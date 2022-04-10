@@ -10,8 +10,46 @@ function NullRender() {
 }
 
 export const calculators = [
-  { value: 'equal', name: '等于' },
-  { value: 'notEqual', name: '不等于' }
+  {
+    value: 'boolean',
+    title: '值比较',
+    children: [
+      { value: 'equal', name: '=' },
+      { value: 'notEqual', name: '≠' },
+      { value: 'gt', name: '>' },
+      { value: 'gte', name: '≥' },
+      { value: 'lt', name: '<' },
+      { value: 'lte', name: '≤' }
+    ]
+  },
+  {
+    value: 'number',
+    title: '算术运算',
+    children: [
+      { value: 'add', name: '+' },
+      { value: 'minus', name: '-' },
+      { value: 'multipe', name: '*' },
+      { value: 'divide', name: '/' },
+      { value: 'mod', name: '%' },
+    ]
+  },
+  {
+    value: 'string',
+    title: '字符串',
+    children: [
+      { value: 'includes', name: '包含' },
+      { value: 'notIncludes', name: '不包含' },
+      { value: 'startsWith', name: '开头是' },
+      { value: 'notStartsWith', name: '开头不是' },
+      { value: 'endsWith', name: '结尾是' },
+      { value: 'notEndsWith', name: '结尾不是' }
+    ]
+  },
+  {
+    value: 'date',
+    title: '日期',
+    children: []
+  }
 ];
 
 const JT_VALUE_RE = /^\s*\{\{([\s\S]*)\}\}\s*$/;
@@ -79,17 +117,17 @@ export const VariableTypes = {
       label: item.title
     })),
     component({ options: { type } = { type: 'string' } }) {
-      return type ? ConstantTypes[type].component : NullRender;
+      return ConstantTypes[type]?.component ?? NullRender;
     },
     appendTypeValue({ options = { type: 'string' } }) {
       return options?.type ? [options.type] : [];
     },
-    onTypeChange(props, [type, optionsType], onChange) {
+    onTypeChange(old, [type, optionsType], onChange) {
       const { default: value } = ConstantTypes[optionsType];
       onChange({
         value,
         type,
-        options: { ...props.options, type: optionsType }
+        options: { ...old.options, type: optionsType }
       });
     },
     parse(path) {
@@ -104,7 +142,7 @@ export const VariableTypes = {
       const stack = [];
       for (let current = node.upstream; current; current = current.upstream) {
         const { getter } = instructions.get(current.type);
-        // consider `getter` as the key of a value available node
+        // Note: consider `getter` as the key of a value available node
         if (getter) {
           stack.push({
             value: current.id,
@@ -130,11 +168,11 @@ export const VariableTypes = {
     appendTypeValue({ options = {} }: { type: string, options: any }) {
       return options.nodeId ? [Number.parseInt(options.nodeId, 10)] : [];
     },
-    onTypeChange(props, [type, nodeId], onChange) {
+    onTypeChange(old, [type, nodeId], onChange) {
       onChange({
-        ...props,
+        // ...old,
         type,
-        options: { ...props.options, nodeId }
+        options: { nodeId }
       });
     },
     parse([nodeId, ...path]) {
@@ -155,6 +193,12 @@ export const VariableTypes = {
   // calculation: Calculation
 };
 
+export const VariableTypesContext = React.createContext(null);
+
+export function useVariableTypes() {
+  return React.useContext(VariableTypesContext);
+}
+
 interface OperandProps {
   value: {
     type: string;
@@ -165,10 +209,12 @@ interface OperandProps {
 }
 
 export function Operand({ onChange, value: operand = { type: 'constant', value: '', options: { type: 'string' } } }: OperandProps) {
+  const Types = useVariableTypes();
+
   const { type } = operand;
 
-  const { component, appendTypeValue } = VariableTypes[type];
-  const VariableComponent = typeof component === 'function' ? component(operand) : component;
+  const { component, appendTypeValue } = Types[type];
+  const VariableComponent = typeof component === 'function' ? component(operand) : NullRender;
 
   return (
     <div className={css`
@@ -179,56 +225,64 @@ export function Operand({ onChange, value: operand = { type: 'constant', value: 
       <Cascader
         allowClear={false}
         value={[type, ...(appendTypeValue ? appendTypeValue(operand) : [])]}
-        options={Object.values(VariableTypes).map(item => {
+        options={Object.values(Types).map((item: any) => {
           const children = typeof item.options === 'function' ? item.options() : item.options;
           return {
             label: item.title,
             value: item.value,
             children,
-            disabled: children && !children.length
+            disabled: children && !children.length,
+            isLeaf: !children
           };
         })}
-        onChange={(t: Array<string | number>) => {
-          const { onTypeChange } = VariableTypes[t[0]];
+        onChange={(next: Array<string | number>) => {
+          const { onTypeChange } = Types[next[0]];
           if (typeof onTypeChange === 'function') {
-            onTypeChange(operand, t, onChange);
+            onTypeChange(operand, next, onChange);
           } else {
-            if (t[0] !== type) {
-              onChange({ type: t[0], value: null });
+            if (next[0] !== type) {
+              onChange({ type: next[0], value: null });
             }
           }
         }}
       />
-      <VariableComponent {...operand} onChange={v => onChange({ ...operand, value: v })} />
+      <VariableComponent {...operand} onChange={op => onChange({ ...op })} />
     </div>
   );
 }
 
-export function Calculation({ calculator, operands, onChange }) {
+export function Calculation({ calculator, operands = [], onChange }) {
   return (
-    <div className={css`
-      display: flex;
-      gap: .5em;
-      align-items: center;
+    <VariableTypesContext.Provider value={VariableTypes}>
+      <div className={css`
+        display: flex;
+        gap: .5em;
+        align-items: center;
 
-      .ant-select{
-        width: auto;
-      }
-    `}>
-      <Operand value={operands[0]} onChange={(v => onChange({ calculator, operands: [v, operands[1]] }))} />
-      {operands[0]
-        ? (
-          <>
-            <Select value={calculator} onChange={v => onChange({ operands, calculator: v })}>
-              {calculators.map(item => (
-                <Select.Option key={item.value} value={item.value}>{item.name}</Select.Option>
-              ))}
-            </Select>
-            <Operand value={operands[1]} onChange={(v => onChange({ calculator, operands: [operands[0], v] }))} />
-          </>
-        )
-        : null
-      }
-    </div>
+        .ant-select{
+          width: auto;
+          min-width: 6em;
+        }
+      `}>
+        <Operand value={operands[0]} onChange={(v => onChange({ calculator, operands: [v, operands[1]] }))} />
+        {operands[0]
+          ? (
+            <>
+              <Select value={calculator} onChange={v => onChange({ operands, calculator: v })}>
+                {calculators.map(group => (
+                  <Select.OptGroup key={group.value} label={group.title}>
+                    {group.children.map(item => (
+                      <Select.Option key={item.value} value={item.value}>{item.name}</Select.Option>
+                    ))}
+                  </Select.OptGroup>
+                ))}
+              </Select>
+              <Operand value={operands[1]} onChange={(v => onChange({ calculator, operands: [operands[0], v] }))} />
+            </>
+          )
+          : null
+        }
+      </div>
+    </VariableTypesContext.Provider>
   );
 }
