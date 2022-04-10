@@ -14,8 +14,8 @@ export const useActionContext = () => {
   return {
     ...ctx,
     setVisible(visible: boolean) {
-      if (ctx.openMode !== 'page') {
-        ctx.setVisible(visible);
+      if (ctx?.openMode !== 'page') {
+        ctx?.setVisible?.(visible);
       }
     },
   };

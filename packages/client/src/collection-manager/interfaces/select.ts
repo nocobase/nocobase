@@ -7,6 +7,7 @@ export const select: IField = {
   group: 'choices',
   order: 2,
   title: '{{t("Single select")}}',
+  sortable: true,
   default: {
     type: 'string',
     // name,

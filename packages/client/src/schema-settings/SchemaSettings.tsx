@@ -200,6 +200,10 @@ SchemaSettings.Item = (props) => {
   );
 };
 
+SchemaSettings.ItemGroup = (props) => {
+  return <Menu.ItemGroup {...props} />;
+};
+
 SchemaSettings.SubMenu = (props) => {
   return <Menu.SubMenu {...props} />;
 };
@@ -245,7 +249,13 @@ SchemaSettings.SelectItem = (props) => {
     <SchemaSettings.Item {...others}>
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
-        <Select bordered={false} defaultValue={value} onChange={onChange} options={options} style={{ textAlign: 'right', minWidth: 100 }} />
+        <Select
+          bordered={false}
+          defaultValue={value}
+          onChange={onChange}
+          options={options}
+          style={{ textAlign: 'right', minWidth: 100 }}
+        />
       </div>
     </SchemaSettings.Item>
   );
@@ -298,8 +308,11 @@ SchemaSettings.PopupItem = (props) => {
 };
 
 SchemaSettings.ModalItem = (props) => {
-  const { title, components, scope, effects, schema, onSubmit, initialValues, ...others } = props;
+  const { hidden, title, components, scope, effects, schema, onSubmit, initialValues, ...others } = props;
   const options = useContext(SchemaOptionsContext);
+  if (hidden) {
+    return null;
+  }
   return (
     <SchemaSettings.Item
       {...others}

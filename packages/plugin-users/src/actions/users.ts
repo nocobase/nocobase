@@ -14,7 +14,7 @@ export async function check(ctx: Context, next: Next) {
 
 export async function signin(ctx: Context, next: Next) {
   const { uniqueField = 'email', values } = ctx.action.params;
-  console.log('signin.values', values);
+
   if (!values[uniqueField]) {
     ctx.throw(401, '请填写邮箱账号');
   }
@@ -32,19 +32,19 @@ export async function signin(ctx: Context, next: Next) {
   if (!isValid) {
     ctx.throw(401, '密码错误，请您重新输入');
   }
-  if (!user.token) {
-    user.token = crypto.randomBytes(20).toString('hex');
-    await user.save();
-  }
+
+  const pluginUser = ctx.app.getPlugin('@nocobase/plugin-users');
+
   ctx.body = {
     ...user.toJSON(),
-    token: user.get('token'),
+    token: pluginUser.jwtService.sign({
+      userId: user.get('id'),
+    }),
   };
   await next();
 }
 
 export async function signout(ctx: Context, next: Next) {
-  await ctx.state.currentUser.update({ token: null });
   ctx.body = ctx.state.currentUser;
   await next();
 }
@@ -152,29 +152,10 @@ export async function changePassword(ctx: Context, next: Next) {
 
 export async function setDefaultRole(ctx: Context, next: Next) {
   const {
-    values: { defaultRole },
+    values: { roleName },
   } = ctx.action.params;
 
-  const currentUserId = ctx.state.currentUser.id;
-
-  await ctx.db.getRepository('rolesUsers').update({
-    filter: {
-      userId: currentUserId,
-    },
-    values: {
-      default: false,
-    },
-  });
-
-  await ctx.db.getRepository('rolesUsers').update({
-    filter: {
-      userId: currentUserId,
-      roleName: defaultRole,
-    },
-    values: {
-      default: true,
-    },
-  });
+  await ctx.state.currentUser.setDefaultRole(roleName);
 
   ctx.body = 'ok';
 

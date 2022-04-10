@@ -7,6 +7,7 @@ export const radioGroup: IField = {
   group: 'choices',
   order: 4,
   title: '{{t("Radio group")}}',
+  sortable: true,
   default: {
     type: 'string',
     // name,

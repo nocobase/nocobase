@@ -9,9 +9,10 @@ export async function checkAction(ctx, next) {
     });
 
     ctx.body = {
-      role: ctx.app.acl.getRole(currentRole).toJSON(),
+      ...ctx.app.acl.getRole(currentRole).toJSON(),
+      allowAll: currentRole === 'root',
       allowConfigure: roleInstance.get('allowConfigure'),
-      roleMenuItemIds: roleInstance.get('menuUiSchemas').map((uiSchema) => uiSchema.get('x-uid')),
+      allowMenuItemIds: roleInstance.get('menuUiSchemas').map((uiSchema) => uiSchema.get('x-uid')),
     };
   }
 

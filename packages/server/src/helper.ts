@@ -48,6 +48,9 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   );
 
   app.use<DefaultState, DefaultContext>(async (ctx, next) => {
+    ctx.getBearerToken = () => {
+      return ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
+    };
     ctx.db = app.db;
     ctx.resourcer = app.resourcer;
     const i18n = app.i18n.cloneInstance({ initImmediate: false });

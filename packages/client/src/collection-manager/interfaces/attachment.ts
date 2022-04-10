@@ -47,6 +47,13 @@ export const attachment: IField = {
   },
   properties: {
     ...defaultProps,
+    'uiSchema.x-component-props.accept': {
+      type: 'string',
+      title: '{{t("Accept")}}',
+      'x-component': 'Input',
+      'x-decorator': 'FormItem',
+      description: 'Example: .doc,.docx',
+    },
     'uiSchema.x-component-props.multiple': {
       type: 'boolean',
       'x-content': "{{t('Allow uploading multiple files')}}",

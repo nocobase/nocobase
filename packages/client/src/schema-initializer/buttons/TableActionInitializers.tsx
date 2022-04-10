@@ -24,6 +24,7 @@ export const TableActionInitializers = {
           component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
           },
         },
         {
@@ -32,6 +33,7 @@ export const TableActionInitializers = {
           component: 'BulkDestroyActionInitializer',
           schema: {
             'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
           },
         },
       ],

@@ -8,9 +8,12 @@
     "build:cjs": "tsc --project tsconfig.build.json",
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
-  "dependencies": {},
+  "dependencies": {
+    "jsonwebtoken": "^8.5.1"
+  },
   "devDependencies": {
-    "@nocobase/test": "^0.6.0-alpha.0"
+    "@nocobase/test": "^0.6.0-alpha.0",
+    "@types/jsonwebtoken": "^8.5.8"
   },
   "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
 }

@@ -1,8 +1,8 @@
 import { Checkbox, message, Table } from 'antd';
 import React, { useState } from 'react';
-import { useMenuItems } from '.';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
+import { useMenuItems } from './RoleTable';
 
 const findUids = (items) => {
   if (!Array.isArray(items)) {

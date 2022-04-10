@@ -1,4 +1,5 @@
 import {
+  ACLProvider,
   ACLShortcut,
   AdminLayout,
   AntdConfigProvider,
@@ -25,6 +26,7 @@ import {
   SchemaTemplateShortcut,
   SigninPage,
   SignupPage,
+  Slate,
   SystemSettingsProvider,
   SystemSettingsShortcut,
   useRoutes,
@@ -86,7 +88,7 @@ const providers = [
       },
     },
   ],
-  [SchemaComponentProvider, { components: { Link, NavLink } }],
+  [SchemaComponentProvider, { components: { Slate, Link, NavLink } }],
   // RemoteCollectionManagerProvider,
   [
     SchemaInitializerProvider,
@@ -98,6 +100,7 @@ const providers = [
   ],
   BlockSchemaComponentProvider,
   AntdSchemaComponentProvider,
+  ACLProvider,
   ChinaRegionProvider,
   WorkflowRouteProvider,
   [DocumentTitleProvider, { addonAfter: 'NocoBase' }],

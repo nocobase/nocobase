@@ -206,7 +206,7 @@ export const recordPickerSelector: ISchema = {
   title: '{{ t("Select record") }}',
   'x-component': 'RecordPicker.Selector',
   'x-component-props': {
-    className: 'nb-record-picker-selector'
+    className: 'nb-record-picker-selector',
   },
   properties: {
     grid: {

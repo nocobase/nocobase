@@ -1,8 +1,10 @@
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { useRequest } from 'ahooks';
+import template from 'lodash/template';
 import React, { createContext, useContext } from 'react';
-import { TableFieldResource, useAPIClient, useRecord } from '../';
+import { Link } from 'react-router-dom';
+import { ACLCollectionProvider, TableFieldResource, useAPIClient, useRecord } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
 
@@ -87,7 +89,9 @@ export const useResourceAction = (props, opts = {}) => {
 const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
-    <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
+    <CollectionProvider collection={collection}>
+      <ACLCollectionProvider>{props.children}</ACLCollectionProvider>
+    </CollectionProvider>
   ) : (
     <>{props.children}</>
   );
@@ -104,7 +108,7 @@ const BlockRequestProvider = (props) => {
   );
   const __parent = useContext(BlockRequestContext);
   return (
-    <BlockRequestContext.Provider value={{ block: props.block, field, service, resource, __parent }}>
+    <BlockRequestContext.Provider value={{ block: props.block, props, field, service, resource, __parent }}>
       {props.children}
     </BlockRequestContext.Provider>
   );
@@ -174,4 +178,16 @@ export const useParamsFromRecord = () => {
   return {
     filterByTk: filterByTk,
   };
+};
+
+export const RecordLink = (props) => {
+  const field = useField();
+  const record = useRecord();
+  const { title, to, ...others } = props;
+  const compiled = template(to || '');
+  return (
+    <Link {...others} to={compiled({ record: record || {} })}>
+      {field.title}
+    </Link>
+  );
 };

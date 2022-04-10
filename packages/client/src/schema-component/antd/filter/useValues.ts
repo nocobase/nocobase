@@ -3,7 +3,7 @@ import { merge } from '@formily/shared';
 import flat from 'flat';
 import get from 'lodash/get';
 import { useContext, useEffect } from 'react';
-import { FilterContext } from './context';
+import { FilterContext, FilterLogicContext } from './context';
 
 // import { useValues } from './useValues';
 const findOption = (dataIndex = [], options) => {
@@ -21,10 +21,11 @@ const findOption = (dataIndex = [], options) => {
 
 export const useValues = () => {
   const field = useField<any>();
+  const logic = useContext(FilterLogicContext);
   const { options } = useContext(FilterContext);
   const data2value = () => {
     field.value = flat.unflatten({
-      [`${field.data.dataIndex.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
+      [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
     });
   };
   const value2data = () => {
@@ -37,25 +38,19 @@ export const useValues = () => {
     const [operatorValue] = otherPath.split('.', 2);
     const dataIndex = fieldPath.split('.');
     const option = findOption(dataIndex, options);
-    const operators = option.operators;
+    const operators = option?.operators;
     const operator = operators?.find?.((item) => item.value === `$${operatorValue}`);
     field.data = field.data || {};
     field.data.dataIndex = dataIndex;
     field.data.operators = operators;
     field.data.operator = operator;
-    field.data.schema = merge(merge(option?.schema, operator?.schema), {
-      'x-component-props': {
-        style: {
-          minWidth: 150,
-        },
-      },
-    });
+    field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(field.value, `${fieldPath}.$${operatorValue}`);
     console.log('option', operator, field.data.value);
   };
   useEffect(() => {
     value2data();
-  }, []);
+  }, [logic]);
   return {
     fields: options,
     ...field.data,
@@ -63,9 +58,9 @@ export const useValues = () => {
       const option = findOption(dataIndex, options);
       const operator = option?.operators?.[0];
       field.data = field.data || {};
-      field.data.operators = option.operators;
+      field.data.operators = option?.operators;
       field.data.operator = operator;
-      field.data.schema = merge(option.schema, operator.schema);
+      field.data.schema = merge(option?.schema, operator?.schema);
       field.data.dataIndex = dataIndex;
       field.data.value = null;
       data2value();
@@ -75,7 +70,7 @@ export const useValues = () => {
       const operator = field.data?.operators?.find?.((item) => item.value === operatorValue);
       field.data.operator = operator;
       field.data.schema = merge(field.data.schema, operator.schema);
-      field.data.value = null;
+      field.data.value = operator.noValue ? true : null;
       data2value();
       console.log('setOperator', field.data);
     },

@@ -35,5 +35,12 @@ export default defineConfig({
       '@nocobase/client',
       resolve(__dirname, '../client/src'),
     );
+    config.module.rules
+      .get('ts-in-node_modules')
+      .include.add(resolve(__dirname, '../utils/src'));
+    config.resolve.alias.set(
+      '@nocobase/utils',
+      resolve(__dirname, '../utils/src'),
+    );
   },
 });

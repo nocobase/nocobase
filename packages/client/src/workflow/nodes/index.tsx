@@ -1,19 +1,20 @@
 import React, { useContext } from 'react';
-import { cx } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { Button, Modal, Tag } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, CloseOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
 
 import { Registry } from '@nocobase/utils';
 
 import { SchemaComponent, useActionContext, useAPIClient, useCollection, useRequest, useResourceActionContext } from '../..';
-import { useFlowContext } from '../WorkflowCanvas';
+import { AddButton, useFlowContext } from '../WorkflowCanvas';
 
-import { nodeClass, nodeCardClass, nodeHeaderClass, nodeTitleClass } from '../style';
+import { nodeClass, nodeCardClass, nodeHeaderClass, nodeTitleClass, nodeBlockClass } from '../style';
 
 import query from './query';
 import condition from './condition';
 import parallel from './parallel';
+import calculation from './calculation';
 
 
 function useUpdateConfigAction() {
@@ -44,12 +45,15 @@ function useUpdateConfigAction() {
 export interface Instruction {
   title: string;
   type: string;
+  group: string;
   options?: { label: string; value: any; key: string }[];
   fieldset: { [key: string]: ISchema };
-  view: ISchema;
+  view?: ISchema;
   scope?: { [key: string]: any };
-  components?: { [key: string]: any }
-  render?(props): React.ReactElement
+  components?: { [key: string]: any };
+  render?(props): React.ReactElement;
+  endding?: boolean;
+  getter?(node: any): React.ReactElement;
 };
 
 export const instructions = new Registry<Instruction>();
@@ -57,6 +61,7 @@ export const instructions = new Registry<Instruction>();
 instructions.register('query', query);
 instructions.register('condition', condition);
 instructions.register('parallel', parallel);
+instructions.register('calculation', calculation);
 
 const NodeContext = React.createContext(null);
 
@@ -67,12 +72,38 @@ export function useNodeContext() {
 export function Node({ data }) {
   const instruction = instructions.get(data.type);
 
-  if (instruction.render) {
-    return instruction.render(data);
-  }
-
   return (
-    <NodeDefaultView data={data} />
+    <div className={cx(nodeBlockClass)}>
+      {instruction.render
+        ? instruction.render(data)
+        : <NodeDefaultView data={data} />
+      }
+      {!instruction.endding
+        ? <AddButton upstream={data} />
+        : (
+          <div
+            className={css`
+              flex-grow: 1;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              width: 1px;
+              height: 6em;
+              padding: 2em 0;
+              background-color: #f0f2f5;
+
+              .anticon{
+                font-size: 1.5em;
+                line-height: 100%;
+              }
+            `}
+          >
+            <CloseOutlined />
+          </div>
+        )
+      }
+    </div>
   );
 }
 
@@ -95,7 +126,7 @@ export function RemoveButton() {
 
     Modal.confirm({
       title: '删除分支',
-      content: '节点包含分支，将删除其所有分支下的子节点，确定继续？',
+      content: '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
       onOk
     });
   }
@@ -123,7 +154,7 @@ export function NodeDefaultView(props) {
           </div>
           <SchemaComponent
             scope={instruction.scope}
-            components={{...instruction.components}}
+            components={instruction.components}
             schema={{
               type: 'void',
               properties: {

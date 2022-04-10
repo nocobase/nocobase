@@ -3,6 +3,7 @@ import { Layout } from 'antd';
 import React, { useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
+  ACLAllowConfigure, ACLRolesCheckProvider,
   CurrentUser,
   CurrentUserProvider,
   findByUid,
@@ -15,6 +16,7 @@ import {
   useRoute,
   useSystemSettings
 } from '../../../';
+import { PoweredBy } from '../../../powered-by';
 
 const InternalAdminLayout = (props: any) => {
   const route = useRoute();
@@ -96,22 +98,41 @@ const InternalAdminLayout = (props: any) => {
           </div>
         </div>
         <div style={{ position: 'absolute', top: 0, right: 0 }}>
-          <PluginManager.Toolbar
-            items={[
-              { component: 'DesignableSwitch', pin: true },
-              { component: 'CollectionManagerShortcut', pin: true },
-              { component: 'ACLShortcut', pin: true },
-              { component: 'WorkflowShortcut', pin: true },
-              { component: 'SchemaTemplateShortcut', pin: true },
-              { component: 'SystemSettingsShortcut' },
-            ]}
-          />
+          <ACLAllowConfigure>
+            <PluginManager.Toolbar
+              items={[
+                { component: 'DesignableSwitch', pin: true },
+                { component: 'CollectionManagerShortcut', pin: true },
+                { component: 'ACLShortcut', pin: true },
+                { component: 'WorkflowShortcut', pin: true },
+                { component: 'SchemaTemplateShortcut', pin: true },
+                { component: 'SystemSettingsShortcut' },
+              ]}
+            />
+          </ACLAllowConfigure>
           <CurrentUser />
         </div>
       </Layout.Header>
       <Layout>
         <Layout.Sider style={{ display: 'none' }} theme={'light'} ref={sideMenuRef}></Layout.Sider>
-        <Layout.Content style={{ minHeight: 'calc(100vh - 46px)' }}>{props.children}</Layout.Content>
+        <Layout.Content
+          className={css`
+            min-height: calc(100vh - 46px);
+            position: relative;
+            padding-bottom: 70px;
+            .ant-layout-footer {
+              position: absolute;
+              bottom: 0;
+              text-align: center;
+              width: 100%;
+            }
+          `}
+        >
+          {props.children}
+          <Layout.Footer>
+            <PoweredBy />
+          </Layout.Footer>
+        </Layout.Content>
       </Layout>
     </Layout>
   );
@@ -119,13 +140,15 @@ const InternalAdminLayout = (props: any) => {
 
 export const AdminLayout = (props) => {
   return (
-    <RemoteSchemaTemplateManagerProvider>
-      <RemoteCollectionManagerProvider>
-        <CurrentUserProvider>
-          <InternalAdminLayout {...props} />
-        </CurrentUserProvider>
-      </RemoteCollectionManagerProvider>
-    </RemoteSchemaTemplateManagerProvider>
+    <CurrentUserProvider>
+      <RemoteSchemaTemplateManagerProvider>
+        <RemoteCollectionManagerProvider>
+          <ACLRolesCheckProvider>
+            <InternalAdminLayout {...props} />
+          </ACLRolesCheckProvider>
+        </RemoteCollectionManagerProvider>
+      </RemoteSchemaTemplateManagerProvider>
+    </CurrentUserProvider>
   );
 };
 

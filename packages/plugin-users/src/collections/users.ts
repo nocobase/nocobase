@@ -4,6 +4,7 @@ export default {
   name: 'users',
   title: '{{t("Users")}}',
   sortable: 'sort',
+  model: 'UserModel',
   fields: [
     {
       interface: 'input',
@@ -64,12 +65,6 @@ export default {
     {
       type: 'string',
       name: 'appLang',
-    },
-    {
-      type: 'string',
-      name: 'token',
-      unique: true,
-      hidden: true,
     },
     {
       type: 'string',

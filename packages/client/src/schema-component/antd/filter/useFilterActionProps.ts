@@ -1,10 +1,19 @@
+import { Field } from '@formily/core';
+import { useField, useFieldSchema } from '@formily/react';
+import flat from 'flat';
+import { useTranslation } from 'react-i18next';
 import { useBlockRequestContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 
 export const useFilterOptions = (collectionName: string) => {
+  const fieldSchema = useFieldSchema();
+  const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, nochildren) => {
+    if (nonfilterable.length && !nochildren && nonfilterable.includes(field.name)) {
+      return;
+    }
     if (!field.interface) {
       return;
     }
@@ -46,15 +55,61 @@ export const useFilterOptions = (collectionName: string) => {
   return getOptions(fields);
 };
 
+const isEmpty = (obj) => {
+  return obj && Object.keys(obj).length === 0 && Object.getPrototypeOf(obj) === Object.prototype;
+};
+
+const removeNullCondition = (filter) => {
+  const items = flat(filter);
+  console.log('filter', items);
+  const values = {};
+  for (const key in items) {
+    const value = items[key];
+    if (value !== null && !isEmpty(value)) {
+      values[key] = value;
+    }
+  }
+  return flat.unflatten(values);
+};
+
+export const mergeFilter = (filter1, filter2) => {
+  if (filter1 && filter2) {
+    return { $and: [filter1, filter2] };
+  }
+  if (!filter1 && filter2) {
+    return filter2;
+  }
+  if (filter1 && !filter2) {
+    return filter1;
+  }
+  return {};
+};
+
 export const useFilterActionProps = () => {
   const { name } = useCollection();
   const options = useFilterOptions(name);
-  const { service } = useBlockRequestContext();
+  const { service, props } = useBlockRequestContext();
+  const field = useField<Field>();
+  const { t } = useTranslation();
   return {
     options,
-    onSubmit({ filter }) {
-      console.log('filter', filter)
+    onSubmit(values) {
+      // filter parameter for the block
+      const defaultFilter = removeNullCondition(props.params.filter);
+      // filter parameter for the filter action
+      const filter = removeNullCondition(values?.filter);
+      service.run({ ...service.params?.[0], filter: mergeFilter(defaultFilter, filter) });
+      const items = filter?.$and || filter?.$or;
+      if (items?.length) {
+        field.title = t('{{count}} filter items', { count: items?.length || 0 });
+      } else {
+        field.title = t('Filter');
+      }
+    },
+    onReset() {
+      const filter = removeNullCondition(props.params.filter);
       service.run({ ...service.params?.[0], filter });
+      field.title = t('Filter');
     },
   };
 };

@@ -1,46 +1,57 @@
 import { Context, Next } from '@nocobase/actions';
+import UsersPlugin from '../server';
 
-// TODO(feature): 表名应在 options 中配置
-// 中间件默认只解决解析 token 和附加对应 user 的工作，不解决是否提前报 401 退出。
-
-// 因为是否提供匿名访问资源是应用决定的，不是使用插件就一定不能匿名访问。
-export function parseToken(options?: any) {
+export function parseToken(options?: { plugin: UsersPlugin }) {
   return async function parseToken(ctx: Context, next: Next) {
-    const user = await findUserByToken(ctx);
-
+    const user = await findUserByToken(ctx, options.plugin);
     if (user) {
       ctx.state.currentUser = user;
-      setCurrentRole(ctx, user);
+      setCurrentRole(ctx);
     }
     return next();
   };
 }
 
-function setCurrentRole(ctx, user) {
-  const userRoles = user.get('roles');
-  let userRole;
+export function setCurrentRole(ctx) {
+  let currentRole = ctx.get('X-Role');
 
-  if (userRoles.length == 1) {
-    userRole = userRoles[0].get('name');
-  } else if (userRoles.length > 1) {
-    const defaultRole = userRoles.findIndex((role) => role.get('rolesUsers').default);
-    userRole = (defaultRole !== -1 ? userRoles[defaultRole] : userRoles[0]).get('name');
+  if (currentRole === 'anonymous') {
+    ctx.state.currentRole = currentRole;
+    return;
   }
 
-  if (userRole) {
-    ctx.state.currentRole = userRole;
+  const userRoles = ctx.state.currentUser.roles;
+
+  if (userRoles.length == 1) {
+    currentRole = userRoles[0].name;
+  } else if (userRoles.length > 1) {
+    const role = userRoles.find((role) => role.name === currentRole);
+    if (!role) {
+      const defaultRole = userRoles.find((role) => role?.rolesUsers?.default);
+      currentRole = (defaultRole || userRoles[0])?.name;
+    }
+  }
+
+  if (currentRole) {
+    ctx.state.currentRole = currentRole;
   }
 }
 
-async function findUserByToken(ctx: Context) {
-  const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
-  const User = ctx.db.getCollection('users');
-  const user = await User.repository.findOne({
-    filter: {
-      token,
-    },
-    appends: ['roles'],
-  });
+async function findUserByToken(ctx: Context, plugin: UsersPlugin) {
+  const token = ctx.getBearerToken();
+  if (!token) {
+    return null;
+  }
+  try {
+    const { userId } = await plugin.jwtService.decode(token);
 
-  return user;
+    return await ctx.db.getRepository('users').findOne({
+      filter: {
+        id: userId,
+      },
+      appends: ['roles'],
+    });
+  } catch (error) {
+    console.warn(error);
+  }
 }

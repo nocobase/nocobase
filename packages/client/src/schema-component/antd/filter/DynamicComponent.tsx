@@ -1,5 +1,6 @@
 import { createForm, onFieldValueChange } from '@formily/core';
 import { FieldContext, FormContext } from '@formily/react';
+import { merge } from '@formily/shared';
 import React, { useContext, useMemo } from 'react';
 import { SchemaComponent } from '../../core';
 import { useComponent } from '../../hooks';
@@ -27,6 +28,11 @@ export const DynamicComponent = (props) => {
           schema={{
             'x-component': 'Input',
             ...props.schema,
+            'x-component-props': merge(props?.schema?.['x-component-props'] || {}, {
+              style: {
+                minWidth: 150,
+              },
+            }),
             name: 'value',
             'x-read-pretty': false,
             'x-validator': undefined,

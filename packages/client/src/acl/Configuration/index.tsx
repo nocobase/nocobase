@@ -1,6 +1,6 @@
-export * from './MenuConfigure';
-export * from './RoleConfigure';
-export * from './RolesResourcesActions';
-export * from './RoleTable';
-export * from './StrategyActions';
+export { MenuConfigure } from './MenuConfigure';
+export { RoleConfigure } from './RoleConfigure';
+export { RolesResourcesActions } from './RolesResourcesActions';
+export { RoleTable } from './RoleTable';
+export { StrategyActions } from './StrategyActions';
 

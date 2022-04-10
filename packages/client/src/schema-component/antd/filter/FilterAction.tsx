@@ -17,7 +17,7 @@ export const FilterAction = observer((props: any) => {
   const [visible, setVisible] = useState(false);
   const { designable, dn } = useDesignable();
   const fieldSchema = useFieldSchema();
-  const form = useMemo<Form>(() => props.form || createForm(), [visible]);
+  const form = useMemo<Form>(() => props.form || createForm(), []);
   const { options, onSubmit, onReset, ...others } = useProps(props);
   return (
     <FilterActionContext.Provider value={{ field, fieldSchema, designable, dn }}>
@@ -58,7 +58,7 @@ export const FilterAction = observer((props: any) => {
                   <Button
                     onClick={async () => {
                       await form.reset();
-                      onReset?.();
+                      onReset?.(form.values);
                       field.title = t('Filter');
                       setVisible(false);
                     }}
@@ -72,9 +72,6 @@ export const FilterAction = observer((props: any) => {
                       e.preventDefault();
                       e.stopPropagation();
                       onSubmit?.(form.values);
-                      const items = form.values?.filter?.$and || form.values?.filter?.$or;
-                      console.log('form.values.filter', form.values, items);
-                      field.title = t('{{count}} filter items', { count: items?.length || 0 });
                       setVisible(false);
                     }}
                   >

@@ -63,8 +63,8 @@ export const chinaRegion: IField = {
         { value: 1, label: '{{t("Province")}}' },
         { value: 2, label: '{{t("City")}}' },
         { value: 3, label: '{{t("Area")}}' },
-        { value: 4, label: '{{t("Street")}}' },
-        { value: 5, label: '{{t("Village")}}' },
+        { value: 4, label: '{{t("Street")}}', disabled: true },
+        { value: 5, label: '{{t("Village")}}', disabled: true },
       ],
     },
     'uiSchema.x-component-props.changeOnSelectLast': {
