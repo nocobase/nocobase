@@ -30,7 +30,7 @@ export const RichText = (props: any) => {
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor() as ReactEditor)), []);
   const slateValue = useMemo(() => {
-    editor.children = JSON.parse(JSON.stringify(value));
+    editor.children = JSON.parse(JSON.stringify(value || []));
     Editor.normalize(editor, { force: true });
     return editor.children;
   }, [editor, value]);
