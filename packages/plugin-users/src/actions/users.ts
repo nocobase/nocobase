@@ -155,31 +155,7 @@ export async function setDefaultRole(ctx: Context, next: Next) {
     values: { roleName },
   } = ctx.action.params;
 
-  if (roleName == 'anonymous') {
-    ctx.body = 'ok';
-    return next();
-  }
-
-  const currentUserId = ctx.state.currentUser.id;
-
-  await ctx.db.getRepository('rolesUsers').update({
-    filter: {
-      userId: currentUserId,
-    },
-    values: {
-      default: false,
-    },
-  });
-
-  await ctx.db.getRepository('rolesUsers').update({
-    filter: {
-      userId: currentUserId,
-      roleName,
-    },
-    values: {
-      default: true,
-    },
-  });
+  await ctx.state.currentUser.setDefaultRole(roleName);
 
   ctx.body = 'ok';
 

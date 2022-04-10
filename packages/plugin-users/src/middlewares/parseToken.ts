@@ -6,32 +6,34 @@ export function parseToken(options?: { plugin: UsersPlugin }) {
     const user = await findUserByToken(ctx, options.plugin);
     if (user) {
       ctx.state.currentUser = user;
-      setCurrentRole(ctx, user);
+      setCurrentRole(ctx);
     }
     return next();
   };
 }
 
-function setCurrentRole(ctx, user) {
-  const roleName = ctx.get('X-Role');
+export function setCurrentRole(ctx) {
+  let currentRole = ctx.get('X-Role');
 
-  if (roleName === 'anonymous') {
-    ctx.state.currentRole = roleName;
+  if (currentRole === 'anonymous') {
+    ctx.state.currentRole = currentRole;
     return;
   }
 
-  const userRoles = user.get('roles');
-  let userRole;
+  const userRoles = ctx.state.currentUser.roles;
 
   if (userRoles.length == 1) {
-    userRole = userRoles[0].get('name');
+    currentRole = userRoles[0].name;
   } else if (userRoles.length > 1) {
-    const defaultRole = userRoles.findIndex((role) => role.get('rolesUsers').default);
-    userRole = (defaultRole !== -1 ? userRoles[defaultRole] : userRoles[0]).get('name');
+    const role = userRoles.find((role) => role.name === currentRole);
+    if (!role) {
+      const defaultRole = userRoles.find((role) => role.rolesUsers?.default);
+      currentRole = (defaultRole || userRoles[0])?.name;
+    }
   }
 
-  if (userRole) {
-    ctx.state.currentRole = userRole;
+  if (currentRole) {
+    ctx.state.currentRole = currentRole;
   }
 }
 
