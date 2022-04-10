@@ -10,8 +10,46 @@ function NullRender() {
 }
 
 export const calculators = [
-  { value: 'equal', name: '等于' },
-  { value: 'notEqual', name: '不等于' }
+  {
+    value: 'boolean',
+    title: '值比较',
+    children: [
+      { value: 'equal', name: '=' },
+      { value: 'notEqual', name: '≠' },
+      { value: 'gt', name: '>' },
+      { value: 'gte', name: '≥' },
+      { value: 'lt', name: '<' },
+      { value: 'lte', name: '≤' }
+    ]
+  },
+  {
+    value: 'number',
+    title: '算术运算',
+    children: [
+      { value: 'add', name: '+' },
+      { value: 'minus', name: '-' },
+      { value: 'multipe', name: '*' },
+      { value: 'divide', name: '/' },
+      { value: 'mod', name: '%' },
+    ]
+  },
+  {
+    value: 'string',
+    title: '字符串',
+    children: [
+      { value: 'includes', name: '包含' },
+      { value: 'notIncludes', name: '不包含' },
+      { value: 'startsWith', name: '开头是' },
+      { value: 'notStartsWith', name: '开头不是' },
+      { value: 'endsWith', name: '结尾是' },
+      { value: 'notEndsWith', name: '结尾不是' }
+    ]
+  },
+  {
+    value: 'date',
+    title: '日期',
+    children: []
+  }
 ];
 
 const JT_VALUE_RE = /^\s*\{\{([\s\S]*)\}\}\s*$/;
