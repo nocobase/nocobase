@@ -28,18 +28,18 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     this.db.registerModels({ UserModel });
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {
       const { transaction } = options;
-
-      if (this.app.db.getCollection('roles')) {
-        const defaultRole = await this.app.db.getRepository('roles').findOne({
-          filter: {
-            default: true,
-          },
-          transaction,
-        });
-
-        if (defaultRole && (await model.countRoles({ transaction })) == 0) {
-          await model.addRoles(defaultRole, { transaction });
-        }
+      const repository = this.app.db.getRepository('roles');
+      if (!repository) {
+        return;
+      }
+      const defaultRole = await repository.findOne({
+        filter: {
+          default: true,
+        },
+        transaction,
+      });
+      if (defaultRole && (await model.countRoles({ transaction })) == 0) {
+        await model.addRoles(defaultRole, { transaction });
       }
     });
 

@@ -7,10 +7,14 @@ export class UserModel extends Model {
     }
 
     const db = (this.constructor as any).database as Database;
+    const repository = db.getRepository('rolesUsers');
+    if (!repository) {
+      return false;
+    }
     const transaction = options.transaction || (await db.sequelize.transaction());
 
     try {
-      await db.getRepository('rolesUsers').update({
+      await repository.update({
         filter: {
           userId: this.get('id'),
         },
@@ -19,8 +23,7 @@ export class UserModel extends Model {
         },
         transaction,
       });
-
-      await db.getRepository('rolesUsers').update({
+      await repository.update({
         filter: {
           userId: this.get('id'),
           roleName,
