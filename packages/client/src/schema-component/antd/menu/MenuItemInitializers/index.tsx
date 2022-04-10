@@ -83,6 +83,12 @@ export const GroupItem = itemWrap((props) => {
           'x-component-props': {
             icon,
           },
+          'x-server-hooks': [
+            {
+              type: 'onSelfCreate',
+              method: 'bindMenuToRole',
+            },
+          ],
         });
       }}
     />
@@ -133,6 +139,12 @@ export const PageMenuItem = itemWrap((props) => {
           'x-component-props': {
             icon,
           },
+          'x-server-hooks': [
+            {
+              type: 'onSelfCreate',
+              method: 'bindMenuToRole',
+            },
+          ],
           properties: {
             page: {
               type: 'void',
@@ -204,6 +216,12 @@ export const LinkMenuItem = itemWrap((props) => {
             icon,
             href,
           },
+          'x-server-hooks': [
+            {
+              type: 'onSelfCreate',
+              method: 'bindMenuToRole',
+            },
+          ],
         });
       }}
     />

@@ -82,6 +82,12 @@ const InsertMenuItems = (props) => {
             'x-component-props': {
               icon,
             },
+            'x-server-hooks': [
+              {
+                type: 'onSelfCreate',
+                method: 'bindMenuToRole',
+              },
+            ],
           });
         }}
       />
@@ -117,6 +123,12 @@ const InsertMenuItems = (props) => {
             'x-component-props': {
               icon,
             },
+            'x-server-hooks': [
+              {
+                type: 'onSelfCreate',
+                method: 'bindMenuToRole',
+              },
+            ],
             properties: {
               page: {
                 type: 'void',
@@ -172,6 +184,12 @@ const InsertMenuItems = (props) => {
               icon,
               href,
             },
+            'x-server-hooks': [
+              {
+                type: 'onSelfCreate',
+                method: 'bindMenuToRole',
+              },
+            ],
           });
         }}
       />
