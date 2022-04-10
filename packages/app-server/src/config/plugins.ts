@@ -8,7 +8,14 @@ export default [
   '@nocobase/plugin-ui-routes-storage',
   '@nocobase/plugin-file-manager',
   '@nocobase/plugin-system-settings',
-  ['@nocobase/plugin-users', {}],
+  [
+    '@nocobase/plugin-users',
+    {
+      jwt: {
+        secret: process.env.JWT_SECRET,
+      },
+    },
+  ],
   '@nocobase/plugin-acl',
   '@nocobase/plugin-china-region',
   '@nocobase/plugin-workflow',
