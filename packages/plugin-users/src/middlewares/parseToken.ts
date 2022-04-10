@@ -27,7 +27,7 @@ export function setCurrentRole(ctx) {
   } else if (userRoles.length > 1) {
     const role = userRoles.find((role) => role.name === currentRole);
     if (!role) {
-      const defaultRole = userRoles.find((role) => role.rolesUsers?.default);
+      const defaultRole = userRoles.find((role) => role?.rolesUsers?.default);
       currentRole = (defaultRole || userRoles[0])?.name;
     }
   }
