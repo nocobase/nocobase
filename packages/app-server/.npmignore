@@ -4,5 +4,5 @@ docs
 __tests__
 jest.config.js
 tsconfig.json
-src
+tsconfig.build.json
 .fatherrc.ts

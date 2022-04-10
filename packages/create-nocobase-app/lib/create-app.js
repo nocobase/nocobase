@@ -9,6 +9,7 @@ const { join, resolve } = require('path');
 const createEnvFile = require('./resources/templates/env');
 const createPackageJson = require('./resources/templates/package.json.js');
 const createServerPackageJson = require('./resources/templates/server.package.json.js');
+const loadSrcFromNpm = require('./resources/templates/load-src-from-npm');
 
 const getDatabaseOptionsFromCommandOptions = (commandOptions) => {
   if (
@@ -45,6 +46,9 @@ async function createApp(directory, options) {
   // copy files
   await fse.copy(path.join(resourcePath, 'files'), projectPath);
 
+  await loadSrcFromNpm('@nocobase/app-server', path.join(projectPath, 'packages/app/server'));
+  await loadSrcFromNpm('@nocobase/app-client', path.join(projectPath, 'packages/app/client'));
+
   // write .env file
   await fse.writeFile(join(projectPath, '.env'), createEnvFile({ dbOptions }));
 
@@ -61,7 +65,7 @@ async function createApp(directory, options) {
 
   // write server package.json
   await fse.writeJson(
-    join(projectPath, 'packages/server/package.json'),
+    join(projectPath, 'packages/app/server/package.json'),
     createServerPackageJson({
       version: '^0.6.0-alpha.0',
       dbOptions,
