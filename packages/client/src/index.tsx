@@ -14,6 +14,7 @@ export * from './document-title';
 export * from './i18n';
 export * from './icon';
 export * from './plugin-manager';
+export * from './powered-by';
 export * from './record-provider';
 export * from './route-switch';
 export * from './schema-component';
@@ -25,3 +26,4 @@ export * from './slate';
 export * from './system-settings';
 export * from './user';
 export * from './workflow';
+
