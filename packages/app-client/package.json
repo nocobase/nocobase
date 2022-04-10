@@ -1,7 +1,6 @@
 {
-  "name": "@nocobase/app",
+  "name": "@nocobase/app-client",
   "version": "0.6.0-alpha.0",
-  "private": true,
   "scripts": {
     "start": "umi dev",
     "build": "umi build",
@@ -21,5 +20,10 @@
     "@umijs/test": "^3.5.20",
     "lint-staged": "^10.0.7",
     "yorkie": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/app-client"
   }
 }
