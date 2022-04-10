@@ -50,7 +50,7 @@ export const RolesResourcesActions = connect((props) => {
     return action?.fields?.includes(fieldName);
   };
   const availableActionsWithFields = availableActions.filter((action) => action.allowConfigureFields);
-  const fieldPermissions = collection?.fields?.map((field) => {
+  const fieldPermissions = collection?.fields?.filter(field => field.interface)?.map((field) => {
     const permission = { ...field };
     for (const action of availableActionsWithFields) {
       permission[action.name] = inAction(action.name, field.name);
@@ -63,7 +63,7 @@ export const RolesResourcesActions = connect((props) => {
     } else {
       actionMap[actionName] = {
         name: actionName,
-        fields: collection?.fields?.map?.((item) => item.name),
+        fields: collection?.fields?.filter(field => field.interface)?.map?.((item) => item.name),
       };
     }
     onChange(Object.values(actionMap));
@@ -79,7 +79,7 @@ export const RolesResourcesActions = connect((props) => {
   };
   const allChecked = {};
   for (const action of availableActionsWithFields) {
-    allChecked[action.name] = collection?.fields?.length === actionMap?.[action.name]?.fields?.length;
+    allChecked[action.name] = collection?.fields?.filter(field => field.interface)?.length === actionMap?.[action.name]?.fields?.length;
   }
   return (
     <div>
