@@ -8,7 +8,7 @@ import { css } from '@emotion/css';
 import { useCollectionManager } from '../..';
 import { useCollectionFilterOptions } from '../../collection-manager/action-hooks';
 import { useFlowContext } from '../WorkflowCanvas';
-import { parseStringValue, VariableTypes } from '../calculators';
+import { Operand, parseStringValue, VariableTypes, VariableTypesContext } from '../calculators';
 
 const BaseTypeSet = new Set(['boolean', 'number', 'string', 'date']);
 
@@ -89,7 +89,10 @@ export default {
         constant: {
           title: '常量',
           value: 'constant',
-          options: undefined
+          options: undefined,
+          component() {
+            return renderSchemaComponent;
+          }
         }
       };
 
@@ -97,64 +100,33 @@ export default {
         ? parseStringValue(value, VTypes)
         : { type: 'constant', value };
 
-      const { component, appendTypeValue } = VTypes[operand.type];
-      const [types, setTypes] = useState([operand.type, ...(appendTypeValue ? appendTypeValue(operand) : [])]);
-      const [type] = types;
-
-      const VariableComponent = typeof component === 'function' ? component(operand) : component;
-
       return (
-        <div className={css`
-          display: flex;
-          gap: .5em;
-          align-items: center;
-        `}>
-          <Cascader
-            allowClear={false}
-            value={types}
-            options={Object.values(VTypes).map(item => {
-              const children = typeof item.options === 'function' ? item.options() : item.options;
-              return {
-                label: item.title,
-                value: item.value,
-                children,
-                disabled: children && !children.length,
-                isLeaf: !children
-              };
-            })}
-            onChange={(next: Array<any>) => {
-              const { onTypeChange, stringify } = VTypes[next[0]];
-              setTypes(next);
-              if (typeof onTypeChange === 'function') {
-                onTypeChange(operand, next, (op) => {
-                  onChange(stringify(op));
-                });
+        <VariableTypesContext.Provider value={VTypes}>
+          <Operand
+            value={operand}
+            onChange={(next) => {
+              if (next.type !== operand.type && next.type === 'constant') {
+                onChange(null);
               } else {
-                if (next[0] !== type) {
-                  onChange(null);
-                }
+                const { stringify } = VTypes[next.type];
+                onChange(stringify(next));
               }
             }}
           />
-          {type === 'constant'
-            ? renderSchemaComponent()
-            : <VariableComponent {...operand} onChange={(v) => {
-              const { stringify } = VTypes[type];
-              onChange(stringify(v));
-            }} />
-          }
-        </div>
+        </VariableTypesContext.Provider>
       );
     }
   },
-  getter({ options, onChange }) {
+  getter({ type, options, onChange }) {
     const { collections = [] } = useCollectionManager();
     const { nodes } = useFlowContext();
     const { config } = nodes.find(n => n.id == options.nodeId);
     const collection = collections.find(item => item.name === config.collection) ?? { fields: [] };
 
     return (
-      <Select value={options.path} placeholder="选择字段" onChange={path => onChange({ options: { ...options, path } })}>
+      <Select value={options.path} placeholder="选择字段" onChange={path => {
+        onChange({ type, options: { ...options, path } });
+      }}>
         {collection.fields
           .filter(field => BaseTypeSet.has(field.uiSchema.type))
           .map(field => (
