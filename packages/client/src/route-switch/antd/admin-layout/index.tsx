@@ -12,11 +12,31 @@ import {
   RemoteCollectionManagerProvider,
   RemoteSchemaComponent,
   RemoteSchemaTemplateManagerProvider,
+  useACLRoleContext,
   useDocumentTitle,
   useRoute,
   useSystemSettings
 } from '../../../';
 import { PoweredBy } from '../../../powered-by';
+
+const filterByACL = (schema, options) => {
+  const { allowAll, allowConfigure, allowMenuItemIds = [] } = options;
+  if (allowAll || allowConfigure) {
+    return schema;
+  }
+  const filterSchema = (s) => {
+    for (const key in s.properties) {
+      if (Object.prototype.hasOwnProperty.call(s.properties, key)) {
+        const element = s.properties[key];
+        if (element['x-uid'] && !allowMenuItemIds.includes(element['x-uid'])) {
+          delete s.properties[key];
+        }
+      }
+    }
+  };
+  filterSchema(schema);
+  return schema;
+};
 
 const InternalAdminLayout = (props: any) => {
   const route = useRoute();
@@ -26,6 +46,7 @@ const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef();
   const defaultSelectedUid = match.params.name;
   const [schema, setSchema] = useState({});
+  const ctx = useACLRoleContext();
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
     console.log('onSelect', schema);
@@ -75,6 +96,7 @@ const InternalAdminLayout = (props: any) => {
                 }
                 data['x-component-props'] = data['x-component-props'] || {};
                 data['x-component-props']['defaultSelectedUid'] = defaultSelectedUid;
+                filterByACL(data, ctx);
                 return data;
               }}
               onSuccess={(data) => {
