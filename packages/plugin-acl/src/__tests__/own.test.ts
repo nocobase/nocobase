@@ -38,7 +38,7 @@ describe('own test', () => {
     app.plugin(PluginCollectionManager);
     app.plugin(PluginUser, {
       jwt: {
-        secret: process.env.JWT_SECRET,
+        secret: process.env.JWT_SECRET || '09f26e402586e2faa8da4c98a35f1b20d6b033c60',
       },
     });
 
