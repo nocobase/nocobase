@@ -219,6 +219,23 @@ export class ACL extends EventEmitter {
   middleware() {
     const acl = this;
 
+    const filterParams = (ctx, resourceName, params) => {
+      if (params?.filter?.createdById) {
+        const collection = ctx.db.getCollection(resourceName);
+        if (!collection.getField('createdById')) {
+          return lodash.omit(params, 'filter.createdById');
+        }
+      }
+
+      return params;
+    };
+
+    const ctxToObject = (ctx) => {
+      return {
+        state: JSON.parse(JSON.stringify(ctx.state)),
+      };
+    };
+
     return async function ACLMiddleware(ctx, next) {
       const roleName = ctx.state.currentRole || 'anonymous';
       const { resourceName, actionName } = ctx.action;
@@ -248,7 +265,9 @@ export class ACL extends EventEmitter {
         const { params } = permission.can;
 
         if (params) {
-          resourcerAction.mergeParams(parse(params)({ ctx }));
+          const filteredParams = filterParams(ctx, resourceName, params);
+          const parsedParams = parse(filteredParams)({ ctx: ctxToObject(ctx) });
+          resourcerAction.mergeParams(parsedParams);
         }
 
         await next();
