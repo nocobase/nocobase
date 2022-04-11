@@ -306,7 +306,7 @@ export class Designable {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
-    const opts = {};
+    const opts = { onSuccess: options.onSuccess };
     const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
       if (this.parentsIn(schema)) {
@@ -363,7 +363,7 @@ export class Designable {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
-    const opts = {};
+    const opts = { onSuccess: options.onSuccess };
     const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
       if (this.parentsIn(schema)) {
@@ -411,7 +411,7 @@ export class Designable {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
-    const opts = {};
+    const opts = { onSuccess: options.onSuccess };
     const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
       if (this.parentsIn(schema)) {

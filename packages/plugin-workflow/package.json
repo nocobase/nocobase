@@ -2,7 +2,6 @@
   "name": "@nocobase/plugin-workflow",
   "version": "0.6.0-alpha.0",
   "main": "lib/index.js",
-  "private": true,
   "license": "MIT",
   "scripts": {
     "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
