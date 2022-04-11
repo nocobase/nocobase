@@ -161,7 +161,7 @@ export default {
     { label: '分支模式', key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
-    const { id, config: { calculation, rejectOnFalse } } = data;
+    const { id, config: { rejectOnFalse } } = data;
     const { nodes } = useFlowContext();
     const trueEntry = nodes.find(item => item.upstreamId === id && item.branchIndex === 1);
     const falseEntry = nodes.find(item => item.upstreamId === id && item.branchIndex === 0);
