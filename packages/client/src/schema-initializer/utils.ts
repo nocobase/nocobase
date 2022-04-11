@@ -497,7 +497,6 @@ export const createTableSelectorSchema = (options) => {
         'x-initializer': 'TableColumnInitializers',
         'x-component': 'TableV2.Selector',
         'x-component-props': {
-          rowKey: 'id',
           rowSelection: {
             type: 'checkbox',
           },

@@ -12,13 +12,14 @@ const RecordPickerContext = createContext(null);
 
 const useTableSelectorProps = () => {
   const { multiple, value, setSelectedRows, selectedRows } = useContext(RecordPickerContext);
-  const { onRowSelectionChange, ...others } = useTsp();
+  const { onRowSelectionChange, rowKey, ...others } = useTsp();
   return {
     ...others,
+    rowKey,
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
-      defaultSelectedRowKeys: selectedRows?.map((item) => item.id),
-      selectedRowKeys: selectedRows?.map((item) => item.id),
+      defaultSelectedRowKeys: selectedRows?.map((item) => item[rowKey||'id']),
+      selectedRowKeys: selectedRows?.map((item) => item[rowKey||'id']),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       onRowSelectionChange?.(selectedRowKeys, selectedRows);
