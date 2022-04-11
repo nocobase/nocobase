@@ -29,6 +29,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     component,
     style,
     icon,
+    onSuccess,
     ...others
   } = props;
   const compile = useCompile();
@@ -38,7 +39,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     if (props.insert) {
       props.insert(wrap(schema));
     } else {
-      insertAdjacent(insertPosition, wrap(schema));
+      insertAdjacent(insertPosition, wrap(schema), { onSuccess });
     }
   };
   const renderItems = (items: any) => {

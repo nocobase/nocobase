@@ -46,6 +46,21 @@ export const ACLRolesCheckProvider = (props) => {
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };
 
+export const useRoleRecheck = () => {
+  const ctx = useContext(ACLContext);
+  const { allowAll, allowConfigure } = useACLRoleContext();
+  return () => {
+    if (allowAll) {
+      return;
+    }
+    ctx.refresh();
+  }
+}
+
+export const useACLContext = () => {
+  return useContext(ACLContext);
+}
+
 export const useACLRoleContext = () => {
   const ctx = useContext(ACLContext);
   const data = ctx.data?.data;

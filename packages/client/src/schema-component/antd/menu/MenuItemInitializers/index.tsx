@@ -3,16 +3,21 @@ import { SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent, SchemaComponentOptions } from '../../..';
+import { useRoleRecheck } from '../../../../acl';
 import { SchemaInitializer } from '../../../../schema-initializer';
 
 export const MenuItemInitializers = (props: any) => {
   const { t } = useTranslation();
+  const recheck = useRoleRecheck();
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
       icon={'PlusOutlined'}
       insert={props.insert}
       style={props.style}
+      onSuccess={() => {
+        recheck?.();
+      }}
       {...props}
       items={[
         {
