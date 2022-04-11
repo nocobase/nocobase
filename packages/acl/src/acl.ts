@@ -90,6 +90,10 @@ export class ACL extends EventEmitter {
 
   private skipOwnAssociation() {
     return async (ctx, next) => {
+      if (!ctx.action?.params) {
+        return await next();
+      }
+
       const { resourceName, actionName, associatedName, associatedIndex } = ctx.action.params;
 
       if ((associatedIndex && actionName == 'list') || actionName == 'get') {
@@ -100,7 +104,7 @@ export class ACL extends EventEmitter {
         const aclResource = aclRole.getResource(resourceName);
         const hasResourceAction = !!(aclResource && aclResource.getAction(actionName));
 
-        if (!hasResourceAction && aclRole.strategy.actions.includes('view:own')) {
+        if (!hasResourceAction && aclRole.strategy?.actions?.includes('view:own')) {
           const canResource = ctx.can({ resource: associatedName, action: actionName });
           if (canResource) {
             const userCan = await ctx.db.getRepository(associatedName).count({
@@ -271,7 +275,7 @@ export class ACL extends EventEmitter {
 
     return async function ACLMiddleware(ctx, next) {
       const roleName = ctx.state.currentRole || 'anonymous';
-      const { resourceName, actionName } = ctx.action.params;
+      const { resourceName, actionName } = ctx.action;
 
       const resourcerAction: Action = ctx.action;
 
