@@ -137,4 +137,42 @@ describe('own test', () => {
     expect(response.statusCode).toEqual(200);
     expect(await db.getRepository('posts').count()).toEqual(0);
   });
+
+  it('should view own resource association', async () => {
+    let response = await agent
+      .patch('/roles/admin')
+      .send({
+        strategy: {
+          actions: ['view:own', 'create', 'destroy:own'],
+        },
+      })
+      .set({ Authorization: 'Bearer ' + adminToken });
+
+    response = await agent
+      .post('/tags')
+      .send({
+        name: 't1',
+      })
+      .set({ Authorization: 'Bearer ' + adminToken });
+
+    const t1Id = response.body.data['id'];
+
+    expect(response.statusCode).toEqual(200);
+
+    response = await agent
+      .post('/posts')
+      .send({
+        title: 'p1',
+        tags: [t1Id],
+      })
+      .set({ Authorization: 'Bearer ' + userToken });
+
+    expect(response.statusCode).toEqual(200);
+
+    const p1Id = response.body.data['id'];
+
+    response = await agent.get(`/posts/${p1Id}/tags`).set({ Authorization: 'Bearer ' + userToken });
+    expect(response.statusCode).toEqual(200);
+    expect(response.body.data.length).toEqual(1);
+  });
 });

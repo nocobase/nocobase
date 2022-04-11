@@ -85,7 +85,40 @@ export class ACL extends EventEmitter {
       }
     });
 
-    this.middlewares.push(this.skipManager.aclMiddleware());
+    this.middlewares.push(this.skipManager.aclMiddleware(), this.skipOwnAssociation());
+  }
+
+  private skipOwnAssociation() {
+    return async (ctx, next) => {
+      const { resourceName, actionName, associatedName, associatedIndex } = ctx.action.params;
+
+      if ((associatedIndex && actionName == 'list') || actionName == 'get') {
+        const acl = ctx.app.acl;
+        const role = ctx.state.currentRole;
+        const aclRole = acl.getRole(role);
+
+        const aclResource = aclRole.getResource(resourceName);
+        const hasResourceAction = !!(aclResource && aclResource.getAction(actionName));
+
+        if (!hasResourceAction && aclRole.strategy.actions.includes('view:own')) {
+          const canResource = ctx.can({ resource: associatedName, action: actionName });
+          if (canResource) {
+            const userCan = await ctx.db.getRepository(associatedName).count({
+              filterByTk: associatedIndex,
+              filter: {
+                createdById: ctx.state.currentUser.id,
+              },
+            });
+
+            if (userCan) {
+              ctx.permission.skip = true;
+            }
+          }
+        }
+      }
+
+      await next();
+    };
   }
 
   define(options: DefineOptions): ACLRole {
@@ -222,7 +255,7 @@ export class ACL extends EventEmitter {
     const filterParams = (ctx, resourceName, params) => {
       if (params?.filter?.createdById) {
         const collection = ctx.db.getCollection(resourceName);
-        if (!collection.getField('createdById')) {
+        if (collection && !collection.getField('createdById')) {
           return lodash.omit(params, 'filter.createdById');
         }
       }
@@ -238,7 +271,7 @@ export class ACL extends EventEmitter {
 
     return async function ACLMiddleware(ctx, next) {
       const roleName = ctx.state.currentRole || 'anonymous';
-      const { resourceName, actionName } = ctx.action;
+      const { resourceName, actionName } = ctx.action.params;
 
       const resourcerAction: Action = ctx.action;
 
