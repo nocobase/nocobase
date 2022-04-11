@@ -175,4 +175,5 @@ describe('own test', () => {
     expect(response.statusCode).toEqual(200);
     expect(response.body.data.length).toEqual(1);
   });
+
 });
