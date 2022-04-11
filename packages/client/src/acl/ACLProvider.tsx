@@ -112,14 +112,16 @@ const ACLActionParamsContext = createContext<any>({});
 export const ACLCollectionProvider = (props) => {
   const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
   const fieldSchema = useFieldSchema();
+  const isOwn = useRecordIsOwn();
   if (allowAll || allowConfigure) {
     return <>{props.children}</>;
   }
   const path = fieldSchema['x-acl-action'];
+  const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
   if (!path) {
     return <>{props.children}</>;
   }
-  const params = getActionParams(path, { skipOwnCheck: true });
+  const params = getActionParams(path, { isOwn, skipOwnCheck: skipScopeCheck === false ? false : true });
   if (!params) {
     return null;
   }

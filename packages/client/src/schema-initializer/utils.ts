@@ -286,6 +286,9 @@ export const createFormBlockSchema = (options) => {
   const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
+    'x-acl-action-props': {
+      skipScopeCheck: !action,
+    },
     'x-acl-action': action ? `${resourceName}:update` : `${resourceName}:create`,
     'x-decorator': 'FormBlockProvider',
     'x-decorator-props': {
