@@ -594,6 +594,7 @@ export class UiSchemaRepository extends Repository {
       options.removeParentsIfNoChildren = false;
     } else {
       const schemaExists = await this.schemaExists(schema, { transaction });
+
       if (schemaExists) {
         schema = lodash.isString(schema) ? schema : schema['x-uid'];
       } else {
@@ -710,6 +711,12 @@ export class UiSchemaRepository extends Repository {
         transaction,
       },
     );
+
+    const rootNode = nodes[0];
+    if (rootNode['x-server-hooks']) {
+      const rootModel = await this.findOne({ filter: { 'x-uid': rootNode['x-uid'] }, transaction });
+      await this.database.emitAsync(`${this.collection.name}.afterCreateWithAssociations`, rootModel, options);
+    }
 
     if (options?.returnNode) {
       return nodes;
@@ -880,7 +887,7 @@ export class UiSchemaRepository extends Repository {
 
         // Compatible with mysql
         if (this.database.sequelize.getDialect() === 'mysql') {
-          updateSql = `UPDATE ${treeTable} as TreeTable 
+          updateSql = `UPDATE ${treeTable} as TreeTable
           JOIN ${treeTable} as NodeInfo ON (NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0)
           SET TreeTable.sort = TreeTable.sort + 1
           WHERE TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`;
