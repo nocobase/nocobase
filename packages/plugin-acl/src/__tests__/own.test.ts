@@ -110,4 +110,31 @@ describe('own test', () => {
     response = await agent.get('/tests:list').set({ Authorization: 'Bearer ' + userToken });
     expect(response.statusCode).toEqual(200);
   });
+
+  it('should delete with createdBy', async () => {
+    let response = await agent
+      .patch('/roles/admin')
+      .send({
+        strategy: {
+          actions: ['view:own', 'create', 'destroy:own'],
+        },
+      })
+      .set({ Authorization: 'Bearer ' + adminToken });
+
+    response = await agent
+      .get('/posts:create')
+      .send({
+        title: 't1',
+      })
+      .set({ Authorization: 'Bearer ' + userToken });
+
+    expect(response.statusCode).toEqual(200);
+
+    const data = response.body;
+    const id = data.data['id'];
+
+    response = await agent.delete(`/posts/${id}`).set({ Authorization: 'Bearer ' + userToken });
+    expect(response.statusCode).toEqual(200);
+    expect(await db.getRepository('posts').count()).toEqual(0);
+  });
 });
