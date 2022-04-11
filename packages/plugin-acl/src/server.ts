@@ -260,10 +260,15 @@ export class PluginACL extends Plugin {
           {
             name: 'admin',
             title: 'Admin',
+            allowConfigure: true,
+            allowNewMenu: true,
+            strategy: { actions: ['create', 'export', 'view', 'update', 'destroy'] },
           },
           {
             name: 'member',
             title: 'Member',
+            allowNewMenu: true,
+            strategy: { actions: ['view', 'update:own', 'destroy:own', 'create'] },
             default: true,
           },
           {
