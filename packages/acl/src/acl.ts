@@ -96,7 +96,7 @@ export class ACL extends EventEmitter {
 
       const { resourceName, actionName, associatedName, associatedIndex } = ctx.action.params;
 
-      if ((associatedIndex && actionName == 'list') || actionName == 'get') {
+      if (associatedIndex && (actionName == 'list' || actionName == 'get')) {
         const acl = ctx.app.acl;
         const role = ctx.state.currentRole;
         const aclRole = acl.getRole(role);
