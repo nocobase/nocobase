@@ -16,6 +16,7 @@ export const ReadPrettyFormActionInitializers = {
           component: 'UpdateActionInitializer',
           schema: {
             'x-component': 'Action',
+            'x-decorator': 'ACLActionProvider',
             'x-component-props': {
               type: 'primary',
             },
@@ -27,6 +28,7 @@ export const ReadPrettyFormActionInitializers = {
           component: 'DestroyActionInitializer',
           schema: {
             'x-component': 'Action',
+            'x-decorator': 'ACLActionProvider',
           },
         },
       ],

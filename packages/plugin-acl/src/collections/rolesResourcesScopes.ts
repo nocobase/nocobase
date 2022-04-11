@@ -4,6 +4,10 @@ export default {
   name: 'rolesResourcesScopes',
   fields: [
     {
+      type: 'uid',
+      name: 'key',
+    },
+    {
       type: 'string',
       name: 'name',
     },

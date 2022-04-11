@@ -1,5 +1,5 @@
-import { Database, Model } from '@nocobase/database';
 import { ACL, ACLRole } from '@nocobase/acl';
+import { Database, Model } from '@nocobase/database';
 import { AssociationFieldAction, AssociationFieldsActions, GrantHelper } from '../server';
 
 export class RoleResourceActionModel extends Model {
@@ -20,13 +20,14 @@ export class RoleResourceActionModel extends Model {
 
     const actionPath = `${resourceName}:${actionName}`;
     const actionParams = {
-      fields,
+      // fields,
     };
 
     // @ts-ignore
     const scope = await this.getScope();
 
     if (scope) {
+      actionParams['own'] = scope.get('key') === 'own';
       actionParams['filter'] = scope.get('scope');
     }
 

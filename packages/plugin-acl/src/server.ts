@@ -276,10 +276,12 @@ export class PluginACL extends Plugin {
       await rolesResourcesScopes.createMany({
         records: [
           {
+            key: 'all',
             name: '{{t("All records")}}',
             scope: {},
           },
           {
+            key: 'own',
             name: '{{t("Own records")}}',
             scope: {
               createdById: '{{ ctx.state.currentUser.id }}',
@@ -295,8 +297,7 @@ export class PluginACL extends Plugin {
     this.app.acl.skip('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';
     });
-
-    // root role 
+    // root role
     this.app.resourcer.use(async (ctx, next) => {
       const { actionName, resourceName } = ctx.action.params;
       if (actionName === 'list' && resourceName === 'roles') {

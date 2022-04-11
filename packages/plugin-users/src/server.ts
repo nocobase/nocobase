@@ -85,10 +85,6 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
     publicActions.forEach((action) => this.app.acl.skip('users', action));
     loggedInActions.forEach((action) => this.app.acl.skip('users', action, 'logged-in'));
-
-    this.app.acl.skip('*', '*', (ctx) => {
-      return ctx.state.currentUser?.id == 1;
-    });
   }
 
   async load() {

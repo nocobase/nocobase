@@ -248,7 +248,14 @@ export class ACL extends EventEmitter {
         const { params } = permission.can;
 
         if (params) {
-          resourcerAction.mergeParams(parse(params)({ ctx }));
+          const data = parse(params)({
+            ctx: {
+              state: {
+                currentUser: ctx.state.currentUser?.toJSON?.(),
+              },
+            },
+          });
+          resourcerAction.mergeParams(data);
         }
 
         await next();
