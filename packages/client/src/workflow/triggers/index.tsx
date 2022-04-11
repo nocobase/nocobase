@@ -1,6 +1,7 @@
 import React from "react";
-import { useForm } from "@formily/react";
+import { ISchema, useForm } from "@formily/react";
 import { cx } from "@emotion/css";
+import { Registry } from "@nocobase/utils";
 
 import { SchemaComponent, useActionContext, useAPIClient, useRecord, useResourceActionContext } from '../../';
 import model from './model';
@@ -30,10 +31,22 @@ function useUpdateConfigAction() {
   };
 };
 
-
-const triggerTypes = {
-  model
+export interface Trigger {
+  title: string;
+  type: string;
+  // group: string;
+  options?: { label: string; value: any; key: string }[];
+  fieldset: { [key: string]: ISchema };
+  view?: ISchema;
+  scope?: { [key: string]: any };
+  components?: { [key: string]: any };
+  render?(props): React.ReactElement;
+  getter?(node: any): React.ReactElement;
 };
+
+export const triggers = new Registry<Trigger>();
+
+triggers.register('model', model);
 
 export const TriggerConfig = () => {
   const { data } = useResourceActionContext();
@@ -41,7 +54,7 @@ export const TriggerConfig = () => {
     return null;
   }
   const { type, config } = data.data;
-  const { title, fieldset, scope } = triggerTypes[type];
+  const { title, fieldset, scope } = triggers.get(type);
   return (
     <div className={cx(nodeCardClass)}>
       <h4>{title}</h4>

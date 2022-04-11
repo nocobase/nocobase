@@ -414,7 +414,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       ).map((instance) => instance.get(modelFilterKey) as TargetKey);
 
       if (filterByTk) {
-        pks = lodash.intersection(pks, filterByTk);
+        pks = lodash.intersection(
+          pks.map((i) => `${i}`),
+          filterByTk.map((i) => `${i}`),
+        );
       }
 
       return await this.destroy({

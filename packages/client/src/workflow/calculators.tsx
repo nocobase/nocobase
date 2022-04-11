@@ -4,6 +4,7 @@ import { css } from "@emotion/css";
 
 import { instructions, useNodeContext } from "./nodes";
 import { useFlowContext } from "./WorkflowCanvas";
+import { triggers } from "./triggers";
 
 function NullRender() {
   return null;
@@ -67,6 +68,8 @@ export function parseStringValue(value: string, Types) {
     options: paths.length ? (Types || VariableTypes)[type].parse(paths) : {}
   };
 }
+
+export const BaseTypeSet = new Set(['boolean', 'number', 'string', 'date']);
 
 const ConstantTypes = {
   string: {
@@ -189,7 +192,25 @@ export const VariableTypes = {
       return `{{${stack.join('.')}}}`;
     }
   },
-  // context: ContextSelect,
+  context: {
+    title: '触发数据',
+    value: 'context',
+    component() {
+      const { workflow } = useFlowContext();
+      const trigger = triggers.get(workflow.type);
+      return trigger?.getter ?? NullRender;
+    },
+    parse([prefix, ...path]) {
+      return { path: path.join('.') };
+    },
+    stringify({ options }) {
+      const stack = ['context'];
+      if (options?.path) {
+        stack.push(options.path);
+      }
+      return `{{${stack.join('.')}}}`;
+    }
+  },
   // calculation: Calculation
 };
 
@@ -205,10 +226,15 @@ interface OperandProps {
     value?: any;
     options?: any;
   };
-  onChange(v: any): void
+  onChange(v: any): void;
+  children?: React.ReactNode;
 }
 
-export function Operand({ onChange, value: operand = { type: 'constant', value: '', options: { type: 'string' } } }: OperandProps) {
+export function Operand({
+  value: operand = { type: 'constant', value: '', options: { type: 'string' } },
+  onChange,
+  children
+}: OperandProps) {
   const Types = useVariableTypes();
 
   const { type } = operand;
@@ -226,13 +252,13 @@ export function Operand({ onChange, value: operand = { type: 'constant', value: 
         allowClear={false}
         value={[type, ...(appendTypeValue ? appendTypeValue(operand) : [])]}
         options={Object.values(Types).map((item: any) => {
-          const children = typeof item.options === 'function' ? item.options() : item.options;
+          const options = typeof item.options === 'function' ? item.options() : item.options;
           return {
             label: item.title,
             value: item.value,
-            children,
-            disabled: children && !children.length,
-            isLeaf: !children
+            children: options,
+            disabled: options && !options.length,
+            isLeaf: !options
           };
         })}
         onChange={(next: Array<string | number>) => {
@@ -246,7 +272,7 @@ export function Operand({ onChange, value: operand = { type: 'constant', value: 
           }
         }}
       />
-      <VariableComponent {...operand} onChange={op => onChange({ ...op })} />
+      {children ?? <VariableComponent {...operand} onChange={op => onChange({ ...op })} />}
     </div>
   );
 }

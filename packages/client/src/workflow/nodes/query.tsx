@@ -8,9 +8,7 @@ import { css } from '@emotion/css';
 import { useCollectionManager } from '../..';
 import { useCollectionFilterOptions } from '../../collection-manager/action-hooks';
 import { useFlowContext } from '../WorkflowCanvas';
-import { Operand, parseStringValue, VariableTypes, VariableTypesContext } from '../calculators';
-
-const BaseTypeSet = new Set(['boolean', 'number', 'string', 'date']);
+import { Operand, parseStringValue, VariableTypes, VariableTypesContext, BaseTypeSet } from '../calculators';
 
 export default {
   title: '数据查询',
@@ -89,10 +87,7 @@ export default {
         constant: {
           title: '常量',
           value: 'constant',
-          options: undefined,
-          component() {
-            return renderSchemaComponent;
-          }
+          options: undefined
         }
       };
 
@@ -112,7 +107,9 @@ export default {
                 onChange(stringify(next));
               }
             }}
-          />
+          >
+            {operand.type === 'constant' ? renderSchemaComponent() : null}
+          </Operand>
         </VariableTypesContext.Provider>
       );
     }
