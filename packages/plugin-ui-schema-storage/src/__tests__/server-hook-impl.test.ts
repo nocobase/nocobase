@@ -264,6 +264,38 @@ describe('server hooks', () => {
     expect(jsonTree['properties']['child2']).not.toBeDefined();
   });
 
+  it('should bind menu to role when insert new menu using insertAdjacent', async () => {
+    await db.getRepository('roles').create({
+      values: {
+        name: 'role1',
+        allowConfigure: true,
+        allowNewMenu: true,
+      },
+    });
+
+    const schema = {
+      'x-uid': 'root',
+      name: 'root',
+      properties: {},
+    };
+
+    await uiSchemaRepository.insert(schema);
+
+    await uiSchemaRepository.insertAdjacent('afterBegin', 'root', {
+      'x-uid': 'child2',
+      name: 'child2',
+      'x-server-hooks': [
+        {
+          type: 'onSelfCreate',
+          method: 'bindMenuToRole',
+        },
+      ],
+    });
+
+    const role1Menus = await db.getRepository<BelongsToManyRepository>('roles.menuUiSchemas', 'role1').find();
+    expect(role1Menus.length).toEqual(1);
+  });
+
   it('should bind menu to role when create new menu', async () => {
     await db.getRepository('roles').create({
       values: {
