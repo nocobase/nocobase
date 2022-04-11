@@ -247,11 +247,18 @@ export class ACL extends EventEmitter {
 
         const { params } = permission.can;
 
+        const getCurrentUser = () => {
+          if (ctx.state.currentUser?.toJSON) {
+            return ctx.state.currentUser?.toJSON();
+          }
+          return ctx.state.currentUser;
+        };
+
         if (params) {
           const data = parse(params)({
             ctx: {
               state: {
-                currentUser: ctx.state.currentUser?.toJSON?.(),
+                currentUser: getCurrentUser(),
               },
             },
           });

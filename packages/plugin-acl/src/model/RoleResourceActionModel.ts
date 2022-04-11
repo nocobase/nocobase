@@ -20,7 +20,7 @@ export class RoleResourceActionModel extends Model {
 
     const actionPath = `${resourceName}:${actionName}`;
     const actionParams = {
-      // fields,
+      fields,
     };
 
     // @ts-ignore
