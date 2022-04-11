@@ -127,12 +127,16 @@ export class PluginACL extends Plugin {
 
     this.app.resourcer.registerActionHandler('roles:check', checkAction);
 
-    this.app.db.on('roles.afterSave', async (model, options) => {
+    this.app.db.on('roles.afterSaveWithAssociations', async (model, options) => {
       const { transaction } = options;
 
       model.writeToAcl({
         acl: this.acl,
       });
+
+      for (const resource of (await model.getResources({ transaction })) as RoleResourceModel[]) {
+        await this.writeResourceToACL(resource, transaction);
+      }
 
       // model is default
       if (model.get('default')) {
