@@ -137,9 +137,9 @@ export const VariableTypes = {
       return { path };
     }
   },
-  job: {
+  $jobsMapByNodeId: {
     title: '节点数据',
-    value: 'job',
+    value: '$jobsMapByNodeId',
     options() {
       const node = useNodeContext();
       const stack = [];
@@ -182,7 +182,7 @@ export const VariableTypes = {
       return { nodeId, path: path.join('.') };
     },
     stringify({ options }) {
-      const stack = ['job'];
+      const stack = ['$jobsMapByNodeId'];
       if (options.nodeId) {
         stack.push(options.nodeId);
         if (options.path) {
@@ -192,9 +192,9 @@ export const VariableTypes = {
       return `{{${stack.join('.')}}}`;
     }
   },
-  context: {
+  $context: {
     title: '触发数据',
-    value: 'context',
+    value: '$context',
     component() {
       const { workflow } = useFlowContext();
       const trigger = triggers.get(workflow.type);
@@ -204,7 +204,7 @@ export const VariableTypes = {
       return { path: path.join('.') };
     },
     stringify({ options }) {
-      const stack = ['context'];
+      const stack = ['$context'];
       if (options?.path) {
         stack.push(options.path);
       }
