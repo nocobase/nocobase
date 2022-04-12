@@ -73,8 +73,11 @@ export default class ExecutionModel extends Model {
 
   async prepare(options, commit = false) {
     this.options = options || {};
-    const { transaction = await (<typeof ExecutionModel>this.constructor).database.sequelize.transaction() } =
-      this.options;
+    const { sequelize } = (<typeof ExecutionModel>this.constructor).database;
+    // @ts-ignore
+    const transaction = this.options.transaction && !this.options.transaction.finished
+      ? this.options.transaction
+      : await sequelize.transaction();
     this.transaction = transaction;
 
     if (!this.workflow) {
@@ -122,7 +125,8 @@ export default class ExecutionModel extends Model {
   }
 
   private async commit() {
-    if (!this.options || !this.options.transaction) {
+    // @ts-ignore
+    if (!this.options.transaction || this.options.transaction.finished) {
       await this.transaction.commit();
     }
   }
@@ -138,7 +142,7 @@ export default class ExecutionModel extends Model {
     } catch (err) {
       // for uncaught error, set to rejected
       job = {
-        result: err instanceof Error ? err.toString() : err,
+        result: err instanceof Error ? { message: err.message, stack: err.stack } : err,
         status: JOB_STATUS.REJECTED,
       };
       // if previous job is from resuming
@@ -148,7 +152,7 @@ export default class ExecutionModel extends Model {
       }
     }
 
-    let savedJob: JobModel;
+    let savedJob;
     // TODO(optimize): many checking of resuming or new could be improved
     // could be implemented separately in exec() / resume()
     if (job instanceof Model) {
@@ -162,7 +166,7 @@ export default class ExecutionModel extends Model {
       });
     }
 
-    if (savedJob.get('status') === JOB_STATUS.RESOLVED && node.downstream) {
+    if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node
       return this.run(node.downstream, savedJob);
     }

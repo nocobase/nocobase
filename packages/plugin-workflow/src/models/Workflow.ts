@@ -50,26 +50,35 @@ export default class WorkflowModel extends Model {
     const type = this.get('type');
     const { on, off } = triggers.get(type);
     if (typeof enable !== 'undefined' ? enable : this.get('enabled')) {
-      on.call(this, this.start.bind(this));
+      on.call(this, this.trigger.bind(this));
     } else {
       off.call(this);
     }
   }
 
-  async start(context: Object, options) {
+  async trigger(context: Object, options) {
     // `null` means not to trigger
     if (context === null) {
       return;
     }
 
+    const transaction = options.transaction && !options.transaction.finished
+      ? options.transaction
+      : await (<typeof WorkflowModel>this.constructor).database.sequelize.transaction();
+
     const execution = await this.createExecution({
       context,
       status: EXECUTION_STATUS.STARTED,
-    });
+    }, { transaction });
 
     execution.workflow = this;
 
-    await execution.start(options);
+    await execution.start({ transaction });
+
+    if (!options.transaction || options.transaction.finished) {
+      await transaction.commit();
+    }
+
     return execution;
   }
 }
