@@ -85,7 +85,7 @@ export const RichText = (props: any) => {
             renderLeaf={renderLeaf}
             placeholder={placeholder}
             spellCheck
-            autoFocus
+            style={{ minHeight: '10em' }}
             readOnly={readOnly}
             onKeyDown={(event) => {
               for (const hotkey in HOTKEYS) {
