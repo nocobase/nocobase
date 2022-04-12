@@ -6,10 +6,10 @@ export async function check(ctx: Context, next: Next) {
   if (ctx.state.currentUser) {
     const user = ctx.state.currentUser.toJSON();
     ctx.body = user;
-    await next();
   } else {
-    ctx.throw(401, 'Unauthorized');
+    ctx.body = {};
   }
+  await next();
 }
 
 export async function signin(ctx: Context, next: Next) {
