@@ -138,6 +138,11 @@ export class ACL extends EventEmitter {
     }
   }
 
+  getAvailableAction(name: string) {
+    const actionName = this.actionAlias.get(name) || name;
+    return this.availableActions.get(actionName);
+  }
+
   getAvailableActions() {
     return this.availableActions;
   }
@@ -216,13 +221,21 @@ export class ACL extends EventEmitter {
     this.skipManager.skip(resourceName, actionName, condition);
   }
 
+  parseJsonTemplate(json: any, ctx: any) {
+    return parse(json)({
+      ctx: {
+        state: JSON.parse(JSON.stringify(ctx.state)),
+      },
+    });
+  }
+
   middleware() {
     const acl = this;
 
     const filterParams = (ctx, resourceName, params) => {
       if (params?.filter?.createdById) {
         const collection = ctx.db.getCollection(resourceName);
-        if (!collection.getField('createdById')) {
+        if (collection && !collection.getField('createdById')) {
           return lodash.omit(params, 'filter.createdById');
         }
       }
@@ -266,7 +279,7 @@ export class ACL extends EventEmitter {
 
         if (params) {
           const filteredParams = filterParams(ctx, resourceName, params);
-          const parsedParams = parse(filteredParams)({ ctx: ctxToObject(ctx) });
+          const parsedParams = acl.parseJsonTemplate(filteredParams, ctx);
           resourcerAction.mergeParams(parsedParams);
         }
 

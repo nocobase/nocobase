@@ -35,6 +35,8 @@ export default class PluginFileManager extends Plugin {
     if (process.env.NOCOBASE_ENV !== 'production') {
       await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
     }
+
+    this.app.acl.skip('attachments', 'upload', 'logged-in');
   }
 
   getName(): string {

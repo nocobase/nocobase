@@ -25,6 +25,9 @@ export const TableActionInitializers = {
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
           },
         },
         {
@@ -34,6 +37,9 @@ export const TableActionInitializers = {
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
           },
         },
       ],

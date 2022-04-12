@@ -68,6 +68,9 @@ export const CalendarActionInitializers = {
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
           },
         },
       ],
