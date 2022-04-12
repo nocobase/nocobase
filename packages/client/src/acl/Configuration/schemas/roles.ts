@@ -1,4 +1,7 @@
 import { ISchema } from '@formily/react';
+import { uid } from '@formily/shared';
+import { useRequest } from '../../../api-client';
+import { useActionContext } from '../../../schema-component';
 import { roleCollectionsSchema } from './roleCollections';
 
 const collection = {
@@ -25,7 +28,6 @@ const collection = {
         title: '角色标识',
         type: 'string',
         'x-component': 'Input',
-        description: '使用英文',
       } as ISchema,
     },
     {
@@ -92,6 +94,20 @@ export const roleSchema: ISchema = {
                   type: 'void',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
+                  'x-decorator-props': {
+                    useValues(options) {
+                      const ctx = useActionContext();
+                      return useRequest(
+                        () =>
+                          Promise.resolve({
+                            data: {
+                              name: `r_${uid()}`,
+                            },
+                          }),
+                        { ...options, refreshDeps: [ctx.visible] },
+                      );
+                    },
+                  },
                   title: '添加角色',
                   properties: {
                     title: {
@@ -101,6 +117,7 @@ export const roleSchema: ISchema = {
                     name: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
+                      description: '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
                     },
                     default: {
                       'x-component': 'CollectionField',

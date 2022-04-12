@@ -105,7 +105,7 @@ export const FormBlockInitializer = (props) => {
     <DataBlockInitializer
       {...props}
       icon={<FormOutlined />}
-      componentType={'Form'}
+      componentType={'CreateForm'}
       createBlockSchema={createFormBlockSchema}
     />
   );
