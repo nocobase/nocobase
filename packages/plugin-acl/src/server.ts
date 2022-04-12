@@ -1,3 +1,4 @@
+import { Context } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
@@ -311,6 +312,39 @@ export class PluginACL extends Plugin {
             'name.$ne': 'root',
           },
         });
+      }
+      await next();
+    });
+
+    const parseJsonTemplate = this.app.acl.parseJsonTemplate;
+    this.app.acl.use(async (ctx: Context, next) => {
+      const { actionName, resourceName, resourceOf } = ctx.action;
+      if (resourceName.includes('.') && resourceOf) {
+        if (!ctx?.permission?.can?.params) {
+          return next();
+        }
+        // 关联数据去掉 filter
+        delete ctx.permission.can.params.filter;
+        // 关联数据能不能处理取决于 source 是否有权限
+        const [collectionName] = resourceName.split('.');
+        const action = ctx.can({ resource: collectionName, action: actionName });
+        const availableAction = this.app.acl.getAvailableAction(actionName);
+        if (availableAction?.options?.onNewRecord) {
+          if (action) {
+            ctx.permission.skip = true;
+          } else {
+            ctx.permission.can = false;
+          }
+        } else {
+          const filter = parseJsonTemplate(action?.params?.filter || {}, ctx);
+          const sourceInstance = await ctx.db.getRepository(collectionName).findOne({
+            filterByTk: resourceOf,
+            filter,
+          });
+          if (!sourceInstance) {
+            ctx.permission.can = false;
+          }
+        }
       }
       await next();
     });
