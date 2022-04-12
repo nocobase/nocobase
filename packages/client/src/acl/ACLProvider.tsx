@@ -5,6 +5,7 @@ import React, { createContext, useContext } from 'react';
 import { Redirect } from 'react-router-dom';
 import { useRequest } from '../api-client';
 import { useCollection } from '../collection-manager';
+import { useRecordIsOwn } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 export const ACLContext = createContext(null);
@@ -50,24 +51,50 @@ export const useRoleRecheck = () => {
   const ctx = useContext(ACLContext);
   const { allowAll, allowConfigure } = useACLRoleContext();
   return () => {
-    if (allowAll) {
+    if (allowAll || allowConfigure) {
       return;
     }
     ctx.refresh();
-  }
-}
+  };
+};
 
 export const useACLContext = () => {
   return useContext(ACLContext);
-}
+};
 
 export const useACLRoleContext = () => {
   const ctx = useContext(ACLContext);
   const data = ctx.data?.data;
+
   return {
     ...data,
-    getActionParams(path) {
-      return data?.actions?.[path];
+    getActionParams(path: string, { skipOwnCheck, isOwn }) {
+      const [resourceName, act] = path.split(':');
+      const currentAction = data?.actionAlias?.[act] || act;
+      const hasResource = data?.resources?.includes(resourceName);
+      const params = data?.actions?.[`${resourceName}:${currentAction}`];
+      if (hasResource) {
+        if (!skipOwnCheck && params?.own) {
+          return isOwn ? params : null;
+        }
+        return params;
+      }
+      const strategyActions = data?.strategy?.actions || [];
+      const strategyAction = strategyActions?.find((action) => {
+        const [value] = action.split(':');
+        return value === currentAction;
+      });
+      if (!strategyAction) {
+        return;
+      }
+      if (skipOwnCheck) {
+        return {};
+      }
+      const [, actionScope] = strategyAction.split(':');
+      if (actionScope === 'own') {
+        return isOwn;
+      }
+      return {};
     },
   };
 };
@@ -80,25 +107,43 @@ export const ACLAllowConfigure = (props) => {
   return null;
 };
 
-export const ACLCollectionProvider = (props) => {
-  const { name } = useCollection();
+const ACLActionParamsContext = createContext<any>({});
 
-  return <>{props.children}</>;
+export const ACLCollectionProvider = (props) => {
+  const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
+  const fieldSchema = useFieldSchema();
+  const isOwn = useRecordIsOwn();
+  if (allowAll || allowConfigure) {
+    return <>{props.children}</>;
+  }
+  const path = fieldSchema['x-acl-action'];
+  const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
+  if (!path) {
+    return <>{props.children}</>;
+  }
+  const params = getActionParams(path, { isOwn, skipOwnCheck: skipScopeCheck === false ? false : true });
+  if (!params) {
+    return null;
+  }
+  return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
 
 export const ACLActionProvider = (props) => {
   const { name } = useCollection();
   const fieldSchema = useFieldSchema();
-  const { allowAll, getActionParams } = useACLRoleContext();
-  if (!name || allowAll) {
+  const isOwn = useRecordIsOwn();
+  const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
+  if (!name || allowAll || allowConfigure) {
     return <>{props.children}</>;
   }
   const actionName = fieldSchema['x-action'];
-  const params = getActionParams([`${name}:${actionName}`]);
+  const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
+  const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
+  const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
   if (!params) {
     return null;
   }
-  return <>{props.children}</>;
+  return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
 
 export const ACLCollectionFieldProvider = (props) => {
@@ -106,9 +151,9 @@ export const ACLCollectionFieldProvider = (props) => {
 };
 
 export const ACLMenuItemProvider = (props) => {
-  const { allowAll, allowMenuItemIds = [] } = useACLRoleContext();
+  const { allowAll, allowConfigure, allowMenuItemIds = [] } = useACLRoleContext();
   const fieldSchema = useFieldSchema();
-  if (allowAll) {
+  if (allowAll || allowConfigure) {
     return <>{props.children}</>;
   }
   if (!fieldSchema['x-uid']) {

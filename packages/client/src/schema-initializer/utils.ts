@@ -280,14 +280,21 @@ export const createFormBlockSchema = (options) => {
     collection,
     resource,
     association,
+    action,
     ...others
   } = options;
+  const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
+    'x-acl-action-props': {
+      skipScopeCheck: !action,
+    },
+    'x-acl-action': action ? `${resourceName}:update` : `${resourceName}:create`,
     'x-decorator': 'FormBlockProvider',
     'x-decorator-props': {
       ...others,
-      resource: resource || association || collection,
+      action,
+      resource: resourceName,
       collection,
       association,
       // action: 'get',
@@ -338,11 +345,13 @@ export const createReadPrettyFormBlockSchema = (options) => {
     resource,
     ...others
   } = options;
+  const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
+    'x-acl-action': `${resourceName}:get`,
     'x-decorator': 'FormBlockProvider',
     'x-decorator-props': {
-      resource: resource || association || collection,
+      resource: resourceName,
       collection,
       association,
       readPretty: true,
@@ -391,6 +400,7 @@ export const createTableBlockSchema = (options) => {
   const schema: ISchema = {
     type: 'void',
     'x-decorator': 'TableBlockProvider',
+    'x-acl-action': `${resource || collection}:list`,
     'x-decorator-props': {
       collection,
       resource: resource || collection,
@@ -461,6 +471,7 @@ export const createTableSelectorSchema = (options) => {
   const { collection, resource, rowKey, ...others } = options;
   const schema: ISchema = {
     type: 'void',
+    'x-acl-action': `${resource || collection}:list`,
     'x-decorator': 'TableSelectorProvider',
     'x-decorator-props': {
       collection,
@@ -491,7 +502,6 @@ export const createTableSelectorSchema = (options) => {
         'x-initializer': 'TableColumnInitializers',
         'x-component': 'TableV2.Selector',
         'x-component-props': {
-          rowKey: 'id',
           rowSelection: {
             type: 'checkbox',
           },
@@ -509,6 +519,7 @@ export const createCalendarBlockSchema = (options) => {
   const { collection, resource, fieldNames, ...others } = options;
   const schema: ISchema = {
     type: 'void',
+    'x-acl-action': `${resource || collection}:list`,
     'x-decorator': 'CalendarBlockProvider',
     'x-decorator-props': {
       collection: collection,
@@ -595,6 +606,7 @@ export const createKanbanBlockSchema = (options) => {
   const { collection, resource, groupField, ...others } = options;
   const schema: ISchema = {
     type: 'void',
+    'x-acl-action': `${resource || collection}:list`,
     'x-decorator': 'KanbanBlockProvider',
     'x-decorator-props': {
       collection: collection,

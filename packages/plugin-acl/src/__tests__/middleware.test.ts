@@ -92,9 +92,8 @@ describe('middleware', () => {
   it('should limit fields on view actions', async () => {
     await app
       .agent()
-      .resource('roles.resources')
+      .resource('roles.resources', role.get('name'))
       .create({
-        associatedIndex: role.get('name') as string,
         values: {
           name: 'posts',
           usingActionsConfig: true,
@@ -140,7 +139,7 @@ describe('middleware', () => {
       id: 2,
     });
 
-    await app
+    const res = await app
       .agent()
       .resource('rolesResourcesScopes')
       .create({
@@ -152,13 +151,10 @@ describe('middleware', () => {
         },
       });
 
-    const scope = await db.getRepository('rolesResourcesScopes').findOne();
-
     await app
       .agent()
-      .resource('roles.resources')
+      .resource('roles.resources', role.get('name'))
       .create({
-        associatedIndex: role.get('name') as string,
         values: {
           name: 'posts',
           usingActionsConfig: true,
@@ -170,7 +166,7 @@ describe('middleware', () => {
             {
               name: 'view',
               fields: ['title'],
-              scope: scope.get('id'),
+              scope: res.body.data.id,
             },
           ],
         },
@@ -206,9 +202,8 @@ describe('middleware', () => {
   it('should change fields params to whitelist in create action', async () => {
     await app
       .agent()
-      .resource('roles.resources')
+      .resource('roles.resources', role.get('name'))
       .create({
-        associatedIndex: role.get('name') as string,
         values: {
           name: 'posts',
           usingActionsConfig: true,
