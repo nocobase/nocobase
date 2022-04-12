@@ -16,7 +16,7 @@ export const CurrentUserProvider = (props) => {
   if (result.loading) {
     return <Spin />;
   }
-  if (result.error) {
+  if (!result?.data?.data?.id) {
     return <Redirect to={'/signin'} />;
   }
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
