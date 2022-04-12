@@ -6,6 +6,8 @@ import { Select } from 'antd';
 import { useCollectionManager } from '../../collection-manager';
 import { useFlowContext } from '../WorkflowCanvas';
 import { BaseTypeSet } from '../calculators';
+import { useForm } from '@formily/react';
+import { useCollectionFilterOptions } from '../../collection-manager/action-hooks';
 
 export default {
   title: '数据表事件',
@@ -20,11 +22,35 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
     },
-    // mode: {
-    //   type: 'number',
-    //   title: '触发时机',
-    //   name: 'mode',
-    // }
+    mode: {
+      type: 'number',
+      title: '触发时机',
+      name: 'mode',
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      'x-component-props': {
+        options: [
+          { value: 1, label: '新增数据' },
+          { value: 2, label: '更新数据' },
+          { value: 3, label: '新增或更新数据' },
+          { value: 4, label: '删除数据' }
+        ]
+      }
+    },
+    filter: {
+      type: 'object',
+      title: '满足条件',
+      name: 'filter',
+      'x-decorator': 'FormItem',
+      'x-component': 'Filter',
+      'x-component-props': {
+        useProps() {
+          const { values } = useForm();
+          const options = useCollectionFilterOptions(values.collection);
+          return { options };
+        }
+      }
+    }
   },
   scope: {
     useAsyncDataSource() {
