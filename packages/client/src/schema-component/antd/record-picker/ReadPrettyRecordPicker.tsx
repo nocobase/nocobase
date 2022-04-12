@@ -17,32 +17,33 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const [visible, setVisible] = useState(false);
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
+  const [record, setRecord] = useState({});
   return (
     <div>
       <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
         <CollectionProvider name={collectionField.target}>
+          <Space size={0} split={<span style={{ marginRight: 4, color: '#aaa' }}>, </span>}>
+            {toArr(field.value).map((record, index) => {
+              return (
+                <span>
+                  <a
+                    onClick={() => {
+                      setVisible(true);
+                      setRecord(record);
+                    }}
+                  >
+                    {record?.[fieldNames?.label || 'label']}
+                  </a>
+                </span>
+              );
+            })}
+          </Space>
           <ActionContext.Provider value={{ visible, setVisible, openMode: 'drawer' }}>
-            <Space size={0} split={<span style={{ marginRight: 4, color: '#aaa' }}>, </span>}>
-              {toArr(field.value).map((record, index) => {
-                return (
-                  <span>
-                    <a
-                      onClick={() => {
-                        console.log('setVisible');
-                        setVisible(true);
-                      }}
-                    >
-                      {record?.[fieldNames?.label || 'label']}
-                    </a>
-                    <RecordProvider record={record}>
-                      <FormProvider>
-                        <RecursionField schema={fieldSchema} onlyRenderProperties />
-                      </FormProvider>
-                    </RecordProvider>
-                  </span>
-                );
-              })}
-            </Space>
+            <RecordProvider record={record}>
+              <FormProvider>
+                <RecursionField schema={fieldSchema} onlyRenderProperties />
+              </FormProvider>
+            </RecordProvider>
           </ActionContext.Provider>
         </CollectionProvider>
       </BlockAssociationContext.Provider>
