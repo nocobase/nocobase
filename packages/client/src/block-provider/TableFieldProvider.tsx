@@ -44,8 +44,8 @@ export class TableFieldResource {
 
   async list(options) {
     this.field.data = this.field.data || {};
-    if (this.field?.data?.dataSource?.length) {
-      console.log('list', this.field.data.dataSource);
+    if (this.field.data.changed) {
+      console.log('list.dataSource', this.field.data.dataSource);
       return {
         data: {
           data: this.field.data.dataSource,
@@ -85,12 +85,14 @@ export class TableFieldResource {
     console.log('create', options);
     const { values } = options;
     this.field.data.dataSource.push(values);
+    this.field.data.changed = true;
   }
 
   async update(options) {
     console.log('update', options);
     const { filterByTk, values } = options;
     this.field.data.dataSource[filterByTk] = values;
+    this.field.data.changed = true;
   }
 
   async destroy(options) {
@@ -102,6 +104,7 @@ export class TableFieldResource {
     this.field.data.dataSource = this.field.data.dataSource.filter((item, index) => {
       return !filterByTk.includes(index);
     });
+    this.field.data.changed = true;
   }
 }
 

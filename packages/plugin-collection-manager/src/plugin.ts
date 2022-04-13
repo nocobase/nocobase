@@ -1,14 +1,15 @@
+import { Collection } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import lodash from 'lodash';
 import path from 'path';
 import { CollectionRepository } from '.';
 import {
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
-  beforeInitOptions,
+  beforeInitOptions
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
-import lodash from 'lodash';
 
 export class CollectionManagerPlugin extends Plugin {
   async beforeLoad() {
@@ -74,6 +75,42 @@ export class CollectionManagerPlugin extends Plugin {
         ctx.action.mergeParams({
           updateAssociationValues,
         });
+      }
+      await next();
+    });
+
+    this.app.resourcer.use(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action;
+      if (actionName === 'update') {
+        const { updateAssociationValues = [] } = ctx.action.params;
+        const [collectionName, associationName] = resourceName.split('.');
+        if (!associationName) {
+          const collection: Collection = ctx.db.getCollection(collectionName);
+          if (collection) {
+            for (const [, field] of collection.fields) {
+              if (field.options.interface === 'subTable') {
+                updateAssociationValues.push(field.name);
+              }
+            }
+          }
+        } else {
+          const association = ctx.db.getCollection(collectionName)?.getField?.(associationName);
+          if (association?.target) {
+            const collection: Collection = ctx.db.getCollection(association?.target);
+            if (collection) {
+              for (const [, field] of collection.fields) {
+                if (field.options.interface === 'subTable') {
+                  updateAssociationValues.push(field.name);
+                }
+              }
+            }
+          }
+        }
+        if (updateAssociationValues.length) {
+          ctx.action.mergeParams({
+            updateAssociationValues,
+          });
+        }
       }
       await next();
     });
