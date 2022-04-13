@@ -35,7 +35,7 @@ export default {
 
     const result = calculation
       ? calculate({
-        type: 'calculation',
+        type: '$calculation',
         options: execution.getParsedValue(calculation)
       }, prevJob, execution)
       : null;
