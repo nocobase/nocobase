@@ -60,8 +60,7 @@ const isEmpty = (obj) => {
 };
 
 const removeNullCondition = (filter) => {
-  const items = flat(filter);
-  console.log('filter', items);
+  const items = flat(filter || {});
   const values = {};
   for (const key in items) {
     const value = items[key];
