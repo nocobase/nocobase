@@ -46,7 +46,7 @@ export const SwitchRole = () => {
         onChange={async (roleName) => {
           setRoleName(roleName);
           await api.resource('users').setDefaultRole({ values: { roleName } });
-          window.location.reload();
+          window.location.href = '/';
         }}
       />
     </Menu.Item>
