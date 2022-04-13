@@ -304,15 +304,18 @@ export class PluginACL extends Plugin {
     this.app.acl.skip('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';
     });
-    // root role
+
     this.app.resourcer.use(async (ctx, next) => {
-      const { actionName, resourceName } = ctx.action.params;
+      const { actionName, resourceName, params } = ctx.action;
+      const { showAnonymous } = params || {};
       if (actionName === 'list' && resourceName === 'roles') {
-        ctx.action.mergeParams({
-          filter: {
-            'name.$ne': 'root',
-          },
-        });
+        if (!showAnonymous) {
+          ctx.action.mergeParams({
+            filter: {
+              'name.$ne': 'anonymous',
+            },
+          });
+        }
       }
       await next();
     });
