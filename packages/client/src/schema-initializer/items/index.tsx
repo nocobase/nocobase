@@ -36,6 +36,10 @@ export const BlockInitializer = (props) => {
   );
 };
 
+export const CustomizeActionInitializer = (props) => {
+  return <BlockInitializer {...props} />;
+};
+
 export const InitializerWithSwitch = (props) => {
   const { type, schema, item, insert } = props;
   const { exists, remove } = useCurrentSchema(schema?.[type] || item?.schema?.[type], type, item.find, item.remove);
