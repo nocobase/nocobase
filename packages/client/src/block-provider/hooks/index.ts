@@ -5,6 +5,7 @@ import { useHistory } from 'react-router-dom';
 import { useActionContext } from '../../schema-component';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useFormBlockContext } from '../FormBlockProvider';
+import { TableFieldResource } from '../TableFieldProvider';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -75,13 +76,14 @@ export const useUpdateActionProps = () => {
   return {
     async onClick() {
       await form.submit();
-
       await resource.update({
         filterByTk,
         values: form.values,
       });
       __parent?.service?.refresh?.();
-      __parent?.__parent?.service?.refresh?.();
+      if (!(resource instanceof TableFieldResource)) {
+        __parent?.__parent?.service?.refresh?.();
+      }
       setVisible?.(false);
     },
   };
@@ -111,6 +113,7 @@ export const useBulkDestroyActionProps = () => {
       await resource.destroy({
         filterByTk: field.data?.selectedRowKeys,
       });
+      field.data.selectedRowKeys = [];
       service?.refresh?.();
     },
   };
