@@ -27,11 +27,12 @@ export default {
     if (!Collection) {
       return;
     }
+    // async function, should return promise
     const handler = (data: any, options) => {
       if (filter) {
         // TODO: check all conditions in filter against data
       }
-      callback({ data: data.get() }, options);
+      return callback({ data: data.get() }, options);
     };
     // TODO: duplication when mode change should be considered
     for (let [key, event] of MODE_BITMAP_EVENTS.entries()) {
