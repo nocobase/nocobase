@@ -57,7 +57,10 @@ export const roleSchema: ISchema = {
           action: 'list',
           params: {
             pageSize: 50,
-            filter: {},
+            filter: {
+              'name.$ne': 'root',
+            },
+            showAnonymous: true,
             sort: ['createdAt'],
             appends: [],
           },
