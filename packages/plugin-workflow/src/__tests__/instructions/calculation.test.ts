@@ -60,7 +60,7 @@ describe('workflow > instructions > calculation', () => {
             calculator: 'add',
             operands: [
               { value: 1 },
-              { type: 'context', options: { path: 'data.read' } }
+              { type: '$context', options: { path: 'data.read' } }
             ]
           }
         }
@@ -104,7 +104,7 @@ describe('workflow > instructions > calculation', () => {
             calculator: 'add',
             operands: [
               { value: 1 },
-              { type: 'job', options: { nodeId: n1.id, path: 'data.read' } }
+              { type: '$jobsMapByNodeId', options: { nodeId: n1.id, path: 'data.read' } }
             ]
           }
         },
@@ -177,7 +177,7 @@ describe('workflow > instructions > calculation', () => {
             operands: [
               { value: 1 },
               {
-                type: 'calculation',
+                type: '$calculation',
                 options: {
                   calculator: 'minus',
                   operands: [

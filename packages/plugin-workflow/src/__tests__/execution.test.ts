@@ -46,9 +46,9 @@ describe('execution', () => {
         title: 'echo',
         type: 'echo'
       });
-  
+
       const post = await PostModel.create({ title: 't1' });
-  
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
@@ -63,26 +63,26 @@ describe('execution', () => {
         title: 'echo',
         type: 'echo'
       });
-  
+
       const post = await PostModel.create({ title: 't1' });
-  
+
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
-  
+
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(1);
       const { status, result } = jobs[0].get();
       expect(status).toEqual(JOB_STATUS.RESOLVED);
       expect(result).toMatchObject({ data: JSON.parse(JSON.stringify(post.toJSON())) });
     });
-  
+
     it('workflow with multiple simple nodes', async () => {
       const n1 = await workflow.createNode({
         title: 'echo 1',
         type: 'echo'
       });
-  
+
       const n2 = await workflow.createNode({
         title: 'echo 2',
         type: 'echo',
@@ -90,13 +90,13 @@ describe('execution', () => {
       });
 
       await n1.setDownstream(n2);
-  
+
       const post = await PostModel.create({ title: 't1' });
-  
+
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
-  
+
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(2);
       const { status, result } = jobs[1].get();
@@ -109,7 +109,7 @@ describe('execution', () => {
         title: 'error',
         type: 'error'
       });
-  
+
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
@@ -119,7 +119,7 @@ describe('execution', () => {
       expect(jobs.length).toEqual(1);
       const { status, result } = jobs[0].get();
       expect(status).toEqual(JOB_STATUS.REJECTED);
-      expect(result).toBe('Error: definite error');
+      expect(result.message).toBe('definite error');
     });
   });
 
@@ -129,7 +129,7 @@ describe('execution', () => {
         title: 'prompt',
         type: 'prompt',
       });
-      
+
       const n2 = await workflow.createNode({
         title: 'echo',
         type: 'echo',
@@ -185,7 +185,7 @@ describe('execution', () => {
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(1);
       expect(jobs[0].status).toEqual(JOB_STATUS.REJECTED);
-      expect(jobs[0].result).toEqual('Error: input failed');
+      expect(jobs[0].result.message).toEqual('input failed');
     });
   });
 

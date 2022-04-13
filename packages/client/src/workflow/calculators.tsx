@@ -75,25 +75,35 @@ const ConstantTypes = {
   string: {
     title: '字符串',
     value: 'string',
-    component({ onChange, type, options, ...props }) {
-      return <Input {...props} onChange={ev => onChange(ev.target.value)} />;
+    component({ onChange, type, options, value }) {
+      return (
+        <Input
+          value={value}
+          onChange={ev => onChange({ value: ev.target.value, type, options })}
+        />
+      );
     },
     default: ''
   },
   number: {
     title: '数字',
     value: 'number',
-    component({ type, options, ...props }) {
-      return <InputNumber {...props} />;
+    component({ onChange, type, options, value }) {
+      return (
+        <InputNumber
+          value={value}
+          onChange={v => onChange({ value: v, type, options })}
+        />
+      );
     },
     default: 0
   },
   boolean: {
     title: '逻辑值',
     value: 'boolean',
-    component({ type, options, ...props }) {
+    component({ onChange, type, options, value }) {
       return (
-        <Select {...props}>
+        <Select value={value} onChange={v => onChange({ value: v, type, options })}>
           <Select.Option value={true}>真</Select.Option>
           <Select.Option value={false}>假</Select.Option>
         </Select>
@@ -104,8 +114,8 @@ const ConstantTypes = {
   // date: {
   //   title: '日期',
   //   value: 'date',
-  //   component({ type, options, ...props }) {
-  //     return <DatePicker {...props} />;
+  //   component({ onChange, type, options, value }) {
+  //     return <DatePicker value={value} onChange={v => onChange({ value: v, type, options })}/>;
   //   },
   //   default: new Date()
   // }
@@ -119,13 +129,16 @@ export const VariableTypes = {
       value: item.value,
       label: item.title
     })),
-    component({ options: { type } = { type: 'string' } }) {
-      return ConstantTypes[type]?.component ?? NullRender;
+    component({ options = { type: 'string' } }) {
+      return ConstantTypes[options.type]?.component ?? NullRender;
     },
     appendTypeValue({ options = { type: 'string' } }) {
       return options?.type ? [options.type] : [];
     },
     onTypeChange(old, [type, optionsType], onChange) {
+      if (old?.options?.type === optionsType) {
+        return;
+      }
       const { default: value } = ConstantTypes[optionsType];
       onChange({
         value,
@@ -137,9 +150,9 @@ export const VariableTypes = {
       return { path };
     }
   },
-  job: {
+  $jobsMapByNodeId: {
     title: '节点数据',
-    value: 'job',
+    value: '$jobsMapByNodeId',
     options() {
       const node = useNodeContext();
       const stack = [];
@@ -182,7 +195,7 @@ export const VariableTypes = {
       return { nodeId, path: path.join('.') };
     },
     stringify({ options }) {
-      const stack = ['job'];
+      const stack = ['$jobsMapByNodeId'];
       if (options.nodeId) {
         stack.push(options.nodeId);
         if (options.path) {
@@ -192,9 +205,9 @@ export const VariableTypes = {
       return `{{${stack.join('.')}}}`;
     }
   },
-  context: {
+  $context: {
     title: '触发数据',
-    value: 'context',
+    value: '$context',
     component() {
       const { workflow } = useFlowContext();
       const trigger = triggers.get(workflow.type);
@@ -204,7 +217,7 @@ export const VariableTypes = {
       return { path: path.join('.') };
     },
     stringify({ options }) {
-      const stack = ['context'];
+      const stack = ['$context'];
       if (options?.path) {
         stack.push(options.path);
       }
