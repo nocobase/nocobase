@@ -287,5 +287,6 @@ export default {
   "Template name": "模板名称",
   "Block type": "区块类型",
   "Action column": "操作列",
-  "Records per page": "每页显示数量"
+  "Records per page": "每页显示数量",
+  "(Fields only)": "（仅字段）"
 }

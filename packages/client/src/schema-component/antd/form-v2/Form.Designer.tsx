@@ -75,7 +75,8 @@ export const FormDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.Template componentName={ctx?.action ? 'RecordForm' : 'CreateForm'} collectionName={name} />
+      {/* <SchemaSettings.Template componentName={'FormItem'} collectionName={name} /> */}
+      <SchemaSettings.FormItemTemplate componentName={'FormItem'} collectionName={name} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
@@ -92,7 +93,12 @@ export const ReadPrettyFormDesigner = () => {
   const template = useSchemaTemplate();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
-      <SchemaSettings.Template componentName={'ReadPrettyForm'} collectionName={name} />
+      {/* <SchemaSettings.Template componentName={'ReadPrettyForm'} collectionName={name} /> */}
+      <SchemaSettings.FormItemTemplate
+        insertAdjacentPosition={'beforeEnd'}
+        componentName={'ReadPrettyFormItem'}
+        collectionName={name}
+      />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
