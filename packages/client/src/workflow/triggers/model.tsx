@@ -40,6 +40,7 @@ export default {
     filter: {
       type: 'object',
       title: '满足条件',
+      description: 'not supported by server yet',
       name: 'filter',
       'x-decorator': 'FormItem',
       'x-component': 'Filter',

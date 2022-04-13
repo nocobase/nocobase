@@ -22,12 +22,17 @@ export default {
   name: 'model',
   on(this: WorkflowModel, callback: Function) {
     const { database } = <typeof WorkflowModel>this.constructor;
-    const { collection, mode } = this.config;
+    const { collection, mode, filter } = this.config;
     const Collection = database.getCollection(collection);
     if (!Collection) {
       return;
     }
-    const handler = (data: any, options) => callback({ data: data.get() }, options);
+    const handler = (data: any, options) => {
+      if (filter) {
+        // TODO: check all conditions in filter against data
+      }
+      callback({ data: data.get() }, options);
+    };
     // TODO: duplication when mode change should be considered
     for (let [key, event] of MODE_BITMAP_EVENTS.entries()) {
       if (mode & key) {
