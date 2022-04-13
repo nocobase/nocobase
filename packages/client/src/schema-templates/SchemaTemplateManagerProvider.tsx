@@ -46,10 +46,12 @@ const regenerateUid = (s: ISchema) => {
 };
 
 export const useSchemaTemplate = () => {
-  const { getTemplateBySchemaId } = useSchemaTemplateManager();
+  const { getTemplateBySchema, templates } = useSchemaTemplateManager();
   const fieldSchema = useFieldSchema();
   const schemaId = fieldSchema['x-uid'];
-  return useMemo(() => getTemplateBySchemaId(schemaId), [schemaId]);
+  const templateKey = fieldSchema['x-template-key'];
+  console.log('templateKey', { schemaId, templateKey })
+  return useMemo(() => getTemplateBySchema(fieldSchema), [schemaId, templateKey]);
 };
 
 export const useSchemaTemplateManager = () => {
@@ -98,7 +100,20 @@ export const useSchemaTemplateManager = () => {
       await refresh();
       return { key };
     },
+    getTemplateBySchema(schema) {
+      const templateKey = schema['x-template-key'];
+      if (templateKey) {
+        return templates?.find((template) => template.key === templateKey);
+      }
+      const schemaId = schema['x-uid'];
+      if (schemaId) {
+        return templates?.find((template) => template.uid === schemaId);
+      }
+    },
     getTemplateBySchemaId(schemaId) {
+      if (!schemaId) {
+        return null;
+      }
       return templates?.find((template) => template.uid === schemaId);
     },
     getTemplateById(key) {

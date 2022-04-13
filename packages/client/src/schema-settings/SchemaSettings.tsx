@@ -67,9 +67,9 @@ interface SchemaSettingsProviderProps {
 
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
   const { children, fieldSchema, ...others } = props;
-  const { getTemplateBySchemaId } = useSchemaTemplateManager();
+  const { getTemplateBySchema } = useSchemaTemplateManager();
   const { name } = useCollection();
-  const template = getTemplateBySchemaId(fieldSchema['x-uid']);
+  const template = getTemplateBySchema(fieldSchema);
   return (
     <SchemaSettingsContext.Provider value={{ collectionName: name, template, fieldSchema, ...others }}>
       {children}
@@ -172,6 +172,147 @@ SchemaSettings.Template = (props) => {
           'x-component': 'BlockTemplate',
           'x-component-props': {
             templateId: key,
+          },
+        });
+      }}
+    >
+      {t('Save as template')}
+    </SchemaSettings.Item>
+  );
+};
+
+const findGridSchema = (fieldSchema) => {
+  return fieldSchema.reduceProperties((buf, s) => {
+    if (s['x-component'] === 'FormV2') {
+      const f = s.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'Grid') {
+          return s;
+        }
+        return buf;
+      }, null);
+      if (f) {
+        return f;
+      }
+    }
+    return buf;
+  }, null);
+};
+
+const findBlockTemplateSchema = (fieldSchema) => {
+  return fieldSchema.reduceProperties((buf, s) => {
+    if (s['x-component'] === 'FormV2') {
+      const f = s.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'BlockTemplate') {
+          return s;
+        }
+        return buf;
+      }, null);
+      if (f) {
+        return f;
+      }
+    }
+    return buf;
+  }, null);
+};
+
+SchemaSettings.FormItemTemplate = (props) => {
+  const { insertAdjacentPosition = 'afterBegin', componentName, collectionName } = props;
+  const { t } = useTranslation();
+  const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
+  const api = useAPIClient();
+  const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
+  if (!collectionName) {
+    return null;
+  }
+  if (template) {
+    return (
+      <SchemaSettings.Item
+        onClick={async () => {
+          const schema = await copyTemplateSchema(template);
+          const templateSchema = findBlockTemplateSchema(fieldSchema);
+          const sdn = createDesignable({
+            api,
+            refresh: dn.refresh.bind(dn),
+            current: templateSchema.parent,
+          });
+          sdn.loadAPIClientEvents();
+          sdn.removeWithoutEmit(templateSchema);
+          sdn.insertAdjacent(insertAdjacentPosition, schema, {
+            async onSuccess() {
+              await api.request({
+                url: `/uiSchemas:remove/${templateSchema['x-uid']}`,
+              });
+            },
+          });
+          fieldSchema['x-template-key'] = null;
+          await api.request({
+            url: `uiSchemas:patch`,
+            method: 'post',
+            data: {
+              'x-uid': fieldSchema['x-uid'],
+              'x-template-key': null,
+            },
+          });
+          dn.refresh();
+        }}
+      >
+        {t('Convert reference to duplicate')}
+      </SchemaSettings.Item>
+    );
+  }
+  return (
+    <SchemaSettings.Item
+      onClick={async () => {
+        setVisible(false);
+        const gridSchema = findGridSchema(fieldSchema);
+        console.log('gridSchema', gridSchema);
+        const values = await FormDialog('Save as template', () => {
+          return (
+            <FormLayout layout={'vertical'}>
+              <SchemaComponent
+                components={{ Input, FormItem }}
+                schema={{
+                  type: 'object',
+                  properties: {
+                    name: {
+                      title: '模板名称',
+                      required: true,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                    },
+                  },
+                }}
+              />
+            </FormLayout>
+          );
+        }).open({});
+        const sdn = createDesignable({
+          api,
+          refresh: dn.refresh.bind(dn),
+          current: gridSchema.parent,
+        });
+        sdn.loadAPIClientEvents();
+        const { key } = await saveAsTemplate({
+          collectionName,
+          componentName,
+          name: values.name,
+          uid: gridSchema['x-uid'],
+        });
+        sdn.removeWithoutEmit(gridSchema);
+        sdn.insertAdjacent(insertAdjacentPosition, {
+          type: 'void',
+          'x-component': 'BlockTemplate',
+          'x-component-props': {
+            templateId: key,
+          },
+        });
+        fieldSchema['x-template-key'] = key;
+        await api.request({
+          url: `uiSchemas:patch`,
+          method: 'post',
+          data: {
+            'x-uid': fieldSchema['x-uid'],
+            'x-template-key': key,
           },
         });
       }}

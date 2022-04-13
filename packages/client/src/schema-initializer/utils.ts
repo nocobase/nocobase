@@ -149,6 +149,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
 };
 
 export const useRecordCollectionDataSourceItems = (componentName) => {
+  const { t } = useTranslation();
   const collection = useCollection();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const templates = getTemplatesByCollection(collection.name).filter((template) => {
@@ -173,12 +174,14 @@ export const useRecordCollectionDataSourceItems = (componentName) => {
       name: 'copy',
       title: '复制模板',
       children: templates.map((template) => {
+        const templateName =
+          template?.componentName === 'ReadPrettyFormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
         return {
           type: 'item',
           mode: 'copy',
           name: collection.name,
           template,
-          title: template.name || '未命名',
+          title: templateName || '未命名',
         };
       }),
     },
@@ -188,12 +191,14 @@ export const useRecordCollectionDataSourceItems = (componentName) => {
       name: 'ref',
       title: '引用模板',
       children: templates.map((template) => {
+        const templateName =
+          template?.componentName === 'ReadPrettyFormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
         return {
           type: 'item',
           mode: 'reference',
           name: collection.name,
           template,
-          title: template.name || '未命名',
+          title: templateName || '未命名',
         };
       }),
     },
@@ -242,12 +247,14 @@ export const useCollectionDataSourceItems = (componentName) => {
                 name: 'copy',
                 title: '复制模板',
                 children: templates.map((template) => {
+                  const templateName =
+                    template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
                   return {
                     type: 'item',
                     mode: 'copy',
                     name: item.name,
                     template,
-                    title: template.name || '未命名',
+                    title: templateName || '未命名',
                   };
                 }),
               },
@@ -257,12 +264,14 @@ export const useCollectionDataSourceItems = (componentName) => {
                 name: 'ref',
                 title: '引用模板',
                 children: templates.map((template) => {
+                  const templateName =
+                    template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
                   return {
                     type: 'item',
                     mode: 'reference',
                     name: item.name,
                     template,
-                    title: template.name || '未命名',
+                    title: templateName || '未命名',
                   };
                 }),
               },
@@ -281,6 +290,7 @@ export const createFormBlockSchema = (options) => {
     resource,
     association,
     action,
+    template,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -310,7 +320,7 @@ export const createFormBlockSchema = (options) => {
           useProps: '{{ useFormBlockProps }}',
         },
         properties: {
-          grid: {
+          grid: template || {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': formItemInitializers,
@@ -343,6 +353,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
     collection,
     association,
     resource,
+    template,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -381,7 +392,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
             },
             properties: {},
           },
-          grid: {
+          grid: template || {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': formItemInitializers,
