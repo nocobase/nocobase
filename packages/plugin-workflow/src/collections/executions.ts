@@ -12,6 +12,12 @@ export default {
       title: '所属工作流'
     },
     {
+      type: 'boolean',
+      name: 'useTransaction',
+      title: '使用事务',
+      defaultValue: false
+    },
+    {
       interface: 'linkTo',
       type: 'hasMany',
       name: 'jobs',

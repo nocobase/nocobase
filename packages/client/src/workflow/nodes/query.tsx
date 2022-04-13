@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
-import { Cascader, Select } from 'antd';
+import { Select } from 'antd';
 import { t } from 'i18next';
 import { css } from '@emotion/css';
 

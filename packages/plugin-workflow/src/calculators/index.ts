@@ -9,7 +9,7 @@ export const calculators = new Registry<Function>();
 export default calculators;
 
 
-export type OperandType = 'context' | 'input' | 'job' | 'calculation';
+export type OperandType = '$context' | '$input' | '$jobsMapByNodeId' | '$calculation';
 
 export type ObjectGetterOptions = {
   path?: string
@@ -30,22 +30,22 @@ export type ConstantOperand = {
 };
 
 export type ContextOperand = {
-  type: 'context';
+  type: '$context';
   options: ObjectGetterOptions;
 };
 
 export type InputOperand = {
-  type: 'input';
+  type: '$input';
   options: ObjectGetterOptions;
 };
 
 export type JobOperand = {
-  type: 'job';
+  type: '$jobsMapByNodeId';
   options: JobGetterOptions;
 };
 
 export type Calculation = {
-  type: 'calculation';
+  type: '$calculation';
   options: CalculationOptions
 };
 
@@ -68,22 +68,22 @@ export function calculate(operand: Operand, lastJob: JobModel, execution: Execut
   switch (operand.type) {
     // @Deprecated
     // from execution context
-    case 'context':
+    case '$context':
       return get(execution.context, operand.options.path);
 
     // @Deprecated
     // from last job (or input job)
-    case 'input':
+    case '$input':
       return lastJob ?? get(lastJob.result, operand.options.path);
 
     // @Deprecated
     // from job in execution
-    case 'job':
+    case '$jobsMapByNodeId':
       // assume jobs have been fetched from execution before
       const job = execution.jobsMapByNodeId[operand.options.nodeId];
       return job && get(job, operand.options.path);
 
-    case 'calculation':
+    case '$calculation':
       const fn = calculators.get(operand.options.calculator);
       if (!fn) {
         throw new Error(`no calculator function registered for "${operand.options.calculator}"`);
