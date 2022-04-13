@@ -19,6 +19,8 @@ export default class ExecutionModel extends Model {
   declare title: string;
   declare context: any;
   declare status: number;
+  // NOTE: this duplicated column is for transaction in preparing cycle from workflow
+  declare useTransaction: boolean;
 
   declare createdAt: Date;
   declare updatedAt: Date;
@@ -71,13 +73,25 @@ export default class ExecutionModel extends Model {
     });
   }
 
+  getTransaction() {
+    const { sequelize } = (<typeof WorkflowModel>this.constructor).database;
+    // @ts-ignore
+    if (!this.useTransaction || sequelize.options.dialect === 'sqlite') {
+      return undefined;
+    }
+
+    const { options } = this;
+
+    // @ts-ignore
+    return options.transaction && !options.transaction.finished
+      ? options.transaction
+      : sequelize.transaction();
+  }
+
   async prepare(options, commit = false) {
     this.options = options || {};
-    const { sequelize } = (<typeof ExecutionModel>this.constructor).database;
     // @ts-ignore
-    const transaction = this.options.transaction && !this.options.transaction.finished
-      ? this.options.transaction
-      : await sequelize.transaction();
+    const transaction = await this.getTransaction()
     this.transaction = transaction;
 
     if (!this.workflow) {
@@ -126,7 +140,7 @@ export default class ExecutionModel extends Model {
 
   private async commit() {
     // @ts-ignore
-    if (!this.options.transaction || this.options.transaction.finished) {
+    if (this.transaction && (!this.options.transaction || this.options.transaction.finished)) {
       await this.transaction.commit();
     }
   }
@@ -142,7 +156,9 @@ export default class ExecutionModel extends Model {
     } catch (err) {
       // for uncaught error, set to rejected
       job = {
-        result: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+        result: err instanceof Error
+          ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
+          : err,
         status: JOB_STATUS.REJECTED,
       };
       // if previous job is from resuming

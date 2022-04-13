@@ -15,6 +15,7 @@ export default class WorkflowModel extends Model {
   declare description?: string;
   declare type: string;
   declare config: any;
+  declare useTransaction: boolean;
 
   declare createdAt: Date;
   declare updatedAt: Date;
@@ -46,6 +47,16 @@ export default class WorkflowModel extends Model {
     return `workflow-${this.get('id')}`;
   }
 
+  getTransaction(options) {
+    if (!this.useTransaction) {
+      return undefined;
+    }
+
+    return options.transaction && !options.transaction.finished
+      ? options.transaction
+      : (<typeof WorkflowModel>this.constructor).database.sequelize.transaction();
+  }
+
   async toggle(enable?: boolean) {
     const type = this.get('type');
     const { on, off } = triggers.get(type);
@@ -62,20 +73,19 @@ export default class WorkflowModel extends Model {
       return;
     }
 
-    const transaction = options.transaction && !options.transaction.finished
-      ? options.transaction
-      : await (<typeof WorkflowModel>this.constructor).database.sequelize.transaction();
+    const transaction = await this.getTransaction(options);
 
     const execution = await this.createExecution({
       context,
       status: EXECUTION_STATUS.STARTED,
+      useTransaction: this.useTransaction
     }, { transaction });
 
     execution.workflow = this;
 
     await execution.start({ transaction });
 
-    if (!options.transaction || options.transaction.finished) {
+    if (transaction && (!options.transaction || options.transaction.finished)) {
       await transaction.commit();
     }
 

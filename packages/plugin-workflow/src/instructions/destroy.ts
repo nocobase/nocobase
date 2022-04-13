@@ -9,7 +9,11 @@ export default {
     } = this.config;
 
     const repo = (<typeof FlowNodeModel>this.constructor).database.getRepository(collection);
-    const result = await repo.destroy(execution.getParsedValue(params));
+    const options = execution.getParsedValue(params);
+    const result = await repo.destroy({
+      ...options,
+      transaction: execution.transaction
+    });
 
     return {
       result,

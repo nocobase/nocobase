@@ -9,7 +9,11 @@ export default {
     } = this.config;
 
     const repo = (<typeof FlowNodeModel>this.constructor).database.getRepository(collection);
-    const result = await repo.create(execution.getParsedValue(params));
+    const options = execution.getParsedValue(params);
+    const result = await repo.create({
+      ...options,
+      transaction: execution.transaction
+    });
 
     return {
       result,

@@ -40,6 +40,13 @@ export default {
       defaultValue: {}
     },
     {
+      interface: 'boolean',
+      type: 'boolean',
+      title: '使用事务',
+      name: 'useTransaction',
+      defaultValue: false
+    },
+    {
       interface: 'linkTo',
       type: 'hasMany',
       name: 'nodes',
