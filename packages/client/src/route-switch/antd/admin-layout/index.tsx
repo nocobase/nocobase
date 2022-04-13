@@ -74,8 +74,10 @@ const InternalAdminLayout = (props: any) => {
           <div style={{ width: 200, display: 'inline-flex', color: '#fff', padding: '0', alignItems: 'center' }}>
             <img
               className={css`
-                height: 20px;
                 padding: 0 16px;
+                object-fit: contain;
+                width: 100%;
+                height: 100%;
               `}
               src={result?.data?.data?.logo?.url}
             />
@@ -96,20 +98,20 @@ const InternalAdminLayout = (props: any) => {
                 }
                 data['x-component-props'] = data['x-component-props'] || {};
                 data['x-component-props']['defaultSelectedUid'] = defaultSelectedUid;
-                filterByACL(data, ctx);
-                return data;
+                return filterByACL(data, ctx);
               }}
               onSuccess={(data) => {
+                const schema = filterByACL(data?.data, ctx);
                 if (defaultSelectedUid) {
-                  const s = findByUid(data?.data, defaultSelectedUid);
+                  const s = findByUid(schema, defaultSelectedUid);
                   if (s) {
                     setTitle(s.title);
+                    return;
                   }
-                  return;
                 }
                 setHidden(true);
                 setTimeout(() => setHidden(false), 11);
-                const s = findMenuItem(data?.data);
+                const s = findMenuItem(schema);
                 if (s) {
                   setSchema(s);
                   setTitle(s.title);
