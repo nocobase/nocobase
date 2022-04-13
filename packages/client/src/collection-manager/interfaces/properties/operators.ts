@@ -12,22 +12,34 @@ export const array = [
     label: '{{t("is")}}',
     value: '$match',
     selected: true,
-    schema: { 'x-component': 'Select' },
+    schema: {
+      'x-component': 'Select',
+      'x-component-props': { mode: 'tags' },
+    },
   },
   {
     label: '{{t("is not")}}',
     value: '$notMatch',
-    schema: { 'x-component': 'Select' },
+    schema: {
+      'x-component': 'Select',
+      'x-component-props': { mode: 'tags' },
+    },
   },
   {
     label: '{{t("contains")}}',
     value: '$anyOf',
-    schema: { 'x-component': 'Select' },
+    schema: {
+      'x-component': 'Select',
+      'x-component-props': { mode: 'tags' },
+    },
   },
   {
     label: '{{t("does not contain")}}',
     value: '$noneOf',
-    schema: { 'x-component': 'Select' },
+    schema: {
+      'x-component': 'Select',
+      'x-component-props': { mode: 'tags' },
+    },
   },
   { label: '{{t("is empty")}}', value: '$empty', noValue: true },
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
