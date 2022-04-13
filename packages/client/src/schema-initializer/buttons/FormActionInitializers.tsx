@@ -11,6 +11,33 @@ export const FormActionInitializers = {
           type: 'item',
           title: '{{t("Submit")}}',
           component: 'CreateSubmitActionInitializer',
+          schema: {
+            'x-action-params': {
+              initialValues: {},
+            },
+          },
+        },
+      ],
+    },
+    {
+      type: 'subMenu',
+      title: '{{t("Customize")}}',
+      children: [
+        {
+          type: 'item',
+          title: '{{t("Save action")}}',
+          component: 'CustomizeActionInitializer',
+          schema: {
+            title: '{{ t("Save") }}',
+            'x-component': 'Action',
+            'x-designer': 'Action.Designer',
+            'x-action-params': {
+              initialValues: {},
+            },
+            'x-component-props': {
+              useProps: '{{ useCreateActionProps }}',
+            },
+          },
         },
       ],
     },
@@ -29,6 +56,33 @@ export const CreateFormActionInitializers = {
           type: 'item',
           title: '{{t("Submit")}}',
           component: 'CreateSubmitActionInitializer',
+          schema: {
+            'x-action-params': {
+              initialValues: {},
+            },
+          },
+        },
+      ],
+    },
+    {
+      type: 'subMenu',
+      title: '{{t("Customize")}}',
+      children: [
+        {
+          type: 'item',
+          title: '{{t("Save action")}}',
+          component: 'CustomizeActionInitializer',
+          schema: {
+            title: '{{ t("Save") }}',
+            'x-component': 'Action',
+            'x-designer': 'Action.Designer',
+            'x-action-params': {
+              initialValues: {},
+            },
+            'x-component-props': {
+              useProps: '{{ useCreateActionProps }}',
+            },
+          },
         },
       ],
     },
@@ -47,6 +101,33 @@ export const UpdateFormActionInitializers = {
           type: 'item',
           title: '{{t("Submit")}}',
           component: 'UpdateSubmitActionInitializer',
+          schema: {
+            'x-action-params': {
+              initialValues: {},
+            },
+          },
+        },
+      ],
+    },
+    {
+      type: 'subMenu',
+      title: '{{t("Customize")}}',
+      children: [
+        {
+          type: 'item',
+          title: '{{t("Save action")}}',
+          component: 'CustomizeActionInitializer',
+          schema: {
+            title: '{{ t("Save") }}',
+            'x-component': 'Action',
+            'x-designer': 'Action.Designer',
+            'x-action-params': {
+              initialValues: {},
+            },
+            'x-component-props': {
+              useProps: '{{ useUpdateActionProps }}',
+            },
+          },
         },
       ],
     },

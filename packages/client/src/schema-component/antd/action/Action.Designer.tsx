@@ -77,6 +77,38 @@ export const ActionDesigner = (props) => {
           }}
         />
       )}
+      {fieldSchema['x-action-params'] && (
+        <SchemaSettings.ModalItem
+          title={'表单默认值'}
+          schema={
+            {
+              type: 'object',
+              properties: {
+                initialValues: {
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input.TextArea',
+                  default: JSON.stringify(fieldSchema?.['x-action-params']?.initialValues),
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={({ initialValues }) => {
+            try {
+              const values = JSON.parse(initialValues);
+              fieldSchema['x-action-params']['initialValues'] = values;
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: fieldSchema['x-uid'],
+                  'x-action-params': {
+                    initialValues: values,
+                  },
+                },
+              });
+              dn.refresh();
+            } catch (e) {}
+          }}
+        />
+      )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

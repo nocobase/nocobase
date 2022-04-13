@@ -1,4 +1,4 @@
-import { useForm } from '@formily/react';
+import { useFieldSchema, useForm } from '@formily/react';
 import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -35,11 +35,16 @@ export const useCreateActionProps = () => {
   const { field } = useFormBlockContext();
   const history = useHistory();
   const { t } = useTranslation();
+  const actionSchema = useFieldSchema();
   return {
     async onClick() {
       await form.submit();
+      const initialValues = actionSchema?.['x-action-params']?.initialValues;
       await resource.create({
-        values: form.values,
+        values: {
+          ...form.values,
+          ...initialValues,
+        },
       });
       __parent?.service?.refresh?.();
       setVisible?.(false);
@@ -73,12 +78,17 @@ export const useUpdateActionProps = () => {
   const filterByTk = useFilterByTk();
   const { resource, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
+  const actionSchema = useFieldSchema();
   return {
     async onClick() {
+      const initialValues = actionSchema?.['x-action-params']?.initialValues;
       await form.submit();
       await resource.update({
         filterByTk,
-        values: form.values,
+        values: {
+          ...form.values,
+          ...initialValues,
+        },
       });
       __parent?.service?.refresh?.();
       if (!(resource instanceof TableFieldResource)) {
