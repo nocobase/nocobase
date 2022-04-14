@@ -14,6 +14,9 @@ export const FormActionInitializers = {
           schema: {
             'x-action-settings': {
               initialValues: {},
+              onSuccess: {
+                successMessage: 'Submitted successfully!',
+              },
             },
           },
         },
@@ -36,6 +39,9 @@ export const FormActionInitializers = {
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               initialValues: {},
+              onSuccess: {
+                successMessage: 'Submitted successfully!',
+              },
             },
             'x-component-props': {
               useProps: '{{ useCreateActionProps }}',
