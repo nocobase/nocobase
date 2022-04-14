@@ -5,6 +5,8 @@ export default {
   title: '{{t("Users")}}',
   sortable: 'sort',
   model: 'UserModel',
+  createdBy: true,
+  updatedBy: true,
   fields: [
     {
       interface: 'input',

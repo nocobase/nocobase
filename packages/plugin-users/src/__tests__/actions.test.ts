@@ -1,8 +1,8 @@
-import { mockServer, MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import PluginACL from '@nocobase/plugin-acl';
-import PluginUsers from '../server';
+import { mockServer, MockServer } from '@nocobase/test';
 import supertest from 'supertest';
+import PluginUsers from '../server';
 import { userPluginConfig } from './utils';
 
 describe('actions', () => {
@@ -32,7 +32,7 @@ describe('actions', () => {
     const { adminEmail, adminPassword } = userPluginConfig.installing;
 
     let response = await api.agent().resource('users').check();
-    expect(response.statusCode).toEqual(401);
+    expect(response.body.data.id).toBeUndefined();
 
     response = await agent.post('/users:signin').send({
       email: adminEmail,
@@ -46,6 +46,6 @@ describe('actions', () => {
     expect(token).toBeDefined();
 
     response = await agent.get('/users:check').set({ Authorization: 'Bearer ' + token });
-    expect(response.statusCode).toEqual(200);
+    expect(response.body.data.id).toBeDefined();
   });
 });

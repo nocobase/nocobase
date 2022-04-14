@@ -9,6 +9,7 @@ export interface SchemaInitializerButtonProps extends ButtonProps {
   dropdown?: DropDownProps;
   component?: any;
   designable?: boolean;
+  onSuccess?: any;
 }
 
 export type SchemaInitializerItemOptions = ItemGroupOptions | SubMenuOptions | ItemOptions | DividerOptions;

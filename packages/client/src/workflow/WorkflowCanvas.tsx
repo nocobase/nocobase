@@ -40,7 +40,7 @@ export function WorkflowCanvas() {
     return <div>加载失败</div>;
   }
 
-  const { nodes = [] } = data?.data ?? {};
+  const { nodes = [], ...workflow } = data?.data ?? {};
 
   makeNodes(nodes);
 
@@ -48,6 +48,7 @@ export function WorkflowCanvas() {
 
   return (
     <FlowContext.Provider value={{
+      workflow,
       nodes,
       onNodeAdded: refresh,
       onNodeRemoved: refresh

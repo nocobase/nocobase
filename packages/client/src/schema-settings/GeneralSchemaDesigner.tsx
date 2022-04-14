@@ -4,6 +4,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { DragHandler, useCompile, useDesignable } from '../schema-component';
 import { SchemaSettings } from './SchemaSettings';
 
@@ -33,6 +34,7 @@ export const GeneralSchemaDesigner = (props: any) => {
   const { title, template, draggable = true } = props;
   const { dn, designable } = useDesignable();
   const field = useField();
+  const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
   const schemaSettingsProps = {
@@ -43,13 +45,14 @@ export const GeneralSchemaDesigner = (props: any) => {
   if (!designable) {
     return null;
   }
+  const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)  ? `${template?.name} ${t('(Fields only)')}` : template?.name;
   return (
     <div className={'general-schema-designer'}>
       {title && (
         <div className={classNames('general-schema-designer-title', titleCss)}>
           <Space size={2}>
             <span className={'title-tag'}>{compile(title)}</span>
-            {template && <span className={'title-tag'}>引用模板: {template?.name || '未命名'}</span>}
+            {template && <span className={'title-tag'}>引用模板: {templateName || '未命名'}</span>}
           </Space>
         </div>
       )}

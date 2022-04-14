@@ -7,11 +7,24 @@ import { useCompile, useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { BlockItem } from '../block-item';
+import { HTMLEncode } from '../input/shared';
 
 export const FormItem: any = (props) => {
+  const field = useField();
   return (
     <BlockItem className={'nb-form-item'}>
-      <Item {...props} />
+      <Item
+        {...props}
+        extra={
+          field.description ? (
+            <div
+              dangerouslySetInnerHTML={{
+                __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+              }}
+            />
+          ) : null
+        }
+      />
     </BlockItem>
   );
 };

@@ -36,6 +36,10 @@ export const BlockInitializer = (props) => {
   );
 };
 
+export const CustomizeActionInitializer = (props) => {
+  return <BlockInitializer {...props} />;
+};
+
 export const InitializerWithSwitch = (props) => {
   const { type, schema, item, insert } = props;
   const { exists, remove } = useCurrentSchema(schema?.[type] || item?.schema?.[type], type, item.find, item.remove);
@@ -60,7 +64,7 @@ export const ActionInitializer = (props) => {
 };
 
 export const DataBlockInitializer = (props) => {
-  const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { templateWrap, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   return (
     <SchemaInitializer.Item
@@ -69,7 +73,7 @@ export const DataBlockInitializer = (props) => {
       onClick={async ({ item }) => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
-          insert(s);
+          templateWrap ? insert(templateWrap(s, { item })) : insert(s);
         } else {
           if (onCreateBlockSchema) {
             onCreateBlockSchema({ item });
@@ -105,7 +109,17 @@ export const FormBlockInitializer = (props) => {
     <DataBlockInitializer
       {...props}
       icon={<FormOutlined />}
-      componentType={'Form'}
+      componentType={'FormItem'}
+      templateWrap={(templateSchema, { item }) => {
+        const s = createFormBlockSchema({
+          template: templateSchema,
+          collection: item.name,
+        });
+        if (item.template && item.mode === 'reference') {
+          s['x-template-key'] = item.template.key;
+        }
+        return s;
+      }}
       createBlockSchema={createFormBlockSchema}
     />
   );
@@ -530,7 +544,20 @@ export const CreateFormBlockInitializer = (props) => {
       onClick={async ({ item }) => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
-          insert(s);
+          if (item.template.componentName === 'FormItem') {
+            const blockSchema = createFormBlockSchema({
+              actionInitializers: 'CreateFormActionInitializers',
+              association,
+              collection: collection.name,
+              template: s,
+            });
+            if (item.mode === 'reference') {
+              blockSchema['x-template-key'] = item.template.key;
+            }
+            insert(blockSchema);
+          } else {
+            insert(s);
+          }
         } else {
           insert(
             createFormBlockSchema({
@@ -541,7 +568,7 @@ export const CreateFormBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('CreateForm')}
+      items={useRecordCollectionDataSourceItems('FormItem')}
     />
   );
 };
@@ -558,7 +585,23 @@ export const RecordFormBlockInitializer = (props) => {
       onClick={async ({ item }) => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
-          insert(s);
+          if (item.template.componentName === 'FormItem') {
+            const blockSchema = createFormBlockSchema({
+              association,
+              collection: collection.name,
+              action: 'get',
+              useSourceId: '{{ useSourceIdFromParentRecord }}',
+              useParams: '{{ useParamsFromRecord }}',
+              actionInitializers: 'UpdateFormActionInitializers',
+              template: s,
+            });
+            if (item.mode === 'reference') {
+              blockSchema['x-template-key'] = item.template.key;
+            }
+            insert(blockSchema);
+          } else {
+            insert(s);
+          }
         } else {
           insert(
             createFormBlockSchema({
@@ -572,7 +615,7 @@ export const RecordFormBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('RecordForm')}
+      items={useRecordCollectionDataSourceItems('FormItem')}
     />
   );
 };
@@ -589,7 +632,22 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
       onClick={async ({ item }) => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
-          insert(s);
+          if (item.template.componentName === 'ReadPrettyFormItem') {
+            const blockSchema = createReadPrettyFormBlockSchema({
+              association,
+              collection: collection.name,
+              action: 'get',
+              useSourceId: '{{ useSourceIdFromParentRecord }}',
+              useParams: '{{ useParamsFromRecord }}',
+              template: s,
+            });
+            if (item.mode === 'reference') {
+              blockSchema['x-template-key'] = item.template.key;
+            }
+            insert(blockSchema);
+          } else {
+            insert(s);
+          }
         } else {
           insert(
             createReadPrettyFormBlockSchema({
@@ -602,7 +660,7 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('ReadPrettyForm')}
+      items={useRecordCollectionDataSourceItems('ReadPrettyFormItem')}
     />
   );
 };

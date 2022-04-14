@@ -11,7 +11,15 @@ export const ActionBar = observer((props: any) => {
   if (layout === 'one-column') {
     return (
       <div style={{ display: 'flex', ...style }} {...others}>
-        {props.children && <div style={{ marginRight: 8 }}>{props.children}</div>}
+        {props.children && (
+          <div style={{ marginRight: 8 }}>
+            <Space>
+              {fieldSchema.mapProperties((schema, key) => {
+                return <RecursionField key={key} name={key} schema={schema} />;
+              })}
+            </Space>
+          </div>
+        )}
         {render()}
       </div>
     );

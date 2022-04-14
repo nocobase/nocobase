@@ -100,7 +100,7 @@ export default {
   "Create collection": "创建数据表",
   "Collection display name": "数据表名称",
   "Collection name": "数据表标识",
-  "Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.": "随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头。",
+  "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头。",
   "Storage type": "存储类型",
   "Edit": "编辑",
   "Edit collection": "编辑数据表",
@@ -287,5 +287,6 @@ export default {
   "Template name": "模板名称",
   "Block type": "区块类型",
   "Action column": "操作列",
-  "Records per page": "每页显示数量"
+  "Records per page": "每页显示数量",
+  "(Fields only)": "（仅字段）"
 }

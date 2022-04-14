@@ -1,6 +1,7 @@
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import React, { useEffect } from 'react';
 import { useCollection } from '../../../collection-manager';
+import { useCompile } from '../../hooks';
 import { ActionBar } from '../action';
 
 export const TableField: any = observer((props) => {
@@ -8,9 +9,10 @@ export const TableField: any = observer((props) => {
   const { getField } = useCollection();
   const field = useField();
   const collectionField = getField(fieldSchema.name);
+  const compile = useCompile();
   useEffect(() => {
     if (!field.title) {
-      field.title = collectionField?.uiSchema?.title;
+      field.title = compile(collectionField?.uiSchema?.title);
     }
   }, []);
   return <div>{props.children}</div>;

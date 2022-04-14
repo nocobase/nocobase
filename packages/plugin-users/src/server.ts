@@ -51,6 +51,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           dataType: 'integer',
           dataIndex: 'state.currentUser.id',
           createOnly: true,
+          visible: true,
         });
         collection.setField('createdBy', {
           type: 'belongsTo',
@@ -64,6 +65,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           type: 'context',
           dataType: 'integer',
           dataIndex: 'state.currentUser.id',
+          visible: true,
         });
         collection.setField('updatedBy', {
           type: 'belongsTo',
@@ -85,10 +87,6 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
     publicActions.forEach((action) => this.app.acl.skip('users', action));
     loggedInActions.forEach((action) => this.app.acl.skip('users', action, 'logged-in'));
-
-    this.app.acl.skip('*', '*', (ctx) => {
-      return ctx.state.currentUser?.id == 1;
-    });
   }
 
   async load() {

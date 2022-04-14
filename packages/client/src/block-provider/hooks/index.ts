@@ -1,10 +1,11 @@
-import { useForm } from '@formily/react';
+import { useFieldSchema, useForm } from '@formily/react';
 import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useActionContext } from '../../schema-component';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useFormBlockContext } from '../FormBlockProvider';
+import { TableFieldResource } from '../TableFieldProvider';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -34,23 +35,73 @@ export const useCreateActionProps = () => {
   const { field } = useFormBlockContext();
   const history = useHistory();
   const { t } = useTranslation();
+  const actionSchema = useFieldSchema();
   return {
     async onClick() {
-      await form.submit();
+      const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
+      const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
+      if (!skipValidator) {
+        await form.submit();
+      }
       await resource.create({
-        values: form.values,
+        values: {
+          ...form.values,
+          ...overwriteValues,
+        },
       });
       __parent?.service?.refresh?.();
       setVisible?.(false);
-      if (visible !== undefined) {
+      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
+      if (!onSuccess?.successMessage) {
         return;
       }
-      const onSuccess = field?.decoratorProps?.onSuccess;
-      if (typeof onSuccess === 'function') {
-        onSuccess({ form });
-      } else {
+      Modal.success({
+        title: onSuccess?.successMessage,
+        onOk: async () => {
+          await form.reset();
+          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+            if (isURL(onSuccess.redirectTo)) {
+              window.location.href = onSuccess.redirectTo;
+            } else {
+              history.push(onSuccess.redirectTo);
+            }
+          }
+        },
+      });
+    },
+  };
+};
+
+export const useUpdateActionProps = () => {
+  const form = useForm();
+  const filterByTk = useFilterByTk();
+  const { resource, __parent } = useBlockRequestContext();
+  const { setVisible } = useActionContext();
+  const actionSchema = useFieldSchema();
+  const history = useHistory();
+  return {
+    async onClick() {
+      const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
+      const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
+      if (!skipValidator) {
+        await form.submit();
+      }
+      await resource.update({
+        filterByTk,
+        values: {
+          ...form.values,
+          ...overwriteValues,
+        },
+      });
+      __parent?.service?.refresh?.();
+      if (!(resource instanceof TableFieldResource)) {
+        __parent?.__parent?.service?.refresh?.();
+      }
+      setVisible?.(false);
+      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
+      if (onSuccess?.successMessage) {
         Modal.success({
-          title: onSuccess?.successMessage || t('Submitted successfully!'),
+          title: onSuccess?.successMessage,
           onOk: async () => {
             await form.reset();
             if (onSuccess?.redirecting && onSuccess?.redirectTo) {
@@ -63,26 +114,6 @@ export const useCreateActionProps = () => {
           },
         });
       }
-    },
-  };
-};
-
-export const useUpdateActionProps = () => {
-  const form = useForm();
-  const filterByTk = useFilterByTk();
-  const { resource, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
-  return {
-    async onClick() {
-      await form.submit();
-
-      await resource.update({
-        filterByTk,
-        values: form.values,
-      });
-      __parent?.service?.refresh?.();
-      __parent?.__parent?.service?.refresh?.();
-      setVisible?.(false);
     },
   };
 };
@@ -111,6 +142,7 @@ export const useBulkDestroyActionProps = () => {
       await resource.destroy({
         filterByTk: field.data?.selectedRowKeys,
       });
+      field.data.selectedRowKeys = [];
       service?.refresh?.();
     },
   };

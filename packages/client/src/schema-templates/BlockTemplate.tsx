@@ -19,7 +19,7 @@ export const BlockTemplate = observer((props: any) => {
   return (
     <div>
       <BlockTemplateContext.Provider value={{ dn, field, fieldSchema, template }}>
-        <RemoteSchemaComponent uid={template?.uid} />
+        <RemoteSchemaComponent noForm uid={template?.uid} />
       </BlockTemplateContext.Provider>
     </div>
   );

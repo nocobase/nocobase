@@ -283,6 +283,7 @@ export async function updateSingleAssociation(
     if (value instanceof Model) {
       await model[setAccessor](value, { context, transaction });
       model.setDataValue(key, value);
+
       if (!options.transaction) {
         await transaction.commit();
       }

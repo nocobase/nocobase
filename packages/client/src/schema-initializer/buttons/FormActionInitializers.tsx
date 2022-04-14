@@ -11,6 +11,42 @@ export const FormActionInitializers = {
           type: 'item',
           title: '{{t("Submit")}}',
           component: 'CreateSubmitActionInitializer',
+          schema: {
+            'x-action-settings': {
+              initialValues: {},
+              onSuccess: {
+                successMessage: 'Submitted successfully!',
+              },
+            },
+          },
+        },
+      ],
+    },
+    {
+      type: 'divider',
+    },
+    {
+      type: 'subMenu',
+      title: '{{t("Customize")}}',
+      children: [
+        {
+          type: 'item',
+          title: '{{t("Save action")}}',
+          component: 'CustomizeActionInitializer',
+          schema: {
+            title: '{{ t("Save") }}',
+            'x-component': 'Action',
+            'x-designer': 'Action.Designer',
+            'x-action-settings': {
+              initialValues: {},
+              onSuccess: {
+                successMessage: 'Submitted successfully!',
+              },
+            },
+            'x-component-props': {
+              useProps: '{{ useCreateActionProps }}',
+            },
+          },
         },
       ],
     },
@@ -29,6 +65,36 @@ export const CreateFormActionInitializers = {
           type: 'item',
           title: '{{t("Submit")}}',
           component: 'CreateSubmitActionInitializer',
+          schema: {
+            'x-action-settings': {
+              overwriteValues: {},
+            },
+          },
+        },
+      ],
+    },
+    {
+      type: 'divider',
+    },
+    {
+      type: 'subMenu',
+      title: '{{t("Customize")}}',
+      children: [
+        {
+          type: 'item',
+          title: '{{t("Save action")}}',
+          component: 'CustomizeActionInitializer',
+          schema: {
+            title: '{{ t("Save") }}',
+            'x-component': 'Action',
+            'x-designer': 'Action.Designer',
+            'x-action-settings': {
+              overwriteValues: {},
+            },
+            'x-component-props': {
+              useProps: '{{ useCreateActionProps }}',
+            },
+          },
         },
       ],
     },
@@ -47,6 +113,36 @@ export const UpdateFormActionInitializers = {
           type: 'item',
           title: '{{t("Submit")}}',
           component: 'UpdateSubmitActionInitializer',
+          schema: {
+            'x-action-settings': {
+              overwriteValues: {},
+            },
+          },
+        },
+      ],
+    },
+    {
+      type: 'divider',
+    },
+    {
+      type: 'subMenu',
+      title: '{{t("Customize")}}',
+      children: [
+        {
+          type: 'item',
+          title: '{{t("Save action")}}',
+          component: 'CustomizeActionInitializer',
+          schema: {
+            title: '{{ t("Save") }}',
+            'x-component': 'Action',
+            'x-designer': 'Action.Designer',
+            'x-action-settings': {
+              overwriteValues: {},
+            },
+            'x-component-props': {
+              useProps: '{{ useUpdateActionProps }}',
+            },
+          },
         },
       ],
     },

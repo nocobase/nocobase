@@ -43,7 +43,7 @@ export const CurrentUser = () => {
             </Menu>
           }
         >
-          <span style={{ border: 0, padding: '16px', color: 'rgba(255, 255, 255, 0.65)' }}>
+          <span style={{ cursor: 'pointer', border: 0, padding: '16px', color: 'rgba(255, 255, 255, 0.65)' }}>
             {data?.data?.nickname || data?.data?.email}
           </span>
         </Dropdown>
