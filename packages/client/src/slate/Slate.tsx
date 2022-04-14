@@ -20,10 +20,10 @@ const DEFAULT_VALUE = [
 Slate.RichText = connect(
   RichText,
   mapProps((props, field: Field) => {
-    const fieldValue = serialize(field.value)?.trim();
-    if (!fieldValue) {
-      field.value = undefined;
-    }
+    // const fieldValue = serialize(field.value)?.trim();
+    // if (!fieldValue) {
+    //   field.value = undefined;
+    // }
     return {
       ...props,
     };
