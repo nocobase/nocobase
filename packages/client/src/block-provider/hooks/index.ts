@@ -51,27 +51,23 @@ export const useCreateActionProps = () => {
       });
       __parent?.service?.refresh?.();
       setVisible?.(false);
-      if (visible !== undefined) {
+      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
+      if (!onSuccess?.successMessage) {
         return;
       }
-      const onSuccess = field?.decoratorProps?.onSuccess;
-      if (typeof onSuccess === 'function') {
-        onSuccess({ form });
-      } else {
-        Modal.success({
-          title: onSuccess?.successMessage || t('Submitted successfully!'),
-          onOk: async () => {
-            await form.reset();
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
-              } else {
-                history.push(onSuccess.redirectTo);
-              }
+      Modal.success({
+        title: onSuccess?.successMessage,
+        onOk: async () => {
+          await form.reset();
+          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+            if (isURL(onSuccess.redirectTo)) {
+              window.location.href = onSuccess.redirectTo;
+            } else {
+              history.push(onSuccess.redirectTo);
             }
-          },
-        });
-      }
+          }
+        },
+      });
     },
   };
 };
@@ -82,6 +78,7 @@ export const useUpdateActionProps = () => {
   const { resource, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
+  const history = useHistory();
   return {
     async onClick() {
       const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
@@ -101,6 +98,22 @@ export const useUpdateActionProps = () => {
         __parent?.__parent?.service?.refresh?.();
       }
       setVisible?.(false);
+      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
+      if (onSuccess?.successMessage) {
+        Modal.success({
+          title: onSuccess?.successMessage,
+          onOk: async () => {
+            await form.reset();
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                history.push(onSuccess.redirectTo);
+              }
+            }
+          },
+        });
+      }
     },
   };
 };

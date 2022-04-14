@@ -1,5 +1,6 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
@@ -7,6 +8,7 @@ export const ActionDesigner = (props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
+  const { t } = useTranslation();
   const isPopupAction = ['create', 'update', 'view'].includes(fieldSchema['x-action'] || '');
   return (
     <GeneralSchemaDesigner {...props}>
@@ -79,7 +81,7 @@ export const ActionDesigner = (props) => {
       )}
       {fieldSchema?.['x-action-settings'] && (
         <SchemaSettings.SwitchItem
-          title={'跳过表单校验'}
+          title={'跳过必填校验'}
           checked={!!fieldSchema?.['x-action-settings']?.skipValidator}
           onChange={(value) => {
             fieldSchema['x-action-settings'].skipValidator = value;
@@ -127,11 +129,66 @@ export const ActionDesigner = (props) => {
           }}
         />
       )}
+      {fieldSchema?.['x-action-settings'] && (
+        <SchemaSettings.ModalItem
+          title={t('After successful submission')}
+          initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
+          schema={
+            {
+              type: 'object',
+              title: t('After successful submission'),
+              properties: {
+                successMessage: {
+                  // default: t('Submitted successfully!'),
+                  title: 'Pop-up message',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input.TextArea',
+                  'x-component-props': {},
+                },
+                redirecting: {
+                  title: t('Then'),
+                  default: false,
+                  enum: [
+                    { label: t('Stay on current page'), value: false },
+                    { label: t('Redirect to'), value: true },
+                  ],
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Radio.Group',
+                  'x-component-props': {},
+                  'x-reactions': {
+                    target: 'redirectTo',
+                    fulfill: {
+                      state: {
+                        visible: '{{!!$self.value}}',
+                      },
+                    },
+                  },
+                },
+                redirectTo: {
+                  title: t('Link'),
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                  'x-component-props': {},
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={(onSuccess) => {
+            fieldSchema['x-action-settings']['onSuccess'] = onSuccess;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-action-settings': fieldSchema['x-action-settings'],
+              },
+            });
+          }}
+        />
+      )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
         breakRemoveOn={(s) => {
-          return s['x-component'] === 'Space' || s['x-component'] === 'ActionBar';
+          return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
         }}
       />
     </GeneralSchemaDesigner>
