@@ -9,7 +9,7 @@ module.exports = (opts) => {
     license: 'MIT',
     scripts: {
       nocobase:
-        'DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts',
+        'cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts',
       'start-client': 'cd packages/app/client && npm run start',
       'start-server': 'npm run nocobase start',
     },
@@ -19,6 +19,7 @@ module.exports = (opts) => {
     devDependencies: {
       'node-dev': '^7.4.2',
       'ts-node-dev': '^1.1.8',
+      'cross-env': '^7.0.3',
       'tsconfig-paths': '^3.14.1',
     },
   };

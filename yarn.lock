@@ -4102,7 +4102,7 @@ ansi-styles@^5.0.0:
   resolved "https://registry.npmjs.org/ansi-styles/-/ansi-styles-5.2.0.tgz#07449690ad45777d1924ac2abb2fc8895dba836b"
   integrity sha512-Cxwpt2SfTzTtXcfOlzGEee8O+c+MmUgGrNiBcXnuWxuFJHe6a5Hz7qwhwe5OgaSYI0IJvkLqWX1ASG+cJOkEiA==
 
-antd@^4.18.9:
+antd@^4.18.9, antd@^4.19.5:
   version "4.19.5"
   resolved "https://registry.npmjs.org/antd/-/antd-4.19.5.tgz#38d08f3e1391a7a69c2ca76f50968bb12ec2ac93"
   integrity sha512-C4H/VJqlVO5iMvHZyiV27R8SbPs4jsOKCGPhDXIHUry/RnUCbMmVeQaPRfUIxSI1NbqDflsuQfevPtz1svyIlg==
@@ -14004,6 +14004,15 @@ react-i18next@^11.15.1:
   version "11.15.1"
   resolved "https://registry.npmjs.org/react-i18next/-/react-i18next-11.15.1.tgz#1dec5f2bf2cf7bc5043e9fcb391c9d6e24bb9bfe"
   integrity sha512-lnje1uKu5XeM5MLvfbt1oygF+nEIZnpOM4Iu8bkx5ECD4XRYgi3SJDmolrp0EDxDHeK2GgFb+vEEK0hsZ9sjeA==
+  dependencies:
+    "@babel/runtime" "^7.14.5"
+    html-escaper "^2.0.2"
+    html-parse-stringify "^3.0.1"
+
+react-i18next@^11.16.6:
+  version "11.16.6"
+  resolved "https://registry.npmjs.org/react-i18next/-/react-i18next-11.16.6.tgz#e8a07802c391a55e1528673201a2727994787641"
+  integrity sha512-qa76GnvAPafNSxKNN/XMhdCkVN/9Lm+BpzW5+6FE2ctYUemhbglP7oklGmYiJXlG24p9itqzlJDbCi3SNd3jzA==
   dependencies:
     "@babel/runtime" "^7.14.5"
     html-escaper "^2.0.2"
