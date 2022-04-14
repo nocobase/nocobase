@@ -7,6 +7,7 @@ export default {
   model: 'RoleModel',
   filterTargetKey: 'name',
   // targetKey: 'name',
+  sortable: true,
   fields: [
     {
       type: 'uid',

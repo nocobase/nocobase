@@ -16,6 +16,12 @@ export async function checkAction(ctx, next) {
       appends: ['menuUiSchemas'],
     });
 
+    const anonymous = await ctx.db.getRepository('roles').findOne({
+      filter: {
+        name: 'anonymous',
+      },
+    });
+
     const role = ctx.app.acl.getRole(currentRole);
 
     ctx.body = {
@@ -25,6 +31,7 @@ export async function checkAction(ctx, next) {
       allowAll: currentRole === 'root',
       allowConfigure: roleInstance.get('allowConfigure'),
       allowMenuItemIds: roleInstance.get('menuUiSchemas').map((uiSchema) => uiSchema.get('x-uid')),
+      allowAnonymous: !!anonymous,
     };
   }
 
