@@ -25,6 +25,7 @@ export * from './page';
 export * from './password';
 export * from './radio';
 export * from './record-picker';
+export * from './rich-text';
 export * from './select';
 export * from './space';
 export * from './table';
@@ -34,3 +35,4 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 import './index.less';
+

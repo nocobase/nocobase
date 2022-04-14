@@ -26,6 +26,7 @@ const InternalField: React.FC = (props) => {
     if (!uiSchema) {
       return;
     }
+    setFieldProps('content', uiSchema['x-content']);
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);
@@ -39,6 +40,7 @@ const InternalField: React.FC = (props) => {
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
     field.component = [component, componentProps];
+    
     // if (interfaceType === 'input') {
     //   field.componentProps.ellipsis = true;
     // } else if (interfaceType === 'textarea') {

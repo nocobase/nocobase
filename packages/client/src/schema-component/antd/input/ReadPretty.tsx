@@ -12,6 +12,7 @@ type Composed = {
   TextArea: React.FC<
     TextAreaProps & { ellipsis?: any; text?: any; addonBefore?: any; suffix?: any; addonAfter?: any; autop?: boolean }
   >;
+  Html?: any;
 };
 
 export const ReadPretty: Composed = () => null;
@@ -42,6 +43,44 @@ ReadPretty.TextArea = (props) => {
       }}
     />
   );
+  console.log('value', value);
+  const content = (
+    <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
+      {ellipsis ? text || value : html}
+    </EllipsisWithTooltip>
+  );
+  return (
+    <div className={cls(prefixCls, props.className)} style={props.style}>
+      {props.addonBefore}
+      {props.prefix}
+      {content}
+      {props.suffix}
+      {props.addonAfter}
+    </div>
+  );
+};
+
+function convertToText(html: string) {
+  let temp = document.createElement('div');
+  temp.innerHTML = html;
+  const text = temp.innerText;
+  temp = null;
+  return text.replace(/[\n\r]/g, '');
+}
+
+ReadPretty.Html = (props) => {
+  const prefixCls = usePrefixCls('description-textarea', props);
+  const compile = useCompile();
+  const value = compile(props.value ?? '');
+  const { autop = true, ellipsis } = props;
+  const html = (
+    <div
+      dangerouslySetInnerHTML={{
+        __html: value,
+      }}
+    />
+  );
+  const text = convertToText(value);
   const content = (
     <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
       {ellipsis ? text || value : html}

@@ -10,11 +10,11 @@ export const richText: IField = {
   title: '{{t("Rich Text")}}',
   default: {
     interface: 'richText',
-    type: 'json',
+    type: 'text',
     // name,
     uiSchema: {
-      type: 'array',
-      'x-component': 'Slate.RichText',
+      type: 'string',
+      'x-component': 'RichText',
     },
   },
   properties: {
