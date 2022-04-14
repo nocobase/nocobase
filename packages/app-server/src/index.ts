@@ -1,5 +1,5 @@
+import { Application, readConfig } from '@nocobase/server';
 import * as path from 'path';
-import { readConfig, Application } from '@nocobase/server';
 
 (async () => {
   const config = await readConfig(path.join(__dirname, './config'));

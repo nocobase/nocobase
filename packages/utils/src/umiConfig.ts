@@ -1,7 +1,7 @@
 export function getUmiConfig() {
-  const { API_PORT, API_BASE_URL } = process.env;
+  const { SERVER_PORT, API_BASE_URL } = process.env;
   const API_BASE_PATH = process.env.API_BASE_PATH || '/api/';
-  const PROXY_TARGET_URL = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${API_PORT}`;
+  const PROXY_TARGET_URL = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${SERVER_PORT}`;
   const LOCAL_STORAGE_BASE_URL = process.env.LOCAL_STORAGE_BASE_URL || '/uploads';
 
   function getLocalStorageProxy() {

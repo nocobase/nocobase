@@ -1,4 +1,5 @@
 import { IDatabaseOptions } from '@nocobase/database';
+import { resolve } from 'path';
 
 const dialect = process.env.DB_DIALECT as any;
 
@@ -10,7 +11,7 @@ let databaseConfig: IDatabaseOptions = {
 if (dialect === 'sqlite') {
   databaseConfig = {
     ...databaseConfig,
-    storage: process.env.DB_STORAGE,
+    storage: resolve(process.cwd(), process.env.DB_STORAGE || 'db.sqlite'),
   };
 } else {
   databaseConfig = {
