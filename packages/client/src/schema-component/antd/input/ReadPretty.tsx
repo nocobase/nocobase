@@ -83,7 +83,7 @@ ReadPretty.Html = (props) => {
   const text = convertToText(value);
   const content = (
     <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
-      {ellipsis ? text || value : html}
+      {ellipsis ? text : html}
     </EllipsisWithTooltip>
   );
   return (
