@@ -77,30 +77,48 @@ export const ActionDesigner = (props) => {
           }}
         />
       )}
-      {fieldSchema['x-action-params'] && (
+      {fieldSchema?.['x-action-settings'] && (
+        <SchemaSettings.SwitchItem
+          title={'跳过表单校验'}
+          checked={!!fieldSchema?.['x-action-settings']?.skipValidator}
+          onChange={(value) => {
+            fieldSchema['x-action-settings'].skipValidator = value;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-action-settings': {
+                  ...fieldSchema['x-action-settings'],
+                },
+              },
+            });
+          }}
+        />
+      )}
+      {fieldSchema?.['x-action-settings'] && (
         <SchemaSettings.ModalItem
-          title={'表单默认值'}
+          title={'表单值'}
           schema={
             {
               type: 'object',
               properties: {
-                initialValues: {
+                overwriteValues: {
+                  title: '以下字段提交时，保存值为',
                   'x-decorator': 'FormItem',
                   'x-component': 'Input.TextArea',
-                  default: JSON.stringify(fieldSchema?.['x-action-params']?.initialValues),
+                  default: JSON.stringify(fieldSchema?.['x-action-settings']?.overwriteValues),
                 },
               },
             } as ISchema
           }
-          onSubmit={({ initialValues }) => {
+          onSubmit={({ overwriteValues }) => {
             try {
-              const values = JSON.parse(initialValues);
-              fieldSchema['x-action-params']['initialValues'] = values;
+              const values = JSON.parse(overwriteValues);
+              fieldSchema['x-action-settings'].overwriteValues = values;
               dn.emit('patch', {
                 schema: {
                   ['x-uid']: fieldSchema['x-uid'],
-                  'x-action-params': {
-                    initialValues: values,
+                  'x-action-settings': {
+                    ...fieldSchema['x-action-settings'],
                   },
                 },
               });
