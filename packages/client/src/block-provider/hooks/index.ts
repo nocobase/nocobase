@@ -38,12 +38,15 @@ export const useCreateActionProps = () => {
   const actionSchema = useFieldSchema();
   return {
     async onClick() {
-      await form.submit();
-      const initialValues = actionSchema?.['x-action-params']?.initialValues;
+      const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
+      const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
+      if (!skipValidator) {
+        await form.submit();
+      }
       await resource.create({
         values: {
           ...form.values,
-          ...initialValues,
+          ...overwriteValues,
         },
       });
       __parent?.service?.refresh?.();
@@ -81,13 +84,16 @@ export const useUpdateActionProps = () => {
   const actionSchema = useFieldSchema();
   return {
     async onClick() {
-      const initialValues = actionSchema?.['x-action-params']?.initialValues;
-      await form.submit();
+      const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
+      const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
+      if (!skipValidator) {
+        await form.submit();
+      }
       await resource.update({
         filterByTk,
         values: {
           ...form.values,
-          ...initialValues,
+          ...overwriteValues,
         },
       });
       __parent?.service?.refresh?.();
