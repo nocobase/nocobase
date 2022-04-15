@@ -65,7 +65,7 @@ export function parseStringValue(value: string, Types) {
 
   return {
     type,
-    options: paths.length ? (Types || VariableTypes)[type].parse(paths) : {}
+    options: paths.length ? (Types || VariableTypes)[type]?.parse(paths) : {}
   };
 }
 
@@ -252,7 +252,7 @@ export function Operand({
 
   const { type } = operand;
 
-  const { component, appendTypeValue } = Types[type];
+  const { component, appendTypeValue } = Types[type] || {};
   const VariableComponent = typeof component === 'function' ? component(operand) : NullRender;
 
   return (
