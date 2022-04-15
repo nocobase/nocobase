@@ -12,6 +12,7 @@ import { AddButton, useFlowContext } from '../WorkflowCanvas';
 import { nodeClass, nodeCardClass, nodeHeaderClass, nodeTitleClass, nodeBlockClass } from '../style';
 
 import query from './query';
+import create from './create';
 import condition from './condition';
 import parallel from './parallel';
 import calculation from './calculation';
@@ -59,6 +60,7 @@ export interface Instruction {
 export const instructions = new Registry<Instruction>();
 
 instructions.register('query', query);
+instructions.register('create', create);
 instructions.register('condition', condition);
 instructions.register('parallel', parallel);
 instructions.register('calculation', calculation);
@@ -159,54 +161,58 @@ export function NodeDefaultView(props) {
               type: 'void',
               properties: {
                 view: instruction.view,
-                config: {
-                  type: 'void',
-                  title: '配置节点',
-                  'x-component': 'Action.Link',
-                  'x-component-props': {
-                    type: 'primary',
-                  },
-                  properties: {
-                    drawer: {
+                ...(Object.keys(instruction.fieldset).length
+                  ? {
+                    config: {
                       type: 'void',
                       title: '配置节点',
-                      'x-component': 'Action.Drawer',
-                      'x-decorator': 'Form',
-                      'x-decorator-props': {
-                        useValues(options) {
-                          const node = useNodeContext();
-                          return useRequest(() => {
-                            return Promise.resolve({ data: node.config });
-                          }, options);
-                        }
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        type: 'primary',
                       },
                       properties: {
-                        ...instruction.fieldset,
-                        actions: {
+                        drawer: {
                           type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
-                          properties: {
-                            cancel: {
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
-                              },
-                            },
-                            submit: {
-                              title: '{{t("Submit")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                type: 'primary',
-                                useAction: useUpdateConfigAction,
-                              },
-                            },
+                          title: '配置节点',
+                          'x-component': 'Action.Drawer',
+                          'x-decorator': 'Form',
+                          'x-decorator-props': {
+                            useValues(options) {
+                              const node = useNodeContext();
+                              return useRequest(() => {
+                                return Promise.resolve({ data: node.config });
+                              }, options);
+                            }
                           },
-                        } as ISchema
+                          properties: {
+                            ...instruction.fieldset,
+                            actions: {
+                              type: 'void',
+                              'x-component': 'Action.Drawer.Footer',
+                              properties: {
+                                cancel: {
+                                  title: '{{t("Cancel")}}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    useAction: '{{ cm.useCancelAction }}',
+                                  },
+                                },
+                                submit: {
+                                  title: '{{t("Submit")}}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    type: 'primary',
+                                    useAction: useUpdateConfigAction,
+                                  },
+                                },
+                              },
+                            } as ISchema
+                          }
+                        }
                       }
                     }
                   }
-                }
+                : {})
               }
             }}
           />
