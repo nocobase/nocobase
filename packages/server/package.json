@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/server",
-  "version": "0.6.2-alpha.1",
+  "version": "0.6.2-alpha.2",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "MIT",
@@ -12,10 +12,10 @@
   "dependencies": {
     "@koa/cors": "^3.1.0",
     "@koa/router": "^9.4.0",
-    "@nocobase/acl": "0.6.2-alpha.1",
-    "@nocobase/actions": "0.6.2-alpha.1",
-    "@nocobase/database": "0.6.2-alpha.1",
-    "@nocobase/resourcer": "0.6.2-alpha.1",
+    "@nocobase/acl": "0.6.2-alpha.2",
+    "@nocobase/actions": "0.6.2-alpha.2",
+    "@nocobase/database": "0.6.2-alpha.2",
+    "@nocobase/resourcer": "0.6.2-alpha.2",
     "commander": "^8.1.0",
     "dotenv": "^8.2.0",
     "find-package-json": "^1.2.0",
