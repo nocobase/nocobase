@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notifications",
-  "version": "0.6.0",
+  "version": "0.6.1-alpha.0",
   "main": "lib/index.js",
   "license": "MIT",
   "scripts": {
@@ -12,7 +12,7 @@
     "nodemailer": "^6.6.1"
   },
   "devDependencies": {
-    "@nocobase/test": "0.6.0",
+    "@nocobase/test": "0.6.1-alpha.0",
     "@types/nodemailer": "6.4.4",
     "nodemailer-mock": "^1.5.11"
   },
