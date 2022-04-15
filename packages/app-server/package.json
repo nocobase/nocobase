@@ -11,7 +11,19 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/server": "0.6.2-alpha.1"
+    "@nocobase/server": "0.6.2-alpha.1",
+    "@nocobase/plugin-acl":  "0.6.2-alpha.1",
+    "@nocobase/plugin-china-region":  "0.6.2-alpha.1",
+    "@nocobase/plugin-collection-manager":  "0.6.2-alpha.1",
+    "@nocobase/plugin-error-handler":  "0.6.2-alpha.1",
+    "@nocobase/plugin-file-manager":  "0.6.2-alpha.1",
+    "@nocobase/plugin-system-settings":  "0.6.2-alpha.1",
+    "@nocobase/plugin-ui-routes-storage":  "0.6.2-alpha.1",
+    "@nocobase/plugin-ui-schema-storage":  "0.6.2-alpha.1",
+    "@nocobase/plugin-users":  "0.6.2-alpha.1",
+    "@nocobase/plugin-workflow":  "0.6.2-alpha.1",
+    "@nocobase/plugin-client":  "0.6.2-alpha.1",
+    "@nocobase/database":  "0.6.2-alpha.1"
   },
   "repository": {
     "type": "git",

@@ -4,15 +4,20 @@
     "moduleResolution": "node",
     "jsx": "react",
     "module": "commonjs",
-    "target": "ES6",
+    "target": "es6",
     "allowJs": false,
     "noUnusedLocals": false,
-    "removeComments": true,
     "preserveConstEnums": true,
+    "skipLibCheck": true,
     "sourceMap": true,
+    "inlineSources": true,
+    "resolveJsonModule": true,
     "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
-    "paths": {}
+    "baseUrl": ".",
+    "paths": {
+      "@nocobase/*": ["packages/*/src"]
+    }
   }
 }

@@ -1,3 +1,4 @@
+const path = require('path');
 const dialectLib = (dialect) => {
   if (dialect === 'sqlite') {
     return {
@@ -19,34 +20,18 @@ const dialectLib = (dialect) => {
 };
 
 module.exports = (opts) => {
-  const { version, dbOptions } = opts;
+  const { dbOptions, projectPath } = opts;
+  const templateJsonPath = path.join(projectPath, 'packages/app/server/package.json');
+  const templateJson = require(templateJsonPath);
 
   return {
+    ...templateJson,
     name: 'server',
     version: '0.1.0',
     main: 'index.js',
     dependencies: {
+      ...templateJson.dependencies,
       ...dialectLib(dbOptions.dialect),
-      '@nocobase/plugin-acl': version,
-      '@nocobase/plugin-china-region': version,
-      '@nocobase/plugin-collection-manager': version,
-      '@nocobase/plugin-error-handler': version,
-      '@nocobase/plugin-file-manager': version,
-      '@nocobase/plugin-system-settings': version,
-      '@nocobase/plugin-ui-routes-storage': version,
-      '@nocobase/plugin-ui-schema-storage': version,
-      '@nocobase/plugin-users': version,
-      '@nocobase/plugin-workflow': version,
-      '@nocobase/plugin-client': version,
-      '@nocobase/database': version,
-      '@nocobase/server': version,
-      dotenv: '^16.0.0',
-    },
-    devDependencies: {
-      '@types/node': '^17.0.23',
-      'node-dev': '^7.4.2',
-      'ts-node': '^10.7.0',
-      typescript: '^4.6.3',
     },
   };
 };

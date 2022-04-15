@@ -70,7 +70,7 @@ async function createApp(directory, options) {
   await fse.writeJson(
     join(projectPath, 'packages/app/server/package.json'),
     createServerPackageJson({
-      version: '^0.6.0-alpha.0',
+      projectPath,
       dbOptions,
     }),
     {

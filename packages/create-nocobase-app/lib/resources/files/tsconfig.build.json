@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "moduleResolution": "node",
     "jsx": "react",
     "module": "commonjs",
@@ -11,10 +12,8 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "inlineSources": true,
-    "resolveJsonModule": true,
     "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
-    "baseUrl": ".",
   }
 }

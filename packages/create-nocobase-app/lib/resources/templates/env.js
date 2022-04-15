@@ -10,14 +10,15 @@ module.exports = (options) => {
   const tmpl = fs.readFileSync(path.join(__dirname, 'env.template'));
   const compile = _.template(tmpl);
 
-  const envContent = compile({
-    jwtSecret: generateASecret(),
-  });
-
   const dbEnvs = Object.keys(dbOptions)
     .map((keyName) => [`DB_${keyName.toUpperCase()}`, dbOptions[keyName]])
     .map((item) => `${item[0]}=${item[1] || ''}`)
     .join('\n');
 
-  return `${envContent}\n${dbEnvs}\n`;
+  const envContent = compile({
+    jwtSecret: generateASecret(),
+    dbEnvs,
+  });
+
+  return envContent;
 };
