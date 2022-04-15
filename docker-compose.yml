@@ -3,6 +3,15 @@ networks:
   nocobase:
     driver: bridge
 services:
+  verdaccio:
+    image: verdaccio/verdaccio
+    networks:
+      - nocobase
+    environment:
+      VERDACCIO_PORT: ${VERDACCIO_PORT}
+    restart: always
+    ports:
+      - "${VERDACCIO_PORT}:${VERDACCIO_PORT}"
   adminer:
     build:
       context: .
