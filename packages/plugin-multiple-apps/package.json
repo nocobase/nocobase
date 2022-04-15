@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-multiple-apps",
-  "version": "0.6.1-alpha.0",
+  "version": "0.6.2-alpha.0",
   "main": "lib/index.js",
   "license": "MIT",
   "scripts": {
@@ -9,6 +9,6 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/server": "0.6.1-alpha.0"
+    "@nocobase/server": "0.6.2-alpha.0"
   }
 }

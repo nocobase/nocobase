@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-ui-schema-storage",
-  "version": "0.6.1-alpha.0",
+  "version": "0.6.2-alpha.0",
   "main": "lib/index.js",
   "license": "MIT",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "@formily/json-schema": "^2.0.15",
-    "@nocobase/test": "0.6.1-alpha.0"
+    "@nocobase/test": "0.6.2-alpha.0"
   },
   "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
 }
