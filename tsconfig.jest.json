@@ -9,7 +9,15 @@
     "module": "commonjs",
     "target": "es6",
     "paths": {
-      "@nocobase/*": ["./packages/*/src"]
+      "@nocobase/app-*": [
+        "packages/app/*/src"
+      ],
+      "@nocobase/plugin-*": [
+        "packages/plugins/*/src"
+      ],
+      "@nocobase/*": [
+        "packages/core/*/src"
+      ]
     }
   },
   "exclude": ["./packages/*/esm", "./packages/*/lib"]
