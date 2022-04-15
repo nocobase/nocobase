@@ -17,7 +17,15 @@
     "downlevelIteration": true,
     "baseUrl": ".",
     "paths": {
-      "@nocobase/*": ["packages/*/src"]
+      "@nocobase/app-*": [
+        "packages/app/*/src"
+      ],
+      "@nocobase/plugin-*": [
+        "packages/plugins/*/src"
+      ],
+      "@nocobase/*": [
+        "packages/core/*/src"
+      ]
     }
   }
 }

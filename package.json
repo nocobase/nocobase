@@ -2,16 +2,18 @@
   "name": "root",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/app/*",
+    "packages/core/*",
+    "packages/plugins/*"
   ],
   "scripts": {
     "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
-    "start-pm2": "yarn pm2-runtime start packages/api/lib/index.js",
+    "start-pm2": "yarn pm2-runtime start packages/app/server/lib/index.js",
     "start-docs": "dumi dev",
     "bootstrap": "lerna bootstrap",
-    "clean": "rimraf -rf packages/*/{lib,esm,dist} && lerna clean",
-    "nocobase": "cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app-server/src/index.ts",
-    "start-client": "cd packages/app-client && npm run start",
+    "clean": "rimraf -rf packages/{app,core,plugins}/*/{lib,esm,dist} && lerna clean",
+    "nocobase": "cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts",
+    "start-client": "cd packages/app/client && npm run start",
     "start-server": "npm run nocobase start",
     "build": "lerna run build",
     "build-docs": "dumi build",
