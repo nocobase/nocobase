@@ -16,7 +16,7 @@ const useDef = (options) => {
 
 export const Filter: any = observer((props: any) => {
   const { useDataSource = useDef } = props;
-  const { options, dynamicComponent } = useProps(props);
+  const { options, dynamicComponent, className } = useProps(props);
   const field = useField<ObjectFieldModel>();
   const fieldSchema = useFieldSchema();
   useDataSource({
@@ -25,7 +25,7 @@ export const Filter: any = observer((props: any) => {
     },
   });
   return (
-    <div>
+    <div className={className}>
       <FilterContext.Provider
         value={{ field, fieldSchema, dynamicComponent, options: options || field.dataSource || [] }}
       >
