@@ -23,15 +23,7 @@ module.exports = (opts) => {
       '@types/react': '^17.0.0',
       '@types/react-dom': '^17.0.0',
     },
-    config: {
-      ghooks: {
-        'commit-msg': 'commitlint --edit',
-      },
-    },
     devDependencies: {
-      '@commitlint/cli': '^16.1.0',
-      '@commitlint/config-conventional': '^16.0.0',
-      '@commitlint/prompt-cli': '^16.1.0',
       '@testing-library/react': '^12.1.2',
       '@types/jest': '^26.0.0',
       '@types/node': '^12.6.8',
@@ -52,7 +44,6 @@ module.exports = (opts) => {
       'eslint-plugin-react': '^7.14.2',
       'eslint-plugin-react-hooks': '^4.2.0',
       'eslint-plugin-vue': '^7.0.1',
-      ghooks: '^2.0.4',
       jest: '^26.0.0',
       'jest-codemods': '^0.19.1',
       'jest-dom': '^3.1.2',
