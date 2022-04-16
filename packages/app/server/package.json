@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-server",
-  "version": "0.6.2-alpha.6",
+  "version": "0.6.2-alpha.7",
   "description": "",
   "license": "MIT",
   "main": "./lib/index.js",
@@ -11,19 +11,19 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/database": "0.6.2-alpha.6",
-    "@nocobase/plugin-acl": "0.6.2-alpha.6",
-    "@nocobase/plugin-china-region": "0.6.2-alpha.6",
-    "@nocobase/plugin-client": "0.6.2-alpha.6",
-    "@nocobase/plugin-collection-manager": "0.6.2-alpha.6",
-    "@nocobase/plugin-error-handler": "0.6.2-alpha.6",
-    "@nocobase/plugin-file-manager": "0.6.2-alpha.6",
-    "@nocobase/plugin-system-settings": "0.6.2-alpha.6",
-    "@nocobase/plugin-ui-routes-storage": "0.6.2-alpha.6",
-    "@nocobase/plugin-ui-schema-storage": "0.6.2-alpha.6",
-    "@nocobase/plugin-users": "0.6.2-alpha.6",
-    "@nocobase/plugin-workflow": "0.6.2-alpha.6",
-    "@nocobase/server": "0.6.2-alpha.6"
+    "@nocobase/database": "0.6.2-alpha.7",
+    "@nocobase/plugin-acl": "0.6.2-alpha.7",
+    "@nocobase/plugin-china-region": "0.6.2-alpha.7",
+    "@nocobase/plugin-client": "0.6.2-alpha.7",
+    "@nocobase/plugin-collection-manager": "0.6.2-alpha.7",
+    "@nocobase/plugin-error-handler": "0.6.2-alpha.7",
+    "@nocobase/plugin-file-manager": "0.6.2-alpha.7",
+    "@nocobase/plugin-system-settings": "0.6.2-alpha.7",
+    "@nocobase/plugin-ui-routes-storage": "0.6.2-alpha.7",
+    "@nocobase/plugin-ui-schema-storage": "0.6.2-alpha.7",
+    "@nocobase/plugin-users": "0.6.2-alpha.7",
+    "@nocobase/plugin-workflow": "0.6.2-alpha.7",
+    "@nocobase/server": "0.6.2-alpha.7"
   },
   "repository": {
     "type": "git",
