@@ -20,7 +20,7 @@ const getDatabaseOptionsFromCommandOptions = (commandOptions) => {
   ) {
     return {
       dialect: 'sqlite',
-      storage: resolve(process.cwd(), commandOptions.dbstorage || 'db.sqlite'),
+      storage: commandOptions.dbstorage || 'db.sqlite',
     };
   }
 

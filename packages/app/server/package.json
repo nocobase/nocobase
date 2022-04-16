@@ -28,6 +28,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
-    "directory": "packages/app-server"
+    "directory": "packages/app/server"
   }
 }

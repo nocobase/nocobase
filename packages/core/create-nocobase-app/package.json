@@ -7,11 +7,6 @@
     "bin",
     "templates"
   ],
-  "repository": {
-    "type": "git",
-    "url": "github:nocobase/nocobase",
-    "directory": "packages/create-nocobase-app"
-  },
   "license": "MIT",
   "dependencies": {
     "@nocobase/utils": "^0.5.0-alpha.38",
@@ -23,5 +18,10 @@
     "ora": "^5.4.1",
     "tar": "^6.1.11"
   },
-  "bin": "./bin/create-nocobase-app.js"
+  "bin": "./bin/create-nocobase-app.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/core/create-nocobase-app"
+  }
 }

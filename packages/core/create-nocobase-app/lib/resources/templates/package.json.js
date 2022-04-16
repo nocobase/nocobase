@@ -8,10 +8,8 @@ module.exports = (opts) => {
     license: 'MIT',
     scripts: {
       start: 'concurrently "npm run start-server" "npm run start-client"',
-      'start-pm2': 'yarn pm2-runtime start packages/api/lib/index.js',
-      'start-docs': 'dumi dev',
       bootstrap: 'lerna bootstrap',
-      clean: 'rimraf -rf packages/app/*/{lib,esm,dist} && lerna clean',
+      clean: 'rimraf -rf packages/{app,plugins}/*/{lib,esm,dist} && lerna clean',
       nocobase:
         'cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts',
       'start-client': 'cd packages/app/client && npm run start',
@@ -44,7 +42,6 @@ module.exports = (opts) => {
       concurrently: '^7.0.0',
       'cross-env': '^7.0.3',
       dotenv: '^10.0.0',
-      dumi: '^1.1.33',
       eslint: '^7.14.0',
       'eslint-config-prettier': '^7.0.0',
       'eslint-plugin-import': '^2.13.0',
@@ -63,7 +60,6 @@ module.exports = (opts) => {
       'jest-styled-components': '6.3.3',
       'jest-watch-lerna-packages': '^1.1.0',
       lerna: '^4.0.0',
-      pm2: '^5.2.0',
       prettier: '^2.2.1',
       'pretty-format': '^24.0.0',
       'pretty-quick': '^3.1.0',
