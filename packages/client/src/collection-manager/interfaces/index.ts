@@ -7,6 +7,7 @@ export * from './createdBy';
 export * from './datetime';
 export * from './email';
 export * from './icon';
+export * from './id';
 export * from './input';
 export * from './linkTo';
 export * from './markdown';
