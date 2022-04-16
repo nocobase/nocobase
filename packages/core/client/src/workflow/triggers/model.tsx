@@ -72,11 +72,15 @@ export default {
     const collection = collections.find(item => item.name === workflow.config.collection) ?? { fields: [] };
 
     return (
-      <Select value={options?.path.replace(/^data\./, '')} placeholder="选择字段" onChange={path => {
-        onChange({ type, options: { ...options, path: `data.${path}` } });
-      }}>
+      <Select
+        placeholder="选择字段"
+        value={options?.path?.replace(/^data\./, '')}
+        onChange={(path) => {
+          onChange({ type, options: { ...options, path: `data.${path}` } });
+        }}
+      >
         {collection.fields
-          .filter(field => BaseTypeSet.has(field.uiSchema.type))
+          .filter(field => BaseTypeSet.has(field?.uiSchema?.type))
           .map(field => (
           <Select.Option key={field.name} value={field.name}>{t(field.uiSchema.title)}</Select.Option>
         ))}

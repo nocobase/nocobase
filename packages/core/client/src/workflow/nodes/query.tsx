@@ -11,7 +11,7 @@ import { useFlowContext } from '../WorkflowCanvas';
 import { Operand, parseStringValue, VariableTypes, VariableTypesContext, BaseTypeSet } from '../calculators';
 
 export default {
-  title: '数据查询',
+  title: '查询',
   type: 'query',
   group: 'model',
   fieldset: {
