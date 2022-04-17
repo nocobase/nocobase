@@ -18,7 +18,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
   const [record, setRecord] = useState({});
-  return (
+  return collectionField ? (
     <div>
       <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
         <CollectionProvider name={collectionField.target}>
@@ -48,5 +48,5 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
         </CollectionProvider>
       </BlockAssociationContext.Provider>
     </div>
-  );
+  ) : null;
 });
