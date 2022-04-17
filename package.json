@@ -2,21 +2,26 @@
   "name": "root",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/app/*",
+    "packages/core/*",
+    "packages/plugins/*"
   ],
   "scripts": {
     "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
-    "start-pm2": "yarn pm2-runtime start packages/api/lib/index.js",
+    "start-pm2": "yarn pm2-runtime start packages/app/server/lib/index.js",
     "start-docs": "dumi dev",
     "bootstrap": "lerna bootstrap",
-    "clean": "rimraf -rf packages/*/{lib,esm,dist} && lerna clean",
-    "nocobase": "ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/api/src/index.ts",
-    "start-client": "cd packages/app && npm run start",
-    "start-server": "ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/api/src/index.ts",
+    "clean": "rimraf -rf packages/{app,core,plugins}/*/{lib,esm,dist} && lerna clean",
+    "nocobase": "cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts",
+    "start-client": "cd packages/app/client && npm run start",
+    "start-server": "npm run nocobase start",
     "build": "lerna run build",
     "build-docs": "dumi build",
     "test": "node ./jest.cli.js -i",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
+    "release:force": "lerna publish from-package --yes",
+    "release": "lerna publish"
   },
   "resolutions": {
     "@types/react": "^17.0.0",
@@ -44,7 +49,7 @@
     "antd": "^4.18.9",
     "classnames": "^2.3.1",
     "concurrently": "^7.0.0",
-    "cross-env": "^5.2.0",
+    "cross-env": "^7.0.3",
     "dotenv": "^10.0.0",
     "dumi": "^1.1.33",
     "eslint": "^7.14.0",

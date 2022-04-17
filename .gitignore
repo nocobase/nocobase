@@ -1,5 +1,6 @@
 node_modules/
 lib/
+!packages/core/create-nocobase-app/lib
 esm/
 .env
 .DS_Store
@@ -13,3 +14,4 @@ coverage
 /uploads
 .env.test
 docs-dist/
+.npmrc
