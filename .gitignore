@@ -15,3 +15,4 @@ coverage
 .env.test
 docs-dist/
 .npmrc
+dist/
