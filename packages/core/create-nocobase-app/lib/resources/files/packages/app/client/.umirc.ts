@@ -1,4 +1,4 @@
-import { getUmiConfig } from '@nocobase/utils';
+import { getUmiConfig } from '@nocobase/utils/umiConfig';
 import dotenv from 'dotenv';
 import { resolve } from 'path';
 import { defineConfig } from 'umi';
