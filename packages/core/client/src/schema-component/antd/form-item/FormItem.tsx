@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
@@ -14,6 +15,9 @@ export const FormItem: any = (props) => {
   return (
     <BlockItem className={'nb-form-item'}>
       <Item
+       className={`${css`& .ant-space{
+        flex-wrap:wrap;
+      }`}`}
         {...props}
         extra={
           field.description ? (
