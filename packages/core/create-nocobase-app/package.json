@@ -1,0 +1,27 @@
+{
+  "name": "create-nocobase-app",
+  "version": "0.6.2-alpha.8",
+  "main": "lib/index.js",
+  "files": [
+    "lib",
+    "bin",
+    "templates"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@nocobase/utils": "^0.5.0-alpha.38",
+    "axios": "^0.26.1",
+    "chalk": "^4.1.1",
+    "commander": "^8.2.0",
+    "execa": "5",
+    "fs-extra": "^10.0.1",
+    "ora": "^5.4.1",
+    "tar": "^6.1.11"
+  },
+  "bin": "./bin/create-nocobase-app.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/core/create-nocobase-app"
+  }
+}

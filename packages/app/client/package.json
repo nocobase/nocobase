@@ -1,0 +1,26 @@
+{
+  "name": "@nocobase/app-client",
+  "version": "0.6.2-alpha.8",
+  "scripts": {
+    "start": "umi dev",
+    "build": "umi build",
+    "postinstall": "node ./umi.cli.js generate tmp",
+    "test": "umi-test",
+    "test:coverage": "umi-test --coverage"
+  },
+  "devDependencies": {
+    "@nocobase/client": "0.6.2-alpha.8",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "@umijs/test": "^3.5.20",
+    "antd": "^4.19.5",
+    "react": "17.x",
+    "react-dom": "17.x",
+    "umi": "^3.5.20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/app/client"
+  }
+}
