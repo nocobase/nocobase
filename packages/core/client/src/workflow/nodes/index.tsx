@@ -13,10 +13,37 @@ import { nodeClass, nodeCardClass, nodeHeaderClass, nodeTitleClass, nodeBlockCla
 
 import query from './query';
 import create from './create';
+import update from './update';
+import destroy from './destroy';
 import condition from './condition';
 import parallel from './parallel';
 import calculation from './calculation';
 
+
+
+export interface Instruction {
+  title: string;
+  type: string;
+  group: string;
+  options?: { label: string; value: any; key: string }[];
+  fieldset: { [key: string]: ISchema };
+  view?: ISchema;
+  scope?: { [key: string]: any };
+  components?: { [key: string]: any };
+  render?(props): React.ReactElement;
+  endding?: boolean;
+  getter?(node: any): React.ReactElement;
+};
+
+export const instructions = new Registry<Instruction>();
+
+instructions.register('query', query);
+instructions.register('create', create);
+instructions.register('update', update);
+instructions.register('destroy', destroy);
+instructions.register('condition', condition);
+instructions.register('parallel', parallel);
+instructions.register('calculation', calculation);
 
 function useUpdateConfigAction() {
   const form = useForm();
@@ -40,30 +67,6 @@ function useUpdateConfigAction() {
     },
   };
 };
-
-
-
-export interface Instruction {
-  title: string;
-  type: string;
-  group: string;
-  options?: { label: string; value: any; key: string }[];
-  fieldset: { [key: string]: ISchema };
-  view?: ISchema;
-  scope?: { [key: string]: any };
-  components?: { [key: string]: any };
-  render?(props): React.ReactElement;
-  endding?: boolean;
-  getter?(node: any): React.ReactElement;
-};
-
-export const instructions = new Registry<Instruction>();
-
-instructions.register('query', query);
-instructions.register('create', create);
-instructions.register('condition', condition);
-instructions.register('parallel', parallel);
-instructions.register('calculation', calculation);
 
 const NodeContext = React.createContext(null);
 

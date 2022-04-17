@@ -1,10 +1,13 @@
 import React from "react";
+import { observer } from "@formily/react";
+import { FormItem } from "@formily/antd";
 import { Cascader, DatePicker, Input, InputNumber, Select } from "antd";
 import { css } from "@emotion/css";
 
 import { instructions, useNodeContext } from "./nodes";
 import { useFlowContext } from "./WorkflowCanvas";
 import { triggers } from "./triggers";
+import { SchemaComponent, useCompile } from "..";
 
 function NullRender() {
   return null;
@@ -325,3 +328,101 @@ export function Calculation({ calculator, operands = [], onChange }) {
     </VariableTypesContext.Provider>
   );
 }
+
+export function VariableComponent({ value, onChange, renderSchemaComponent }) {
+  const VTypes = { ...VariableTypes,
+    constant: {
+      title: '常量',
+      value: 'constant',
+      options: undefined
+    }
+  };
+
+  const operand = typeof value === 'string'
+    ? parseStringValue(value, VTypes)
+    : { type: 'constant', value };
+
+  return (
+    <VariableTypesContext.Provider value={VTypes}>
+      <Operand
+        value={operand}
+        onChange={(next) => {
+          if (next.type !== operand.type && next.type === 'constant') {
+            onChange(null);
+          } else {
+            const { stringify } = VTypes[next.type];
+            onChange(stringify(next));
+          }
+        }}
+      >
+        {operand.type === 'constant' ? renderSchemaComponent() : null}
+      </Operand>
+    </VariableTypesContext.Provider>
+  );
+}
+
+// NOTE: observer for watching useProps
+export const CollectionFieldset = observer(({ value, onChange, useProps }: any) => {
+  const { fields } = useProps();
+  const compile = useCompile();
+
+  const VTypes = { ...VariableTypes,
+    constant: {
+      title: '常量',
+      value: 'constant',
+      options: undefined
+    }
+  };
+
+  return (
+    <fieldset className={css`
+      margin-top: .5em;
+
+      .ant-formily-item{
+        .ant-formily-item-label{
+          line-height: 32px;
+        }
+
+        .ant-select,
+        .ant-cascader-picker,
+        .ant-picker,
+        .ant-input-number,
+        .ant-input-affix-wrapper{
+          width: auto;
+        }
+      }
+    `}>
+      {fields.length
+        ? fields.map(field => {
+            const operand = typeof value[field.name] === 'string'
+              ? parseStringValue(value[field.name], VTypes)
+              : { type: 'constant', value: value[field.name] };
+
+            return (
+              <FormItem label={compile(field.title)}>
+                <VariableTypesContext.Provider value={VTypes}>
+                  <Operand
+                    value={operand}
+                    onChange={(next) => {
+                      if (next.type !== operand.type && next.type === 'constant') {
+                        onChange({ ...value, [field.name]: null });
+                      } else {
+                        const { stringify } = VTypes[next.type];
+                        onChange({ ...value, [field.name]: stringify(next) });
+                      }
+                    }}
+                  >
+                    {operand.type === 'constant'
+                      ? <SchemaComponent schema={field.schema} />
+                      : null
+                    }
+                  </Operand>
+                </VariableTypesContext.Provider>
+              </FormItem>
+            );
+          })
+        : <p>请先选择数据表</p>
+      }
+    </fieldset>
+  );
+});

@@ -1,30 +1,17 @@
 import React from 'react';
-import { observer, useForm } from '@formily/react';
-import { action } from '@formily/reactive';
 import { Select } from 'antd';
-import { t } from 'i18next';
-import { css } from '@emotion/css';
 
-import { SchemaComponent, useCollectionManager } from '../..';
-import { useCollectionFilterOptions } from '../../collection-manager/action-hooks';
+import { useCollectionDataSource, useCollectionManager, useCompile } from '../..';
 import { useFlowContext } from '../WorkflowCanvas';
-import { Operand, parseStringValue, VariableTypes, VariableTypesContext, BaseTypeSet } from '../calculators';
-import { FormItem } from '@formily/antd';
+import { collection, values } from '../schemas/collection';
+import { BaseTypeSet, CollectionFieldset } from '../calculators';
 
 export default {
-  title: '新增',
+  title: '新增数据',
   type: 'create',
   group: 'model',
   fieldset: {
-    collection: {
-      type: 'string',
-      title: '数据表',
-      name: 'collection',
-      required: true,
-      'x-reactions': ['{{useCollectionDataSource()}}'],
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-    },
+    collection,
     // multiple: {
     //   type: 'boolean',
     //   title: '多条数据',
@@ -38,21 +25,10 @@ export default {
     params: {
       type: 'object',
       name: 'params',
-      title: '数据',
+      title: '',
       'x-decorator': 'FormItem',
       properties: {
-        values: {
-          type: 'object',
-          title: '',
-          name: 'values',
-          'x-component': 'DynamicFieldset',
-          'x-component-props': {
-            useProps() {
-              const { values } = useForm();
-              return { fields: useCollectionFilterOptions(values.collection) };
-            }
-          }
-        }
+        values
       }
     }
   },
@@ -60,82 +36,13 @@ export default {
 
   },
   scope: {
-    useCollectionDataSource() {
-      return (field: any) => {
-        const { collections = [] } = useCollectionManager();
-        action.bound((data: any) => {
-          field.dataSource = data.map(item => ({
-            label: t(item.title),
-            value: item.name
-          }));
-        })(collections);
-      }
-    }
+    useCollectionDataSource
   },
   components: {
-    // NOTE: observer for watching useProps
-    DynamicFieldset: observer(({ value, onChange, useProps }: any) => {
-      const { fields } = useProps();
-
-      const VTypes = { ...VariableTypes,
-        constant: {
-          title: '常量',
-          value: 'constant',
-          options: undefined
-        }
-      };
-
-      return (
-        <fieldset className={css`
-          margin-top: .5em;
-
-          .ant-formily-item{
-            .ant-formily-item-label{
-              line-height: 32px;
-            }
-
-            .ant-select,
-            .ant-cascader-picker,
-            .ant-picker,
-            .ant-input-number,
-            .ant-input-affix-wrapper{
-              width: auto;
-            }
-          }
-        `}>
-          {fields.map(field => {
-            const operand = typeof value[field.name] === 'string'
-              ? parseStringValue(value[field.name], VTypes)
-              : { type: 'constant', value: value[field.name] };
-
-            return (
-              <FormItem label={field.title}>
-                <VariableTypesContext.Provider value={VTypes}>
-                  <Operand
-                    value={operand}
-                    onChange={(next) => {
-                      if (next.type !== operand.type && next.type === 'constant') {
-                        onChange({ ...value, [field.name]: null });
-                      } else {
-                        const { stringify } = VTypes[next.type];
-                        onChange({ ...value, [field.name]: stringify(next) });
-                      }
-                    }}
-                  >
-                    {operand.type === 'constant'
-                      ? <SchemaComponent schema={field.schema} />
-                      : null
-                    }
-                  </Operand>
-                </VariableTypesContext.Provider>
-              </FormItem>
-            );
-          })}
-        </fieldset>
-      );
-    })
+    CollectionFieldset
   },
   getter({ type, options, onChange }) {
+    const compile = useCompile();
     const { collections = [] } = useCollectionManager();
     const { nodes } = useFlowContext();
     const { config } = nodes.find(n => n.id == options.nodeId);
@@ -148,7 +55,7 @@ export default {
         {collection.fields
           .filter(field => BaseTypeSet.has(field.uiSchema.type))
           .map(field => (
-          <Select.Option key={field.name} value={field.name}>{t(field.uiSchema.title)}</Select.Option>
+          <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema.title)}</Select.Option>
         ))}
       </Select>
     );

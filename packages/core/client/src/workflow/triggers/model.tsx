@@ -1,27 +1,18 @@
 import React from 'react';
-import { action } from '@formily/reactive';
-import { t } from 'i18next';
 import { Select } from 'antd';
 
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionDataSource, useCollectionManager } from '../../collection-manager';
+import { useCompile } from '../../schema-component';
+
 import { useFlowContext } from '../WorkflowCanvas';
 import { BaseTypeSet } from '../calculators';
-import { useForm } from '@formily/react';
-import { useCollectionFilterOptions } from '../../collection-manager/action-hooks';
+import { collection, filter } from '../schemas/collection';
 
 export default {
   title: '数据表事件',
   type: 'model',
   fieldset: {
-    collection: {
-      type: 'string',
-      title: '数据表',
-      name: 'collection',
-      required: true,
-      'x-reactions': ['{{useAsyncDataSource()}}'],
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-    },
+    collection,
     mode: {
       type: 'number',
       title: '触发时机',
@@ -38,35 +29,15 @@ export default {
       }
     },
     filter: {
-      type: 'object',
-      title: '满足条件',
-      description: 'not supported by server yet',
-      name: 'filter',
-      'x-decorator': 'FormItem',
-      'x-component': 'Filter',
-      'x-component-props': {
-        useProps() {
-          const { values } = useForm();
-          const options = useCollectionFilterOptions(values.collection);
-          return { options };
-        }
-      }
+      ...filter,
+      title: '满足条件'
     }
   },
   scope: {
-    useAsyncDataSource() {
-      return (field: any) => {
-        const { collections = [] } = useCollectionManager();
-        action.bound((data: any) => {
-          field.dataSource = data.map(item => ({
-            label: t(item.title),
-            value: item.name
-          }));
-        })(collections);
-      }
-    }
+    useCollectionDataSource
   },
   getter({ type, options, onChange }) {
+    const compile = useCompile();
     const { collections = [] } = useCollectionManager();
     const { workflow } = useFlowContext();
     const collection = collections.find(item => item.name === workflow.config.collection) ?? { fields: [] };
@@ -82,7 +53,7 @@ export default {
         {collection.fields
           .filter(field => BaseTypeSet.has(field?.uiSchema?.type))
           .map(field => (
-          <Select.Option key={field.name} value={field.name}>{t(field.uiSchema.title)}</Select.Option>
+          <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema.title)}</Select.Option>
         ))}
       </Select>
     );
