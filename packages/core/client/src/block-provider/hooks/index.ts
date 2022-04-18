@@ -49,11 +49,17 @@ export const useCreateActionProps = () => {
         if (fieldNames.includes(key)) {
           const items = form.values[key];
           const collectionField = getField(key);
-          const targetKey = collectionField.targetKey || 'id';
-          if (Array.isArray(items)) {
-            values[key] = items.map((item) => item[targetKey]);
-          } else if (items && typeof items === 'object') {
-            values[key] = items[targetKey];
+          if (collectionField.interface === 'linkTo') {
+            const targetKey = collectionField.targetKey || 'id';
+            if (Array.isArray(items)) {
+              values[key] = items.map((item) => item[targetKey]);
+            } else if (items && typeof items === 'object') {
+              values[key] = items[targetKey];
+            } else {
+              values[key] = items[targetKey];
+            }
+          } else {
+            values[key] = form.values[key];
           }
         } else {
           values[key] = form.values[key];
@@ -117,6 +123,8 @@ export const useUpdateActionProps = () => {
             if (Array.isArray(items)) {
               values[key] = items.map((item) => item[targetKey]);
             } else if (items && typeof items === 'object') {
+              values[key] = items[targetKey];
+            } else {
               values[key] = items[targetKey];
             }
           } else {
