@@ -27,7 +27,9 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
               return (
                 <span>
                   <a
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
                       setVisible(true);
                       setRecord(record);
                     }}

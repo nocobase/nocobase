@@ -21,67 +21,73 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   return (
     <>
       {createPortal(
-        <Drawer
-          width={'50%'}
-          title={field.title}
-          {...others}
-          destroyOnClose
-          visible={visible}
-          onClose={() => setVisible(false)}
-          className={classNames(
-            others.className,
-            css`
-              &.nb-action-popup {
-                .ant-drawer-content {
-                  background: #f0f2f5;
-                }
-              }
-              &.nb-record-picker-selector {
-                .nb-block-item {
-                  margin-bottom: 24px;
-                  .general-schema-designer {
-                    top: -8px;
-                    bottom: -8px;
-                    left: -8px;
-                    right: -8px;
-                  }
-                }
-              }
-            `,
-          )}
-          footer={
-            footerSchema && (
-              <div
-                className={css`
-                  display: flex;
-                  justify-content: flex-end;
-                  width: 100%;
-                  .ant-btn {
-                    margin-right: 8px;
-                  }
-                `}
-              >
-                <RecursionField
-                  basePath={field.address}
-                  schema={schema}
-                  onlyRenderProperties
-                  filterProperties={(s) => {
-                    return s['x-component'] === footerNodeName;
-                  }}
-                />
-              </div>
-            )
-          }
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
         >
-          <RecursionField
-            basePath={field.address}
-            schema={schema}
-            onlyRenderProperties
-            filterProperties={(s) => {
-              return s['x-component'] !== footerNodeName;
-            }}
-          />
-        </Drawer>,
+          <Drawer
+            width={'50%'}
+            title={field.title}
+            {...others}
+            destroyOnClose
+            visible={visible}
+            onClose={() => setVisible(false)}
+            className={classNames(
+              others.className,
+              css`
+                &.nb-action-popup {
+                  .ant-drawer-content {
+                    background: #f0f2f5;
+                  }
+                }
+                &.nb-record-picker-selector {
+                  .nb-block-item {
+                    margin-bottom: 24px;
+                    .general-schema-designer {
+                      top: -8px;
+                      bottom: -8px;
+                      left: -8px;
+                      right: -8px;
+                    }
+                  }
+                }
+              `,
+            )}
+            footer={
+              footerSchema && (
+                <div
+                  className={css`
+                    display: flex;
+                    justify-content: flex-end;
+                    width: 100%;
+                    .ant-btn {
+                      margin-right: 8px;
+                    }
+                  `}
+                >
+                  <RecursionField
+                    basePath={field.address}
+                    schema={schema}
+                    onlyRenderProperties
+                    filterProperties={(s) => {
+                      return s['x-component'] === footerNodeName;
+                    }}
+                  />
+                </div>
+              )
+            }
+          >
+            <RecursionField
+              basePath={field.address}
+              schema={schema}
+              onlyRenderProperties
+              filterProperties={(s) => {
+                return s['x-component'] !== footerNodeName;
+              }}
+            />
+          </Drawer>
+        </div>,
         document.body,
       )}
     </>
