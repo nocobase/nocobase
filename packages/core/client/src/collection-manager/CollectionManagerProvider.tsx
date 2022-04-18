@@ -37,6 +37,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
       filter: {
         // inherit: false,
       },
+      sort: ['sort'],
     },
   };
   const service = useRequest(options);

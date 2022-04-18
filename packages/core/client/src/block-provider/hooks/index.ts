@@ -2,9 +2,9 @@ import { useFieldSchema, useForm } from '@formily/react';
 import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
+import { useCollection } from '../../collection-manager';
 import { useActionContext } from '../../schema-component';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
-import { useFormBlockContext } from '../FormBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
 export const usePickActionProps = () => {
@@ -30,22 +30,38 @@ function isURL(string) {
 
 export const useCreateActionProps = () => {
   const form = useForm();
-  const { resource, __parent } = useBlockRequestContext();
+  const { field, resource, __parent } = useBlockRequestContext();
   const { visible, setVisible } = useActionContext();
-  const { field } = useFormBlockContext();
   const history = useHistory();
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
+  const { fields, getField } = useCollection();
   return {
     async onClick() {
+      const fieldNames = fields.map((field) => field.name);
       const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
       const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
       if (!skipValidator) {
         await form.submit();
       }
+      const values = {};
+      for (const key in form.values) {
+        if (fieldNames.includes(key)) {
+          const items = form.values[key];
+          const collectionField = getField(key);
+          const targetKey = collectionField.targetKey || 'id';
+          if (Array.isArray(items)) {
+            values[key] = items.map((item) => item[targetKey]);
+          } else if (items && typeof items === 'object') {
+            values[key] = items[targetKey];
+          }
+        } else {
+          values[key] = form.values[key];
+        }
+      }
       await resource.create({
         values: {
-          ...form.values,
+          ...values,
           ...overwriteValues,
         },
       });
@@ -75,10 +91,11 @@ export const useCreateActionProps = () => {
 export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
-  const { resource, __parent } = useBlockRequestContext();
+  const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const history = useHistory();
+  const { fields, getField } = useCollection();
   return {
     async onClick() {
       const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
@@ -86,10 +103,33 @@ export const useUpdateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
+      const fieldNames = fields.map((field) => field.name);
+      const values = {};
+      for (const key in form.values) {
+        if (fieldNames.includes(key)) {
+          if (!field.added.has(key)) {
+            continue;
+          }
+          const items = form.values[key];
+          const collectionField = getField(key);
+          if (collectionField.interface === 'linkTo') {
+            const targetKey = collectionField.targetKey || 'id';
+            if (Array.isArray(items)) {
+              values[key] = items.map((item) => item[targetKey]);
+            } else if (items && typeof items === 'object') {
+              values[key] = items[targetKey];
+            }
+          } else {
+            values[key] = form.values[key];
+          }
+        } else {
+          values[key] = form.values[key];
+        }
+      }
       await resource.update({
         filterByTk,
         values: {
-          ...form.values,
+          ...values,
           ...overwriteValues,
         },
       });
