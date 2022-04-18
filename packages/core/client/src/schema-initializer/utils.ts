@@ -87,10 +87,11 @@ export const useTableColumnInitializerFields = () => {
     });
 };
 
-export const useFormItemInitializerFields = () => {
+export const useFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
   const { getInterface } = useCollectionManager();
   const form = useForm();
+  const { readPretty = form.readPretty } = options || {};
   return fields
     ?.filter((field) => field?.interface)
     ?.map((field) => {
@@ -111,7 +112,7 @@ export const useFormItemInitializerFields = () => {
         component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, { field, block: 'Form', readPretty: form.readPretty });
+          interfaceConfig?.schemaInitialize?.(s, { field, block: 'Form', readPretty });
         },
         schema,
       } as SchemaInitializerItemOptions;
@@ -641,6 +642,7 @@ export const createKanbanBlockSchema = (options) => {
         properties: {
           card: {
             type: 'void',
+            'x-read-pretty': true,
             'x-decorator': 'BlockItem',
             'x-component': 'KanbanV2.Card',
             'x-designer': 'KanbanV2.Card.Designer',
