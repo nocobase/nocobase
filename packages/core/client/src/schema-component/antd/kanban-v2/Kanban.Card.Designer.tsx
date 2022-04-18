@@ -58,7 +58,7 @@ export const KanbanCardDesigner = (props: any) => {
   const { refresh } = useDesignable();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const fields = useFormItemInitializerFields();
+  const fields = useFormItemInitializerFields({ readPretty: true });
   if (!designable) {
     return null;
   }
