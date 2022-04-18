@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import React, { useEffect } from 'react';
-import { useCompile, useComponent } from '..';
+import { useCompile, useComponent, useFormBlockContext } from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
 
@@ -21,6 +21,13 @@ const InternalField: React.FC = (props) => {
       field.required = !!uiSchema['required'];
     }
   };
+  const ctx = useFormBlockContext();
+  useEffect(() => {
+    if (ctx?.field) {
+      ctx.field.added = ctx.field.added || new Set();
+      ctx.field.added.add(fieldSchema.name);
+    }
+  });
   // TODO: 初步适配
   useEffect(() => {
     if (!uiSchema) {
@@ -40,7 +47,7 @@ const InternalField: React.FC = (props) => {
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
     field.component = [component, componentProps];
-    
+
     // if (interfaceType === 'input') {
     //   field.componentProps.ellipsis = true;
     // } else if (interfaceType === 'textarea') {

@@ -84,6 +84,13 @@ export const linkTo: IField = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
     },
+    through: {
+      type: 'string',
+      title: '{{t("Junction collection")}}',
+      'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+    },
     // 'reverseField.uiSchema.title': {
     //   type: 'string',
     //   title: '{{t("Reverse field display name")}}',
