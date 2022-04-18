@@ -61,6 +61,7 @@ export abstract class RelationRepository {
     await updateAssociations(instance, values, options);
 
     if (options.hooks !== false) {
+      await this.db.emitAsync(`${this.targetCollection.name}.afterCreateWithAssociations`, instance, options);
       const eventName = `${this.targetCollection.name}.afterSaveWithAssociations`;
       await this.db.emitAsync(eventName, instance, options);
     }
