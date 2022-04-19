@@ -128,19 +128,21 @@ describe('collections repository', () => {
 
     expect(matchesCollection.model.rawAttributes[matchJobField[1].options.foreignKey].primaryKey).not.toBeTruthy();
 
-    app = mockServer({
+    const app2 = mockServer({
       database: {
         tablePrefix: 'through_',
       },
     });
-    app.plugin(CollectionManagerPlugin);
-    await app.load();
-    await app.start();
+    app2.plugin(CollectionManagerPlugin);
+    await app2.load();
+    await app2.start();
 
-    await app.db.sync();
+    await app2.db.sync();
 
     expect(
       app.db.getCollection('matches').model.rawAttributes[matchJobField[1].options.foreignKey].primaryKey,
     ).not.toBeTruthy();
+
+    await app2.destroy();
   });
 });
