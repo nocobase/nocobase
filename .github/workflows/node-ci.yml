@@ -55,7 +55,7 @@ jobs:
         run: yarn test -i
         env:
           DB_DIALECT: sqlite
-          DB_STORAGE: ":memory:"
+          DB_STORAGE: /tmp/db.sqlite
       - name: Test with MySQL
         run: yarn test -i
         env:
