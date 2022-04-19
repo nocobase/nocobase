@@ -9,7 +9,7 @@ import {
   ModelCtor,
   Op,
   Transaction,
-  UpdateOptions as SequelizeUpdateOptions,
+  UpdateOptions as SequelizeUpdateOptions
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -74,6 +74,7 @@ export interface CommonFindOptions {
   appends?: Appends;
   except?: Except;
   sort?: Sort;
+  context?: any;
 }
 
 interface FindOneOptions extends FindOptions, CommonFindOptions {}
@@ -187,7 +188,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     if (countOptions?.filter) {
       options = {
         ...options,
-        ...this.parseFilter(countOptions.filter),
+        ...this.parseFilter(countOptions.filter, countOptions),
       };
     }
 
@@ -453,9 +454,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return { where: {}, ...options, ...params };
   }
 
-  protected parseFilter(filter: Filter) {
+  protected parseFilter(filter: Filter, options?: any) {
     const parser = new FilterParser(filter, {
       collection: this.collection,
+      app: {
+        ctx: options?.context,
+      },
     });
     return parser.toSequelizeParams();
   }

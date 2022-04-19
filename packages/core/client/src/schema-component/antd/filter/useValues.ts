@@ -70,7 +70,7 @@ export const useValues = () => {
       const operator = field.data?.operators?.find?.((item) => item.value === operatorValue);
       field.data.operator = operator;
       field.data.schema = merge(field.data.schema, operator.schema);
-      field.data.value = operator.noValue ? true : null;
+      field.data.value = operator.noValue ? operator.default || true : null;
       data2value();
       console.log('setOperator', field.data);
     },

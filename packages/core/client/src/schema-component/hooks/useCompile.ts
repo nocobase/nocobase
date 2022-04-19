@@ -1,14 +1,13 @@
-import { compile } from '@formily/json-schema/lib/compiler';
-import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
+import { Schema, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import { useContext } from 'react';
 
 export const useCompile = () => {
   const options = useContext(SchemaOptionsContext);
   const scope = useContext(SchemaExpressionScopeContext);
-  return (source: any) => {
+  return (source: any, ext?: any) => {
     if (!source) {
       return source;
     }
-    return compile(source, { ...options.scope, ...scope });
+    return Schema.compile(source, { ...options.scope, ...scope, ...ext });
   };
 };

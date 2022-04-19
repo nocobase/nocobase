@@ -33,6 +33,16 @@ export const updatedBy: IField = {
   filterable: {
     children: [
       {
+        name: 'id',
+        title: '{{t("ID")}}',
+        operators: operators.id,
+        schema: {
+          title: '{{t("ID")}}',
+          type: 'number',
+          'x-component': 'InputNumber',
+        },
+      },
+      {
         name: 'nickname',
         title: '{{t("Nickname")}}',
         operators: operators.string,

@@ -12,6 +12,7 @@ export async function get(ctx: Context, next) {
     appends,
     except,
     filter,
+    context: ctx,
   });
 
   ctx.body = instance;

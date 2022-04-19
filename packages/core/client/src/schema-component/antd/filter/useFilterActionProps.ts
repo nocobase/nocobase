@@ -10,8 +10,9 @@ export const useFilterOptions = (collectionName: string) => {
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
-  const field2option = (field, nochildren) => {
-    if (nonfilterable.length && !nochildren && nonfilterable.includes(field.name)) {
+  let depth = 0;
+  const field2option = (field) => {
+    if (nonfilterable.length && depth !== 1 && nonfilterable.includes(field.name)) {
       return;
     }
     if (!field.interface) {
@@ -26,9 +27,15 @@ export const useFilterOptions = (collectionName: string) => {
       name: field.name,
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
-      operators: operators || [],
+      operators:
+        operators?.filter?.((operator) => {
+          return !operator?.visible || operator.visible(field);
+        }) || [],
     };
-    if (nochildren) {
+    if (field.target && depth > 2) {
+      return;
+    }
+    if (depth > 2) {
       return option;
     }
     if (children?.length) {
@@ -36,16 +43,17 @@ export const useFilterOptions = (collectionName: string) => {
     }
     if (nested) {
       const targetFields = getCollectionFields(field.target);
-      const options = getOptions(targetFields, true);
+      const options = getOptions(targetFields).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
     }
     return option;
   };
-  const getOptions = (fields, nochildren = false) => {
+  const getOptions = (fields) => {
+    ++depth;
     const options = [];
     fields.forEach((field) => {
-      const option = field2option(field, nochildren);
+      const option = field2option(field);
       if (option) {
         options.push(option);
       }

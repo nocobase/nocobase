@@ -1,6 +1,7 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
+import lodash from 'lodash';
 import { ModelCtor, Op, Options, QueryInterfaceDropAllTablesOptions, Sequelize, SyncOptions, Utils } from 'sequelize';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
@@ -11,7 +12,6 @@ import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
-import lodash from 'lodash';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -34,6 +34,7 @@ interface RegisterOperatorsContext {
   db?: Database;
   path?: string;
   field?: Field;
+  app?: any;
 }
 
 export interface CleanOptions extends QueryInterfaceDropAllTablesOptions {
