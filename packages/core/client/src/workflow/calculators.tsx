@@ -399,7 +399,7 @@ export const CollectionFieldset = observer(({ value, onChange, useProps }: any) 
               : { type: 'constant', value: value[field.name] };
 
             return (
-              <FormItem label={compile(field.title)}>
+              <FormItem label={compile(field.uiSchema?.title)}>
                 <VariableTypesContext.Provider value={VTypes}>
                   <Operand
                     value={operand}
@@ -413,7 +413,7 @@ export const CollectionFieldset = observer(({ value, onChange, useProps }: any) 
                     }}
                   >
                     {operand.type === 'constant'
-                      ? <SchemaComponent schema={field.schema} />
+                      ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
                       : null
                     }
                   </Operand>

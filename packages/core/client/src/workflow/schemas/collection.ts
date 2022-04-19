@@ -1,5 +1,6 @@
 import { css } from "@emotion/css";
 import { useForm } from "@formily/react";
+import { useCollectionManager } from "../../collection-manager";
 import { useCollectionFilterOptions } from "../../collection-manager/action-hooks";
 
 export const collection = {
@@ -26,8 +27,9 @@ export const values = {
   'x-component': 'CollectionFieldset',
   'x-component-props': {
     useProps() {
+      const { getCollectionFields } = useCollectionManager();
       const { values: form } = useForm();
-      const fields = useCollectionFilterOptions(form.collection);
+      const fields = getCollectionFields(form.collection);
       return { fields };
     }
   }
