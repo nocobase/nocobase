@@ -44,25 +44,29 @@ export const useCreateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      const values = {};
-      for (const key in form.values) {
-        if (fieldNames.includes(key)) {
-          const items = form.values[key];
-          const collectionField = getField(key);
-          if (collectionField.interface === 'linkTo') {
-            const targetKey = collectionField.targetKey || 'id';
-            if (Array.isArray(items)) {
-              values[key] = items.map((item) => item[targetKey]);
-            } else if (items && typeof items === 'object') {
-              values[key] = items[targetKey];
+      let values = {};
+      if (resource instanceof TableFieldResource) {
+        values = form.values;
+      } else {
+        for (const key in form.values) {
+          if (fieldNames.includes(key)) {
+            const items = form.values[key];
+            const collectionField = getField(key);
+            if (collectionField.interface === 'linkTo') {
+              const targetKey = collectionField.targetKey || 'id';
+              if (Array.isArray(items)) {
+                values[key] = items.map((item) => item[targetKey]);
+              } else if (items && typeof items === 'object') {
+                values[key] = items[targetKey];
+              } else {
+                values[key] = items;
+              }
             } else {
-              values[key] = items[targetKey];
+              values[key] = form.values[key];
             }
           } else {
             values[key] = form.values[key];
           }
-        } else {
-          values[key] = form.values[key];
         }
       }
       await resource.create({
@@ -110,28 +114,36 @@ export const useUpdateActionProps = () => {
         await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
-      const values = {};
-      for (const key in form.values) {
-        if (fieldNames.includes(key)) {
-          if (!field.added.has(key)) {
-            continue;
-          }
-          const items = form.values[key];
-          const collectionField = getField(key);
-          if (collectionField.interface === 'linkTo') {
-            const targetKey = collectionField.targetKey || 'id';
-            if (Array.isArray(items)) {
-              values[key] = items.map((item) => item[targetKey]);
-            } else if (items && typeof items === 'object') {
-              values[key] = items[targetKey];
+      let values = {};
+      if (resource instanceof TableFieldResource) {
+        values = form.values;
+      } else {
+        for (const key in form.values) {
+          if (fieldNames.includes(key)) {
+            const collectionField = getField(key);
+            if (collectionField.interface === 'subTable') {
+              values[key] = form.values[key];
+              continue;
+            }
+            if (!field.added.has(key)) {
+              continue;
+            }
+            const items = form.values[key];
+            if (collectionField.interface === 'linkTo') {
+              const targetKey = collectionField.targetKey || 'id';
+              if (Array.isArray(items)) {
+                values[key] = items.map((item) => item[targetKey]);
+              } else if (items && typeof items === 'object') {
+                values[key] = items[targetKey];
+              } else {
+                values[key] = items;
+              }
             } else {
-              values[key] = items[targetKey];
+              values[key] = form.values[key];
             }
           } else {
             values[key] = form.values[key];
           }
-        } else {
-          values[key] = form.values[key];
         }
       }
       await resource.update({
