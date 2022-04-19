@@ -70,8 +70,16 @@ export const number = [
 export const id = [
   { label: '{{t("is")}}', value: '$eq', selected: true },
   { label: '{{t("is not")}}', value: '$ne' },
-  { label: '{{t("Exists")}}', value: '$exists', noValue: true },
-  { label: '{{t("Not exists")}}', value: '$notExists', noValue: true },
+  {
+    label: '{{t("is current logged-in user")}}',
+    value: '$isCurrentUser',
+    noValue: true,
+    visible(field) {
+      return field.collectionName === 'users';
+    },
+  },
+  { label: '{{t("exists")}}', value: '$exists', noValue: true },
+  { label: '{{t("not exists")}}', value: '$notExists', noValue: true },
 ];
 
 export const enumType = [

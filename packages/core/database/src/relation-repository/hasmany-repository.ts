@@ -66,7 +66,7 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
     ];
 
     if (options && options['filter']) {
-      const filterResult = this.parseFilter(options['filter']);
+      const filterResult = this.parseFilter(options['filter'], options);
 
       if (filterResult.include && filterResult.include.length > 0) {
         return await this.destroyByFilter(options['filter'], transaction);

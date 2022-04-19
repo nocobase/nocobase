@@ -33,6 +33,7 @@ async function listWithPagination(ctx: Context) {
   const repository = getRepositoryFromParams(ctx);
 
   const [rows, count] = await repository.findAndCount({
+    context: ctx,
     ...findArgs(ctx.action.params),
     ...pageArgsToLimitArgs(parseInt(String(page)), parseInt(String(pageSize))),
   });

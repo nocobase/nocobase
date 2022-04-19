@@ -26,7 +26,10 @@ export const useFilterOptions = (collectionName: string) => {
       name: field.name,
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
-      operators: operators || [],
+      operators:
+        operators?.filter?.((operator) => {
+          return !operator?.visible || operator.visible(field);
+        }) || [],
     };
     if (nochildren) {
       return option;
