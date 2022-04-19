@@ -97,19 +97,25 @@ export class CollectionManagerPlugin extends Plugin {
           foreignKey: model.get('foreignKey'),
           interface: 'linkTo',
           reverseField: {
-            interface: 'linkTo',
+            interface: 'subTable',
             uiSchema: {
+              type: 'void',
               title: through.get('title'),
-              'x-component': 'RecordPicker',
-              'x-component-props': {
-                // mode: 'tags',
-                multiple: true,
-                fieldNames: {
-                  label: 'id',
-                  value: 'id',
-                },
-              },
+              'x-component': 'TableField',
+              'x-component-props': {},
             },
+            // uiSchema: {
+            //   title: through.get('title'),
+            //   'x-component': 'RecordPicker',
+            //   'x-component-props': {
+            //     // mode: 'tags',
+            //     multiple: true,
+            //     fieldNames: {
+            //       label: 'id',
+            //       value: 'id',
+            //     },
+            //   },
+            // },
           },
           uiSchema: {
             title: db.getCollection(sourceName)?.options?.title || sourceName,
@@ -135,19 +141,26 @@ export class CollectionManagerPlugin extends Plugin {
           foreignKey: model.get('otherKey'),
           interface: 'linkTo',
           reverseField: {
-            interface: 'linkTo',
+            interface: 'subTable',
             uiSchema: {
+              type: 'void',
               title: through.get('title'),
-              'x-component': 'RecordPicker',
-              'x-component-props': {
-                // mode: 'tags',
-                multiple: true,
-                fieldNames: {
-                  label: 'id',
-                  value: 'id',
-                },
-              },
+              'x-component': 'TableField',
+              'x-component-props': {},
             },
+            // interface: 'linkTo',
+            // uiSchema: {
+            //   title: through.get('title'),
+            //   'x-component': 'RecordPicker',
+            //   'x-component-props': {
+            //     // mode: 'tags',
+            //     multiple: true,
+            //     fieldNames: {
+            //       label: 'id',
+            //       value: 'id',
+            //     },
+            //   },
+            // },
           },
           uiSchema: {
             title: db.getCollection(targetName)?.options?.title || targetName,
