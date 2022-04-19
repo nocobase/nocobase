@@ -1,8 +1,5 @@
-import { RelationRepository, transaction } from './relation-repository';
-import lodash, { omit } from 'lodash';
+import { omit } from 'lodash';
 import { MultiAssociationAccessors, Op, Sequelize, Transaction } from 'sequelize';
-import { UpdateGuard } from '../update-guard';
-import { updateModelByValues } from '../update-associations';
 import {
   CommonFindOptions,
   CountOptions,
@@ -10,11 +7,14 @@ import {
   Filter,
   FilterByTk,
   FindOptions,
-  TK,
   TargetKey,
+  TK,
   TransactionAble,
-  UpdateOptions,
+  UpdateOptions
 } from '../repository';
+import { updateModelByValues } from '../update-associations';
+import { UpdateGuard } from '../update-guard';
+import { RelationRepository, transaction } from './relation-repository';
 
 export interface FindAndCountOptions extends CommonFindOptions {}
 
@@ -187,10 +187,11 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     });
   }
 
-  protected filterHasInclude(filter: Filter) {
-    const filterResult = this.parseFilter(filter);
+  protected filterHasInclude(filter: Filter, options?: any) {
+    const filterResult = this.parseFilter(filter, options);
     return filterResult.include && filterResult.include.length > 0;
   }
+
   protected accessors() {
     return <MultiAssociationAccessors>super.accessors();
   }

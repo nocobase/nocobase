@@ -11,6 +11,7 @@ type FilterType = any;
 
 interface FilterParserContext {
   collection: Collection;
+  app?: any;
 }
 
 export default class FilterParser {
@@ -125,6 +126,7 @@ export default class FilterParser {
               const queryValue = lodash.get(unflatten(originalFiler), skipPrefix);
 
               value = opKey(queryValue, {
+                app: this.context.app,
                 db: this.database,
                 path: skipPrefix,
                 fieldName: this.getFieldNameFromQueryPath(skipPrefix),

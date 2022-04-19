@@ -1,4 +1,4 @@
-import { Collection } from '@nocobase/database';
+import { Collection, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import * as actions from './actions/users';
@@ -25,6 +25,13 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
   }
 
   async beforeLoad() {
+    this.db.registerOperators({
+      $isCurrentUser(_, ctx) {
+        return {
+          [Op.eq]: ctx?.app?.ctx?.state?.currentUser?.id || -1,
+        };
+      },
+    });
     this.db.registerModels({ UserModel });
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {
       const { transaction } = options;

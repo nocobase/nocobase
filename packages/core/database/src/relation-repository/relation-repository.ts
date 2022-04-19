@@ -90,9 +90,12 @@ export abstract class RelationRepository {
     return { ...options, ...params };
   }
 
-  protected parseFilter(filter: Filter) {
+  protected parseFilter(filter: Filter, options?: any) {
     const parser = new FilterParser(filter, {
       collection: this.targetCollection,
+      app: {
+        ctx: options?.context,
+      },
     });
     return parser.toSequelizeParams();
   }

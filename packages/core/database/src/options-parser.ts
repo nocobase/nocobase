@@ -26,7 +26,12 @@ export class OptionsParser {
     this.model = collection.model;
     this.options = options;
     this.database = collection.context.database;
-    this.filterParser = new FilterParser(options?.filter, { collection });
+    this.filterParser = new FilterParser(options?.filter, {
+      collection,
+      app: {
+        ctx: options?.context,
+      },
+    });
     this.context = context;
   }
 
