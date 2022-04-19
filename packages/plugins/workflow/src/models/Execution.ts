@@ -172,7 +172,7 @@ export default class ExecutionModel extends Model {
     // TODO(optimize): many checking of resuming or new could be improved
     // could be implemented separately in exec() / resume()
     if (job instanceof Model) {
-      savedJob = (await job.save({ transaction: this.transaction })) as JobModel;
+      savedJob = (await job.save({ transaction: this.transaction })) as unknown as JobModel;
     } else {
       const upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
       savedJob = await this.saveJob({
@@ -238,7 +238,7 @@ export default class ExecutionModel extends Model {
         executionId: this.id,
       },
       { transaction: this.transaction },
-    )) as [JobModel, boolean | null];
+    )) as unknown as [JobModel, boolean | null];
     this.jobsMap.set(job.id, job);
     this.jobsMapByNodeId[job.nodeId] = job.result;
 
