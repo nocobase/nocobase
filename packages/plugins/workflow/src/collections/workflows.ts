@@ -44,7 +44,7 @@ export default {
       type: 'boolean',
       title: '使用事务',
       name: 'useTransaction',
-      defaultValue: false
+      defaultValue: true
     },
     {
       interface: 'linkTo',
