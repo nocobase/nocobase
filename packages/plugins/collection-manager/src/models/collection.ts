@@ -44,6 +44,7 @@ export class CollectionModel extends MagicAttributeModel {
   async loadFields(options: Transactionable = {}) {
     // @ts-ignore
     const instances: FieldModel[] = await this.getFields(options);
+
     for (const instance of instances) {
       await instance.load(options);
     }
