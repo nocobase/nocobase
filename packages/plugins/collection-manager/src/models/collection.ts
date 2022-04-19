@@ -44,6 +44,17 @@ export class CollectionModel extends MagicAttributeModel {
   async loadFields(options: Transactionable = {}) {
     // @ts-ignore
     const instances: FieldModel[] = await this.getFields(options);
+    const associationsType = ['belongsToMany', 'belongsTo', 'hasMany'];
+
+    instances.sort((a, b) => {
+      const aType = a['type'];
+      if (associationsType.includes(aType)) {
+        return 1;
+      }
+
+      return -1;
+    });
+
     for (const instance of instances) {
       await instance.load(options);
     }
