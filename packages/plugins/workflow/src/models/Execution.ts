@@ -76,7 +76,7 @@ export default class ExecutionModel extends Model {
   getTransaction() {
     const { sequelize } = (<typeof WorkflowModel>this.constructor).database;
     // @ts-ignore
-    if (!this.useTransaction || sequelize.options.dialect === 'sqlite') {
+    if (!this.useTransaction) {
       return undefined;
     }
 
