@@ -1,4 +1,5 @@
 import _ from 'lodash';
+// @ts-ignore
 import { pathToRegexp } from 'path-to-regexp';
 import qs from 'qs';
 import { ResourceType } from './resource';
