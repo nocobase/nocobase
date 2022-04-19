@@ -42,6 +42,6 @@ export const id: IField = {
     },
   },
   filterable: {
-    operators: operators.number,
+    operators: operators.id,
   },
 };

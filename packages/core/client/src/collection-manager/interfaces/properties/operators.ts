@@ -67,6 +67,13 @@ export const number = [
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
+export const id = [
+  { label: '{{t("is")}}', value: '$eq', selected: true },
+  { label: '{{t("is not")}}', value: '$ne' },
+  { label: '{{t("Exists")}}', value: '$exists', noValue: true },
+  { label: '{{t("Not exists")}}', value: '$notExists', noValue: true },
+];
+
 export const enumType = [
   {
     label: '{{t("is")}}',

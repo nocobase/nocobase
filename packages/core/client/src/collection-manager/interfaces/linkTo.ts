@@ -116,19 +116,19 @@ export const linkTo: IField = {
   filterable: {
     nested: true,
     children: [
-      {
-        name: 'id',
-        title: '{{t("Exists")}}',
-        operators: [
-          { label: '{{t("exists")}}', value: '$exists', noValue: true },
-          { label: '{{t("not exists")}}', value: '$notExists', noValue: true },
-        ],
-        schema: {
-          title: '{{t("Exists")}}',
-          type: 'string',
-          'x-component': 'Input',
-        },
-      },
+      // {
+      //   name: 'id',
+      //   title: '{{t("Exists")}}',
+      //   operators: [
+      //     { label: '{{t("exists")}}', value: '$exists', noValue: true },
+      //     { label: '{{t("not exists")}}', value: '$notExists', noValue: true },
+      //   ],
+      //   schema: {
+      //     title: '{{t("Exists")}}',
+      //     type: 'string',
+      //     'x-component': 'Input',
+      //   },
+      // },
     ],
   },
 };
