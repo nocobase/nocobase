@@ -2,5 +2,4 @@ node_modules
 *.log
 docs
 __tests__
-tsconfig.json
 .fatherrc.ts
