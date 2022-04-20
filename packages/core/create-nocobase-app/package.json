@@ -2,10 +2,6 @@
   "name": "create-nocobase-app",
   "version": "0.6.2-alpha.11",
   "main": "src/index.js",
-  "files": [
-    "src",
-    "bin"
-  ],
   "license": "MIT",
   "dependencies": {
     "@nocobase/utils": "^0.5.0-alpha.38",
