@@ -9,6 +9,15 @@ export default {
   updatedBy: true,
   fields: [
     {
+      name: 'id',
+      type: 'integer',
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
+      uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
+      interface: 'id',
+    },
+    {
       interface: 'input',
       type: 'string',
       name: 'nickname',
