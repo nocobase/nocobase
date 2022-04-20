@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-client",
-  "version": "0.6.2-alpha.10",
+  "version": "0.6.2-alpha.11",
   "scripts": {
     "start": "umi dev",
     "build": "umi build",
@@ -9,7 +9,7 @@
     "test:coverage": "umi-test --coverage"
   },
   "devDependencies": {
-    "@nocobase/client": "0.6.2-alpha.10",
+    "@nocobase/client": "0.6.2-alpha.11",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@umijs/test": "^3.5.20",

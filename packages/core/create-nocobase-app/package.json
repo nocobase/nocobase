@@ -1,6 +1,6 @@
 {
   "name": "create-nocobase-app",
-  "version": "0.6.2-alpha.10",
+  "version": "0.6.2-alpha.11",
   "main": "src/index.js",
   "files": [
     "lib",
