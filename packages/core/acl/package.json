@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/acl",
-  "version": "0.6.2-alpha.8",
+  "version": "0.6.2-alpha.9",
   "description": "",
   "license": "MIT",
   "main": "./lib/index.js",
@@ -11,7 +11,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/resourcer": "0.6.2-alpha.8",
+    "@nocobase/resourcer": "0.6.2-alpha.9",
     "json-templates": "^4.2.0"
   },
   "repository": {
