@@ -20,15 +20,16 @@ const useGroupField = (props) => {
 };
 
 const InternalKanbanBlockProvider = (props) => {
-  const field = useField();
+  const field = useField<any>();
   const { resource, service } = useBlockRequestContext();
   const groupField = useGroupField(props);
   if (!groupField) {
     return null;
   }
-  if (service.loading) {
+  if (service.loading && !field.loaded) {
     return <Spin />;
   }
+  field.loaded = true;
   return (
     <KanbanBlockContext.Provider
       value={{

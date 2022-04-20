@@ -81,7 +81,8 @@ export const useSortFields = (collectionName: string) => {
 export const useCollectionFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
-  const field2option = (field, nochildren) => {
+  let depth = 0;
+  const field2option = (field) => {
     if (!field.interface) {
       return;
     }
@@ -94,9 +95,15 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       name: field.name,
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
-      operators: operators || [],
+      operators:
+        operators?.filter?.((operator) => {
+          return !operator?.visible || operator.visible(field);
+        }) || [],
     };
-    if (nochildren) {
+    if (field.target && depth > 2) {
+      return;
+    }
+    if (depth > 2) {
       return option;
     }
     if (children?.length) {
@@ -104,16 +111,17 @@ export const useCollectionFilterOptions = (collectionName: string) => {
     }
     if (nested) {
       const targetFields = getCollectionFields(field.target);
-      const options = getOptions(targetFields, true);
+      const options = getOptions(targetFields).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
     }
     return option;
   };
-  const getOptions = (fields, nochildren = false) => {
+  const getOptions = (fields) => {
+    ++depth;
     const options = [];
     fields.forEach((field) => {
-      const option = field2option(field, nochildren);
+      const option = field2option(field);
       if (option) {
         options.push(option);
       }
