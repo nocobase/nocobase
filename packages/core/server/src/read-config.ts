@@ -41,6 +41,10 @@ export async function loadConfiguration(configurationDir: string, repository: Co
       if (file.isDirectory()) {
         await getConfigurationFiles(path.join(dir, file.name), [...prefix, file.name]);
       } else {
+        if (!['ts', 'js'].includes(file.name.split('.').slice(1).join('.'))) {
+          continue;
+        }
+
         const filePath = path.join(dir, file.name);
         const keyName = path.parse(filePath).name;
         const configuration = require(filePath).default;
