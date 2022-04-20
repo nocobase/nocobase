@@ -5,6 +5,7 @@ import { useHistory } from 'react-router-dom';
 import { useCollection } from '../../collection-manager';
 import { useActionContext } from '../../schema-component';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
+import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
 export const usePickActionProps = () => {
@@ -204,6 +205,26 @@ export const useBulkDestroyActionProps = () => {
       });
       field.data.selectedRowKeys = [];
       service?.refresh?.();
+    },
+  };
+};
+
+export const useDetailsPaginationProps = () => {
+  const ctx = useDetailsBlockContext();
+  const count = ctx.service?.data?.meta?.count || 0;
+  return {
+    simple: true,
+    hidden: count <= 1,
+    current: ctx.service?.data?.meta?.page || 1,
+    total: count,
+    pageSize: 1,
+    async onChange(page) {
+      const params = ctx.service?.params?.[0];
+      ctx.service.run({ ...params, page });
+    },
+    style: {
+      marginTop: 24,
+      textAlign: 'center',
     },
   };
 };

@@ -12,6 +12,7 @@ import { useSchemaTemplateManager } from '../../schema-templates';
 import { SchemaInitializer } from '../SchemaInitializer';
 import {
   createCalendarBlockSchema,
+  createDetailsBlockSchema,
   createFormBlockSchema,
   createKanbanBlockSchema,
   createReadPrettyFormBlockSchema,
@@ -121,6 +122,23 @@ export const FormBlockInitializer = (props) => {
         return s;
       }}
       createBlockSchema={createFormBlockSchema}
+    />
+  );
+};
+
+export const DetailsBlockInitializer = (props) => {
+  const { insert } = props;
+  const { getCollection } = useCollectionManager();
+  return (
+    <DataBlockInitializer
+      {...props}
+      icon={<TableOutlined />}
+      componentType={'Details'}
+      onCreateBlockSchema={async ({ item }) => {
+        const collection = getCollection(item.name);
+        const schema = createDetailsBlockSchema({ collection: item.name, rowKey: collection.filterTargetKey || 'id' });
+        insert(schema);
+      }}
     />
   );
 };

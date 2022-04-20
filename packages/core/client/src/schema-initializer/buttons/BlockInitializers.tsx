@@ -24,6 +24,12 @@ export const BlockInitializers = {
           component: 'FormBlockInitializer',
         },
         {
+          key: 'details',
+          type: 'item',
+          title: 'Details',
+          component: 'DetailsBlockInitializer',
+        },
+        {
           key: 'calendar',
           type: 'item',
           title: 'Calendar',

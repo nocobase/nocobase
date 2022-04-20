@@ -1,6 +1,7 @@
 export * from './BlockInitializers';
 export * from './CalendarActionInitializers';
 export * from './CreateFormBlockInitializers';
+export * from './DetailsActionInitializers';
 export * from './FormActionInitializers';
 export * from './FormItemInitializers';
 export * from './ReadPrettyFormActionInitializers';
