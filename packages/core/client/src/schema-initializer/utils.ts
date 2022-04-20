@@ -283,6 +283,76 @@ export const useCollectionDataSourceItems = (componentName) => {
   ];
 };
 
+export const createDetailsBlockSchema = (options) => {
+  const {
+    formItemInitializers = 'ReadPrettyFormItemInitializers',
+    actionInitializers = 'DetailsActionInitializers',
+    collection,
+    association,
+    resource,
+    template,
+    ...others
+  } = options;
+  const resourceName = resource || association || collection;
+  const schema: ISchema = {
+    type: 'void',
+    'x-acl-action': `${resourceName}:get`,
+    'x-decorator': 'DetailsBlockProvider',
+    'x-decorator-props': {
+      resource: resourceName,
+      collection,
+      association,
+      readPretty: true,
+      action: 'list',
+      params: {
+        pageSize: 1,
+      },
+      // useParams: '{{ useParamsFromRecord }}',
+      ...others,
+    },
+    'x-designer': 'DetailsDesigner',
+    'x-component': 'CardItem',
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-component': 'FormV2',
+        'x-read-pretty': true,
+        'x-component-props': {
+          useProps: '{{ useDetailsBlockProps }}',
+        },
+        properties: {
+          actions: {
+            type: 'void',
+            'x-initializer': actionInitializers,
+            'x-component': 'ActionBar',
+            'x-component-props': {
+              style: {
+                marginBottom: 24,
+              },
+            },
+            properties: {},
+          },
+          grid: template || {
+            type: 'void',
+            'x-component': 'Grid',
+            'x-initializer': formItemInitializers,
+            properties: {},
+          },
+          pagination: {
+            type: 'void',
+            'x-component': 'Pagination',
+            'x-component-props': {
+              useProps: '{{ useDetailsPaginationProps }}',
+            },
+          },
+        },
+      },
+    },
+  };
+  console.log(JSON.stringify(schema, null, 2));
+  return schema;
+};
+
 export const createFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'FormItemInitializers',

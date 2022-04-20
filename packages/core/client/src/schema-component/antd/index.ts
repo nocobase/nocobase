@@ -22,6 +22,7 @@ export * from './kanban-v2';
 export * from './markdown';
 export * from './menu';
 export * from './page';
+export * from './pagination';
 export * from './password';
 export * from './radio';
 export * from './record-picker';
@@ -35,4 +36,5 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 import './index.less';
+
 
