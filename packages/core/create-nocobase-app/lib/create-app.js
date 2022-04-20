@@ -11,30 +11,87 @@ const createPackageJson = require('./resources/templates/package.json.js');
 const createServerPackageJson = require('./resources/templates/server.package.json.js');
 const loadSrcFromNpm = require('./resources/templates/load-src-from-npm');
 
+let envs = undefined;
+
+const parseEnvs = (options) => {
+  if (envs) {
+    return envs;
+  }
+
+  for (const env of options.env) {
+    if (!env.match(/\w+=\w+/)) {
+      console.log(`${chalk.red(env)} is not a valid environment value`);
+      process.exit(1);
+    }
+  }
+
+  envs = options.env
+    .map((env) => env.split('='))
+    .reduce((carry, item) => {
+      carry[item[0]] = item[1];
+      return carry;
+    }, {});
+
+  return envs;
+};
+
+function checkDialect(dialect) {
+  const supportDialects = ['mysql', 'sqlite', 'postgres'];
+  if (!supportDialects.includes(dialect)) {
+    console.log(
+      `dialect ${chalk.red(dialect)} is not supported, currently supported dialects are ${chalk.green(
+        supportDialects.join(','),
+      )}.`,
+    );
+    process.exit(1);
+  }
+}
+
 const getDatabaseOptionsFromCommandOptions = (commandOptions) => {
-  if (
-    commandOptions.quickstart ||
-    !commandOptions.dbdialect ||
-    commandOptions.dbdialect === 'sqlite' ||
-    commandOptions.dbstorage
-  ) {
+  const envs = parseEnvs(commandOptions);
+
+  if (!commandOptions.dbDialect || commandOptions.dbDialect === 'sqlite' || envs['DB_STORAGE']) {
     return {
       dialect: 'sqlite',
-      storage: commandOptions.dbstorage || 'db.sqlite',
+      storage: envs['DB_STORAGE'] || 'db.sqlite',
     };
   }
 
-  return {
-    dialect: commandOptions.dbdialect,
-    host: commandOptions.dbhost,
-    port: commandOptions.dbport,
-    database: commandOptions.dbdatabase,
-    username: commandOptions.dbusername,
-    password: commandOptions.dbpassword,
+  const databaseOptions = {
+    dialect: commandOptions.dbDialect,
+    host: envs['DB_HOST'],
+    port: envs['DB_PORT'],
+    database: envs['DB_DATABASE'],
+    username: envs['DB_USERNAME'],
+    password: envs['DB_PASSWORD'],
   };
+
+  const emptyValues = Object.entries(databaseOptions).filter((items) => !items[1]);
+
+  if (emptyValues.length > 0) {
+    console.log(
+      chalk.red(
+        `Please set ${emptyValues
+          .map((i) => i[0])
+          .map((i) => `DB_${i.toUpperCase()}`)
+          .join(' ')} in .env file to complete database settings`,
+      ),
+    );
+  }
+
+  return databaseOptions;
 };
 
 async function createApp(directory, options) {
+  const dbDialect = options.dbDialect || 'sqlite';
+  checkDialect(dbDialect);
+
+  if (options.quickstart) {
+    console.log(`⚠️  ${chalk.yellow('quickstart option is deprecated')}`);
+  }
+
+  parseEnvs(options);
+
   console.log(`Creating a new NocoBase application at ${chalk.green(directory)}.`);
   console.log('Creating files.');
 
@@ -53,7 +110,7 @@ async function createApp(directory, options) {
   await loadSrcFromNpm('@nocobase/app-client', path.join(projectPath, 'packages/app/client'));
 
   // write .env file
-  await fse.writeFile(join(projectPath, '.env'), createEnvFile({ dbOptions }));
+  await fse.writeFile(join(projectPath, '.env'), createEnvFile({ dbOptions, envs: parseEnvs(options) }));
 
   // write root packages.json
   await fse.writeJson(
@@ -79,19 +136,19 @@ async function createApp(directory, options) {
   );
 
   // run install command
+  console.log('finished');
+}
+
+function collect(value, previous) {
+  return previous.concat([value]);
 }
 
 function setCommandOptions(command) {
   return command
     .arguments('<directory>', 'directory of new NocoBase app')
     .option('--quickstart', 'Quickstart app creation')
-    .option('--dbdialect <dbdialect>', 'Database dialect, current support sqlite/mysql/postgres')
-    .option('--dbhost <dbhost>', 'Database host')
-    .option('--dbport <dbport>', 'Database port')
-    .option('--dbdatabase <dbdatabase>', 'Database name')
-    .option('--dbusername <dbusername>', 'Database username')
-    .option('--dbpassword <dbpassword>', 'Database password')
-    .option('--dbstorage <dbstorage>', 'Database file storage path for sqlite')
+    .option('-d, --db-dialect <dbdialect>', 'Database dialect, current support sqlite/mysql/postgres')
+    .option('-e, --env <envvalue>', 'environment variables write into .env file', collect, [])
     .description('create a new application');
 }
 

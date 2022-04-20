@@ -15,6 +15,7 @@ const dialectLib = (dialect) => {
   if (dialect === 'postgres') {
     return {
       pg: '^8.7.3',
+      'pg-hstore': '^2.3.4',
     };
   }
 };
