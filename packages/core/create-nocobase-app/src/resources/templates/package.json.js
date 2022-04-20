@@ -7,7 +7,7 @@ module.exports = (opts) => {
     workspaces: ['packages/app/*', 'packages/plugins/*'],
     license: 'MIT',
     scripts: {
-      start: 'concurrently "npm run start-server" "npm run start-client"',
+      start: 'concurrently --kill-others "npm run start-server" "npm run start-client"',
       bootstrap: 'lerna bootstrap',
       clean: 'rimraf -rf packages/{app,plugins}/*/{lib,esm,dist} && lerna clean',
       nocobase:

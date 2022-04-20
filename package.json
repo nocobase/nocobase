@@ -7,7 +7,7 @@
     "packages/plugins/*"
   ],
   "scripts": {
-    "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
+    "start": "concurrently --kill-others \"npm run start-server\" \"npm run start-client\"",
     "start-pm2": "yarn pm2-runtime start packages/app/server/lib/index.js",
     "start-docs": "dumi dev",
     "bootstrap": "lerna bootstrap",
