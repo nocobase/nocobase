@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/test",
-  "version": "0.6.2-alpha.11",
+  "version": "0.6.2-alpha.12",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "MIT",
@@ -10,7 +10,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/server": "0.6.2-alpha.11",
+    "@nocobase/server": "0.6.2-alpha.12",
     "@types/supertest": "^2.0.11",
     "mockjs": "^1.1.0",
     "mysql2": "^2.1.0",
