@@ -142,7 +142,7 @@ export const AddFieldAction = () => {
           {t('Add field')}
         </Button>
       </Dropdown>
-      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ useCreateCollectionField }} />
+      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ createOnly: true, useCreateCollectionField }} />
     </ActionContext.Provider>
   );
 };

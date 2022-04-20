@@ -10,8 +10,7 @@ export const useFilterOptions = (collectionName: string) => {
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
-  let depth = 0;
-  const field2option = (field) => {
+  const field2option = (field, depth) => {
     if (nonfilterable.length && depth !== 1 && nonfilterable.includes(field.name)) {
       return;
     }
@@ -43,24 +42,23 @@ export const useFilterOptions = (collectionName: string) => {
     }
     if (nested) {
       const targetFields = getCollectionFields(field.target);
-      const options = getOptions(targetFields).filter(Boolean);
+      const options = getOptions(targetFields, depth+1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
     }
     return option;
   };
-  const getOptions = (fields) => {
-    ++depth;
+  const getOptions = (fields, depth) => {
     const options = [];
     fields.forEach((field) => {
-      const option = field2option(field);
+      const option = field2option(field, depth);
       if (option) {
         options.push(option);
       }
     });
     return options;
   };
-  return getOptions(fields);
+  return getOptions(fields, 1);
 };
 
 const isEmpty = (obj) => {

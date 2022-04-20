@@ -81,8 +81,7 @@ export const useSortFields = (collectionName: string) => {
 export const useCollectionFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
-  let depth = 0;
-  const field2option = (field) => {
+  const field2option = (field, depth) => {
     if (!field.interface) {
       return;
     }
@@ -111,24 +110,23 @@ export const useCollectionFilterOptions = (collectionName: string) => {
     }
     if (nested) {
       const targetFields = getCollectionFields(field.target);
-      const options = getOptions(targetFields).filter(Boolean);
+      const options = getOptions(targetFields, depth+1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
     }
     return option;
   };
-  const getOptions = (fields) => {
-    ++depth;
+  const getOptions = (fields, depth) => {
     const options = [];
     fields.forEach((field) => {
-      const option = field2option(field);
+      const option = field2option(field, depth);
       if (option) {
         options.push(option);
       }
     });
     return options;
   };
-  return getOptions(fields);
+  return getOptions(fields, 1);
 };
 
 export const useFilterDataSource = (options) => {
