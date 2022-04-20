@@ -10,6 +10,7 @@ const configurationDir = path.join(__dirname, './config');
 describe('config', () => {
   it('should read configuration from directory', async () => {
     const config = await readConfig(configurationDir);
+    expect(config['fake']).toBeUndefined();
     expect(config['not-exists']).toBeUndefined();
     expect(config['database']).toEqual(databaseConfiguration);
     expect(config['database']).toEqual(databaseConfiguration);
