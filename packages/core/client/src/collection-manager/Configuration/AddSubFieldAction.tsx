@@ -134,7 +134,7 @@ export const AddSubFieldAction = () => {
         </Button>
       </Dropdown>
       <RecordProvider record={{}}>
-        <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ useCreateSubField }} />
+        <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ createOnly: true, useCreateSubField }} />
       </RecordProvider>
     </ActionContext.Provider>
   );
