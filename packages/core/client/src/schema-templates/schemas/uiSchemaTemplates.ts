@@ -75,7 +75,7 @@ export const uiSchemaTemplatesSchema: ISchema = {
                       'x-action': 'view',
                       'x-component': 'RecordLink',
                       'x-component-props': {
-                        to: '/admin/block-templates/${record.key}',
+                        to: '/admin/plugins/block-templates/${record.key}',
                       },
                     },
                     edit: {
