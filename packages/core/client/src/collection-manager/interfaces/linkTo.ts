@@ -83,10 +83,12 @@ export const linkTo: IField = {
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-decorator': 'FormItem',
       'x-component': 'Select',
+      'x-disabled': '{{ !createOnly }}',
     },
     through: {
       type: 'string',
       title: '{{t("Junction collection")}}',
+      'x-disabled': '{{ !createOnly }}',
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-decorator': 'FormItem',
       'x-component': 'Select',

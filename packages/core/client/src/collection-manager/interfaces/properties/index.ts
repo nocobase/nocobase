@@ -192,7 +192,7 @@ export const defaultProps = {
     type: 'string',
     title: '{{t("Field name")}}',
     required: true,
-    // 'x-disabled': true,
+    'x-disabled': '{{ !createOnly }}',
     'x-decorator': 'FormItem',
     'x-component': 'Input',
     description:
