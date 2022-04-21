@@ -1,13 +1,12 @@
-import { promisify } from 'util';
 import { promises as fs } from 'fs';
 import path from 'path';
-
+import { getApp } from '.';
 import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../constants';
-import { getApp, requestFile } from '.';
 
-const { LOCAL_STORAGE_BASE_URL, API_PORT = '13002' } = process.env;
 
-const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `http://localhost:${API_PORT}/uploads`;
+const { LOCAL_STORAGE_BASE_URL, SERVER_PORT = '13002' } = process.env;
+
+const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `http://localhost:${SERVER_PORT}/uploads`;
 
 describe('action', () => {
   let app;
@@ -83,7 +82,7 @@ describe('action', () => {
       expect(file.toString()).toBe('Hello world!\n');
 
       // 通过 url 是否能正确访问
-      const url = attachment.url.replace(`http://localhost:${API_PORT}`, '');
+      const url = attachment.url.replace(`http://localhost:${SERVER_PORT}`, '');
       const content = await agent.get(url);
       expect(content.text).toBe('Hello world!\n');
     });
@@ -135,7 +134,7 @@ describe('action', () => {
     });
 
     it('upload to assoiciated field and storage with full base url should be ok', async () => {
-      const BASE_URL = `http://localhost:${API_PORT}/another-uploads`;
+      const BASE_URL = `http://localhost:${SERVER_PORT}/another-uploads`;
       const storageName = 'local_private';
       const urlPath = 'test/path';
       const Storage = db.getCollection('storages').model;
@@ -161,7 +160,7 @@ describe('action', () => {
       // 文件的 url 是否正常生成
       expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
       console.log(body.data.url);
-      const url = body.data.url.replace(`http://localhost:${API_PORT}`, '');
+      const url = body.data.url.replace(`http://localhost:${SERVER_PORT}`, '');
       const content = await agent.get(url);
       expect(content.text).toBe('Hello world!\n');
     });
