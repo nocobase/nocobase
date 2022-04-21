@@ -54,7 +54,7 @@ export default {
         onChange({ type, options: { ...options, path } });
       }}>
         {collection.fields
-          .filter(field => BaseTypeSet.has(field.uiSchema.type))
+          .filter(field => BaseTypeSet.has(field.uiSchema?.type))
           .map(field => (
           <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema.title)}</Select.Option>
         ))}
