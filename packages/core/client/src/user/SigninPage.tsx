@@ -1,7 +1,7 @@
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 
 const schema: ISchema = {
@@ -60,9 +60,11 @@ const schema: ISchema = {
 };
 
 const useSignin = () => {
+  const location = useLocation<any>();
   const history = useHistory();
   const form = useForm();
   const api = useAPIClient();
+  const redirect = location?.['query']?.redirect;
   return {
     async run() {
       await form.submit();
@@ -71,7 +73,7 @@ const useSignin = () => {
       });
       if (response?.data?.data?.token) {
         api.setBearerToken(response?.data?.data?.token);
-        history.push('/admin');
+        history.push(redirect || '/admin');
       }
     },
   };
