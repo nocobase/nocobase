@@ -62,7 +62,7 @@ const getDatabaseOptionsFromCommandOptions = (commandOptions) => {
     host: envs['DB_HOST'],
     port: envs['DB_PORT'],
     database: envs['DB_DATABASE'],
-    username: envs['DB_USERNAME'],
+    user: envs['DB_USER'],
     password: envs['DB_PASSWORD'],
   };
 
