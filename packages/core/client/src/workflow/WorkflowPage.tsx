@@ -1,13 +1,11 @@
+import { cx } from '@emotion/css';
+import { ISchema } from '@formily/react';
 import React from 'react';
 import { useRouteMatch } from 'react-router-dom';
-import { ISchema } from '@formily/react';
-import { cx } from '@emotion/css';
 import { SchemaComponent } from '..';
-import { TriggerConfig } from './triggers';
-import { WorkflowCanvas } from './WorkflowCanvas'
 import { workflowPageClass } from './style';
-
-
+import { TriggerConfig } from './triggers';
+import { WorkflowCanvas } from './WorkflowCanvas';
 
 const workflowCollection = {
   name: 'workflow',
@@ -22,12 +20,12 @@ const workflowCollection = {
         'x-component': 'Input',
         required: true,
       } as ISchema,
-    }
-  ]
+    },
+  ],
 };
 
 export const WorkflowPage = () => {
-  const { params } = useRouteMatch();
+  const { params } = useRouteMatch<any>();
 
   return (
     <div className={cx(workflowPageClass)}>
@@ -36,7 +34,7 @@ export const WorkflowPage = () => {
           schema={{
             type: 'void',
             properties: {
-              provider: {
+              [`provider_${params.id}`]: {
                 type: 'void',
                 'x-decorator': 'ResourceActionProvider',
                 'x-decorator-props': {
@@ -47,14 +45,14 @@ export const WorkflowPage = () => {
                     action: 'get',
                     params: {
                       filter: params,
-                      appends: ['nodes']
-                    }
-                  }
+                      appends: ['nodes'],
+                    },
+                  },
                 },
                 properties: {
                   trigger: {
                     type: 'void',
-                    'x-component': 'TriggerConfig'
+                    'x-component': 'TriggerConfig',
                   },
                   nodes: {
                     type: 'void',
@@ -70,7 +68,7 @@ export const WorkflowPage = () => {
                             uiSchema: {
                               title: '节点名称',
                               type: 'string',
-                              'x-component': 'Input'
+                              'x-component': 'Input',
                             },
                           },
                           {
@@ -82,23 +80,23 @@ export const WorkflowPage = () => {
                               type: 'string',
                               'x-component': 'Select',
                               required: true,
-                            }
-                          }
-                        ]
-                      }
+                            },
+                          },
+                        ],
+                      },
                     },
                     'x-component': 'WorkflowCanvas',
                     'x-component-props': {
                       // nodes
-                    }
-                  }
-                }
+                    },
+                  },
+                },
               },
-            }
+            },
           }}
           components={{
             TriggerConfig,
-            WorkflowCanvas
+            WorkflowCanvas,
           }}
         />
       </div>

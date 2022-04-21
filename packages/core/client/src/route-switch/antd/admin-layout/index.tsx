@@ -101,6 +101,9 @@ const InternalAdminLayout = (props: any) => {
                 return filterByACL(data, ctx);
               }}
               onSuccess={(data) => {
+                if (defaultSelectedUid && defaultSelectedUid.includes('/')) {
+                  return;
+                }
                 const schema = filterByACL(data?.data, ctx);
                 if (defaultSelectedUid) {
                   const s = findByUid(schema, defaultSelectedUid);

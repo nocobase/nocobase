@@ -15,12 +15,12 @@ const SchemaTemplateRouteProvider = (props) => {
   routes[1].routes.unshift(
     {
       type: 'route',
-      path: '/admin/block-templates/:key',
+      path: '/admin/plugins/block-templates/:key',
       component: 'BlockTemplateDetails',
     },
     {
       type: 'route',
-      path: '/admin/block-templates',
+      path: '/admin/plugins/block-templates',
       component: 'BlockTemplatePage',
     },
   );

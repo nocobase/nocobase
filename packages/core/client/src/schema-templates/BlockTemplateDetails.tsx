@@ -76,7 +76,7 @@ export const BlockTemplateDetails = () => {
     <div>
       <AntdPageHeader
         onBack={() => {
-          history.push('/admin/block-templates');
+          history.push('/admin/plugins/block-templates');
         }}
         ghost={false}
         title={<EditableTitle filterByTk={key} title={data?.data?.name} />}
