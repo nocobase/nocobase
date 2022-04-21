@@ -6,5 +6,9 @@ import { CollectionOptions } from './types';
 export const CollectionProvider: React.FC<{ name?: string; collection?: CollectionOptions }> = (props) => {
   const { name, collection, children } = props;
   const { getCollection } = useCollectionManager();
-  return <CollectionContext.Provider value={getCollection(collection || name)}>{children}</CollectionContext.Provider>;
+  const value = getCollection(collection || name);
+  if (!value) {
+    return null;
+  }
+  return <CollectionContext.Provider value={value}>{children}</CollectionContext.Provider>;
 };

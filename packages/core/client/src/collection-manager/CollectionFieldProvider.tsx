@@ -1,15 +1,18 @@
+import { SchemaKey } from '@formily/react';
 import React from 'react';
-import { merge } from '@formily/shared';
+import { CollectionFieldContext } from './context';
 import { useCollection } from './hooks';
 import { CollectionFieldOptions } from './types';
-import { CollectionFieldContext } from './context';
-import { SchemaKey } from '@formily/react';
 
 export const CollectionFieldProvider: React.FC<{ name?: SchemaKey; field?: CollectionFieldOptions }> = (props) => {
   const { name, field, children } = props;
   const { getField } = useCollection();
+  const value = field || getField(field?.name || name);
+  if (!value) {
+    return null;
+  }
   return (
-    <CollectionFieldContext.Provider value={field || getField(field?.name || name)}>
+    <CollectionFieldContext.Provider value={value}>
       {children}
     </CollectionFieldContext.Provider>
   );
