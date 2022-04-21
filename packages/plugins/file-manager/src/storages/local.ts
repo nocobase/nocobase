@@ -1,11 +1,11 @@
-import path from 'path';
-import { URL } from 'url';
+import Application from '@nocobase/server';
+import serve from 'koa-static';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
-import serve from 'koa-static';
+import path from 'path';
+import { URL } from 'url';
 import { STORAGE_TYPE_LOCAL } from '../constants';
 import { getFilename } from '../utils';
-import Application from '@nocobase/server';
 
 // use koa-mount match logic
 function match(basePath: string, pathname: string): boolean {
@@ -53,7 +53,7 @@ function getDocumentRoot(storage): string {
 }
 
 async function middleware(app: Application, options?) {
-  const LOCALHOST = `http://localhost:${process.env.API_PORT || '13002'}`;
+  const LOCALHOST = `http://localhost:${process.env.SERVER_PORT || '13002'}`;
 
   const Storage = app.db.getCollection('storages');
   const storages = new Map<string, any>();
@@ -122,7 +122,7 @@ export default {
       title: '本地存储',
       type: STORAGE_TYPE_LOCAL,
       name: `local`,
-      baseUrl: process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.API_PORT || '13002'}/uploads`,
+      baseUrl: process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.SERVER_PORT || '13002'}/uploads`,
     };
   },
 };
