@@ -11,7 +11,7 @@ export const useFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
-    if (nonfilterable.length && depth !== 1 && nonfilterable.includes(field.name)) {
+    if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
       return;
     }
     if (!field.interface) {

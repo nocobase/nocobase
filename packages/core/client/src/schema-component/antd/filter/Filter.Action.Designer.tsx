@@ -1,8 +1,10 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useCompile } from '../../hooks';
 
 export const useFilterableFields = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
@@ -25,16 +27,18 @@ export const FilterActionDesigner = (props) => {
   const { dn } = useDesignable();
   const { name } = useCollection();
   const fields = useFilterableFields(name);
+  const compile = useCompile();
+  const { t } = useTranslation();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   return (
     <GeneralSchemaDesigner {...props}>
-      <SchemaSettings.ItemGroup title={'可筛选字段'}>
+      <SchemaSettings.ItemGroup title={t('Filterable fields')}>
         {fields.map((field) => {
           const checked = !nonfilterable.includes(field.name);
           return (
             <SchemaSettings.SwitchItem
               checked={checked}
-              title={field?.uiSchema?.title}
+              title={compile(field?.uiSchema?.title)}
               onChange={(value) => {
                 fieldSchema['x-component-props'] = fieldSchema?.['x-component-props'] || {};
                 const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
