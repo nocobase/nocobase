@@ -29,6 +29,29 @@ function isURL(string) {
   return url.protocol === 'http:' || url.protocol === 'https:';
 }
 
+const filterValue = (value) => {
+  if (typeof value !== 'object') {
+    return value;
+  }
+  if (!value) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => filterValue(value));
+  }
+  const obj = {};
+  for (const key in value) {
+    if (Object.prototype.hasOwnProperty.call(value, key)) {
+      const val = value[key];
+      if (Array.isArray(val) || (val && typeof val === 'object')) {
+        continue;
+      }
+      obj[key] = val;
+    }
+  }
+  return obj;
+};
+
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
@@ -46,15 +69,21 @@ export const useCreateActionProps = () => {
         await form.submit();
       }
       let values = {};
-      if (resource instanceof TableFieldResource) {
-        values = form.values;
-      } else {
-        for (const key in form.values) {
-          if (fieldNames.includes(key)) {
-            const items = form.values[key];
-            const collectionField = getField(key);
-            if (collectionField.interface === 'linkTo') {
-              const targetKey = collectionField.targetKey || 'id';
+      for (const key in form.values) {
+        if (fieldNames.includes(key)) {
+          const items = form.values[key];
+          const collectionField = getField(key);
+          if (collectionField.interface === 'linkTo') {
+            const targetKey = collectionField.targetKey || 'id';
+            if (resource instanceof TableFieldResource) {
+              if (Array.isArray(items)) {
+                values[key] = filterValue(items);
+              } else if (items && typeof items === 'object') {
+                values[key] = filterValue(items);
+              } else {
+                values[key] = items;
+              }
+            } else {
               if (Array.isArray(items)) {
                 values[key] = items.map((item) => item[targetKey]);
               } else if (items && typeof items === 'object') {
@@ -62,12 +91,12 @@ export const useCreateActionProps = () => {
               } else {
                 values[key] = items;
               }
-            } else {
-              values[key] = form.values[key];
             }
           } else {
             values[key] = form.values[key];
           }
+        } else {
+          values[key] = form.values[key];
         }
       }
       await resource.create({
@@ -116,22 +145,28 @@ export const useUpdateActionProps = () => {
       }
       const fieldNames = fields.map((field) => field.name);
       let values = {};
-      if (resource instanceof TableFieldResource) {
-        values = form.values;
-      } else {
-        for (const key in form.values) {
-          if (fieldNames.includes(key)) {
-            const collectionField = getField(key);
-            if (collectionField.interface === 'subTable') {
-              values[key] = form.values[key];
-              continue;
-            }
-            if (!field.added.has(key)) {
-              continue;
-            }
-            const items = form.values[key];
-            if (collectionField.interface === 'linkTo') {
-              const targetKey = collectionField.targetKey || 'id';
+      for (const key in form.values) {
+        if (fieldNames.includes(key)) {
+          const collectionField = getField(key);
+          if (collectionField.interface === 'subTable') {
+            values[key] = form.values[key];
+            continue;
+          }
+          if (!field.added.has(key)) {
+            continue;
+          }
+          const items = form.values[key];
+          if (collectionField.interface === 'linkTo') {
+            const targetKey = collectionField.targetKey || 'id';
+            if (resource instanceof TableFieldResource) {
+              if (Array.isArray(items)) {
+                values[key] = filterValue(items);
+              } else if (items && typeof items === 'object') {
+                values[key] = filterValue(items);
+              } else {
+                values[key] = items;
+              }
+            } else {
               if (Array.isArray(items)) {
                 values[key] = items.map((item) => item[targetKey]);
               } else if (items && typeof items === 'object') {
@@ -139,12 +174,12 @@ export const useUpdateActionProps = () => {
               } else {
                 values[key] = items;
               }
-            } else {
-              values[key] = form.values[key];
             }
           } else {
             values[key] = form.values[key];
           }
+        } else {
+          values[key] = form.values[key];
         }
       }
       await resource.update({
