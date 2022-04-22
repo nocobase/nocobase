@@ -14,6 +14,7 @@ export class RoleResourceActionModel extends Model {
     const db: Database = this.constructor.database;
 
     const { resourceName, role, acl, associationFieldsActions, grantHelper } = options;
+
     const actionName = this.get('name') as string;
 
     const fields = this.get('fields') as any;
@@ -47,17 +48,19 @@ export class RoleResourceActionModel extends Model {
 
       const fieldActions: AssociationFieldAction = associationFieldsActions?.[fieldType]?.[availableAction];
 
+      const fieldTarget = collectionField.get('target');
+
       if (fieldActions) {
         const associationActions = fieldActions.associationActions || [];
         associationActions.forEach((associationAction) => {
-          const actionName = `${resourceName}.${field}:${associationAction}`;
+          const actionName = `${resourceName}.${fieldTarget}:${associationAction}`;
           role.grantAction(actionName);
         });
 
         const targetActions = fieldActions.targetActions || [];
 
         targetActions.forEach((targetAction) => {
-          const targetActionPath = `${field}:${targetAction}`;
+          const targetActionPath = `${fieldTarget}:${targetAction}`;
 
           grantHelper.resourceTargetActionMap.set(resourceName, [
             ...(grantHelper.resourceTargetActionMap.get(resourceName) || []),
