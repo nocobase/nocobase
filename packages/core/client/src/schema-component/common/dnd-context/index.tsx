@@ -2,12 +2,14 @@ import { DndContext as DndKitContext, DragEndEvent, DragOverlay, rectIntersectio
 import { Props } from '@dnd-kit/core/dist/components/DndContext/DndContext';
 import { observer } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../';
 import { createDesignable, useDesignable } from '../../hooks';
 
 const useDragEnd = (props?: any) => {
   const { refresh } = useDesignable();
   const api = useAPIClient();
+  const { t } = useTranslation();
 
   return (event: DragEndEvent) => {
     const { active, over } = event;
@@ -28,6 +30,7 @@ const useDragEnd = (props?: any) => {
     }
 
     const dn = createDesignable({
+      t,
       api,
       refresh,
       current: overSchema,

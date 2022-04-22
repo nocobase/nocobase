@@ -85,14 +85,14 @@ export const RolesResourcesActions = connect((props) => {
     <div>
       <RoleResourceCollectionContext.Provider value={collection}>
         <FormLayout layout={'vertical'}>
-          <FormItem label={'操作权限'}>
+          <FormItem label={t('Action permission')}>
             <Table
               size={'small'}
               pagination={false}
               columns={[
                 {
                   dataIndex: 'displayName',
-                  title: '操作',
+                  title: t('Action display name'),
                   render: (value) => compile(value),
                 },
                 {
@@ -148,14 +148,14 @@ export const RolesResourcesActions = connect((props) => {
               })}
             />
           </FormItem>
-          <FormItem label={'字段权限'}>
+          <FormItem label={t('Field permission')}>
             <Table
               pagination={false}
               dataSource={fieldPermissions}
               columns={[
                 {
                   dataIndex: ['uiSchema', 'title'],
-                  title: '字段名称',
+                  title: t('Field display name'),
                   render: (value) => compile(value),
                 },
                 ...availableActionsWithFields.map((action) => {

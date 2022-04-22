@@ -24,11 +24,11 @@ export const RecordFormBlockInitializers = (props: any) => {
         },
         {
           type: 'itemGroup',
-          title: 'Media',
+          title: '{{t("Media")}}',
           children: [
             {
               type: 'item',
-              title: 'Markdown',
+              title: '{{t("Markdown")}}',
               component: 'MarkdownBlockInitializer',
             },
           ],

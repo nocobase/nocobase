@@ -10,6 +10,7 @@ import {
 import { Menu as AntdMenu } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
 import { Icon, useAPIClient, useSchemaInitializer } from '../../../';
 import { MenuDesigner } from './Menu.Designer';
@@ -144,6 +145,7 @@ export const Menu: ComposedMenu = observer((props) => {
     defaultOpenKeys: dOpenKeys,
     ...others
   } = props;
+  const { t } = useTranslation();
   const Designer = useDesigner();
   const schema = useFieldSchema();
   const { refresh } = useDesignable();
@@ -300,8 +302,8 @@ export const Menu: ComposedMenu = observer((props) => {
                     {render({
                       style: { margin: 8 },
                       insert: (s) => {
-                        console.log('createDesignable', s);
                         const dn = createDesignable({
+                          t,
                           api,
                           refresh,
                           current: sideMenuSchema,

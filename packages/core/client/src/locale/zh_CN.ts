@@ -288,5 +288,8 @@ export default {
   "Block type": "区块类型",
   "Action column": "操作列",
   "Records per page": "每页显示数量",
-  "(Fields only)": "（仅字段）"
+  "(Fields only)": "（仅字段）",
+  "Button title":  "按钮标题",
+  "Button icon":  "按钮图标",
+  "Submitted successfully": "提交成功",
 }

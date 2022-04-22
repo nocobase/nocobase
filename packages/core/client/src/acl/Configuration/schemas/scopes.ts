@@ -12,7 +12,7 @@ export const rolesResourcesScopesCollection = {
       name: 'name',
       interface: 'input',
       uiSchema: {
-        title: '名称',
+        title: '{{t("Scope name")}}',
         type: 'string',
         'x-component': 'Input',
         required: true,

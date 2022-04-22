@@ -25,6 +25,7 @@ export const TableActionColumnInitializers = (props: any) => {
           return;
         }
         const dn = createDesignable({
+          t,
           api,
           refresh,
           current: spaceSchema,

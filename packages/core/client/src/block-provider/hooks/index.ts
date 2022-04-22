@@ -3,7 +3,7 @@ import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useCollection } from '../../collection-manager';
-import { useActionContext } from '../../schema-component';
+import { useActionContext, useCompile } from '../../schema-component';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
@@ -60,6 +60,7 @@ export const useCreateActionProps = () => {
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
   const { fields, getField } = useCollection();
+  const compile = useCompile();
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
@@ -112,7 +113,7 @@ export const useCreateActionProps = () => {
         return;
       }
       Modal.success({
-        title: onSuccess?.successMessage,
+        title: compile(onSuccess?.successMessage),
         onOk: async () => {
           await form.reset();
           if (onSuccess?.redirecting && onSuccess?.redirectTo) {
@@ -136,6 +137,7 @@ export const useUpdateActionProps = () => {
   const actionSchema = useFieldSchema();
   const history = useHistory();
   const { fields, getField } = useCollection();
+  const compile = useCompile();
   return {
     async onClick() {
       const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
@@ -197,7 +199,7 @@ export const useUpdateActionProps = () => {
       const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
       if (onSuccess?.successMessage) {
         Modal.success({
-          title: onSuccess?.successMessage,
+          title: compile(onSuccess?.successMessage),
           onOk: async () => {
             await form.reset();
             if (onSuccess?.redirecting && onSuccess?.redirectTo) {

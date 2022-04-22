@@ -1,8 +1,10 @@
+import { css } from '@emotion/css';
 import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import { GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Dropdown, Menu, MenuItemProps, Modal, Select, Switch } from 'antd';
+import classNames from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -87,6 +89,15 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
         setVisible(visible);
       }}
       overlay={<Menu>{props.children}</Menu>}
+      overlayClassName={classNames(
+        'nb-schema-initializer-button-overlay',
+        css`
+          .ant-dropdown-menu-item-group-list {
+            max-height: 40vh;
+            overflow: auto;
+          }
+        `,
+      )}
     >
       {typeof title === 'string' ? <span>{title}</span> : title}
     </Dropdown>
@@ -134,7 +145,7 @@ SchemaSettings.Template = (props) => {
     <SchemaSettings.Item
       onClick={async () => {
         setVisible(false);
-        const values = await FormDialog('Save as template', () => {
+        const values = await FormDialog(t('Save as template'), () => {
           return (
             <FormLayout layout={'vertical'}>
               <SchemaComponent
@@ -143,7 +154,7 @@ SchemaSettings.Template = (props) => {
                   type: 'object',
                   properties: {
                     name: {
-                      title: '模板名称',
+                      title: t('Template name'),
                       required: true,
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
@@ -155,6 +166,7 @@ SchemaSettings.Template = (props) => {
           );
         }).open({});
         const sdn = createDesignable({
+          t,
           api,
           refresh: dn.refresh.bind(dn),
           current: fieldSchema.parent,
@@ -231,6 +243,7 @@ SchemaSettings.FormItemTemplate = (props) => {
           const schema = await copyTemplateSchema(template);
           const templateSchema = findBlockTemplateSchema(fieldSchema);
           const sdn = createDesignable({
+            t,
             api,
             refresh: dn.refresh.bind(dn),
             current: templateSchema.parent,
@@ -275,7 +288,7 @@ SchemaSettings.FormItemTemplate = (props) => {
                   type: 'object',
                   properties: {
                     name: {
-                      title: '模板名称',
+                      title: t('Template name'),
                       required: true,
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
@@ -287,6 +300,7 @@ SchemaSettings.FormItemTemplate = (props) => {
           );
         }).open({});
         const sdn = createDesignable({
+          t,
           api,
           refresh: dn.refresh.bind(dn),
           current: gridSchema.parent,

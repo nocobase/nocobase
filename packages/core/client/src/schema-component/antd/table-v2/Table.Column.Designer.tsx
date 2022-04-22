@@ -34,16 +34,16 @@ export const TableColumnDesigner = (props) => {
   return (
     <GeneralSchemaDesigner>
       <SchemaSettings.ModalItem
-        title={t('Edit column title')}
+        title={t('Custom column title')}
         schema={
           {
             type: 'object',
-            title: t('Edit column title'),
+            title: t('Custom column title'),
             properties: {
               title: {
-                title: t('Column title'),
+                // title: t('Column title'),
                 default: columnSchema?.title,
-                description: `${t('Original field title: ')}${collectionField?.uiSchema?.title}`,
+                description: `${t('Original title: ')}${collectionField?.uiSchema?.title}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {},
@@ -96,6 +96,9 @@ export const TableColumnDesigner = (props) => {
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',
+        }}
+        confirm={{
+          title: t('Delete table column')
         }}
       />
     </GeneralSchemaDesigner>
