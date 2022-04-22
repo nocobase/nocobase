@@ -13,7 +13,6 @@ export const BlockItem: React.FC<any> = (props) => {
         props.className,
         css`
           position: relative;
-          overflow: hidden;
           &:hover {
             > .general-schema-designer {
               display: block;

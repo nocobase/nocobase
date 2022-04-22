@@ -14,7 +14,7 @@ const collection = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '角色名称',
+        title: '{{t("Role title")}}',
         type: 'number',
         'x-component': 'Input',
         required: true,
@@ -25,7 +25,7 @@ const collection = {
       name: 'name',
       interface: 'input',
       uiSchema: {
-        title: '角色标识',
+        title: '{{t("Role name")}}',
         type: 'string',
         'x-component': 'Input',
       } as ISchema,
@@ -35,7 +35,7 @@ const collection = {
       name: 'default',
       interface: 'boolean',
       uiSchema: {
-        title: '默认角色',
+        title: '{{t("Default role")}}',
         type: 'boolean',
         'x-component': 'Checkbox',
       } as ISchema,
@@ -82,12 +82,19 @@ export const roleSchema: ISchema = {
           properties: {
             delete: {
               type: 'void',
-              title: '删除',
+              title: '{{ t("Delete") }}',
               'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ cm.useBulkDestroyAction }}',
+                confirm: {
+                  title: "{{t('Delete role')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
             },
             create: {
               type: 'void',
-              title: '添加角色',
+              title: '{{t("Add role")}}',
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
@@ -111,7 +118,7 @@ export const roleSchema: ISchema = {
                       );
                     },
                   },
-                  title: '添加角色',
+                  title: '{{t("Add role")}}',
                   properties: {
                     title: {
                       'x-component': 'CollectionField',
@@ -120,25 +127,28 @@ export const roleSchema: ISchema = {
                     name: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
-                      description: '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+                      description:
+                        '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
                     },
                     default: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
+                      title: '',
+                      'x-content': '{{t("Default role")}}',
                     },
                     footer: {
                       type: 'void',
                       'x-component': 'Action.Drawer.Footer',
                       properties: {
-                        action1: {
-                          title: 'Cancel',
+                        cancel: {
+                          title: '{{t("Cancel")}}',
                           'x-component': 'Action',
                           'x-component-props': {
                             useAction: '{{ cm.useCancelAction }}',
                           },
                         },
-                        action2: {
-                          title: 'Submit',
+                        submit: {
+                          title: '{{t("Submit")}}',
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
@@ -215,14 +225,14 @@ export const roleSchema: ISchema = {
                   properties: {
                     view: {
                       type: 'void',
-                      title: '配置权限',
+                      title: '{{t("Configure")}}',
                       'x-component': 'Action.Link',
                       'x-component-props': {},
                       properties: {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
-                          title: '配置权限',
+                          title: '{{t("Configure permissions")}}',
                           properties: {
                             tabs1: {
                               type: 'void',
@@ -231,7 +241,7 @@ export const roleSchema: ISchema = {
                               properties: {
                                 tab1: {
                                   type: 'void',
-                                  title: '系统全局配置',
+                                  title: '{{t("Global permissions")}}',
                                   'x-component': 'Tabs.TabPane',
                                   'x-component-props': {},
                                   properties: {
@@ -242,7 +252,7 @@ export const roleSchema: ISchema = {
                                 },
                                 tab2: {
                                   type: 'void',
-                                  title: '数据权限',
+                                  title: '{{t("Action permissions")}}',
                                   'x-component': 'Tabs.TabPane',
                                   'x-component-props': {},
                                   properties: {
@@ -251,7 +261,7 @@ export const roleSchema: ISchema = {
                                 },
                                 tab3: {
                                   type: 'void',
-                                  title: '菜单访问权限',
+                                  title: '{{t("Menu permissions")}}',
                                   'x-component': 'Tabs.TabPane',
                                   'x-component-props': {},
                                   properties: {
@@ -268,7 +278,7 @@ export const roleSchema: ISchema = {
                     },
                     update: {
                       type: 'void',
-                      title: '编辑',
+                      title: '{{t("Edit")}}',
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         type: 'primary',
@@ -281,7 +291,7 @@ export const roleSchema: ISchema = {
                           'x-decorator-props': {
                             useValues: '{{ cm.useValuesFromRecord }}',
                           },
-                          title: '编辑角色',
+                          title: '{{t("Edit role")}}',
                           properties: {
                             title: {
                               'x-component': 'CollectionField',
@@ -293,22 +303,24 @@ export const roleSchema: ISchema = {
                               'x-disabled': true,
                             },
                             default: {
+                              title: '',
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
+                              'x-content': '{{t("Default role")}}',
                             },
                             footer: {
                               type: 'void',
                               'x-component': 'Action.Drawer.Footer',
                               properties: {
-                                action1: {
-                                  title: 'Cancel',
+                                cancel: {
+                                  title: '{{t("Cancel")}}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     useAction: '{{ cm.useCancelAction }}',
                                   },
                                 },
-                                action2: {
-                                  title: 'Submit',
+                                submit: {
+                                  title: '{{t("Submit")}}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
@@ -323,10 +335,14 @@ export const roleSchema: ISchema = {
                     },
                     delete: {
                       type: 'void',
-                      title: '删除',
+                      title: '{{ t("Delete") }}',
                       'x-component': 'Action.Link',
                       'x-component-props': {
-                        useAction: '{{ cm.useDestroyAction }}',
+                        confirm: {
+                          title: "{{t('Delete role')}}",
+                          content: "{{t('Are you sure you want to delete it?')}}",
+                        },
+                        useAction: '{{cm.useDestroyAction}}',
                       },
                     },
                   },

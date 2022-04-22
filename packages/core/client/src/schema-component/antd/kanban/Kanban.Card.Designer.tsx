@@ -79,6 +79,7 @@ export const KanbanCardDesigner = (props: any) => {
                 return;
               }
               const dn = createDesignable({
+                t,
                 api,
                 refresh,
                 current: gridSchema,

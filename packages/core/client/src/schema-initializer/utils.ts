@@ -164,7 +164,7 @@ export const useRecordCollectionDataSourceItems = (componentName) => {
     {
       type: 'item',
       name: collection.name,
-      title: '空白区块',
+      title: t('Blank block'),
     },
     {
       type: 'divider',
@@ -173,7 +173,7 @@ export const useRecordCollectionDataSourceItems = (componentName) => {
       key: `${componentName}_table_subMenu_${index}_copy`,
       type: 'subMenu',
       name: 'copy',
-      title: '复制模板',
+      title: t('Duplicate template'),
       children: templates.map((template) => {
         const templateName =
           template?.componentName === 'ReadPrettyFormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
@@ -182,7 +182,7 @@ export const useRecordCollectionDataSourceItems = (componentName) => {
           mode: 'copy',
           name: collection.name,
           template,
-          title: templateName || '未命名',
+          title: templateName || t('Untitled'),
         };
       }),
     },
@@ -190,7 +190,7 @@ export const useRecordCollectionDataSourceItems = (componentName) => {
       key: `${componentName}_table_subMenu_${index}_ref`,
       type: 'subMenu',
       name: 'ref',
-      title: '引用模板',
+      title: t('Reference template'),
       children: templates.map((template) => {
         const templateName =
           template?.componentName === 'ReadPrettyFormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
@@ -199,7 +199,7 @@ export const useRecordCollectionDataSourceItems = (componentName) => {
           mode: 'reference',
           name: collection.name,
           template,
-          title: templateName || '未命名',
+          title: templateName || t('Untitled'),
         };
       }),
     },
@@ -214,7 +214,7 @@ export const useCollectionDataSourceItems = (componentName) => {
     {
       key: 'tableBlock',
       type: 'itemGroup',
-      title: t('Select data source'),
+      title: t('Select collection'),
       children: collections
         ?.filter((item) => !item.inherit)
         ?.map((item, index) => {
@@ -237,7 +237,7 @@ export const useCollectionDataSourceItems = (componentName) => {
               {
                 type: 'item',
                 name: item.name,
-                title: '空白区块',
+                title: t('Blank block'),
               },
               {
                 type: 'divider',
@@ -246,7 +246,7 @@ export const useCollectionDataSourceItems = (componentName) => {
                 key: `${componentName}_table_subMenu_${index}_copy`,
                 type: 'subMenu',
                 name: 'copy',
-                title: '复制模板',
+                title: t('Duplicate template'),
                 children: templates.map((template) => {
                   const templateName =
                     template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
@@ -255,7 +255,7 @@ export const useCollectionDataSourceItems = (componentName) => {
                     mode: 'copy',
                     name: item.name,
                     template,
-                    title: templateName || '未命名',
+                    title: templateName || t('Untitled'),
                   };
                 }),
               },
@@ -263,7 +263,7 @@ export const useCollectionDataSourceItems = (componentName) => {
                 key: `${componentName}_table_subMenu_${index}_ref`,
                 type: 'subMenu',
                 name: 'ref',
-                title: '引用模板',
+                title: t('Reference template'),
                 children: templates.map((template) => {
                   const templateName =
                     template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
@@ -272,7 +272,7 @@ export const useCollectionDataSourceItems = (componentName) => {
                     mode: 'reference',
                     name: item.name,
                     template,
-                    title: templateName || '未命名',
+                    title: templateName || t('Untitled'),
                   };
                 }),
               },
@@ -657,7 +657,7 @@ export const createCalendarBlockSchema = (options) => {
                     properties: {
                       tab1: {
                         type: 'void',
-                        title: '详情',
+                        title: '{{t("Details")}}',
                         'x-component': 'Tabs.TabPane',
                         'x-designer': 'Tabs.Designer',
                         'x-component-props': {},
@@ -725,7 +725,7 @@ export const createKanbanBlockSchema = (options) => {
             },
           },
           cardAdder: {
-            title: '添加卡片',
+            title: '{{t("Add new")}}',
             type: 'void',
             'x-designer': 'Action.Designer',
             'x-designer-props': {
@@ -780,7 +780,7 @@ export const createKanbanBlockSchema = (options) => {
                     properties: {
                       tab1: {
                         type: 'void',
-                        title: '详情',
+                        title: '{{t("Details")}}',
                         'x-component': 'Tabs.TabPane',
                         'x-designer': 'Tabs.Designer',
                         'x-component-props': {},

@@ -174,7 +174,7 @@ FormItem.Designer = () => {
       )}
       {collectionField?.target && (
         <SchemaSettings.SelectItem
-          title={'标题字段'}
+          title={t('Title field')}
           options={options}
           value={field?.componentProps?.fieldNames?.label}
           onChange={(label) => {
@@ -201,6 +201,9 @@ FormItem.Designer = () => {
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         removeParentsIfNoChildren
+        confirm={{
+          title: t('Delete field')
+        }}
         breakRemoveOn={{
           'x-component': 'Grid',
         }}

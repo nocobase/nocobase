@@ -4,6 +4,7 @@ import { message } from 'antd';
 import get from 'lodash/get';
 import set from 'lodash/set';
 import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
 import { SchemaComponentContext } from '../context';
 
@@ -12,6 +13,8 @@ interface CreateDesignableProps {
   api?: APIClient;
   refresh?: () => void;
   onSuccess?: any;
+  i18n?: any;
+  t?: any;
 }
 
 export function createDesignable(options: CreateDesignableProps) {
@@ -90,6 +93,8 @@ export const splitWrapSchema = (wrapped: Schema, schema: ISchema) => {
   return [schema1, schema2];
 };
 
+const translate = (v?: any) => v;
+
 export class Designable {
   current: Schema;
   options: CreateDesignableProps;
@@ -101,7 +106,7 @@ export class Designable {
   }
 
   loadAPIClientEvents() {
-    const { refresh, api } = this.options;
+    const { refresh, api, t = translate } = this.options;
     if (!api) {
       return;
     }
@@ -125,7 +130,7 @@ export class Designable {
         });
       }
       onSuccess?.();
-      message.success('配置保存成功！', 0.2);
+      message.success(t('Saved successfully'), 0.2);
     });
     this.on('patch', async ({ schema }) => {
       refresh();
@@ -139,7 +144,7 @@ export class Designable {
           ...schema,
         },
       });
-      message.success('配置保存成功！', 0.2);
+      message.success(t('Saved successfully'), 0.2);
     });
     this.on('remove', async ({ removed }) => {
       refresh();
@@ -150,7 +155,7 @@ export class Designable {
         url: `/uiSchemas:remove/${removed['x-uid']}`,
         method: 'post',
       });
-      message.success('配置保存成功！', 0.2);
+      message.success(t('Saved successfully'), 0.2);
     });
   }
 
@@ -508,7 +513,8 @@ export function useDesignable() {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
-  const dn = createDesignable({ api, refresh, current: fieldSchema });
+  const { t } = useTranslation();
+  const dn = createDesignable({ t, api, refresh, current: fieldSchema });
   dn.loadAPIClientEvents();
   return {
     dn,

@@ -25,7 +25,7 @@ export const TableSelectorInitializers = (props: any) => {
         },
         {
           type: 'itemGroup',
-          title: 'Media',
+          title: t('Media'),
           children: [
             {
               type: 'item',

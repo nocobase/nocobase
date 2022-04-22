@@ -308,6 +308,7 @@ export const MenuDesigner = () => {
           }
           const current = findByUid(menuSchema, uid);
           const dn = createDesignable({
+            t,
             api,
             refresh,
             current,

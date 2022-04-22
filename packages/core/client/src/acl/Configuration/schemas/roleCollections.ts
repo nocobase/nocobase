@@ -12,34 +12,34 @@ const collection = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '数据表名称',
+        title: '{{t("Collection display name")}}',
         type: 'number',
         'x-component': 'Input',
         required: true,
       } as ISchema,
     },
-    {
-      type: 'string',
-      name: 'name',
-      interface: 'input',
-      uiSchema: {
-        title: '数据表标识',
-        type: 'string',
-        'x-component': 'Input',
-        description: '使用英文',
-      } as ISchema,
-    },
+    // {
+    //   type: 'string',
+    //   name: 'name',
+    //   interface: 'input',
+    //   uiSchema: {
+    //     title: '数据表标识',
+    //     type: 'string',
+    //     'x-component': 'Input',
+    //     description: '使用英文',
+    //   } as ISchema,
+    // },
     {
       type: 'string',
       name: 'usingConfig',
       interface: 'input',
       uiSchema: {
-        title: '权限策略',
+        title: '{{t("Permission policy")}}',
         type: 'string',
         'x-component': 'Select',
         enum: [
-          { label: '单独配置', value: 'resourceAction', color: 'orange' },
-          { label: '通用配置', value: 'strategy', color: 'default' },
+          { label: '{{t("Individual")}}', value: 'resourceAction', color: 'orange' },
+          { label: '{{t("General")}}', value: 'strategy', color: 'default' },
         ],
       } as ISchema,
     },
@@ -127,7 +127,7 @@ export const roleCollectionsSchema: ISchema = {
         },
         column4: {
           type: 'void',
-          title: 'Actions',
+          title: '{{t("Actions")}}',
           'x-component': 'Table.Column',
           properties: {
             actions: {
@@ -139,7 +139,7 @@ export const roleCollectionsSchema: ISchema = {
               properties: {
                 configure: {
                   type: 'void',
-                  title: '单独配置权限',
+                  title: '{{t("Configure")}}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
                     type: 'primary',
@@ -152,15 +152,16 @@ export const roleCollectionsSchema: ISchema = {
                       'x-decorator-props': {
                         useValues: useRoleResourceValues,
                       },
-                      title: '配置权限',
+                      title: '{{t("Configure permission")}}',
                       properties: {
                         usingActionsConfig: {
+                          title: '{{t("Permission policy")}}',
                           'x-component': 'Radio.Group',
                           'x-decorator': 'FormItem',
                           default: false,
                           enum: [
-                            { value: false, label: '使用通用权限' },
-                            { value: true, label: '单独配置权限' },
+                            { value: false, label: '{{t("General")}}' },
+                            { value: true, label: '{{t("Individual")}}' },
                           ],
                           'x-reactions': {
                             target: 'actions',
@@ -179,15 +180,15 @@ export const roleCollectionsSchema: ISchema = {
                           type: 'void',
                           'x-component': 'Action.Drawer.Footer',
                           properties: {
-                            action1: {
-                              title: 'Cancel',
+                            cancel: {
+                              title: '{{t("Cancel")}}',
                               'x-component': 'Action',
                               'x-component-props': {
                                 useAction: '{{ cm.useCancelAction }}',
                               },
                             },
-                            action2: {
-                              title: 'Submit',
+                            submit: {
+                              title: '{{t("Submit")}}',
                               'x-component': 'Action',
                               'x-component-props': {
                                 type: 'primary',

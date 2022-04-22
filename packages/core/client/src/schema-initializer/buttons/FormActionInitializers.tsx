@@ -1,3 +1,4 @@
+
 // 表单的操作配置
 export const FormActionInitializers = {
   title: '{{t("Configure actions")}}',
@@ -15,7 +16,7 @@ export const FormActionInitializers = {
             'x-action-settings': {
               initialValues: {},
               onSuccess: {
-                successMessage: 'Submitted successfully!',
+                successMessage: '{{t("Submitted successfully")}}',
               },
             },
           },
@@ -40,7 +41,7 @@ export const FormActionInitializers = {
             'x-action-settings': {
               initialValues: {},
               onSuccess: {
-                successMessage: 'Submitted successfully!',
+                successMessage: '{{t("Submitted successfully")}}',
               },
             },
             'x-component-props': {
