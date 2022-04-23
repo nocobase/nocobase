@@ -300,13 +300,8 @@ export class PluginACL extends Plugin {
 
     this.app.acl.skip('roles', 'check', 'loggedIn');
 
-    this.app.acl.skip('roles.menuUiSchemas', 'set', 'allowConfigure');
-    this.app.acl.skip('roles.menuUiSchemas', 'toggle', 'allowConfigure');
-    this.app.acl.skip('roles.menuUiSchemas', 'list', 'allowConfigure');
-
-    this.app.acl.skip('roles', 'create', 'allowConfigure');
-    this.app.acl.skip('roles', 'update', 'allowConfigure');
-    this.app.acl.skip('roles', 'destroy', 'allowConfigure');
+    this.app.acl.skip('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
+    this.app.acl.skip('roles', ['create', 'update', 'destroy'], 'allowConfigure');
 
     this.app.acl.skip('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';

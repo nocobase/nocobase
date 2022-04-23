@@ -217,8 +217,14 @@ export class ACL extends EventEmitter {
     this.middlewares.push(fn);
   }
 
-  skip(resourceName: string, actionName: string, condition?: any) {
-    this.skipManager.skip(resourceName, actionName, condition);
+  skip(resourceName: string, actionNames: string[] | string, condition?: any) {
+    if (!Array.isArray(actionNames)) {
+      actionNames = [actionNames];
+    }
+
+    for (const actionName of actionNames) {
+      this.skipManager.skip(resourceName, actionName, condition);
+    }
   }
 
   parseJsonTemplate(json: any, ctx: any) {
