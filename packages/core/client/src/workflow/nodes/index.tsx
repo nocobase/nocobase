@@ -125,19 +125,26 @@ export function RemoveButton() {
       onNodeRemoved(node);
     }
 
-    if (!nodes.find(item => item.upstream === current && item.branchIndex != null)) {
-      return onOk();
-    }
+    const hasBranches = !nodes.find(item => item.upstream === current && item.branchIndex != null);
+    const message = hasBranches
+      ? '确定删除该节点吗？'
+      : '节点包含分支，将同时删除其所有分支下的子节点，确定继续？';
 
     Modal.confirm({
-      title: '删除分支',
-      content: '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
+      title: '删除节点',
+      content: message,
       onOk
     });
   }
 
   return (
-    <Button type="text" shape="circle" icon={<DeleteOutlined />} onClick={onRemove} />
+    <Button
+      type="text"
+      shape="circle"
+      icon={<DeleteOutlined />}
+      onClick={onRemove}
+      className="workflow-node-remove-button"
+    />
   );
 }
 
