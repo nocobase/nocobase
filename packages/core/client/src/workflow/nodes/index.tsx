@@ -138,7 +138,13 @@ export function RemoveButton() {
   }
 
   return (
-    <Button type="text" shape="circle" icon={<DeleteOutlined />} onClick={onRemove} />
+    <Button
+      type="text"
+      shape="circle"
+      icon={<DeleteOutlined />}
+      onClick={onRemove}
+      className="workflow-node-remove-button"
+    />
   );
 }
 
