@@ -382,4 +382,12 @@ export default {
   'Action permission': '操作权限',
   'Field permission': '字段权限',
   'Scope name': '数据范围名称',
+
+  'File storages': '文件存储',
+  'Storage display name': '文件存储名称',
+  'Storage name': '文件存储标识',
+  'Default storage': '默认存储',
+  'Add storage': '添加文件存储',
+  'Edit storage': '编辑文件存储',
+  'Storage base URL': '根 URL',
 }
