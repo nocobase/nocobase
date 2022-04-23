@@ -5,7 +5,7 @@ import lodash from 'lodash';
 import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, RoleActionParams } from './acl-role';
-import { SkipManager } from './skip-manager';
+import { AllowManager } from './allow-manager';
 const parse = require('json-templates');
 
 interface CanResult {
@@ -47,7 +47,7 @@ export class ACL extends EventEmitter {
   protected availableStrategy = new Map<string, ACLAvailableStrategy>();
   protected middlewares = [];
 
-  public skipManager = new SkipManager(this);
+  public allowManager = new AllowManager(this);
 
   roles = new Map<string, ACLRole>();
 
@@ -85,7 +85,7 @@ export class ACL extends EventEmitter {
       }
     });
 
-    this.middlewares.push(this.skipManager.aclMiddleware());
+    this.middlewares.push(this.allowManager.aclMiddleware());
   }
 
   define(options: DefineOptions): ACLRole {
@@ -223,7 +223,7 @@ export class ACL extends EventEmitter {
     }
 
     for (const actionName of actionNames) {
-      this.skipManager.skip(resourceName, actionName, condition);
+      this.allowManager.allow(resourceName, actionName, condition);
     }
   }
 

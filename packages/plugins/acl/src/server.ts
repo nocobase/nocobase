@@ -299,9 +299,9 @@ export class PluginACL extends Plugin {
     });
 
     this.app.acl.allow('roles', 'check', 'loggedIn');
+    this.app.acl.allow('roles', ['create', 'update', 'destroy'], 'allowConfigure');
 
     this.app.acl.allow('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
-    this.app.acl.allow('roles', ['create', 'update', 'destroy'], 'allowConfigure');
 
     this.app.acl.allow('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';
