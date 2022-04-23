@@ -140,7 +140,7 @@ export const ActionDesigner = (props) => {
               properties: {
                 successMessage: {
                   // default: t('Submitted successfully!'),
-                  title: 'Pop-up message',
+                  title: t('Pop-up message'),
                   'x-decorator': 'FormItem',
                   'x-component': 'Input.TextArea',
                   'x-component-props': {},

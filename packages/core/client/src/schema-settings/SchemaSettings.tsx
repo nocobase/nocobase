@@ -279,7 +279,7 @@ SchemaSettings.FormItemTemplate = (props) => {
         setVisible(false);
         const gridSchema = findGridSchema(fieldSchema);
         console.log('gridSchema', gridSchema);
-        const values = await FormDialog('Save as template', () => {
+        const values = await FormDialog(t('Save as template'), () => {
           return (
             <FormLayout layout={'vertical'}>
               <SchemaComponent

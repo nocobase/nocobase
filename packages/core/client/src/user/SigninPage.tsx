@@ -83,7 +83,6 @@ export const SigninPage = () => {
   useCurrentDocumentTitle('Signin');
   const ctx = useSystemSettings();
   const allowSignUp = ctx?.data?.data?.allowSignUp;
-  console.log('ctx.data.allowSignUp', ctx?.data?.data?.allowSignUp);
   return (
     <div>
       <SchemaComponent scope={{ useSignin, allowSignUp }} schema={schema} />
