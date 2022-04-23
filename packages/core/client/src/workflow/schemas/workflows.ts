@@ -193,6 +193,7 @@ export const workflowSchema: ISchema = {
                   type: 'boolean',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
+                  default: false
                 },
               }
             },
@@ -213,22 +214,22 @@ export const workflowSchema: ISchema = {
                       title: '配置流程',
                       'x-component': 'WorkflowLink'
                     },
-                    executions: {
-                      type: 'void',
-                      title: '执行历史',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {
-                        type: 'primary',
-                      },
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          title: '执行历史',
-                          'x-component': 'Action.Drawer',
-                          properties: executionSchema
-                        }
-                      }
-                    },
+                    // executions: {
+                    //   type: 'void',
+                    //   title: '执行历史',
+                    //   'x-component': 'Action.Link',
+                    //   'x-component-props': {
+                    //     type: 'primary',
+                    //   },
+                    //   properties: {
+                    //     drawer: {
+                    //       type: 'void',
+                    //       title: '执行历史',
+                    //       'x-component': 'Action.Drawer',
+                    //       properties: executionSchema
+                    //     }
+                    //   }
+                    // },
                     update: {
                       type: 'void',
                       title: '{{ t("Edit") }}',
@@ -279,18 +280,18 @@ export const workflowSchema: ISchema = {
                         },
                       },
                     },
-                    delete: {
-                      type: 'void',
-                      title: '{{ t("Delete") }}',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {
-                        confirm: {
-                          title: "{{t('Delete record')}}",
-                          content: "{{t('Are you sure you want to delete it?')}}",
-                        },
-                        useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
-                      },
-                    },
+                    // delete: {
+                    //   type: 'void',
+                    //   title: '{{ t("Delete") }}',
+                    //   'x-component': 'Action.Link',
+                    //   'x-component-props': {
+                    //     confirm: {
+                    //       title: "{{t('Delete record')}}",
+                    //       content: "{{t('Are you sure you want to delete it?')}}",
+                    //     },
+                    //     useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
+                    //   },
+                    // },
                   }
                 }
               }

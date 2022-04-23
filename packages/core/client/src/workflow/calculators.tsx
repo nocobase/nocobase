@@ -263,6 +263,14 @@ export function Operand({
       display: flex;
       gap: .5em;
       align-items: center;
+
+      .ant-select,
+      .ant-cascader-picker,
+      .ant-picker,
+      .ant-input-number,
+      .ant-input-affix-wrapper{
+        width: auto;
+      }
     `}>
       <Cascader
         allowClear={false}
@@ -378,28 +386,24 @@ export const CollectionFieldset = observer(({ value, onChange, useProps }: any) 
     <fieldset className={css`
       margin-top: .5em;
 
-      .ant-formily-item{
-        .ant-formily-item-label{
-          line-height: 32px;
-        }
+      > .ant-formily-item{
+        flex-direction: column;
 
-        .ant-select,
-        .ant-cascader-picker,
-        .ant-picker,
-        .ant-input-number,
-        .ant-input-affix-wrapper{
-          width: auto;
+        > .ant-formily-item-label{
+          line-height: 32px;
         }
       }
     `}>
       {fields.length
-        ? fields.map(field => {
+        ? fields
+          .filter(field => !field.hidden)
+          .map(field => {
             const operand = typeof value[field.name] === 'string'
               ? parseStringValue(value[field.name], VTypes)
               : { type: 'constant', value: value[field.name] };
 
             return (
-              <FormItem label={compile(field.uiSchema?.title)}>
+              <FormItem label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left">
                 <VariableTypesContext.Provider value={VTypes}>
                   <Operand
                     value={operand}
