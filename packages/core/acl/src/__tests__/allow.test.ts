@@ -65,7 +65,7 @@ describe('skip', () => {
     const middlewareFunc = acl.middleware();
 
     const conditionFn = jest.fn();
-    acl.skipManager.registerSkipCondition('superUser', () => {
+    acl.skipManager.registerSkipCondition('superUser', async () => {
       conditionFn();
       return true;
     });
