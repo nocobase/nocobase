@@ -159,6 +159,11 @@ export const storageSchema: ISchema = {
                       title: '',
                       'x-content': '{{t("Default storage")}}',
                     },
+                    options: {
+                      type: 'object',
+                      'x-component': 'StorageOptions',
+                      'x-decorator': 'FormItem',
+                    },
                     footer: {
                       type: 'void',
                       'x-component': 'Action.Drawer.Footer',
@@ -286,6 +291,11 @@ export const storageSchema: ISchema = {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                               'x-content': '{{t("Default storage")}}',
+                            },
+                            options: {
+                              type: 'object',
+                              'x-component': 'StorageOptions',
+                              'x-decorator': 'FormItem',
                             },
                             footer: {
                               type: 'void',

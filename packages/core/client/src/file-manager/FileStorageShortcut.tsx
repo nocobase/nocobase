@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { PluginManager } from '..';
 import { ActionContext, SchemaComponent } from '../schema-component';
 import { storageSchema } from './schemas/storage';
+import { StorageOptions } from './StorageOptions';
 
 const schema = {
   type: 'object',
@@ -33,7 +34,7 @@ export const FileStorageShortcut = () => {
         icon={<SettingOutlined />}
         title={t('File storages')}
       />
-      <SchemaComponent schema={schema} />
+      <SchemaComponent components={{ StorageOptions }} schema={schema} />
     </ActionContext.Provider>
   );
 };
