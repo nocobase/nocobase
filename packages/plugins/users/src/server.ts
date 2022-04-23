@@ -97,7 +97,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     const loggedInActions = ['signout', 'updateProfile', 'changePassword', 'setDefaultRole'];
 
     publicActions.forEach((action) => this.app.acl.skip('users', action));
-    loggedInActions.forEach((action) => this.app.acl.skip('users', action, 'logged-in'));
+    loggedInActions.forEach((action) => this.app.acl.skip('users', action, 'loggedIn'));
   }
 
   async load() {

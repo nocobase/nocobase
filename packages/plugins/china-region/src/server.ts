@@ -11,7 +11,7 @@ export class ChinaRegionPlugin extends Plugin {
     await this.db.import({
       directory: resolve(__dirname, 'collections'),
     });
-    this.app.acl.skip('chinaRegions', 'list', 'logged-in');
+    this.app.acl.skip('chinaRegions', 'list', 'loggedIn');
   }
 
   async importData() {

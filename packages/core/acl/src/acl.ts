@@ -243,12 +243,6 @@ export class ACL extends EventEmitter {
       return params;
     };
 
-    const ctxToObject = (ctx) => {
-      return {
-        state: JSON.parse(JSON.stringify(ctx.state)),
-      };
-    };
-
     return async function ACLMiddleware(ctx, next) {
       const roleName = ctx.state.currentRole || 'anonymous';
       const { resourceName, actionName } = ctx.action;

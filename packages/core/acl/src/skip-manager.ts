@@ -1,6 +1,6 @@
 import { ACL } from './acl';
 
-type ConditionFunc = (ctx: any) => boolean;
+type ConditionFunc = (ctx: any) => Promise<boolean>;
 
 export class SkipManager {
   protected skipActions = new Map<string, Map<string, string | ConditionFunc | true>>();
@@ -8,8 +8,21 @@ export class SkipManager {
   protected registeredCondition = new Map<string, ConditionFunc>();
 
   constructor(public acl: ACL) {
-    this.registerSkipCondition('logged-in', (ctx) => {
+    this.registerSkipCondition('loggedIn', (ctx) => {
       return ctx.state.currentUser;
+    });
+
+    this.registerSkipCondition('allowConfigure', async (ctx) => {
+      const roleName = ctx.state.currentRole;
+      if (!roleName) {
+        return false;
+      }
+
+      const roleInstance = await ctx.db.getRepository('roles').findOne({
+        name: roleName,
+      });
+
+      return roleInstance?.get('allowConfigure');
     });
   }
 
@@ -53,7 +66,7 @@ export class SkipManager {
           let skipResult = false;
 
           if (typeof skippedCondition === 'function') {
-            skipResult = skippedCondition(ctx);
+            skipResult = await skippedCondition(ctx);
           } else if (skippedCondition) {
             skipResult = true;
           }
