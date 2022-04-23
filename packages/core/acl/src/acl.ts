@@ -217,7 +217,7 @@ export class ACL extends EventEmitter {
     this.middlewares.push(fn);
   }
 
-  skip(resourceName: string, actionNames: string[] | string, condition?: any) {
+  allow(resourceName: string, actionNames: string[] | string, condition?: any) {
     if (!Array.isArray(actionNames)) {
       actionNames = [actionNames];
     }

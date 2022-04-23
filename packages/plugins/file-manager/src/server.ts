@@ -36,7 +36,7 @@ export default class PluginFileManager extends Plugin {
       await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
     }
 
-    this.app.acl.skip('attachments', 'upload', 'loggedIn');
+    this.app.acl.allow('attachments', 'upload', 'loggedIn');
   }
 
   getName(): string {
