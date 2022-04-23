@@ -14,7 +14,7 @@ const collection = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Role title")}}',
+        title: '{{t("Role display name")}}',
         type: 'number',
         'x-component': 'Input',
         required: true,
@@ -25,7 +25,7 @@ const collection = {
       name: 'name',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Role name")}}',
+        title: '{{t("Role UID")}}',
         type: 'string',
         'x-component': 'Input',
       } as ISchema,
@@ -213,7 +213,7 @@ export const roleSchema: ISchema = {
             },
             column4: {
               type: 'void',
-              title: 'Actions',
+              title: '{{t("Actions")}}',
               'x-component': 'Table.Column',
               properties: {
                 actions: {

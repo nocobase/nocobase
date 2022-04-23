@@ -30,7 +30,7 @@ export class APIClient {
 
   services: Record<string, Result<any, any>>;
 
-  tokenKey = 'nocobaseToken';
+  tokenKey = 'NOCOBASE_TOKEN';
 
   constructor(instance?: AxiosInstance | AxiosRequestConfig) {
     this.services = observable({});

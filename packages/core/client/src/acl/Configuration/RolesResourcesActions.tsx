@@ -97,17 +97,17 @@ export const RolesResourcesActions = connect((props) => {
                 },
                 {
                   dataIndex: 'onNewRecord',
-                  title: '类型',
+                  title: t('Action type'),
                   render: (onNewRecord) =>
                     onNewRecord ? (
-                      <Tag color={'green'}>{t('Operate on new record')}</Tag>
+                      <Tag color={'green'}>{t('Action on new records')}</Tag>
                     ) : (
-                      <Tag color={'geekblue'}>{t('Operate on existing record')}</Tag>
+                      <Tag color={'geekblue'}>{t('Action on existing records')}</Tag>
                     ),
                 },
                 {
                   dataIndex: 'enabled',
-                  title: '允许操作',
+                  title: t("Allow"),
                   render: (enabled, action) => (
                     <Checkbox
                       checked={enabled}
@@ -119,7 +119,7 @@ export const RolesResourcesActions = connect((props) => {
                 },
                 {
                   dataIndex: 'scope',
-                  title: '可操作的数据范围',
+                  title: t("Data scope"),
                   render: (value, action) =>
                     !action.onNewRecord && (
                       <ScopeSelect
