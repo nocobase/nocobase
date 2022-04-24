@@ -3,6 +3,12 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   name: 'rolesResources',
   model: 'RoleResourceModel',
+  indexes: [
+    {
+      unique: true,
+      fields: ['roleName', 'name'],
+    },
+  ],
   fields: [
     {
       type: 'belongsTo',

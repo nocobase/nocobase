@@ -11,6 +11,7 @@ describe('createdBy/updatedBy', () => {
     api = mockServer();
     api.plugin(UsersPlugin, userPluginConfig);
     api.plugin(PluginACL);
+    await api.cleanDb();
     await api.loadAndInstall();
     db = api.db;
   });

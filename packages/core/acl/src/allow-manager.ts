@@ -1,26 +1,39 @@
 import { ACL } from './acl';
 
-type ConditionFunc = (ctx: any) => boolean;
+type ConditionFunc = (ctx: any) => Promise<boolean>;
 
-export class SkipManager {
+export class AllowManager {
   protected skipActions = new Map<string, Map<string, string | ConditionFunc | true>>();
 
   protected registeredCondition = new Map<string, ConditionFunc>();
 
   constructor(public acl: ACL) {
-    this.registerSkipCondition('logged-in', (ctx) => {
+    this.registerAllowCondition('loggedIn', (ctx) => {
       return ctx.state.currentUser;
+    });
+
+    this.registerAllowCondition('allowConfigure', async (ctx) => {
+      const roleName = ctx.state.currentRole;
+      if (!roleName) {
+        return false;
+      }
+
+      const roleInstance = await ctx.db.getRepository('roles').findOne({
+        name: roleName,
+      });
+
+      return roleInstance?.get('allowConfigure');
     });
   }
 
-  skip(resourceName: string, actionName: string, condition?: string | ConditionFunc) {
+  allow(resourceName: string, actionName: string, condition?: string | ConditionFunc) {
     const actionMap = this.skipActions.get(resourceName) || new Map<string, string | ConditionFunc>();
     actionMap.set(actionName, condition || true);
 
     this.skipActions.set(resourceName, actionMap);
   }
 
-  getSkippedConditions(resourceName: string, actionName: string): Array<ConditionFunc | true> {
+  getAllowedConditions(resourceName: string, actionName: string): Array<ConditionFunc | true> {
     const fetchActionSteps: string[] = ['*', resourceName];
 
     const results = [];
@@ -38,14 +51,14 @@ export class SkipManager {
     return results;
   }
 
-  registerSkipCondition(name: string, condition: ConditionFunc) {
+  registerAllowCondition(name: string, condition: ConditionFunc) {
     this.registeredCondition.set(name, condition);
   }
 
   aclMiddleware() {
     return async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
-      const skippedConditions = ctx.app.acl.skipManager.getSkippedConditions(resourceName, actionName);
+      const skippedConditions = ctx.app.acl.allowManager.getAllowedConditions(resourceName, actionName);
       let skip = false;
 
       for (const skippedCondition of skippedConditions) {
@@ -53,7 +66,7 @@ export class SkipManager {
           let skipResult = false;
 
           if (typeof skippedCondition === 'function') {
-            skipResult = skippedCondition(ctx);
+            skipResult = await skippedCondition(ctx);
           } else if (skippedCondition) {
             skipResult = true;
           }
