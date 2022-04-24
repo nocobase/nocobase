@@ -1,9 +1,10 @@
 import { css } from '@emotion/css';
-import { Layout } from 'antd';
+import { Layout, Spin } from 'antd';
 import React, { useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
-  ACLAllowConfigure, ACLRolesCheckProvider,
+  ACLAllowConfigure,
+  ACLRolesCheckProvider,
   CurrentUser,
   CurrentUserProvider,
   findByUid,
@@ -17,6 +18,7 @@ import {
   useRoute,
   useSystemSettings
 } from '../../../';
+import { useCollectionManager } from '../../../collection-manager';
 import { PoweredBy } from '../../../powered-by';
 
 const filterByACL = (schema, options) => {
@@ -56,6 +58,7 @@ const InternalAdminLayout = (props: any) => {
   };
   const [hidden, setHidden] = useState(false);
   const result = useSystemSettings();
+  const { service } = useCollectionManager();
   return (
     <Layout>
       <Layout.Header
@@ -156,7 +159,7 @@ const InternalAdminLayout = (props: any) => {
             }
           `}
         >
-          {props.children}
+          {service.contentLoading ? <Spin /> : props.children}
           <Layout.Footer>
             <PoweredBy />
           </Layout.Footer>
