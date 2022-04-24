@@ -13,6 +13,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
 import { Icon, useAPIClient, useSchemaInitializer } from '../../../';
+import { useProps } from '../../hooks/useProps';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
 
@@ -139,12 +140,13 @@ export const Menu: ComposedMenu = observer((props) => {
   let {
     onSelect,
     mode,
+    selectedUid,
     defaultSelectedUid,
     sideMenuRefScopeKey,
     defaultSelectedKeys: dSelectedKeys,
     defaultOpenKeys: dOpenKeys,
     ...others
-  } = props;
+  } = useProps(props);
   const { t } = useTranslation();
   const Designer = useDesigner();
   const schema = useFieldSchema();
@@ -178,6 +180,24 @@ export const Menu: ComposedMenu = observer((props) => {
     }
     return null;
   });
+  useEffect(() => {
+    const keys = findKeysByUid(schema, selectedUid);
+    setDefaultSelectedKeys(keys);
+    if (['inline', 'mix'].includes(mode)) {
+      setDefaultOpenKeys(dOpenKeys || keys);
+    }
+    const key = keys?.[0] || null;
+    if (mode === 'mix') {
+      if (key) {
+        const s = schema.properties?.[key];
+        if (s['x-component'] === 'Menu.SubMenu') {
+          setSideMenuSchema(s);
+        }
+      } else {
+        setSideMenuSchema(null);
+      }
+    }
+  }, [selectedUid]);
   useEffect(() => {
     if (['inline', 'mix'].includes(mode)) {
       setDefaultOpenKeys(defaultSelectedKeys);
@@ -244,8 +264,8 @@ export const Menu: ComposedMenu = observer((props) => {
               }
             }}
             mode={mode === 'mix' ? 'horizontal' : mode}
-            defaultOpenKeys={defaultOpenKeys}
-            defaultSelectedKeys={defaultSelectedKeys}
+            openKeys={defaultOpenKeys}
+            selectedKeys={defaultSelectedKeys}
           >
             {designable && (
               <AntdMenu.Item disabled style={{ padding: '0 8px', order: 9999 }}>
