@@ -235,7 +235,8 @@ export class CollectionManagerPlugin extends Plugin {
       await next();
     });
 
-    this.app.acl.skip('collections', 'list', 'logged-in');
+    this.app.acl.allow('collections', 'list', 'loggedIn');
+    this.app.acl.allow('collections', ['create', 'update', 'destroy'], 'allowConfigure');
   }
 
   async load() {

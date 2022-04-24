@@ -293,11 +293,13 @@ export class PluginACL extends Plugin {
         ],
       });
     });
-    this.app.acl.skip('roles.menuUiSchemas', 'set', 'logged-in');
-    this.app.acl.skip('roles.menuUiSchemas', 'toggle', 'logged-in');
-    this.app.acl.skip('roles.menuUiSchemas', 'list', 'logged-in');
-    this.app.acl.skip('roles', 'check', 'logged-in');
-    this.app.acl.skip('*', '*', (ctx) => {
+
+    this.app.acl.allow('roles', 'check', 'loggedIn');
+    this.app.acl.allow('roles', ['create', 'update', 'destroy'], 'allowConfigure');
+
+    this.app.acl.allow('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
+
+    this.app.acl.allow('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';
     });
 

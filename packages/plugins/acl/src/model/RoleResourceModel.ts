@@ -35,6 +35,7 @@ export class RoleResourceModel extends Model {
     const roleName = this.get('roleName') as string;
     const role = acl.getRole(roleName);
 
+    // revoke resource of role
     await this.revoke({ role, resourceName, grantHelper });
 
     // @ts-ignore

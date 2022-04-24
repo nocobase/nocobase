@@ -5,7 +5,7 @@ import lodash from 'lodash';
 import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, RoleActionParams } from './acl-role';
-import { SkipManager } from './skip-manager';
+import { AllowManager } from './allow-manager';
 const parse = require('json-templates');
 
 interface CanResult {
@@ -47,7 +47,7 @@ export class ACL extends EventEmitter {
   protected availableStrategy = new Map<string, ACLAvailableStrategy>();
   protected middlewares = [];
 
-  public skipManager = new SkipManager(this);
+  public allowManager = new AllowManager(this);
 
   roles = new Map<string, ACLRole>();
 
@@ -85,7 +85,7 @@ export class ACL extends EventEmitter {
       }
     });
 
-    this.middlewares.push(this.skipManager.aclMiddleware());
+    this.middlewares.push(this.allowManager.aclMiddleware());
   }
 
   define(options: DefineOptions): ACLRole {
@@ -217,8 +217,14 @@ export class ACL extends EventEmitter {
     this.middlewares.push(fn);
   }
 
-  skip(resourceName: string, actionName: string, condition?: any) {
-    this.skipManager.skip(resourceName, actionName, condition);
+  allow(resourceName: string, actionNames: string[] | string, condition?: any) {
+    if (!Array.isArray(actionNames)) {
+      actionNames = [actionNames];
+    }
+
+    for (const actionName of actionNames) {
+      this.allowManager.allow(resourceName, actionName, condition);
+    }
   }
 
   parseJsonTemplate(json: any, ctx: any) {
@@ -241,12 +247,6 @@ export class ACL extends EventEmitter {
       }
 
       return params;
-    };
-
-    const ctxToObject = (ctx) => {
-      return {
-        state: JSON.parse(JSON.stringify(ctx.state)),
-      };
     };
 
     return async function ACLMiddleware(ctx, next) {
