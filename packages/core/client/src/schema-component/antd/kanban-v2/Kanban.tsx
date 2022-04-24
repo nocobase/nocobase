@@ -9,6 +9,7 @@ import { Board } from '../../../board';
 import '../../../board/style.less';
 import { useProps } from '../../hooks/useProps';
 import { KanbanCardContext, KanbanColumnContext } from './context';
+import './index.less';
 
 const useCreateActionProps = () => {
   const form = useForm();
