@@ -19,6 +19,7 @@ export default defineCollection({
       name: 'plugins',
       target: 'applicationPlugins',
       foreignKey: 'applicationName',
+      onDelete: 'cascade',
     },
   ],
 });

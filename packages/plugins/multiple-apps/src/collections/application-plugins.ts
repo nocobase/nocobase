@@ -9,6 +9,10 @@ export default defineCollection({
       name: 'name',
     },
     {
+      type: 'json',
+      name: 'options',
+    },
+    {
       type: 'belongsTo',
       name: 'application',
       foreignKey: 'applicationName',

@@ -30,7 +30,7 @@ export class ApplicationModel extends Model {
 
     for (const pluginInstance of plugins) {
       const plugin = ApplicationModel.getPluginByName(pluginInstance.get('name') as string);
-      app.plugin(plugin);
+      app.plugin(plugin, pluginInstance.get('options') || {});
     }
 
     app.on('beforeInstall', async function createDatabase() {
