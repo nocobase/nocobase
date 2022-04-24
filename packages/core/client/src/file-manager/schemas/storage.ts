@@ -160,7 +160,6 @@ export const storageSchema: ISchema = {
                     options: {
                       type: 'object',
                       'x-component': 'StorageOptions',
-                      'x-decorator': 'FormItem',
                     },
                     default: {
                       'x-component': 'CollectionField',
@@ -293,7 +292,6 @@ export const storageSchema: ISchema = {
                             options: {
                               type: 'object',
                               'x-component': 'StorageOptions',
-                              'x-decorator': 'FormItem',
                             },
                             default: {
                               title: '',

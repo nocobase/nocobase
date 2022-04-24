@@ -1,5 +1,5 @@
 import { Spin } from 'antd';
-import React from 'react';
+import React, { useState } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionManagerContext } from './context';
@@ -28,6 +28,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
 
 export const RemoteCollectionManagerProvider = (props: any) => {
   const api = useAPIClient();
+  const [contentLoading, setContentLoading] = useState(false);
   const options = {
     resource: 'collections',
     action: 'list',
@@ -46,11 +47,13 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   }
   return (
     <CollectionManagerProvider
-      service={service}
+      service={{...service, contentLoading, setContentLoading}}
       collections={service?.data?.data}
       refreshCM={async () => {
+        setContentLoading(true);
         const { data } = await api.request(options);
         service.mutate(data);
+        setContentLoading(false);
       }}
       {...props}
     />
