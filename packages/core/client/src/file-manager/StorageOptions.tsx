@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 const schema = {
   local: {
     properties: {
-      dist: {
+      documentRoot: {
         title: '{{t("Destination")}}',
         type: 'string',
         'x-decorator': 'FormItem',
