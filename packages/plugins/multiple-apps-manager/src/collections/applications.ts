@@ -15,12 +15,5 @@ export default defineCollection({
       type: 'json',
       name: 'options',
     },
-    {
-      type: 'hasMany',
-      name: 'plugins',
-      target: 'applicationPlugins',
-      foreignKey: 'applicationName',
-      onDelete: 'cascade',
-    },
   ],
 });
