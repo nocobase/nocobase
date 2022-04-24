@@ -134,6 +134,7 @@ const InternalAdminLayout = (props: any) => {
                 { component: 'WorkflowShortcut', pin: true },
                 { component: 'SchemaTemplateShortcut', pin: true },
                 { component: 'SystemSettingsShortcut' },
+                { component: 'FileStorageShortcut' },
               ]}
             />
           </ACLAllowConfigure>
