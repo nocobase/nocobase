@@ -16,6 +16,7 @@ import {
   RealFieldOptions
 } from './number-field';
 import { PasswordFieldOptions } from './password-field';
+import { RadioFieldOptions } from './radio-field';
 import { SortFieldOptions } from './sort-field';
 import { StringFieldOptions } from './string-field';
 import { TextFieldOptions } from './text-field';
@@ -35,6 +36,7 @@ export * from './has-one-field';
 export * from './json-field';
 export * from './number-field';
 export * from './password-field';
+export * from './radio-field';
 export * from './relation-field';
 export * from './sort-field';
 export * from './string-field';
@@ -54,6 +56,7 @@ export type FieldOptions =
   | JsonFieldOptions
   | JsonbFieldOptions
   | BooleanFieldOptions
+  | RadioFieldOptions
   | SortFieldOptions
   | TextFieldOptions
   | VirtualFieldOptions

@@ -82,11 +82,12 @@ async function middleware(app: Application, options?) {
 
       // 以下情况才认为当前进程所应该提供静态服务
       // 否则都忽略，交给其他 server 来提供（如 nginx/cdn 等）
-      if (url.origin && url.origin !== LOCALHOST) {
+      if (url.origin && storage?.options?.serve === false) {
         continue;
       }
 
       const basePath = url.pathname.startsWith('/') ? url.pathname : `/${url.pathname}`;
+
       if (!match(basePath, ctx.path)) {
         continue;
       }
