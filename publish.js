@@ -14,7 +14,7 @@ Promise.all(packageDirs.map((d) => getDirectories(d)))
   .then((res) => res.flat())
   .then((res) =>
     res.forEach((d) => {
-      exec(`cd ${d} && npm unpublish -f  && npm publish`, (error, stdout, stderr) => {
+      exec(`cd ${d} && npm unpublish -f; npm publish`, (error, stdout, stderr) => {
         if (error) {
           console.log(`error: ${error.message}`);
           return;
