@@ -6,8 +6,8 @@ import React, { useEffect, useState } from 'react';
 const schema = {
   local: {
     properties: {
-      documentRoot: {
-        title: '{{t("Storage dist")}}',
+      dist: {
+        title: '{{t("Destination")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
@@ -17,28 +17,28 @@ const schema = {
   'ali-oss': {
     properties: {
       region: {
-        title: '{{t("region")}}',
+        title: '{{t("Region")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
       },
       accessKeyId: {
-        title: '{{t("accessKeyId")}}',
+        title: '{{t("AccessKey ID")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
       },
       accessKeySecret: {
-        title: '{{t("accessKeySecret")}}',
+        title: '{{t("AccessKey Secret")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
       },
       bucket: {
-        title: '{{t("bucket")}}',
+        title: '{{t("Bucket")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
@@ -49,28 +49,28 @@ const schema = {
   s3: {
     properties: {
       region: {
-        title: '{{t("s3 region")}}',
+        title: '{{t("Region")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
       },
       accessKeyId: {
-        title: '{{t("s3 accessKeyId")}}',
+        title: '{{t("AccessKey ID")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
       },
       secretAccessKey: {
-        title: '{{t("s3 secretAccessKey")}}',
+        title: '{{t("AccessKey Secret")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
       },
       bucket: {
-        title: '{{t("s3 bucket")}}',
+        title: '{{t("Bucket")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',

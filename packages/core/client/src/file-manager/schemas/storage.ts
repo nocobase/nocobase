@@ -149,8 +149,17 @@ export const storageSchema: ISchema = {
                       description:
                         '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
                     },
+                    baseUrl: {
+                      'x-component': 'CollectionField',
+                      'x-decorator': 'FormItem',
+                    },
                     type: {
                       'x-component': 'CollectionField',
+                      'x-decorator': 'FormItem',
+                    },
+                    options: {
+                      type: 'object',
+                      'x-component': 'StorageOptions',
                       'x-decorator': 'FormItem',
                     },
                     default: {
@@ -158,11 +167,6 @@ export const storageSchema: ISchema = {
                       'x-decorator': 'FormItem',
                       title: '',
                       'x-content': '{{t("Default storage")}}',
-                    },
-                    options: {
-                      type: 'object',
-                      'x-component': 'StorageOptions',
-                      'x-decorator': 'FormItem',
                     },
                     footer: {
                       type: 'void',
@@ -277,13 +281,18 @@ export const storageSchema: ISchema = {
                               'x-decorator': 'FormItem',
                               'x-disabled': true,
                             },
+                            baseUrl: {
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                            },
                             type: {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                               'x-disabled': true,
                             },
-                            baseUrl: {
-                              'x-component': 'CollectionField',
+                            options: {
+                              type: 'object',
+                              'x-component': 'StorageOptions',
                               'x-decorator': 'FormItem',
                             },
                             default: {
@@ -291,11 +300,6 @@ export const storageSchema: ISchema = {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                               'x-content': '{{t("Default storage")}}',
-                            },
-                            options: {
-                              type: 'object',
-                              'x-component': 'StorageOptions',
-                              'x-decorator': 'FormItem',
                             },
                             footer: {
                               type: 'void',

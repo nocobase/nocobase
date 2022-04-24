@@ -389,5 +389,5 @@ export default {
   'Default storage': '默认存储',
   'Add storage': '添加文件存储',
   'Edit storage': '编辑文件存储',
-  'Storage base URL': '根 URL',
+  'Storage base URL': 'Base URL',
 }
