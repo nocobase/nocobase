@@ -3,7 +3,7 @@ import http, { IncomingMessage } from 'http';
 import EventEmitter from 'events';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 
-type AppSelector = (ctx) => Application | string;
+type AppSelector = (req: IncomingMessage) => Application | string | undefined | null;
 
 export class AppManager extends EventEmitter {
   public applications: Map<string, Application> = new Map<string, Application>();
@@ -63,7 +63,7 @@ export class AppManager extends EventEmitter {
 
   callback() {
     return async (req, res) => {
-      let handleApp = this.appSelector(req);
+      let handleApp = this.appSelector(req) || this.app;
 
       if (typeof handleApp === 'string') {
         handleApp = (await this.getApplication(handleApp)) || this.app;
