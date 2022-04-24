@@ -9,11 +9,11 @@ import { i18n, InitOptions } from 'i18next';
 import Koa from 'koa';
 import { isBoolean } from 'lodash';
 import { createACL } from './acl';
+import { AppManager } from './app-manager';
 import { createCli } from './commands';
 import { createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
-import { PluginManager, InstallOptions } from './plugin-manager';
-import { AppManager } from './app-manager';
+import { InstallOptions, PluginManager } from './plugin-manager';
 
 export type PluginConfiguration = string | [string, any];
 export type PluginsConfigurations = Array<PluginConfiguration>;
