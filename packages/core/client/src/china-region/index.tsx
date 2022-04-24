@@ -13,6 +13,7 @@ const useChinaRegionDataSource = (options) => {
       action: 'list',
       params: {
         sort: 'code',
+        paginate: false,
         filter: {
           level: 1,
         },
@@ -49,6 +50,7 @@ const useChinaRegionLoadData = () => {
       .resource('chinaRegions')
       .list({
         sort: 'code',
+        paginate: false,
         filter: {
           parentCode: targetOption.code,
         },
