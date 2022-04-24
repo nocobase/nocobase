@@ -1,6 +1,6 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
-import { PluginMultipleAppsManager } from '../server';
+import { PluginMultiAppManager } from '../server';
 
 describe('multiple apps create', () => {
   let app: MockServer;
@@ -10,7 +10,7 @@ describe('multiple apps create', () => {
     app = mockServer({});
     db = app.db;
     await app.cleanDb();
-    app.plugin(PluginMultipleAppsManager);
+    app.plugin(PluginMultiAppManager);
 
     await app.loadAndInstall();
   });
