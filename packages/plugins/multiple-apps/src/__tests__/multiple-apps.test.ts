@@ -51,14 +51,9 @@ describe('multiple apps create', () => {
     await db.getRepository('applications').create({
       values: {
         name: 'miniApp',
-        plugins: [
-          {
-            name: '@nocobase/plugin-ui-schema-storage',
-            options: {
-              test: 'B',
-            },
-          },
-        ],
+        options: {
+          plugins: [['@nocobase/plugin-ui-schema-storage', { test: 'B' }]],
+        },
       },
     });
 
@@ -77,11 +72,9 @@ describe('multiple apps create', () => {
     await db.getRepository('applications').create({
       values: {
         name: 'miniApp',
-        plugins: [
-          {
-            name: '@nocobase/plugin-ui-schema-storage',
-          },
-        ],
+        options: {
+          plugins: ['@nocobase/plugin-ui-schema-storage'],
+        },
       },
     });
 

@@ -6,9 +6,10 @@ export default defineCollection({
   autoGenId: false,
   fields: [
     {
-      type: 'string',
+      type: 'uid',
       name: 'name',
       primaryKey: true,
+      prefix: 'a',
     },
     {
       type: 'json',
