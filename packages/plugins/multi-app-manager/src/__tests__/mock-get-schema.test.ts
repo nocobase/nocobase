@@ -1,7 +1,6 @@
-import { Plugin } from '@nocobase/server';
-import { ApplicationModel } from '../models/application';
+import { Plugin, PluginManager } from '@nocobase/server';
 import { mockServer } from '@nocobase/test';
-import { PluginMultipleApps } from '../server';
+import { PluginMultiAppManager } from '../server';
 
 describe('test with start', () => {
   it('should load subApp on create', async () => {
@@ -24,11 +23,12 @@ describe('test with start', () => {
 
     const mockGetPluginByName = jest.fn();
     mockGetPluginByName.mockReturnValue(TestPlugin);
-    ApplicationModel.getPluginByName = mockGetPluginByName;
+    PluginManager.resolvePlugin = mockGetPluginByName;
 
     const app = mockServer();
     await app.cleanDb();
-    app.plugin(PluginMultipleApps);
+
+    app.plugin(PluginMultiAppManager);
 
     await app.loadAndInstall();
     await app.start();
@@ -38,11 +38,9 @@ describe('test with start', () => {
     await db.getRepository('applications').create({
       values: {
         name: 'sub1',
-        plugins: [
-          {
-            name: 'test-package',
-          },
-        ],
+        options: {
+          plugins: ['test-package'],
+        },
       },
     });
 
@@ -55,7 +53,7 @@ describe('test with start', () => {
   it('should install into difference database', async () => {
     const app = mockServer();
     await app.cleanDb();
-    app.plugin(PluginMultipleApps);
+    app.plugin(PluginMultiAppManager);
 
     await app.loadAndInstall();
     await app.start();
@@ -65,11 +63,9 @@ describe('test with start', () => {
     await db.getRepository('applications').create({
       values: {
         name: 'sub1',
-        plugins: [
-          {
-            name: '@nocobase/plugin-ui-schema-storage',
-          },
-        ],
+        options: {
+          plugins: ['@nocobase/plugin-ui-schema-storage'],
+        },
       },
     });
     await app.destroy();
@@ -84,7 +80,7 @@ describe('test with start', () => {
 
     let app = mockServer();
     await app.cleanDb();
-    app.plugin(PluginMultipleApps);
+    app.plugin(PluginMultiAppManager);
 
     await app.loadAndInstall();
     await app.start();
@@ -93,16 +89,14 @@ describe('test with start', () => {
 
     const mockGetPluginByName = jest.fn();
     mockGetPluginByName.mockReturnValue(TestPlugin);
-    ApplicationModel.getPluginByName = mockGetPluginByName;
+    PluginManager.resolvePlugin = mockGetPluginByName;
 
     await db.getRepository('applications').create({
       values: {
         name: 'sub1',
-        plugins: [
-          {
-            name: 'test-package',
-          },
-        ],
+        options: {
+          plugins: ['test-package'],
+        },
       },
     });
 
@@ -114,7 +108,7 @@ describe('test with start', () => {
       database: app.db,
     });
 
-    newApp.plugin(PluginMultipleApps);
+    newApp.plugin(PluginMultiAppManager);
     await newApp.db.reconnect();
 
     await newApp.load();

@@ -8,10 +8,6 @@ interface registerAppOptions extends TransactionAble {
 }
 
 export class ApplicationModel extends Model {
-  static getPluginByName(pluginName: string) {
-    return require(pluginName).default;
-  }
-
   static getDatabaseConfig(app: Application): IDatabaseOptions {
     return lodash.cloneDeep(
       lodash.isPlainObject(app.options.database)
@@ -23,15 +19,12 @@ export class ApplicationModel extends Model {
   async registerToMainApp(mainApp: Application, options: registerAppOptions) {
     const { transaction } = options;
     const appName = this.get('name') as string;
-    const app = mainApp.appManager.createApplication(appName, ApplicationModel.initOptions(appName, mainApp));
+    const appOptions = (this.get('options') as any) || {};
 
-    // @ts-ignore
-    const plugins = await this.getPlugins({ transaction });
-
-    for (const pluginInstance of plugins) {
-      const plugin = ApplicationModel.getPluginByName(pluginInstance.get('name') as string);
-      app.plugin(plugin);
-    }
+    const app = mainApp.appManager.createApplication(appName, {
+      ...ApplicationModel.initOptions(appName, mainApp),
+      ...appOptions,
+    });
 
     app.on('beforeInstall', async function createDatabase() {
       const { host, port, username, password, database, dialect } = ApplicationModel.getDatabaseConfig(app);
