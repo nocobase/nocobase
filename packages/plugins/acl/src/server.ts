@@ -256,26 +256,22 @@ export class PluginACL extends Plugin {
         records: [
           {
             name: 'root',
-            title: 'Root',
+            title: '{{t("Root")}}',
             hidden: true,
           },
           {
             name: 'admin',
-            title: 'Admin',
+            title: '{{t("Admin")}}',
             allowConfigure: true,
             allowNewMenu: true,
             strategy: { actions: ['create', 'export', 'view', 'update', 'destroy'] },
           },
           {
             name: 'member',
-            title: 'Member',
+            title: '{{t("Member")}}',
             allowNewMenu: true,
             strategy: { actions: ['view', 'update:own', 'destroy:own', 'create'] },
             default: true,
-          },
-          {
-            name: 'anonymous',
-            title: 'Anonymous',
           },
         ],
       });

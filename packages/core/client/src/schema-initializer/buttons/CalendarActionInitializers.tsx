@@ -1,19 +1,19 @@
 // 日历的操作配置
 export const CalendarActionInitializers = {
-  title: 'Configure actions',
+  title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: { marginLeft: 8 },
   items: [
     {
       type: 'itemGroup',
-      title: 'Enable actions',
+      title: '{{t("Enable actions")}}',
       children: [
         {
           type: 'item',
-          title: 'Today',
+          title: '{{t("Today")}}',
           component: 'ActionInitializer',
           schema: {
-            title: 'Today',
+            title: '{{t("Today")}}',
             'x-component': 'CalendarV2.Today',
             'x-action': `calendar:today`,
             'x-align': 'left',
@@ -21,10 +21,10 @@ export const CalendarActionInitializers = {
         },
         {
           type: 'item',
-          title: 'Turn pages',
+          title: '{{t("Turn pages")}}',
           component: 'ActionInitializer',
           schema: {
-            title: 'Turn pages',
+            title: '{{t("Turn pages")}}',
             'x-component': 'CalendarV2.Nav',
             'x-action': `calendar:nav`,
             'x-align': 'left',
@@ -32,10 +32,10 @@ export const CalendarActionInitializers = {
         },
         {
           type: 'item',
-          title: 'Title',
+          title: '{{t("Title")}}',
           component: 'ActionInitializer',
           schema: {
-            title: 'Title',
+            title: '{{t("Title")}}',
             'x-component': 'CalendarV2.Title',
             'x-action': `calendar:title`,
             'x-align': 'left',
@@ -43,10 +43,10 @@ export const CalendarActionInitializers = {
         },
         {
           type: 'item',
-          title: 'Select view',
+          title: '{{t("Select view")}}',
           component: 'ActionInitializer',
           schema: {
-            title: 'Select view',
+            title: '{{t("Select view")}}',
             'x-component': 'CalendarV2.ViewSelect',
             'x-action': `calendar:viewSelect`,
             'x-align': 'right',

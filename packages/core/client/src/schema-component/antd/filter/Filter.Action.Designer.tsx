@@ -65,27 +65,25 @@ export const FilterActionDesigner = (props) => {
       </SchemaSettings.ItemGroup>
       <SchemaSettings.Divider />
       <SchemaSettings.ModalItem
-        title={'编辑'}
+        title={t('Edit button')}
         schema={
           {
             type: 'object',
-            title: '编辑按钮',
+            title: t('Edit button'),
             properties: {
               title: {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
-                title: '按钮标题',
+                title: t('Button title'),
                 default: fieldSchema.title,
                 'x-component-props': {},
-                // description: `原字段标题：${collectionField?.uiSchema?.title}`,
               },
               icon: {
                 'x-decorator': 'FormItem',
                 'x-component': 'IconPicker',
-                title: '按钮图标',
+                title: t('Button icon'),
                 default: fieldSchema?.['x-component-props']?.icon,
                 'x-component-props': {},
-                // description: `原字段标题：${collectionField?.uiSchema?.title}`,
               },
             },
           } as ISchema

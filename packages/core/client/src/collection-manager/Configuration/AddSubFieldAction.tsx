@@ -23,8 +23,7 @@ const getSchema = (schema: IField): ISchema => {
     ...cloneDeep(schema.default),
     interface: schema.name,
   };
-  initialValue.uiSchema.title = schema.title;
-  console.log('initialValue', initialValue);
+  // initialValue.uiSchema.title = schema.title;
   return {
     type: 'object',
     properties: {

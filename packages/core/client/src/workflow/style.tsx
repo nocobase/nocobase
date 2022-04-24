@@ -108,12 +108,29 @@ export const nodeCardClass = css`
   background: #fff;
   padding: 1em;
   box-shadow: 0 .25em .5em rgba(0, 0, 0, .1);
+
+  .workflow-node-remove-button{
+    position: absolute;
+    right: -.5em;
+    top: -.5em;
+    color: #999;
+    opacity: 0;
+    transition: opacity .3s ease;
+
+    &:hover {
+      color: red;
+    }
+  }
+
+  &:hover{
+    .workflow-node-remove-button{
+      opacity: 1;
+    }
+  }
 `;
 
 export const nodeHeaderClass = css`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  position: relative;
 `;
 
 export const nodeTitleClass = css`

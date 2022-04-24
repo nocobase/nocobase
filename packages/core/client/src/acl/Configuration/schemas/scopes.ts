@@ -12,7 +12,7 @@ export const rolesResourcesScopesCollection = {
       name: 'name',
       interface: 'input',
       uiSchema: {
-        title: '名称',
+        title: '{{t("Scope name")}}',
         type: 'string',
         'x-component': 'Input',
         required: true,
@@ -133,7 +133,7 @@ export const scopesSchema: ISchema = {
                                     },
                                     scope: {
                                       type: 'object',
-                                      title: 'Data scope',
+                                      title: '{{t("Data scope")}}',
                                       name: 'filter',
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Filter',
@@ -260,7 +260,7 @@ export const scopesSchema: ISchema = {
                                             },
                                             scope: {
                                               type: 'object',
-                                              title: 'Data scope',
+                                              title: '{{t("Data scope")}}',
                                               name: 'filter',
                                               'x-decorator': 'FormItem',
                                               'x-component': 'Filter',

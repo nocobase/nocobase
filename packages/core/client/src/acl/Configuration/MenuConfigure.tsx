@@ -1,7 +1,9 @@
 import { Checkbox, message, Table } from 'antd';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
+import { useCompile } from '../../schema-component';
 import { useMenuItems } from './RoleTable';
 
 const findUids = (items) => {
@@ -20,6 +22,8 @@ export const MenuConfigure = () => {
   const record = useRecord();
   const api = useAPIClient();
   const items = useMenuItems();
+  const compile = useCompile();
+  const { t } = useTranslation();
   const allUids = findUids(items);
   const [uids, setUids] = useState([]);
   const { loading, refresh } = useRequest(
@@ -50,7 +54,7 @@ export const MenuConfigure = () => {
       columns={[
         {
           dataIndex: 'title',
-          title: '菜单项',
+          title: t('Menu item title'),
         },
         {
           dataIndex: 'accessible',
@@ -69,10 +73,10 @@ export const MenuConfigure = () => {
                     });
                   }
                   refresh();
-                  message.success('保存成功');
+                  message.success(t('Saved successfully'));
                 }}
               />{' '}
-              允许访问
+              {t('Accessible')}
             </>
           ),
           render: (_, schema) => {
@@ -93,7 +97,7 @@ export const MenuConfigure = () => {
                       tk: schema.uid,
                     },
                   });
-                  message.success('保存成功');
+                  message.success(t('Saved successfully'));
                 }}
               />
             );

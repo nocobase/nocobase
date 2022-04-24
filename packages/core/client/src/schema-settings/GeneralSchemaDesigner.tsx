@@ -52,7 +52,7 @@ export const GeneralSchemaDesigner = (props: any) => {
         <div className={classNames('general-schema-designer-title', titleCss)}>
           <Space size={2}>
             <span className={'title-tag'}>{compile(title)}</span>
-            {template && <span className={'title-tag'}>引用模板: {templateName || '未命名'}</span>}
+            {template && <span className={'title-tag'}>{t('Reference template')}: {templateName || t('Untitled')}</span>}
           </Space>
         </div>
       )}

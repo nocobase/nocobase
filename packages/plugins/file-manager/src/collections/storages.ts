@@ -49,7 +49,7 @@ export default {
     // TODO(feature): 需要使用一个实现了可设置默认值的字段
     {
       comment: '默认引擎',
-      type: 'boolean',
+      type: 'radio',
       name: 'default',
       defaultValue: false,
     },

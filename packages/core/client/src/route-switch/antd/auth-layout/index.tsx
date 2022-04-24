@@ -1,8 +1,10 @@
 import { css } from '@emotion/css';
 import React from 'react';
 import { PoweredBy } from '../../../powered-by';
+import { useSystemSettings } from '../../../system-settings';
 
 export function AuthLayout(props: any) {
+  const { data } = useSystemSettings();
   return (
     <div
       style={{
@@ -11,7 +13,7 @@ export function AuthLayout(props: any) {
         paddingTop: '20vh',
       }}
     >
-      <h1>NocoBase</h1>
+      <h1>{data?.data?.title}</h1>
       {props.children}
       <div
         className={css`

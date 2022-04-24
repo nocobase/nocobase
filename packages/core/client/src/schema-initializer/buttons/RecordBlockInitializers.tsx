@@ -28,35 +28,35 @@ export const RecordBlockInitializers = (props: any) => {
       items={[
         {
           type: 'itemGroup',
-          title: '当前数据区块',
+          title: '{{t("Current record blocks")}}',
           children: [
             {
               key: 'details',
               type: 'item',
-              title: 'Details',
+              title: '{{t("Details")}}',
               component: 'RecordReadPrettyFormBlockInitializer',
             },
             {
               key: 'form',
               type: 'item',
-              title: 'Form',
+              title: '{{t("Form")}}',
               component: 'RecordFormBlockInitializer',
             },
           ],
         },
         {
           type: 'itemGroup',
-          title: '关系数据区块',
+          title: '{{t("Relationship blocks")}}',
           children: useRelationFields(),
         },
         {
           type: 'itemGroup',
-          title: 'Media',
+          title: '{{t("Media")}}',
           children: [
             {
               key: 'markdown',
               type: 'item',
-              title: 'Markdown',
+              title: '{{t("Markdown")}}',
               component: 'MarkdownBlockInitializer',
             },
           ],

@@ -13,22 +13,22 @@ export const CreateFormBlockInitializers = (props: any) => {
       items={[
         {
           type: 'itemGroup',
-          title: '{{ t("Data blocks") }}',
+          title: '{{t("Data blocks")}}',
           children: [
             {
               type: 'item',
-              title: '{{ t("Form") }}',
+              title: '{{t("Form")}}',
               component: 'CreateFormBlockInitializer',
             },
           ],
         },
         {
           type: 'itemGroup',
-          title: 'Media',
+          title: '{{t("Media")}}',
           children: [
             {
               type: 'item',
-              title: 'Markdown',
+              title: '{{t("Markdown")}}',
               component: 'MarkdownBlockInitializer',
             },
           ],

@@ -145,6 +145,7 @@ export const DetailsBlockInitializer = (props) => {
 
 export const CalendarBlockInitializer = (props) => {
   const { insert } = props;
+  const { t } = useTranslation();
   const { getCollection } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   return (
@@ -170,7 +171,7 @@ export const CalendarBlockInitializer = (props) => {
               value: field.name,
             };
           });
-        const values = await FormDialog('创建日历区块', () => {
+        const values = await FormDialog(t('Create calendar block'), () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
@@ -178,14 +179,14 @@ export const CalendarBlockInitializer = (props) => {
                   schema={{
                     properties: {
                       title: {
-                        title: '标题字段',
+                        title: t('Title field'),
                         enum: stringFields,
                         required: true,
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                       },
                       start: {
-                        title: '开始日期字段',
+                        title: t('Start date field'),
                         enum: dateFields,
                         required: true,
                         default: 'createdAt',
@@ -193,7 +194,7 @@ export const CalendarBlockInitializer = (props) => {
                         'x-decorator': 'FormItem',
                       },
                       end: {
-                        title: '结束日期字段',
+                        title: t('End date field'),
                         enum: dateFields,
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
@@ -222,6 +223,7 @@ export const CalendarBlockInitializer = (props) => {
 
 export const KanbanBlockInitializer = (props) => {
   const { insert } = props;
+  const { t } = useTranslation();
   const { getCollection } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
@@ -244,7 +246,7 @@ export const KanbanBlockInitializer = (props) => {
               },
             };
           });
-        const values = await FormDialog('创建看板区块', () => {
+        const values = await FormDialog(t('Create kanban block'), () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
@@ -252,7 +254,7 @@ export const KanbanBlockInitializer = (props) => {
                   schema={{
                     properties: {
                       groupField: {
-                        title: '分组字段',
+                        title: t('Group field'),
                         enum: fields,
                         required: true,
                         'x-component': 'Select',

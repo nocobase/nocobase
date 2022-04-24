@@ -13,16 +13,16 @@ export const ActionDesigner = (props) => {
   return (
     <GeneralSchemaDesigner {...props}>
       <SchemaSettings.ModalItem
-        title={'编辑'}
+        title={t('Edit button')}
         schema={
           {
             type: 'object',
-            title: '编辑按钮',
+            title: t('Edit button'),
             properties: {
               title: {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
-                title: '按钮标题',
+                title: t('Button title'),
                 default: fieldSchema.title,
                 'x-component-props': {},
                 // description: `原字段标题：${collectionField?.uiSchema?.title}`,
@@ -30,7 +30,7 @@ export const ActionDesigner = (props) => {
               icon: {
                 'x-decorator': 'FormItem',
                 'x-component': 'IconPicker',
-                title: '按钮图标',
+                title: t('Button icon'),
                 default: fieldSchema?.['x-component-props']?.icon,
                 'x-component-props': {},
                 // description: `原字段标题：${collectionField?.uiSchema?.title}`,
@@ -60,10 +60,10 @@ export const ActionDesigner = (props) => {
       />
       {isPopupAction && (
         <SchemaSettings.SelectItem
-          title={'打开方式'}
+          title={t('Open mode')}
           options={[
-            { label: '抽屉', value: 'drawer' },
-            { label: '对话框', value: 'modal' },
+            { label: t('Drawer'), value: 'drawer' },
+            { label: t('Dialog'), value: 'modal' },
           ]}
           value={field.componentProps.openMode}
           onChange={(value) => {
@@ -81,7 +81,7 @@ export const ActionDesigner = (props) => {
       )}
       {fieldSchema?.['x-action-settings'] && (
         <SchemaSettings.SwitchItem
-          title={'跳过必填校验'}
+          title={t('Skip required validation')}
           checked={!!fieldSchema?.['x-action-settings']?.skipValidator}
           onChange={(value) => {
             fieldSchema['x-action-settings'].skipValidator = value;
@@ -98,13 +98,13 @@ export const ActionDesigner = (props) => {
       )}
       {fieldSchema?.['x-action-settings'] && (
         <SchemaSettings.ModalItem
-          title={'表单值'}
+          title={t('Form values')}
           schema={
             {
               type: 'object',
               properties: {
                 overwriteValues: {
-                  title: '以下字段提交时，保存值为',
+                  title: t('When submitting the following fields, the saved values are'),
                   'x-decorator': 'FormItem',
                   'x-component': 'Input.TextArea',
                   default: JSON.stringify(fieldSchema?.['x-action-settings']?.overwriteValues),
@@ -140,7 +140,7 @@ export const ActionDesigner = (props) => {
               properties: {
                 successMessage: {
                   // default: t('Submitted successfully!'),
-                  title: 'Pop-up message',
+                  title: t('Pop-up message'),
                   'x-decorator': 'FormItem',
                   'x-component': 'Input.TextArea',
                   'x-component-props': {},
@@ -189,6 +189,9 @@ export const ActionDesigner = (props) => {
         removeParentsIfNoChildren
         breakRemoveOn={(s) => {
           return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
+        }}
+        confirm={{
+          title: t('Delete action')
         }}
       />
     </GeneralSchemaDesigner>

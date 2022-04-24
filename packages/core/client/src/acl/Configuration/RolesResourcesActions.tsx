@@ -85,29 +85,29 @@ export const RolesResourcesActions = connect((props) => {
     <div>
       <RoleResourceCollectionContext.Provider value={collection}>
         <FormLayout layout={'vertical'}>
-          <FormItem label={'操作权限'}>
+          <FormItem label={t('Action permission')}>
             <Table
               size={'small'}
               pagination={false}
               columns={[
                 {
                   dataIndex: 'displayName',
-                  title: '操作',
+                  title: t('Action display name'),
                   render: (value) => compile(value),
                 },
                 {
                   dataIndex: 'onNewRecord',
-                  title: '类型',
+                  title: t('Action type'),
                   render: (onNewRecord) =>
                     onNewRecord ? (
-                      <Tag color={'green'}>{t('Operate on new record')}</Tag>
+                      <Tag color={'green'}>{t('Action on new records')}</Tag>
                     ) : (
-                      <Tag color={'geekblue'}>{t('Operate on existing record')}</Tag>
+                      <Tag color={'geekblue'}>{t('Action on existing records')}</Tag>
                     ),
                 },
                 {
                   dataIndex: 'enabled',
-                  title: '允许操作',
+                  title: t("Allow"),
                   render: (enabled, action) => (
                     <Checkbox
                       checked={enabled}
@@ -119,7 +119,7 @@ export const RolesResourcesActions = connect((props) => {
                 },
                 {
                   dataIndex: 'scope',
-                  title: '可操作的数据范围',
+                  title: t("Data scope"),
                   render: (value, action) =>
                     !action.onNewRecord && (
                       <ScopeSelect
@@ -148,14 +148,14 @@ export const RolesResourcesActions = connect((props) => {
               })}
             />
           </FormItem>
-          <FormItem label={'字段权限'}>
+          <FormItem label={t('Field permission')}>
             <Table
               pagination={false}
               dataSource={fieldPermissions}
               columns={[
                 {
                   dataIndex: ['uiSchema', 'title'],
-                  title: '字段名称',
+                  title: t('Field display name'),
                   render: (value) => compile(value),
                 },
                 ...availableActionsWithFields.map((action) => {

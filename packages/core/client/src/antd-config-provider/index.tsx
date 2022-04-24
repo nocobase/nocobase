@@ -14,8 +14,8 @@ export function AntdConfigProvider(props) {
     },
     {
       onSuccess(data) {
-        const locale = localStorage.getItem('locale');
-        if (data?.data?.lang && locale !== data?.data?.lang) {
+        const locale = localStorage.getItem('NOCOBASE_LANG');
+        if (data?.data?.lang && !locale) {
           i18n.changeLanguage(data?.data?.lang);
         }
       },

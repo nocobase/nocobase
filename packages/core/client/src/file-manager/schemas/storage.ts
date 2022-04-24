@@ -1,79 +1,87 @@
 import { ISchema } from '@formily/react';
-import { executionSchema } from './executions';
+import { uid } from '@formily/shared';
+import { useRequest } from '../../api-client';
+import { useActionContext } from '../../schema-component';
 
 const collection = {
-  name: 'workflows',
+  name: 'storages',
   fields: [
     {
-      type: 'string',
+      type: 'integer',
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '流程名称',
+        title: '{{t("Storage display name")}}',
         type: 'string',
         'x-component': 'Input',
         required: true,
       } as ISchema,
     },
-    // {
-    //   type: 'string',
-    //   name: 'description',
-    //   interface: 'textarea',
-    //   uiSchema: {
-    //     title: '描述',
-    //     type: 'string',
-    //     'x-component': 'TextArea',
-    //   } as ISchema,
-    // },
+    {
+      type: 'string',
+      name: 'name',
+      interface: 'input',
+      uiSchema: {
+        title: '{{t("Storage name")}}',
+        type: 'string',
+        'x-component': 'Input',
+      } as ISchema,
+    },
     {
       type: 'string',
       name: 'type',
       interface: 'select',
       uiSchema: {
-        title: '触发方式',
+        title: '{{t("Storage type")}}',
         type: 'string',
         'x-component': 'Select',
-        'x-decorator': 'FormItem',
+        required: true,
         enum: [
-          { value: 'model', label: '数据变动' }
+          { label: '{{t("Local storage")}}', value: 'local' },
+          { label: '{{t("Aliyun OSS")}}', value: 'ali-oss' },
+          { label: '{{t("Amazon S3")}}', value: 's3' },
         ],
       } as ISchema,
     },
     {
-      type: 'boolean',
-      name: 'enabled',
-      interface: 'radio',
+      type: 'string',
+      name: 'baseUrl',
+      interface: 'input',
       uiSchema: {
-        title: '状态',
+        title: '{{t("Storage base URL")}}',
         type: 'string',
-        enum: [
-          { label: '启用', value: true },
-          { label: '禁用', value: false },
-        ],
-        'x-component': 'Radio.Group',
-        'x-decorator': 'FormItem',
-      } as ISchema
-    }
+        'x-component': 'Input',
+      } as ISchema,
+    },
+    {
+      type: 'boolean',
+      name: 'default',
+      interface: 'boolean',
+      uiSchema: {
+        title: '{{t("Default storage")}}',
+        type: 'boolean',
+        'x-component': 'Checkbox',
+      } as ISchema,
+    },
   ],
 };
 
-export const workflowSchema: ISchema = {
+export const storageSchema: ISchema = {
   type: 'object',
   properties: {
-    provider: {
+    block1: {
       type: 'void',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
         collection,
-        resourceName: 'workflows',
+        resourceName: 'storages',
         request: {
-          resource: 'workflows',
+          resource: 'storages',
           action: 'list',
           params: {
             pageSize: 50,
-            filter: {},
-            sort: ['createdAt'],
-            except: ['config'],
+            sort: ['id'],
+            appends: [],
           },
         },
       },
@@ -93,12 +101,19 @@ export const workflowSchema: ISchema = {
           properties: {
             delete: {
               type: 'void',
-              title: '删除',
+              title: '{{ t("Delete") }}',
               'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ cm.useBulkDestroyAction }}',
+                confirm: {
+                  title: "{{t('Delete storage')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
             },
             create: {
               type: 'void',
-              title: '添加工作流',
+              title: '{{t("Add storage")}}',
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
@@ -108,13 +123,33 @@ export const workflowSchema: ISchema = {
                   type: 'void',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
-                  title: '添加工作流',
+                  'x-decorator-props': {
+                    useValues(options) {
+                      const ctx = useActionContext();
+                      return useRequest(
+                        () =>
+                          Promise.resolve({
+                            data: {
+                              name: `s_${uid()}`,
+                            },
+                          }),
+                        { ...options, refreshDeps: [ctx.visible] },
+                      );
+                    },
+                  },
+                  title: '{{t("Add storage")}}',
                   properties: {
                     title: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                     },
-                    description: {
+                    name: {
+                      'x-component': 'CollectionField',
+                      'x-decorator': 'FormItem',
+                      description:
+                        '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+                    },
+                    baseUrl: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                     },
@@ -122,19 +157,30 @@ export const workflowSchema: ISchema = {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                     },
+                    options: {
+                      type: 'object',
+                      'x-component': 'StorageOptions',
+                      'x-decorator': 'FormItem',
+                    },
+                    default: {
+                      'x-component': 'CollectionField',
+                      'x-decorator': 'FormItem',
+                      title: '',
+                      'x-content': '{{t("Default storage")}}',
+                    },
                     footer: {
                       type: 'void',
                       'x-component': 'Action.Drawer.Footer',
                       properties: {
                         cancel: {
-                          title: 'Cancel',
+                          title: '{{t("Cancel")}}',
                           'x-component': 'Action',
                           'x-component-props': {
                             useAction: '{{ cm.useCancelAction }}',
                           },
                         },
                         submit: {
-                          title: 'Submit',
+                          title: '{{t("Submit")}}',
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
@@ -147,10 +193,11 @@ export const workflowSchema: ISchema = {
                 },
               },
             },
-          }
+          },
         },
         table: {
           type: 'void',
+          'x-uid': 'input',
           'x-component': 'Table.Void',
           'x-component-props': {
             rowKey: 'id',
@@ -160,46 +207,45 @@ export const workflowSchema: ISchema = {
             useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
           properties: {
-            title: {
+            column1: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
                 title: {
-                  type: 'string',
+                  type: 'number',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
-              }
+              },
             },
-            type: {
+            column2: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
-                type: {
+                name: {
                   type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
-              }
+              },
             },
-            enabled: {
+            column3: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
-                enabled: {
-                  type: 'boolean',
+                default: {
+                  type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
-                  default: false
                 },
-              }
+              },
             },
-            actions: {
+            column4: {
               type: 'void',
-              title: '{{ t("Actions") }}',
+              title: '{{t("Actions")}}',
               'x-component': 'Table.Column',
               properties: {
                 actions: {
@@ -209,65 +255,65 @@ export const workflowSchema: ISchema = {
                     split: '|',
                   },
                   properties: {
-                    config: {
-                      type: 'void',
-                      title: '配置流程',
-                      'x-component': 'WorkflowLink'
-                    },
-                    // executions: {
-                    //   type: 'void',
-                    //   title: '执行历史',
-                    //   'x-component': 'Action.Link',
-                    //   'x-component-props': {
-                    //     type: 'primary',
-                    //   },
-                    //   properties: {
-                    //     drawer: {
-                    //       type: 'void',
-                    //       title: '执行历史',
-                    //       'x-component': 'Action.Drawer',
-                    //       properties: executionSchema
-                    //     }
-                    //   }
-                    // },
                     update: {
                       type: 'void',
-                      title: '{{ t("Edit") }}',
+                      title: '{{t("Edit")}}',
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         type: 'primary',
                       },
                       properties: {
-                        modal: {
+                        drawer: {
                           type: 'void',
-                          'x-component': 'Action.Modal',
+                          'x-component': 'Action.Drawer',
                           'x-decorator': 'Form',
                           'x-decorator-props': {
                             useValues: '{{ cm.useValuesFromRecord }}',
                           },
-                          title: '编辑工作流',
+                          title: '{{t("Edit storage")}}',
                           properties: {
                             title: {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                             },
-                            enabled: {
+                            name: {
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                              'x-disabled': true,
+                            },
+                            baseUrl: {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                             },
+                            type: {
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                              'x-disabled': true,
+                            },
+                            options: {
+                              type: 'object',
+                              'x-component': 'StorageOptions',
+                              'x-decorator': 'FormItem',
+                            },
+                            default: {
+                              title: '',
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                              'x-content': '{{t("Default storage")}}',
+                            },
                             footer: {
                               type: 'void',
-                              'x-component': 'Action.Modal.Footer',
+                              'x-component': 'Action.Drawer.Footer',
                               properties: {
                                 cancel: {
-                                  title: '{{ t("Cancel") }}',
+                                  title: '{{t("Cancel")}}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     useAction: '{{ cm.useCancelAction }}',
                                   },
                                 },
                                 submit: {
-                                  title: '{{ t("Submit") }}',
+                                  title: '{{t("Submit")}}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
@@ -280,25 +326,25 @@ export const workflowSchema: ISchema = {
                         },
                       },
                     },
-                    // delete: {
-                    //   type: 'void',
-                    //   title: '{{ t("Delete") }}',
-                    //   'x-component': 'Action.Link',
-                    //   'x-component-props': {
-                    //     confirm: {
-                    //       title: "{{t('Delete record')}}",
-                    //       content: "{{t('Are you sure you want to delete it?')}}",
-                    //     },
-                    //     useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
-                    //   },
-                    // },
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+                    delete: {
+                      type: 'void',
+                      title: '{{ t("Delete") }}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        confirm: {
+                          title: "{{t('Delete role')}}",
+                          content: "{{t('Are you sure you want to delete it?')}}",
+                        },
+                        useAction: '{{cm.useDestroyAction}}',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 };
