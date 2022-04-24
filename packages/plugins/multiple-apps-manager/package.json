@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-multiple-apps",
+  "name": "@nocobase/plugin-multiple-apps-manager",
   "version": "0.6.2-alpha.12",
   "main": "lib/index.js",
   "license": "MIT",

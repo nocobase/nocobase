@@ -1,6 +1,6 @@
 import { Plugin, PluginManager } from '@nocobase/server';
 import { mockServer } from '@nocobase/test';
-import { PluginMultipleApps } from '../server';
+import { PluginMultipleAppsManager } from '../server';
 
 describe('test with start', () => {
   it('should load subApp on create', async () => {
@@ -28,7 +28,7 @@ describe('test with start', () => {
     const app = mockServer();
     await app.cleanDb();
 
-    app.plugin(PluginMultipleApps);
+    app.plugin(PluginMultipleAppsManager);
 
     await app.loadAndInstall();
     await app.start();
@@ -53,7 +53,7 @@ describe('test with start', () => {
   it('should install into difference database', async () => {
     const app = mockServer();
     await app.cleanDb();
-    app.plugin(PluginMultipleApps);
+    app.plugin(PluginMultipleAppsManager);
 
     await app.loadAndInstall();
     await app.start();
@@ -80,7 +80,7 @@ describe('test with start', () => {
 
     let app = mockServer();
     await app.cleanDb();
-    app.plugin(PluginMultipleApps);
+    app.plugin(PluginMultipleAppsManager);
 
     await app.loadAndInstall();
     await app.start();
@@ -108,7 +108,7 @@ describe('test with start', () => {
       database: app.db,
     });
 
-    newApp.plugin(PluginMultipleApps);
+    newApp.plugin(PluginMultipleAppsManager);
     await newApp.db.reconnect();
 
     await newApp.load();
