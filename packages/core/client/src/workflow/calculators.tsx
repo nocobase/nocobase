@@ -32,7 +32,7 @@ export const calculators = [
     children: [
       { value: 'add', name: '+' },
       { value: 'minus', name: '-' },
-      { value: 'multipe', name: '*' },
+      { value: 'multiple', name: '*' },
       { value: 'divide', name: '/' },
       { value: 'mod', name: '%' },
     ]
