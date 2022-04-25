@@ -1,6 +1,13 @@
 {
   "name": "@nocobase/app-client",
   "version": "0.6.2-alpha.12",
+  "license": "Apache-2.0",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
   "scripts": {
     "start": "umi dev",
     "build": "umi build",
