@@ -1,8 +1,14 @@
 {
   "name": "@nocobase/plugin-users",
-  "version": "0.6.2-alpha.12",
+  "version": "0.7.0-alpha.0",
   "main": "lib/index.js",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
   "scripts": {
     "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
     "build:cjs": "tsc --project tsconfig.build.json",
@@ -12,7 +18,7 @@
     "jsonwebtoken": "^8.5.1"
   },
   "devDependencies": {
-    "@nocobase/test": "0.6.2-alpha.12",
+    "@nocobase/test": "0.7.0-alpha.0",
     "@types/jsonwebtoken": "^8.5.8"
   },
   "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"

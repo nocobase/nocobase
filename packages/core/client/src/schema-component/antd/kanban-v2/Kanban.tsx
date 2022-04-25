@@ -9,6 +9,7 @@ import { Board } from '../../../board';
 import '../../../board/style.less';
 import { useProps } from '../../hooks/useProps';
 import { KanbanCardContext, KanbanColumnContext } from './context';
+import './index.less';
 
 const useCreateActionProps = () => {
   const form = useForm();
@@ -57,7 +58,7 @@ export const Kanban: ComposedKanban = observer((props: any) => {
   const { groupField, onCardDragEnd, ...restProps } = useProps(props);
   const field = useField<ArrayField>();
   const fieldSchema = useFieldSchema();
-  const [disableCardDrag, setDisableCardDrag] = useState(false);
+  const [disableCardDrag, setDisableCardDrag] = useState(!!restProps.disableCardDrag);
   const schemas = useMemo(
     () =>
       fieldSchema.reduceProperties(
@@ -87,7 +88,7 @@ export const Kanban: ComposedKanban = observer((props: any) => {
   return (
     <Spin spinning={field.loading || false}>
       <Board
-        allowAddCard
+        allowAddCard={!!schemas.cardAdder}
         disableColumnDrag
         cardAdderPosition={'bottom'}
         disableCardDrag={disableCardDrag}
@@ -123,6 +124,9 @@ export const Kanban: ComposedKanban = observer((props: any) => {
           );
         }}
         renderCardAdder={({ column }) => {
+          if (!schemas.cardAdder) {
+            return null;
+          }
           return (
             <KanbanColumnContext.Provider value={{ column, groupField }}>
               <SchemaComponentOptions scope={{ useCreateActionProps }}>

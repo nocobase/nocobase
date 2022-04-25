@@ -81,7 +81,7 @@ yarn create nocobase-app my-nocobase-app
 # 2. switch to the project directory
 cd my-nocobase-app
 
-# 3. create initialization data
+# 3. Install NocoBase
 yarn nocobase install --lang=en-US
 
 # 4. start project
@@ -106,13 +106,17 @@ yarn nocobase install
 yarn start
 ```
 
-### Build
+### Building
 
 ```bash
+# For all packages
 yarn build
+
+# For specific package
+yarn build --scope @nocobase/database
 ```
 
-### Test
+### Testing
 
 ```bash
 # For all packages

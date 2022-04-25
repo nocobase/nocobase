@@ -6,6 +6,13 @@
     "packages/core/*",
     "packages/plugins/*"
   ],
+  "license": "Apache-2.0",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
   "scripts": {
     "start": "concurrently --kill-others \"npm run start-server\" \"npm run start-client\"",
     "start-pm2": "yarn pm2-runtime start packages/app/server/lib/index.js",

@@ -1,6 +1,6 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
-import { PluginMultipleApps } from '../server';
+import { PluginMultiAppManager } from '../server';
 
 describe('multiple apps create', () => {
   let app: MockServer;
@@ -10,7 +10,7 @@ describe('multiple apps create', () => {
     app = mockServer({});
     db = app.db;
     await app.cleanDb();
-    app.plugin(PluginMultipleApps);
+    app.plugin(PluginMultiAppManager);
 
     await app.loadAndInstall();
   });
@@ -51,29 +51,30 @@ describe('multiple apps create', () => {
     await db.getRepository('applications').create({
       values: {
         name: 'miniApp',
-        plugins: [
-          {
-            name: '@nocobase/plugin-ui-schema-storage',
-          },
-        ],
+        options: {
+          plugins: [['@nocobase/plugin-ui-schema-storage', { test: 'B' }]],
+        },
       },
     });
 
     const miniApp = app.appManager.applications.get('miniApp');
     expect(miniApp).toBeDefined();
 
-    expect(miniApp.pm.get('@nocobase/plugin-ui-schema-storage')).toBeDefined();
+    const plugin = miniApp.pm.get('@nocobase/plugin-ui-schema-storage');
+
+    expect(plugin).toBeDefined();
+    expect(plugin.options).toEqual({
+      test: 'B',
+    });
   });
 
   it('should lazy load applications', async () => {
     await db.getRepository('applications').create({
       values: {
         name: 'miniApp',
-        plugins: [
-          {
-            name: '@nocobase/plugin-ui-schema-storage',
-          },
-        ],
+        options: {
+          plugins: ['@nocobase/plugin-ui-schema-storage'],
+        },
       },
     });
 

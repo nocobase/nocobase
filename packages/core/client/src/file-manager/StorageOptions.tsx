@@ -11,6 +11,14 @@ const schema = {
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
+        default: 'uploads',
+      },
+      serve: {
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Checkbox',
+        'x-content': '{{t("Use the built-in static file server")}}',
+        default: true,
       },
     },
   },
@@ -34,7 +42,7 @@ const schema = {
         title: '{{t("AccessKey Secret")}}',
         type: 'string',
         'x-decorator': 'FormItem',
-        'x-component': 'Input',
+        'x-component': 'Password',
         required: true,
       },
       bucket: {
@@ -66,7 +74,7 @@ const schema = {
         title: '{{t("AccessKey Secret")}}',
         type: 'string',
         'x-decorator': 'FormItem',
-        'x-component': 'Input',
+        'x-component': 'Password',
         required: true,
       },
       bucket: {

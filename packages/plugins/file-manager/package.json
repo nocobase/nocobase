@@ -1,8 +1,14 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "0.6.2-alpha.12",
+  "version": "0.7.0-alpha.0",
   "main": "lib/index.js",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
   "scripts": {
     "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
     "build:cjs": "tsc --project tsconfig.build.json",
@@ -10,7 +16,7 @@
   },
   "dependencies": {
     "@koa/multer": "^3.0.0",
-    "@nocobase/server": "0.6.2-alpha.12",
+    "@nocobase/server": "0.7.0-alpha.0",
     "aws-sdk": "^2.2.32",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",
@@ -19,7 +25,7 @@
     "multer-s3": "^2.10.0"
   },
   "devDependencies": {
-    "@nocobase/test": "0.6.2-alpha.12",
+    "@nocobase/test": "0.7.0-alpha.0",
     "@types/koa-multer": "^1.0.1",
     "@types/multer": "^1.4.5"
   },

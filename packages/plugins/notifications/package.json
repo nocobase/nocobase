@@ -1,8 +1,14 @@
 {
   "name": "@nocobase/plugin-notifications",
-  "version": "0.6.2-alpha.12",
+  "version": "0.7.0-alpha.0",
   "main": "lib/index.js",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
   "scripts": {
     "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
     "build:cjs": "tsc --project tsconfig.build.json",
@@ -12,7 +18,7 @@
     "nodemailer": "^6.6.1"
   },
   "devDependencies": {
-    "@nocobase/test": "0.6.2-alpha.12",
+    "@nocobase/test": "0.7.0-alpha.0",
     "@types/nodemailer": "6.4.4",
     "nodemailer-mock": "^1.5.11"
   },

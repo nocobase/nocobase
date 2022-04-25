@@ -4,6 +4,7 @@ export * from './CreateFormBlockInitializers';
 export * from './DetailsActionInitializers';
 export * from './FormActionInitializers';
 export * from './FormItemInitializers';
+export * from './KanbanActionInitializers';
 export * from './ReadPrettyFormActionInitializers';
 export * from './ReadPrettyFormItemInitializers';
 export * from './RecordBlockInitializers';

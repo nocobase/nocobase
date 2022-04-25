@@ -3,7 +3,7 @@ import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
 import { AppManager } from '@nocobase/server';
 
-export class PluginMultipleApps extends Plugin {
+export class PluginMultiAppManager extends Plugin {
   getName(): string {
     return this.getPackageName(__dirname);
   }

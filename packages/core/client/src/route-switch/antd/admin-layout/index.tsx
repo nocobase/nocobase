@@ -1,22 +1,25 @@
 import { css } from '@emotion/css';
-import { Layout } from 'antd';
-import React, { useRef, useState } from 'react';
+import { Layout, Spin } from 'antd';
+import React, { createContext, useContext, useMemo, useRef } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
-  ACLAllowConfigure, ACLRolesCheckProvider,
+  ACLAllowConfigure,
+  ACLRolesCheckProvider,
   CurrentUser,
   CurrentUserProvider,
   findByUid,
   findMenuItem,
   PluginManager,
   RemoteCollectionManagerProvider,
-  RemoteSchemaComponent,
   RemoteSchemaTemplateManagerProvider,
+  SchemaComponent,
   useACLRoleContext,
   useDocumentTitle,
+  useRequest,
   useRoute,
   useSystemSettings
 } from '../../../';
+import { useCollectionManager } from '../../../collection-manager';
 import { PoweredBy } from '../../../powered-by';
 
 const filterByACL = (schema, options) => {
@@ -25,6 +28,9 @@ const filterByACL = (schema, options) => {
     return schema;
   }
   const filterSchema = (s) => {
+    if (!s) {
+      return;
+    }
     for (const key in s.properties) {
       if (Object.prototype.hasOwnProperty.call(s.properties, key)) {
         const element = s.properties[key];
@@ -38,24 +44,76 @@ const filterByACL = (schema, options) => {
   return schema;
 };
 
+const SchemaIdContext = createContext(null);
+const useMenuProps = () => {
+  const defaultSelectedUid = useContext(SchemaIdContext);
+  return {
+    selectedUid: defaultSelectedUid,
+    defaultSelectedUid,
+  };
+};
+const MenuEditor = (props) => {
+  const { setTitle } = useDocumentTitle();
+  const history = useHistory();
+  const match = useRouteMatch<any>();
+  const defaultSelectedUid = match.params.name;
+  const { sideMenuRef } = props;
+  const ctx = useACLRoleContext();
+  const route = useRoute();
+  const onSelect = ({ item }) => {
+    const schema = item.props.schema;
+    setTitle(schema.title);
+    history.push(`/admin/${schema['x-uid']}`);
+  };
+  const { data, loading } = useRequest(
+    {
+      url: `/uiSchemas:getJsonSchema/${route.uiSchemaUid}`,
+    },
+    {
+      refreshDeps: [route.uiSchemaUid],
+      onSuccess(data) {
+        const schema = filterByACL(data?.data, ctx);
+        if (defaultSelectedUid) {
+          const s = findByUid(schema, defaultSelectedUid);
+          if (s) {
+            setTitle(s.title);
+          }
+        } else {
+          const s = findMenuItem(schema);
+          if (s) {
+            history.push(`/admin/${s['x-uid']}`);
+            setTitle(s.title);
+          }
+        }
+      },
+    },
+  );
+  const schema = useMemo(() => {
+    const s = filterByACL(data?.data, ctx);
+    if (s?.['x-component-props']) {
+      s['x-component-props']['useProps'] = useMenuProps;
+    }
+    return s;
+  }, [data?.data]);
+  if (loading) {
+    return <Spin />;
+  }
+  return (
+    <SchemaIdContext.Provider value={defaultSelectedUid}>
+      <SchemaComponent memoized scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }} schema={schema} />
+    </SchemaIdContext.Provider>
+  );
+};
+
 const InternalAdminLayout = (props: any) => {
   const route = useRoute();
   const history = useHistory();
   const match = useRouteMatch<any>();
   const { setTitle } = useDocumentTitle();
   const sideMenuRef = useRef();
-  const defaultSelectedUid = match.params.name;
-  const [schema, setSchema] = useState({});
-  const ctx = useACLRoleContext();
-  const onSelect = ({ item }) => {
-    const schema = item.props.schema;
-    console.log('onSelect', schema);
-    setSchema(schema);
-    setTitle(schema.title);
-    history.push(`/admin/${schema['x-uid']}`);
-  };
-  const [hidden, setHidden] = useState(false);
+
   const result = useSystemSettings();
+  const { service } = useCollectionManager();
   return (
     <Layout>
       <Layout.Header
@@ -88,40 +146,7 @@ const InternalAdminLayout = (props: any) => {
               width: 'calc(100% - 590px)',
             }}
           >
-            <RemoteSchemaComponent
-              hidden={hidden}
-              uid={route.uiSchemaUid}
-              scope={{ onSelect, sideMenuRef, defaultSelectedUid }}
-              schemaTransform={(data) => {
-                if (!data) {
-                  return data;
-                }
-                data['x-component-props'] = data['x-component-props'] || {};
-                data['x-component-props']['defaultSelectedUid'] = defaultSelectedUid;
-                return filterByACL(data, ctx);
-              }}
-              onSuccess={(data) => {
-                if (defaultSelectedUid && defaultSelectedUid.includes('/')) {
-                  return;
-                }
-                const schema = filterByACL(data?.data, ctx);
-                if (defaultSelectedUid) {
-                  const s = findByUid(schema, defaultSelectedUid);
-                  if (s) {
-                    setTitle(s.title);
-                    return;
-                  }
-                }
-                setHidden(true);
-                setTimeout(() => setHidden(false), 11);
-                const s = findMenuItem(schema);
-                if (s) {
-                  setSchema(s);
-                  setTitle(s.title);
-                  history.push(`/admin/${s['x-uid']}`);
-                }
-              }}
-            />
+            <MenuEditor sideMenuRef={sideMenuRef} />
           </div>
         </div>
         <div style={{ position: 'absolute', top: 0, right: 0 }}>
@@ -156,7 +181,7 @@ const InternalAdminLayout = (props: any) => {
             }
           `}
         >
-          {props.children}
+          {service.contentLoading ? <Spin /> : props.children}
           <Layout.Footer>
             <PoweredBy />
           </Layout.Footer>

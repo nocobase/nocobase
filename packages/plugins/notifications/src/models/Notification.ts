@@ -3,7 +3,6 @@ import { NotificationService } from './NotificationService';
 import _ from 'lodash';
 
 export class Notification extends Model {
-
   [key: string]: any;
 
   get db(): Database {
@@ -20,12 +19,14 @@ export class Notification extends Model {
       const rows = await collection.repository.find({
         filter,
       });
-      receivers = rows.map(row => row[dataField]);
+      receivers = rows.map((row) => row[dataField]);
     }
     return receivers;
   }
 
   async send(options: any = {}) {
+    const { transaction } = options;
+
     if (!this.service) {
       this.service = await this.getService();
     }
@@ -35,7 +36,7 @@ export class Notification extends Model {
       to = Array.isArray(to) ? to : [to];
       receivers.push(...to);
     }
-    console.log(receivers)
+    console.log(receivers);
     for (const receiver of receivers) {
       try {
         const response = await (this.service as NotificationService).send({
@@ -43,21 +44,31 @@ export class Notification extends Model {
           subject: this.getSubject(),
           html: this.getBody(options),
         });
-        await this.createLog({
-          receiver,
-          state: 'success',
-          response,
-        });
+        await this.createLog(
+          {
+            receiver,
+            state: 'success',
+            response,
+          },
+          {
+            transaction,
+          },
+        );
         await new Promise((resolve) => {
           setTimeout(resolve, 100);
         });
       } catch (error) {
         console.error(error);
-        await this.createLog({
-          receiver,
-          state: 'fail',
-          response: {},
-        });
+        await this.createLog(
+          {
+            receiver,
+            state: 'fail',
+            response: {},
+          },
+          {
+            transaction,
+          },
+        );
       }
     }
   }
@@ -67,7 +78,7 @@ export class Notification extends Model {
   }
 
   getBody(data) {
-    const compiled = _.template(this.body)
+    const compiled = _.template(this.body);
     const body = compiled(data);
     return body;
   }
