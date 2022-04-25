@@ -58,7 +58,7 @@ export const Kanban: ComposedKanban = observer((props: any) => {
   const { groupField, onCardDragEnd, ...restProps } = useProps(props);
   const field = useField<ArrayField>();
   const fieldSchema = useFieldSchema();
-  const [disableCardDrag, setDisableCardDrag] = useState(!!restProps.disableCardDrag);
+  const [disableCardDrag, setDisableCardDrag] = useState(false);
   const schemas = useMemo(
     () =>
       fieldSchema.reduceProperties(
@@ -88,10 +88,11 @@ export const Kanban: ComposedKanban = observer((props: any) => {
   return (
     <Spin spinning={field.loading || false}>
       <Board
+        {...restProps}
         allowAddCard={!!schemas.cardAdder}
         disableColumnDrag
         cardAdderPosition={'bottom'}
-        disableCardDrag={disableCardDrag}
+        disableCardDrag={restProps.disableCardDrag || disableCardDrag}
         onCardRemove={handleCardRemove}
         onCardDragEnd={handleCardDragEnd}
         renderColumnHeader={({ title, color }) => (
@@ -135,7 +136,6 @@ export const Kanban: ComposedKanban = observer((props: any) => {
             </KanbanColumnContext.Provider>
           );
         }}
-        {...restProps}
       >
         {{
           columns: field.value || [],
