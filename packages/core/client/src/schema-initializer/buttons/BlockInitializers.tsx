@@ -44,10 +44,12 @@ export const BlockInitializers = {
       ],
     },
     {
+      key: 'media',
       type: 'itemGroup',
       title: '{{t("Media")}}',
       children: [
         {
+          key: 'markdown',
           type: 'item',
           title: '{{t("Markdown")}}',
           component: 'MarkdownBlockInitializer',
