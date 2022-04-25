@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/server",
-  "version": "0.7.0-alpha.7",
+  "version": "0.7.0-alpha.10",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
@@ -18,10 +18,10 @@
   "dependencies": {
     "@koa/cors": "^3.1.0",
     "@koa/router": "^9.4.0",
-    "@nocobase/acl": "0.7.0-alpha.7",
-    "@nocobase/actions": "0.7.0-alpha.7",
-    "@nocobase/database": "0.7.0-alpha.7",
-    "@nocobase/resourcer": "0.7.0-alpha.7",
+    "@nocobase/acl": "0.7.0-alpha.10",
+    "@nocobase/actions": "0.7.0-alpha.10",
+    "@nocobase/database": "0.7.0-alpha.10",
+    "@nocobase/resourcer": "0.7.0-alpha.10",
     "commander": "^8.1.0",
     "dotenv": "^8.2.0",
     "find-package-json": "^1.2.0",
