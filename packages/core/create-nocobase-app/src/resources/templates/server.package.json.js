@@ -27,7 +27,7 @@ module.exports = (opts) => {
 
   return {
     ...templateJson,
-    name: 'server',
+    name: 'app-server',
     version: '0.1.0',
     main: 'index.js',
     dependencies: {

@@ -98,8 +98,8 @@ yarn create nocobase-app my-nocobase-app -d postgres \
 # 2. 切换目录
 cd my-nocobase-app
 
-# 3. 安装依赖
-yarn install
+# 3. 安装依赖（使用阿里云镜像）
+yarn install --registry=https://registry.npmmirror.com
 
 # 4. 安装 NocoBase
 yarn nocobase install --lang=zh-CN
