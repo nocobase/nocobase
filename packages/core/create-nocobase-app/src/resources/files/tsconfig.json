@@ -16,8 +16,6 @@
     "experimentalDecorators": true,
     "downlevelIteration": true,
     "baseUrl": ".",
-    "paths": {
-      "@nocobase/*": ["packages/*/src"]
-    }
+    "paths": {}
   }
 }
