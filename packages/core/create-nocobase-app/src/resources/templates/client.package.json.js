@@ -7,7 +7,7 @@ module.exports = (opts) => {
 
   return {
     ...templateJson,
-    name: 'client',
+    name: 'app-client',
     version: '0.1.0',
     dependencies: {
       ...templateJson.dependencies,
