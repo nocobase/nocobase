@@ -2,6 +2,7 @@ import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
+import { useACLRoleContext } from '../acl';
 import { useCollection } from '../collection-manager';
 import { toColumns } from '../schema-component/antd/kanban-v2/Kanban';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -33,6 +34,9 @@ const InternalKanbanBlockProvider = (props) => {
   return (
     <KanbanBlockContext.Provider
       value={{
+        props: {
+          resource: props.resource,
+        },
         field,
         service,
         resource,
@@ -56,6 +60,16 @@ export const useKanbanBlockContext = () => {
   return useContext(KanbanBlockContext);
 };
 
+const useDisableCardDrag = () => {
+  const ctx = useKanbanBlockContext();
+  const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
+  if (allowAll || allowConfigure) {
+    return false;
+  }
+  const result = getActionParams(`${ctx?.props?.resource}:update`, { skipOwnCheck: true });
+  return !result;
+}
+
 export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
@@ -67,6 +81,7 @@ export const useKanbanBlockProps = () => {
   }, [ctx?.service?.loading]);
   return {
     groupField: ctx.groupField,
+    disableCardDrag: useDisableCardDrag(),
     async onCardDragEnd({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) {
       const sourceColumn = columns.find((column) => column.id === fromColumnId);
       const destinationColumn = columns.find((column) => column.id === toColumnId);

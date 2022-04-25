@@ -701,8 +701,19 @@ export const createKanbanBlockSchema = (options) => {
       ...others,
     },
     'x-designer': 'KanbanV2.Designer',
-    'x-component': 'BlockItem',
+    'x-component': 'CardItem',
     properties: {
+      actions: {
+        type: 'void',
+        'x-initializer': 'KanbanActionInitializers',
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 16,
+          },
+        },
+        properties: {},
+      },
       [uid()]: {
         type: 'array',
         'x-component': 'KanbanV2',
@@ -721,37 +732,6 @@ export const createKanbanBlockSchema = (options) => {
                 type: 'void',
                 'x-component': 'Grid',
                 'x-component-props': { dndContext: false },
-              },
-            },
-          },
-          cardAdder: {
-            title: '{{t("Add new")}}',
-            type: 'void',
-            'x-designer': 'Action.Designer',
-            'x-designer-props': {
-              draggable: false,
-            },
-            'x-component': 'KanbanV2.CardAdder',
-            'x-component-props': {
-              type: 'text',
-              openMode: 'drawer',
-            },
-            properties: {
-              drawer: {
-                type: 'void',
-                title: '{{ t("Add record") }}',
-                'x-component': 'Action.Container',
-                'x-component-props': {
-                  className: 'nb-action-popup',
-                },
-                properties: {
-                  grid: {
-                    type: 'void',
-                    'x-component': 'Grid',
-                    'x-initializer': 'CreateFormBlockInitializers',
-                    properties: {},
-                  },
-                },
               },
             },
           },
