@@ -66,8 +66,8 @@ Node:
 Database:
 
 - PostgreSQL 10.x+
-- Mysql 8.x+
-- Sqlite 3+
+- MySQL 8.x+
+- SQLite 3+
 
 Installation
 ----------
@@ -76,15 +76,33 @@ Installation
 
 ~~~shell
 # 1. create project
-yarn create nocobase-app my-nocobase-app
+# SQLite
+yarn create nocobase-app my-nocobase-app -d sqlite
+# MySQL
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=mysql \
+   -e DB_PORT=3356 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase
+# PostgreSQL
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=postgres \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=postgres \
+   -e DB_USER=postgres \
+   -e DB_PASSWORD=postgres
 
 # 2. switch to the project directory
 cd my-nocobase-app
 
-# 3. Install NocoBase
+# 3. Install dependencies
+yarn install
+
+# 4. Install NocoBase
 yarn nocobase install --lang=en-US
 
-# 4. start project
+# 5. start project
 yarn start
 ~~~
 
