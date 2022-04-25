@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-multi-app-manager",
-  "version": "0.7.0-alpha.2",
+  "version": "0.7.0-alpha.3",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -15,6 +15,6 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/server": "0.7.0-alpha.2"
+    "@nocobase/server": "0.7.0-alpha.3"
   }
 }
