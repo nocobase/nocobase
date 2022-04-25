@@ -3,12 +3,11 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
 export class SystemSettingsPlugin extends Plugin {
-  async install(options: InstallOptions) {
-    const [opts] = options.cliArgs;
+  async install(options?: InstallOptions) {
     await this.db.getRepository('systemSettings').create({
       values: {
         title: 'NocoBase',
-        appLang: opts?.lang || 'en-US',
+        appLang: options?.cliArgs?.[0]?.opts?.lang || process.env.APP_LANG || 'en-US',
         logo: {
           title: 'nocobase-logo',
           filename: '682e5ad037dd02a0fe4800a3e91c283b.png',

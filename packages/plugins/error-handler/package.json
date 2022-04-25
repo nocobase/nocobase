@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-error-handler",
-  "version": "0.7.0-alpha.4",
+  "version": "0.7.0-alpha.7",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -17,12 +17,12 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/server": "0.7.0-alpha.4"
+    "@nocobase/server": "0.7.0-alpha.7"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugin-error-handler"
   },
-  "gitHead": "b12507f6e4bcb5f1fd8285670a43fb3807d90ea0"
+  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }
