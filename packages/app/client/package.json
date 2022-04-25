@@ -14,7 +14,7 @@
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@umijs/test": "^3.5.20",
-    "antd": "^4.19.5",
+    "antd": "~4.19.5",
     "react": "17.x",
     "react-dom": "17.x",
     "umi": "^3.5.20"
