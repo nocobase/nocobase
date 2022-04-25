@@ -374,18 +374,12 @@ export class PluginACL extends Plugin {
       await next();
     });
 
-    // should not destroy roles and users table
-    this.app.resourcer.use(async (ctx, next) => {
-      const { resourceName, actionName } = ctx.action.params;
-      if (resourceName === 'collections' && actionName === 'destroy') {
-        ctx.action.mergeParams({
-          filter: {
-            $and: [{ 'name.$ne': 'roles' }, { 'name.$ne': 'users' }],
-          },
-        });
-      }
-
-      await next();
+    this.app.resourcer.addParamsMerger('collections:destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'name.$ne': 'roles' }, { 'name.$ne': 'users' }],
+        },
+      };
     });
   }
 

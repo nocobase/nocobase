@@ -5,6 +5,7 @@ import { pathToRegexp } from 'path-to-regexp';
 import Action, { ActionName } from './action';
 import Resource, { ResourceOptions } from './resource';
 import { getNameByParams, ParsedParams, parseQuery, parseRequest, requireModule } from './utils';
+import ParamsMergerManager, { ActionPath, Merger } from './params-merger-manager';
 
 export interface ResourcerContext {
   resourcer?: Resourcer;
@@ -160,10 +161,13 @@ export class Resourcer {
 
   protected middlewares = [];
 
+  public readonly paramsMergerManager = new ParamsMergerManager();
+
   public readonly options: ResourcerOptions;
 
   constructor(options: ResourcerOptions = {}) {
     this.options = options;
+    this.use(this.paramsMergerManager.middleware());
   }
 
   /**
@@ -209,6 +213,10 @@ export class Resourcer {
 
   registerAction(name: ActionName, handler: HandlerType) {
     this.registerActionHandler(name, handler);
+  }
+
+  addParamsMerger(path: ActionPath, merger: Merger) {
+    this.paramsMergerManager.addMerger(path, merger);
   }
 
   registerActions(handlers: Handlers) {
