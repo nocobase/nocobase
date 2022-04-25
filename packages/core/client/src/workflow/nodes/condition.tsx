@@ -1,7 +1,7 @@
 import React from "react";
 import { css, cx } from "@emotion/css";
-import { Button, Select } from "antd";
-import { CloseCircleOutlined } from '@ant-design/icons';
+import { Button, Select, Tooltip } from "antd";
+import { CloseCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Trans } from "react-i18next";
 
 import { NodeDefaultView } from ".";
@@ -66,17 +66,20 @@ function CalculationGroup({ value, onChange }) {
   }
 
   return (
-    <div className={css`
+    <div className={cx('node-type-condition-group', css`
       position: relative;
       width: 100%;
-      padding: .5em 1em;
-      border: 1px dashed #ddd;
+
+      .node-type-condition-group{
+        padding: .5em 1em;
+        border: 1px dashed #ddd;
+      }
 
       + button{
         position: absolute;
         right: 0;
       }
-    `}>
+    `)}>
       <div className={css`
         display: flex;
         align-items: center;
@@ -141,8 +144,28 @@ export default {
         disabled: true,
       },
       enum: [
-        { value: true, label: '通行模式' },
-        { value: false, label: '分支模式' },
+        {
+          value: true,
+          label: (
+            <Tooltip
+              title="判断为“是”时继续"
+              placement="bottom"
+            >
+              通行模式 <QuestionCircleOutlined style={{ color: '#999' }} />
+            </Tooltip>
+          )
+        },
+        {
+          value: false,
+          label: (
+            <Tooltip
+              title="判断结果分为“是”和“否”两个分支，分别继续"
+              placement="bottom"
+            >
+              分支模式 <QuestionCircleOutlined style={{ color: '#999' }} />
+            </Tooltip>
+          )
+        }
       ],
     },
     calculation: {

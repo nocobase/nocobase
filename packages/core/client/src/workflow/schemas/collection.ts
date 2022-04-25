@@ -56,8 +56,6 @@ export const filter = {
         className: css`
           position: relative;
           width: 100%;
-          padding: .5em 1em;
-          border: 1px dashed #ddd;
         `
       };
     },
