@@ -4,8 +4,8 @@ WORKDIR /app
 # COPY . /app
 RUN ls -a
 
-RUN npm config set registry https://registry.npm.taobao.org
-RUN yarn config set registry https://registry.npm.taobao.org
+RUN npm config set registry https://registry.npmmirror.com
+RUN yarn config set registry https://registry.npmmirror.com
 
 # RUN npm install
 # RUN npm run bootstrap
