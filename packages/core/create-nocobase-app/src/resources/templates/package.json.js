@@ -24,6 +24,10 @@ module.exports = (opts) => {
       '@types/react': '^17.0.0',
       '@types/react-dom': '^17.0.0',
     },
+    dependencies: {
+      'cross-env': '^7.0.3',
+      dotenv: '^10.0.0',
+    },
     devDependencies: {
       '@testing-library/react': '^12.1.2',
       '@types/jest': '^26.0.0',
@@ -33,8 +37,6 @@ module.exports = (opts) => {
       '@typescript-eslint/eslint-plugin': '^4.9.1',
       '@typescript-eslint/parser': '^4.8.2',
       concurrently: '^7.0.0',
-      'cross-env': '^7.0.3',
-      dotenv: '^10.0.0',
       eslint: '^7.14.0',
       'eslint-config-prettier': '^7.0.0',
       'eslint-plugin-import': '^2.13.0',
