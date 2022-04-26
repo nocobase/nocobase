@@ -1,7 +1,7 @@
 const execa = require('execa');
 const axios = require('axios');
 const fs = require('fs');
-const fsP = require('fs/promises');
+const fsP = require('fs').promises;
 const tar = require('tar');
 const { join } = require('path');
 const crypto = require('crypto');
