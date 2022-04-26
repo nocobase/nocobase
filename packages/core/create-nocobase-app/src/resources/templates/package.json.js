@@ -12,6 +12,7 @@ module.exports = (opts) => {
       clean: 'rimraf -rf packages/{app,plugins}/*/{lib,esm,dist} && lerna clean',
       nocobase:
         'cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts',
+      'nocobase-prod': 'cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js',
       'start-client': 'cd packages/app/client && npm run start',
       'start-server': 'npm run nocobase start',
       build: 'lerna run build',

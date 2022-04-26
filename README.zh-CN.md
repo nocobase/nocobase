@@ -68,8 +68,8 @@ Node:
 Database:
 
 - PostgreSQL 10.x+
-- Mysql 8.x+
-- Sqlite 3+
+- MySQL 8.x+
+- SQLite 3+
 
 安装 & 运行
 ----------
@@ -78,15 +78,33 @@ Database:
 
 ~~~shell
 # 1. 创建项目
-yarn create nocobase-app my-nocobase-app
+# SQLite
+yarn create nocobase-app my-nocobase-app -d sqlite
+# MySQL
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=mysql \
+   -e DB_PORT=3356 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase
+# PostgreSQL
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=postgres \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase
 
 # 2. 切换目录
 cd my-nocobase-app
 
-# 3. 安装
+# 3. 安装依赖（使用阿里云镜像）
+yarn install --registry=https://registry.npmmirror.com
+
+# 4. 安装 NocoBase
 yarn nocobase install --lang=zh-CN
 
-# 4. 启动
+# 5. 启动
 yarn start
 ~~~
 

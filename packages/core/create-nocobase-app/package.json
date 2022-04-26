@@ -1,6 +1,6 @@
 {
   "name": "create-nocobase-app",
-  "version": "0.7.0-alpha.0",
+  "version": "0.7.0-alpha.10",
   "main": "src/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -24,5 +24,6 @@
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/core/create-nocobase-app"
-  }
+  },
+  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }

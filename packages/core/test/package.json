@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/test",
-  "version": "0.7.0-alpha.0",
+  "version": "0.7.0-alpha.10",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
@@ -16,7 +16,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/server": "0.7.0-alpha.0",
+    "@nocobase/server": "0.7.0-alpha.10",
     "@types/supertest": "^2.0.11",
     "mockjs": "^1.1.0",
     "mysql2": "^2.1.0",
@@ -24,5 +24,5 @@
     "pg-hstore": "^2.3.3",
     "supertest": "^6.1.6"
   },
-  "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
+  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }

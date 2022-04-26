@@ -1,4 +1,4 @@
-import { lodash } from '@umijs/utils';
+import lodash from 'lodash';
 import { DataTypes } from 'sequelize';
 import { Model } from '../model';
 import { BaseColumnFieldOptions, Field } from './field';
