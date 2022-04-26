@@ -93,6 +93,22 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
     this.app.resourcer.use(middlewares.parseToken({ plugin: this }));
 
+    this.app.resourcer.addParamsMerger('collections:destroy', () => {
+      return {
+        filter: {
+          'name.$ne': 'users',
+        },
+      };
+    });
+
+    this.app.resourcer.addParamsMerger('users:destroy', () => {
+      return {
+        filter: {
+          'id.$ne': 1,
+        },
+      };
+    });
+
     const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
     const loggedInActions = ['signout', 'updateProfile', 'changePassword', 'setDefaultRole'];
 

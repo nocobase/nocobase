@@ -11,6 +11,7 @@ export class ChinaRegionPlugin extends Plugin {
     await this.db.import({
       directory: resolve(__dirname, 'collections'),
     });
+
     this.app.acl.allow('chinaRegions', 'list', 'loggedIn');
   }
 
@@ -23,9 +24,9 @@ export class ChinaRegionPlugin extends Plugin {
       storage: resolve(process.cwd(), 'node_modules/china-division/dist/data.sqlite'),
     });
 
-    const [provinces] = await db.sequelize.query('SELECT `code`, `name` FROM `province`') as any;
-    const [cities] = await db.sequelize.query('SELECT `code`, `name`, `provinceCode` FROM `city`') as any;
-    const [areas] = await db.sequelize.query('SELECT `code`, `name`, `cityCode` FROM `area`') as any;
+    const [provinces] = (await db.sequelize.query('SELECT `code`, `name` FROM `province`')) as any;
+    const [cities] = (await db.sequelize.query('SELECT `code`, `name`, `provinceCode` FROM `city`')) as any;
+    const [areas] = (await db.sequelize.query('SELECT `code`, `name`, `cityCode` FROM `area`')) as any;
 
     await ChinaRegion.bulkCreate(
       provinces.map((item) => ({

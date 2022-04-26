@@ -93,12 +93,7 @@ export class UiRoutesStoragePlugin extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
-    this.app.acl.use(
-      skip({
-        resourceName: 'uiRoutes',
-        actionName: 'getAccessible',
-      }),
-    );
+    this.app.acl.allow('uiRoutes', 'getAccessible');
   }
 }
 

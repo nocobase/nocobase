@@ -30,12 +30,17 @@ export class SystemSettingsPlugin extends Plugin {
     await this.app.db.import({
       directory: resolve(__dirname, 'collections'),
     });
-    this.app.acl.use(
-      skip({
-        resourceName: 'systemSettings',
-        actionName: 'get',
-      }),
-    );
+
+    this.app.resourcer.addParamsMerger('systemSettings:destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'title.$ne': 'Nocobase' }],
+        },
+      };
+    });
+
+    this.app.acl.allow('systemSettings', 'get');
+    this.app.acl.allow('systemSettings', 'update', 'allowConfigure');
   }
 
   getName(): string {

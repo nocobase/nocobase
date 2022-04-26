@@ -303,6 +303,30 @@ export class PluginACL extends Plugin {
       return ctx.state.currentRole === 'root';
     });
 
+    this.app.resourcer.addParamsMerger('collections:destroy', () => {
+      return {
+        filter: {
+          'name.$ne': 'roles',
+        },
+      };
+    });
+
+    this.app.resourcer.addParamsMerger('rolesResourcesScopes:destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'key.$ne': 'all' }, { 'key.$ne': 'own' }],
+        },
+      };
+    });
+
+    this.app.resourcer.addParamsMerger('roles:destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'name.$ne': 'root' }, { 'name.$ne': 'admin' }, { 'name.$ne': 'member' }],
+        },
+      };
+    });
+
     this.app.resourcer.use(async (ctx, next) => {
       const { actionName, resourceName, params } = ctx.action;
       const { showAnonymous } = params || {};
@@ -372,14 +396,6 @@ export class PluginACL extends Plugin {
         }
       }
       await next();
-    });
-
-    this.app.resourcer.addParamsMerger('collections:destroy', () => {
-      return {
-        filter: {
-          $and: [{ 'name.$ne': 'roles' }, { 'name.$ne': 'users' }],
-        },
-      };
     });
   }
 

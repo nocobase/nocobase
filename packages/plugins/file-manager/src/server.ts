@@ -36,6 +36,27 @@ export default class PluginFileManager extends Plugin {
       await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
     }
 
+    this.app.resourcer.addParamsMerger('storages:destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'name.$ne': 'local' }],
+        },
+      };
+    });
+
+    const ownMerger = (ctx) => {
+      return {
+        filter: {
+          createdById: ctx.state.currentUser.id,
+        },
+      };
+    };
+
+    this.app.resourcer.addParamsMerger('attachments:update', ownMerger);
+    this.app.resourcer.addParamsMerger('attachments:create', ownMerger);
+    this.app.resourcer.addParamsMerger('attachments:destroy', ownMerger);
+
+    this.app.acl.allow('storages', ['create', 'update', 'destroy'], 'allowConfigure');
     this.app.acl.allow('attachments', 'upload', 'loggedIn');
   }
 
