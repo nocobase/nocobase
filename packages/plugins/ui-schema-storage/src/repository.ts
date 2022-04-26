@@ -3,6 +3,7 @@ import { uid } from '@nocobase/utils';
 import lodash from 'lodash';
 import { Transaction } from 'sequelize';
 import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
+import { UidFormatError } from './helper';
 
 interface GetJsonSchemaOptions {
   includeAsyncNode?: boolean;
@@ -766,6 +767,11 @@ export class UiSchemaRepository extends Repository {
     const db = this.database;
 
     const { uid, name, async, childOptions } = this.prepareSingleNodeForInsert(schema);
+
+    if (!uid.match(/^[A-Za-z][A-Za-z0-9_]+$/)) {
+      throw new UidFormatError('uid format error');
+    }
+
     let savedNode;
 
     // check node exists or not

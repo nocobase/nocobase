@@ -7,6 +7,7 @@ import { UiSchemaModel } from './model';
 import UiSchemaRepository from './repository';
 import { ServerHooks } from './server-hooks';
 import { ServerHookModel } from './server-hooks/model';
+import { UidFormatError } from './helper';
 
 export class UiSchemaStoragePlugin extends Plugin {
   serverHooks: ServerHooks;
@@ -81,6 +82,19 @@ export class UiSchemaStoragePlugin extends Plugin {
     );
 
     this.app.acl.allow('uiSchemaTemplates', '*', 'loggedIn');
+
+    const errorHandlerPlugin = this.app.getPlugin<any>('@nocobase/plugin-error-handler');
+    if (errorHandlerPlugin) {
+      errorHandlerPlugin.errorHandler.register(
+        (err) => err instanceof UidFormatError,
+        (err, ctx) => {
+          ctx.body = {
+            errors: [{ message: err.message }],
+          };
+          ctx.status = 400;
+        },
+      );
+    }
   }
 
   async load() {

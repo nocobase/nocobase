@@ -3,6 +3,7 @@ import { mockServer, MockServer } from '@nocobase/test';
 import { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
 import PluginUiSchema from '../server';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
 
 describe('ui_schema repository', () => {
   let app: MockServer;
@@ -26,6 +27,7 @@ describe('ui_schema repository', () => {
     await queryInterface.dropAllTables();
 
     app.plugin(PluginUiSchema);
+    app.plugin(PluginErrorHandler);
 
     await app.load();
     await db.sync({
@@ -36,6 +38,33 @@ describe('ui_schema repository', () => {
     });
     repository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
     treePathCollection = db.getCollection('uiSchemaTreePath');
+  });
+
+  it('should validate uid format', async () => {
+    const invalidUid = '你好';
+    const validUid = 'some_valid_uid';
+
+    let response = await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': invalidUid,
+        },
+      });
+
+    expect(response.statusCode).toEqual(400);
+
+    response = await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': validUid,
+        },
+      });
+
+    expect(response.statusCode).toEqual(200);
   });
 
   it('should be registered', async () => {
