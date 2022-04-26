@@ -15,7 +15,7 @@ module.exports = (opts) => {
       'nocobase-prod': 'cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js',
       'start-client': 'cd packages/app/client && npm run start',
       'start-server': 'npm run nocobase start',
-      'start-pm2': 'pm2-runtime start packages/app/server/lib/index.js -- start',
+      'start-pm2': 'pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start',
       build: 'lerna run build',
       'build-docs': 'dumi build',
       test: 'node ./jest.cli.js -i',
