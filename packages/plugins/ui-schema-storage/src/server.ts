@@ -81,7 +81,8 @@ export class UiSchemaStoragePlugin extends Plugin {
       'allowConfigure',
     );
 
-    this.app.acl.allow('uiSchemaTemplates', '*', 'loggedIn');
+    this.app.acl.allow('uiSchemaTemplates', ['get', 'list'], 'loggedIn');
+    this.app.acl.allow('uiSchemaTemplates', ['create', 'update', 'destroy'], 'allowConfigure');
 
     const errorHandlerPlugin = this.app.getPlugin<any>('@nocobase/plugin-error-handler');
     if (errorHandlerPlugin) {
