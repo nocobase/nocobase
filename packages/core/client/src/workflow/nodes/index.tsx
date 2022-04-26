@@ -1,24 +1,24 @@
-import React, { useContext } from 'react';
+import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { Button, Modal, Tag } from 'antd';
-import { DeleteOutlined, CloseOutlined } from '@ant-design/icons';
 import { Field } from '@formily/core';
 import { ISchema, RecursionField, useField, useForm } from '@formily/react';
-
 import { Registry } from '@nocobase/utils';
-
+import { Button, Modal, Tag } from 'antd';
+import React, { useContext } from 'react';
 import { SchemaComponent, useActionContext, useAPIClient, useCollection, useRequest, useResourceActionContext } from '../..';
+import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeTitleClass } from '../style';
 import { AddButton, useFlowContext } from '../WorkflowCanvas';
-
-import { nodeClass, nodeCardClass, nodeHeaderClass, nodeTitleClass, nodeBlockClass } from '../style';
-
-import query from './query';
-import create from './create';
-import update from './update';
-import destroy from './destroy';
-import condition from './condition';
-import parallel from './parallel';
 import calculation from './calculation';
+import condition from './condition';
+import create from './create';
+import destroy from './destroy';
+import parallel from './parallel';
+import query from './query';
+import update from './update';
+
+
+
+
 
 
 
@@ -214,14 +214,9 @@ export function NodeDefaultView(props) {
                         config: {
                           type: 'void',
                           name: 'config',
-                          'x-component': 'Fieldset',
-                          'x-component-props': {
-                            schema: {
-                              type: 'object',
-                              name: 'config',
-                              properties: instruction.fieldset
-                            }
-                          },
+                          'x-component': 'div',
+                          'x-component-props': {},
+                          properties: instruction.fieldset
                         },
                         actions: {
                           type: 'void',

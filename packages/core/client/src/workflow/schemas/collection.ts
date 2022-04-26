@@ -29,7 +29,7 @@ export const values = {
     useProps() {
       const { getCollectionFields } = useCollectionManager();
       const { values: form } = useForm();
-      const fields = getCollectionFields(form.collection);
+      const fields = getCollectionFields(form?.config?.collection);
       return { fields };
     }
   }
