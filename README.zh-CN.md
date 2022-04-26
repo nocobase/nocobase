@@ -98,7 +98,7 @@ yarn create nocobase-app my-nocobase-app -d postgres \
 # 2. 切换目录
 cd my-nocobase-app
 
-# 📢 由于网络原因，接下来这一步骤可能需要十几分钟时间
+# 📢 由于网络环境、系统配置等因素影响，接下来这一步骤可能需要十几分钟时间
 # 📢 使用 SQLite 数据库时，需要配置 sqlite3_binary_host_mirror
 yarn config set sqlite3_binary_host_mirror https://npmmirror.com/mirrors/sqlite3/
 
