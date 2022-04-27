@@ -22,7 +22,7 @@ module.exports = (options) => {
 
   for (const env of Object.entries(envs)) {
     const [key, value] = env;
-    const re = new RegExp(`${key}=\\w+`);
+    const re = new RegExp(`^${key}=(.+)`, 'm');
     if (envContent.match(re)) {
       envContent = envContent.replace(re, `${key}=${value}`);
     } else {
