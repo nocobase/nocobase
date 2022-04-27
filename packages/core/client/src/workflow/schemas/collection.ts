@@ -50,7 +50,7 @@ export const filter = {
   'x-component-props': {
     useProps() {
       const { values } = useForm();
-      const options = useCollectionFilterOptions(values.config.collection);
+      const options = useCollectionFilterOptions(values.config?.collection);
       return {
         options,
         className: css`
