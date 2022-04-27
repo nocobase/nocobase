@@ -19,6 +19,7 @@
     "@nocobase/server": "0.7.0-alpha.15",
     "aws-sdk": "^2.2.32",
     "koa-static": "^5.0.0",
+    "mkdirp": "~0.5.4",
     "mime-match": "^1.0.2",
     "multer": "^1.4.2",
     "multer-aliyun-oss": "1.1.1",
