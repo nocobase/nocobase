@@ -15,16 +15,6 @@ const collection = {
         required: true,
       } as ISchema,
     },
-    // {
-    //   type: 'string',
-    //   name: 'description',
-    //   interface: 'textarea',
-    //   uiSchema: {
-    //     title: '描述',
-    //     type: 'string',
-    //     'x-component': 'TextArea',
-    //   } as ISchema,
-    // },
     {
       type: 'string',
       name: 'type',
@@ -37,6 +27,17 @@ const collection = {
         enum: [
           { value: 'model', label: '数据变动' }
         ],
+        required: true,
+      } as ISchema,
+    },
+    {
+      type: 'string',
+      name: 'description',
+      interface: 'textarea',
+      uiSchema: {
+        title: '描述',
+        type: 'string',
+        'x-component': 'Input.TextArea',
       } as ISchema,
     },
     {
@@ -95,6 +96,13 @@ export const workflowSchema: ISchema = {
               type: 'void',
               title: '删除',
               'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ cm.useBulkDestroyAction }}',
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
             },
             create: {
               type: 'void',
@@ -114,11 +122,11 @@ export const workflowSchema: ISchema = {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                     },
-                    description: {
+                    type: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                     },
-                    type: {
+                    description: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                     },

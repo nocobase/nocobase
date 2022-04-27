@@ -7,10 +7,10 @@ export default {
   type: 'update',
   group: 'model',
   fieldset: {
-    collection,
-    params: {
+    'config.collection': collection,
+    'config.params': {
       type: 'object',
-      name: 'params',
+      name: 'config.params',
       title: '',
       'x-decorator': 'FormItem',
       properties: {
