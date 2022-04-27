@@ -12,20 +12,20 @@ export default {
   type: 'query',
   group: 'model',
   fieldset: {
-    collection,
-    multiple: {
+    'config.collection': collection,
+    'config.multiple': {
       type: 'boolean',
       title: '多条数据',
-      name: 'multiple',
+      name: 'config.multiple',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       'x-component-props': {
         disabled: true
       }
     },
-    params: {
+    'config.params': {
       type: 'object',
-      name: 'params',
+      name: 'config.params',
       title: '',
       'x-decorator': 'FormItem',
       properties: {
