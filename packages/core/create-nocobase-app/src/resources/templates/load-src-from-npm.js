@@ -1,7 +1,7 @@
 const execa = require('execa');
 const axios = require('axios');
 const fs = require('fs');
-const fsP = require('fs/promises');
+const fsP = require('fs').promises;
 const tar = require('tar');
 const { join } = require('path');
 const crypto = require('crypto');
@@ -40,9 +40,9 @@ module.exports = async (packageName, target) => {
     cwd: target,
     strip: 1,
     k: true,
-    filter(path, entry) {
-      return !(path.startsWith('package/lib') || path.startsWith('package/esm') || path.startsWith('package/dist'));
-    },
+    // filter(path, entry) {
+    //   return !(path.startsWith('package/lib') || path.startsWith('package/esm') || path.startsWith('package/dist'));
+    // },
   });
 
   await fsP.unlink(tarballFile);

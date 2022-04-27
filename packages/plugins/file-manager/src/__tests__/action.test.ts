@@ -46,7 +46,6 @@ describe('action', () => {
         size: 13,
         mimetype: 'text/plain',
         meta: {},
-        storageId: 1,
       };
 
       // 文件上传和解析是否正常
@@ -119,7 +118,6 @@ describe('action', () => {
         // see: https://github.com/ljharb/qs/issues/91
         // 或考虑使用 query-string 库的 parseNumbers 等配置项
         meta: { width: '100', height: '100' },
-        storageId: 1,
       };
       // 上传正常返回
       expect(body.data).toMatchObject(matcher);

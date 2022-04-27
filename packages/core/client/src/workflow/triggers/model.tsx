@@ -21,10 +21,10 @@ export default {
       'x-component': 'Select',
       'x-component-props': {
         options: [
-          { value: 1, label: '新增数据' },
-          { value: 2, label: '更新数据' },
-          { value: 3, label: '新增或更新数据' },
-          { value: 4, label: '删除数据' }
+          { value: 1, label: '新增数据后' },
+          { value: 2, label: '更新数据后' },
+          { value: 3, label: '新增或更新数据后' },
+          { value: 4, label: '删除数据后' }
         ]
       }
     },
