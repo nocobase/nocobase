@@ -1,5 +1,6 @@
 import Application from '@nocobase/server';
 import serve from 'koa-static';
+import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
 import { URL } from 'url';
@@ -112,7 +113,7 @@ export default {
     return multer.diskStorage({
       destination: function (req, file, cb) {
         const destPath = path.join(getDocumentRoot(storage), storage.path);
-        cb(null, destPath);
+        mkdirp(destPath, (err: Error | null) => cb(err, destPath));
       },
       filename: getFilename,
     });
