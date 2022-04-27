@@ -11,23 +11,10 @@ NocoBase 是一个极易扩展的开源无代码开发平台。
 
 在线体验：https://demo-cn.nocobase.com/new
 
-哪些场景适合使用 NocoBase
-----------
-- 中小企业和组织为自己或者为所在行业搭建业务平台和管理系统
-   - 希望价格足够低，甚至免费
-   - 不懂编程也可以灵活定制
-   - 需要完全掌控源代码和数据
-   - 可以以自有产品的形态自由分发和销售
-- 服务商和外包团队为客户开发协作平台和管理系统
-   - 希望尽可能降低开发成本
-   - 需要极致友好的二次开发体验
-   - 必须以独立产品的形态为客户私有部署
-   - 客户可以自由分发和销售
-
 为什么选择 NocoBase
 ----------
 - 开源免费
-   - 采用 MIT 许可协议，不限制商业使用
+   - 采用 Apache-2.0 许可协议，不限制商业使用
    - 拥有全部代码，私有化部署，保障数据私有和安全
    - 针对实际需求自由扩展开发
    - 具备良好的生态支持
@@ -44,7 +31,6 @@ NocoBase 是一个极易扩展的开源无代码开发平台。
 
 说明
 ----------
-NocoBase 仍处于早期开发阶段，功能不完整，稳定性不高，仅用于预览，不适合在生产环境中使用。相对稳定以及包含完善文档的公开测试版预计最早将于 2022 年第一季度发布。
 
 如果你希望加入我们一起开发 NocoBase，或者探讨 NocoBase 未来发展，或者需要提供 NocoBase 使用上的帮助，欢迎通过邮件联系我们：hello@nocobase.com  
 
@@ -97,6 +83,10 @@ yarn create nocobase-app my-nocobase-app -d postgres \
 
 # 2. 切换目录
 cd my-nocobase-app
+
+# 📢 由于网络环境、系统配置等因素影响，接下来这一步骤可能需要十几分钟时间
+# 📢 使用 SQLite 数据库时，需要配置 sqlite3_binary_host_mirror
+yarn config set sqlite3_binary_host_mirror https://npmmirror.com/mirrors/sqlite3/
 
 # 3. 安装依赖（使用阿里云镜像）
 yarn install --registry=https://registry.npmmirror.com

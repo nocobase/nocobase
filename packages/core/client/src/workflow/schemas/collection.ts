@@ -6,7 +6,7 @@ import { useCollectionFilterOptions } from "../../collection-manager/action-hook
 export const collection = {
   type: 'string',
   title: '数据表',
-  name: 'collection',
+  name: 'config.collection',
   required: true,
   'x-reactions': ['{{useCollectionDataSource()}}'],
   'x-decorator': 'FormItem',
@@ -16,7 +16,7 @@ export const collection = {
 export const values = {
   type: 'object',
   title: '数据内容',
-  name: 'values',
+  name: 'config.params.values',
   'x-decorator': 'FormItem',
   'x-decorator-props': {
     labelAlign: 'left',
@@ -29,7 +29,7 @@ export const values = {
     useProps() {
       const { getCollectionFields } = useCollectionManager();
       const { values: form } = useForm();
-      const fields = getCollectionFields(form.collection);
+      const fields = getCollectionFields(form?.config?.collection);
       return { fields };
     }
   }
@@ -38,7 +38,7 @@ export const values = {
 export const filter = {
   type: 'object',
   title: '筛选条件',
-  name: 'filter',
+  name: 'config.params.filter',
   'x-decorator': 'FormItem',
   'x-decorator-props': {
     labelAlign: 'left',
@@ -50,14 +50,12 @@ export const filter = {
   'x-component-props': {
     useProps() {
       const { values } = useForm();
-      const options = useCollectionFilterOptions(values.collection);
+      const options = useCollectionFilterOptions(values.config.collection);
       return {
         options,
         className: css`
           position: relative;
           width: 100%;
-          padding: .5em 1em;
-          border: 1px dashed #ddd;
         `
       };
     },

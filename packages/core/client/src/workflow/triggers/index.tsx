@@ -16,6 +16,7 @@ function useUpdateConfigAction() {
   const { refresh } = useResourceActionContext();
   return {
     async run() {
+      await form.submit();
       await api.resource('workflows', record.id).update({
         filterByTk: record.id,
         values: {

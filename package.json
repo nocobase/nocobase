@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "start": "concurrently --kill-others \"npm run start-server\" \"npm run start-client\"",
-    "start-pm2": "yarn pm2-runtime start packages/app/server/lib/index.js",
+    "start-pm2": "pm2-runtime start --node-args=\"-r dotenv/config\" packages/app/server/lib/index.js -- start",
     "start-docs": "dumi dev",
     "bootstrap": "lerna bootstrap",
     "clean": "rimraf -rf packages/{app,core,plugins}/*/{lib,esm,dist} && lerna clean",

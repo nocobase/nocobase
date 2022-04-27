@@ -1,17 +1,20 @@
-import React from 'react';
 import { Select } from 'antd';
-
+import React from 'react';
 import { useCollectionDataSource, useCollectionManager, useCompile } from '../..';
-import { useFlowContext } from '../WorkflowCanvas';
-import { collection, values } from '../schemas/collection';
 import { BaseTypeSet, CollectionFieldset } from '../calculators';
+import { collection, values } from '../schemas/collection';
+import { useFlowContext } from '../WorkflowCanvas';
+
 
 export default {
   title: '新增数据',
   type: 'create',
   group: 'model',
   fieldset: {
-    collection,
+    'config.collection': {
+      name: 'config.collection',
+      ...collection,
+    },
     // multiple: {
     //   type: 'boolean',
     //   title: '多条数据',
@@ -22,9 +25,9 @@ export default {
     //     disabled: true
     //   }
     // },
-    params: {
+    'config.params': {
       type: 'object',
-      name: 'params',
+      name: 'config.params',
       title: '',
       'x-decorator': 'FormItem',
       properties: {
