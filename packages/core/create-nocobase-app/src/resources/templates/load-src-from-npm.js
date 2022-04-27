@@ -40,9 +40,9 @@ module.exports = async (packageName, target) => {
     cwd: target,
     strip: 1,
     k: true,
-    filter(path, entry) {
-      return !(path.startsWith('package/lib') || path.startsWith('package/esm') || path.startsWith('package/dist'));
-    },
+    // filter(path, entry) {
+    //   return !(path.startsWith('package/lib') || path.startsWith('package/esm') || path.startsWith('package/dist'));
+    // },
   });
 
   await fsP.unlink(tarballFile);
