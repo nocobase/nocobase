@@ -46,7 +46,7 @@ instructions.register('condition', condition);
 instructions.register('parallel', parallel);
 instructions.register('calculation', calculation);
 
-function useUpdateConfigAction() {
+function useUpdateAction() {
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
@@ -214,7 +214,7 @@ export function NodeDefaultView(props) {
                         config: {
                           type: 'void',
                           name: 'config',
-                          'x-component': 'div',
+                          'x-component': 'fieldset',
                           'x-component-props': {},
                           properties: instruction.fieldset
                         },
@@ -234,7 +234,7 @@ export function NodeDefaultView(props) {
                               'x-component': 'Action',
                               'x-component-props': {
                                 type: 'primary',
-                                useAction: useUpdateConfigAction,
+                                useAction: useUpdateAction,
                               },
                             },
                           },

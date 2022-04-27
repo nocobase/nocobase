@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import React from 'react';
 import { Calculation } from '../calculators';
 
@@ -6,10 +7,10 @@ export default {
   type: 'calculation',
   group: 'control',
   fieldset: {
-    calculation: {
+    'config.calculation': {
       type: 'object',
       title: '配置计算',
-      name: 'calculation',
+      name: 'config.calculation',
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',
@@ -26,6 +27,6 @@ export default {
     }
   },
   getter() {
-    return <div>计算值</div>;
+    return <div className={css`flex-shrink: 0`}>计算值</div>;
   }
 };

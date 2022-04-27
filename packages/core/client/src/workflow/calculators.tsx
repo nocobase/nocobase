@@ -396,7 +396,10 @@ export const CollectionFieldset = observer(({ value, onChange, useProps }: any) 
     `}>
       {fields.length
         ? fields
-          .filter(field => !field.hidden)
+          .filter(field => (
+            !field.hidden
+            && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true)
+          ))
           .map(field => {
             const operand = typeof value[field.name] === 'string'
               ? parseStringValue(value[field.name], VTypes)

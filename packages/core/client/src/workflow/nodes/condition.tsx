@@ -134,9 +134,9 @@ export default {
   type: 'condition',
   group: 'control',
   fieldset: {
-    rejectOnFalse: {
+    'config.rejectOnFalse': {
       type: 'boolean',
-      name: 'rejectOnFalse',
+      name: 'config.rejectOnFalse',
       title: '模式',
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -168,9 +168,9 @@ export default {
         }
       ],
     },
-    calculation: {
+    'config.calculation': {
       type: 'string',
-      name: 'calculation',
+      name: 'config.calculation',
       title: '条件配置',
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',

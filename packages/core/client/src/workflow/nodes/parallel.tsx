@@ -13,9 +13,9 @@ export default {
   type: 'parallel',
   group: 'control',
   fieldset: {
-    mode: {
+    'config.mode': {
       type: 'string',
-      name: 'mode',
+      name: 'config.mode',
       title: '模式',
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
