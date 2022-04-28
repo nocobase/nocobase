@@ -11,5 +11,7 @@ export default async ({ app, cliArgs }) => {
     },
   });
 
-  console.log(`🚀 nocobase server had started at http://${host}:${port}`);
+  if (!opts.silent) {
+    console.log(`🚀 NocoBase server running at: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/`);
+  }
 };

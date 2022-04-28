@@ -1,7 +1,7 @@
-import Application, { ApplicationOptions } from './application';
-import http, { IncomingMessage } from 'http';
-import EventEmitter from 'events';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import EventEmitter from 'events';
+import http, { IncomingMessage } from 'http';
+import Application, { ApplicationOptions } from './application';
 
 type AppSelector = (req: IncomingMessage) => Application | string | undefined | null;
 

@@ -62,6 +62,138 @@ Database:
 Installation
 ----------
 
+## Create a project with [Docker](https://docs.docker.com/get-docker/) (Recommended)
+
+### 1. Create an empty project directory
+
+```bash
+mkdir my-nocobase-app && cd my-nocobase-app/
+```
+
+### 2. Create a docker-compose.yml file
+
+#### SQLite
+
+```yml
+version: "3"
+networks:
+  nocobase:
+    driver: bridge
+services:
+  app:
+    image: nocobase/nocobase:latest
+    networks:
+      - nocobase
+    environment:
+      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:80"
+```
+
+#### MySQL
+
+```yml
+version: "3"
+networks:
+  nocobase:
+    driver: bridge
+services:
+  app:
+    image: nocobase/nocobase:latest
+    networks:
+      - nocobase
+    environment:
+      - DB_DIALECT=mysql
+      - DB_HOST=mysql
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:80"
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    networks:
+      - nocobase
+```
+
+#### PostgreSQL
+
+```yml
+version: "3"
+networks:
+  nocobase:
+    driver: bridge
+services:
+  app:
+    image: nocobase/nocobase:latest
+    networks:
+      - nocobase
+    environment:
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:80"
+  postgres:
+    image: postgres:10
+    restart: always
+    networks:
+      - nocobase
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+```
+
+### 3. Install and start NocoBase
+
+安装过程可能需要等待几十秒钟
+
+```bash
+$ docker-compose up
+
+app-sqlite-app-1  | nginx started
+app-sqlite-app-1  | yarn run v1.22.15
+app-sqlite-app-1  | $ cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js install -s
+app-sqlite-app-1  | Done in 2.72s.
+app-sqlite-app-1  | yarn run v1.22.15
+app-sqlite-app-1  | $ pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start
+app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: Launching in no daemon mode
+app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] starting in -fork mode-
+app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
+app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
+```
+
+你也可以使用 `docker-compose up -d` 在后台运行，如：
+
+```bash
+# 在后台运行
+$ docker-compose up -d
+# 查看 app 进程的情况
+$ docker-compose logs app
+```
+
+### 4. Log in to NocoBase
+
+使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+
 ## Create a project with `create-nocobase-app`
 
 ~~~shell
