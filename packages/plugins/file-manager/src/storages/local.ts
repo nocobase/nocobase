@@ -124,6 +124,9 @@ export default {
       type: STORAGE_TYPE_LOCAL,
       name: `local`,
       baseUrl: process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.SERVER_PORT || '13002'}/uploads`,
+      options: {
+        documentRoot: process.env.LOCAL_STORAGE_DEST || 'uploads',
+      },
     };
   },
 };
