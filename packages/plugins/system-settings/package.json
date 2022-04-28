@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-system-settings",
-  "version": "0.7.0-alpha.20",
+  "version": "0.7.0-alpha.21",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -15,7 +15,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "devDependencies": {
-    "@nocobase/test": "0.7.0-alpha.20"
+    "@nocobase/test": "0.7.0-alpha.21"
   },
   "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }
