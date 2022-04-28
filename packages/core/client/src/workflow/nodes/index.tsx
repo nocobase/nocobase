@@ -1,13 +1,13 @@
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { Field } from '@formily/core';
-import { ISchema, RecursionField, useField, useForm } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
 import { Registry } from '@nocobase/utils';
 import { Button, Modal, Tag } from 'antd';
 import React, { useContext } from 'react';
 import { SchemaComponent, useActionContext, useAPIClient, useCollection, useRequest, useResourceActionContext } from '../..';
 import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeTitleClass } from '../style';
 import { AddButton, useFlowContext } from '../WorkflowCanvas';
+
 import calculation from './calculation';
 import condition from './condition';
 import create from './create';
@@ -15,10 +15,6 @@ import destroy from './destroy';
 import parallel from './parallel';
 import query from './query';
 import update from './update';
-
-
-
-
 
 
 
@@ -148,14 +144,6 @@ export function RemoveButton() {
   );
 }
 
-function Fieldset({ schema }) {
-  const field = useField<Field>();
-
-  return (
-    <RecursionField basePath={field.address} schema={schema} />
-  );
-}
-
 export function NodeDefaultView(props) {
   const { data, children } = props;
   const instruction = instructions.get(data.type);
@@ -174,10 +162,7 @@ export function NodeDefaultView(props) {
           </div>
           <SchemaComponent
             scope={instruction.scope}
-            components={{
-              ...instruction.components,
-              Fieldset
-            }}
+            components={instruction.components}
             schema={{
               type: 'void',
               properties: {
@@ -197,9 +182,9 @@ export function NodeDefaultView(props) {
                       'x-decorator': 'Form',
                       'x-decorator-props': {
                         useValues(options) {
-                          const data = useNodeContext();
+                          const d = useNodeContext();
                           return useRequest(() => {
-                            return Promise.resolve({ data });
+                            return Promise.resolve({ data: d });
                           }, options);
                         }
                       },
