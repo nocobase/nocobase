@@ -2,8 +2,7 @@ import chalk from 'chalk';
 
 export default async ({ app, cliArgs }) => {
   const [opts] = cliArgs;
-
-  if (!opts?.clean || !opts?.force) {
+  if (!opts?.clean && !opts?.force) {
     const tables = await app.db.sequelize.getQueryInterface().showAllTables();
     if (tables.includes('collections')) {
       console.log();
