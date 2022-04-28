@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-error-handler",
-  "version": "0.7.0-alpha.19",
+  "version": "0.7.0-alpha.20",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@formily/json-schema": "^2.0.15",
-    "@nocobase/server": "0.7.0-alpha.19"
+    "@nocobase/server": "0.7.0-alpha.20"
   },
   "repository": {
     "type": "git",
