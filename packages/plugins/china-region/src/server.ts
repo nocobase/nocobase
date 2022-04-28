@@ -1,5 +1,5 @@
-import { Database } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import { areas, cities, provinces } from 'china-division';
 import { resolve } from 'path';
 
 export class ChinaRegionPlugin extends Plugin {
@@ -17,15 +17,6 @@ export class ChinaRegionPlugin extends Plugin {
   async importData() {
     const timer = Date.now();
     const ChinaRegion = this.db.getModel('chinaRegions');
-
-    const db = new Database({
-      dialect: 'sqlite',
-      storage: resolve(process.cwd(), 'node_modules/china-division/dist/data.sqlite'),
-    });
-
-    const [provinces] = await db.sequelize.query('SELECT `code`, `name` FROM `province`') as any;
-    const [cities] = await db.sequelize.query('SELECT `code`, `name`, `provinceCode` FROM `city`') as any;
-    const [areas] = await db.sequelize.query('SELECT `code`, `name`, `cityCode` FROM `area`') as any;
 
     await ChinaRegion.bulkCreate(
       provinces.map((item) => ({
@@ -70,7 +61,7 @@ export class ChinaRegionPlugin extends Plugin {
     // })));
 
     const count = await ChinaRegion.count();
-    console.log(`${count} rows of region data imported in ${(Date.now() - timer) / 1000}s`);
+    // console.log(`${count} rows of region data imported in ${(Date.now() - timer) / 1000}s`);
   }
 
   getName(): string {
