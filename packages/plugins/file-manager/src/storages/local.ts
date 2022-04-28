@@ -119,13 +119,15 @@ export default {
     });
   },
   defaults() {
+    const { LOCAL_STORAGE_DEST, LOCAL_STORAGE_BASE_URL, SERVER_PORT } = process.env;
+    const documentRoot = LOCAL_STORAGE_DEST || 'uploads';
     return {
       title: '本地存储',
       type: STORAGE_TYPE_LOCAL,
       name: `local`,
-      baseUrl: process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.SERVER_PORT || '13002'}/uploads`,
+      baseUrl: LOCAL_STORAGE_BASE_URL || `http://localhost:${SERVER_PORT || '13002'}/${documentRoot}`,
       options: {
-        documentRoot: process.env.LOCAL_STORAGE_DEST || 'uploads',
+        documentRoot,
       },
     };
   },

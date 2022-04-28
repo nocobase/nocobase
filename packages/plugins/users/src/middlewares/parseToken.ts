@@ -52,6 +52,6 @@ async function findUserByToken(ctx: Context, plugin: UsersPlugin) {
       appends: ['roles'],
     });
   } catch (error) {
-    console.warn(error);
+    return null;
   }
 }
