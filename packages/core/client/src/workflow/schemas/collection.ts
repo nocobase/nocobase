@@ -29,7 +29,11 @@ export const values = {
     useProps() {
       const { getCollectionFields } = useCollectionManager();
       const { values: form } = useForm();
-      const fields = getCollectionFields(form?.config?.collection);
+      const fields = getCollectionFields(form?.config?.collection)
+        .filter(field => (
+          !field.hidden
+          && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false)
+        ));
       return { fields };
     }
   }
