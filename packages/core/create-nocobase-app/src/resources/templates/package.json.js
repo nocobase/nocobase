@@ -7,14 +7,14 @@ module.exports = (opts) => {
     workspaces: ['packages/app/*', 'packages/plugins/*'],
     license: 'MIT',
     scripts: {
-      start: 'concurrently --kill-others "npm run start-server" "npm run start-client"',
+      start: 'concurrently --kill-others "yarn start-server -s" "yarn start-client"',
       bootstrap: 'lerna bootstrap',
       clean: 'rimraf -rf packages/{app,plugins}/*/{lib,esm,dist} && lerna clean',
       nocobase:
         'cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts',
       'nocobase-prod': 'cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js',
-      'start-client': 'cd packages/app/client && npm run start',
-      'start-server': 'npm run nocobase start',
+      'start-client': 'cd packages/app/client && yarn start',
+      'start-server': 'yarn nocobase start',
       'start-pm2': 'pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start',
       build: 'lerna run build',
       'build-docs': 'dumi build',
