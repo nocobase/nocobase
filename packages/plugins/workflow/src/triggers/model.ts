@@ -4,7 +4,7 @@ export interface ModelChangeTriggerConfig {
   collection: string;
   mode: number;
   // TODO: ICondition
-  filter: any;
+  condition: any;
 }
 
 const MODE_BITMAP = {
@@ -18,26 +18,37 @@ MODE_BITMAP_EVENTS.set(MODE_BITMAP.CREATE, 'afterCreate');
 MODE_BITMAP_EVENTS.set(MODE_BITMAP.UPDATE, 'afterUpdate');
 MODE_BITMAP_EVENTS.set(MODE_BITMAP.DESTROY, 'afterDestroy');
 
+// async function, should return promise
+function bindHandler(this: WorkflowModel, callback: Function) {
+  const { condition, changed } = this.config;
+  return (data: any, options) => {
+    // NOTE: if no configured fields changed, do not trigger
+    if (changed && changed.length && changed.every(name => !data.changed(name))) {
+      return;
+    }
+    // NOTE: if no configured condition match, do not trigger
+    if (condition && condition.$and.length) {
+      // TODO: check all conditions in condition against data
+      // const calculation = toCalculation(condition);
+    }
+
+    return callback({ data: data.get() }, options);
+  };
+}
+
 export default {
   name: 'model',
   on(this: WorkflowModel, callback: Function) {
     const { database } = <typeof WorkflowModel>this.constructor;
-    const { collection, mode, filter } = this.config;
+    const { collection, mode } = this.config;
     const Collection = database.getCollection(collection);
     if (!Collection) {
       return;
     }
-    // async function, should return promise
-    const handler = (data: any, options) => {
-      if (filter) {
-        // TODO: check all conditions in filter against data
-      }
-      return callback({ data: data.get() }, options);
-    };
     // TODO: duplication when mode change should be considered
     for (let [key, event] of MODE_BITMAP_EVENTS.entries()) {
       if (mode & key) {
-        Collection.model.addHook(event, this.getHookId(), handler);
+        Collection.model.addHook(event, this.getHookId(), bindHandler.call(this, callback));
       }
     }
   },
