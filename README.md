@@ -70,7 +70,7 @@ Installation
 mkdir my-nocobase-app && cd my-nocobase-app/
 ```
 
-### 2. Create a docker-compose.yml file
+### 2. Create a `docker-compose.yml` file
 
 #### SQLite
 
@@ -164,7 +164,7 @@ services:
 
 ### 3. Install and start NocoBase
 
-安装过程可能需要等待几十秒钟
+It may take dozens of seconds
 
 ```bash
 $ docker-compose up
@@ -181,18 +181,18 @@ app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
 app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 ```
 
-你也可以使用 `docker-compose up -d` 在后台运行，如：
+You can also use `docker-compose up -d` to run in the background
 
 ```bash
-# 在后台运行
+# in the background
 $ docker-compose up -d
-# 查看 app 进程的情况
+# view app logs
 $ docker-compose logs app
 ```
 
 ### 4. Log in to NocoBase
 
-使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+Open [http://localhost:13000](http://localhost:13000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
 
 ## Create a project with `create-nocobase-app`
 
