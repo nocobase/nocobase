@@ -22,6 +22,7 @@ export function createCli(app: Application) {
   program.command('start').description('start NocoBase application').option('-s, --silent').action(runSubCommand('start'));
   program.command('install').option('-f, --force').option('-c, --clean').option('-s, --silent').action(runSubCommand('install'));
   program.command('db:sync').option('-f, --force').action(runSubCommand('db-sync'));
+  program.command('db:auth').option('-r, --repeat [repeat]').action(runSubCommand('db-auth'));
   program.command('console').action(runSubCommand('console'));
 
   program
