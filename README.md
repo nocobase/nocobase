@@ -53,7 +53,7 @@ Node:
 
 - Node.js 14+
 
-Database(Choose one):
+Database:(choose one)
 
 - PostgreSQL 10.x+
 - MySQL 8.x+
@@ -63,6 +63,8 @@ Installation
 ----------
 
 ## Create a project with [Docker](https://docs.docker.com/get-docker/) (Recommended)
+
+⚡⚡ Please make sure you have installed [Docker](https://docs.docker.com/get-docker/)
 
 ### 1. Download NocoBase
 
@@ -86,8 +88,6 @@ cd nocobase/docker/app-postgres
 ```
 
 ### 3. Install and start NocoBase
-
-> You can download and install Docker [here](https://docs.docker.com/get-docker/)
 
 It may take dozens of seconds
 
