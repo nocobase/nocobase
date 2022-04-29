@@ -23,7 +23,6 @@ export const attachment: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { block }) {
-    debugger;
     if (['Table', 'KanbanV2'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['size'] = 'small';
