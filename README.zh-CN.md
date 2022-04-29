@@ -60,11 +60,11 @@ Database（任选其一）:
 安装 & 运行
 ----------
 
-## 使用 [Docker](https://docs.docker.com/get-docker/) 创建项目（推荐）
+### 使用 Docker 创建项目（推荐）
 
 ⚡⚡请确保你已经安装了 [Docker](https://docs.docker.com/get-docker/)
 
-### 1. 将 NocoBase 下载到本地
+#### 1. 将 NocoBase 下载到本地
 
 使用 Git 下载（或直接[下载 Zip 包](https://github.com/nocobase/nocobase/archive/refs/heads/main.zip)，并解压到 nocobase 目录下）
 
@@ -72,7 +72,7 @@ Database（任选其一）:
 git clone https://github.com/nocobase/nocobase.git nocobase
 ```
 
-### 2. 选择数据库（任选其一）
+#### 2. 选择数据库（任选其一）
 
 支持 SQLite、MySQL、PostgreSQL 数据库
 
@@ -85,7 +85,7 @@ cd nocobase/docker/app-mysql
 cd nocobase/docker/app-postgres
 ```
 
-### 3. 安装并启动 NocoBase
+#### 3. 安装并启动 NocoBase
 
 安装过程可能需要等待几十秒钟
 
@@ -107,11 +107,11 @@ app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
 app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 ```
 
-### 4. 登录 NocoBase
+#### 4. 登录 NocoBase
 
 使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
 
-## 通过 `create-nocobase-app` 创建项目
+### 通过 `create-nocobase-app` 创建项目
 
 ~~~shell
 # 1. 创建项目
@@ -151,7 +151,7 @@ yarn start
 
 使用浏览器打开 http://localhost:8000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
 
-## 参与贡献
+### 参与贡献
 
 - Fork 源代码到自己的仓库
 - 修改源代码
@@ -167,7 +167,7 @@ yarn nocobase install
 yarn start
 ```
 
-### 打包
+#### 打包
 
 ```bash
 # For all packages
@@ -177,7 +177,7 @@ yarn build
 yarn build --scope @nocobase/database
 ```
 
-### 测试
+#### 测试
 
 ```bash
 # For all packages
