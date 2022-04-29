@@ -3,7 +3,7 @@ import { Application } from '@nocobase/server';
 import lodash from 'lodash';
 import * as path from 'path';
 
-interface registerAppOptions extends TransactionAble {
+export interface registerAppOptions extends TransactionAble {
   skipInstall?: boolean;
 }
 
@@ -16,8 +16,17 @@ export class ApplicationModel extends Model {
     );
   }
 
+  static async handleAppStart(app: Application, options: registerAppOptions) {
+    await app.load();
+
+    if (!lodash.get(options, 'skipInstall', false)) {
+      await app.install();
+    }
+
+    await app.start();
+  }
+
   async registerToMainApp(mainApp: Application, options: registerAppOptions) {
-    const { transaction } = options;
     const appName = this.get('name') as string;
     const appOptions = (this.get('options') as any) || {};
 
@@ -26,6 +35,7 @@ export class ApplicationModel extends Model {
       ...appOptions,
     });
 
+    // create database before installation if it not exists
     app.on('beforeInstall', async function createDatabase() {
       const { host, port, username, password, database, dialect } = ApplicationModel.getDatabaseConfig(app);
 
@@ -56,13 +66,7 @@ export class ApplicationModel extends Model {
       }
     });
 
-    await app.load();
-
-    if (!lodash.get(options, 'skipInstall', false)) {
-      await app.install();
-    }
-
-    await app.start();
+    await ApplicationModel.handleAppStart(app, options);
   }
 
   static initOptions(appName: string, mainApp: Application) {

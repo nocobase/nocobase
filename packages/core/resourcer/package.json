@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/resourcer",
-  "version": "0.7.0-alpha.1",
+  "version": "0.7.0-alpha.23",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -28,5 +28,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/resourcer"
   },
-  "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
+  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }

@@ -148,7 +148,7 @@ function minus(a, b) {
   return a - b;
 }
 
-function multipe(...args) {
+function multiple(...args) {
   return args.reduce((result, a) => result * a, 1);
 }
 
@@ -162,13 +162,13 @@ function mod(a, b) {
 
 calculators.register('add', add);
 calculators.register('minus', minus);
-calculators.register('multipe', multipe);
+calculators.register('multiple', multiple);
 calculators.register('divide', divide);
 calculators.register('mod', mod);
 
 calculators.register('+', add);
 calculators.register('-', minus);
-calculators.register('*', multipe);
+calculators.register('*', multiple);
 calculators.register('/', divide);
 calculators.register('%', mod);
 

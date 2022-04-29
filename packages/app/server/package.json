@@ -1,14 +1,8 @@
 {
   "name": "@nocobase/app-server",
-  "version": "0.7.0-alpha.1",
+  "version": "0.7.0-alpha.23",
   "description": "",
-  "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
+  "license": "MIT",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
@@ -17,23 +11,24 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/database": "0.7.0-alpha.1",
-    "@nocobase/plugin-acl": "0.7.0-alpha.1",
-    "@nocobase/plugin-china-region": "0.7.0-alpha.1",
-    "@nocobase/plugin-client": "0.7.0-alpha.1",
-    "@nocobase/plugin-collection-manager": "0.7.0-alpha.1",
-    "@nocobase/plugin-error-handler": "0.7.0-alpha.1",
-    "@nocobase/plugin-file-manager": "0.7.0-alpha.1",
-    "@nocobase/plugin-system-settings": "0.7.0-alpha.1",
-    "@nocobase/plugin-ui-routes-storage": "0.7.0-alpha.1",
-    "@nocobase/plugin-ui-schema-storage": "0.7.0-alpha.1",
-    "@nocobase/plugin-users": "0.7.0-alpha.1",
-    "@nocobase/plugin-workflow": "0.7.0-alpha.1",
-    "@nocobase/server": "0.7.0-alpha.1"
+    "@nocobase/database": "0.7.0-alpha.23",
+    "@nocobase/plugin-acl": "0.7.0-alpha.23",
+    "@nocobase/plugin-china-region": "0.7.0-alpha.23",
+    "@nocobase/plugin-client": "0.7.0-alpha.23",
+    "@nocobase/plugin-collection-manager": "0.7.0-alpha.23",
+    "@nocobase/plugin-error-handler": "0.7.0-alpha.23",
+    "@nocobase/plugin-file-manager": "0.7.0-alpha.23",
+    "@nocobase/plugin-system-settings": "0.7.0-alpha.23",
+    "@nocobase/plugin-ui-routes-storage": "0.7.0-alpha.23",
+    "@nocobase/plugin-ui-schema-storage": "0.7.0-alpha.23",
+    "@nocobase/plugin-users": "0.7.0-alpha.23",
+    "@nocobase/plugin-workflow": "0.7.0-alpha.23",
+    "@nocobase/server": "0.7.0-alpha.23"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/app/server"
-  }
+  },
+  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }

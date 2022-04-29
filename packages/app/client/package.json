@@ -1,13 +1,7 @@
 {
   "name": "@nocobase/app-client",
-  "version": "0.7.0-alpha.1",
-  "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
+  "version": "0.7.0-alpha.23",
+  "license": "MIT",
   "scripts": {
     "start": "umi dev",
     "build": "umi build",
@@ -16,11 +10,11 @@
     "test:coverage": "umi-test --coverage"
   },
   "devDependencies": {
-    "@nocobase/client": "0.7.0-alpha.1",
+    "@nocobase/client": "0.7.0-alpha.23",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@umijs/test": "^3.5.20",
-    "antd": "^4.19.5",
+    "antd": "~4.19.5",
     "react": "17.x",
     "react-dom": "17.x",
     "umi": "^3.5.20"
@@ -29,5 +23,6 @@
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/app/client"
-  }
+  },
+  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }

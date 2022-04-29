@@ -61,7 +61,7 @@ export class ChinaRegionPlugin extends Plugin {
     // })));
 
     const count = await ChinaRegion.count();
-    console.log(`${count} rows of region data imported in ${(Date.now() - timer) / 1000}s`);
+    // console.log(`${count} rows of region data imported in ${(Date.now() - timer) / 1000}s`);
   }
 
   getName(): string {

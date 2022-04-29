@@ -364,8 +364,12 @@ export default {
 
   'Role display name': '角色名称',
   'Default role': '默认角色',
-
+  'All collections use general action permissions by default; permission configured individually will override the default one.': '所有数据表都默认使用通用数据操作权限；同时，可以针对每个数据表单独配置权限。',
+  'Allows configuration of the whole system, including UI, collections, permissions, etc.': '允许配置系统，包括界面配置、数据表配置、权限配置、系统配置等全部配置项',
+  'New menu items are allowed to be accessed by default.': '新增菜单项默认允许访问',
   'Global permissions': '全局配置',
+  'General permissions': '通用配置',
+  'Global action permissions': '全局操作权限',
   'General action permissions': '通用操作权限',
   'Action display name': '操作名称',
   'Allow': '允许',

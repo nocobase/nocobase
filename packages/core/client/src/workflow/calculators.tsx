@@ -1,13 +1,14 @@
 import React from "react";
-import { observer } from "@formily/react";
+import { observer, useForm } from "@formily/react";
 import { FormItem } from "@formily/antd";
-import { Cascader, DatePicker, Input, InputNumber, Select } from "antd";
+import { Button, Cascader, Dropdown, Input, InputNumber, Menu, Select } from "antd";
 import { css } from "@emotion/css";
+import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 import { instructions, useNodeContext } from "./nodes";
 import { useFlowContext } from "./WorkflowCanvas";
 import { triggers } from "./triggers";
-import { SchemaComponent, useCompile } from "..";
+import { SchemaComponent, useCollectionManager, useCompile } from "..";
 
 function NullRender() {
   return null;
@@ -32,7 +33,7 @@ export const calculators = [
     children: [
       { value: 'add', name: '+' },
       { value: 'minus', name: '-' },
-      { value: 'multipe', name: '*' },
+      { value: 'multiple', name: '*' },
       { value: 'divide', name: '/' },
       { value: 'mod', name: '%' },
     ]
@@ -370,11 +371,18 @@ export function VariableComponent({ value, onChange, renderSchemaComponent }) {
 }
 
 // NOTE: observer for watching useProps
-export const CollectionFieldset = observer(({ value, onChange, useProps }: any) => {
-  const { fields } = useProps();
+export const CollectionFieldset = observer(({ value, onChange }: any) => {
   const compile = useCompile();
+  const { getCollectionFields } = useCollectionManager();
+  const { values: data } = useForm();
+  const fields = getCollectionFields(data?.config?.collection)
+    .filter(field => (
+      !field.hidden
+      && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false)
+    ));
 
-  const VTypes = { ...VariableTypes,
+  const VTypes = {
+    ...VariableTypes,
     constant: {
       title: '常量',
       value: 'constant',
@@ -395,36 +403,68 @@ export const CollectionFieldset = observer(({ value, onChange, useProps }: any) 
       }
     `}>
       {fields.length
-        ? fields
-          .filter(field => !field.hidden)
-          .map(field => {
-            const operand = typeof value[field.name] === 'string'
-              ? parseStringValue(value[field.name], VTypes)
-              : { type: 'constant', value: value[field.name] };
+        ? (
+          <>
+          {fields
+            .filter(field => field.name in value)
+            .map(field => {
+              const operand = typeof value[field.name] === 'string'
+                ? parseStringValue(value[field.name], VTypes)
+                : { type: 'constant', value: value[field.name] };
 
-            return (
-              <FormItem label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left">
-                <VariableTypesContext.Provider value={VTypes}>
-                  <Operand
-                    value={operand}
-                    onChange={(next) => {
-                      if (next.type !== operand.type && next.type === 'constant') {
-                        onChange({ ...value, [field.name]: null });
-                      } else {
-                        const { stringify } = VTypes[next.type];
-                        onChange({ ...value, [field.name]: stringify(next) });
+              return (
+                <FormItem key={field.name} label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left" className={css`
+                  .ant-formily-item-control-content-component{
+                    display: flex;
+                  }
+                `}>
+                  <VariableTypesContext.Provider value={VTypes}>
+                    <Operand
+                      value={operand}
+                      onChange={(next) => {
+                        if (next.type !== operand.type && next.type === 'constant') {
+                          onChange({ ...value, [field.name]: null });
+                        } else {
+                          const { stringify } = VTypes[next.type];
+                          onChange({ ...value, [field.name]: stringify(next) });
+                        }
+                      }}
+                    >
+                      {operand.type === 'constant'
+                        ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
+                        : null
                       }
-                    }}
-                  >
-                    {operand.type === 'constant'
-                      ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
-                      : null
-                    }
-                  </Operand>
-                </VariableTypesContext.Provider>
-              </FormItem>
-            );
-          })
+                    </Operand>
+                    <Button
+                      type="link"
+                      icon={<CloseCircleOutlined />}
+                      onClick={() => {
+                        const { [field.name]: _, ...rest } = value;
+                        onChange(rest);
+                      }}
+                    />
+                  </VariableTypesContext.Provider>
+                </FormItem>
+              );
+            })}
+            {Object.keys(value).length < fields.length
+              ? (
+                <Dropdown overlay={
+                  <Menu onClick={({ key }) => onChange({ ...value, [key]: null })}>
+                    {fields
+                      .filter(field => !(field.name in value))
+                      .map(field => (
+                        <Menu.Item key={field.name}>{compile(field.uiSchema?.title ?? field.name)}</Menu.Item>
+                      ))}
+                  </Menu>
+                }>
+                  <Button icon={<PlusOutlined />}>添加字段</Button>
+                </Dropdown>
+              )
+              : null
+            }
+          </>
+        )
         : <p>请先选择数据表</p>
       }
     </fieldset>

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { css, cx } from "@emotion/css";
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 
 import { NodeDefaultView } from ".";
 import { Branch, useFlowContext } from "../WorkflowCanvas";
@@ -13,17 +13,37 @@ export default {
   type: 'parallel',
   group: 'control',
   fieldset: {
-    mode: {
+    'config.mode': {
       type: 'string',
-      name: 'mode',
+      name: 'config.mode',
       title: '模式',
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       'x-component-props': {
       },
       enum: [
-        { value: 'all', label: '全部成功' },
-        { value: 'any', label: '任意成功' },
+        {
+          value: 'all',
+          label: (
+            <Tooltip
+              title="全部分支都成功后才能继续"
+              placement="bottom"
+            >
+              全部成功 <QuestionCircleOutlined style={{ color: '#999' }} />
+            </Tooltip>
+          )
+        },
+        {
+          value: 'any',
+          label: (
+            <Tooltip
+              title="任意分支成功后就继续"
+              placement="bottom"
+            >
+              任意成功 <QuestionCircleOutlined style={{ color: '#999' }} />
+            </Tooltip>
+          )
+        },
         // { value: 'race', label: '任意退出' },
       ],
       default: 'all'

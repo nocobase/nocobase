@@ -9,6 +9,7 @@ const { join, resolve } = require('path');
 const createEnvFile = require('./resources/templates/env');
 const createPackageJson = require('./resources/templates/package.json.js');
 const createServerPackageJson = require('./resources/templates/server.package.json.js');
+const createClientPackageJson = require('./resources/templates/client.package.json.js');
 const loadSrcFromNpm = require('./resources/templates/load-src-from-npm');
 
 let envs = undefined;
@@ -53,7 +54,7 @@ const getDatabaseOptionsFromCommandOptions = (commandOptions) => {
   if (!commandOptions.dbDialect || commandOptions.dbDialect === 'sqlite' || envs['DB_STORAGE']) {
     return {
       dialect: 'sqlite',
-      storage: envs['DB_STORAGE'] || 'db.sqlite',
+      storage: envs['DB_STORAGE'] || 'storage/db/nocobase.sqlite',
     };
   }
 
@@ -129,6 +130,17 @@ async function createApp(directory, options) {
     createServerPackageJson({
       projectPath,
       dbOptions,
+    }),
+    {
+      spaces: 2,
+    },
+  );
+
+  // write client package.json
+  await fse.writeJson(
+    join(projectPath, 'packages/app/client/package.json'),
+    createClientPackageJson({
+      projectPath,
     }),
     {
       spaces: 2,

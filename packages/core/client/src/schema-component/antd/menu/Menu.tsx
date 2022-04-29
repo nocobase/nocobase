@@ -264,7 +264,8 @@ export const Menu: ComposedMenu = observer((props) => {
               }
             }}
             mode={mode === 'mix' ? 'horizontal' : mode}
-            openKeys={defaultOpenKeys}
+            defaultOpenKeys={defaultOpenKeys}
+            defaultSelectedKeys={defaultSelectedKeys}
             selectedKeys={defaultSelectedKeys}
           >
             {designable && (

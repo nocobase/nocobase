@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/acl",
-  "version": "0.7.0-alpha.1",
+  "version": "0.7.0-alpha.23",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -17,12 +17,13 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/resourcer": "0.7.0-alpha.1",
+    "@nocobase/resourcer": "0.7.0-alpha.23",
     "json-templates": "^4.2.0"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/acl"
-  }
+  },
+  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }

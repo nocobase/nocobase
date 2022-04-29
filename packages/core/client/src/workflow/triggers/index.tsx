@@ -3,7 +3,7 @@ import { ISchema, useForm } from "@formily/react";
 import { cx } from "@emotion/css";
 import { Registry } from "@nocobase/utils";
 
-import { SchemaComponent, useActionContext, useAPIClient, useRecord, useResourceActionContext } from '../../';
+import { SchemaComponent, useActionContext, useAPIClient, useRecord, useRequest, useResourceActionContext } from '../../';
 import model from './model';
 import { nodeCardClass } from "../style";
 
@@ -16,14 +16,10 @@ function useUpdateConfigAction() {
   const { refresh } = useResourceActionContext();
   return {
     async run() {
+      await form.submit();
       await api.resource('workflows', record.id).update({
         filterByTk: record.id,
-        values: {
-          config: {
-            ...record.config,
-            ...form.values
-          }
-        },
+        values: form.values
       });
       ctx.setVisible(false);
       refresh();
@@ -71,10 +67,16 @@ export const TriggerConfig = () => {
               'x-component': 'Action.Drawer',
               'x-decorator': 'Form',
               'x-decorator-props': {
-                initialValue: config
+                initialValue: { config }
               },
               properties: {
-                ...fieldset,
+                config: {
+                  type: 'void',
+                  name: 'config',
+                  'x-component': 'fieldset',
+                  'x-component-props': {},
+                  properties: fieldset
+                },
                 actions: {
                   type: 'void',
                   'x-component': 'Action.Drawer.Footer',

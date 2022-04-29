@@ -7,13 +7,15 @@ module.exports = (opts) => {
     workspaces: ['packages/app/*', 'packages/plugins/*'],
     license: 'MIT',
     scripts: {
-      start: 'concurrently --kill-others "npm run start-server" "npm run start-client"',
+      start: 'concurrently --kill-others "yarn start-server -s" "yarn start-client"',
       bootstrap: 'lerna bootstrap',
       clean: 'rimraf -rf packages/{app,plugins}/*/{lib,esm,dist} && lerna clean',
       nocobase:
         'cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts',
-      'start-client': 'cd packages/app/client && npm run start',
-      'start-server': 'npm run nocobase start',
+      'nocobase-prod': 'cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js',
+      'start-client': 'cd packages/app/client && yarn start',
+      'start-server': 'yarn nocobase start',
+      'start-pm2': 'pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start',
       build: 'lerna run build',
       'build-docs': 'dumi build',
       test: 'node ./jest.cli.js -i',
@@ -22,6 +24,11 @@ module.exports = (opts) => {
     resolutions: {
       '@types/react': '^17.0.0',
       '@types/react-dom': '^17.0.0',
+    },
+    dependencies: {
+      'cross-env': '^7.0.3',
+      dotenv: '^10.0.0',
+      pm2: '^5.2.0',
     },
     devDependencies: {
       '@testing-library/react': '^12.1.2',
@@ -32,8 +39,6 @@ module.exports = (opts) => {
       '@typescript-eslint/eslint-plugin': '^4.9.1',
       '@typescript-eslint/parser': '^4.8.2',
       concurrently: '^7.0.0',
-      'cross-env': '^7.0.3',
-      dotenv: '^10.0.0',
       eslint: '^7.14.0',
       'eslint-config-prettier': '^7.0.0',
       'eslint-plugin-import': '^2.13.0',
