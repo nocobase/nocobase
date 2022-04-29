@@ -24,17 +24,17 @@ Why choose NocoBase
 	- Good ecological support
 - **Strong no-code capability**
 	- Data Model
-		- Dozens of field types such as text, attachments, etc., as well as many-to-many, one-to-many, one-to-one relationships.
-	- Menu
-		- Groups, pages, links combination into menu, support infinite level submenu
+		- Create independent data models using dozens of field types such as text, date, number, attachment, option, icon, etc., and various association relationships such as one-to-one, one-to-many, many-to-many, etc.
 	- Block
-		- Rich block types such as tables, kanban, calendars, forms, etc. are freely combined within the page to display and manipulate data.
-	- Action
-		- Configure actions such as filtering, exporting, adding, deleting, modifying, and viewing to process data.
+		- Display and manipulate data within a page using a free combination of block types such as tables, forms, kanban, calendars, details, etc.
 	- ACL
-		- Role-based control of user's system configuration rights, action rights and menu access rights.
+		- Role-based control of user's system configuration rights, data action rights and menu access rights.
 	- Workflow
-		- Repetitive tasks are replaced by automation, reducing manual operations and increasing efficiency.
+		- Repetitive tasks are replaced by automation to increase efficiency. Manual approval is required for important matters.
+	- Menu
+		- You can group menus, support adding pages and links, and support unlimited submenus.
+	- Action
+		- Support filtering, exporting, adding, deleting, modifying, viewing and other operations to process data, which can be extended to more types.
 - **Developer-friendly**
 	- Microkernel architecture, flexible and easy to extend, with a robust plug-in system
 	- Node.js-based, with popular frameworks and technologies, including Koa, Sequelize, React, Formily, Ant Design, etc.
