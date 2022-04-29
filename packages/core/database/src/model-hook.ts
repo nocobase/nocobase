@@ -27,7 +27,7 @@ export class ModelHook {
 
   findModelName(hookArgs) {
     for (const arg of hookArgs) {
-      if (arg instanceof Model) {
+      if (lodash.get(arg, '_previousDataValues')) {
         return (<Model>arg).constructor.name;
       }
 
