@@ -24,19 +24,7 @@ export const values = {
       flex-direction: column;
     `
   },
-  'x-component': 'CollectionFieldset',
-  'x-component-props': {
-    useProps() {
-      const { getCollectionFields } = useCollectionManager();
-      const { values: form } = useForm();
-      const fields = getCollectionFields(form?.config?.collection)
-        .filter(field => (
-          !field.hidden
-          && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false)
-        ));
-      return { fields };
-    }
-  }
+  'x-component': 'CollectionFieldset'
 };
 
 export const filter = {
