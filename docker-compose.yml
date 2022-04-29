@@ -48,7 +48,7 @@ services:
   nocobase:
     build:
       context: .
-      dockerfile: ./docker/nocobase/Dockerfile
+      dockerfile: ./docker/node/Dockerfile
     networks:
       - nocobase
     command: [ "yarn", "start-pm2" ]

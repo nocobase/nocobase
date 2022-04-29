@@ -51,9 +51,9 @@ Requirements
 
 Node:
 
-- Node.js 12.20+
+- Node.js 14+
 
-Database:
+Database(Choose one):
 
 - PostgreSQL 10.x+
 - MySQL 8.x+
@@ -64,110 +64,38 @@ Installation
 
 ## Create a project with [Docker](https://docs.docker.com/get-docker/) (Recommended)
 
-### 1. Create an empty project directory
+### 1. Download NocoBase
+
+Download with Git (or [Download Zip](https://github.com/nocobase/nocobase/archive/refs/heads/main.zip)，and extract it to the `nocobase` directory)
 
 ```bash
-mkdir my-nocobase-app && cd my-nocobase-app/
+git clone https://github.com/nocobase/nocobase.git nocobase
 ```
 
-### 2. Create a `docker-compose.yml` file
+### 2. Select database (choose one)
 
-#### SQLite
+Supports SQLite, MySQL, PostgreSQL
 
-```yml
-version: "3"
-networks:
-  nocobase:
-    driver: bridge
-services:
-  app:
-    image: nocobase/nocobase:latest
-    networks:
-      - nocobase
-    environment:
-      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - "13000:80"
-```
-
-#### MySQL
-
-```yml
-version: "3"
-networks:
-  nocobase:
-    driver: bridge
-services:
-  app:
-    image: nocobase/nocobase:latest
-    networks:
-      - nocobase
-    environment:
-      - DB_DIALECT=mysql
-      - DB_HOST=mysql
-      - DB_DATABASE=nocobase
-      - DB_USER=nocobase
-      - DB_PASSWORD=nocobase
-      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - "13000:80"
-  mysql:
-    image: mysql:8
-    environment:
-      MYSQL_DATABASE: nocobase
-      MYSQL_USER: nocobase
-      MYSQL_PASSWORD: nocobase
-      MYSQL_ROOT_PASSWORD: nocobase
-    restart: always
-    networks:
-      - nocobase
-```
-
-#### PostgreSQL
-
-```yml
-version: "3"
-networks:
-  nocobase:
-    driver: bridge
-services:
-  app:
-    image: nocobase/nocobase:latest
-    networks:
-      - nocobase
-    environment:
-      - DB_DIALECT=postgres
-      - DB_HOST=postgres
-      - DB_DATABASE=nocobase
-      - DB_USER=nocobase
-      - DB_PASSWORD=nocobase
-      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - "13000:80"
-  postgres:
-    image: postgres:10
-    restart: always
-    networks:
-      - nocobase
-    command: postgres -c wal_level=logical
-    environment:
-      POSTGRES_USER: nocobase
-      POSTGRES_DB: nocobase
-      POSTGRES_PASSWORD: nocobase
+```bash
+# SQLite
+cd nocobase/docker/app-sqlite
+# MySQL
+cd nocobase/docker/app-mysql
+# PostgreSQL
+cd nocobase/docker/app-postgres
 ```
 
 ### 3. Install and start NocoBase
 
+> You can download and install Docker [here](https://docs.docker.com/get-docker/)
+
 It may take dozens of seconds
 
 ```bash
-$ docker-compose up
+# run in the background
+$ docker-compose up -d
+# view app logs
+$ docker-compose logs app
 
 app-sqlite-app-1  | nginx started
 app-sqlite-app-1  | yarn run v1.22.15
@@ -179,15 +107,6 @@ app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: Launching in no daemon mode
 app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] starting in -fork mode-
 app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
 app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
-```
-
-You can also use `docker-compose up -d` to run in the background
-
-```bash
-# in the background
-$ docker-compose up -d
-# view app logs
-$ docker-compose logs app
 ```
 
 ### 4. Log in to NocoBase
