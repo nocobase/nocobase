@@ -75,7 +75,6 @@ export const KanbanCardDesigner = (props: any) => {
                 }
                 return buf;
               }, null);
-              console.log('schema', gridSchema);
               if (!gridSchema) {
                 return;
               }
