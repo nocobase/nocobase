@@ -62,6 +62,8 @@ Database（任选其一）:
 
 ## 使用 [Docker](https://docs.docker.com/get-docker/) 创建项目（推荐）
 
+⚡⚡请确保你已经安装了 [Docker](https://docs.docker.com/get-docker/)
+
 ### 1. 将 NocoBase 下载到本地
 
 使用 Git 下载（或直接[下载 Zip 包](https://github.com/nocobase/nocobase/archive/refs/heads/main.zip)，并解压到 nocobase 目录下）
@@ -84,8 +86,6 @@ cd nocobase/docker/app-postgres
 ```
 
 ### 3. 安装并启动 NocoBase
-
-> 请确保你已经安装了 Docker，如果没有安装[点此下载](https://docs.docker.com/get-docker/)
 
 安装过程可能需要等待几十秒钟
 
