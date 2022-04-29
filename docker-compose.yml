@@ -12,34 +12,43 @@ services:
     restart: always
     ports:
       - "${VERDACCIO_PORT}:${VERDACCIO_PORT}"
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    restart: always
+    ports:
+      - "${DB_MYSQL_PORT}:3306"
+    networks:
+      - nocobase
+  postgres:
+    image: postgres:10
+    restart: always
+    networks:
+      - nocobase
+    command: postgres -c wal_level=logical
+    ports:
+      - "${DB_POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
   adminer:
-    build:
-      context: .
-      dockerfile: ./docker/adminer/Dockerfile
+    image: nocobase/adminer
     restart: always
     networks:
       - nocobase
     ports:
       - ${ADMINER_PORT}:8080
     volumes:
-      - ./docker/adminer/login-sqlite-plugin.php:/var/www/html/plugins-enabled/login-sqlite-plugin.php
       - ./:/var/www/app
-  postgres:
-    image: postgres:10
-    restart: always
-    ports:
-      - "${DB_POSTGRES_PORT}:5432"
-    networks:
-      - nocobase
-    command: postgres -c wal_level=logical
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_DB: ${DB_DATABASE}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
   nocobase:
     build:
       context: .
-      dockerfile: ./docker/nocobase/Dockerfile
+      dockerfile: ./docker/node/Dockerfile
     networks:
       - nocobase
     command: [ "yarn", "start-pm2" ]

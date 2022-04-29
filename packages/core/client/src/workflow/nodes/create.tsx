@@ -12,8 +12,8 @@ export default {
   group: 'model',
   fieldset: {
     'config.collection': {
-      name: 'config.collection',
       ...collection,
+      name: 'config.collection'
     },
     // multiple: {
     //   type: 'boolean',

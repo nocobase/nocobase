@@ -24,15 +24,7 @@ export const values = {
       flex-direction: column;
     `
   },
-  'x-component': 'CollectionFieldset',
-  'x-component-props': {
-    useProps() {
-      const { getCollectionFields } = useCollectionManager();
-      const { values: form } = useForm();
-      const fields = getCollectionFields(form?.config?.collection);
-      return { fields };
-    }
-  }
+  'x-component': 'CollectionFieldset'
 };
 
 export const filter = {
@@ -50,7 +42,7 @@ export const filter = {
   'x-component-props': {
     useProps() {
       const { values } = useForm();
-      const options = useCollectionFilterOptions(values.config.collection);
+      const options = useCollectionFilterOptions(values.config?.collection);
       return {
         options,
         className: css`
