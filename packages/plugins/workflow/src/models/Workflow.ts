@@ -1,5 +1,5 @@
 import { Database, Model } from '@nocobase/database';
-import { HasManyCreateAssociationMixin, HasManyGetAssociationsMixin } from 'sequelize';
+import { HasManyCountAssociationsMixin, HasManyCreateAssociationMixin, HasManyGetAssociationsMixin } from 'sequelize';
 
 import triggers from '../triggers';
 import { EXECUTION_STATUS } from '../constants';
@@ -25,6 +25,7 @@ export default class WorkflowModel extends Model {
   declare createNode: HasManyCreateAssociationMixin<FlowNodeModel>;
 
   declare executions: ExecutionModel[];
+  declare countExecutions: HasManyCountAssociationsMixin;
   declare getExecutions: HasManyGetAssociationsMixin<ExecutionModel>;
   declare createExecution: HasManyCreateAssociationMixin<ExecutionModel>;
 
@@ -75,10 +76,25 @@ export default class WorkflowModel extends Model {
 
     const transaction = await this.getTransaction(options);
 
+    if (this.useTransaction) {
+      const existed = await this.countExecutions({
+        where: {
+          transaction: transaction.id
+        },
+        transaction
+      });
+
+      if (existed) {
+        console.warn(`workflow ${this.id} has already been triggered in same execution (${transaction.id}), and newly triggering will be skipped.`);
+        return;
+      }
+    }
+
     const execution = await this.createExecution({
       context,
       status: EXECUTION_STATUS.STARTED,
-      useTransaction: this.useTransaction
+      useTransaction: this.useTransaction,
+      transaction: transaction.id
     }, { transaction });
 
     execution.workflow = this;
