@@ -62,11 +62,11 @@ Database:(choose one)
 Installation
 ----------
 
-## Create a project with [Docker](https://docs.docker.com/get-docker/) (Recommended)
+### Create a project with Docker (👍Recommended)
 
 ⚡⚡ Please make sure you have installed [Docker](https://docs.docker.com/get-docker/)
 
-### 1. Download NocoBase
+#### 1. Download NocoBase
 
 Download with Git (or [Download Zip](https://github.com/nocobase/nocobase/archive/refs/heads/main.zip)，and extract it to the `nocobase` directory)
 
@@ -74,7 +74,7 @@ Download with Git (or [Download Zip](https://github.com/nocobase/nocobase/archiv
 git clone https://github.com/nocobase/nocobase.git nocobase
 ```
 
-### 2. Select database (choose one)
+#### 2. Select database (choose one)
 
 Supports SQLite, MySQL, PostgreSQL
 
@@ -87,7 +87,7 @@ cd nocobase/docker/app-mysql
 cd nocobase/docker/app-postgres
 ```
 
-### 3. Install and start NocoBase
+#### 3. Install and start NocoBase
 
 It may take dozens of seconds
 
@@ -109,11 +109,11 @@ app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
 app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 ```
 
-### 4. Log in to NocoBase
+#### 4. Log in to NocoBase
 
 Open [http://localhost:13000](http://localhost:13000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
 
-## Create a project with `create-nocobase-app`
+### Create a project with `create-nocobase-app`
 
 ~~~shell
 # 1. create project
@@ -149,7 +149,7 @@ yarn start
 
 Open [http://localhost:8000](http://localhost:8000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
 
-## Contributing
+### Contributing
 
 - Fork the source code to your own repository
 - Modify source code
@@ -165,7 +165,7 @@ yarn nocobase install
 yarn start
 ```
 
-### Building
+#### Building
 
 ```bash
 # For all packages
@@ -175,7 +175,7 @@ yarn build
 yarn build --scope @nocobase/database
 ```
 
-### Testing
+#### Testing
 
 ```bash
 # For all packages
