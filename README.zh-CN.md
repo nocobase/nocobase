@@ -49,9 +49,9 @@ NocoBase 架构
 
 Node:
 
-- Node.js 12.20+
+- Node.js 14+
 
-Database:
+Database（任选其一）:
 
 - PostgreSQL 10.x+
 - MySQL 8.x+
@@ -62,110 +62,38 @@ Database:
 
 ## 使用 [Docker](https://docs.docker.com/get-docker/) 创建项目（推荐）
 
-### 1. 创建项目文件夹
+### 1. 将 NocoBase 下载到本地
+
+使用 Git 下载（或直接[下载 Zip 包](https://github.com/nocobase/nocobase/archive/refs/heads/main.zip)，并解压到 nocobase 目录下）
 
 ```bash
-mkdir my-nocobase-app && cd my-nocobase-app/
+git clone https://github.com/nocobase/nocobase.git nocobase
 ```
 
-### 2. 创建 `docker-compose.yml` 文件
+### 2. 选择数据库（任选其一）
 
-#### SQLite
+支持 SQLite、MySQL、PostgreSQL 数据库
 
-```yml
-version: "3"
-networks:
-  nocobase:
-    driver: bridge
-services:
-  app:
-    image: nocobase/nocobase:latest
-    networks:
-      - nocobase
-    environment:
-      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - "13000:80"
-```
-
-#### MySQL
-
-```yml
-version: "3"
-networks:
-  nocobase:
-    driver: bridge
-services:
-  app:
-    image: nocobase/nocobase:latest
-    networks:
-      - nocobase
-    environment:
-      - DB_DIALECT=mysql
-      - DB_HOST=mysql
-      - DB_DATABASE=nocobase
-      - DB_USER=nocobase
-      - DB_PASSWORD=nocobase
-      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - "13000:80"
-  mysql:
-    image: mysql:8
-    environment:
-      MYSQL_DATABASE: nocobase
-      MYSQL_USER: nocobase
-      MYSQL_PASSWORD: nocobase
-      MYSQL_ROOT_PASSWORD: nocobase
-    restart: always
-    networks:
-      - nocobase
-```
-
-#### PostgreSQL
-
-```yml
-version: "3"
-networks:
-  nocobase:
-    driver: bridge
-services:
-  app:
-    image: nocobase/nocobase:latest
-    networks:
-      - nocobase
-    environment:
-      - DB_DIALECT=postgres
-      - DB_HOST=postgres
-      - DB_DATABASE=nocobase
-      - DB_USER=nocobase
-      - DB_PASSWORD=nocobase
-      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - "13000:80"
-  postgres:
-    image: postgres:10
-    restart: always
-    networks:
-      - nocobase
-    command: postgres -c wal_level=logical
-    environment:
-      POSTGRES_USER: nocobase
-      POSTGRES_DB: nocobase
-      POSTGRES_PASSWORD: nocobase
+```bash
+# SQLite
+cd nocobase/docker/app-sqlite
+# MySQL
+cd nocobase/docker/app-mysql
+# PostgreSQL
+cd nocobase/docker/app-postgres
 ```
 
 ### 3. 安装并启动 NocoBase
 
+> 请确保你已经安装了 Docker，如果没有安装[点此下载](https://docs.docker.com/get-docker/)
+
 安装过程可能需要等待几十秒钟
 
 ```bash
-$ docker-compose up
+# 在后台运行
+$ docker-compose up -d
+# 查看 app 进程的情况
+$ docker-compose logs app
 
 app-sqlite-app-1  | nginx started
 app-sqlite-app-1  | yarn run v1.22.15
@@ -177,15 +105,6 @@ app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: Launching in no daemon mode
 app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] starting in -fork mode-
 app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
 app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
-```
-
-你也可以使用 `docker-compose up -d` 在后台运行，如：
-
-```bash
-# 在后台运行
-$ docker-compose up -d
-# 查看 app 进程的情况
-$ docker-compose logs app
 ```
 
 ### 4. 登录 NocoBase
