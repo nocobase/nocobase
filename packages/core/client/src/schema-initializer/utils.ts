@@ -91,7 +91,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
   const { getInterface } = useCollectionManager();
   const form = useForm();
-  const { readPretty = form.readPretty } = options || {};
+  const { readPretty = form.readPretty, block = 'Form' } = options || {};
   return fields
     ?.filter((field) => field?.interface)
     ?.map((field) => {
@@ -112,7 +112,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, { field, block: 'Form', readPretty });
+          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
         },
         schema,
       } as SchemaInitializerItemOptions;
