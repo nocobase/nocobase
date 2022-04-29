@@ -5,7 +5,7 @@ import {
   Schema,
   SchemaExpressionScopeContext,
   useField,
-  useFieldSchema
+  useFieldSchema,
 } from '@formily/react';
 import { Menu as AntdMenu } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -385,7 +385,17 @@ Menu.URL = observer((props) => {
     >
       <SortableItem className={designerCss}>
         <Icon type={icon} />
-        {field.title}
+        <span
+          className={css`
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            width: 100%;
+            vertical-align: middle;
+          `}
+        >
+          {field.title}
+        </span>
         <Designer />
       </SortableItem>
     </AntdMenu.Item>
