@@ -73,9 +73,9 @@ export default class ExecutionModel extends Model {
     });
   }
 
-  getTransaction() {
-    const { sequelize } = (<typeof WorkflowModel>this.constructor).database;
-    // @ts-ignore
+  async getTransaction() {
+    const { sequelize } = (<typeof ExecutionModel>this.constructor).database;
+
     if (!this.useTransaction) {
       return undefined;
     }
@@ -83,15 +83,21 @@ export default class ExecutionModel extends Model {
     const { options } = this;
 
     // @ts-ignore
-    return options.transaction && !options.transaction.finished
+    const transaction = options.transaction && !options.transaction.finished
       ? options.transaction
       : sequelize.transaction();
+
+    // @ts-ignore
+    if (this.transaction !== transaction.id) {
+      // @ts-ignore
+      await this.update({ transaction: transaction.id }, { transaction });
+    }
+    return transaction;
   }
 
   async prepare(options, commit = false) {
     this.options = options || {};
-    // @ts-ignore
-    const transaction = await this.getTransaction()
+    const transaction = await this.getTransaction();
     this.transaction = transaction;
 
     if (!this.workflow) {
@@ -230,7 +236,7 @@ export default class ExecutionModel extends Model {
 
   // TODO(optimize)
   async saveJob(payload) {
-    const { database } = <typeof WorkflowModel>this.constructor;
+    const { database } = <typeof ExecutionModel>this.constructor;
     const { model } = database.getCollection('jobs');
     const [job] = (await model.upsert(
       {
