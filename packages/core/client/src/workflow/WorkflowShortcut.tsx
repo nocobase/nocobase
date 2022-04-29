@@ -5,6 +5,7 @@ import { uid } from '@formily/shared';
 import { PluginManager } from '../plugin-manager';
 import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
 import { WorkflowTable } from './WorkflowTable';
+import { useTranslation } from 'react-i18next';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -25,7 +26,7 @@ const schema: ISchema = {
     [uid()]: {
       'x-component': 'Action.Drawer',
       type: 'void',
-      title: '工作流',
+      title: '{{t("Workflow")}}',
       properties: {
         main: {
           type: 'void',
@@ -37,12 +38,13 @@ const schema: ISchema = {
 };
 
 export const WorkflowShortcut = () => {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         icon={<PartitionOutlined />}
-        title={'工作流'}
+        title={t('Workflow')}
         onClick={() => {
           setVisible(true);
         }}

@@ -5,7 +5,7 @@ import { useCollectionFilterOptions } from "../../collection-manager/action-hook
 
 export const collection = {
   type: 'string',
-  title: '数据表',
+  title: '{{t("Collection")}}',
   name: 'config.collection',
   required: true,
   'x-reactions': ['{{useCollectionDataSource()}}'],
@@ -15,7 +15,7 @@ export const collection = {
 
 export const values = {
   type: 'object',
-  title: '数据内容',
+  title: '{{t("Form values")}}',
   name: 'config.params.values',
   'x-decorator': 'FormItem',
   'x-decorator-props': {
@@ -29,7 +29,7 @@ export const values = {
 
 export const filter = {
   type: 'object',
-  title: '筛选条件',
+  title: '{{t("Filter")}}',
   name: 'config.params.filter',
   'x-decorator': 'FormItem',
   'x-decorator-props': {

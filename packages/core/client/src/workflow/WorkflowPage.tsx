@@ -15,7 +15,7 @@ const workflowCollection = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '流程名称',
+        title: '{{t("Name")}}',
         type: 'string',
         'x-component': 'Input',
         required: true,
@@ -66,7 +66,7 @@ export const WorkflowPage = () => {
                             name: 'title',
                             interface: 'input',
                             uiSchema: {
-                              title: '节点名称',
+                              title: '{{t("Name")}}',
                               type: 'string',
                               'x-component': 'Input',
                             },
@@ -76,7 +76,7 @@ export const WorkflowPage = () => {
                             name: 'type',
                             interface: 'select',
                             uiSchema: {
-                              title: '节点类型',
+                              title: '{{t("Node type")}}',
                               type: 'string',
                               'x-component': 'Select',
                               required: true,

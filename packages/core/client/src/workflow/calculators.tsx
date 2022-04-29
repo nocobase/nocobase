@@ -9,6 +9,7 @@ import { instructions, useNodeContext } from "./nodes";
 import { useFlowContext } from "./WorkflowCanvas";
 import { triggers } from "./triggers";
 import { SchemaComponent, useCollectionManager, useCompile } from "..";
+import { useTranslation } from "react-i18next";
 
 function NullRender() {
   return null;
@@ -17,7 +18,7 @@ function NullRender() {
 export const calculators = [
   {
     value: 'boolean',
-    title: '值比较',
+    title: '{{t("Comparison")}}',
     children: [
       { value: 'equal', name: '=' },
       { value: 'notEqual', name: '≠' },
@@ -29,7 +30,7 @@ export const calculators = [
   },
   {
     value: 'number',
-    title: '算术运算',
+    title: '{{t("Arithmetic calculation")}}',
     children: [
       { value: 'add', name: '+' },
       { value: 'minus', name: '-' },
@@ -40,19 +41,19 @@ export const calculators = [
   },
   {
     value: 'string',
-    title: '字符串',
+    title: '{{t("String operation")}}',
     children: [
-      { value: 'includes', name: '包含' },
-      { value: 'notIncludes', name: '不包含' },
-      { value: 'startsWith', name: '开头是' },
-      { value: 'notStartsWith', name: '开头不是' },
-      { value: 'endsWith', name: '结尾是' },
-      { value: 'notEndsWith', name: '结尾不是' }
+      { value: 'includes', name: '{{t("contains")}}' },
+      { value: 'notIncludes', name: '{{t("does not contain")}}' },
+      { value: 'startsWith', name: '{{t("starts with")}}' },
+      { value: 'notStartsWith', name: '{{t("not starts with")}}' },
+      { value: 'endsWith', name: '{{t("ends with")}}' },
+      { value: 'notEndsWith', name: '{{t("not ends with")}}' }
     ]
   },
   {
     value: 'date',
-    title: '日期',
+    title: '{{t("Date")}}',
     children: []
   }
 ];
@@ -77,7 +78,7 @@ export const BaseTypeSet = new Set(['boolean', 'number', 'string', 'date']);
 
 const ConstantTypes = {
   string: {
-    title: '字符串',
+    title: '{{t("String")}}',
     value: 'string',
     component({ onChange, type, options, value }) {
       return (
@@ -90,7 +91,7 @@ const ConstantTypes = {
     default: ''
   },
   number: {
-    title: '数字',
+    title: '{{t("Number")}}',
     value: 'number',
     component({ onChange, type, options, value }) {
       return (
@@ -103,7 +104,7 @@ const ConstantTypes = {
     default: 0
   },
   boolean: {
-    title: '逻辑值',
+    title: '{{t("Boolean")}}',
     value: 'boolean',
     component({ onChange, type, options, value }) {
       return (
@@ -127,7 +128,7 @@ const ConstantTypes = {
 
 export const VariableTypes = {
   constant: {
-    title: '常量',
+    title: '{{t("Constant")}}',
     value: 'constant',
     options: Object.values(ConstantTypes).map(item => ({
       value: item.value,
@@ -155,7 +156,7 @@ export const VariableTypes = {
     }
   },
   $jobsMapByNodeId: {
-    title: '节点数据',
+    title: '{{t("Node result")}}',
     value: '$jobsMapByNodeId',
     options() {
       const node = useNodeContext();
@@ -210,7 +211,7 @@ export const VariableTypes = {
     }
   },
   $context: {
-    title: '触发数据',
+    title: '{{t("Trigger context")}}',
     value: '$context',
     component() {
       const { workflow } = useFlowContext();
@@ -252,6 +253,7 @@ export function Operand({
   onChange,
   children
 }: OperandProps) {
+  const compile = useCompile();
   const Types = useVariableTypes();
 
   const { type } = operand;
@@ -279,7 +281,7 @@ export function Operand({
         options={Object.values(Types).map((item: any) => {
           const options = typeof item.options === 'function' ? item.options() : item.options;
           return {
-            label: item.title,
+            label: compile(item.title),
             value: item.value,
             children: options,
             disabled: options && !options.length,
@@ -303,6 +305,7 @@ export function Operand({
 }
 
 export function Calculation({ calculator, operands = [], onChange }) {
+  const { t } = useTranslation();
   return (
     <VariableTypesContext.Provider value={VariableTypes}>
       <div className={css`
@@ -321,9 +324,9 @@ export function Calculation({ calculator, operands = [], onChange }) {
             <>
               <Select value={calculator} onChange={v => onChange({ operands, calculator: v })}>
                 {calculators.map(group => (
-                  <Select.OptGroup key={group.value} label={group.title}>
+                  <Select.OptGroup key={group.value} label={t(group.title)}>
                     {group.children.map(item => (
-                      <Select.Option key={item.value} value={item.value}>{item.name}</Select.Option>
+                      <Select.Option key={item.value} value={t(item.value)}>{item.name}</Select.Option>
                     ))}
                   </Select.OptGroup>
                 ))}
@@ -341,7 +344,7 @@ export function Calculation({ calculator, operands = [], onChange }) {
 export function VariableComponent({ value, onChange, renderSchemaComponent }) {
   const VTypes = { ...VariableTypes,
     constant: {
-      title: '常量',
+      title: '{{t("Constant")}}',
       value: 'constant',
       options: undefined
     }
@@ -372,6 +375,7 @@ export function VariableComponent({ value, onChange, renderSchemaComponent }) {
 
 // NOTE: observer for watching useProps
 export const CollectionFieldset = observer(({ value, onChange }: any) => {
+  const { t } = useTranslation();
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
   const { values: data } = useForm();
@@ -384,7 +388,7 @@ export const CollectionFieldset = observer(({ value, onChange }: any) => {
   const VTypes = {
     ...VariableTypes,
     constant: {
-      title: '常量',
+      title: '{{t("Constant")}}',
       value: 'constant',
       options: undefined
     }
@@ -458,14 +462,14 @@ export const CollectionFieldset = observer(({ value, onChange }: any) => {
                       ))}
                   </Menu>
                 }>
-                  <Button icon={<PlusOutlined />}>添加字段</Button>
+                  <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
                 </Dropdown>
               )
               : null
             }
           </>
         )
-        : <p>请先选择数据表</p>
+        : <p>{t('Select collection')}</p>
       }
     </fieldset>
   );
