@@ -18,6 +18,11 @@ export default {
       defaultValue: false
     },
     {
+      type: 'uuid',
+      name: 'transaction',
+      defaultValue: null
+    },
+    {
       interface: 'linkTo',
       type: 'hasMany',
       name: 'jobs',
