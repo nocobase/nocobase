@@ -32,7 +32,7 @@ NocoBase 是一个极易扩展的开源无代码开发平台。
 说明
 ----------
 
-如果你希望加入我们一起开发 NocoBase，或者探讨 NocoBase 未来发展，或者需要提供 NocoBase 使用上的帮助，欢迎通过邮件联系我们：hello@nocobase.com  
+如果你希望加入我们一起开发 NocoBase，或者探讨 NocoBase 未来发展，或者需要提供商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
 
 或者添加我们的微信：  
 
