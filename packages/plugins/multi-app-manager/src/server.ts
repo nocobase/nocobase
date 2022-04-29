@@ -19,6 +19,7 @@ export class PluginMultiAppManager extends Plugin {
 
     this.db.on('applications.afterCreateWithAssociations', async (model: ApplicationModel, options) => {
       const { transaction } = options;
+
       await model.registerToMainApp(this.app, { transaction });
     });
 

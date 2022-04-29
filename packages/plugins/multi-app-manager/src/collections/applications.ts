@@ -6,7 +6,6 @@ export default defineCollection({
   autoGenId: false,
   title: '{{t("Applications")}}',
   sortable: 'sort',
-  createdBy: true,
   filterTargetKey: 'name',
   fields: [
     {

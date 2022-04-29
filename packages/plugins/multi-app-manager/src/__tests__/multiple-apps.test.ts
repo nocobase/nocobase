@@ -1,6 +1,7 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
 import { PluginMultiAppManager } from '../server';
+import { ApplicationModel } from '..';
 
 describe('multiple apps create', () => {
   let app: MockServer;
@@ -89,5 +90,21 @@ describe('multiple apps create', () => {
     await app.agent().resource('test').test();
 
     expect(app.appManager.applications.has('miniApp')).toBeTruthy();
+  });
+
+  it('should change handleAppStart', async () => {
+    const customHandler = jest.fn();
+    ApplicationModel.handleAppStart = customHandler;
+
+    await db.getRepository('applications').create({
+      values: {
+        name: 'miniApp',
+        options: {
+          plugins: ['@nocobase/plugin-ui-schema-storage'],
+        },
+      },
+    });
+
+    expect(customHandler).toHaveBeenCalledTimes(1);
   });
 });
