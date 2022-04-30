@@ -1,5 +1,18 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { useUpdateActionProps } from '../../block-provider/hooks';
+import { useSchemaTemplateManager } from '../SchemaTemplateManagerProvider';
+
+const useUpdateSchemaTemplateActionProps = () => {
+  const props = useUpdateActionProps();
+  const { refresh } = useSchemaTemplateManager();
+  return {
+    async onClick() {
+      await props.onClick();
+      refresh();
+    }
+  }
+}
 
 export const uiSchemaTemplatesSchema: ISchema = {
   type: 'object',
@@ -70,14 +83,14 @@ export const uiSchemaTemplatesSchema: ISchema = {
                     split: '|',
                   },
                   properties: {
-                    view: {
-                      title: '{{ t("View") }}',
-                      'x-action': 'view',
-                      'x-component': 'RecordLink',
-                      'x-component-props': {
-                        to: '/admin/plugins/block-templates/${record.key}',
-                      },
-                    },
+                    // view: {
+                    //   title: '{{ t("View") }}',
+                    //   'x-action': 'view',
+                    //   'x-component': 'RecordLink',
+                    //   'x-component-props': {
+                    //     to: '/admin/plugins/block-templates/${record.key}',
+                    //   },
+                    // },
                     edit: {
                       type: 'void',
                       title: '{{ t("Edit") }}',
@@ -132,13 +145,13 @@ export const uiSchemaTemplatesSchema: ISchema = {
                                       },
                                       properties: {
                                         submit: {
-                                          title: 'Submit',
+                                          title: '{{t("Submit")}}',
                                           'x-action': 'submit',
                                           'x-component': 'Action',
                                           'x-component-props': {
                                             type: 'primary',
                                             htmlType: 'submit',
-                                            useProps: '{{ useUpdateActionProps }}',
+                                            useProps: useUpdateSchemaTemplateActionProps,
                                           },
                                           type: 'void',
                                         },
