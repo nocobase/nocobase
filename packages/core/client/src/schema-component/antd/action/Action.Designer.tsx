@@ -11,7 +11,7 @@ export const ActionDesigner = (props) => {
   const { t } = useTranslation();
   const isPopupAction = ['create', 'update', 'view'].includes(fieldSchema['x-action'] || '');
   return (
-    <GeneralSchemaDesigner {...props}>
+    <GeneralSchemaDesigner {...props} disableInitializer>
       <SchemaSettings.ModalItem
         title={t('Edit button')}
         schema={

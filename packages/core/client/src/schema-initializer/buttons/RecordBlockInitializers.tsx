@@ -20,10 +20,13 @@ const useRelationFields = () => {
 
 export const RecordBlockInitializers = (props: any) => {
   const { t } = useTranslation();
+  const { insertPosition, component } = props;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
-      title={t('Add block')}
+      insertPosition={insertPosition}
+      component={component}
+      title={component ? null : t('Add block')}
       icon={'PlusOutlined'}
       items={[
         {

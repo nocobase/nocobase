@@ -10,7 +10,7 @@ export const TabsDesigner = () => {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   return (
-    <GeneralSchemaDesigner>
+    <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
         title={t('Edit')}
         schema={

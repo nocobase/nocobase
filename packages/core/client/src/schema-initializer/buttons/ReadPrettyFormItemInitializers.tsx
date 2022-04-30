@@ -5,6 +5,7 @@ import { gridRowColWrap, useFormItemInitializerFields } from '../utils';
 
 export const ReadPrettyFormItemInitializers = (props: any) => {
   const { t } = useTranslation();
+  const { insertPosition, component } = props;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -34,8 +35,9 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
           },
         },
       ]}
-    >
-      {t('Configure fields')}
-    </SchemaInitializer.Button>
+      insertPosition={insertPosition}
+      component={component}
+      title={component ? null : t('Configure fields')}
+    />
   );
 };

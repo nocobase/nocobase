@@ -6,6 +6,7 @@ import { gridRowColWrap, useFormItemInitializerFields } from '../utils';
 // 表单里配置字段
 export const FormItemInitializers = (props: any) => {
   const { t } = useTranslation();
+  const { insertPosition, component } = props;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -35,8 +36,9 @@ export const FormItemInitializers = (props: any) => {
           },
         },
       ]}
-    >
-      {t('Configure fields')}
-    </SchemaInitializer.Button>
+      insertPosition={insertPosition}
+      component={component}
+      title={component ? null : t('Configure fields')}
+    />
   );
 };
