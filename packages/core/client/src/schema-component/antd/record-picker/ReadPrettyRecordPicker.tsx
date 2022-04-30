@@ -7,6 +7,7 @@ import { BlockAssociationContext } from '../../../block-provider';
 import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { RecordProvider } from '../../../record-provider';
 import { FormProvider } from '../../core';
+import { useCompile } from '../../hooks';
 import { ActionContext } from '../action';
 import { useFieldNames } from './useFieldNames';
 
@@ -18,6 +19,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
   const [record, setRecord] = useState({});
+  const compile = useCompile();
   return collectionField ? (
     <div>
       <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
@@ -34,7 +36,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
                       setRecord(record);
                     }}
                   >
-                    {record?.[fieldNames?.label || 'label']}
+                    {compile(record?.[fieldNames?.label || 'label'])}
                   </a>
                 </span>
               );
