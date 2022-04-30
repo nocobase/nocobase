@@ -73,8 +73,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (options instanceof Sequelize) {
       this.sequelize = options;
     } else {
-      this.sequelize = new Sequelize(options);
-      this.options = options;
+      const opts = {
+        sync: {
+          alter: {
+            drop: false,
+          },
+          force: false,
+        },
+        ...options,
+      };
+      this.sequelize = new Sequelize(opts);
+      this.options = opts;
     }
 
     this.collections = new Map();
