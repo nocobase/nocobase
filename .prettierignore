@@ -9,3 +9,5 @@ package.json
 packages/**/lib/**
 packages/**/esm/**
 packages/**/node_modules/**
+packages/**/en_US.ts
+packages/**/zh_CN.ts

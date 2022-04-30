@@ -476,5 +476,8 @@ export default {
   'Multiple records': '多条数据',
   'Please select collection first': '请先选择数据表',
   'Only update records matching conditions': '只更新满足条件的数据',
-  'Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.': '未被赋值的字段将被设置为默认值，没有默认值的设置为空值。'
+  'Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.': '未被赋值的字段将被设置为默认值，没有默认值的设置为空值。',
+
+  'Confirm': '确认',
+  'Form value changed tip': '数据更新未保存，确定要退出吗?',
 }
