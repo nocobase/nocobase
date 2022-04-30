@@ -284,4 +284,5 @@ export default {
 
   // workflows
   'Execution History': 'History',
+  'Parallel branch': 'Branch',
 }
