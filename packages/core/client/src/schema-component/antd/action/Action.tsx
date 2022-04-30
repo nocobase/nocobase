@@ -69,7 +69,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const {
     popover,
     confirm,
-    openMode,
+    // openMode,
     containerRefKey,
     component,
     useAction = useA,
@@ -85,6 +85,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const { run } = useAction();
   const fieldSchema = useFieldSchema();
   const designerProps = fieldSchema['x-designer-props'];
+  const openMode = fieldSchema?.['x-component-props']?.['openMode'];
   const renderButton = () => (
     <SortableItem
       {...others}
