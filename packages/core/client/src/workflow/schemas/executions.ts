@@ -4,12 +4,16 @@ const collection = {
   name: 'executions',
   fields: [
     {
-      type: 'number',
-      name: 'workflow',
-      interface: 'linkTo',
+      interface: 'createdAt',
+      type: 'datetime',
+      // field: 'createdAt',
+      name: 'createdAt',
       uiSchema: {
-        title: '所属工作流',
-        type: 'string',
+        type: 'datetime',
+        title: '{{t("Created at")}}',
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
       } as ISchema,
     },
     {
@@ -17,15 +21,15 @@ const collection = {
       name: 'status',
       interface: 'select',
       uiSchema: {
-        title: '执行状态',
+        title: '{{t("Status")}}',
         type: 'string',
         'x-component': 'Select',
         'x-decorator': 'FormItem',
         enum: [
-          { value: 0, label: '进行中' },
-          { value: 1, label: '已完成' },
-          { value: -1, label: '已失败' },
-          { value: -2, label: '已取消' },
+          { value: 0, label: '{{t("On going")}}' },
+          { value: 1, label: '{{t("Success")}}' },
+          { value: -1, label: '{{t("Failed")}}' },
+          { value: -2, label: '{{t("Canceled")}}' },
         ],
       } as ISchema,
     }
@@ -76,13 +80,13 @@ export const executionSchema = {
           useDataSource: '{{ cm.useDataSourceFromRAC }}',
         },
         properties: {
-          workflow: {
+          createdAt: {
             type: 'void',
             'x-decorator': 'Table.Column.Decorator',
             'x-component': 'Table.Column',
             properties: {
-              workflow: {
-                type: 'string',
+              createdAt: {
+                type: 'datetime',
                 'x-component': 'CollectionField',
                 'x-read-pretty': true,
               },
@@ -100,27 +104,27 @@ export const executionSchema = {
               },
             }
           },
-          actions: {
-            type: 'void',
-            title: '{{ t("Actions") }}',
-            'x-component': 'Table.Column',
-            properties: {
-              actions: {
-                type: 'void',
-                'x-component': 'Space',
-                'x-component-props': {
-                  split: '|',
-                },
-                properties: {
-                  config: {
-                    type: 'void',
-                    title: '查看',
-                    'x-component': 'ExecutionLink'
-                  },
-                }
-              }
-            }
-          }
+          // actions: {
+          //   type: 'void',
+          //   title: '{{ t("Actions") }}',
+          //   'x-component': 'Table.Column',
+          //   properties: {
+          //     actions: {
+          //       type: 'void',
+          //       'x-component': 'Space',
+          //       'x-component-props': {
+          //         split: '|',
+          //       },
+          //       properties: {
+          //         config: {
+          //           type: 'void',
+          //           title: '查看',
+          //           'x-component': 'ExecutionLink'
+          //         },
+          //       }
+          //     }
+          //   }
+          // }
         }
       }
     }

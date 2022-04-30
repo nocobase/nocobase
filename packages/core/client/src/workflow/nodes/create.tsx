@@ -1,5 +1,6 @@
 import { Select } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollectionDataSource, useCollectionManager, useCompile } from '../..';
 import { BaseTypeSet, CollectionFieldset } from '../calculators';
 import { collection, values } from '../schemas/collection';
@@ -7,9 +8,9 @@ import { useFlowContext } from '../WorkflowCanvas';
 
 
 export default {
-  title: '新增数据',
+  title: '{{t("Create record")}}',
   type: 'create',
-  group: 'model',
+  group: 'collection',
   fieldset: {
     'config.collection': {
       ...collection,
@@ -45,6 +46,7 @@ export default {
     CollectionFieldset
   },
   getter({ type, options, onChange }) {
+    const { t } = useTranslation();
     const compile = useCompile();
     const { collections = [] } = useCollectionManager();
     const { nodes } = useFlowContext();
@@ -52,7 +54,7 @@ export default {
     const collection = collections.find(item => item.name === config.collection) ?? { fields: [] };
 
     return (
-      <Select value={options.path} placeholder="选择字段" onChange={path => {
+      <Select value={options.path} placeholder={t('Fields')} onChange={path => {
         onChange({ type, options: { ...options, path } });
       }}>
         {collection.fields

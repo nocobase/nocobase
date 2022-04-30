@@ -32,6 +32,7 @@ export default {
   "Insert inner": "在里面插入",
   "Delete": "删除",
   "UI editor": "界面配置",
+  "Collection": "数据表",
   "Collections & Fields": "数据表配置",
   "Roles & Permissions": "角色和权限",
   "Edit profile": "个人资料",
@@ -153,6 +154,10 @@ export default {
   "is not": "不等于",
   "contains": "包含",
   "does not contain": "不包含",
+  "starts with": "开头是",
+  "not starts with": "开头不是",
+  "ends with": "结尾是",
+  "not ends with": "结尾不是",
   "is empty": "为空",
   "is not empty": "不为空",
   "Edit chart": "编辑图表",
@@ -300,8 +305,8 @@ export default {
   'Insert before': '在前面插入',
   'Insert after': '在后面插入',
   'UI Editor': '界面配置',
-  'ASC': 'ASC',
-  'DESC': 'DESC',
+  'ASC': '升序',
+  'DESC': '降序',
   'Add sort field': '添加排序字段',
   'ID': 'ID',
   'Drawer': '抽屉',
@@ -399,4 +404,60 @@ export default {
   'Local storage': '本地存储',
   'Aliyun OSS': '阿里云 OSS',
   'Amazon S3': '亚马逊 S3',
+
+  // plugins/workflow
+  'Workflow': '工作流',
+  'Configure workflow': '流程配置',
+  'Executions': '执行历史',
+  'Trigger type': '触发方式',
+  'Description': '描述',
+  'Status': '状态',
+  'Enabled': '启用',
+  'Disabled': '禁用',
+  'Trigger configuration': '触发器配置',
+  'Load failed': '加载失败',
+
+  'Model event': '数据表事件',
+  'Trigger on': '触发时机',
+  'After record added': '新增数据后',
+  'After record updated': '更新数据后',
+  'After record added or updated': '新增或更新数据后',
+  'After record deleted': '删除数据后',
+  'Changed fields': '发生变动的字段',
+  'Select the fields which changed will trigger the event only': '只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增或删除数据时，任意字段都被认为发生变动。',
+  'Match condition': '满足条件',
+
+  'End': '结束',
+
+  'Trigger context': '触发数据',
+  'Node result': '节点数据',
+  'Constant': '常量',
+
+  'Boolean': '逻辑值',
+  'String': '字符串',
+
+  'Comparison': '值比较',
+  'Arithmetic calculation': '算术运算',
+  'String operation': '字符串',
+
+  'On going': '进行中',
+  'Success': '成功',
+  'Failed': '失败',
+  'Canceled': '已取消',
+
+  'Node configuration': '配置节点',
+  'This node contains branches, deleting will also be preformed to them, are you sure?': '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
+
+  'Control': '流程控制',
+  'Collection operations': '数据表操作',
+
+  'Node type': '节点类型',
+
+  'Calculation': '运算',
+  'Configure calculation': '配置运算',
+  'Calculation result': '运算结果',
+
+  'Create record': '新增数据',
+  'Update record': '更新数据',
+  'Query record': '查询数据',
 }

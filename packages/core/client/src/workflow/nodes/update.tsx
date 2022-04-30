@@ -3,9 +3,9 @@ import { CollectionFieldset, VariableComponent } from '../calculators';
 import { collection, filter, values } from '../schemas/collection';
 
 export default {
-  title: '更新数据',
+  title: '{{t("Update record")}}',
   type: 'update',
-  group: 'model',
+  group: 'collection',
   fieldset: {
     'config.collection': collection,
     'config.params': {

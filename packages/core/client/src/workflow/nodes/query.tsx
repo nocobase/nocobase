@@ -6,11 +6,12 @@ import { useCollectionDataSource, useCollectionManager, useCompile } from '../..
 import { useFlowContext } from '../WorkflowCanvas';
 import { BaseTypeSet, VariableComponent } from '../calculators';
 import { collection, filter } from '../schemas/collection';
+import { useTranslation } from 'react-i18next';
 
 export default {
-  title: '查询数据',
+  title: '{{t("Query record")}}',
   type: 'query',
-  group: 'model',
+  group: 'collection',
   fieldset: {
     'config.collection': collection,
     'config.multiple': {
@@ -43,6 +44,7 @@ export default {
     VariableComponent
   },
   getter({ type, options, onChange }) {
+    const { t } = useTranslation();
     const compile = useCompile();
     const { collections = [] } = useCollectionManager();
     const { nodes } = useFlowContext();
@@ -50,7 +52,7 @@ export default {
     const collection = collections.find(item => item.name === config.collection) ?? { fields: [] };
 
     return (
-      <Select value={options.path} placeholder="选择字段" onChange={path => {
+      <Select value={options.path} placeholder={t('Fields')} onChange={path => {
         onChange({ type, options: { ...options, path } });
       }}>
         {collection.fields

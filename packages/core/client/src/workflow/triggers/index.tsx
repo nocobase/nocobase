@@ -3,7 +3,7 @@ import { ISchema, useForm } from "@formily/react";
 import { cx } from "@emotion/css";
 import { Registry } from "@nocobase/utils";
 
-import { SchemaComponent, useActionContext, useAPIClient, useRecord, useRequest, useResourceActionContext } from '../../';
+import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRecord, useRequest, useResourceActionContext } from '../../';
 import model from './model';
 import { nodeCardClass } from "../style";
 
@@ -42,9 +42,10 @@ export interface Trigger {
 
 export const triggers = new Registry<Trigger>();
 
-triggers.register('model', model);
+triggers.register(model.type, model);
 
 export const TriggerConfig = () => {
+  const compile = useCompile();
   const { data } = useResourceActionContext();
   if (!data) {
     return null;
@@ -53,17 +54,17 @@ export const TriggerConfig = () => {
   const { title, fieldset, scope } = triggers.get(type);
   return (
     <div className={cx(nodeCardClass)}>
-      <h4>{title}</h4>
+      <h4>{compile(title)}</h4>
       <SchemaComponent
         schema={{
           type: 'void',
-          title: '触发器配置',
+          title: '{{t("Trigger configuration")}}',
           'x-component': 'Action.Link',
           name: 'drawer',
           properties: {
             drawer: {
               type: 'void',
-              title: '触发器配置',
+              title: '{{t("Trigger configuration")}}',
               'x-component': 'Action.Drawer',
               'x-decorator': 'Form',
               'x-decorator-props': {

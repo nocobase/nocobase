@@ -9,7 +9,7 @@ export default {
       interface: 'string',
       type: 'string',
       name: 'title',
-      title: '自动化名称',
+      title: '工作流名称',
       required: true
     },
     {
