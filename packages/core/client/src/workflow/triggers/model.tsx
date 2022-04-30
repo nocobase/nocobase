@@ -9,6 +9,7 @@ import { useCompile } from '../../schema-component';
 import { useFlowContext } from '../WorkflowCanvas';
 import { BaseTypeSet } from '../calculators';
 import { collection, filter } from '../schemas/collection';
+import { useTranslation } from 'react-i18next';
 
 function useCollectionFieldsDataSource() {
   const compile = useCompile();
@@ -32,30 +33,30 @@ function useCollectionFieldsDataSource() {
 }
 
 export default {
-  title: '数据表事件',
+  title: '{{t("Model event")}}',
   type: 'model',
   fieldset: {
     'config.collection': collection,
     'config.mode': {
       type: 'number',
-      title: '触发时机',
+      title: '{{t("Trigger on")}}',
       name: 'config.mode',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
         options: [
-          { value: 1, label: '新增数据后' },
-          { value: 2, label: '更新数据后' },
-          { value: 3, label: '新增或更新数据后' },
-          { value: 4, label: '删除数据后' }
+          { value: 1, label: '{{t("After record added")}}' },
+          { value: 2, label: '{{t("After record updated")}}' },
+          { value: 3, label: '{{t("After record added or updated")}}' },
+          { value: 4, label: '{{t("After record deleted")}}' }
         ]
       }
     },
     'config.changed': {
       type: 'array',
       name: 'changed',
-      title: '发生变动的字段',
-      description: '只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增或删除数据时，任意字段都被认为发生变动。',
+      title: '{{t("Changed fields")}}',
+      description: '{{t("Select the fields which changed will trigger the event only")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
@@ -68,7 +69,7 @@ export default {
     'config.condition': {
       ...filter,
       name: 'config.condition',
-      title: '满足条件'
+      title: '{{t("Match condition")}}',
     }
   },
   scope: {
@@ -76,6 +77,7 @@ export default {
     useCollectionFieldsDataSource
   },
   getter({ type, options, onChange }) {
+    const { t } = useTranslation();
     const compile = useCompile();
     const { collections = [] } = useCollectionManager();
     const { workflow } = useFlowContext();
@@ -83,7 +85,7 @@ export default {
 
     return (
       <Select
-        placeholder="选择字段"
+        placeholder={t('Fields')}
         value={options?.path?.replace(/^data\./, '')}
         onChange={(path) => {
           onChange({ type, options: { ...options, path: `data.${path}` } });

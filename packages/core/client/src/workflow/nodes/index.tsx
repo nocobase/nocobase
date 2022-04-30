@@ -4,7 +4,8 @@ import { ISchema, useForm } from '@formily/react';
 import { Registry } from '@nocobase/utils';
 import { Button, Modal, Tag } from 'antd';
 import React, { useContext } from 'react';
-import { SchemaComponent, useActionContext, useAPIClient, useCollection, useRequest, useResourceActionContext } from '../..';
+import { useTranslation } from 'react-i18next';
+import { SchemaComponent, useActionContext, useAPIClient, useCollection, useCompile, useRequest, useResourceActionContext } from '../..';
 import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeTitleClass } from '../style';
 import { AddButton, useFlowContext } from '../WorkflowCanvas';
 
@@ -109,6 +110,7 @@ export function Node({ data }) {
 }
 
 export function RemoveButton() {
+  const { t } = useTranslation();
   const { resource } = useCollection();
   const current = useNodeContext();
   const { nodes, onNodeRemoved } = useFlowContext();
@@ -123,11 +125,11 @@ export function RemoveButton() {
 
     const hasBranches = !nodes.find(item => item.upstream === current && item.branchIndex != null);
     const message = hasBranches
-      ? '确定删除该节点吗？'
-      : '节点包含分支，将同时删除其所有分支下的子节点，确定继续？';
+      ? t('Are you sure you want to delete it?')
+      : t('This node contains branches, deleting will also be preformed to them, are you sure?');
 
     Modal.confirm({
-      title: '删除节点',
+      title: t('Delete'),
       content: message,
       onOk
     });
@@ -146,6 +148,7 @@ export function RemoveButton() {
 
 export function NodeDefaultView(props) {
   const { data, children } = props;
+  const compile = useCompile();
   const instruction = instructions.get(data.type);
 
   return (
@@ -154,7 +157,7 @@ export function NodeDefaultView(props) {
         <div className={cx(nodeCardClass)}>
           <div className={cx(nodeHeaderClass)}>
             <h4 className={cx(nodeTitleClass)}>
-              <Tag>{instruction.title}</Tag>
+              <Tag>{compile(instruction.title)}</Tag>
               <strong>{data.title}</strong>
               <span className="workflow-node-id">#{data.id}</span>
             </h4>
@@ -169,7 +172,7 @@ export function NodeDefaultView(props) {
                 view: instruction.view,
                 config: {
                   type: 'void',
-                  title: '配置节点',
+                  title: '{{t("Node configuration")}}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
                     type: 'primary',
@@ -177,7 +180,7 @@ export function NodeDefaultView(props) {
                   properties: {
                     drawer: {
                       type: 'void',
-                      title: '配置节点',
+                      title: '{{t("Node configuration")}}',
                       'x-component': 'Action.Drawer',
                       'x-decorator': 'Form',
                       'x-decorator-props': {
@@ -192,7 +195,7 @@ export function NodeDefaultView(props) {
                         title: {
                           type: 'string',
                           name: 'title',
-                          title: '节点名称',
+                          title: '{{t("Name")}}',
                           'x-decorator': 'FormItem',
                           'x-component': 'Input',
                         },

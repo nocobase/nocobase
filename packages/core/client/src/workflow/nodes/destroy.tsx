@@ -4,9 +4,9 @@ import { VariableComponent } from '../calculators';
 import { collection, filter } from '../schemas/collection';
 
 export default {
-  title: '删除数据',
+  title: '{{t("Delete record")}}',
   type: 'destroy',
-  group: 'model',
+  group: 'collection',
   fieldset: {
     'config.collection': collection,
     'config.params': {

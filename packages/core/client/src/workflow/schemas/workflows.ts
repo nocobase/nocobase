@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import { triggers } from '../triggers';
 import { executionSchema } from './executions';
 
 const collection = {
@@ -9,7 +10,7 @@ const collection = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '流程名称',
+        title: '{{t("Name")}}',
         type: 'string',
         'x-component': 'Input',
         required: true,
@@ -20,13 +21,14 @@ const collection = {
       name: 'type',
       interface: 'select',
       uiSchema: {
-        title: '触发方式',
+        title: '{{t("Trigger type")}}',
         type: 'string',
         'x-component': 'Select',
         'x-decorator': 'FormItem',
-        enum: [
-          { value: 'model', label: '数据变动' }
-        ],
+        enum: Array.from(triggers.getEntities()).map(([value, { title }]) => ({
+          value,
+          label: title,
+        })),
         required: true,
       } as ISchema,
     },
@@ -35,7 +37,7 @@ const collection = {
       name: 'description',
       interface: 'textarea',
       uiSchema: {
-        title: '描述',
+        title: '{{t("Description")}}',
         type: 'string',
         'x-component': 'Input.TextArea',
       } as ISchema,
@@ -45,11 +47,11 @@ const collection = {
       name: 'enabled',
       interface: 'radio',
       uiSchema: {
-        title: '状态',
+        title: '{{t("Status")}}',
         type: 'string',
         enum: [
-          { label: '启用', value: true },
-          { label: '禁用', value: false },
+          { label: '{{t("Enabled")}}', value: true },
+          { label: '{{t("Disabled")}}', value: false },
         ],
         'x-component': 'Radio.Group',
         'x-decorator': 'FormItem',
@@ -94,7 +96,7 @@ export const workflowSchema: ISchema = {
           properties: {
             delete: {
               type: 'void',
-              title: '删除',
+              title: '{{t("Delete")}}',
               'x-component': 'Action',
               'x-component-props': {
                 useAction: '{{ cm.useBulkDestroyAction }}',
@@ -106,7 +108,7 @@ export const workflowSchema: ISchema = {
             },
             create: {
               type: 'void',
-              title: '添加工作流',
+              title: '{{t("Add new")}}',
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
@@ -116,7 +118,7 @@ export const workflowSchema: ISchema = {
                   type: 'void',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
-                  title: '添加工作流',
+                  title: '{{t("Add new")}}',
                   properties: {
                     title: {
                       'x-component': 'CollectionField',
@@ -219,25 +221,24 @@ export const workflowSchema: ISchema = {
                   properties: {
                     config: {
                       type: 'void',
-                      title: '配置流程',
                       'x-component': 'WorkflowLink'
                     },
-                    // executions: {
-                    //   type: 'void',
-                    //   title: '执行历史',
-                    //   'x-component': 'Action.Link',
-                    //   'x-component-props': {
-                    //     type: 'primary',
-                    //   },
-                    //   properties: {
-                    //     drawer: {
-                    //       type: 'void',
-                    //       title: '执行历史',
-                    //       'x-component': 'Action.Drawer',
-                    //       properties: executionSchema
-                    //     }
-                    //   }
-                    // },
+                    executions: {
+                      type: 'void',
+                      title: '{{t("Executions")}}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        type: 'primary',
+                      },
+                      properties: {
+                        drawer: {
+                          type: 'void',
+                          title: '{{t("Executions")}}',
+                          'x-component': 'Action.Drawer',
+                          properties: executionSchema
+                        }
+                      }
+                    },
                     update: {
                       type: 'void',
                       title: '{{ t("Edit") }}',
@@ -253,7 +254,7 @@ export const workflowSchema: ISchema = {
                           'x-decorator-props': {
                             useValues: '{{ cm.useValuesFromRecord }}',
                           },
-                          title: '编辑工作流',
+                          title: '{{ t("Edit") }}',
                           properties: {
                             title: {
                               'x-component': 'CollectionField',
