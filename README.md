@@ -35,7 +35,7 @@ Why choose NocoBase
 		- You can group menus, support adding pages and links, and support unlimited submenus.
 	- Action
 		- Support filtering, exporting, adding, deleting, modifying, viewing and other operations to process data, which can be extended to more types.
-- **Developer-friendly**
+- **Built for extended development**
 	- Microkernel architecture, flexible and easy to extend, with a robust plug-in system
 	- Node.js-based, with popular frameworks and technologies, including Koa, Sequelize, React, Formily, Ant Design, etc.
 	- Progressive development, easy for getting-started, friendly to newcomers
