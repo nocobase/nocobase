@@ -10,7 +10,7 @@ import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 
 export const TableBlockDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title, sortable } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
@@ -41,7 +41,7 @@ export const TableBlockDesigner = () => {
         onChange={(dragSort) => {
           field.decoratorProps.dragSort = dragSort;
           fieldSchema['x-decorator-props'].dragSort = dragSort;
-          service.run({ ...service.params?.[0], sort: defaultSort });
+          service.run({ ...service.params?.[0], sort: 'sort' });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
