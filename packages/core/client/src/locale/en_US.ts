@@ -280,5 +280,8 @@ export default {
   "Add card": "Add card",
   "edit title": "Edit Title",
   "Turn the page": "Turn the page",
-  "Others": "Others"
+  "Others": "Others",
+
+  // workflows
+  'Execution History': 'History',
 }

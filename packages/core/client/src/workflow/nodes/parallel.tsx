@@ -6,17 +6,19 @@ import { NodeDefaultView } from ".";
 import { Branch, useFlowContext } from "../WorkflowCanvas";
 import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { Button, Tooltip } from "antd";
+import { i18n } from "../../i18n";
+import { useTranslation } from "react-i18next";
 // import { SchemaComponent } from "../../schema-component";
 
 export default {
-  title: '并行',
+  title: '{{t("Parallel")}}',
   type: 'parallel',
   group: 'control',
   fieldset: {
     'config.mode': {
       type: 'string',
       name: 'config.mode',
-      title: '模式',
+      title: '{{t("Mode")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       'x-component-props': {
@@ -26,10 +28,10 @@ export default {
           value: 'all',
           label: (
             <Tooltip
-              title="全部分支都成功后才能继续"
+              title={i18n.t('Continue after all branches succeeded')}
               placement="bottom"
             >
-              全部成功 <QuestionCircleOutlined style={{ color: '#999' }} />
+              {i18n.t('All succeeded')} <QuestionCircleOutlined style={{ color: '#999' }} />
             </Tooltip>
           )
         },
@@ -37,10 +39,10 @@ export default {
           value: 'any',
           label: (
             <Tooltip
-              title="任意分支成功后就继续"
+              title="Continue after any branch succeeded"
               placement="bottom"
             >
-              任意成功 <QuestionCircleOutlined style={{ color: '#999' }} />
+              {i18n.t('Any succeeded')} <QuestionCircleOutlined style={{ color: '#999' }} />
             </Tooltip>
           )
         },
@@ -54,6 +56,7 @@ export default {
   },
   render(data) {
     const { id, config: { mode } } = data;
+    const { t } = useTranslation();
     const { nodes } = useFlowContext();
     const branches = nodes.reduce((result, node) => {
       if (node.upstreamId === id && node.branchIndex != null) {
@@ -108,7 +111,7 @@ export default {
               height: 2em;
             `}
           >
-            <Tooltip title="添加分支">
+            <Tooltip title={t('Add branch')}>
               <Button
                 icon={<PlusOutlined />}
                 className={css`
