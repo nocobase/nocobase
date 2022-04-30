@@ -480,4 +480,6 @@ export default {
   'Unsaved changes': '未保存修改',
   'Are you sure you don\'t want to save?': '你确定不保存修改吗？',
   'Dragging': '拖拽中',
+  'Confirm': '确认',
+  'Form value changed tip': '数据更新未保存，确定要退出吗?',
 }
