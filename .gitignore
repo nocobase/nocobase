@@ -16,3 +16,4 @@ coverage
 docs-dist/
 .npmrc
 dist/
+docker/**/storage
