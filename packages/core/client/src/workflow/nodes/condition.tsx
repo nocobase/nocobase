@@ -1,7 +1,7 @@
 import React from "react";
 import { css, cx } from "@emotion/css";
-import { Button, Select, Tooltip } from "antd";
-import { CloseCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { Button, Select } from "antd";
+import { CloseCircleOutlined } from '@ant-design/icons';
 import { Trans, useTranslation } from "react-i18next";
 
 import { NodeDefaultView } from ".";
@@ -150,25 +150,11 @@ export default {
       enum: [
         {
           value: true,
-          label: (
-            <Tooltip
-              title={i18n.t('Continue when result is "Yes"')}
-              placement="bottom"
-            >
-              {i18n.t('Reject on false')} <QuestionCircleOutlined style={{ color: '#999' }} />
-            </Tooltip>
-          )
+          label: i18n.t('Continue when "Yes"')
         },
         {
           value: false,
-          label: (
-            <Tooltip
-              title={i18n.t('Make 2 branches for "Yes" and "No"')}
-              placement="bottom"
-            >
-              {i18n.t('Branch results')} <QuestionCircleOutlined style={{ color: '#999' }} />
-            </Tooltip>
-          )
+          label: i18n.t('Branch results')
         }
       ],
     },

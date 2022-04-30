@@ -55,6 +55,7 @@ const collection = {
         ],
         'x-component': 'Radio.Group',
         'x-decorator': 'FormItem',
+        default: false
       } as ISchema
     }
   ],
