@@ -152,6 +152,10 @@ export const useGridContext = () => {
   return useContext(GridContext);
 };
 
+export const useGridRowContext = () => {
+  return useContext(GridRowContext);
+}
+
 export const Grid: any = observer((props: any) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
