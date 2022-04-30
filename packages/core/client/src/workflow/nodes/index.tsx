@@ -146,7 +146,8 @@ export function RemoveButton() {
   );
 }
 
-export function NodeDefaultView({ data, children }) {
+export function NodeDefaultView(props) {
+  const { data, children } = props;
   const compile = useCompile();
   const instruction = instructions.get(data.type);
 
