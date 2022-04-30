@@ -280,5 +280,8 @@ export default {
   "Add card": "Add card",
   "edit title": "Edit Title",
   "Turn the page": "Turn the page",
-  "Others": "Others"
+  "Others": "Others",
+
+  'Confirm': 'Confirm',
+  'Form value changed tip': 'Are you sure to exit that Data unsaved',
 }

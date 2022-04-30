@@ -395,4 +395,7 @@ export default {
   'Local storage': '本地存储',
   'Aliyun OSS': '阿里云 OSS',
   'Amazon S3': '亚马逊 S3',
+
+  'Confirm': '确认',
+  'Form value changed tip': '数据更新未保存，确定要退出吗?',
 }
