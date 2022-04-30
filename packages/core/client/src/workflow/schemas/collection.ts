@@ -15,7 +15,7 @@ export const collection = {
 
 export const values = {
   type: 'object',
-  title: '{{t("Form values")}}',
+  title: '{{t("Fields values")}}',
   name: 'config.params.values',
   'x-decorator': 'FormItem',
   'x-decorator-props': {
@@ -24,7 +24,8 @@ export const values = {
       flex-direction: column;
     `
   },
-  'x-component': 'CollectionFieldset'
+  'x-component': 'CollectionFieldset',
+  description: '{{t("Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.")}}',
 };
 
 export const filter = {

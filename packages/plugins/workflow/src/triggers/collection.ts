@@ -37,7 +37,7 @@ function bindHandler(this: WorkflowModel, callback: Function) {
 }
 
 export default {
-  name: 'model',
+  name: 'collection',
   on(this: WorkflowModel, callback: Function) {
     const { database } = <typeof WorkflowModel>this.constructor;
     const { collection, mode } = this.config;
@@ -47,7 +47,9 @@ export default {
     }
     // TODO: duplication when mode change should be considered
     for (let [key, event] of MODE_BITMAP_EVENTS.entries()) {
-      if (mode & key) {
+      if (mode & key
+        && !Collection.model.options.hooks[event]?.find(item => item.name && item.name === this.getHookId())
+      ) {
         Collection.model.addHook(event, this.getHookId(), bindHandler.call(this, callback));
       }
     }

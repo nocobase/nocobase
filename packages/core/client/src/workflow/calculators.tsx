@@ -10,6 +10,7 @@ import { useFlowContext } from "./WorkflowCanvas";
 import { triggers } from "./triggers";
 import { SchemaComponent, useCollectionManager, useCompile } from "..";
 import { useTranslation } from "react-i18next";
+import { t } from "i18next";
 
 function NullRender() {
   return null;
@@ -107,10 +108,11 @@ const ConstantTypes = {
     title: '{{t("Boolean")}}',
     value: 'boolean',
     component({ onChange, type, options, value }) {
+      const { t } = useTranslation();
       return (
         <Select value={value} onChange={v => onChange({ value: v, type, options })}>
-          <Select.Option value={true}>真</Select.Option>
-          <Select.Option value={false}>假</Select.Option>
+          <Select.Option value={true}>{t('True')}</Select.Option>
+          <Select.Option value={false}>{t('False')}</Select.Option>
         </Select>
       );
     },
@@ -260,7 +262,7 @@ export function Operand({
 
   const { component, appendTypeValue } = Types[type] || {};
   const VariableComponent = typeof component === 'function' ? component(operand) : NullRender;
-
+  console.log(Types);
   return (
     <div className={css`
       display: flex;
@@ -283,7 +285,7 @@ export function Operand({
           return {
             label: compile(item.title),
             value: item.value,
-            children: options,
+            children: compile(options),
             disabled: options && !options.length,
             isLeaf: !options
           };
@@ -305,7 +307,7 @@ export function Operand({
 }
 
 export function Calculation({ calculator, operands = [], onChange }) {
-  const { t } = useTranslation();
+  const compile = useCompile();
   return (
     <VariableTypesContext.Provider value={VariableTypes}>
       <div className={css`
@@ -324,9 +326,9 @@ export function Calculation({ calculator, operands = [], onChange }) {
             <>
               <Select value={calculator} onChange={v => onChange({ operands, calculator: v })}>
                 {calculators.map(group => (
-                  <Select.OptGroup key={group.value} label={t(group.title)}>
+                  <Select.OptGroup key={group.value} label={compile(group.title)}>
                     {group.children.map(item => (
-                      <Select.Option key={item.value} value={t(item.value)}>{item.name}</Select.Option>
+                      <Select.Option key={item.value} value={item.value}>{compile(item.name)}</Select.Option>
                     ))}
                   </Select.OptGroup>
                 ))}
@@ -469,7 +471,7 @@ export const CollectionFieldset = observer(({ value, onChange }: any) => {
             }
           </>
         )
-        : <p>{t('Select collection')}</p>
+        : <p>{t('Please select collection first')}</p>
       }
     </fieldset>
   );

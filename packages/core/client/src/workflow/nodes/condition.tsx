@@ -2,12 +2,13 @@ import React from "react";
 import { css, cx } from "@emotion/css";
 import { Button, Select, Tooltip } from "antd";
 import { CloseCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { Trans } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 
 import { NodeDefaultView } from ".";
 import { Branch, useFlowContext } from "../WorkflowCanvas";
 import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { Calculation } from "../calculators";
+import { i18n } from "../../i18n";
 // import { SchemaComponent } from "../../schema-component";
 
 function CalculationItem({ value, onChange, onRemove }) {
@@ -38,6 +39,7 @@ function CalculationItem({ value, onChange, onRemove }) {
 }
 
 function CalculationGroup({ value, onChange }) {
+  const { t } = useTranslation();
   const { type = 'and', calculations = [] } = value;
 
   function onAddSingle() {
@@ -113,8 +115,8 @@ function CalculationGroup({ value, onChange }) {
           margin-right: 1em;
         }
       `} >
-        <a onClick={onAddSingle}>添加条件</a>
-        <a onClick={onAddGroup}>添加条件组</a>
+        <a onClick={onAddSingle}>{t('Add condition')}</a>
+        <a onClick={onAddGroup}>{t('Add condition group')}</a>
       </div>
     </div>
   );
@@ -129,15 +131,17 @@ function CalculationConfig({ value, onChange }) {
   );
 }
 
+console.log(i18n.t('Collection name'));
+
 export default {
-  title: '条件判断',
+  title: '{{t("Condition")}}',
   type: 'condition',
   group: 'control',
   fieldset: {
     'config.rejectOnFalse': {
       type: 'boolean',
       name: 'config.rejectOnFalse',
-      title: '模式',
+      title: '{{t("Mode")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       'x-component-props': {
@@ -148,10 +152,10 @@ export default {
           value: true,
           label: (
             <Tooltip
-              title="判断为“是”时继续"
+              title={i18n.t('Continue when result is "Yes"')}
               placement="bottom"
             >
-              通行模式 <QuestionCircleOutlined style={{ color: '#999' }} />
+              {i18n.t('Reject on false')} <QuestionCircleOutlined style={{ color: '#999' }} />
             </Tooltip>
           )
         },
@@ -159,10 +163,10 @@ export default {
           value: false,
           label: (
             <Tooltip
-              title="判断结果分为“是”和“否”两个分支，分别继续"
+              title={i18n.t('Make 2 branches for "Yes" and "No"')}
               placement="bottom"
             >
-              分支模式 <QuestionCircleOutlined style={{ color: '#999' }} />
+              {i18n.t('Branch results')} <QuestionCircleOutlined style={{ color: '#999' }} />
             </Tooltip>
           )
         }
@@ -171,7 +175,7 @@ export default {
     'config.calculation': {
       type: 'string',
       name: 'config.calculation',
-      title: '条件配置',
+      title: '{{t("Conditions")}}',
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',
     }
@@ -180,8 +184,8 @@ export default {
 
   },
   options: [
-    { label: '通行模式', key: 'rejectOnFalse', value: { rejectOnFalse: true } },
-    { label: '分支模式', key: 'branch', value: { rejectOnFalse: false } }
+    { label: i18n.t('Reject on false'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
+    { label: i18n.t('Branch results'), key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
     const { id, config: { rejectOnFalse } } = data;
@@ -210,7 +214,7 @@ export default {
                 height: 2em;
                 overflow: visible;
 
-                :before,:after{
+                > span{
                   position: absolute;
                   top: calc(1.5em - 1px);
                   line-height: 1em;
@@ -218,18 +222,11 @@ export default {
                   background-color: #f0f2f5;
                   padding: 1px;
                 }
-
-                :before{
-                  content: "否";
-                  right: 4em;
-                }
-
-                :after{
-                  content: "是";
-                  left: 4em;
-                }
               `}
-            />
+            >
+              <span className={css`right: 4em;`}>{i18n.t('No')}</span>
+              <span className={css`left: 4em;`}>{i18n.t('Yes')}</span>
+            </div>
           </div>
         )}
       </NodeDefaultView>

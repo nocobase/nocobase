@@ -225,7 +225,7 @@ export const workflowSchema: ISchema = {
                     },
                     executions: {
                       type: 'void',
-                      title: '{{t("Executions")}}',
+                      title: '{{t("Execution History")}}',
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         type: 'primary',
@@ -233,7 +233,7 @@ export const workflowSchema: ISchema = {
                       properties: {
                         drawer: {
                           type: 'void',
-                          title: '{{t("Executions")}}',
+                          title: '{{t("Execution History")}}',
                           'x-component': 'Action.Drawer',
                           properties: executionSchema
                         }

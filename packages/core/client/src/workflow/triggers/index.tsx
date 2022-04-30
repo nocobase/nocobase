@@ -4,8 +4,10 @@ import { cx } from "@emotion/css";
 import { Registry } from "@nocobase/utils";
 
 import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRecord, useRequest, useResourceActionContext } from '../../';
-import model from './model';
-import { nodeCardClass } from "../style";
+import collection from './collection';
+import { nodeCardClass, nodeMetaClass } from "../style";
+import { useTranslation } from "react-i18next";
+import { Tag } from "antd";
 
 
 function useUpdateConfigAction() {
@@ -42,9 +44,10 @@ export interface Trigger {
 
 export const triggers = new Registry<Trigger>();
 
-triggers.register(model.type, model);
+triggers.register(collection.type, collection);
 
 export const TriggerConfig = () => {
+  const { t } = useTranslation();
   const compile = useCompile();
   const { data } = useResourceActionContext();
   if (!data) {
@@ -54,17 +57,20 @@ export const TriggerConfig = () => {
   const { title, fieldset, scope } = triggers.get(type);
   return (
     <div className={cx(nodeCardClass)}>
+      <div className={cx(nodeMetaClass)}>
+        <Tag color="gold">{t('Trigger')}</Tag>
+      </div>
       <h4>{compile(title)}</h4>
       <SchemaComponent
         schema={{
           type: 'void',
-          title: '{{t("Trigger configuration")}}',
+          title: '{{t("Configure")}}',
           'x-component': 'Action.Link',
           name: 'drawer',
           properties: {
             drawer: {
               type: 'void',
-              title: '{{t("Trigger configuration")}}',
+              title: '{{t("Configure")}}',
               'x-component': 'Action.Drawer',
               'x-decorator': 'Form',
               'x-decorator-props': {

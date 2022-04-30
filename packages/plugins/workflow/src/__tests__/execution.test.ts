@@ -22,7 +22,7 @@ describe('execution', () => {
     workflow = await WorkflowModel.create({
       title: 'test workflow',
       enabled: true,
-      type: 'model',
+      type: 'collection',
       config: {
         mode: 1,
         collection: 'posts'
