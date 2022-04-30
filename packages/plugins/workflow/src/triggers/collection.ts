@@ -47,10 +47,12 @@ export default {
     }
     // TODO: duplication when mode change should be considered
     for (let [key, event] of MODE_BITMAP_EVENTS.entries()) {
-      if (mode & key
-        && !Collection.model.options.hooks[event]?.find(item => item.name && item.name === this.getHookId())
-      ) {
-        Collection.model.addHook(event, this.getHookId(), bindHandler.call(this, callback));
+      if (mode & key) {
+        if (!Collection.model.options.hooks[event]?.find(item => item.name && item.name === this.getHookId())) {
+          Collection.model.addHook(event, this.getHookId(), bindHandler.call(this, callback));
+        }
+      } else {
+        Collection.model.removeHook(event, this.getHookId());
       }
     }
   },
