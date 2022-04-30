@@ -223,35 +223,43 @@ export const MenuDesigner = () => {
       });
     });
   };
+  const schema = {
+    type: 'object',
+    title: t('Edit menu item'),
+    properties: {
+      title: {
+        title: t('Menu item title'),
+        required: true,
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        'x-component-props': {},
+      },
+      icon: {
+        title: t('Menu item icon'),
+        'x-component': 'IconPicker',
+        'x-decorator': 'FormItem',
+      },
+    },
+  };
+  const initialValues = {
+    title: field.title,
+    icon: field.componentProps.icon,
+  };
+  if (fieldSchema['x-component'] === 'Menu.URL') {
+    schema.properties['href'] = {
+      title: t('Link'),
+      'x-component': 'Input',
+      'x-decorator': 'FormItem',
+    };
+    initialValues['href'] = field.componentProps.href;
+  }
   return (
     <GeneralSchemaDesigner>
       <SchemaSettings.ModalItem
         title={t('Edit')}
-        schema={
-          {
-            type: 'object',
-            title: t('Edit menu item'),
-            properties: {
-              title: {
-                title: t('Menu item title'),
-                required: true,
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                'x-component-props': {},
-              },
-              icon: {
-                title: t('Menu item icon'),
-                'x-component': 'IconPicker',
-                'x-decorator': 'FormItem',
-              },
-            },
-          } as ISchema
-        }
-        initialValues={{
-          title: field.title,
-          icon: field.componentProps.icon,
-        }}
-        onSubmit={({ title, icon }) => {
+        schema={schema as ISchema}
+        initialValues={initialValues}
+        onSubmit={({ title, icon, href }) => {
           const schema = {
             ['x-uid']: fieldSchema['x-uid'],
           };
@@ -262,9 +270,11 @@ export const MenuDesigner = () => {
             refresh();
           }
           field.componentProps.icon = icon;
-          schema['x-component-props'] = { icon };
+          field.componentProps.href = href;
+          schema['x-component-props'] = { icon, href };
           fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
           fieldSchema['x-component-props']['icon'] = icon;
+          fieldSchema['x-component-props']['href'] = href;
           dn.emit('patch', {
             schema,
           });
