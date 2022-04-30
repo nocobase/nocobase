@@ -22,6 +22,21 @@ export default defineCollection({
       },
     },
     {
+      type: 'string',
+      name: 'status',
+      interface: 'radioGroup',
+      defaultValue: 'pending',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Application status")}}',
+        'x-component': 'Radio.Group',
+        enum: [
+          { label: '创建中', value: 'pending' },
+          { label: '运行中', value: 'running' },
+        ],
+      },
+    },
+    {
       type: 'json',
       name: 'options',
     },
