@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-users",
-  "version": "0.7.0-alpha.26",
+  "version": "0.7.0-alpha.27",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -18,7 +18,7 @@
     "jsonwebtoken": "^8.5.1"
   },
   "devDependencies": {
-    "@nocobase/test": "0.7.0-alpha.26",
+    "@nocobase/test": "0.7.0-alpha.27",
     "@types/jsonwebtoken": "^8.5.8"
   },
   "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
