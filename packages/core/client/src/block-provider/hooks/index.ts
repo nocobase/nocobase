@@ -1,4 +1,4 @@
-import { useFieldSchema, useForm } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -59,6 +59,7 @@ export const useCreateActionProps = () => {
   const history = useHistory();
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
+  const actionField = useField();
   const { fields, getField } = useCollection();
   const compile = useCompile();
   return {
@@ -100,12 +101,15 @@ export const useCreateActionProps = () => {
           values[key] = form.values[key];
         }
       }
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
       await resource.create({
         values: {
           ...values,
           ...overwriteValues,
         },
       });
+      actionField.data.loading = false;
       __parent?.service?.refresh?.();
       setVisible?.(false);
       const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
@@ -138,6 +142,7 @@ export const useUpdateActionProps = () => {
   const history = useHistory();
   const { fields, getField } = useCollection();
   const compile = useCompile();
+  const actionField = useField();
   return {
     async onClick() {
       const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
@@ -154,7 +159,7 @@ export const useUpdateActionProps = () => {
             values[key] = form.values[key];
             continue;
           }
-          if (!field.added.has(key)) {
+          if (field.added && !field.added.has(key)) {
             continue;
           }
           const items = form.values[key];
@@ -184,6 +189,8 @@ export const useUpdateActionProps = () => {
           values[key] = form.values[key];
         }
       }
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
       await resource.update({
         filterByTk,
         values: {
@@ -191,6 +198,7 @@ export const useUpdateActionProps = () => {
           ...overwriteValues,
         },
       });
+      actionField.data.loading = false;
       __parent?.service?.refresh?.();
       if (!(resource instanceof TableFieldResource)) {
         __parent?.__parent?.service?.refresh?.();

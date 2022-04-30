@@ -81,13 +81,14 @@ export const Action: ComposedAction = observer((props: any) => {
   const { onClick } = useProps(props);
   const [visible, setVisible] = useState(false);
   const Designer = useDesigner();
-  const field = useField();
+  const field = useField<any>();
   const { run } = useAction();
   const fieldSchema = useFieldSchema();
   const designerProps = fieldSchema['x-designer-props'];
   const renderButton = () => (
     <SortableItem
       {...others}
+      loading={field?.data?.loading}
       icon={<Icon type={icon} />}
       onClick={(e: React.MouseEvent) => {
         e.preventDefault();
