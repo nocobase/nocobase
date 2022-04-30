@@ -1,6 +1,6 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import EventEmitter from 'events';
-import http, { IncomingMessage } from 'http';
+import http, { IncomingMessage, ServerResponse } from 'http';
 import Application, { ApplicationOptions } from './application';
 
 type AppSelector = (req: IncomingMessage) => Application | string | undefined | null;
@@ -62,11 +62,24 @@ export class AppManager extends EventEmitter {
   }
 
   callback() {
-    return async (req, res) => {
-      let handleApp = this.appSelector(req) || this.app;
+    return async (req: IncomingMessage, res: ServerResponse) => {
+      let handleApp: any = this.appSelector(req) || this.app;
 
       if (typeof handleApp === 'string') {
-        handleApp = (await this.getApplication(handleApp)) || this.app;
+        handleApp = await this.getApplication(handleApp);
+        if (!handleApp) {
+          res.statusCode = 404;
+          return res.end(
+            JSON.stringify({
+              redirectTo: process.env.APP_NOT_FOUND_REDIRECT_TO,
+              errors: [
+                {
+                  message: 'Not Found',
+                },
+              ],
+            }),
+          );
+        }
       }
 
       handleApp.callback()(req, res);

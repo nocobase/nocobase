@@ -1,11 +1,17 @@
-import { Plugin } from '@nocobase/server';
+import { AppManager, InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
-import { AppManager } from '@nocobase/server';
 
 export class PluginMultiAppManager extends Plugin {
   getName(): string {
     return this.getPackageName(__dirname);
+  }
+
+  async install(options?: InstallOptions) {
+    const repo = this.db.getRepository<any>('collections');
+    if (repo) {
+      await repo.db2cm('applications');
+    }
   }
 
   async load() {
