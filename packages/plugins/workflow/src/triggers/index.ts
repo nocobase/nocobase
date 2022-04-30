@@ -1,6 +1,6 @@
 import { Registry } from '@nocobase/utils';
 import WorkflowModel from '../models/Workflow';
-import modelTrigger from './model';
+import collectionlTrigger from './collection';
 
 export interface Trigger {
   name: string;
@@ -12,4 +12,4 @@ export const triggers = new Registry<Trigger>();
 
 export default triggers;
 
-triggers.register(modelTrigger.name, modelTrigger);
+triggers.register(collectionlTrigger.name, collectionlTrigger);

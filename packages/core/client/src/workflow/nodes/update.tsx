@@ -14,7 +14,10 @@ export default {
       title: '',
       'x-decorator': 'FormItem',
       properties: {
-        filter,
+        filter: {
+          ...filter,
+          title: '{{t("Only update records matching conditions")}}',
+        },
         values
       }
     }

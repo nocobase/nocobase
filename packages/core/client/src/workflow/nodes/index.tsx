@@ -6,7 +6,7 @@ import { Button, Modal, Tag } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent, useActionContext, useAPIClient, useCollection, useCompile, useRequest, useResourceActionContext } from '../..';
-import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeTitleClass } from '../style';
+import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { AddButton, useFlowContext } from '../WorkflowCanvas';
 
 import calculation from './calculation';
@@ -156,8 +156,10 @@ export function NodeDefaultView(props) {
       <div className={cx(nodeClass, `workflow-node-type-${data.type}`)}>
         <div className={cx(nodeCardClass)}>
           <div className={cx(nodeHeaderClass)}>
-            <h4 className={cx(nodeTitleClass)}>
+            <div className={cx(nodeMetaClass)}>
               <Tag>{compile(instruction.title)}</Tag>
+            </div>
+            <h4 className={cx(nodeTitleClass)}>
               <strong>{data.title}</strong>
               <span className="workflow-node-id">#{data.id}</span>
             </h4>
@@ -172,7 +174,7 @@ export function NodeDefaultView(props) {
                 view: instruction.view,
                 config: {
                   type: 'void',
-                  title: '{{t("Node configuration")}}',
+                  title: '{{t("Configure")}}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
                     type: 'primary',
@@ -180,7 +182,7 @@ export function NodeDefaultView(props) {
                   properties: {
                     drawer: {
                       type: 'void',
-                      title: '{{t("Node configuration")}}',
+                      title: '{{t("Configure")}}',
                       'x-component': 'Action.Drawer',
                       'x-decorator': 'Form',
                       'x-decorator-props': {

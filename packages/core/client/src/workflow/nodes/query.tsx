@@ -16,7 +16,7 @@ export default {
     'config.collection': collection,
     'config.multiple': {
       type: 'boolean',
-      title: '多条数据',
+      title: '{{t("Multiple records")}}',
       name: 'config.multiple',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',

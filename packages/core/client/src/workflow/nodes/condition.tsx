@@ -152,10 +152,10 @@ export default {
           value: true,
           label: (
             <Tooltip
-              title={i18n.t('Collection name')}
+              title={i18n.t('Continue when result is "Yes"')}
               placement="bottom"
             >
-              <Trans i18nKey="Reject on false">{'Reject on false'} <QuestionCircleOutlined style={{ color: '#999' }} /></Trans>
+              {i18n.t('Reject on false')} <QuestionCircleOutlined style={{ color: '#999' }} />
             </Tooltip>
           )
         },
@@ -163,10 +163,10 @@ export default {
           value: false,
           label: (
             <Tooltip
-              title={i18n.t('2 branches for true / false')}
+              title={i18n.t('Make 2 branches for "Yes" and "No"')}
               placement="bottom"
             >
-              分支模式 <QuestionCircleOutlined style={{ color: '#999' }} />
+              {i18n.t('Branch results')} <QuestionCircleOutlined style={{ color: '#999' }} />
             </Tooltip>
           )
         }
@@ -175,7 +175,7 @@ export default {
     'config.calculation': {
       type: 'string',
       name: 'config.calculation',
-      title: '条件配置',
+      title: '{{t("Conditions")}}',
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',
     }
@@ -184,8 +184,8 @@ export default {
 
   },
   options: [
-    { label: '通行模式', key: 'rejectOnFalse', value: { rejectOnFalse: true } },
-    { label: '分支模式', key: 'branch', value: { rejectOnFalse: false } }
+    { label: i18n.t('Reject on false'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
+    { label: i18n.t('Branch results'), key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
     const { id, config: { rejectOnFalse } } = data;
@@ -214,7 +214,7 @@ export default {
                 height: 2em;
                 overflow: visible;
 
-                :before,:after{
+                > span{
                   position: absolute;
                   top: calc(1.5em - 1px);
                   line-height: 1em;
@@ -222,18 +222,11 @@ export default {
                   background-color: #f0f2f5;
                   padding: 1px;
                 }
-
-                :before{
-                  content: "否";
-                  right: 4em;
-                }
-
-                :after{
-                  content: "是";
-                  left: 4em;
-                }
               `}
-            />
+            >
+              <span className={css`right: 4em;`}>{i18n.t('No')}</span>
+              <span className={css`left: 4em;`}>{i18n.t('Yes')}</span>
+            </div>
           </div>
         )}
       </NodeDefaultView>

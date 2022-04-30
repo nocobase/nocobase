@@ -33,8 +33,8 @@ function useCollectionFieldsDataSource() {
 }
 
 export default {
-  title: '{{t("Model event")}}',
-  type: 'model',
+  title: '{{t("Collection event")}}',
+  type: 'collection',
   fieldset: {
     'config.collection': collection,
     'config.mode': {
@@ -50,13 +50,14 @@ export default {
           { value: 3, label: '{{t("After record added or updated")}}' },
           { value: 4, label: '{{t("After record deleted")}}' }
         ]
-      }
+      },
+      required: true
     },
     'config.changed': {
       type: 'array',
       name: 'changed',
       title: '{{t("Changed fields")}}',
-      description: '{{t("Select the fields which changed will trigger the event only")}}',
+      description: '{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
@@ -69,7 +70,7 @@ export default {
     'config.condition': {
       ...filter,
       name: 'config.condition',
-      title: '{{t("Match condition")}}',
+      title: '{{t("Only triggers when match conditions")}}'
     }
   },
   scope: {

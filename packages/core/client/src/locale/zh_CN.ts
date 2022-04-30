@@ -318,6 +318,7 @@ export default {
 
   'Skip required validation': '跳过必填校验',
   'Form values': '表单值',
+  'Fields values': '字段值',
   'When submitting the following fields, the saved values are': '提交以下字段时，保存的值为',
   'After successful submission': '提交成功后',
   'Then': '然后',
@@ -407,25 +408,24 @@ export default {
 
   // plugins/workflow
   'Workflow': '工作流',
-  'Configure workflow': '流程配置',
-  'Executions': '执行历史',
+  'Execution History': '执行历史',
   'Trigger type': '触发方式',
   'Description': '描述',
   'Status': '状态',
   'Enabled': '启用',
   'Disabled': '禁用',
-  'Trigger configuration': '触发器配置',
   'Load failed': '加载失败',
 
-  'Model event': '数据表事件',
+  'Trigger': '触发器',
+  'Collection event': '数据表事件',
   'Trigger on': '触发时机',
   'After record added': '新增数据后',
   'After record updated': '更新数据后',
   'After record added or updated': '新增或更新数据后',
   'After record deleted': '删除数据后',
   'Changed fields': '发生变动的字段',
-  'Select the fields which changed will trigger the event only': '只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增或删除数据时，任意字段都被认为发生变动。',
-  'Match condition': '满足条件',
+  'Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.': '只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增或删除数据时，任意字段都被认为发生变动。',
+  'Only triggers when match conditions': '满足以下条件才触发',
 
   'End': '结束',
 
@@ -445,7 +445,6 @@ export default {
   'Failed': '失败',
   'Canceled': '已取消',
 
-  'Node configuration': '配置节点',
   'This node contains branches, deleting will also be preformed to them, are you sure?': '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
 
   'Control': '流程控制',
@@ -456,14 +455,28 @@ export default {
   'Calculation': '运算',
   'Configure calculation': '配置运算',
   'Calculation result': '运算结果',
+  'True': '真',
+  'False': '假',
 
   'Condition': '条件判断',
   'Mode': '模式',
-  'Reject on false': '通行模式 <1></1>',
-  'Continue when result is true': '判断为“是”时继续',
-  '2 branches for true / false': '判断结果分为“是”和“否”两个分支，分别继续',
+  'Reject on false': '通行模式',
+  'Branch results': '分支模式',
+  'Continue when result is "Yes"': '判断为“是”时继续',
+  'Make 2 branches for "Yes" and "No"': '判断结果分为“是”和“否”两个分支，分别继续',
+  'Conditions': '条件配置',
+
+  'Parallel': '并行',
+  'All succeeded': '全部成功',
+  'Any succeeded': '任意成功',
+  'Continue after all branches succeeded': '全部分支都成功后才能继续',
+  'Continue after any branch succeeded': '任意分支成功后就继续',
 
   'Create record': '新增数据',
   'Update record': '更新数据',
   'Query record': '查询数据',
+  'Multiple records': '多条数据',
+  'Please select collection first': '请先选择数据表',
+  'Only update records matching conditions': '只更新满足条件的数据',
+  'Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.': '未被赋值的字段将被设置为默认值，没有默认值的设置为空值。'
 }
