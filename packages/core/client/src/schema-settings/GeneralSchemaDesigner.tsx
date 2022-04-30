@@ -5,7 +5,8 @@ import { Space } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { DragHandler, useCompile, useDesignable, useGridContext } from '../schema-component';
+import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
+import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettings } from './SchemaSettings';
 
 const titleCss = css`
@@ -45,6 +46,7 @@ export const GeneralSchemaDesigner = (props: any) => {
   if (!designable) {
     return null;
   }
+  const rowCtx = useGridRowContext();
   const ctx = useGridContext();
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
     ? `${template?.name} ${t('(Fields only)')}`
@@ -70,10 +72,12 @@ export const GeneralSchemaDesigner = (props: any) => {
               <DragOutlined />
             </DragHandler>
           )}
-          {!disableInitializer && ctx?.renderSchemaInitializer?.({
-            insertPosition: 'afterEnd',
-            component: <PlusOutlined style={{ cursor: 'pointer', fontSize: 12 }} />,
-          })}
+          {!disableInitializer &&
+            ctx?.renderSchemaInitializer?.({
+              insertPosition: 'afterEnd',
+              wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
+              component: <PlusOutlined style={{ cursor: 'pointer', fontSize: 12 }} />,
+            })}
           <SchemaSettings title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />} {...schemaSettingsProps}>
             {props.children}
           </SchemaSettings>
