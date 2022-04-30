@@ -9,7 +9,7 @@ export const BlockInitializers = {
     {
       key: 'dataBlocks',
       type: 'itemGroup',
-      title: 'Data blocks',
+      title: '{{t("Data blocks")}}',
       children: [
         {
           key: 'table',

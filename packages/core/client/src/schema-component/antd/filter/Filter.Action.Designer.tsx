@@ -31,7 +31,7 @@ export const FilterActionDesigner = (props) => {
   const { t } = useTranslation();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   return (
-    <GeneralSchemaDesigner {...props}>
+    <GeneralSchemaDesigner {...props} disableInitializer>
       <SchemaSettings.ItemGroup title={t('Filterable fields')}>
         {fields.map((field) => {
           const checked = !nonfilterable.includes(field.name);

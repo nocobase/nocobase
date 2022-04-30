@@ -1,11 +1,11 @@
-import { DragOutlined, MenuOutlined } from '@ant-design/icons';
+import { DragOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { DragHandler, useCompile, useDesignable } from '../schema-component';
+import { DragHandler, useCompile, useDesignable, useGridContext } from '../schema-component';
 import { SchemaSettings } from './SchemaSettings';
 
 const titleCss = css`
@@ -31,7 +31,7 @@ const titleCss = css`
 `;
 
 export const GeneralSchemaDesigner = (props: any) => {
-  const { title, template, draggable = true } = props;
+  const { disableInitializer, title, template, draggable = true } = props;
   const { dn, designable } = useDesignable();
   const field = useField();
   const { t } = useTranslation();
@@ -45,14 +45,21 @@ export const GeneralSchemaDesigner = (props: any) => {
   if (!designable) {
     return null;
   }
-  const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)  ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+  const ctx = useGridContext();
+  const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+    ? `${template?.name} ${t('(Fields only)')}`
+    : template?.name;
   return (
     <div className={'general-schema-designer'}>
       {title && (
         <div className={classNames('general-schema-designer-title', titleCss)}>
           <Space size={2}>
             <span className={'title-tag'}>{compile(title)}</span>
-            {template && <span className={'title-tag'}>{t('Reference template')}: {templateName || t('Untitled')}</span>}
+            {template && (
+              <span className={'title-tag'}>
+                {t('Reference template')}: {templateName || t('Untitled')}
+              </span>
+            )}
           </Space>
         </div>
       )}
@@ -63,6 +70,10 @@ export const GeneralSchemaDesigner = (props: any) => {
               <DragOutlined />
             </DragHandler>
           )}
+          {!disableInitializer && ctx?.renderSchemaInitializer?.({
+            insertPosition: 'afterEnd',
+            component: <PlusOutlined style={{ cursor: 'pointer', fontSize: 12 }} />,
+          })}
           <SchemaSettings title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />} {...schemaSettingsProps}>
             {props.children}
           </SchemaSettings>

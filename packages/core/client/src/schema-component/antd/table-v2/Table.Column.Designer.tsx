@@ -32,7 +32,7 @@ export const TableColumnDesigner = (props) => {
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
   const options = useLabelFields(collectionField?.target);
   return (
-    <GeneralSchemaDesigner>
+    <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
         title={t('Custom column title')}
         schema={
