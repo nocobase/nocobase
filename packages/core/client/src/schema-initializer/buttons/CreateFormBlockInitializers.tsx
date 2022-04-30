@@ -5,11 +5,14 @@ import { gridRowColWrap } from '../utils';
 
 export const CreateFormBlockInitializers = (props: any) => {
   const { t } = useTranslation();
+  const { insertPosition, component } = props;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
-      title={t('Add block')}
+      title={component ? null : t('Add block')}
       icon={'PlusOutlined'}
+      insertPosition={insertPosition}
+      component={component}
       items={[
         {
           type: 'itemGroup',
