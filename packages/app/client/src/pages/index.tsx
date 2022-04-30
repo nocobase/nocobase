@@ -45,6 +45,10 @@ import apiClient from './apiClient';
 apiClient.axios.interceptors.response.use(
   (response) => response,
   (error) => {
+    const redirectTo = error?.response?.data?.redirectTo;
+    if (redirectTo) {
+      return window.location.href = redirectTo;
+    }
     notification.error({
       message: error?.response?.data?.errors?.map?.((error: any) => {
         return <div>{error.message}</div>;

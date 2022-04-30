@@ -30,14 +30,16 @@ export class ApplicationModel extends Model {
     const appName = this.get('name') as string;
     const appOptions = (this.get('options') as any) || {};
 
+    const AppModel = this.constructor as typeof ApplicationModel;
+
     const app = mainApp.appManager.createApplication(appName, {
-      ...ApplicationModel.initOptions(appName, mainApp),
+      ...AppModel.initOptions(appName, mainApp),
       ...appOptions,
     });
 
     // create database before installation if it not exists
     app.on('beforeInstall', async function createDatabase() {
-      const { host, port, username, password, database, dialect } = ApplicationModel.getDatabaseConfig(app);
+      const { host, port, username, password, database, dialect } = AppModel.getDatabaseConfig(app);
 
       if (dialect === 'mysql') {
         const mysql = require('mysql2/promise');
@@ -66,11 +68,24 @@ export class ApplicationModel extends Model {
       }
     });
 
-    await ApplicationModel.handleAppStart(app, options);
+    await AppModel.handleAppStart(app, options);
+
+    await AppModel.update(
+      {
+        status: 'running',
+      },
+      {
+        transaction: options.transaction,
+        where: {
+          [AppModel.primaryKeyAttribute]: this.get(AppModel.primaryKeyAttribute),
+        },
+        hooks: false,
+      },
+    );
   }
 
   static initOptions(appName: string, mainApp: Application) {
-    const rawDatabaseOptions = ApplicationModel.getDatabaseConfig(mainApp);
+    const rawDatabaseOptions = this.getDatabaseConfig(mainApp);
 
     if (rawDatabaseOptions.dialect === 'sqlite') {
       const mainAppStorage = rawDatabaseOptions.storage;
