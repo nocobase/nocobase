@@ -460,13 +460,11 @@ export default {
 
   'Condition': '条件判断',
   'Mode': '模式',
-  'Reject on false': '通行模式',
-  'Branch results': '分支模式',
-  'Continue when result is "Yes"': '判断为“是”时继续',
-  'Make 2 branches for "Yes" and "No"': '判断结果分为“是”和“否”两个分支，分别继续',
+  'Continue when "Yes"': '“是”则继续',
+  'Branch into "Yes" and "No"': '“是”和“否”分别继续',
   'Conditions': '条件配置',
 
-  'Parallel': '并行',
+  'Parallel branch': '分支',
   'All succeeded': '全部成功',
   'Any succeeded': '任意成功',
   'Continue after all branches succeeded': '全部分支都成功后才能继续',

@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 // import { SchemaComponent } from "../../schema-component";
 
 export default {
-  title: '{{t("Parallel")}}',
+  title: '{{t("Parallel branch")}}',
   type: 'parallel',
   group: 'control',
   fieldset: {
@@ -39,7 +39,7 @@ export default {
           value: 'any',
           label: (
             <Tooltip
-              title="Continue after any branch succeeded"
+              title={i18n.t('Continue after any branch succeeded')}
               placement="bottom"
             >
               {i18n.t('Any succeeded')} <QuestionCircleOutlined style={{ color: '#999' }} />

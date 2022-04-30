@@ -16,7 +16,8 @@ export default {
       interface: 'boolean',
       type: 'boolean',
       name: 'enabled',
-      title: '启用'
+      title: '启用',
+      defaultValue: false
     },
     {
       interface: 'textarea',
