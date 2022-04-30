@@ -1,4 +1,4 @@
-import { FormOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
@@ -103,6 +103,20 @@ const InsertFormItem = (props) => {
     }
   };
 
+  const addTextHandler = () => {
+    const schema = {
+      type: 'void',
+      'x-editable': false,
+      'x-decorator': 'FormItem',
+      'x-designer': 'Markdown.Void.Designer',
+      'x-component': 'Markdown.Void',
+      'x-component-props': {
+        content: t('This is a demo text, **supports Markdown syntax**.'),
+      },
+    };
+    dn.insertAfterEnd(gridRowColWrap(schema));
+  };
+
   const findSchema = (schema: Schema, key: string, action: string) => {
     return schema.reduceProperties((buf, s) => {
       if (s[key] === action) {
@@ -124,39 +138,43 @@ const InsertFormItem = (props) => {
       }}
       overlay={
         <Menu>
-          {fields
-            ?.filter((field) => field?.interface)
-            ?.map((field) => {
-              const title = compile(field.uiSchema?.['title']) || fieldSchema?.name;
-              const schema = findSchema(
-                dn.current.parent,
-                'x-collection-field',
-                `${field.collectionName}.${field.name}`,
-              );
-              return (
-                <Menu.Item
-                  key={field.key}
-                  eventKey={field.key as any}
-                  {...props}
-                  onClick={(info) => {
-                    info.domEvent.preventDefault();
-                    info.domEvent.stopPropagation();
-                    props?.onClick?.(info);
-                  }}
-                  style={{ minWidth: 120 }}
-                >
-                  <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
-                    {title}
-                    <Switch
-                      size={'small'}
-                      checked={!!schema}
-                      onChange={(checked) => collectionFieldToggleHandler(checked, field)}
-                      style={{ marginLeft: 32 }}
-                    />
-                  </div>
-                </Menu.Item>
-              );
-            })}
+          <Menu.ItemGroup title={t('Display fields')}>
+            {fields
+              ?.filter((field) => field?.interface)
+              ?.map((field) => {
+                const title = compile(field.uiSchema?.['title']) || fieldSchema?.name;
+                const schema = findSchema(
+                  dn.current.parent,
+                  'x-collection-field',
+                  `${field.collectionName}.${field.name}`,
+                );
+                return (
+                  <Menu.Item
+                    key={field.key}
+                    eventKey={field.key as any}
+                    {...props}
+                    onClick={(info) => {
+                      info.domEvent.preventDefault();
+                      info.domEvent.stopPropagation();
+                      props?.onClick?.(info);
+                    }}
+                    style={{ minWidth: 120 }}
+                  >
+                    <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+                      {title}
+                      <Switch
+                        size={'small'}
+                        checked={!!schema}
+                        onChange={(checked) => collectionFieldToggleHandler(checked, field)}
+                        style={{ marginLeft: 32 }}
+                      />
+                    </div>
+                  </Menu.Item>
+                );
+              })}
+          </Menu.ItemGroup>
+          <Menu.Divider />
+          <Menu.Item onClick={addTextHandler}>{t('Add text')}</Menu.Item>
         </Menu>
       }
       overlayClassName={classNames(
@@ -198,7 +216,7 @@ FormItem.Designer = () => {
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
   const designerActions = useMemo(() => {
-    return [<InsertFormItem title={<FormOutlined />}></InsertFormItem>];
+    return [<InsertFormItem title={<PlusOutlined />}></InsertFormItem>];
   }, []);
   return (
     <GeneralDesignerContext.Provider value={{ designerActions }}>
