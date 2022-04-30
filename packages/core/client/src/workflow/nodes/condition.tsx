@@ -2,12 +2,13 @@ import React from "react";
 import { css, cx } from "@emotion/css";
 import { Button, Select, Tooltip } from "antd";
 import { CloseCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { Trans } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 
 import { NodeDefaultView } from ".";
 import { Branch, useFlowContext } from "../WorkflowCanvas";
 import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { Calculation } from "../calculators";
+import { i18n } from "../../i18n";
 // import { SchemaComponent } from "../../schema-component";
 
 function CalculationItem({ value, onChange, onRemove }) {
@@ -38,6 +39,7 @@ function CalculationItem({ value, onChange, onRemove }) {
 }
 
 function CalculationGroup({ value, onChange }) {
+  const { t } = useTranslation();
   const { type = 'and', calculations = [] } = value;
 
   function onAddSingle() {
@@ -113,8 +115,8 @@ function CalculationGroup({ value, onChange }) {
           margin-right: 1em;
         }
       `} >
-        <a onClick={onAddSingle}>添加条件</a>
-        <a onClick={onAddGroup}>添加条件组</a>
+        <a onClick={onAddSingle}>{t('Add condition')}</a>
+        <a onClick={onAddGroup}>{t('Add condition group')}</a>
       </div>
     </div>
   );
@@ -129,15 +131,17 @@ function CalculationConfig({ value, onChange }) {
   );
 }
 
+console.log(i18n.t('Collection name'));
+
 export default {
-  title: '条件判断',
+  title: '{{t("Condition")}}',
   type: 'condition',
   group: 'control',
   fieldset: {
     'config.rejectOnFalse': {
       type: 'boolean',
       name: 'config.rejectOnFalse',
-      title: '模式',
+      title: '{{t("Mode")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       'x-component-props': {
@@ -148,10 +152,10 @@ export default {
           value: true,
           label: (
             <Tooltip
-              title="判断为“是”时继续"
+              title={i18n.t('Collection name')}
               placement="bottom"
             >
-              通行模式 <QuestionCircleOutlined style={{ color: '#999' }} />
+              <Trans i18nKey="Reject on false">{'Reject on false'} <QuestionCircleOutlined style={{ color: '#999' }} /></Trans>
             </Tooltip>
           )
         },
@@ -159,7 +163,7 @@ export default {
           value: false,
           label: (
             <Tooltip
-              title="判断结果分为“是”和“否”两个分支，分别继续"
+              title={i18n.t('2 branches for true / false')}
               placement="bottom"
             >
               分支模式 <QuestionCircleOutlined style={{ color: '#999' }} />

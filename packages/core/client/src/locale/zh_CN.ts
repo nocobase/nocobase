@@ -457,6 +457,12 @@ export default {
   'Configure calculation': '配置运算',
   'Calculation result': '运算结果',
 
+  'Condition': '条件判断',
+  'Mode': '模式',
+  'Reject on false': '通行模式 <1></1>',
+  'Continue when result is true': '判断为“是”时继续',
+  '2 branches for true / false': '判断结果分为“是”和“否”两个分支，分别继续',
+
   'Create record': '新增数据',
   'Update record': '更新数据',
   'Query record': '查询数据',
