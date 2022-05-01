@@ -57,6 +57,7 @@ const useDragEnd = (props?: any) => {
 };
 
 export const DndContext = observer((props: Props) => {
+  const { t } = useTranslation();
   return (
     <DndKitContext collisionDetection={rectIntersection} {...props} onDragEnd={useDragEnd(props)}>
       <DragOverlay
@@ -65,7 +66,7 @@ export const DndContext = observer((props: Props) => {
           easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
         }}
       >
-        <span style={{ whiteSpace: 'nowrap' }}>拖拽中</span>
+        <span style={{ whiteSpace: 'nowrap' }}>{t('Dragging')}</span>
       </DragOverlay>
       {props.children}
     </DndKitContext>
