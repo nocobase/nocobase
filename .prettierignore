@@ -9,3 +9,4 @@ package.json
 packages/**/lib/**
 packages/**/esm/**
 packages/**/node_modules/**
+packages/core/client/src/locale/*

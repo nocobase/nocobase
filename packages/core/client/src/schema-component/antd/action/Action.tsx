@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { useActionContext } from '../..';
 import { Icon } from '../../../icon';
 import { SortableItem } from '../../common';
-import { useDesigner } from '../../hooks';
+import { useCompile, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
@@ -84,6 +84,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const field = useField<any>();
   const { run } = useAction();
   const fieldSchema = useFieldSchema();
+  const compile = useCompile();
   const designerProps = fieldSchema['x-designer-props'];
   const openMode = fieldSchema?.['x-component-props']?.['openMode'];
   const renderButton = () => (
@@ -111,7 +112,7 @@ export const Action: ComposedAction = observer((props: any) => {
       component={component || Button}
       className={classnames(className, actionDesignerCss)}
     >
-      {field.title}
+      {compile(fieldSchema.title)}
       <Designer {...designerProps} />
     </SortableItem>
   );
