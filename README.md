@@ -44,7 +44,9 @@ Why choose NocoBase
 Architecture
 ----------
 
-![](https://docs.nocobase.com/static/NocoBase.c9542b1f.png)
+![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
+
+[Click here to view the full image](https://www.nocobase.com/images/NocoBaseMindMap.png)
 
 Requirements
 ----------
