@@ -11,6 +11,7 @@ describe('storage:ali-oss', () => {
   let app: MockServer;
   let agent;
   let db: Database;
+  let storage;
 
   beforeEach(async () => {
     app = await getApp();
@@ -18,7 +19,7 @@ describe('storage:ali-oss', () => {
     db = app.db;
 
     const Storage = db.getCollection('storages').model;
-    await Storage.create({
+    storage = await Storage.create({
       ...aliossStorage.defaults(),
       name: `ali-oss_${db.getTablePrefix()}`,
       default: true,
@@ -46,11 +47,10 @@ describe('storage:ali-oss', () => {
         title: 'text',
         extname: '.txt',
         path: 'test/path',
-        // TODO(bug): alioss will not return the size of file
-        // size: 13,
+        size: 13,
         mimetype: 'text/plain',
         meta: {},
-        storage_id: 1,
+        storageId: storage.id,
       };
 
       // 文件上传和解析是否正常
