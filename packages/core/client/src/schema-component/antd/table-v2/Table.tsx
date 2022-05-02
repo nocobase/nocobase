@@ -4,11 +4,13 @@ import { ArrayField } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import ReactDragListView from 'react-drag-listview';
 import { useTranslation } from 'react-i18next';
+import { Resizable } from 'react-resizable';
 import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
+import './index.less';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -30,7 +32,7 @@ const useTableColumns = () => {
         title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
         dataIndex: s.name,
         key: s.name,
-        // width: 300,
+        width: 100,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
           console.log((Date.now() - start) / 1000);
@@ -54,6 +56,44 @@ const useTableColumns = () => {
   });
 };
 
+const ResizableHeaderColumn = (props) => {
+  const { onResize, width, ...restProps } = props;
+  if (!width) {
+    return <th {...restProps} />;
+  }
+
+  return (
+    <Resizable
+      width={width}
+      height={0}
+      handle={
+        <span
+          className="react-resizable-handle"
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        />
+      }
+      onResize={onResize}
+      draggableOpts={{ enableUserSelectHack: false }}
+    >
+      <th
+        {...restProps}
+        className={cls(
+          props.className,
+          css`
+            width: 100px;
+            white-space: nowrap;
+            &:hover .general-schema-designer {
+              display: block;
+            }
+          `,
+        )}
+      />
+    </Resizable>
+  );
+};
+
 export const components = {
   header: {
     wrapper: (props) => {
@@ -63,23 +103,7 @@ export const components = {
         </DndContext>
       );
     },
-    cell: (props) => {
-      return (
-        <th
-          {...props}
-          className={cls(
-            props.className,
-            css`
-              max-width: 300px;
-              white-space: nowrap;
-              &:hover .general-schema-designer {
-                display: block;
-              }
-            `,
-          )}
-        />
-      );
-    },
+    cell: ResizableHeaderColumn,
   },
   body: {
     wrapper: (props) => {
@@ -98,8 +122,9 @@ export const components = {
         className={classNames(
           props.className,
           css`
-            max-width: 300px;
+            width: 100px;
             white-space: nowrap;
+            overflow: hidden;
             .nb-read-pretty-input-number {
               text-align: right;
             }
@@ -141,7 +166,31 @@ const usePaginationProps = (pagination1, pagination2) => {
 
 export const Table: any = observer((props: any) => {
   const field = useField<ArrayField>();
-  const columns = useTableColumns();
+
+  const originalColumns = useTableColumns();
+  const [columns, setColumns] = useState<any>(
+    originalColumns?.map((col, index) => {
+      return {
+        ...col,
+        onHeaderCell: (column) => ({
+          width: column.width,
+          onResize: resizeHandler(index),
+        }),
+      };
+    }),
+  );
+
+  const resizeHandler = useCallback(
+    (index) =>
+      (e, { size }) => {
+        columns[index] = {
+          ...columns[index],
+          width: size.width,
+        };
+        setColumns([...columns]);
+      },
+    [],
+  );
   const { pagination: pagination1, useProps, onChange, ...others1 } = props;
   const { pagination: pagination2, ...others2 } = useProps?.() || {};
   const {
@@ -246,8 +295,6 @@ export const Table: any = observer((props: any) => {
     <div
       className={css`
         .ant-table {
-          overflow-x: auto;
-          overflow-y: hidden;
         }
       `}
     >
@@ -276,6 +323,7 @@ export const Table: any = observer((props: any) => {
           // scroll={{ x: 12 * 300 + 80 }}
           columns={columns}
           dataSource={field?.value?.slice?.()}
+          sticky
         />
       </ReactDragListView>
     </div>
