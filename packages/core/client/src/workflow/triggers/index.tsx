@@ -54,7 +54,7 @@ export const TriggerConfig = () => {
     return null;
   }
   const { type, config } = data.data;
-  const { title, fieldset, scope } = triggers.get(type);
+  const { title, fieldset, scope, components } = triggers.get(type);
   return (
     <div className={cx(nodeCardClass)}>
       <div className={cx(nodeMetaClass)}>
@@ -110,6 +110,7 @@ export const TriggerConfig = () => {
           }
         }}
         scope={scope}
+        components={components}
       />
     </div>
   );
