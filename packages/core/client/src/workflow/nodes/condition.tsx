@@ -170,7 +170,7 @@ export default {
 
   },
   options: [
-    { label: i18n.t('Continue when "Yes'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
+    { label: i18n.t('Continue when "Yes"'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
     { label: i18n.t('Branch into "Yes" and "No"'), key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
