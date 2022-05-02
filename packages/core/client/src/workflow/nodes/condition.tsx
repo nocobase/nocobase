@@ -154,7 +154,7 @@ export default {
         },
         {
           value: false,
-          label: i18n.t('Branch results')
+          label: i18n.t('Branch into "Yes" and "No"')
         }
       ],
     },
