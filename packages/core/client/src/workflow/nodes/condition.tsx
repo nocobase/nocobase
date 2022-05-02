@@ -154,7 +154,7 @@ export default {
         },
         {
           value: false,
-          label: i18n.t('Branch results')
+          label: i18n.t('Branch into "Yes" and "No"')
         }
       ],
     },
@@ -170,8 +170,8 @@ export default {
 
   },
   options: [
-    { label: i18n.t('Reject on false'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
-    { label: i18n.t('Branch results'), key: 'branch', value: { rejectOnFalse: false } }
+    { label: i18n.t('Continue when "Yes"'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
+    { label: i18n.t('Branch into "Yes" and "No"'), key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
     const { id, config: { rejectOnFalse } } = data;
