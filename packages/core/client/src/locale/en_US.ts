@@ -285,4 +285,7 @@ export default {
   // workflows
   'Execution History': 'History',
   'Parallel branch': 'Branch',
+
+  'Confirm': 'Confirm',
+  'Form value changed tip': 'Are you sure to exit that Data unsaved',
 }
