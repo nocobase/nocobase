@@ -49,8 +49,9 @@ NocoBase 是一个极易扩展的开源无代码开发平台。
 
 NocoBase 架构
 ----------
-![](https://docs.nocobase.com/static/NocoBase.c9542b1f.png)
+![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
 
+[点此查看完整图片](https://www.nocobase.com/images/NocoBaseMindMap.png)
 
 环境要求
 ----------

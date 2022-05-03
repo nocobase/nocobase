@@ -1,6 +1,5 @@
 import { css } from "@emotion/css";
 import { useForm } from "@formily/react";
-import { useCollectionManager } from "../../collection-manager";
 import { useCollectionFilterOptions } from "../../collection-manager/action-hooks";
 
 export const collection = {

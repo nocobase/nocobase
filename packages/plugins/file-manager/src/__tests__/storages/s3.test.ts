@@ -11,6 +11,7 @@ describe('storage:s3', () => {
   let app: MockServer;
   let agent;
   let db: Database;
+  let storage;
 
   beforeEach(async () => {
     app = await getApp();
@@ -18,7 +19,7 @@ describe('storage:s3', () => {
     db = app.db;
 
     const Storage = db.getCollection('storages').model;
-    await Storage.create({
+    storage = await Storage.create({
       ...s3Storage.defaults(),
       name: `s3_${db.getTablePrefix()}`,
       default: true,
@@ -49,7 +50,7 @@ describe('storage:s3', () => {
         size: 13,
         mimetype: 'text/plain',
         meta: {},
-        storage_id: 1,
+        storageId: storage.id,
       };
 
       // 文件上传和解析是否正常
