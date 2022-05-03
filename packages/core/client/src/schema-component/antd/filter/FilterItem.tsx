@@ -49,7 +49,7 @@ export const FilterItem = observer((props: any) => {
             },
           })}
         <a>
-          <CloseCircleOutlined onClick={() => remove()} />
+          <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />
         </a>
       </Space>
     </div>
