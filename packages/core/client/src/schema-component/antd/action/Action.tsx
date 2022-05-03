@@ -80,6 +80,7 @@ export const Action: ComposedAction = observer((props: any) => {
   } = props;
   const { onClick } = useProps(props);
   const [visible, setVisible] = useState(false);
+  const [formValueChanged, setFormValueChanged] = useState(false);
   const Designer = useDesigner();
   const field = useField<any>();
   const { run } = useAction();
@@ -117,7 +118,17 @@ export const Action: ComposedAction = observer((props: any) => {
     </SortableItem>
   );
   return (
-    <ActionContext.Provider value={{ button: renderButton(), visible, setVisible, openMode, containerRefKey }}>
+    <ActionContext.Provider
+      value={{
+        button: renderButton(),
+        visible,
+        setVisible,
+        formValueChanged,
+        setFormValueChanged,
+        openMode,
+        containerRefKey,
+      }}
+    >
       {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
       {!popover && renderButton()}
       {!popover && props.children}

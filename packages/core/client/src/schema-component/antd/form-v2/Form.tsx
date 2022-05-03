@@ -1,8 +1,10 @@
 import { FormLayout } from '@formily/antd';
-import { createForm, Field } from '@formily/core';
+import { createForm, Field, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { uid } from '@nocobase/utils';
 import { Spin } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
 import { useProps } from '../../hooks/useProps';
 
@@ -53,13 +55,37 @@ const FormDecorator: React.FC<FormProps> = (props) => {
 };
 
 const WithForm = (props) => {
+  const { form } = props;
   const fieldSchema = useFieldSchema();
+  const { setFormValueChanged } = useActionContext();
+  useEffect(() => {
+    const id = uid();
+    form.addEffects(id, () => {
+      onFormInputChange((form) => {
+        setFormValueChanged(true);
+      });
+    });
+    return () => {
+      form.removeEffects(id);
+    };
+  }, []);
   return fieldSchema['x-decorator'] === 'Form' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
 
 const WithoutForm = (props) => {
   const fieldSchema = useFieldSchema();
-  const form = useMemo(() => createForm(), []);
+  const { setFormValueChanged } = useActionContext();
+  const form = useMemo(
+    () =>
+      createForm({
+        effects() {
+          onFormInputChange((form) => {
+            setFormValueChanged(true);
+          });
+        },
+      }),
+    [],
+  );
   return fieldSchema['x-decorator'] === 'Form' ? (
     <FormDecorator form={form} {...props} />
   ) : (

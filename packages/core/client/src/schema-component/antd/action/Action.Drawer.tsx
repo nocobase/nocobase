@@ -1,15 +1,17 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Drawer } from 'antd';
+import { Drawer, Modal as AntdModal } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { useActionContext } from './hooks';
 import { ComposedActionDrawer } from './types';
 
 export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
-  const { visible, setVisible } = useActionContext();
+  const { t } = useTranslation();
+  const { visible, setVisible, formValueChanged, setFormValueChanged } = useActionContext();
   const schema = useFieldSchema();
   const field = useField();
   const footerSchema = schema.reduceProperties((buf, s) => {
@@ -18,6 +20,21 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
     }
     return buf;
   });
+
+  const closeHandler = () => {
+    if (!formValueChanged) {
+      setVisible(false);
+      return;
+    }
+    AntdModal.confirm({
+      title: t('Confirm'),
+      content: t('Form value changed tip'),
+      async onOk() {
+        setFormValueChanged(false);
+        setVisible(false);
+      },
+    });
+  };
   return (
     <>
       {createPortal(
@@ -32,7 +49,7 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
             {...others}
             destroyOnClose
             visible={visible}
-            onClose={() => setVisible(false)}
+            onClose={closeHandler}
             className={classNames(
               others.className,
               css`
