@@ -27,8 +27,8 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
       return;
     }
     AntdModal.confirm({
-      title: t('Confirm'),
-      content: t('Form value changed tip'),
+      title: t('Unsaved changes'),
+      content: t("Are you sure you don't want to save?"),
       async onOk() {
         setFormValueChanged(false);
         setVisible(false);
