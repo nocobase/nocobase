@@ -8,20 +8,21 @@ export class RoleResourceModel extends Model {
     const { role, resourceName, grantHelper } = options;
     role.revokeResource(resourceName);
 
-    const targetActions = grantHelper.resourceTargetActionMap.get(resourceName) || [];
+    const targetActions = grantHelper.resourceTargetActionMap.get(`${role.name}.${resourceName}`) || [];
 
     for (const targetAction of targetActions) {
       const targetActionResource = (grantHelper.targetActionResourceMap.get(targetAction) || []).filter(
-        (item) => resourceName !== item,
+        (item) => `${role.name}.${resourceName}` !== item,
       );
 
       grantHelper.targetActionResourceMap.set(targetAction, targetActionResource);
+
       if (targetActionResource.length == 0) {
         role.revokeAction(targetAction);
       }
     }
 
-    grantHelper.resourceTargetActionMap.set(resourceName, []);
+    grantHelper.resourceTargetActionMap.set(`${role.name}.${resourceName}`, []);
   }
 
   async writeToACL(options: {
