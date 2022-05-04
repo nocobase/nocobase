@@ -1,5 +1,5 @@
 import { Database, Model } from '@nocobase/database';
-import { ACL, ACLRole } from '@nocobase/acl';
+import { ACL, ACLResource, ACLRole } from '@nocobase/acl';
 import { RoleResourceActionModel } from './RoleResourceActionModel';
 import { AssociationFieldsActions, GrantHelper } from '../server';
 
@@ -42,6 +42,13 @@ export class RoleResourceModel extends Model {
     if (this.usingActionsConfig === false) {
       return;
     }
+
+    const resource = new ACLResource({
+      role,
+      name: resourceName,
+    });
+
+    role.resources.set(resourceName, resource);
 
     // @ts-ignore
     const actions: RoleResourceActionModel[] = await this.getActions({
