@@ -286,6 +286,6 @@ export default {
   'Execution History': 'History',
   'Parallel branch': 'Branch',
 
-  'Confirm': 'Confirm',
-  'Form value changed tip': 'Are you sure you don\'t want to save?',
+  'Unsaved changes': 'Unsaved changes',
+  'Are you sure you don\'t want to save?': 'Are you sure you don\'t want to save?',
 }

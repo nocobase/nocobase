@@ -23,8 +23,8 @@ export const useActionContext = () => {
         if (!visible) {
           if (ctx.formValueChanged) {
             AntdModal.confirm({
-              title: t('Confirm'),
-              content: t('Form value changed tip'),
+              title: t('Unsaved changes'),
+              content: t("Are you sure you don't want to save?"),
               async onOk() {
                 ctx.setFormValueChanged(false);
                 ctx.setVisible(false);
