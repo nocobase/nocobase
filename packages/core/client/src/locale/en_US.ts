@@ -287,5 +287,5 @@ export default {
   'Parallel branch': 'Branch',
 
   'Confirm': 'Confirm',
-  'Form value changed tip': 'Are you sure to exit that Data unsaved',
+  'Form value changed tip': 'Are you sure you don\'t want to save?',
 }
