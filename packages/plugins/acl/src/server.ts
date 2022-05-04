@@ -30,6 +30,8 @@ export class GrantHelper {
 }
 
 export class PluginACL extends Plugin {
+  // association field actions config
+
   associationFieldsActions: AssociationFieldsActions = {};
 
   grantHelper = new GrantHelper();
@@ -43,6 +45,8 @@ export class PluginACL extends Plugin {
   }
 
   registerAssociationFieldsActions() {
+    // if grant create action to role, it should
+    // also grant add action and association target's view action
     this.registerAssociationFieldAction('linkTo', {
       view: {
         associationActions: ['list', 'get'],
@@ -107,6 +111,7 @@ export class PluginACL extends Plugin {
     const roles = (await this.app.db.getRepository('roles').find({
       appends: ['resources', 'resources.actions'],
     })) as RoleModel[];
+
     for (const role of roles) {
       role.writeToAcl({ acl: this.acl });
       for (const resource of role.get('resources') as RoleResourceModel[]) {

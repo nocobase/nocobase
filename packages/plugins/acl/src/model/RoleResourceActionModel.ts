@@ -51,6 +51,7 @@ export class RoleResourceActionModel extends Model {
       const fieldTarget = collectionField.get('target');
 
       if (fieldActions) {
+        // grant association actions to role
         const associationActions = fieldActions.associationActions || [];
         associationActions.forEach((associationAction) => {
           const actionName = `${resourceName}.${fieldTarget}:${associationAction}`;
@@ -62,14 +63,15 @@ export class RoleResourceActionModel extends Model {
         targetActions.forEach((targetAction) => {
           const targetActionPath = `${fieldTarget}:${targetAction}`;
 
-          grantHelper.resourceTargetActionMap.set(resourceName, [
+          // set resource target action with current resourceName
+          grantHelper.resourceTargetActionMap.set(`${role.name}.${resourceName}`, [
             ...(grantHelper.resourceTargetActionMap.get(resourceName) || []),
             targetActionPath,
           ]);
 
           grantHelper.targetActionResourceMap.set(targetActionPath, [
             ...(grantHelper.targetActionResourceMap.get(targetActionPath) || []),
-            resourceName,
+            `${role.name}.${resourceName}`,
           ]);
 
           role.grantAction(targetActionPath);
