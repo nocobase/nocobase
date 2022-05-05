@@ -17,8 +17,6 @@ export const useActionContext = () => {
   return {
     ...ctx,
     setVisible(visible: boolean) {
-      debugger;
-
       if (ctx?.openMode !== 'page') {
         if (!visible) {
           if (ctx.formValueChanged) {
