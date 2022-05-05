@@ -16,10 +16,10 @@ export const useActionContext = () => {
 
   return {
     ...ctx,
-    setVisible(visible: boolean) {
+    setVisible(visible: boolean, confirm = false) {
       if (ctx?.openMode !== 'page') {
         if (!visible) {
-          if (ctx.formValueChanged) {
+          if (confirm && ctx.formValueChanged) {
             AntdModal.confirm({
               title: t('Unsaved changes'),
               content: t("Are you sure you don't want to save?"),
