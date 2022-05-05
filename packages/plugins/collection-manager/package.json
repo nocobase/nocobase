@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-manager",
-  "version": "0.7.0-alpha.29",
+  "version": "0.7.0-alpha.30",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -15,7 +15,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "devDependencies": {
-    "@nocobase/test": "0.7.0-alpha.29"
+    "@nocobase/test": "0.7.0-alpha.30"
   },
   "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }
