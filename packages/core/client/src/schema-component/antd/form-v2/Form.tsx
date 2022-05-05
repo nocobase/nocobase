@@ -62,7 +62,7 @@ const WithForm = (props) => {
     const id = uid();
     form.addEffects(id, () => {
       onFormInputChange((form) => {
-        setFormValueChanged(true);
+        setFormValueChanged?.(true);
       });
     });
     return () => {
