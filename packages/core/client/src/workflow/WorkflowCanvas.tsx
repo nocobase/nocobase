@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { Dropdown, Menu, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
   useCollection,
   useCompile,
+  useDocumentTitle,
   useResourceActionContext
 } from '..';
 import { Instruction, instructions, Node } from './nodes';
@@ -38,6 +39,12 @@ export function useFlowContext() {
 export function WorkflowCanvas() {
   const { t } = useTranslation();
   const { data, refresh, loading } = useResourceActionContext();
+
+  const { setTitle } = useDocumentTitle();
+  useEffect(() => {
+    const { title } = data?.data ?? {};
+    setTitle(`${title ? `${title} - ` : ''}${t('Workflow')}`);
+  }, [data?.data]);
 
   if (!data?.data && !loading) {
     return <div>{t('Load failed')}</div>;

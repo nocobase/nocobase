@@ -131,8 +131,6 @@ function CalculationConfig({ value, onChange }) {
   );
 }
 
-console.log(i18n.t('Collection name'));
-
 export default {
   title: '{{t("Condition")}}',
   type: 'condition',
