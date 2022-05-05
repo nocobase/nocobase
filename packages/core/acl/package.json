@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/acl",
-  "version": "0.7.0-alpha.31",
+  "version": "0.7.0-alpha.32",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -17,7 +17,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/resourcer": "0.7.0-alpha.31",
+    "@nocobase/resourcer": "0.7.0-alpha.32",
     "json-templates": "^4.2.0"
   },
   "repository": {
