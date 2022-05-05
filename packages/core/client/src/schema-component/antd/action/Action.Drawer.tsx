@@ -20,10 +20,6 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
     }
     return buf;
   });
-
-  const closeHandler = () => {
-    setVisible(false);
-  };
   return (
     <>
       {createPortal(
@@ -38,7 +34,7 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
             {...others}
             destroyOnClose
             visible={visible}
-            onClose={closeHandler}
+            onClose={() => setVisible(false, true)}
             className={classNames(
               others.className,
               css`

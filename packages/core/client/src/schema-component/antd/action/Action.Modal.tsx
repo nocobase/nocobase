@@ -32,7 +32,7 @@ export const ActionModal: ComposedActionDrawer = observer((props) => {
             {...others}
             destroyOnClose
             visible={visible}
-            onCancel={() => setVisible(false)}
+            onCancel={() => setVisible(false, true)}
             className={classNames(
               others.className,
               css`
