@@ -14,7 +14,7 @@
   resolved "https://registry.npmjs.org/@ant-design/icons-svg/-/icons-svg-4.2.1.tgz#8630da8eb4471a4aabdaed7d1ff6a97dcb2cf05a"
   integrity sha512-EB0iwlKDGpG93hW8f85CTJTs4SvMX7tt5ceupvhALp1IF44SeUFOMhKUOYqpsoYWQKAOuTRDMqn75rEaKDp0Xw==
 
-"@ant-design/icons@^4.0.0", "@ant-design/icons@^4.7.0":
+"@ant-design/icons@^4.7.0":
   version "4.7.0"
   resolved "https://registry.npmjs.org/@ant-design/icons/-/icons-4.7.0.tgz#8c3cbe0a556ba92af5dc7d1e70c0b25b5179af0f"
   integrity sha512-aoB4Z7JA431rt6d4u+8xcNPPCrdufSRMUOpxa1ab6mz1JCQZOEVolj2WVs/tDFmN62zzK30mNelEsprLYsSF3g==
@@ -1533,24 +1533,23 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
-"@formily/antd@^2.0.15":
-  version "2.0.15"
-  resolved "https://registry.npmjs.org/@formily/antd/-/antd-2.0.15.tgz#70a5607ba9df7c878e15fcd243d44a8ddc2b7530"
-  integrity sha512-mjSdVP3RoyVZBaSr79F/v1U+yXCvRjjYyoUgO9/TVXYzM4wR+inOP46YmZzusrPNXmV4JERFBRAwRW/QV0mkhg==
+"@formily/antd@2.0.20":
+  version "2.0.20"
+  resolved "https://registry.npmjs.org/@formily/antd/-/antd-2.0.20.tgz#8a60ce0473ffa55df63c911a4e11330dd0ddfe2b"
+  integrity sha512-bUfbuqFJXTrkLNh8op2aeByQH+uBwoC1o9RU78INJ8G9DWqh7j27aMo/BWeTMgxZo6PvTDlPShzGh2lG12EQ/Q==
   dependencies:
-    "@ant-design/icons" "^4.0.0"
-    "@formily/core" "2.0.15"
-    "@formily/grid" "2.0.15"
-    "@formily/json-schema" "2.0.15"
-    "@formily/react" "2.0.15"
-    "@formily/reactive" "2.0.15"
-    "@formily/reactive-react" "2.0.15"
-    "@formily/shared" "2.0.15"
+    "@formily/core" "2.0.20"
+    "@formily/grid" "2.0.20"
+    "@formily/json-schema" "2.0.20"
+    "@formily/react" "2.0.20"
+    "@formily/reactive" "2.0.20"
+    "@formily/reactive-react" "2.0.20"
+    "@formily/shared" "2.0.20"
     classnames "^2.2.6"
     react-sortable-hoc "^1.11.0"
     react-sticky-box "^0.9.3"
 
-"@formily/core@2.0.15", "@formily/core@^2.0.15":
+"@formily/core@2.0.15":
   version "2.0.15"
   resolved "https://registry.npmjs.org/@formily/core/-/core-2.0.15.tgz#2cbfda031518f383cdb8d8c4413ddcb4006a225c"
   integrity sha512-68a87CKW2fKD0rMMy8vJ1rlw/votQ4QfwPD3TM/8EsXqXpAgSyzoRmZgZmTHhQY/Z3rwr6a4euhtHu6uDMMsUA==
@@ -1559,15 +1558,33 @@
     "@formily/shared" "2.0.15"
     "@formily/validator" "2.0.15"
 
-"@formily/grid@2.0.15":
-  version "2.0.15"
-  resolved "https://registry.npmjs.org/@formily/grid/-/grid-2.0.15.tgz#1355eecf44043ba2e02aa7d6bf3ba5eccb48e6c6"
-  integrity sha512-E9kXjnRPvzu+KdfOVMza3zLki223FhKfEH7xQZto/z6fs4Z9/9OwjS5FvKLO+KH2bTfUg3pYsdh4wMPledSRxQ==
+"@formily/core@2.0.20":
+  version "2.0.20"
+  resolved "https://registry.npmjs.org/@formily/core/-/core-2.0.20.tgz#a8e8ea74e60d55c4ac61afb467084dcae4948049"
+  integrity sha512-f8X768L4vrR5hL+YOZ5ulrKoMkzG6Y8HQblJBhcwsLwFbiFk3jTQsXdqVw99HULs62B2+OMWUeZeEuWf/COopg==
   dependencies:
-    "@formily/reactive" "2.0.15"
+    "@formily/reactive" "2.0.20"
+    "@formily/shared" "2.0.20"
+    "@formily/validator" "2.0.20"
+
+"@formily/grid@2.0.20":
+  version "2.0.20"
+  resolved "https://registry.npmjs.org/@formily/grid/-/grid-2.0.20.tgz#76a0cabebf9d98f5169f60864cfa29c0204c0088"
+  integrity sha512-XLllIs3Vp8lKwEFFoc9ziV/QY+Nxn51zmZLSDWggvjWzbGTF5W5LKw3Uc1wQROExdlToPhT4Lt3t+zg4ZXd7kg==
+  dependencies:
+    "@formily/reactive" "2.0.20"
     "@juggle/resize-observer" "^3.3.1"
 
-"@formily/json-schema@2.0.15", "@formily/json-schema@^2.0.15":
+"@formily/json-schema@2.0.20":
+  version "2.0.20"
+  resolved "https://registry.npmjs.org/@formily/json-schema/-/json-schema-2.0.20.tgz#1432fba50277e431074eaf96551e162a3528c560"
+  integrity sha512-oc8V/AiMPhPu/8DdK5h1MJN6PHij07WYqjpFCY1AeHSytT3phI4CLgUNlvXagyBgrn/ECAivntPjtf+rNWRH8A==
+  dependencies:
+    "@formily/core" "2.0.20"
+    "@formily/reactive" "2.0.20"
+    "@formily/shared" "2.0.20"
+
+"@formily/json-schema@^2.0.15":
   version "2.0.15"
   resolved "https://registry.npmjs.org/@formily/json-schema/-/json-schema-2.0.15.tgz#d24fbf607fb86146ce44b563a27d8cae4847f70c"
   integrity sha512-zpQ9rvxjs1zc2wlT4xLgLMN8nemWoq31UkoNkLExNvikiGeeCR8OEtKfJkm/wdbvmZWZwko4LGFlh6SIQL+6+g==
@@ -1581,31 +1598,41 @@
   resolved "https://registry.npmjs.org/@formily/path/-/path-2.0.15.tgz#1f18ce76c717c5c6c4778cc07a42f7b6683def26"
   integrity sha512-QoqBdi3XUxX68yNNDG4QmIoLWrLTt4RVlncO8wP+JclT3xiSAZJTMYaxjrNkvLbapxIFJwTLo29tBwsmCBaEbA==
 
-"@formily/react@2.0.15", "@formily/react@^2.0.15":
-  version "2.0.15"
-  resolved "https://registry.npmjs.org/@formily/react/-/react-2.0.15.tgz#3c0dbabf1858f377b3215d233977c0cd480fc775"
-  integrity sha512-2wulxoE6THUeH7Olma9npL9ZGJrdT/HstzdiJMQjRT8VmsJig8WLzGbuCTfKxqh33yP9uywHWahb7l/fJNI1ig==
+"@formily/path@2.0.20":
+  version "2.0.20"
+  resolved "https://registry.npmjs.org/@formily/path/-/path-2.0.20.tgz#1047cb1737d1878182427bdbebf69a86be8b414f"
+  integrity sha512-SqpIFGV69VsgWQKMzyU/BuyJW4F3+tb4us2+xXGYC63BSDjJkdI/e/0LrzodKoWZ3mDJiACUqi0oNpdau8vbNw==
+
+"@formily/react@2.0.20":
+  version "2.0.20"
+  resolved "https://registry.npmjs.org/@formily/react/-/react-2.0.20.tgz#57d9be728a2a297e11ba1def0da28915707c8d0d"
+  integrity sha512-n87Mq0gelZ/b/vcqIag0cGfx7Ob8w07eDSmsB6pz0IuHr8aSU1jKaVQtW32x2Lbn8JQiw/8hSS+0gYIUMSksbw==
   dependencies:
-    "@formily/core" "2.0.15"
-    "@formily/json-schema" "2.0.15"
-    "@formily/reactive" "2.0.15"
-    "@formily/reactive-react" "2.0.15"
-    "@formily/shared" "2.0.15"
-    "@formily/validator" "2.0.15"
+    "@formily/core" "2.0.20"
+    "@formily/json-schema" "2.0.20"
+    "@formily/reactive" "2.0.20"
+    "@formily/reactive-react" "2.0.20"
+    "@formily/shared" "2.0.20"
+    "@formily/validator" "2.0.20"
     hoist-non-react-statics "^3.3.2"
 
-"@formily/reactive-react@2.0.15":
-  version "2.0.15"
-  resolved "https://registry.npmjs.org/@formily/reactive-react/-/reactive-react-2.0.15.tgz#afaa1dd46f7e30151370b27768d8a8c423b0c92f"
-  integrity sha512-IuD0MfRzh0MOikh0shgzkUAdR5WcBbO4W3eTSCdarDhz+TwbMDfdEes8IIJlKsBKV+S8BCO9I6zsgkURdMhZyQ==
+"@formily/reactive-react@2.0.20":
+  version "2.0.20"
+  resolved "https://registry.npmjs.org/@formily/reactive-react/-/reactive-react-2.0.20.tgz#63ec73aca01f3a8de5ef6e18f07e80b7b72551f8"
+  integrity sha512-kG0B9gjwdKv3UpaRvJmhvX5hh5nqgRnHDqF4dqrld9YIXiOW4mpdiie0WJqNjXBp43crSV0EgHWUBDKMvRwzjw==
   dependencies:
-    "@formily/reactive" "2.0.15"
+    "@formily/reactive" "2.0.20"
     hoist-non-react-statics "^3.3.2"
 
 "@formily/reactive@2.0.15":
   version "2.0.15"
   resolved "https://registry.npmjs.org/@formily/reactive/-/reactive-2.0.15.tgz#e94130e01a521cb942cf789fbc3e545524bbeade"
   integrity sha512-KqS4vAc2sQI+xu8+WgNfPr59A8FTlliyp4pPpICq+SSTQkJ18ZmFHnNArE7XaXmhk+aAqAyYCGdnfF+VZQdODg==
+
+"@formily/reactive@2.0.20":
+  version "2.0.20"
+  resolved "https://registry.npmjs.org/@formily/reactive/-/reactive-2.0.20.tgz#e8701a49e94bb53c362da945170c6eeffe931540"
+  integrity sha512-FgJhvtwvJzNvH95hleCnvzGk6BBuQFZidAqT9V4cf+tvmtQ5aYbmJwDKFiFgO0tzb8L3rI0bymy26NcpF/giTg==
 
 "@formily/shared@2.0.15":
   version "2.0.15"
@@ -1620,12 +1647,32 @@
     pascal-case "^3.1.1"
     upper-case "^2.0.1"
 
+"@formily/shared@2.0.20":
+  version "2.0.20"
+  resolved "https://registry.npmjs.org/@formily/shared/-/shared-2.0.20.tgz#8d638598ade03a07e67fb66ebb7de2ba0bb57248"
+  integrity sha512-izMIzqZ9qR8KxLHYDhatLw4sZLEfvYgx80wN3VV55K/aGXxs6NJqqy4VgqVBcKgLCVw0QVXPh8K6UusJitfC6w==
+  dependencies:
+    "@formily/path" "2.0.20"
+    camel-case "^4.1.1"
+    lower-case "^2.0.1"
+    no-case "^3.0.4"
+    param-case "^3.0.4"
+    pascal-case "^3.1.1"
+    upper-case "^2.0.1"
+
 "@formily/validator@2.0.15":
   version "2.0.15"
   resolved "https://registry.npmjs.org/@formily/validator/-/validator-2.0.15.tgz#fdab5b08e45c1584fcfcfea1a40af26fb229c782"
   integrity sha512-cqlSHNyG5lCY4zJVjl1PTL7ux0shM/2lIcFKElUKpdc5wSU6C/+46+5V/b1pkp7L9ezt6iMwbgqiMkdsQ5+n3A==
   dependencies:
     "@formily/shared" "2.0.15"
+
+"@formily/validator@2.0.20":
+  version "2.0.20"
+  resolved "https://registry.npmjs.org/@formily/validator/-/validator-2.0.20.tgz#956c612603fe87430efd6193fe683803f0b22b30"
+  integrity sha512-aMsKCMdEnNmW8D6xCxNvk+FZHf/SAWozA0t5+P1dulkN/IFjoCpsOYzmz6xJlluz4hplaX3JCt0yA/Ffp//eBg==
+  dependencies:
+    "@formily/shared" "2.0.20"
 
 "@gar/promisify@^1.0.1":
   version "1.1.2"
