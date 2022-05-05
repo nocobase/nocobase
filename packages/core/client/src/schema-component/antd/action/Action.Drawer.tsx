@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Drawer, Modal as AntdModal } from 'antd';
+import { Drawer } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { createPortal } from 'react-dom';
@@ -11,7 +11,7 @@ import { ComposedActionDrawer } from './types';
 export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
   const { t } = useTranslation();
-  const { visible, setVisible, formValueChanged, setFormValueChanged } = useActionContext();
+  const { visible, setVisible } = useActionContext();
   const schema = useFieldSchema();
   const field = useField();
   const footerSchema = schema.reduceProperties((buf, s) => {
@@ -22,18 +22,7 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   });
 
   const closeHandler = () => {
-    if (!formValueChanged) {
-      setVisible(false);
-      return;
-    }
-    AntdModal.confirm({
-      title: t('Unsaved changes'),
-      content: t("Are you sure you don't want to save?"),
-      async onOk() {
-        setFormValueChanged(false);
-        setVisible(false);
-      },
-    });
+    setVisible(false);
   };
   return (
     <>
