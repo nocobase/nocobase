@@ -13,7 +13,7 @@ export default {
     const options = execution.getParsedValue(params);
     const result = await repo.update({
       ...options,
-      transaction: execution.transaction
+      transaction: execution.tx
     });
 
     return {

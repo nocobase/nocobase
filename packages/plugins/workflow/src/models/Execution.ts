@@ -21,6 +21,7 @@ export default class ExecutionModel extends Model {
   declare status: number;
   // NOTE: this duplicated column is for transaction in preparing cycle from workflow
   declare useTransaction: boolean;
+  declare transaction: string;
 
   declare createdAt: Date;
   declare updatedAt: Date;
@@ -32,7 +33,8 @@ export default class ExecutionModel extends Model {
   declare getJobs: HasManyGetAssociationsMixin<JobModel>;
 
   options: ExecutionOptions;
-  transaction: Transaction;
+
+  tx: Transaction;
 
   nodes: Array<FlowNodeModel> = [];
   nodesMap = new Map<number, FlowNodeModel>();
@@ -98,7 +100,7 @@ export default class ExecutionModel extends Model {
   async prepare(options, commit = false) {
     this.options = options || {};
     const transaction = await this.getTransaction();
-    this.transaction = transaction;
+    this.tx = transaction;
 
     if (!this.workflow) {
       this.workflow = await this.getWorkflow({ transaction });
@@ -146,8 +148,8 @@ export default class ExecutionModel extends Model {
 
   private async commit() {
     // @ts-ignore
-    if (this.transaction && (!this.options.transaction || this.options.transaction.finished)) {
-      await this.transaction.commit();
+    if (this.tx && (!this.options.transaction || this.options.transaction.finished)) {
+      await this.tx.commit();
     }
   }
 
@@ -178,7 +180,7 @@ export default class ExecutionModel extends Model {
     // TODO(optimize): many checking of resuming or new could be improved
     // could be implemented separately in exec() / resume()
     if (job instanceof Model) {
-      savedJob = (await job.save({ transaction: this.transaction })) as unknown as JobModel;
+      savedJob = (await job.save({ transaction: this.tx })) as unknown as JobModel;
     } else {
       const upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
       savedJob = await this.saveJob({
@@ -230,7 +232,7 @@ export default class ExecutionModel extends Model {
 
   async exit(job: JobModel | null) {
     const status = job ? ExecutionModel.StatusMap[job.status] : EXECUTION_STATUS.RESOLVED;
-    await this.update({ status }, { transaction: this.transaction });
+    await this.update({ status }, { transaction: this.tx });
     return null;
   }
 
@@ -243,7 +245,7 @@ export default class ExecutionModel extends Model {
         ...payload,
         executionId: this.id,
       },
-      { transaction: this.transaction },
+      { transaction: this.tx },
     )) as unknown as [JobModel, boolean | null];
     this.jobsMap.set(job.id, job);
     this.jobsMapByNodeId[job.nodeId] = job.result;

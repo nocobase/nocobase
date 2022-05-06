@@ -456,7 +456,10 @@ export const CollectionFieldset = observer(({ value, onChange }: any) => {
             {Object.keys(value).length < fields.length
               ? (
                 <Dropdown overlay={
-                  <Menu onClick={({ key }) => onChange({ ...value, [key]: null })}>
+                  <Menu onClick={({ key }) => onChange({ ...value, [key]: null })} className={css`
+                    max-height: 300px;
+                    overflow-y: auto;
+                  `}>
                     {fields
                       .filter(field => !(field.name in value))
                       .map(field => (
