@@ -60,6 +60,21 @@ export default {
       name: 'executions',
       target: 'executions',
       title: '触发执行'
+    },
+    {
+      type: 'boolean',
+      name: 'executed',
+      defaultValue: false
+    },
+    {
+      type: 'hasMany',
+      name: 'revisions',
+      target: 'workflows',
+    },
+    {
+      type: 'belongsTo',
+      name: 'current',
+      target: 'workflows'
     }
   ]
 } as CollectionOptions;

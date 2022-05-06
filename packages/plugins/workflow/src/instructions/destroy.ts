@@ -12,7 +12,7 @@ export default {
     const options = execution.getParsedValue(params);
     const result = await repo.destroy({
       ...options,
-      transaction: execution.transaction
+      transaction: execution.tx
     });
 
     return {
