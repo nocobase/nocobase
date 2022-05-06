@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    // tsconfig is not valid josn file
+    "target": "esnext",
+    "moduleResolution": "node",
+    "jsx": "preserve",
+    "esModuleInterop": true,
+    "declaration": true
+  }
+}
