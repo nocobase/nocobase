@@ -224,8 +224,6 @@ export async function buildForLerna(opts: IOpts) {
       .filter(Boolean);
   }
 
-  console.log(pkgs);
-
   const dispose: Dispose[] = [];
   for (const pkg of pkgs) {
     if (process.env.PACKAGE && getPkgRelativePath(pkg) !== process.env.PACKAGE) continue;

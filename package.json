@@ -19,7 +19,7 @@
     "start-docs": "dumi dev",
     "bootstrap": "lerna bootstrap",
     "clean": "rimraf -rf packages/{app,core,plugins}/*/{lib,esm,es,dist} && lerna clean",
-    "nocobase": "cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts",
+    "nocobase": "cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -P ./tsconfig.server.json -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts",
     "start-client": "cd packages/app/client && yarn start",
     "start-server": "yarn nocobase start",
     "build": "yarn build-tool && yarn nocobase-build && yarn build-app-client",
