@@ -9,19 +9,8 @@
     }
   ],
   "main": "lib",
-  "module": "esm",
-  "sideEffects": [
-    "dist/*",
-    "esm/*.js",
-    "lib/*.js",
-    "src/*.ts",
-    "*.less",
-    "**/*/style.js"
-  ],
-  "types": "esm/index.d.ts",
-  "engines": {
-    "npm": ">=3.0.0"
-  },
+  "module": "es/index.js",
+  "typings": "es/index.d.ts",
   "dependencies": {
     "@dnd-kit/core": "^5.0.1",
     "@dnd-kit/sortable": "^6.0.0",
@@ -56,11 +45,6 @@
     "react": ">=16.8.0 || >=17.0.0",
     "react-dom": ">=16.8.0",
     "react-is": ">=16.8.0 || >=17.0.0"
-  },
-  "scripts": {
-    "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
-    "build:cjs": "tsc --project tsconfig.build.json",
-    "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "devDependencies": {
     "@types/marked": "^4.0.1",

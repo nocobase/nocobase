@@ -353,7 +353,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return result;
   }
 
-  emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
 
 export function extend(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {

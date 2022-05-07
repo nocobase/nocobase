@@ -24,6 +24,7 @@ export function createCli(app: Application) {
   program.command('db:sync').option('-f, --force').action(runSubCommand('db-sync'));
   program.command('db:auth').option('-r, --repeat [repeat]').action(runSubCommand('db-auth'));
   program.command('console').action(runSubCommand('console'));
+  program.command('build').action(runSubCommand('build'));
 
   program
     .command('create-plugin')

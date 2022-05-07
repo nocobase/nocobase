@@ -1,7 +1,7 @@
 node_modules/
 lib/
-!packages/core/create-nocobase-app/lib
 esm/
+es/
 .env
 .DS_Store
 yarn-error.log

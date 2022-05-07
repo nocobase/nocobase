@@ -4,6 +4,29 @@ export default {
   // disableTypeCheck: true,
   pkgs: [
     'core/utils',
-    'core/database'
+    'core/database',
+    'core/resourcer',
+    'core/actions',
+    'core/acl',
+    'core/server',
+    'core/test',
+    'core/client',
+
+    'plugins/acl',
+    'plugins/action-logs',
+    'plugins/china-region',
+    'plugins/client',
+    'plugins/collection-manager',
+    'plugins/error-handler',
+    'plugins/file-manager',
+    'plugins/multi-app-manager',
+    'plugins/notifications',
+    'plugins/system-settings',
+    'plugins/ui-routes-storage',
+    'plugins/ui-schema-storage',
+    'plugins/users',
+    'plugins/workflow',
+
+    'app/server',
   ],
 };

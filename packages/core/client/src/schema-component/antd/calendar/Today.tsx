@@ -4,11 +4,11 @@ import React, { useContext } from 'react';
 import { navigate } from 'react-big-calendar/lib/utils/constants';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks';
-import { ToolbarContext } from './context';
+import { CalendarToolbarContext } from './context';
 
 export const Today = observer((props) => {
   const { DesignableBar } = useDesignable();
-  const { onNavigate } = useContext(ToolbarContext);
+  const { onNavigate } = useContext(CalendarToolbarContext);
   const { t } = useTranslation();
   return (
     <Button

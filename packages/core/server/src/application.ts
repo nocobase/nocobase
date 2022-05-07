@@ -253,7 +253,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterInstall', this, options);
   }
 
-  emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
 
 applyMixins(Application, [AsyncEmitter]);

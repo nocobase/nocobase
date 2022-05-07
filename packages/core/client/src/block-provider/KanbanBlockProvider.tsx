@@ -4,7 +4,7 @@ import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useACLRoleContext } from '../acl';
 import { useCollection } from '../collection-manager';
-import { toColumns } from '../schema-component/antd/kanban-v2/Kanban';
+import { toColumns } from '../schema-component/antd/kanban/Kanban';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const KanbanBlockContext = createContext<any>({});
