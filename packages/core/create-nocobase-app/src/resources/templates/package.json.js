@@ -31,6 +31,7 @@ module.exports = (opts) => {
       pm2: '^5.2.0',
     },
     devDependencies: {
+      '@nocobase/build': '0.7.0-alpha.33',
       '@testing-library/react': '^12.1.2',
       '@types/jest': '^26.0.0',
       '@types/node': '^12.6.8',
