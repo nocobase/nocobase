@@ -196,9 +196,10 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
   return dispose;
 }
 
-function getPkgRelativePath(pkg) {
-  const keys = pkg.contents.split(sep);
-  return [keys.pop(), keys.pop()].reverse().join('/');
+function getPkgRelativePath(cwd, pkg) {
+  const basePath = cwd.split(sep).join('/') + '/packages/';
+  const dir = pkg.contents.split(sep).join('/');
+  return dir.substring(basePath.length);
 }
 
 export async function buildForLerna(opts: IOpts) {
@@ -219,14 +220,14 @@ export async function buildForLerna(opts: IOpts) {
   if (userConfig.pkgs) {
     pkgs = userConfig.pkgs
       .map((item) => {
-        return pkgs.find((pkg) => getPkgRelativePath(pkg) === item);
+        return pkgs.find((pkg) => getPkgRelativePath(cwd, pkg) === item);
       })
       .filter(Boolean);
   }
 
   const dispose: Dispose[] = [];
   for (const pkg of pkgs) {
-    if (process.env.PACKAGE && getPkgRelativePath(pkg) !== process.env.PACKAGE) continue;
+    if (process.env.PACKAGE && getPkgRelativePath(cwd, pkg) !== process.env.PACKAGE) continue;
     // build error when .DS_Store includes in packages root
     const pkgPath = pkg.contents;
     assert.ok(
