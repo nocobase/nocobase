@@ -53,8 +53,9 @@ export abstract class RelationRepository {
 
     const guard = UpdateGuard.fromOptions(this.targetModel, options);
     const values = options.values;
+    const transaction = await this.getTransaction(options);
 
-    const sourceModel = await this.getSourceModel();
+    const sourceModel = await this.getSourceModel(transaction);
 
     const instance = await sourceModel[createAccessor](guard.sanitize(options.values), options);
 
@@ -69,12 +70,13 @@ export abstract class RelationRepository {
     return instance;
   }
 
-  async getSourceModel(transaction?: any) {
+  async getSourceModel(transaction?: Transaction) {
     if (!this.sourceInstance) {
       this.sourceInstance = await this.sourceCollection.model.findOne({
         where: {
           [this.associationField.sourceKey]: this.sourceKeyValue,
         },
+        transaction
       });
     }
 
