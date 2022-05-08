@@ -53,28 +53,33 @@ export abstract class RelationRepository {
 
     const guard = UpdateGuard.fromOptions(this.targetModel, options);
     const values = options.values;
+    const transaction = await this.getTransaction(options);
 
-    const sourceModel = await this.getSourceModel();
+    const sourceModel = await this.getSourceModel(transaction);
 
-    const instance = await sourceModel[createAccessor](guard.sanitize(options.values), options);
+    const instance = await sourceModel[createAccessor](guard.sanitize(options.values), { ...options, transaction });
 
-    await updateAssociations(instance, values, options);
+    await updateAssociations(instance, values, { ...options, transaction });
 
     if (options.hooks !== false) {
-      await this.db.emitAsync(`${this.targetCollection.name}.afterCreateWithAssociations`, instance, options);
+      await this.db.emitAsync(`${this.targetCollection.name}.afterCreateWithAssociations`, instance, {
+        ...options,
+        transaction,
+      });
       const eventName = `${this.targetCollection.name}.afterSaveWithAssociations`;
-      await this.db.emitAsync(eventName, instance, options);
+      await this.db.emitAsync(eventName, instance, { ...options, transaction });
     }
 
     return instance;
   }
 
-  async getSourceModel(transaction?: any) {
+  async getSourceModel(transaction?: Transaction) {
     if (!this.sourceInstance) {
       this.sourceInstance = await this.sourceCollection.model.findOne({
         where: {
           [this.associationField.sourceKey]: this.sourceKeyValue,
         },
+        transaction,
       });
     }
 

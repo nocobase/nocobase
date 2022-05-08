@@ -150,7 +150,10 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     const queryOptions = this.buildQueryOptions(options as any);
 
-    const instances = await this.find(queryOptions);
+    const instances = await this.find({
+      ...queryOptions,
+      transaction,
+    });
 
     for (const instance of instances) {
       await updateModelByValues(instance, values, {
@@ -163,8 +166,8 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     for (const instance of instances) {
       if (options.hooks !== false) {
-        await this.db.emitAsync(`${this.targetCollection.name}.afterUpdateWithAssociations`, instance, options);
-        await this.db.emitAsync(`${this.targetCollection.name}.afterSaveWithAssociations`, instance, options);
+        await this.db.emitAsync(`${this.targetCollection.name}.afterUpdateWithAssociations`, instance, {...options, transaction});
+        await this.db.emitAsync(`${this.targetCollection.name}.afterSaveWithAssociations`, instance, {...options, transaction});
       }
     }
 
