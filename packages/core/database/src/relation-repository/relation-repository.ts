@@ -48,6 +48,7 @@ export abstract class RelationRepository {
     return (<BelongsTo | HasOne | HasMany | BelongsToMany>this.association).accessors;
   }
 
+  @transaction()
   async create(options?: CreateOptions): Promise<any> {
     const createAccessor = this.accessors().create;
 
@@ -57,14 +58,17 @@ export abstract class RelationRepository {
 
     const sourceModel = await this.getSourceModel(transaction);
 
-    const instance = await sourceModel[createAccessor](guard.sanitize(options.values), options);
+    const instance = await sourceModel[createAccessor](guard.sanitize(options.values), { ...options, transaction });
 
-    await updateAssociations(instance, values, options);
+    await updateAssociations(instance, values, { ...options, transaction });
 
     if (options.hooks !== false) {
-      await this.db.emitAsync(`${this.targetCollection.name}.afterCreateWithAssociations`, instance, options);
+      await this.db.emitAsync(`${this.targetCollection.name}.afterCreateWithAssociations`, instance, {
+        ...options,
+        transaction,
+      });
       const eventName = `${this.targetCollection.name}.afterSaveWithAssociations`;
-      await this.db.emitAsync(eventName, instance, options);
+      await this.db.emitAsync(eventName, instance, { ...options, transaction });
     }
 
     return instance;
@@ -76,7 +80,7 @@ export abstract class RelationRepository {
         where: {
           [this.associationField.sourceKey]: this.sourceKeyValue,
         },
-        transaction
+        transaction,
       });
     }
 
