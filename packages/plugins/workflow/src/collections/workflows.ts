@@ -6,6 +6,10 @@ export default {
   title: '自动化',
   fields: [
     {
+      name: 'key',
+      type: 'uid'
+    },
+    {
       interface: 'string',
       type: 'string',
       name: 'title',

@@ -117,6 +117,10 @@ export const nodeCardClass = css`
     opacity: 0;
     transition: opacity .3s ease;
 
+    &[disabled]{
+      display: none;
+    }
+
     &:hover {
       color: red;
     }

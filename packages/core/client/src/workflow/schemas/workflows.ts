@@ -138,14 +138,14 @@ export const workflowSchema: ISchema = {
                       'x-component': 'Action.Drawer.Footer',
                       properties: {
                         cancel: {
-                          title: 'Cancel',
+                          title: '{{ t("Cancel") }}',
                           'x-component': 'Action',
                           'x-component-props': {
                             useAction: '{{ cm.useCancelAction }}',
                           },
                         },
                         submit: {
-                          title: 'Submit',
+                          title: '{{ t("Submit") }}',
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',

@@ -1,17 +1,18 @@
 import React, { useContext, useEffect } from 'react';
-import { Dropdown, Menu, Button } from 'antd';
+import { Dropdown, Menu, Button, Tag } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 
 import {
-  useCollection,
+  useAPIClient,
   useCompile,
   useDocumentTitle,
   useResourceActionContext
 } from '..';
 import { Instruction, instructions, Node } from './nodes';
-import { addButtonClass, branchBlockClass, branchClass, nodeBlockClass, nodeCardClass, nodeHeaderClass, nodeTitleClass } from './style';
+import { addButtonClass, branchBlockClass, branchClass, nodeCardClass, nodeMetaClass } from './style';
+import { TriggerConfig } from './triggers';
 
 
 
@@ -63,10 +64,17 @@ export function WorkflowCanvas() {
       onNodeAdded: refresh,
       onNodeRemoved: refresh
     }}>
-      <div className={branchBlockClass}>
-        <Branch entry={entry} />
+      <div className="workflow-canvas">
+        <TriggerConfig />
+        <div className={branchBlockClass}>
+          <Branch entry={entry} />
+        </div>
+        <div className={cx(nodeCardClass)}>
+          <div className={cx(nodeMetaClass)}>
+            <Tag color="#333">{t('End')}</Tag>
+          </div>
+        </div>
       </div>
-      <div className={cx(nodeCardClass)}>{t('End')}</div>
     </FlowContext.Provider>
   );
 }
@@ -104,9 +112,9 @@ interface AddButtonProps {
 
 export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   const compile = useCompile();
-  const { resource } = useCollection();
-  const { data } = useResourceActionContext();
-  const { onNodeAdded } = useFlowContext();
+  const api = useAPIClient();
+  const { workflow, onNodeAdded } = useFlowContext();
+  const resource = api.resource('workflows.nodes', workflow.id);
 
   async function onCreate({ keyPath }) {
     const type = keyPath.pop();
@@ -120,7 +128,6 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
     const { data: { data: node } } = await resource.create({
       values: {
         type,
-        workflowId: data.data.id,
         upstreamId: upstream?.id ?? null,
         branchIndex,
         config
@@ -138,25 +145,29 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
 
   return (
     <div className={cx(addButtonClass)}>
-      <Dropdown trigger={['click']} overlay={
-        <Menu onClick={ev => onCreate(ev)}>
-          {groups.map(group => (
-            <Menu.ItemGroup key={group.value} title={compile(group.name)}>
-              {instructionList.filter(item => item.group === group.value).map(item => item.options
-              ? (
-                <Menu.SubMenu key={item.type} title={compile(item.title)}>
-                  {item.options.map(option => (
-                    <Menu.Item key={option.key}>{compile(option.label)}</Menu.Item>
-                  ))}
-                </Menu.SubMenu>
-              )
-              : (
-                <Menu.Item key={item.type}>{compile(item.title)}</Menu.Item>
-              ))}
-            </Menu.ItemGroup>
-          ))}
-        </Menu>
-      }>
+      <Dropdown
+        trigger={['click']}
+        overlay={
+          <Menu onClick={ev => onCreate(ev)}>
+            {groups.map(group => (
+              <Menu.ItemGroup key={group.value} title={compile(group.name)}>
+                {instructionList.filter(item => item.group === group.value).map(item => item.options
+                ? (
+                  <Menu.SubMenu key={item.type} title={compile(item.title)}>
+                    {item.options.map(option => (
+                      <Menu.Item key={option.key}>{compile(option.label)}</Menu.Item>
+                    ))}
+                  </Menu.SubMenu>
+                )
+                : (
+                  <Menu.Item key={item.type}>{compile(item.title)}</Menu.Item>
+                ))}
+              </Menu.ItemGroup>
+            ))}
+          </Menu>
+        }
+        disabled={workflow.executed}
+      >
         <Button shape="circle" icon={<PlusOutlined />} />
       </Dropdown>
     </div>

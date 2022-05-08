@@ -261,7 +261,7 @@ export function Operand({
 
   const { component, appendTypeValue } = Types[type] || {};
   const VariableComponent = typeof component === 'function' ? component(operand) : NullRender;
-  console.log(Types);
+
   return (
     <div className={css`
       display: flex;

@@ -1,10 +1,27 @@
 import { Op } from 'sequelize';
-import actions, { Context, utils } from '@nocobase/actions';
+import { Context, utils } from '@nocobase/actions';
+import { MultipleRelationRepository } from '@nocobase/database';
+import WorkflowModel from '../models/Workflow';
 
 export async function create(context: Context, next) {
-  return actions.create(context, async () => {
-    const { body: instance, db } = context;
-    const repository = utils.getRepositoryFromParams(context);
+  const { db } = context;
+  const repository = utils.getRepositoryFromParams(context) as MultipleRelationRepository;
+  const { whitelist, blacklist, updateAssociationValues, values, associatedIndex: workflowId } = context.action.params;
+
+  context.body = await db.sequelize.transaction(async transaction => {
+    const workflow = await repository.getSourceModel(transaction) as WorkflowModel;
+    if (workflow.executed) {
+      context.throw(400, 'Node could not be created in executed workflow');
+    }
+
+    const instance = await repository.create({
+      values,
+      whitelist,
+      blacklist,
+      updateAssociationValues,
+      context,
+      transaction
+    });
 
     if (!instance.upstreamId) {
       const previousHead = await repository.findOne({
@@ -13,30 +30,31 @@ export async function create(context: Context, next) {
             $ne: instance.id
           },
           upstreamId: null
-        }
+        },
+        transaction
       });
       if (previousHead) {
-        await previousHead.setUpstream(instance);
-        await instance.setDownstream(previousHead);
+        await previousHead.setUpstream(instance, { transaction });
+        await instance.setDownstream(previousHead, { transaction });
         instance.set('downstream', previousHead);
       }
-      return next();
+      return instance;
     }
 
-    const upstream = await instance.getUpstream();
+    const upstream = await instance.getUpstream({ transaction });
 
     if (instance.branchIndex == null) {
-      const downstream = await upstream.getDownstream();
+      const downstream = await upstream.getDownstream({ transaction });
 
       if (downstream) {
-        await downstream.setUpstream(instance);
-        await instance.setDownstream(downstream);
+        await downstream.setUpstream(instance, { transaction });
+        await instance.setDownstream(downstream, { transaction });
         instance.set('downstream', downstream);
       }
 
       await upstream.update({
         downstreamId: instance.id
-      });
+      }, { transaction });
 
       upstream.set('downstream', instance);
     } else {
@@ -46,23 +64,24 @@ export async function create(context: Context, next) {
             [Op.ne]: instance.id
           },
           branchIndex: instance.branchIndex
-        }
+        },
+        transaction
       });
 
       if (downstream) {
         await downstream.update({
           upstreamId: instance.id,
           branchIndex: null
-        });
-        await instance.setDownstream(downstream);
+        }, { transaction });
+        await instance.setDownstream(downstream, { transaction });
         instance.set('downstream', downstream);
       }
     }
 
     instance.set('upstream', upstream);
-
-    await next();
   });
+
+  await next();
 }
 
 function searchBranchNodes(nodes, from): any[] {
@@ -80,11 +99,16 @@ function searchBranchDownstreams(nodes, from) {
 }
 
 export async function destroy(context: Context, next) {
-  const repository = utils.getRepositoryFromParams(context);
   const { db } = context;
+  const repository = utils.getRepositoryFromParams(context) as MultipleRelationRepository;
   const { filterByTk } = context.action.params;
 
   context.body = await db.sequelize.transaction(async transaction => {
+    const workflow = await repository.getSourceModel(transaction) as WorkflowModel;
+    if (workflow.executed) {
+      context.throw(400, 'Nodes in executed workflow could not be deleted');
+    }
+
     const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex'];
     const instance = await repository.findOne({
       filterByTk,
@@ -139,6 +163,35 @@ export async function destroy(context: Context, next) {
     });
 
     return instance;
+  });
+
+  await next();
+}
+
+export async function update(context: Context, next) {
+  const { db } = context;
+  const repository = utils.getRepositoryFromParams(context);
+  const { filterByTk, values, whitelist, blacklist, filter, updateAssociationValues } = context.action.params;
+  context.body = await db.sequelize.transaction(async transaction => {
+    // TODO(optimize): duplicated instance query
+    const { workflow } = await repository.findOne({
+      appends: ['workflow.executed'],
+      transaction
+    });
+    if (workflow.executed) {
+      context.throw(400, 'Nodes in executed workflow could not be reconfigured');
+    }
+
+    return repository.update({
+      filterByTk,
+      values,
+      whitelist,
+      blacklist,
+      filter,
+      updateAssociationValues,
+      context,
+      transaction
+    });
   });
 
   await next();
