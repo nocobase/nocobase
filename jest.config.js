@@ -18,7 +18,7 @@ module.exports = {
       diagnostics: false,
     },
   },
-  modulePathIgnorePatterns: ['/esm/', '/lib/'],
+  modulePathIgnorePatterns: ['/esm/', '/es/', '/dist/', '/lib/'],
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',

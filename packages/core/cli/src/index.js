@@ -1,11 +1,8 @@
-const fs = require('fs');
-const { resolve } = require('path');
-const BufferList = require('bl');
 const { spawn } = require('child_process');
 const { asyncSpawn } = require('./asyncSpawn');
+const { resolve } = require('path');
 
-const isDev = false;
-process.env.NOCOBASE_ENV !== 'production';
+const isDev = process.env.NOCOBASE_ENV !== 'production';
 const argv = [...process.argv];
 const nodeBin = argv.shift();
 const file = argv.shift();
@@ -13,7 +10,7 @@ const file = argv.shift();
 const dotenv = require('dotenv');
 
 dotenv.config({
-  path: process.cwd(),
+  path: resolve(process.cwd(), '.env'),
 });
 
 const { Command } = require('commander');
@@ -86,7 +83,6 @@ program
   )
   .action(async (opts) => {
     argv.shift();
-    console.log(opts, argv);
     const pkgs = opts.package || [];
     if (!pkgs.length || !pkgs.includes('app/client') || (pkgs.includes('app/client') && pkgs.length > 1)) {
       await asyncSpawn('nocobase-build', argv, { shell: true, stdio: 'inherit' });
