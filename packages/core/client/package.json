@@ -21,7 +21,7 @@
     "@nocobase/utils": "0.7.0-alpha.34",
     "ahooks": "^3.0.5",
     "antd": "~4.19.5",
-    "axios": "^0.24.0",
+    "axios": "^0.26.1",
     "classnames": "^2.3.1",
     "file-saver": "^2.0.5",
     "i18next": "^21.6.0",

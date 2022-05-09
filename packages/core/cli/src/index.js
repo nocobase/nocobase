@@ -10,7 +10,7 @@ const file = argv.shift();
 const dotenv = require('dotenv');
 
 dotenv.config({
-  path: resolve(process.cwd(), '.env'),
+  path: resolve(process.cwd(), process.env.NOCOBASE_ENV_PATH || '.env'),
 });
 
 const { Command } = require('commander');
@@ -20,7 +20,6 @@ program
   .allowUnknownOption()
   .option('-h, --help')
   .action((option) => {
-    console.log(option);
     if (isDev) {
       argv.unshift(
         ...[
@@ -111,9 +110,11 @@ program
 
 program
   .command('start')
+  .option('--pm2')
   .allowUnknownOption()
-  .action(() => {
-    if (isDev) {
+  .action((opts) => {
+    console.log(opts);
+    if (isDev && !opts.pm2) {
       process.argv = [
         nodeBin,
         file,

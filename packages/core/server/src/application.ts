@@ -10,7 +10,7 @@ import Koa from 'koa';
 import { isBoolean } from 'lodash';
 import { createACL } from './acl';
 import { AppManager } from './app-manager';
-import { createCli } from './commands';
+import { registerCli } from './commands';
 import { createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
@@ -102,7 +102,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.acl = createACL();
     this.db = createDatabase(options);
     this.resourcer = createResourcer(options);
-    this.cli = createCli(this);
+    this.cli = new Command('nocobase');
     this.i18n = createI18n(options);
 
     this.pm = new PluginManager({
@@ -118,6 +118,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this.loadPluginConfig(options.plugins || []);
+
+    registerCli(this);
   }
 
   plugin<O = any>(pluginClass: any, options?: O): Plugin<O> {
