@@ -15,9 +15,8 @@
   ],
   "scripts": {
     "start": "nocobase dev",
-    "start-pm2": "nocobase start",
+    "start-pm2": "nocobase start --pm2",
     "start-docs": "dumi dev",
-    "bootstrap": "lerna bootstrap",
     "clean": "rimraf -rf packages/*/*/{lib,esm,es,dist} && lerna clean",
     "build": "yarn build-tool && yarn nocobase build",
     "build-docs": "dumi build",

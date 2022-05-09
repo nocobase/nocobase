@@ -1,3 +1,6 @@
+const { existsSync } = require('fs');
+const { resolve } = require('path');
+
 function getUmiConfig() {
   const { SERVER_PORT, SERVER_BASE_URL } = process.env;
   const SERVER_BASE_PATH = process.env.SERVER_BASE_PATH || '/api/';
@@ -35,4 +38,16 @@ function getUmiConfig() {
   };
 }
 
+function resolveNocobasePackagesAlias(config) {
+  const clientSrc = resolve(process.cwd(), './packages/core/client/src');
+  const utilsSrc = resolve(process.cwd(), './packages/core/utils/src');
+  if (existsSync(clientSrc)) {
+    config.module.rules.get('ts-in-node_modules').include.add(clientSrc);
+    config.resolve.alias.set('@nocobase/client', clientSrc);
+    config.module.rules.get('ts-in-node_modules').include.add(utilsSrc);
+    config.resolve.alias.set('@nocobase/utils', utilsSrc);
+  }
+}
+
 exports.getUmiConfig = getUmiConfig;
+exports.resolveNocobasePackagesAlias = resolveNocobasePackagesAlias;

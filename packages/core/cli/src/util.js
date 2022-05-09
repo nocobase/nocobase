@@ -1,7 +1,11 @@
 const { spawn } = require('child_process');
 const BufferList = require('bl');
 
-exports.asyncSpawn = (...args) => {
+exports.isDev = function isDev() {
+  return process.env.NOCOBASE_ENV !== 'production';
+}
+
+function spawnAsync(...args) {
   const child = spawn(...args);
   const stdout = child.stdout ? new BufferList() : '';
   const stderr = child.stderr ? new BufferList() : '';
@@ -38,3 +42,31 @@ exports.asyncSpawn = (...args) => {
 
   return promise;
 };
+
+function runAsync(command, argv, options = {}) {
+  return spawnAsync(command, argv, {
+    shell: true,
+    stdio: 'inherit',
+    ...options,
+    env: {
+      ...process.env,
+      ...options.env,
+    },
+  });
+};
+
+function run(command, argv, options = {}) {
+  return spawn(command, argv, {
+    shell: true,
+    stdio: 'inherit',
+    ...options,
+    env: {
+      ...process.env,
+      ...options.env,
+    },
+  });
+};
+
+exports.spawnAsync = spawnAsync;
+exports.run = run;
+exports.runAsync = runAsync;

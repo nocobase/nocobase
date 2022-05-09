@@ -12,7 +12,7 @@ const args = yParser(process.argv.slice(2), {
     package: 'p',
   },
 });
-console.log(args);
+
 if (args.v || args.version) {
   console.log(require('../package').version);
   if (existsSync(join(__dirname, '../.local'))) {

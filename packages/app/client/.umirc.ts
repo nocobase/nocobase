@@ -1,5 +1,4 @@
-import { getUmiConfig } from '@nocobase/utils/umiConfig';
-import { resolve } from 'path';
+import { getUmiConfig, resolveNocobasePackagesAlias } from '@nocobase/utils/umiConfig';
 import { defineConfig } from 'umi';
 
 const umiConfig = getUmiConfig();
@@ -23,11 +22,6 @@ export default defineConfig({
   routes: [{ path: '/', exact: false, component: '@/pages/index' }],
   // fastRefresh: {},
   chainWebpack(config) {
-    const clientSrc = resolve(__dirname, '../../core/client/src');
-    const utilsSrc = resolve(__dirname, '../../core/utils/src');
-    config.module.rules.get('ts-in-node_modules').include.add(clientSrc);
-    config.resolve.alias.set('@nocobase/client', clientSrc);
-    config.module.rules.get('ts-in-node_modules').include.add(utilsSrc);
-    config.resolve.alias.set('@nocobase/utils', utilsSrc);
+    resolveNocobasePackagesAlias(config);
   },
 });
