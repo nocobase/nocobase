@@ -7,7 +7,12 @@ const chalk = require('chalk');
 const signale = require('signale');
 
 // print version and @local
-const args = yParser(process.argv.slice(2));
+const args = yParser(process.argv.slice(2), {
+  alias: {
+    package: 'p',
+  },
+});
+console.log(args);
 if (args.v || args.version) {
   console.log(require('../package').version);
   if (existsSync(join(__dirname, '../.local'))) {
@@ -55,6 +60,7 @@ function build() {
       watch: args.w || args.watch,
       clean: args.clean,
       buildArgs,
+      packages: args.package,
     })
     .catch((e) => {
       signale.error(e);

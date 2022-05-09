@@ -203,7 +203,7 @@ function getPkgRelativePath(cwd, pkg) {
 }
 
 export async function buildForLerna(opts: IOpts) {
-  const { cwd, rootConfig = {}, buildArgs = {} } = opts;
+  const { cwd, rootConfig = {}, buildArgs = {}, packages = [] } = opts;
 
   // register babel for config files
   registerBabel({
@@ -214,20 +214,14 @@ export async function buildForLerna(opts: IOpts) {
   const userConfig = merge(getUserConfig({ cwd }), rootConfig, buildArgs);
 
   let pkgs = await getLernaPackages(cwd, userConfig.pkgFilter);
-
   // support define pkgs in lerna
-  // TODO: 使用lerna包解决依赖编译问题
   if (userConfig.pkgs) {
-    pkgs = userConfig.pkgs
-      .map((item) => {
-        return pkgs.find((pkg) => getPkgRelativePath(cwd, pkg) === item);
-      })
-      .filter(Boolean);
+    pkgs = pkgs.filter(pkg => userConfig.pkgs.includes(getPkgRelativePath(cwd, pkg)));
   }
-
   const dispose: Dispose[] = [];
   for (const pkg of pkgs) {
-    if (process.env.PACKAGE && getPkgRelativePath(cwd, pkg) !== process.env.PACKAGE) continue;
+    const pkgName = getPkgRelativePath(cwd, pkg);
+    if (packages.length && !packages.includes(pkgName)) continue;
     // build error when .DS_Store includes in packages root
     const pkgPath = pkg.contents;
     assert.ok(

@@ -1,13 +1,8 @@
 import { getUmiConfig } from '@nocobase/utils/umiConfig';
-import dotenv from 'dotenv';
 import { resolve } from 'path';
 import { defineConfig } from 'umi';
 
 const umiConfig = getUmiConfig();
-
-dotenv.config({
-  path: resolve(__dirname, '../../../.env'),
-});
 
 process.env.MFSU_AD = 'none';
 

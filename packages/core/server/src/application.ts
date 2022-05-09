@@ -33,12 +33,12 @@ export interface ApplicationOptions {
   plugins?: PluginsConfigurations;
 }
 
-interface DefaultState {
+export interface DefaultState {
   currentUser?: any;
   [key: string]: any;
 }
 
-interface DefaultContext {
+export interface DefaultContext {
   db: Database;
   resourcer: Resourcer;
   [key: string]: any;

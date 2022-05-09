@@ -14,12 +14,11 @@
     }
   ],
   "scripts": {
-    "start": "concurrently --kill-others \"yarn start-server -s\" \"yarn start-client\"",
+    "start": "nocobase dev",
     "start-pm2": "pm2-runtime start --node-args=\"-r dotenv/config\" packages/app/server/lib/index.js -- start",
     "start-docs": "dumi dev",
     "bootstrap": "lerna bootstrap",
     "clean": "rimraf -rf packages/{app,core,plugins}/*/{lib,esm,es,dist} && lerna clean",
-    "nocobase": "cross-env DOTENV_CONFIG_PATH=.env ts-node-dev -P ./tsconfig.server.json -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts",
     "start-client": "cd packages/app/client && yarn start",
     "start-server": "yarn nocobase start",
     "build": "yarn build-tool && yarn nocobase-build && yarn build-app-client",
@@ -96,5 +95,8 @@
     "ts-node-dev": "^1.1.8",
     "tsconfig-paths": "^3.12.0",
     "typescript": "^4.1.5"
+  },
+  "dependencies": {
+    "commander": "^9.2.0"
   }
 }

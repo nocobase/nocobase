@@ -111,6 +111,7 @@ export interface IOpts {
   buildArgs?: IBundleOptions;
   rootConfig?: IBundleOptions;
   rootPath?: string;
+  packages?: string[];
 }
 
 export type Dispose = () => void;
