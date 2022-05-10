@@ -46,7 +46,7 @@ describe('ui schema model', () => {
     await RelatedCollection.repository.create({
       values: {
         uiSchema: {
-          'x-uid': 'root-uid',
+          'x-uid': 'rootUid',
           title: 'root-node',
           name: 'root-node',
           properties: {
@@ -64,7 +64,7 @@ describe('ui schema model', () => {
       },
     });
 
-    const tree = await uiSchemaRepository.getJsonSchema('root-uid');
+    const tree = await uiSchemaRepository.getJsonSchema('rootUid');
     expect(tree).toMatchObject({
       title: 'root-node',
       properties: {
@@ -76,7 +76,7 @@ describe('ui schema model', () => {
         },
       },
       name: 'root-node',
-      'x-uid': 'root-uid',
+      'x-uid': 'rootUid',
       'x-async': false,
     });
   });
@@ -87,7 +87,7 @@ describe('ui schema model', () => {
     const relatedInstance = await RelatedCollection.repository.create({
       values: {
         uiSchema: {
-          'x-uid': 'root-uid',
+          'x-uid': 'rootUid',
           title: 'root-node',
           name: 'root-node',
           properties: {
@@ -110,7 +110,7 @@ describe('ui schema model', () => {
       filterByTk: relatedInstance.get('id') as string,
       values: {
         uiSchema: {
-          'x-uid': 'root-uid',
+          'x-uid': 'rootUid',
           title: 'new-root-title',
           name: 'new-root-name',
           properties: {
@@ -122,7 +122,7 @@ describe('ui schema model', () => {
       },
     });
 
-    const tree = await uiSchemaRepository.getJsonSchema('root-uid');
+    const tree = await uiSchemaRepository.getJsonSchema('rootUid');
 
     expect(tree).toMatchObject({
       title: 'new-root-title',
@@ -135,7 +135,7 @@ describe('ui schema model', () => {
         },
       },
       name: 'new-root-name',
-      'x-uid': 'root-uid',
+      'x-uid': 'rootUid',
       'x-async': false,
     });
   });

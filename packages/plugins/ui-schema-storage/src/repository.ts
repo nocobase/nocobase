@@ -1,9 +1,13 @@
 import { Repository, TransactionAble } from '@nocobase/database';
-import { uid } from '@nocobase/utils';
+import { uid as randomUid } from '@nocobase/utils';
 import lodash from 'lodash';
 import { Transaction } from 'sequelize';
 import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
 import { UidFormatError } from './helper';
+
+const uid = () => {
+  return `u_${randomUid()}`
+}
 
 interface GetJsonSchemaOptions {
   includeAsyncNode?: boolean;
@@ -653,6 +657,7 @@ export class UiSchemaRepository extends Repository {
   async insert(schema: any, options?: TransactionAble) {
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
     const insertedNodes = await this.insertNodes(nodes, options);
+
     return this.getJsonSchema(insertedNodes[0].get('x-uid'), {
       transaction: options?.transaction,
     });
@@ -768,8 +773,8 @@ export class UiSchemaRepository extends Repository {
 
     const { uid, name, async, childOptions } = this.prepareSingleNodeForInsert(schema);
 
-    if (!uid.match(/^[A-Za-z][A-Za-z0-9_]+$/)) {
-      throw new UidFormatError('uid format error');
+    if (!uid.match(/^[A-Za-z][A-Za-z0-9_]*$/)) {
+      throw new UidFormatError(`uid "${uid}" format error`);
     }
 
     let savedNode;
