@@ -36,6 +36,7 @@
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
+    "@nocobase/devtools": "{{{version}}}",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "commander": "^9.2.0",
