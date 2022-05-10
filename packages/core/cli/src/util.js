@@ -2,13 +2,17 @@ const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
 
-exports.hasTsNode = () => {
+exports.isPackageValid = (package) => {
   try {
-    require.resolve('ts-node/dist/bin');
+    require.resolve(package);
     return true;
   } catch (error) {
     return false;
   }
+}
+
+exports.hasTsNode = () => {
+  return exports.isPackageValid('ts-node/dist/bin');
 };
 
 exports.isDev = function isDev() {

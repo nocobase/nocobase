@@ -25,9 +25,25 @@ export class ClientPlugin extends Plugin {
         actionName: 'getLang',
       }),
     );
+    this.app.acl.use(
+      skip({
+        resourceName: 'app',
+        actionName: 'getInfo',
+      }),
+    );
     this.app.resource({
       name: 'app',
       actions: {
+        async getInfo(ctx, next) {
+          const SystemSetting = ctx.db.getRepository('systemSettings');
+          const systemSetting = await SystemSetting.findOne();
+          const currentUser = ctx.state.currentUser;
+          ctx.body = {
+            version: this.app.getVersion(),
+            lang: currentUser?.appLang || systemSetting?.appLang || process.env.APP_LANG || 'en-US',
+          }
+          await next();
+        },
         async getLang(ctx, next) {
           const SystemSetting = ctx.db.getRepository('systemSettings');
           const systemSetting = await SystemSetting.findOne();

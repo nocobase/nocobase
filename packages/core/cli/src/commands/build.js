@@ -1,11 +1,6 @@
-const chalk = require('chalk');
+const { resolve } = require('path');
 const { Command } = require('commander');
-const { run, nodeCheck } = require('../util');
-
-function concat(value, previous) {
-  previous.push(value);
-  return previous;
-}
+const { run, nodeCheck, isPackageValid } = require('../util');
 
 /**
  *
@@ -16,8 +11,16 @@ module.exports = (cli) => {
     .command('build')
     .allowUnknownOption()
     .argument('[packages...]')
-    .action(async (pkgs) => {
+    .option('-c, --compile', 'compile the @nocobase/build package')
+    .action(async (pkgs, options) => {
       nodeCheck();
+      if (isPackageValid('umi-tools/cli')) {
+        if (options.compile || !isPackageValid('@nocobase/build/lib')) {
+          await run('umi-tools', ['build'], {
+            cwd: resolve(process.cwd(), 'packages/core/build'),
+          });
+        }
+      }
       if (!pkgs.length || !pkgs.includes('app/client') || (pkgs.includes('app/client') && pkgs.length > 1)) {
         await run('nocobase-build', process.argv.slice(3));
       }

@@ -2,9 +2,7 @@
   "name": "nocobase",
   "private": true,
   "workspaces": [
-    "packages/app/*",
-    "packages/core/*",
-    "packages/plugins/*"
+    "packages/*/*"
   ],
   "license": "Apache-2.0",
   "licenses": [
@@ -16,14 +14,13 @@
   "scripts": {
     "dev": "nocobase dev",
     "start": "nocobase start",
-    "start-docs": "dumi dev",
-    "clean": "rimraf -rf packages/*/*/{lib,esm,es,dist}",
-    "build": "yarn build-tool && yarn nocobase build",
-    "build-docs": "dumi build",
-    "build-tool": "cd packages/core/build && yarn build",
+    "build": "nocobase build",
     "test": "nocobase test",
-    "lint": "eslint .",
     "postinstall": "nocobase umi generate tmp",
+    "lint": "eslint .",
+    "start-docs": "dumi dev",
+    "build-docs": "dumi build",
+    "clean": "rimraf -rf packages/*/*/{lib,esm,es,dist}",
     "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
     "release:force": "lerna publish from-package --yes",
     "release": "lerna publish"

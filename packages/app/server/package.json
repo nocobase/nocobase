@@ -6,19 +6,7 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/database": "0.7.0-alpha.47",
-    "@nocobase/plugin-acl": "0.7.0-alpha.47",
-    "@nocobase/plugin-china-region": "0.7.0-alpha.47",
-    "@nocobase/plugin-client": "0.7.0-alpha.47",
-    "@nocobase/plugin-collection-manager": "0.7.0-alpha.47",
-    "@nocobase/plugin-error-handler": "0.7.0-alpha.47",
-    "@nocobase/plugin-file-manager": "0.7.0-alpha.47",
-    "@nocobase/plugin-system-settings": "0.7.0-alpha.47",
-    "@nocobase/plugin-ui-routes-storage": "0.7.0-alpha.47",
-    "@nocobase/plugin-ui-schema-storage": "0.7.0-alpha.47",
-    "@nocobase/plugin-users": "0.7.0-alpha.47",
-    "@nocobase/plugin-workflow": "0.7.0-alpha.47",
-    "@nocobase/server": "0.7.0-alpha.47"
+    "@nocobase/preset-nocobase": "0.7.0-alpha.47"
   },
   "repository": {
     "type": "git",

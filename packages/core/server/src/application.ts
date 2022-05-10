@@ -15,6 +15,8 @@ import { createDatabase, createI18n, createResourcer, registerMiddlewares } from
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 
+const packageJson = require('../package.json');
+
 export type PluginConfiguration = string | [string, any];
 export type PluginsConfigurations = Array<PluginConfiguration>;
 
@@ -120,6 +122,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.loadPluginConfig(options.plugins || []);
 
     registerCli(this);
+  }
+
+  getVersion() {
+    return packageJson.version;
   }
 
   plugin<O = any>(pluginClass: any, options?: O): Plugin<O> {
