@@ -773,7 +773,7 @@ export class UiSchemaRepository extends Repository {
 
     const { uid, name, async, childOptions } = this.prepareSingleNodeForInsert(schema);
 
-    if (!uid.match(/^[A-Za-z][A-Za-z0-9_]*$/)) {
+    if (!uid.match(/^[A-Za-z0-9][A-Za-z0-9_]*$/)) {
       throw new UidFormatError(`uid "${uid}" format error`);
     }
 

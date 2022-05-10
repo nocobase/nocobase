@@ -85,7 +85,7 @@ describe('server hooks', () => {
                 name: {
                   type: 'string',
                   title: 'Name',
-                  'x-uid': 'posts-name',
+                  'x-uid': 'posts_name',
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-collection-field': 'posts.name',
@@ -101,7 +101,7 @@ describe('server hooks', () => {
                 title: {
                   type: 'string',
                   title: 'Title',
-                  'x-uid': 'posts-title',
+                  'x-uid': 'posts_title',
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-collection-field': 'posts.title',
@@ -126,7 +126,7 @@ describe('server hooks', () => {
               'x-component': 'Grid.Col',
               properties: {
                 intro: {
-                  'x-uid': 'posts-intro',
+                  'x-uid': 'posts_intro',
                   type: 'string',
                   title: 'Intro',
                   'x-decorator': 'FormItem',

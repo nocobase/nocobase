@@ -38,7 +38,7 @@ describe('acl', () => {
       },
     });
 
-    expect(
+    expect( 
       acl.can({
         role: 'admin',
         resource: 'posts',

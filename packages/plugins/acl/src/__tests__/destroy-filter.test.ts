@@ -29,18 +29,12 @@ describe('destroy filter', () => {
   });
 
   it('should not destroy roles collection', async () => {
-    await db.getRepository('collections').create({
-      values: {
-        name: 'users',
-      },
-    });
-
     const response = await app
       .agent()
       .resource('collections')
       .destroy({
         filter: {
-          name: 'users',
+          name: 'roles',
         },
       });
 
@@ -48,7 +42,7 @@ describe('destroy filter', () => {
 
     const usersCollection = await db.getRepository('collections').findOne({
       filter: {
-        name: 'users',
+        name: 'roles',
       },
     });
 
