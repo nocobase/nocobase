@@ -11,7 +11,8 @@
     "clean": "rimraf -rf packages/*/*/{lib,esm,es,dist}",
     "build": "nocobase build",
     "test": "nocobase test",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "postinstall": "nocobase umi generate tmp"
   },
   "resolutions": {
     "@types/react": "^17.0.0",

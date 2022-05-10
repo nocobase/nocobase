@@ -146,7 +146,7 @@ yarn install
 yarn nocobase install --lang=en-US
 
 # 5. start project
-yarn start
+yarn dev
 ~~~
 
 Open [http://localhost:8000](http://localhost:8000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
@@ -164,7 +164,7 @@ cd nocobase
 cp .env.example .env
 yarn install
 yarn nocobase install
-yarn start
+yarn dev
 ```
 
 #### Building
