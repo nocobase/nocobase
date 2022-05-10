@@ -83,7 +83,7 @@ export default {
     });
 
     if (job.status === JOB_STATUS.PENDING) {
-      await job.save({ transaction: execution.transaction });
+      await job.save({ transaction: execution.tx });
       return execution.end(this, job);
     }
 

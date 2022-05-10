@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { useActionContext } from '../..';
 import { Icon } from '../../../icon';
 import { SortableItem } from '../../common';
-import { useDesigner } from '../../hooks';
+import { useCompile, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
@@ -69,7 +69,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const {
     popover,
     confirm,
-    openMode,
+    // openMode,
     containerRefKey,
     component,
     useAction = useA,
@@ -80,14 +80,18 @@ export const Action: ComposedAction = observer((props: any) => {
   } = props;
   const { onClick } = useProps(props);
   const [visible, setVisible] = useState(false);
+  const [formValueChanged, setFormValueChanged] = useState(false);
   const Designer = useDesigner();
-  const field = useField();
+  const field = useField<any>();
   const { run } = useAction();
   const fieldSchema = useFieldSchema();
+  const compile = useCompile();
   const designerProps = fieldSchema['x-designer-props'];
+  const openMode = fieldSchema?.['x-component-props']?.['openMode'];
   const renderButton = () => (
     <SortableItem
       {...others}
+      loading={field?.data?.loading}
       icon={<Icon type={icon} />}
       onClick={(e: React.MouseEvent) => {
         e.preventDefault();
@@ -109,12 +113,22 @@ export const Action: ComposedAction = observer((props: any) => {
       component={component || Button}
       className={classnames(className, actionDesignerCss)}
     >
-      {field.title}
+      {compile(fieldSchema.title)}
       <Designer {...designerProps} />
     </SortableItem>
   );
   return (
-    <ActionContext.Provider value={{ button: renderButton(), visible, setVisible, openMode, containerRefKey }}>
+    <ActionContext.Provider
+      value={{
+        button: renderButton(),
+        visible,
+        setVisible,
+        formValueChanged,
+        setFormValueChanged,
+        openMode,
+        containerRefKey,
+      }}
+    >
       {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
       {!popover && renderButton()}
       {!popover && props.children}

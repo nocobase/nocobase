@@ -22,7 +22,7 @@ describe('execution', () => {
     workflow = await WorkflowModel.create({
       title: 'test workflow',
       enabled: true,
-      type: 'model',
+      type: 'collection',
       config: {
         mode: 1,
         collection: 'posts'
@@ -507,6 +507,30 @@ describe('execution', () => {
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(5);
+    });
+  });
+
+  describe('cycling trigger', () => {
+    it('trigger should not be triggered more than once in same execution', async () => {
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          params: {
+            values: {
+              title: 't2'
+            }
+          }
+        }
+      });
+
+      const post = await PostModel.create({ title: 't1' });
+
+      const posts = await PostModel.findAll();
+      expect(posts.length).toBe(2);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
   });
 });

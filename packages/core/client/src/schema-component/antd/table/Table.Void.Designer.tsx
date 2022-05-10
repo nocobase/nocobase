@@ -39,7 +39,7 @@ export const TableVoidDesigner = () => {
         onChange={(dragSort) => {
           field.decoratorProps.dragSort = dragSort;
           fieldSchema['x-decorator-props'].dragSort = dragSort;
-          ctx.run({ ...ctx.params?.[0], sort: defaultSort });
+          ctx.run({ ...ctx.params?.[0], sort: 'sort' });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],

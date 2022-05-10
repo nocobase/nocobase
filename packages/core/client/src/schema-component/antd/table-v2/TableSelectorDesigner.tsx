@@ -34,7 +34,7 @@ export const TableSelectorDesigner = () => {
   const template = useSchemaTemplate();
   const { dragSort } = field.decoratorProps;
   return (
-    <GeneralSchemaDesigner template={template} title={title || name}>
+    <GeneralSchemaDesigner template={template} title={title || name} disableInitializer>
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={

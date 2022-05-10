@@ -9,14 +9,15 @@ export default {
       interface: 'string',
       type: 'string',
       name: 'title',
-      title: '自动化名称',
+      title: '工作流名称',
       required: true
     },
     {
       interface: 'boolean',
       type: 'boolean',
       name: 'enabled',
-      title: '启用'
+      title: '启用',
+      defaultValue: false
     },
     {
       interface: 'textarea',
@@ -59,6 +60,21 @@ export default {
       name: 'executions',
       target: 'executions',
       title: '触发执行'
+    },
+    {
+      type: 'boolean',
+      name: 'executed',
+      defaultValue: false
+    },
+    {
+      type: 'hasMany',
+      name: 'revisions',
+      target: 'workflows',
+    },
+    {
+      type: 'belongsTo',
+      name: 'current',
+      target: 'workflows'
     }
   ]
 } as CollectionOptions;

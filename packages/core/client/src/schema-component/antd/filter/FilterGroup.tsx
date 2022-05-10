@@ -23,15 +23,19 @@ export const FilterGroup = connect((props) => {
   return (
     <FilterLogicContext.Provider value={logic}>
       <div
-        style={bordered ? {
-          position: 'relative',
-          border: '1px dashed #dedede',
-          padding: 14,
-          marginBottom: 8,
-        } : {
-          position: 'relative',
-          marginBottom: 8,
-        }}
+        style={
+          bordered
+            ? {
+                position: 'relative',
+                border: '1px dashed #dedede',
+                padding: 14,
+                marginBottom: 8,
+              }
+            : {
+                position: 'relative',
+                marginBottom: 8,
+              }
+        }
       >
         {remove && (
           <a>
@@ -40,6 +44,7 @@ export const FilterGroup = connect((props) => {
                 position: 'absolute',
                 right: 10,
                 top: 10,
+                color: '#bfbfbf',
               }}
               onClick={() => remove()}
             />

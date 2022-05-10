@@ -9,6 +9,7 @@ import { DndContext } from '../../common/dnd-context';
 
 const GridRowContext = createContext(null);
 const GridColContext = createContext(null);
+const GridContext = createContext<any>({});
 
 const ColDivider = (props) => {
   const { isOver, setNodeRef } = useDroppable({
@@ -147,6 +148,14 @@ const DndWrapper = (props) => {
   return <DndContext {...props.dndContext}>{props.children}</DndContext>;
 };
 
+export const useGridContext = () => {
+  return useContext(GridContext);
+};
+
+export const useGridRowContext = () => {
+  return useContext(GridRowContext);
+}
+
 export const Grid: any = observer((props: any) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -154,26 +163,28 @@ export const Grid: any = observer((props: any) => {
   const addr = field.address.toString();
   const rows = useRowProperties();
   return (
-    <div className={'nb-grid'} style={{ position: 'relative' }}>
-      <DndWrapper dndContext={props.dndContext}>
-        <RowDivider
-          id={`${addr}_0`}
-          data={{ wrapSchema: wrapRowSchema, insertAdjacent: 'afterBegin', schema: fieldSchema }}
-        />
-        {rows.map((schema, index) => {
-          return (
-            <React.Fragment key={schema.name}>
-              <RecursionField name={schema.name} schema={schema} />
-              <RowDivider
-                id={`${addr}_${index + 1}`}
-                data={{ wrapSchema: wrapRowSchema, insertAdjacent: 'afterEnd', schema }}
-              />
-            </React.Fragment>
-          );
-        })}
-      </DndWrapper>
-      {render()}
-    </div>
+    <GridContext.Provider value={{ fieldSchema, renderSchemaInitializer: render }}>
+      <div className={'nb-grid'} style={{ position: 'relative' }}>
+        <DndWrapper dndContext={props.dndContext}>
+          <RowDivider
+            id={`${addr}_0`}
+            data={{ wrapSchema: wrapRowSchema, insertAdjacent: 'afterBegin', schema: fieldSchema }}
+          />
+          {rows.map((schema, index) => {
+            return (
+              <React.Fragment key={schema.name}>
+                <RecursionField name={schema.name} schema={schema} />
+                <RowDivider
+                  id={`${addr}_${index + 1}`}
+                  data={{ wrapSchema: wrapRowSchema, insertAdjacent: 'afterEnd', schema }}
+                />
+              </React.Fragment>
+            );
+          })}
+        </DndWrapper>
+        {render()}
+      </div>
+    </GridContext.Provider>
   );
 });
 

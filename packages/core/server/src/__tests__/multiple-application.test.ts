@@ -99,5 +99,10 @@ describe('multiple application', () => {
       app: 'sub2',
     });
     expect(response.statusCode).toEqual(200);
+
+    response = await app.agent().resource('test').test({
+      app: 'sub3',
+    });
+    expect(response.statusCode).toEqual(404);
   });
 });

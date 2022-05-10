@@ -133,6 +133,10 @@ export const nodeHeaderClass = css`
   position: relative;
 `;
 
+export const nodeMetaClass = css`
+  margin-bottom: .5em;
+`;
+
 export const nodeTitleClass = css`
   font-weight: normal;
 

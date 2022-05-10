@@ -2,7 +2,16 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import lodash from 'lodash';
-import { ModelCtor, Op, Options, QueryInterfaceDropAllTablesOptions, Sequelize, SyncOptions, Utils } from 'sequelize';
+import {
+  ModelCtor,
+  Op,
+  Options,
+  QueryInterfaceDropAllTablesOptions,
+  QueryOptions,
+  Sequelize,
+  SyncOptions,
+  Utils
+} from 'sequelize';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';
@@ -64,8 +73,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (options instanceof Sequelize) {
       this.sequelize = options;
     } else {
-      this.sequelize = new Sequelize(options);
-      this.options = options;
+      const opts = {
+        sync: {
+          alter: {
+            drop: false,
+          },
+          force: false,
+        },
+        ...options,
+      };
+      this.sequelize = new Sequelize(opts);
+      this.options = opts;
     }
 
     this.collections = new Map();
@@ -246,6 +264,29 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   public isSqliteMemory() {
     return this.sequelize.getDialect() === 'sqlite' && lodash.get(this.options, 'storage') == ':memory:';
+  }
+
+  async auth(options: QueryOptions & { repeat?: number } = {}) {
+    const { repeat = 10, ...others } = options;
+    const delay = (ms) => new Promise((yea) => setTimeout(yea, ms));
+    let count = 0;
+    const authenticate = async () => {
+      try {
+        await this.sequelize.authenticate(others);
+        console.log('Connection has been established successfully.');
+        return true;
+      } catch (error) {
+        console.log('reconnecting...', count);
+        if (count >= repeat) {
+          throw error;
+        }
+        ++count;
+        await delay(500);
+        return await authenticate();
+      }
+    };
+
+    return await authenticate();
   }
 
   async reconnect() {

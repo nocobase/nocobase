@@ -4,11 +4,13 @@ import { Drawer } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { useActionContext } from './hooks';
 import { ComposedActionDrawer } from './types';
 
 export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
+  const { t } = useTranslation();
   const { visible, setVisible } = useActionContext();
   const schema = useFieldSchema();
   const field = useField();
@@ -32,7 +34,7 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
             {...others}
             destroyOnClose
             visible={visible}
-            onClose={() => setVisible(false)}
+            onClose={() => setVisible(false, true)}
             className={classNames(
               others.className,
               css`

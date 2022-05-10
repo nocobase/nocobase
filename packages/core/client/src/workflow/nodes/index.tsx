@@ -1,23 +1,21 @@
-import React, { useContext } from 'react';
+import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { Button, Modal, Tag } from 'antd';
-import { DeleteOutlined, CloseOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
-
 import { Registry } from '@nocobase/utils';
-
-import { SchemaComponent, useActionContext, useAPIClient, useCollection, useRequest, useResourceActionContext } from '../..';
+import { Button, Modal, Tag } from 'antd';
+import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SchemaComponent, useActionContext, useAPIClient, useCollection, useCompile, useRequest, useResourceActionContext } from '../..';
+import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { AddButton, useFlowContext } from '../WorkflowCanvas';
 
-import { nodeClass, nodeCardClass, nodeHeaderClass, nodeTitleClass, nodeBlockClass } from '../style';
-
-import query from './query';
-import create from './create';
-import update from './update';
-import destroy from './destroy';
-import condition from './condition';
-import parallel from './parallel';
 import calculation from './calculation';
+import condition from './condition';
+import create from './create';
+import destroy from './destroy';
+import parallel from './parallel';
+import query from './query';
+import update from './update';
 
 
 
@@ -45,7 +43,7 @@ instructions.register('condition', condition);
 instructions.register('parallel', parallel);
 instructions.register('calculation', calculation);
 
-function useUpdateConfigAction() {
+function useUpdateAction() {
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
@@ -53,14 +51,13 @@ function useUpdateConfigAction() {
   const data = useNodeContext();
   return {
     async run() {
+      await form.submit();
       await api.resource('flow_nodes', data.id).update({
         filterByTk: data.id,
         values: {
-          config: {
-            ...data.config,
-            ...form.values
-          }
-        },
+          title: form.values.title,
+          config: form.values.config
+        }
       });
       ctx.setVisible(false);
       refresh();
@@ -113,6 +110,7 @@ export function Node({ data }) {
 }
 
 export function RemoveButton() {
+  const { t } = useTranslation();
   const { resource } = useCollection();
   const current = useNodeContext();
   const { nodes, onNodeRemoved } = useFlowContext();
@@ -127,11 +125,11 @@ export function RemoveButton() {
 
     const hasBranches = !nodes.find(item => item.upstream === current && item.branchIndex != null);
     const message = hasBranches
-      ? '确定删除该节点吗？'
-      : '节点包含分支，将同时删除其所有分支下的子节点，确定继续？';
+      ? t('Are you sure you want to delete it?')
+      : t('This node contains branches, deleting will also be preformed to them, are you sure?');
 
     Modal.confirm({
-      title: '删除节点',
+      title: t('Delete'),
       content: message,
       onOk
     });
@@ -150,6 +148,7 @@ export function RemoveButton() {
 
 export function NodeDefaultView(props) {
   const { data, children } = props;
+  const compile = useCompile();
   const instruction = instructions.get(data.type);
 
   return (
@@ -157,8 +156,10 @@ export function NodeDefaultView(props) {
       <div className={cx(nodeClass, `workflow-node-type-${data.type}`)}>
         <div className={cx(nodeCardClass)}>
           <div className={cx(nodeHeaderClass)}>
+            <div className={cx(nodeMetaClass)}>
+              <Tag>{compile(instruction.title)}</Tag>
+            </div>
             <h4 className={cx(nodeTitleClass)}>
-              <Tag>{instruction.title}</Tag>
               <strong>{data.title}</strong>
               <span className="workflow-node-id">#{data.id}</span>
             </h4>
@@ -171,58 +172,67 @@ export function NodeDefaultView(props) {
               type: 'void',
               properties: {
                 view: instruction.view,
-                ...(Object.keys(instruction.fieldset).length
-                  ? {
-                    config: {
+                config: {
+                  type: 'void',
+                  title: '{{t("Configure")}}',
+                  'x-component': 'Action.Link',
+                  'x-component-props': {
+                    type: 'primary',
+                  },
+                  properties: {
+                    drawer: {
                       type: 'void',
-                      title: '配置节点',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {
-                        type: 'primary',
+                      title: '{{t("Configure")}}',
+                      'x-component': 'Action.Drawer',
+                      'x-decorator': 'Form',
+                      'x-decorator-props': {
+                        useValues(options) {
+                          const d = useNodeContext();
+                          return useRequest(() => {
+                            return Promise.resolve({ data: d });
+                          }, options);
+                        }
                       },
                       properties: {
-                        drawer: {
+                        title: {
+                          type: 'string',
+                          name: 'title',
+                          title: '{{t("Name")}}',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input',
+                        },
+                        config: {
                           type: 'void',
-                          title: '配置节点',
-                          'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useValues(options) {
-                              const node = useNodeContext();
-                              return useRequest(() => {
-                                return Promise.resolve({ data: node.config });
-                              }, options);
-                            }
-                          },
+                          name: 'config',
+                          'x-component': 'fieldset',
+                          'x-component-props': {},
+                          properties: instruction.fieldset
+                        },
+                        actions: {
+                          type: 'void',
+                          'x-component': 'Action.Drawer.Footer',
                           properties: {
-                            ...instruction.fieldset,
-                            actions: {
-                              type: 'void',
-                              'x-component': 'Action.Drawer.Footer',
-                              properties: {
-                                cancel: {
-                                  title: '{{t("Cancel")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
-                                  },
-                                },
-                                submit: {
-                                  title: '{{t("Submit")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                    useAction: useUpdateConfigAction,
-                                  },
-                                },
+                            cancel: {
+                              title: '{{t("Cancel")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                useAction: '{{ cm.useCancelAction }}',
                               },
-                            } as ISchema
-                          }
-                        }
+                            },
+                            submit: {
+                              title: '{{t("Submit")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                type: 'primary',
+                                useAction: useUpdateAction,
+                              },
+                            },
+                          },
+                        } as ISchema
                       }
                     }
                   }
-                : {})
+                }
               }
             }}
           />

@@ -3,7 +3,7 @@ import { Application } from '@nocobase/server';
 import lodash from 'lodash';
 import * as path from 'path';
 
-interface registerAppOptions extends TransactionAble {
+export interface registerAppOptions extends TransactionAble {
   skipInstall?: boolean;
 }
 
@@ -16,18 +16,30 @@ export class ApplicationModel extends Model {
     );
   }
 
+  static async handleAppStart(app: Application, options: registerAppOptions) {
+    await app.load();
+
+    if (!lodash.get(options, 'skipInstall', false)) {
+      await app.install();
+    }
+
+    await app.start();
+  }
+
   async registerToMainApp(mainApp: Application, options: registerAppOptions) {
-    const { transaction } = options;
     const appName = this.get('name') as string;
     const appOptions = (this.get('options') as any) || {};
 
+    const AppModel = this.constructor as typeof ApplicationModel;
+
     const app = mainApp.appManager.createApplication(appName, {
-      ...ApplicationModel.initOptions(appName, mainApp),
+      ...AppModel.initOptions(appName, mainApp),
       ...appOptions,
     });
 
+    // create database before installation if it not exists
     app.on('beforeInstall', async function createDatabase() {
-      const { host, port, username, password, database, dialect } = ApplicationModel.getDatabaseConfig(app);
+      const { host, port, username, password, database, dialect } = AppModel.getDatabaseConfig(app);
 
       if (dialect === 'mysql') {
         const mysql = require('mysql2/promise');
@@ -56,17 +68,24 @@ export class ApplicationModel extends Model {
       }
     });
 
-    await app.load();
+    await AppModel.handleAppStart(app, options);
 
-    if (!lodash.get(options, 'skipInstall', false)) {
-      await app.install();
-    }
-
-    await app.start();
+    await AppModel.update(
+      {
+        status: 'running',
+      },
+      {
+        transaction: options.transaction,
+        where: {
+          [AppModel.primaryKeyAttribute]: this.get(AppModel.primaryKeyAttribute),
+        },
+        hooks: false,
+      },
+    );
   }
 
   static initOptions(appName: string, mainApp: Application) {
-    const rawDatabaseOptions = ApplicationModel.getDatabaseConfig(mainApp);
+    const rawDatabaseOptions = this.getDatabaseConfig(mainApp);
 
     if (rawDatabaseOptions.dialect === 'sqlite') {
       const mainAppStorage = rawDatabaseOptions.storage;

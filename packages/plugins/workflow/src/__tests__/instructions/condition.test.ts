@@ -22,7 +22,7 @@ describe('workflow > instructions > condition', () => {
     workflow = await WorkflowModel.create({
       title: 'test workflow',
       enabled: true,
-      type: 'model',
+      type: 'collection',
       config: {
         mode: 1,
         collection: 'posts'
@@ -119,7 +119,7 @@ describe('workflow > instructions > condition', () => {
 
   describe('group calculation', () => {
     it('and true', async () => {
-      const n1 = workflow.createNode({
+      const n1 = await workflow.createNode({
         type: 'condition',
         config: {
           calculation: {
@@ -148,7 +148,7 @@ describe('workflow > instructions > condition', () => {
     });
 
     it('and false', async () => {
-      const n1 = workflow.createNode({
+      const n1 = await workflow.createNode({
         type: 'condition',
         config: {
           calculation: {
@@ -177,7 +177,7 @@ describe('workflow > instructions > condition', () => {
     });
 
     it('or true', async () => {
-      const n1 = workflow.createNode({
+      const n1 = await workflow.createNode({
         type: 'condition',
         config: {
           calculation: {
@@ -206,7 +206,7 @@ describe('workflow > instructions > condition', () => {
     });
 
     it('or false', async () => {
-      const n1 = workflow.createNode({
+      const n1 = await workflow.createNode({
         type: 'condition',
         config: {
           calculation: {
@@ -235,7 +235,7 @@ describe('workflow > instructions > condition', () => {
     });
 
     it('nested', async () => {
-      const n1 = workflow.createNode({
+      const n1 = await workflow.createNode({
         type: 'condition',
         config: {
           calculation: {

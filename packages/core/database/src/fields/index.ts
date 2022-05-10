@@ -22,6 +22,7 @@ import { StringFieldOptions } from './string-field';
 import { TextFieldOptions } from './text-field';
 import { TimeFieldOptions } from './time-field';
 import { UidFieldOptions } from './uid-field';
+import { UUIDFieldOptions } from './uuid-field';
 import { VirtualFieldOptions } from './virtual-field';
 
 export * from './array-field';
@@ -43,6 +44,7 @@ export * from './string-field';
 export * from './text-field';
 export * from './time-field';
 export * from './uid-field';
+export * from './uuid-field';
 export * from './virtual-field';
 
 export type FieldOptions =
@@ -64,6 +66,7 @@ export type FieldOptions =
   | TimeFieldOptions
   | DateFieldOptions
   | UidFieldOptions
+  | UUIDFieldOptions
   | PasswordFieldOptions
   | ContextFieldOptions
   | BelongsToFieldOptions

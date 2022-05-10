@@ -1,5 +1,7 @@
 import { useForm } from '@formily/react';
+import { Modal as AntdModal } from 'antd';
 import { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActionContext } from './context';
 
 export const useA = () => {
@@ -10,12 +12,28 @@ export const useA = () => {
 
 export const useActionContext = () => {
   const ctx = useContext(ActionContext);
+  const { t } = useTranslation();
 
   return {
     ...ctx,
-    setVisible(visible: boolean) {
+    setVisible(visible: boolean, confirm = false) {
       if (ctx?.openMode !== 'page') {
-        ctx?.setVisible?.(visible);
+        if (!visible) {
+          if (confirm && ctx.formValueChanged) {
+            AntdModal.confirm({
+              title: t('Unsaved changes'),
+              content: t("Are you sure you don't want to save?"),
+              async onOk() {
+                ctx.setFormValueChanged(false);
+                ctx.setVisible(false);
+              },
+            });
+          } else {
+            ctx.setVisible(false);
+          }
+        } else {
+          ctx?.setVisible?.(visible);
+        }
       }
     },
   };

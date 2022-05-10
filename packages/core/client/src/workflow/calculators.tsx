@@ -1,13 +1,16 @@
 import React from "react";
-import { observer } from "@formily/react";
+import { observer, useForm } from "@formily/react";
 import { FormItem } from "@formily/antd";
-import { Cascader, DatePicker, Input, InputNumber, Select } from "antd";
+import { Button, Cascader, Dropdown, Input, InputNumber, Menu, Select } from "antd";
 import { css } from "@emotion/css";
+import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 import { instructions, useNodeContext } from "./nodes";
 import { useFlowContext } from "./WorkflowCanvas";
 import { triggers } from "./triggers";
-import { SchemaComponent, useCompile } from "..";
+import { SchemaComponent, useCollectionManager, useCompile } from "..";
+import { useTranslation } from "react-i18next";
+import { t } from "i18next";
 
 function NullRender() {
   return null;
@@ -16,7 +19,7 @@ function NullRender() {
 export const calculators = [
   {
     value: 'boolean',
-    title: '值比较',
+    title: '{{t("Comparison")}}',
     children: [
       { value: 'equal', name: '=' },
       { value: 'notEqual', name: '≠' },
@@ -28,30 +31,30 @@ export const calculators = [
   },
   {
     value: 'number',
-    title: '算术运算',
+    title: '{{t("Arithmetic calculation")}}',
     children: [
       { value: 'add', name: '+' },
       { value: 'minus', name: '-' },
-      { value: 'multipe', name: '*' },
+      { value: 'multiple', name: '*' },
       { value: 'divide', name: '/' },
       { value: 'mod', name: '%' },
     ]
   },
   {
     value: 'string',
-    title: '字符串',
+    title: '{{t("String operation")}}',
     children: [
-      { value: 'includes', name: '包含' },
-      { value: 'notIncludes', name: '不包含' },
-      { value: 'startsWith', name: '开头是' },
-      { value: 'notStartsWith', name: '开头不是' },
-      { value: 'endsWith', name: '结尾是' },
-      { value: 'notEndsWith', name: '结尾不是' }
+      { value: 'includes', name: '{{t("contains")}}' },
+      { value: 'notIncludes', name: '{{t("does not contain")}}' },
+      { value: 'startsWith', name: '{{t("starts with")}}' },
+      { value: 'notStartsWith', name: '{{t("not starts with")}}' },
+      { value: 'endsWith', name: '{{t("ends with")}}' },
+      { value: 'notEndsWith', name: '{{t("not ends with")}}' }
     ]
   },
   {
     value: 'date',
-    title: '日期',
+    title: '{{t("Date")}}',
     children: []
   }
 ];
@@ -76,7 +79,7 @@ export const BaseTypeSet = new Set(['boolean', 'number', 'string', 'date']);
 
 const ConstantTypes = {
   string: {
-    title: '字符串',
+    title: '{{t("String")}}',
     value: 'string',
     component({ onChange, type, options, value }) {
       return (
@@ -89,7 +92,7 @@ const ConstantTypes = {
     default: ''
   },
   number: {
-    title: '数字',
+    title: '{{t("Number")}}',
     value: 'number',
     component({ onChange, type, options, value }) {
       return (
@@ -102,13 +105,14 @@ const ConstantTypes = {
     default: 0
   },
   boolean: {
-    title: '逻辑值',
+    title: '{{t("Boolean")}}',
     value: 'boolean',
     component({ onChange, type, options, value }) {
+      const { t } = useTranslation();
       return (
         <Select value={value} onChange={v => onChange({ value: v, type, options })}>
-          <Select.Option value={true}>真</Select.Option>
-          <Select.Option value={false}>假</Select.Option>
+          <Select.Option value={true}>{t('True')}</Select.Option>
+          <Select.Option value={false}>{t('False')}</Select.Option>
         </Select>
       );
     },
@@ -126,7 +130,7 @@ const ConstantTypes = {
 
 export const VariableTypes = {
   constant: {
-    title: '常量',
+    title: '{{t("Constant")}}',
     value: 'constant',
     options: Object.values(ConstantTypes).map(item => ({
       value: item.value,
@@ -154,7 +158,7 @@ export const VariableTypes = {
     }
   },
   $jobsMapByNodeId: {
-    title: '节点数据',
+    title: '{{t("Node result")}}',
     value: '$jobsMapByNodeId',
     options() {
       const node = useNodeContext();
@@ -209,7 +213,7 @@ export const VariableTypes = {
     }
   },
   $context: {
-    title: '触发数据',
+    title: '{{t("Trigger context")}}',
     value: '$context',
     component() {
       const { workflow } = useFlowContext();
@@ -251,13 +255,14 @@ export function Operand({
   onChange,
   children
 }: OperandProps) {
+  const compile = useCompile();
   const Types = useVariableTypes();
 
   const { type } = operand;
 
   const { component, appendTypeValue } = Types[type] || {};
   const VariableComponent = typeof component === 'function' ? component(operand) : NullRender;
-
+  console.log(Types);
   return (
     <div className={css`
       display: flex;
@@ -278,9 +283,9 @@ export function Operand({
         options={Object.values(Types).map((item: any) => {
           const options = typeof item.options === 'function' ? item.options() : item.options;
           return {
-            label: item.title,
+            label: compile(item.title),
             value: item.value,
-            children: options,
+            children: compile(options),
             disabled: options && !options.length,
             isLeaf: !options
           };
@@ -302,6 +307,7 @@ export function Operand({
 }
 
 export function Calculation({ calculator, operands = [], onChange }) {
+  const compile = useCompile();
   return (
     <VariableTypesContext.Provider value={VariableTypes}>
       <div className={css`
@@ -320,9 +326,9 @@ export function Calculation({ calculator, operands = [], onChange }) {
             <>
               <Select value={calculator} onChange={v => onChange({ operands, calculator: v })}>
                 {calculators.map(group => (
-                  <Select.OptGroup key={group.value} label={group.title}>
+                  <Select.OptGroup key={group.value} label={compile(group.title)}>
                     {group.children.map(item => (
-                      <Select.Option key={item.value} value={item.value}>{item.name}</Select.Option>
+                      <Select.Option key={item.value} value={item.value}>{compile(item.name)}</Select.Option>
                     ))}
                   </Select.OptGroup>
                 ))}
@@ -340,7 +346,7 @@ export function Calculation({ calculator, operands = [], onChange }) {
 export function VariableComponent({ value, onChange, renderSchemaComponent }) {
   const VTypes = { ...VariableTypes,
     constant: {
-      title: '常量',
+      title: '{{t("Constant")}}',
       value: 'constant',
       options: undefined
     }
@@ -370,13 +376,21 @@ export function VariableComponent({ value, onChange, renderSchemaComponent }) {
 }
 
 // NOTE: observer for watching useProps
-export const CollectionFieldset = observer(({ value, onChange, useProps }: any) => {
-  const { fields } = useProps();
+export const CollectionFieldset = observer(({ value, onChange }: any) => {
+  const { t } = useTranslation();
   const compile = useCompile();
+  const { getCollectionFields } = useCollectionManager();
+  const { values: data } = useForm();
+  const fields = getCollectionFields(data?.config?.collection)
+    .filter(field => (
+      !field.hidden
+      && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false)
+    ));
 
-  const VTypes = { ...VariableTypes,
+  const VTypes = {
+    ...VariableTypes,
     constant: {
-      title: '常量',
+      title: '{{t("Constant")}}',
       value: 'constant',
       options: undefined
     }
@@ -395,37 +409,72 @@ export const CollectionFieldset = observer(({ value, onChange, useProps }: any) 
       }
     `}>
       {fields.length
-        ? fields
-          .filter(field => !field.hidden)
-          .map(field => {
-            const operand = typeof value[field.name] === 'string'
-              ? parseStringValue(value[field.name], VTypes)
-              : { type: 'constant', value: value[field.name] };
+        ? (
+          <>
+          {fields
+            .filter(field => field.name in value)
+            .map(field => {
+              const operand = typeof value[field.name] === 'string'
+                ? parseStringValue(value[field.name], VTypes)
+                : { type: 'constant', value: value[field.name] };
 
-            return (
-              <FormItem label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left">
-                <VariableTypesContext.Provider value={VTypes}>
-                  <Operand
-                    value={operand}
-                    onChange={(next) => {
-                      if (next.type !== operand.type && next.type === 'constant') {
-                        onChange({ ...value, [field.name]: null });
-                      } else {
-                        const { stringify } = VTypes[next.type];
-                        onChange({ ...value, [field.name]: stringify(next) });
+              return (
+                <FormItem key={field.name} label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left" className={css`
+                  .ant-formily-item-control-content-component{
+                    display: flex;
+                  }
+                `}>
+                  <VariableTypesContext.Provider value={VTypes}>
+                    <Operand
+                      value={operand}
+                      onChange={(next) => {
+                        if (next.type !== operand.type && next.type === 'constant') {
+                          onChange({ ...value, [field.name]: null });
+                        } else {
+                          const { stringify } = VTypes[next.type];
+                          onChange({ ...value, [field.name]: stringify(next) });
+                        }
+                      }}
+                    >
+                      {operand.type === 'constant'
+                        ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
+                        : null
                       }
-                    }}
-                  >
-                    {operand.type === 'constant'
-                      ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
-                      : null
-                    }
-                  </Operand>
-                </VariableTypesContext.Provider>
-              </FormItem>
-            );
-          })
-        : <p>请先选择数据表</p>
+                    </Operand>
+                    <Button
+                      type="link"
+                      icon={<CloseCircleOutlined />}
+                      onClick={() => {
+                        const { [field.name]: _, ...rest } = value;
+                        onChange(rest);
+                      }}
+                    />
+                  </VariableTypesContext.Provider>
+                </FormItem>
+              );
+            })}
+            {Object.keys(value).length < fields.length
+              ? (
+                <Dropdown overlay={
+                  <Menu onClick={({ key }) => onChange({ ...value, [key]: null })} className={css`
+                    max-height: 300px;
+                    overflow-y: auto;
+                  `}>
+                    {fields
+                      .filter(field => !(field.name in value))
+                      .map(field => (
+                        <Menu.Item key={field.name}>{compile(field.uiSchema?.title ?? field.name)}</Menu.Item>
+                      ))}
+                  </Menu>
+                }>
+                  <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
+                </Dropdown>
+              )
+              : null
+            }
+          </>
+        )
+        : <p>{t('Please select collection first')}</p>
       }
     </fieldset>
   );

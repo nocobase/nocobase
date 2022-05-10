@@ -19,5 +19,10 @@ export default [
   '@nocobase/plugin-acl',
   '@nocobase/plugin-china-region',
   '@nocobase/plugin-workflow',
-  ['@nocobase/plugin-client'],
+  [
+    '@nocobase/plugin-client',
+    {
+      dist: resolve(process.cwd(), 'packages/app/client/dist'),
+    },
+  ],
 ] as PluginsConfigurations;

@@ -1,12 +1,11 @@
 import { css } from "@emotion/css";
 import { useForm } from "@formily/react";
-import { useCollectionManager } from "../../collection-manager";
 import { useCollectionFilterOptions } from "../../collection-manager/action-hooks";
 
 export const collection = {
   type: 'string',
-  title: '数据表',
-  name: 'collection',
+  title: '{{t("Collection")}}',
+  name: 'config.collection',
   required: true,
   'x-reactions': ['{{useCollectionDataSource()}}'],
   'x-decorator': 'FormItem',
@@ -15,8 +14,8 @@ export const collection = {
 
 export const values = {
   type: 'object',
-  title: '数据内容',
-  name: 'values',
+  title: '{{t("Fields values")}}',
+  name: 'config.params.values',
   'x-decorator': 'FormItem',
   'x-decorator-props': {
     labelAlign: 'left',
@@ -25,20 +24,13 @@ export const values = {
     `
   },
   'x-component': 'CollectionFieldset',
-  'x-component-props': {
-    useProps() {
-      const { getCollectionFields } = useCollectionManager();
-      const { values: form } = useForm();
-      const fields = getCollectionFields(form.collection);
-      return { fields };
-    }
-  }
+  description: '{{t("Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.")}}',
 };
 
 export const filter = {
   type: 'object',
-  title: '筛选条件',
-  name: 'filter',
+  title: '{{t("Filter")}}',
+  name: 'config.params.filter',
   'x-decorator': 'FormItem',
   'x-decorator-props': {
     labelAlign: 'left',
@@ -50,14 +42,12 @@ export const filter = {
   'x-component-props': {
     useProps() {
       const { values } = useForm();
-      const options = useCollectionFilterOptions(values.collection);
+      const options = useCollectionFilterOptions(values.config?.collection);
       return {
         options,
         className: css`
           position: relative;
           width: 100%;
-          padding: .5em 1em;
-          border: 1px dashed #ddd;
         `
       };
     },

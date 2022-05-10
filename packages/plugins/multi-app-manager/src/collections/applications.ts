@@ -6,7 +6,6 @@ export default defineCollection({
   autoGenId: false,
   title: '{{t("Applications")}}',
   sortable: 'sort',
-  createdBy: true,
   filterTargetKey: 'name',
   fields: [
     {
@@ -20,6 +19,21 @@ export default defineCollection({
         title: '{{t("Application name")}}',
         'x-component': 'Input',
         'x-read-pretty': true,
+      },
+    },
+    {
+      type: 'string',
+      name: 'status',
+      interface: 'radioGroup',
+      defaultValue: 'pending',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Application status")}}',
+        'x-component': 'Radio.Group',
+        enum: [
+          { label: '创建中', value: 'pending' },
+          { label: '运行中', value: 'running' },
+        ],
       },
     },
     {

@@ -54,7 +54,7 @@ const getDatabaseOptionsFromCommandOptions = (commandOptions) => {
   if (!commandOptions.dbDialect || commandOptions.dbDialect === 'sqlite' || envs['DB_STORAGE']) {
     return {
       dialect: 'sqlite',
-      storage: envs['DB_STORAGE'] || 'db.sqlite',
+      storage: envs['DB_STORAGE'] || 'storage/db/nocobase.sqlite',
     };
   }
 

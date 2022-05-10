@@ -47,11 +47,11 @@ export const RoleConfigure = () => {
             title: t('Configure permissions'),
             'x-decorator': 'FormItem',
             'x-component': 'Checkbox',
-            'x-content': '允许配置系统，包括界面配置、数据表配置、权限配置、系统配置等全部配置项',
+            'x-content': t('Allows configuration of the whole system, including UI, collections, permissions, etc.'),
           },
           'strategy.actions': {
-            title: t('General action permissions'),
-            description: '所有数据表都默认使用通用数据操作权限；同时，可以针对每个数据表单独配置权限。',
+            title: t('Global action permissions'),
+            description: t('All collections use general action permissions by default; permission configured individually will override the default one.'),
             'x-component': 'StrategyActions',
             'x-decorator': 'FormItem',
           },
@@ -59,7 +59,7 @@ export const RoleConfigure = () => {
             title: t('Menu permissions'),
             'x-decorator': 'FormItem',
             'x-component': 'Checkbox',
-            'x-content': '新增菜单项默认允许访问',
+            'x-content': t('New menu items are allowed to be accessed by default.'),
           },
         },
       }}

@@ -72,6 +72,56 @@ describe('acl', () => {
     });
   });
 
+  it('should deny when resource action has no resource', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+        strategy: {
+          actions: ['update:own', 'destroy:own', 'create', 'view'],
+        },
+      },
+    });
+
+    changeMockRole('admin');
+
+    // create c1 collection
+    await db.getRepository('collections').create({
+      values: {
+        name: 'c1',
+        title: 'table1',
+      },
+    });
+
+    // create c2 collection
+    await db.getRepository('collections').create({
+      values: {
+        name: 'c2',
+        title: 'table2',
+      },
+    });
+
+    await app
+      .agent()
+      .resource('roles.resources', 'admin')
+      .create({
+        values: {
+          name: 'c1',
+          usingActionsConfig: true,
+          actions: [],
+        },
+      });
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'c1',
+        action: 'list',
+      }),
+    ).toBeNull();
+  });
+
   it('should works with resources actions', async () => {
     const role = await db.getRepository('roles').create({
       values: {

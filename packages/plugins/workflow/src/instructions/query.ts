@@ -13,7 +13,7 @@ export default {
     const options = execution.getParsedValue(params);
     const result = await (multiple ? repo.find : repo.findOne).call(repo, {
       ...options,
-      transaction: execution.transaction
+      transaction: execution.tx
     });
 
     return {

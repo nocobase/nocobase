@@ -19,6 +19,7 @@ export interface CollectionOptions {
   title?: string;
   filterTargetKey?: string;
   targetKey?: string;
+  sortable?: any;
   fields?: FieldOptions[];
 }
 

@@ -1,15 +1,17 @@
+import { css } from '@emotion/css';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calculation } from '../calculators';
 
 export default {
-  title: '运算',
+  title: '{{t("Calculation")}}',
   type: 'calculation',
   group: 'control',
   fieldset: {
-    calculation: {
+    'config.calculation': {
       type: 'object',
-      title: '配置计算',
-      name: 'calculation',
+      title: '{{t("Configure calculation")}}',
+      name: 'config.calculation',
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',
@@ -26,6 +28,7 @@ export default {
     }
   },
   getter() {
-    return <div>计算值</div>;
+    const { t } = useTranslation();
+    return <div className={css`flex-shrink: 0`}>{t('Calculation result')}</div>;
   }
 };

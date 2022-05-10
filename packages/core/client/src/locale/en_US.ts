@@ -280,5 +280,12 @@ export default {
   "Add card": "Add card",
   "edit title": "Edit Title",
   "Turn the page": "Turn the page",
-  "Others": "Others"
+  "Others": "Others",
+
+  // workflows
+  'Execution History': 'History',
+  'Parallel branch': 'Branch',
+
+  'Unsaved changes': 'Unsaved changes',
+  'Are you sure you don\'t want to save?': 'Are you sure you don\'t want to save?',
 }

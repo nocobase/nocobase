@@ -1,14 +1,17 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { Dropdown, Menu, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
-import { addButtonClass, branchBlockClass, branchClass, nodeBlockClass, nodeCardClass, nodeHeaderClass, nodeTitleClass } from './style';
+import { useTranslation } from 'react-i18next';
 
 import {
   useCollection,
+  useCompile,
+  useDocumentTitle,
   useResourceActionContext
 } from '..';
 import { Instruction, instructions, Node } from './nodes';
+import { addButtonClass, branchBlockClass, branchClass, nodeBlockClass, nodeCardClass, nodeHeaderClass, nodeTitleClass } from './style';
 
 
 
@@ -34,10 +37,17 @@ export function useFlowContext() {
 }
 
 export function WorkflowCanvas() {
+  const { t } = useTranslation();
   const { data, refresh, loading } = useResourceActionContext();
 
+  const { setTitle } = useDocumentTitle();
+  useEffect(() => {
+    const { title } = data?.data ?? {};
+    setTitle(`${title ? `${title} - ` : ''}${t('Workflow')}`);
+  }, [data?.data]);
+
   if (!data?.data && !loading) {
-    return <div>加载失败</div>;
+    return <div>{t('Load failed')}</div>;
   }
 
   const { nodes = [], ...workflow } = data?.data ?? {};
@@ -56,7 +66,7 @@ export function WorkflowCanvas() {
       <div className={branchBlockClass}>
         <Branch entry={entry} />
       </div>
-      <div className={cx(nodeCardClass)}>结束</div>
+      <div className={cx(nodeCardClass)}>{t('End')}</div>
     </FlowContext.Provider>
   );
 }
@@ -93,6 +103,7 @@ interface AddButtonProps {
 };
 
 export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
+  const compile = useCompile();
   const { resource } = useCollection();
   const { data } = useResourceActionContext();
   const { onNodeAdded } = useFlowContext();
@@ -120,8 +131,8 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   }
 
   const groups = [
-    { value: 'control', name: '流程控制' },
-    { value: 'model', name: '数据表操作' },
+    { value: 'control', name: '{{t("Control")}}' },
+    { value: 'collection', name: '{{t("Collection operations")}}' },
   ];
   const instructionList = (Array.from(instructions.getValues()) as Instruction[]);
 
@@ -130,17 +141,17 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
       <Dropdown trigger={['click']} overlay={
         <Menu onClick={ev => onCreate(ev)}>
           {groups.map(group => (
-            <Menu.ItemGroup key={group.value} title={group.name}>
+            <Menu.ItemGroup key={group.value} title={compile(group.name)}>
               {instructionList.filter(item => item.group === group.value).map(item => item.options
               ? (
-                <Menu.SubMenu key={item.type} title={item.title}>
+                <Menu.SubMenu key={item.type} title={compile(item.title)}>
                   {item.options.map(option => (
-                    <Menu.Item key={option.key}>{option.label}</Menu.Item>
+                    <Menu.Item key={option.key}>{compile(option.label)}</Menu.Item>
                   ))}
                 </Menu.SubMenu>
               )
               : (
-                <Menu.Item key={item.type}>{item.title}</Menu.Item>
+                <Menu.Item key={item.type}>{compile(item.title)}</Menu.Item>
               ))}
             </Menu.ItemGroup>
           ))}

@@ -68,7 +68,7 @@ export interface FilterByTk {
 
 export interface FindOptions extends SequelizeFindOptions, CommonFindOptions, FilterByTk {}
 
-export interface CommonFindOptions {
+export interface CommonFindOptions extends TransactionAble {
   filter?: Filter;
   fields?: Fields;
   appends?: Appends;

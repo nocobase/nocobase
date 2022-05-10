@@ -3,18 +3,21 @@ import { CollectionFieldset, VariableComponent } from '../calculators';
 import { collection, filter, values } from '../schemas/collection';
 
 export default {
-  title: '更新数据',
+  title: '{{t("Update record")}}',
   type: 'update',
-  group: 'model',
+  group: 'collection',
   fieldset: {
-    collection,
-    params: {
+    'config.collection': collection,
+    'config.params': {
       type: 'object',
-      name: 'params',
+      name: 'config.params',
       title: '',
       'x-decorator': 'FormItem',
       properties: {
-        filter,
+        filter: {
+          ...filter,
+          title: '{{t("Only update records matching conditions")}}',
+        },
         values
       }
     }

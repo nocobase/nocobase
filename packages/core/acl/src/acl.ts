@@ -175,6 +175,8 @@ export class ACL extends EventEmitter {
           action,
           params: actionParams,
         };
+      } else {
+        return null;
       }
     }
 
