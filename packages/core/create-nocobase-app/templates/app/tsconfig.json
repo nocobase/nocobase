@@ -3,8 +3,8 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "jsx": "react",
-    "module": "commonjs",
-    "target": "es6",
+    "target": "esnext",
+    "module": "esnext",
     "allowJs": false,
     "noUnusedLocals": false,
     "preserveConstEnums": true,
@@ -16,6 +16,16 @@
     "experimentalDecorators": true,
     "downlevelIteration": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@nocobase/app-*": [
+        "packages/app/*/src"
+      ],
+      "@nocobase/plugin-*": [
+        "packages/plugins/*/src"
+      ],
+      "@nocobase/*": [
+        "packages/core/*/src"
+      ]
+    }
   }
 }

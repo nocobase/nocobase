@@ -1,21 +1,13 @@
 {
-  "name": "nocobase",
+  "name": "{{{name}}}",
   "private": true,
   "workspaces": [
     "packages/app/*",
-    "packages/core/*",
     "packages/plugins/*"
   ],
-  "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
   "scripts": {
-    "dev": "nocobase dev",
-    "start": "nocobase start",
+    "start": "nocobase dev",
+    "start-pm2": "nocobase start --pm2",
     "start-docs": "dumi dev",
     "clean": "rimraf -rf packages/*/*/{lib,esm,es,dist} && lerna clean",
     "build": "yarn build-tool && yarn nocobase build",
@@ -36,6 +28,10 @@
       "commit-msg": "commitlint --edit"
     }
   },
+  "dependencies": {
+    "@nocobase/cli": "{{{version}}}",
+    {{{dependencies}}}
+  },
   "devDependencies": {
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
@@ -53,7 +49,6 @@
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "rimraf": "^3.0.0",
-    "sqlite3": "^5.0.2",
     "supertest": "^6.1.6"
   }
 }

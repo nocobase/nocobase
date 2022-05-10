@@ -1,9 +1,7 @@
 ################# NOCOBASE APPLICATION #################
 
 NOCOBASE_ENV=development
-JWT_SECRET=<%= jwtSecret %>
 
-SERVER_HOST=0.0.0.0
 SERVER_PORT=3000
 
 # api base path endpoint for app(web)
@@ -12,10 +10,13 @@ SERVER_BASE_PATH=/api/
 # api server access point for app(web when build)
 SERVER_BASE_URL=
 
+JWT_SECRET={{{env.JWT_SECRET}}}
+
 ################# DATABASE #################
 
 DB_LOG_SQL=off
-<%= dbEnvs %>
+DB_DIALECT={{{env.DB_DIALECT}}}
+{{{envs}}}
 
 ################# STORAGE (Initialization only) #################
 

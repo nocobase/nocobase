@@ -3,7 +3,7 @@ import config from './config';
 
 const app = new Application(config);
 
-if (require.main.filename === __filename) {
+if (require.main === module) {
   app.parse();
 }
 

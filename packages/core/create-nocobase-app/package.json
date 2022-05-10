@@ -10,16 +10,16 @@
     }
   ],
   "dependencies": {
+    "@umijs/utils": "^3.5.20",
     "axios": "^0.26.1",
+    "bl": "^4.1.0",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
-    "execa": "5",
-    "fs-extra": "^10.0.1",
-    "lodash": "^4.17.21",
-    "ora": "^5.4.1",
-    "tar": "^6.1.11"
+    "tar": "6.1.11"
   },
-  "bin": "./bin/create-nocobase-app.js",
+  "bin": {
+    "create-nocobase-app": "./bin/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",

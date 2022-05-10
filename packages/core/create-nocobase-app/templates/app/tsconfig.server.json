@@ -1,19 +1,31 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
-    "resolveJsonModule": true,
     "moduleResolution": "node",
     "jsx": "react",
-    "module": "commonjs",
-    "target": "es6",
+    "target": "ES6",
+    "module": "CommonJS",
     "allowJs": false,
     "noUnusedLocals": false,
     "preserveConstEnums": true,
     "skipLibCheck": true,
     "sourceMap": true,
     "inlineSources": true,
+    "resolveJsonModule": true,
     "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
+    "baseUrl": ".",
+    "paths": {
+      "@nocobase/app-*": [
+        "packages/app/*/src"
+      ],
+      "@nocobase/plugin-*": [
+        "packages/plugins/*/src"
+      ],
+      "@nocobase/*": [
+        "packages/core/*/src"
+      ]
+    }
   }
 }
