@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-manager",
-  "version": "0.7.0-alpha.46",
+  "version": "0.7.0-alpha.47",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -10,7 +10,7 @@
     }
   ],
   "devDependencies": {
-    "@nocobase/test": "0.7.0-alpha.46"
+    "@nocobase/test": "0.7.0-alpha.47"
   },
   "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }
