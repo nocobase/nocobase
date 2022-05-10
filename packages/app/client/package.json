@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/app-client",
-  "version": "0.7.0-alpha.44",
+  "version": "0.7.0-alpha.45",
   "license": "MIT",
   "devDependencies": {
-    "@nocobase/client": "0.7.0-alpha.44"
+    "@nocobase/client": "0.7.0-alpha.45"
   },
   "repository": {
     "type": "git",
