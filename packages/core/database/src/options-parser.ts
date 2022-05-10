@@ -230,7 +230,7 @@ export class OptionsParser {
           association: appendAssociation,
         });
 
-        existIncludeIndex = 0;
+        existIncludeIndex = queryParams['include'].length - 1;
       }
 
       // end appends
