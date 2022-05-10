@@ -2,15 +2,27 @@ const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
 
-exports.isDev = function isDev() {
-  if (process.env.NOCOBASE_ENV === 'production') {
-    return false;
-  }
+exports.hasTsNode = () => {
   try {
     require.resolve('ts-node/dist/bin');
     return true;
   } catch (error) {
     return false;
+  }
+};
+
+exports.isDev = function isDev() {
+  if (process.env.NOCOBASE_ENV === 'production') {
+    return false;
+  }
+  return exports.hasTsNode();
+};
+
+exports.nodeCheck = () => {
+  if (!exports.hasTsNode()) {
+    console.log('Please install all dependencies');
+    console.log(chalk.yellow('$ yarn install'));
+    process.exit(0);
   }
 };
 

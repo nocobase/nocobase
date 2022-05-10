@@ -9,7 +9,8 @@ module.exports = (cli) => {
   cli
     .allowUnknownOption()
     .option('-h, --help')
-    .action(() => {
+    .option('-tsnd, --ts-node-dev')
+    .action((options) => {
       if (isDev()) {
         const argv = [
           '-P',
@@ -19,7 +20,7 @@ module.exports = (cli) => {
           './packages/app/server/src/index.ts',
           ...process.argv.slice(2),
         ];
-        run('ts-node', argv);
+        run(options.tsNodeDev ? 'ts-node-dev' : 'ts-node', argv);
       } else {
         const argv = ['./packages/app/server/lib/index.js', ...process.argv.slice(2)];
         run('node', argv);

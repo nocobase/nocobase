@@ -160,7 +160,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   command(name: string, desc?: string, opts?: CommandOptions): Command {
-    return this.cli.command(name, desc, opts);
+    return this.cli.command(name, desc, opts).allowUnknownOption();
   }
 
   findCommand(name: string): Command {

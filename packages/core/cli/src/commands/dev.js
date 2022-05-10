@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { run, postCheck } = require('../util');
+const { run, postCheck, nodeCheck } = require('../util');
 
 /**
  *
@@ -10,6 +10,7 @@ module.exports = (cli) => {
     .command('dev')
     .allowUnknownOption()
     .action(async (opts) => {
+      nodeCheck();
       await postCheck(opts);
       run('ts-node-dev', [
         '-P',
