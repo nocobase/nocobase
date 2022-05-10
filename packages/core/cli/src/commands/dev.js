@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { run } = require('../util');
+const { run, postCheck } = require('../util');
 
 /**
  *
@@ -9,7 +9,8 @@ module.exports = (cli) => {
   cli
     .command('dev')
     .allowUnknownOption()
-    .action(() => {
+    .action(async (opts) => {
+      await postCheck(opts);
       run('ts-node-dev', [
         '-P',
         './tsconfig.server.json',

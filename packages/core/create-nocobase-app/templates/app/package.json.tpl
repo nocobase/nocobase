@@ -28,17 +28,12 @@
   },
   "devDependencies": {
     "@nocobase/devtools": "{{{version}}}",
-    "@types/react": "^17.0.0",
-    "@types/react-dom": "^17.0.0",
     "commander": "^9.2.0",
     "cross-env": "^7.0.3",
     "glob": "^7.1.3",
     "prettier": "^2.2.1",
     "pretty-format": "^24.0.0",
     "pretty-quick": "^3.1.0",
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1",
-    "rimraf": "^3.0.0",
-    "supertest": "^6.1.6"
+    "rimraf": "^3.0.0"
   }
 }

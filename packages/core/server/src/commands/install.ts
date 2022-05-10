@@ -13,13 +13,10 @@ export default (app: Application) => {
         const tables = await app.db.sequelize.getQueryInterface().showAllTables();
         if (tables.includes('collections')) {
           if (!opts.silent) {
+            console.log('NocoBase is already installed. To reinstall, please execute:');
             console.log();
-            console.log();
-            console.log(chalk.yellow('NocoBase is already installed. To reinstall, please execute:'));
-            console.log();
-            let command = 'yarn nocobase install -f';
+            let command = '$ yarn nocobase install -f';
             console.log(chalk.yellow(command));
-            console.log();
             console.log();
           }
           return;

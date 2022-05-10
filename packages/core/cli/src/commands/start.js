@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { isDev, run } = require('../util');
+const { isDev, run, postCheck } = require('../util');
 
 /**
  *
@@ -9,8 +9,10 @@ module.exports = (cli) => {
   cli
     .command('start')
     .option('--pm2')
+    .option('-p, --port [port]')
     .allowUnknownOption()
-    .action((opts) => {
+    .action(async (opts) => {
+      await postCheck(opts);
       if (isDev() && !opts.pm2) {
         const argv = [
           '-P',

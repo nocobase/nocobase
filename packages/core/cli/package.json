@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "bl": "^4.1.0",
+    "chalk": "^4.1.1",
     "commander": "^9.2.0",
     "dotenv": "^10.0.0",
     "pm2": "^5.2.0"
