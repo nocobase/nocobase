@@ -4,7 +4,15 @@ const net = require('net');
 const chalk = require('chalk');
 
 exports.isDev = function isDev() {
-  return process.env.NOCOBASE_ENV !== 'production';
+  if (process.env.NOCOBASE_ENV === 'production') {
+    return false;
+  }
+  try {
+    require.resolve('ts-node/dist/bin');
+    return true;
+  } catch (error) {
+    return false;
+  }
 };
 
 function spawnAsync(...args) {

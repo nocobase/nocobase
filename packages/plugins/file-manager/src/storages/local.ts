@@ -53,7 +53,7 @@ function getDocumentRoot(storage): string {
 }
 
 async function middleware(app: Application, options?) {
-  const LOCALHOST = `http://localhost:${process.env.SERVER_PORT || '13002'}`;
+  const LOCALHOST = `http://localhost:${process.env.SERVER_PORT || '13000'}`;
 
   const Storage = app.db.getCollection('storages');
   const storages = new Map<string, any>();
@@ -125,7 +125,7 @@ export default {
       title: '本地存储',
       type: STORAGE_TYPE_LOCAL,
       name: `local`,
-      baseUrl: LOCAL_STORAGE_BASE_URL || `http://localhost:${SERVER_PORT || '13002'}/${documentRoot}`,
+      baseUrl: LOCAL_STORAGE_BASE_URL || `http://localhost:${SERVER_PORT || '13000'}/${documentRoot}`,
       options: {
         documentRoot,
       },

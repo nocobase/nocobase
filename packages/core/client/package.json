@@ -47,6 +47,7 @@
     "react-is": ">=16.8.0 || >=17.0.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^12.1.2",
     "@types/marked": "^4.0.1",
     "axios-mock-adapter": "^1.20.0"
   },

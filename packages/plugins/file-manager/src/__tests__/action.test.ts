@@ -4,7 +4,7 @@ import { getApp } from '.';
 import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../constants';
 
 
-const { LOCAL_STORAGE_BASE_URL, SERVER_PORT = '13002' } = process.env;
+const { LOCAL_STORAGE_BASE_URL, SERVER_PORT = '13000' } = process.env;
 
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `http://localhost:${SERVER_PORT}/uploads`;
 

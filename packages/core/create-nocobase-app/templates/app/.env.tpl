@@ -2,7 +2,7 @@
 
 NOCOBASE_ENV={{{env.NOCOBASE_ENV}}}
 
-SERVER_PORT=3000
+SERVER_PORT={{{env.SERVER_PORT}}}
 
 # api base path endpoint for app(web)
 SERVER_BASE_PATH=/api/
