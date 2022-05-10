@@ -19,6 +19,7 @@
     "@types/node": "*",
     "@typescript-eslint/eslint-plugin": "^4.9.1",
     "@typescript-eslint/parser": "^4.8.2",
+    "@nocobase/build": "0.7.0-alpha.36",
     "concurrently": "^7.0.0",
     "eslint": "^7.14.0",
     "eslint-config-prettier": "^7.0.0",

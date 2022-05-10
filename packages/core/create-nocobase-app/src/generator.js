@@ -72,13 +72,13 @@ class AppGenerator extends Generator {
       dependencies.push(`"mysql2": "^2.3.3"`);
       dependencies.push(`"pg": "^8.7.3"`);
       dependencies.push(`"pg-hstore": "^2.3.4"`);
-      dependencies.push(`"sqlite": "^5.0.8"`);
+      dependencies.push(`"sqlite3": "^5.0.8"`);
     }
 
     switch (dbDialect) {
       case 'sqlite':
         if (!allDbDeps) {
-          dependencies.push(`"sqlite": "^5.0.8"`);
+          dependencies.push(`"sqlite3": "^5.0.8"`);
         }
         envs.push(`DB_STORAGE=${env.DB_STORAGE || 'storages/db/nocobase.sqlite'}`);
         break;
