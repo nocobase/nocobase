@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/devtools",
-  "version": "0.7.0-alpha.36",
+  "version": "0.7.0-alpha.37",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -11,6 +11,7 @@
   ],
   "main": "./src/index.js",
   "dependencies": {
+    "@nocobase/build": "0.7.0-alpha.37",
     "@testing-library/react": "^12.1.2",
     "@types/jest": "^26.0.0",
     "@types/koa": "^2.13.4",
@@ -19,7 +20,6 @@
     "@types/node": "*",
     "@typescript-eslint/eslint-plugin": "^4.9.1",
     "@typescript-eslint/parser": "^4.8.2",
-    "@nocobase/build": "0.7.0-alpha.36",
     "concurrently": "^7.0.0",
     "eslint": "^7.14.0",
     "eslint-config-prettier": "^7.0.0",
