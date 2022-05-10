@@ -8,13 +8,10 @@
   "scripts": {
     "dev": "nocobase dev",
     "start": "nocobase start",
-    "clean": "rimraf -rf packages/*/*/{lib,esm,es,dist} && lerna clean",
+    "clean": "rimraf -rf packages/*/*/{lib,esm,es,dist}",
     "build": "nocobase build",
     "test": "nocobase test",
-    "lint": "eslint .",
-    "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
-    "release:force": "lerna publish from-package --yes",
-    "release": "lerna publish"
+    "lint": "eslint ."
   },
   "resolutions": {
     "@types/react": "^17.0.0",

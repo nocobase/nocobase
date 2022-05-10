@@ -8,17 +8,12 @@
     "allowJs": true,
     "module": "commonjs",
     "target": "es6",
-    "paths": {
-      "@nocobase/app-*": [
-        "packages/app/*/src"
-      ],
-      "@nocobase/plugin-*": [
-        "packages/plugins/*/src"
-      ],
-      "@nocobase/*": [
-        "packages/core/*/src"
-      ]
-    }
+    "paths": {}
   },
-  "exclude": ["./packages/*/esm", "./packages/*/lib"]
+  "exclude": [
+    "./packages/*/dist", 
+    "./packages/*/esm", 
+    "./packages/*/es", 
+    "./packages/*/lib"
+  ]
 }

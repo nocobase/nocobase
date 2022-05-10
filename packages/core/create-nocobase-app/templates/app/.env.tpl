@@ -1,6 +1,6 @@
 ################# NOCOBASE APPLICATION #################
 
-NOCOBASE_ENV=development
+NOCOBASE_ENV={{{env.NOCOBASE_ENV}}}
 
 SERVER_PORT=3000
 

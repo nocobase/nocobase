@@ -110,9 +110,10 @@ class AppGenerator extends Generator {
       dependencies: dependencies.join(`,\n    `),
       envs: envs.join(`\n`),
       env: {
-        ...env,
+        NOCOBASE_ENV: 'development',
         DB_DIALECT: dbDialect,
         JWT_SECRET: crypto.randomBytes(256).toString('base64'),
+        ...env,
       },
     };
   }
@@ -140,7 +141,6 @@ class AppGenerator extends Generator {
   }
 
   async writing() {
-
     this.checkProjectPath();
     this.checkDialect();
 

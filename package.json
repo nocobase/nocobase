@@ -17,7 +17,7 @@
     "dev": "nocobase dev",
     "start": "nocobase start",
     "start-docs": "dumi dev",
-    "clean": "rimraf -rf packages/*/*/{lib,esm,es,dist} && lerna clean",
+    "clean": "rimraf -rf packages/*/*/{lib,esm,es,dist}",
     "build": "yarn build-tool && yarn nocobase build",
     "build-docs": "dumi build",
     "build-tool": "cd packages/core/build && yarn build",
