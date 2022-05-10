@@ -60,7 +60,7 @@ function build() {
       watch: args.w || args.watch,
       clean: args.clean,
       buildArgs,
-      packages: args.package,
+      packages: args._ || [],
     })
     .catch((e) => {
       signale.error(e);

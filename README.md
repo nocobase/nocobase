@@ -174,7 +174,7 @@ yarn dev
 yarn build
 
 # For specific package
-yarn build --scope @nocobase/database
+yarn build app/client app/server
 ```
 
 #### Testing

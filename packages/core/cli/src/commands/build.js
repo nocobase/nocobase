@@ -15,10 +15,9 @@ module.exports = (cli) => {
   cli
     .command('build')
     .allowUnknownOption()
-    .option('-p, --package [package]', '', concat, [])
-    .action(async (opts) => {
+    .argument('[packages...]')
+    .action(async (pkgs) => {
       nodeCheck();
-      const pkgs = opts.package || [];
       if (!pkgs.length || !pkgs.includes('app/client') || (pkgs.includes('app/client') && pkgs.length > 1)) {
         await run('nocobase-build', process.argv.slice(3));
       }
