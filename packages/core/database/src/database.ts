@@ -269,17 +269,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
   async auth(options: QueryOptions & { repeat?: number } = {}) {
     const { repeat = 10, ...others } = options;
     const delay = (ms) => new Promise((yea) => setTimeout(yea, ms));
-    let count = 0;
+    let count = 1;
     const authenticate = async () => {
       try {
         await this.sequelize.authenticate(others);
         console.log('Connection has been established successfully.');
         return true;
       } catch (error) {
-        console.log('reconnecting...', count);
         if (count >= repeat) {
           throw error;
         }
+        console.log('reconnecting...', count);
         ++count;
         await delay(500);
         return await authenticate();

@@ -14,15 +14,15 @@ const env = {
   LOCAL_STORAGE_DEST: 'storage/uploads',
 };
 
+dotenv.config({
+  path: resolve(process.cwd(), process.env.NOCOBASE_ENV_PATH || '.env'),
+});
+
 for (const key in env) {
   if (!process.env[key]) {
     process.env[key] = env[key];
   }
 }
-
-dotenv.config({
-  path: resolve(process.cwd(), process.env.NOCOBASE_ENV_PATH || '.env'),
-});
 
 const cli = require('../src/cli');
 

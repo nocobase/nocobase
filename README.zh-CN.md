@@ -155,7 +155,7 @@ yarn install --registry=https://registry.npmmirror.com
 yarn nocobase install --lang=zh-CN
 
 # 5. 启动
-yarn dev
+yarn start
 ~~~
 
 使用浏览器打开 http://localhost:8000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
