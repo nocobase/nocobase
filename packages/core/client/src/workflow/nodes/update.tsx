@@ -8,19 +8,11 @@ export default {
   group: 'collection',
   fieldset: {
     'config.collection': collection,
-    'config.params': {
-      type: 'object',
-      name: 'config.params',
-      title: '',
-      'x-decorator': 'FormItem',
-      properties: {
-        filter: {
-          ...filter,
-          title: '{{t("Only update records matching conditions")}}',
-        },
-        values
-      }
-    }
+    'config.params.filter': {
+      ...filter,
+      title: '{{t("Only update records matching conditions")}}',
+    },
+    'config.params.values': values
   },
   view: {
 

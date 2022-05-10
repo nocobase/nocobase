@@ -1,6 +1,30 @@
-import { ISchema } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
+import { useResourceActionContext, useResourceContext } from '../../collection-manager';
+import { useActionContext } from '../../schema-component';
 import { triggers } from '../triggers';
 import { executionSchema } from './executions';
+
+
+function createWorkflowAction() {
+  const form = useForm();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  return {
+    async run() {
+      await form.submit();
+      await resource.create({
+        values: {
+          ...form.values,
+          current: true
+        }
+      });
+      ctx.setVisible(false);
+      await form.reset();
+      refresh();
+    },
+  };
+};
 
 const collection = {
   name: 'workflows',
@@ -75,7 +99,9 @@ export const workflowSchema: ISchema = {
           action: 'list',
           params: {
             pageSize: 50,
-            filter: {},
+            filter: {
+              current: true
+            },
             sort: ['createdAt'],
             except: ['config'],
           },
@@ -149,7 +175,7 @@ export const workflowSchema: ISchema = {
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
-                            useAction: '{{ cm.useCreateAction }}',
+                            useAction: createWorkflowAction,
                           },
                         },
                       },

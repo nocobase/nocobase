@@ -71,14 +71,9 @@ export default {
       defaultValue: false
     },
     {
-      type: 'hasMany',
-      name: 'revisions',
-      target: 'workflows',
-    },
-    {
-      type: 'belongsTo',
+      type: 'boolean',
       name: 'current',
-      target: 'workflows'
+      defaultValue: false
     }
   ]
 } as CollectionOptions;

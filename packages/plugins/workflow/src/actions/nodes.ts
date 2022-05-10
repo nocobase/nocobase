@@ -175,6 +175,7 @@ export async function update(context: Context, next) {
   context.body = await db.sequelize.transaction(async transaction => {
     // TODO(optimize): duplicated instance query
     const { workflow } = await repository.findOne({
+      filterByTk,
       appends: ['workflow.executed'],
       transaction
     });
