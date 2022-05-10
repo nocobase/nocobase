@@ -20,8 +20,8 @@
     "dotenv": "^10.0.0",
     "pm2": "^5.2.0"
   },
-  "peerDependencies": {
-    "@nocobase/devtools": "*"
+  "devDependencies": {
+    "@nocobase/devtools": "0.7.0-alpha.40"
   },
   "repository": {
     "type": "git",

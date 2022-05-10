@@ -23,6 +23,7 @@
     "build-tool": "cd packages/core/build && yarn build",
     "test": "nocobase test",
     "lint": "eslint .",
+    "postinstall": "nocobase umi generate tmp",
     "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
     "release:force": "lerna publish from-package --yes",
     "release": "lerna publish"
