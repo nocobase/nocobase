@@ -85,6 +85,7 @@ export interface IBundleOptions {
     [opt: string]: any;
   };
   pkgs?: string[];
+  excludePkgs?: string[];
   /** 处理 lerna 包 */
   pkgFilter?: {
     /** 指定包含的包 */

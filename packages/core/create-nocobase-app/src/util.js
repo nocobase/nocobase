@@ -1,10 +1,12 @@
 const fs = require('fs');
 const tar = require('tar');
 const axios = require('axios');
+const chalk = require('chalk');
 const crypto = require('crypto');
 const BufferList = require('bl');
 const { join } = require('path');
 const { spawn } = require('child_process');
+const { execa } = require('@umijs/utils');
 const { unlink, writeFile, readFile } = require('fs').promises;
 
 exports.spawnAsync = (...args) => {
@@ -46,14 +48,11 @@ exports.spawnAsync = (...args) => {
 };
 
 exports.downloadPackageFromNpm = async (packageName, target) => {
-  const bufferList = await exports.spawnAsync('npm', ['v', packageName, 'dist.tarball']);
-  const url = bufferList.toString();
-
+  const { stdout } = await execa('npm', ['v', packageName, 'dist.tarball']);
   const tarballFile = join(target, '..', `${crypto.createHash('md5').update(packageName).digest('hex')}-tarball.gz`);
-
   const writer = fs.createWriteStream(tarballFile);
-
-  await axios.get(url, { responseType: 'stream' }).then((response) => {
+  console.log(chalk.gray(`URL: ${stdout}`));
+  await axios.get(stdout, { responseType: 'stream' }).then((response) => {
     return new Promise((resolve, reject) => {
       response.data.pipe(writer);
 

@@ -221,6 +221,9 @@ export async function buildForLerna(opts: IOpts) {
   const dispose: Dispose[] = [];
   for (const pkg of pkgs) {
     const pkgName = getPkgRelativePath(cwd, pkg);
+    if (userConfig.excludePkgs && userConfig.excludePkgs.includes(pkgName)) {
+      continue;
+    }
     if (packages.length && !packages.includes(pkgName)) continue;
     // build error when .DS_Store includes in packages root
     const pkgPath = pkg.contents;

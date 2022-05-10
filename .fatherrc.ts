@@ -1,7 +1,5 @@
 export default {
   target: 'node',
   cjs: { type: 'babel', lazy: true },
-  pkgFilter: {
-    exclude: ['@nocobase/app-client', '@nocobase/build'],
-  },
+  excludePkgs: ['core/build', 'app/client'],
 };
