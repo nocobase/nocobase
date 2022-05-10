@@ -4,7 +4,6 @@ const REPL = require('repl');
 
 export default (app: Application) => {
   app.command('console').action(async () => {
-    await app.load();
     await app.start();
     const repl = (REPL.start('nocobase > ').context.app = app);
     repl.on('exit', async function (err) {
@@ -12,7 +11,6 @@ export default (app: Application) => {
         console.log(err);
         process.exit(1);
       }
-
       await app.stop();
       process.exit(0);
     });

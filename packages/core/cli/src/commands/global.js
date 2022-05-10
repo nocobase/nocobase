@@ -19,7 +19,7 @@ module.exports = (cli) => {
           './packages/app/server/src/index.ts',
           ...process.argv.slice(2),
         ];
-        run('ts-node-dev', argv);
+        run('ts-node', argv);
       } else {
         const argv = ['./packages/app/server/lib/index.js', ...process.argv.slice(2)];
         run('node', argv);

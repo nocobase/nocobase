@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { runAsync } = require('../util');
+const { run } = require('../util');
 
 function concat(value, previous) {
   previous.push(value);
@@ -18,10 +18,10 @@ module.exports = (cli) => {
     .action(async (opts) => {
       const pkgs = opts.package || [];
       if (!pkgs.length || !pkgs.includes('app/client') || (pkgs.includes('app/client') && pkgs.length > 1)) {
-        await runAsync('nocobase-build', process.argv.slice(3));
+        await run('nocobase-build', process.argv.slice(3));
       }
       if (!pkgs.length || pkgs.includes('app/client')) {
-        await runAsync('umi', ['build'], {
+        await run('umi', ['build'], {
           env: {
             APP_ROOT: 'packages/app/client',
           },

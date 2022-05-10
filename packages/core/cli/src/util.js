@@ -1,7 +1,6 @@
-const { spawn } = require('child_process');
-const BufferList = require('bl');
 const net = require('net');
 const chalk = require('chalk');
+const execa = require('execa');
 
 exports.isDev = function isDev() {
   if (process.env.NOCOBASE_ENV === 'production') {
@@ -15,46 +14,8 @@ exports.isDev = function isDev() {
   }
 };
 
-function spawnAsync(...args) {
-  const child = spawn(...args);
-  const stdout = child.stdout ? new BufferList() : '';
-  const stderr = child.stderr ? new BufferList() : '';
-
-  if (child.stdout) {
-    child.stdout.on('data', (data) => {
-      stdout.append(data);
-    });
-  }
-
-  if (child.stderr) {
-    child.stderr.on('data', (data) => {
-      stderr.append(data);
-    });
-  }
-
-  const promise = new Promise((resolve, reject) => {
-    child.on('error', reject);
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve(stdout);
-      } else {
-        const err = new Error(`child exited with code ${code}`);
-        err.code = code;
-        err.stderr = stderr;
-        err.stdout = stdout;
-        reject(err);
-      }
-    });
-  });
-
-  promise.child = child;
-
-  return promise;
-}
-
-function runAsync(command, argv, options = {}) {
-  return spawnAsync(command, argv, {
+exports.run = (command, argv, options = {}) => {
+  return execa(command, argv, {
     shell: true,
     stdio: 'inherit',
     ...options,
@@ -63,19 +24,7 @@ function runAsync(command, argv, options = {}) {
       ...options.env,
     },
   });
-}
-
-function run(command, argv, options = {}) {
-  return spawn(command, argv, {
-    shell: true,
-    stdio: 'inherit',
-    ...options,
-    env: {
-      ...process.env,
-      ...options.env,
-    },
-  });
-}
+};
 
 exports.isPortReachable = async (port, { timeout = 1000, host } = {}) => {
   const promise = new Promise((resolve, reject) => {
@@ -112,7 +61,3 @@ exports.postCheck = async (opts) => {
     process.exit(1);
   }
 };
-
-exports.spawnAsync = spawnAsync;
-exports.run = run;
-exports.runAsync = runAsync;

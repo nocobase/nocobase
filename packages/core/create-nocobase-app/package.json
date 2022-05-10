@@ -12,7 +12,6 @@
   "dependencies": {
     "@umijs/utils": "^3.5.20",
     "axios": "^0.26.1",
-    "bl": "^4.1.0",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
     "tar": "6.1.11"

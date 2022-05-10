@@ -6,12 +6,15 @@ import install from './install';
 import start from './start';
 
 export function registerCli(app: Application) {
-  app.command('build');
   console(app);
   dbAuth(app);
   dbSync(app);
-  app.command('dev');
   install(app);
   start(app);
-  app.command('test');
+
+  // development only with @nocobase/cli
+  app.command('build').description('development only');
+  app.command('dev').description('development only');
+  app.command('test').description('development only');
+  app.command('umi').description('development only');
 }

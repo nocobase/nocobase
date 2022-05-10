@@ -14,10 +14,10 @@
     "nocobase": "./bin/index.js"
   },
   "dependencies": {
-    "bl": "^4.1.0",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
     "dotenv": "^10.0.0",
+    "execa": "^5.1.1",
     "pm2": "^5.2.0"
   },
   "devDependencies": {
