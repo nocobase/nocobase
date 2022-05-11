@@ -1,5 +1,6 @@
 const { Command } = require('commander');
-const { getVersion, run, isDev, hasCorePackages, updateJsonFile } = require('../util');
+const { resolve } = require('path');
+const { getVersion, run, isDev, hasCorePackages, updateJsonFile, hasTsNode } = require('../util');
 
 /**
  *
@@ -10,8 +11,11 @@ module.exports = (cli) => {
     .command('upgrade')
     .allowUnknownOption()
     .action(async () => {
-      const version = getVersion();
+      const version = await getVersion();
       if (hasCorePackages()) {
+        return;
+      }
+      if (!hasTsNode()) {
         return;
       }
       const rootPackage = resolve(process.cwd(), 'package.json');
@@ -23,7 +27,7 @@ module.exports = (cli) => {
         return data;
       });
       await updateJsonFile(clientPackage, (data) => {
-        data.dependencies['@nocobase/client'] = version;
+        data.devDependencies['@nocobase/client'] = version;
         return data;
       });
       await updateJsonFile(serverPackage, (data) => {
@@ -31,9 +35,7 @@ module.exports = (cli) => {
         return data;
       });
       const argv = ['install'];
-      if (!isDev()) {
-        argv.push('--production');
-      }
       await run('yarn', argv);
+      await run('nocobase', ['build']);
     });
 };
