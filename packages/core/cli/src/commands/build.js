@@ -1,6 +1,6 @@
 const { resolve } = require('path');
 const { Command } = require('commander');
-const { run, nodeCheck, isPackageValid } = require('../util');
+const { run, nodeCheck, isPackageValid, promptForTs } = require('../util');
 
 /**
  *
@@ -13,6 +13,7 @@ module.exports = (cli) => {
     .argument('[packages...]')
     .option('-c, --compile', 'compile the @nocobase/build package')
     .action(async (pkgs, options) => {
+      promptForTs();
       nodeCheck();
       if (isPackageValid('umi-tools/cli')) {
         if (options.compile || !isPackageValid('@nocobase/build/lib')) {

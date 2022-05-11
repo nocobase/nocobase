@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { isDev, run, postCheck } = require('../util');
+const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
 
 /**
  *
@@ -12,7 +12,11 @@ module.exports = (cli) => {
     .option('-p, --port [port]')
     .allowUnknownOption()
     .action(async (opts) => {
+      if (isDev() && !opts.pm2) {
+        promptForTs();
+      }
       await postCheck(opts);
+      await runInstall();
       if (isDev() && !opts.pm2) {
         const argv = [
           '-P',

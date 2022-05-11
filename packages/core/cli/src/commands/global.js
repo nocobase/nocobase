@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { run, isDev } = require('../util');
+const { run, isDev, promptForTs } = require('../util');
 
 /**
  *
@@ -12,6 +12,7 @@ module.exports = (cli) => {
     .option('-tsnd, --ts-node-dev')
     .action((options) => {
       if (isDev()) {
+        promptForTs();
         const argv = [
           '-P',
           './tsconfig.server.json',

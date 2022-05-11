@@ -1,5 +1,6 @@
+const chalk = require('chalk');
 const { Command } = require('commander');
-const { run, postCheck, nodeCheck } = require('../util');
+const { runInstall, run, postCheck, nodeCheck, promptForTs } = require('../util');
 
 /**
  *
@@ -10,8 +11,10 @@ module.exports = (cli) => {
     .command('dev')
     .allowUnknownOption()
     .action(async (opts) => {
+      promptForTs();
       nodeCheck();
       await postCheck(opts);
+      await runInstall();
       run('ts-node-dev', [
         '-P',
         './tsconfig.server.json',
@@ -19,6 +22,7 @@ module.exports = (cli) => {
         'tsconfig-paths/register',
         './packages/app/server/src/index.ts',
         'start',
+        '-s',
       ]);
       run('umi', ['dev'], {
         env: {
