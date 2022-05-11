@@ -299,7 +299,7 @@ export class PluginACL extends Plugin {
       });
     });
 
-    this.app.acl.allow('roles', 'check', 'loggedIn');
+    this.app.acl.allow('roles', 'check');
     this.app.acl.allow('roles', ['create', 'update', 'destroy'], 'allowConfigure');
     this.app.acl.allow('rolesResources', ['create', 'update', 'destroy'], 'allowConfigure');
     this.app.acl.allow('rolesResourcesActions', ['create', 'update', 'destroy'], 'allowConfigure');
