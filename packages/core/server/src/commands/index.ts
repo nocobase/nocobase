@@ -14,7 +14,9 @@ export function registerCli(app: Application) {
 
   // development only with @nocobase/cli
   app.command('build').argument('[packages...]').description('development only');
+  app.command('clean', 'development only');
   app.command('dev').description('development only');
+  app.command('doc').argument('[cmd]', '', 'dev').description('development only');
   app.command('test').description('development only');
   app.command('umi').description('development only');
 }

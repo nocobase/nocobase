@@ -1,6 +1,5 @@
 const { pathsToModuleNameMapper } = require('ts-jest/utils');
 const { compilerOptions } = require('./tsconfig.jest.json');
-const { resolve } = require('path');
 
 module.exports = {
   rootDir: process.cwd(),
@@ -9,7 +8,7 @@ module.exports = {
   testEnvironment: 'jsdom',
   preset: 'ts-jest',
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
-  setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), resolve(__dirname, './jest.setup.ts')],
+  setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), './jest.setup.ts'],
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
     prefix: '<rootDir>/',
   }),
