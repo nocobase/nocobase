@@ -7,7 +7,7 @@ import { UiSchemaModel } from './model';
 import UiSchemaRepository from './repository';
 import { ServerHooks } from './server-hooks';
 import { ServerHookModel } from './server-hooks/model';
-import { UidFormatError } from './helper';
+import { InsertRootSchemaError, UidFormatError } from './helper';
 
 export class UiSchemaStoragePlugin extends Plugin {
   serverHooks: ServerHooks;
@@ -91,6 +91,16 @@ export class UiSchemaStoragePlugin extends Plugin {
         (err, ctx) => {
           ctx.body = {
             errors: [{ message: err.message }],
+          };
+          ctx.status = 400;
+        },
+      );
+
+      errorHandlerPlugin.errorHandler.register(
+        (err) => err instanceof InsertRootSchemaError,
+        (err, ctx) => {
+          ctx.body = {
+            errors: [{ message: ctx.t('insert-root-schema') }],
           };
           ctx.status = 400;
         },

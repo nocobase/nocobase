@@ -3,11 +3,11 @@ import { uid as randomUid } from '@nocobase/utils';
 import lodash from 'lodash';
 import { Transaction } from 'sequelize';
 import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
-import { UidFormatError } from './helper';
+import { InsertRootSchemaError, UidFormatError } from './helper';
 
 const uid = () => {
-  return `u_${randomUid()}`
-}
+  return `u_${randomUid()}`;
+};
 
 interface GetJsonSchemaOptions {
   includeAsyncNode?: boolean;
@@ -513,6 +513,10 @@ export class UiSchemaRepository extends Repository {
       },
       transaction,
     });
+
+    if (!typeQuery[0]) {
+      throw new InsertRootSchemaError();
+    }
 
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
 

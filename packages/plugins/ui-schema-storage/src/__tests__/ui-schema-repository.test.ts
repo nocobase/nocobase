@@ -4,6 +4,7 @@ import { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
 import PluginUiSchema from '../server';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
+import { InsertRootSchemaError } from '../helper';
 
 describe('ui_schema repository', () => {
   let app: MockServer;
@@ -1626,6 +1627,33 @@ describe('ui_schema repository', () => {
         'x-uid': 'root',
         'x-async': false,
       });
+    });
+
+    it('should not insert root schema', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(schema);
+
+      let err: any;
+      try {
+        await repository.insertAdjacent('afterEnd', 'p2', 'root');
+      } catch (e) {
+        err = e;
+      }
+      expect(err).toBeDefined();
     });
   });
 });
