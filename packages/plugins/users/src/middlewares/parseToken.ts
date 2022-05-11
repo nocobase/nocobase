@@ -42,6 +42,7 @@ async function findUserByToken(ctx: Context, plugin: UsersPlugin) {
   if (!token) {
     return null;
   }
+
   try {
     const { userId } = await plugin.jwtService.decode(token);
 
