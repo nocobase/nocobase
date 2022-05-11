@@ -2,7 +2,7 @@
   "name": "{{{name}}}",
   "private": true,
   "workspaces": [
-    "packages/*/*",
+    "packages/*/*"
   ],
   "scripts": {
     "dev": "nocobase dev",

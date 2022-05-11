@@ -137,7 +137,7 @@ class AppGenerator extends Generator {
     const clientPackageDir = resolve(this.cwd, 'packages/app/client');
     await downloadPackageFromNpm('@nocobase/app-client', clientPackageDir);
     await updateJsonFile(resolve(clientPackageDir, 'package.json'), (data) => {
-      data['name'] = `@${name}/server`;
+      data['name'] = `@${name}/client`;
       data['version'] = '0.1.0';
       return data;
     });
