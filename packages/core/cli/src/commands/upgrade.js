@@ -37,5 +37,6 @@ module.exports = (cli) => {
       const argv = ['install'];
       await run('yarn', argv);
       await run('nocobase', ['build']);
+      await run('nocobase', ['db:sync']);
     });
 };
