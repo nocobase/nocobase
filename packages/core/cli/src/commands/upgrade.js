@@ -1,3 +1,4 @@
+const chalk = require('chalk');
 const { Command } = require('commander');
 const { resolve } = require('path');
 const { getVersion, run, isDev, hasCorePackages, updateJsonFile, hasTsNode } = require('../util');
@@ -11,13 +12,14 @@ module.exports = (cli) => {
     .command('upgrade')
     .allowUnknownOption()
     .action(async () => {
-      const version = await getVersion();
       if (hasCorePackages()) {
+        console.log(chalk.yellow('The upgrade command can only be used in project scaffolding'));
         return;
       }
       if (!hasTsNode()) {
         return;
       }
+      const version = await getVersion();
       const rootPackage = resolve(process.cwd(), 'package.json');
       const clientPackage = resolve(process.cwd(), 'packages/app/client/package.json');
       const serverPackage = resolve(process.cwd(), 'packages/app/server/package.json');
@@ -38,5 +40,6 @@ module.exports = (cli) => {
       await run('yarn', argv);
       await run('nocobase', ['build']);
       await run('nocobase', ['db:sync']);
+      console.log(chalk.green(`✨  NocoBase has been upgraded to v${version}`));
     });
 };
