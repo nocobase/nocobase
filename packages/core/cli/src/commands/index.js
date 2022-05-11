@@ -13,4 +13,5 @@ module.exports = (cli) => {
   require('./clean')(cli);
   require('./doc')(cli);
   require('./umi')(cli);
+  require('./upgrade')(cli);
 }

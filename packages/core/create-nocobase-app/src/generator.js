@@ -124,9 +124,10 @@ class AppGenerator extends Generator {
     console.log('Download: @nocobase/app-server');
     const serverPackageDir = resolve(this.cwd, 'packages/app/server');
     await downloadPackageFromNpm('@nocobase/app-server', serverPackageDir);
-    await updateJsonFile(resolve(serverPackageDir, 'package.json'), {
-      name: `${name}-server`,
-      version: '0.1.0',
+    await updateJsonFile(resolve(serverPackageDir, 'package.json'), (data) => {
+      data['name'] = `@${name}/server`;
+      data['version'] = '0.1.0';
+      return data;
     });
   }
 
@@ -135,9 +136,10 @@ class AppGenerator extends Generator {
     console.log('Download: @nocobase/app-client');
     const clientPackageDir = resolve(this.cwd, 'packages/app/client');
     await downloadPackageFromNpm('@nocobase/app-client', clientPackageDir);
-    await updateJsonFile(resolve(clientPackageDir, 'package.json'), {
-      name: `${name}-client`,
-      version: '0.1.0',
+    await updateJsonFile(resolve(clientPackageDir, 'package.json'), (data) => {
+      data['name'] = `@${name}/server`;
+      data['version'] = '0.1.0';
+      return data;
     });
   }
 

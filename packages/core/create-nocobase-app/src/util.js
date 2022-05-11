@@ -46,13 +46,10 @@ exports.downloadPackageFromNpm = async (packageName, target) => {
   await unlink(tarballFile);
 };
 
-exports.updateJsonFile = async (target, data) => {
+exports.updateJsonFile = async (target, fn) => {
   const content = await readFile(target, 'utf-8');
   const json = JSON.parse(content);
-  Object.keys(data).forEach((key) => {
-    json[key] = data[key];
-  });
-  await writeFile(target, JSON.stringify(json, null, 2), 'utf-8');
+  await writeFile(target, JSON.stringify(fn(json), null, 2), 'utf-8');
 };
 
 exports.concat = (value, previous) => {

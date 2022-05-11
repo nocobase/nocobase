@@ -1,7 +1,9 @@
 const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
-const exp = require('constants');
+const { resolve } = require('path');
+const { readFile, writeFile } = require('fs').promises;
+const { existsSync } = require('fs');
 
 exports.isPackageValid = (package) => {
   try {
@@ -10,6 +12,11 @@ exports.isPackageValid = (package) => {
   } catch (error) {
     return false;
   }
+};
+
+exports.hasCorePackages = () => {
+  const coreDir = resolve(process.cwd(), 'packages/core/build');
+  return existsSync(coreDir);
 };
 
 exports.hasTsNode = () => {
@@ -100,3 +107,15 @@ exports.runInstall = async () => {
 exports.promptForTs = () => {
   console.log(chalk.green('WAIT: ') + 'TypeScript compiling...');
 };
+
+exports.updateJsonFile = async (target, fn) => {
+  const content = await readFile(target, 'utf-8');
+  const json = JSON.parse(content);
+  await writeFile(target, JSON.stringify(fn(json), null, 2), 'utf-8');
+};
+
+exports.getVersion = async () => {
+  const { stdout } = await execa('npm', ['v', '@nocobase/app-server', 'versions']);
+  const versions = (new Function(`return ${stdout}`))();
+  return versions[versions.length - 1];
+}
