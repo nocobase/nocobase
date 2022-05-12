@@ -80,7 +80,9 @@ export default {
       name: 'revisions',
       target: 'workflows',
       foreignKey: 'key',
-      sourceKey: 'key'
+      sourceKey: 'key',
+      // NOTE: no constraints needed here because tricky self-referencing
+      constraints: false
     }
   ]
 } as CollectionOptions;
