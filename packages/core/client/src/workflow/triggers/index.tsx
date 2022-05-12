@@ -2,15 +2,16 @@ import React from "react";
 import { ISchema, useForm } from "@formily/react";
 import { cx } from "@emotion/css";
 import { Registry } from "@nocobase/utils";
+import { useTranslation } from "react-i18next";
+import { message, Tag } from "antd";
 
 import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRecord, useRequest, useResourceActionContext } from '../../';
 import collection from './collection';
 import { nodeCardClass, nodeMetaClass } from "../style";
-import { useTranslation } from "react-i18next";
-import { Tag } from "antd";
 
 
 function useUpdateConfigAction() {
+  const { t } = useTranslation();
   const form = useForm();
   const api = useAPIClient();
   const record = useRecord();
@@ -18,6 +19,10 @@ function useUpdateConfigAction() {
   const { refresh } = useResourceActionContext();
   return {
     async run() {
+      if (record.executed) {
+        message.error(t('Trigger in executed workflow cannot be modified'));
+        return;
+      }
       await form.submit();
       await api.resource('workflows', record.id).update({
         filterByTk: record.id,
@@ -53,8 +58,10 @@ export const TriggerConfig = () => {
   if (!data) {
     return null;
   }
-  const { type, config } = data.data;
+  const { type, config, executed } = data.data;
   const { title, fieldset, scope, components } = triggers.get(type);
+  const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
+
   return (
     <div className={cx(nodeCardClass)}>
       <div className={cx(nodeMetaClass)}>
@@ -64,13 +71,13 @@ export const TriggerConfig = () => {
       <SchemaComponent
         schema={{
           type: 'void',
-          title: '{{t("Configure")}}',
+          title: detailText,
           'x-component': 'Action.Link',
           name: 'drawer',
           properties: {
             drawer: {
               type: 'void',
-              title: '{{t("Configure")}}',
+              title: detailText,
               'x-component': 'Action.Drawer',
               'x-decorator': 'Form',
               'x-decorator-props': {
@@ -87,7 +94,17 @@ export const TriggerConfig = () => {
                 actions: {
                   type: 'void',
                   'x-component': 'Action.Drawer.Footer',
-                  properties: {
+                  properties: executed
+                  ? {
+                    close: {
+                      title: '{{t("Close")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        useAction: '{{ cm.useCancelAction }}',
+                      },
+                    }
+                  }
+                  : {
                     cancel: {
                       title: '{{t("Cancel")}}',
                       'x-component': 'Action',

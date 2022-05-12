@@ -6,6 +6,10 @@ export default {
   title: '自动化',
   fields: [
     {
+      name: 'key',
+      type: 'uid'
+    },
+    {
       interface: 'string',
       type: 'string',
       name: 'title',
@@ -67,14 +71,18 @@ export default {
       defaultValue: false
     },
     {
+      type: 'boolean',
+      name: 'current',
+      defaultValue: false
+    },
+    {
       type: 'hasMany',
       name: 'revisions',
       target: 'workflows',
-    },
-    {
-      type: 'belongsTo',
-      name: 'current',
-      target: 'workflows'
+      foreignKey: 'key',
+      sourceKey: 'key',
+      // NOTE: no constraints needed here because tricky self-referencing
+      constraints: false
     }
   ]
 } as CollectionOptions;

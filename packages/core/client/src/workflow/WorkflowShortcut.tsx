@@ -1,24 +1,16 @@
 import React, { useState } from 'react';
 import { PartitionOutlined } from '@ant-design/icons';
-import { ISchema, useForm } from '@formily/react';
+import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { PluginManager } from '../plugin-manager';
-import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
-import { WorkflowTable } from './WorkflowTable';
 import { useTranslation } from 'react-i18next';
+import { PluginManager } from '../plugin-manager';
 
-const useCloseAction = () => {
-  const { setVisible } = useActionContext();
-  const form = useForm();
-  return {
-    async run() {
-      setVisible(false);
-      form.submit((values) => {
-        console.log(values);
-      });
-    },
-  };
-};
+import { ActionContext, SchemaComponent } from '../schema-component';
+import { workflowSchema } from './schemas/workflows';
+import { WorkflowLink } from './WorkflowLink';
+import { ExecutionResourceProvider } from './ExecutionResourceProvider';
+
+
 
 const schema: ISchema = {
   type: 'object',
@@ -28,10 +20,7 @@ const schema: ISchema = {
       type: 'void',
       title: '{{t("Workflow")}}',
       properties: {
-        main: {
-          type: 'void',
-          'x-component': 'WorkflowTable',
-        },
+        table: workflowSchema,
       },
     },
   },
@@ -52,9 +41,9 @@ export const WorkflowShortcut = () => {
       <SchemaComponent
         schema={schema}
         components={{
-          WorkflowTable
+          WorkflowLink,
+          ExecutionResourceProvider
         }}
-        scope={{ useCloseAction }}
       />
     </ActionContext.Provider>
   );
