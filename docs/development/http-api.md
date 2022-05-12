@@ -1,5 +1,5 @@
 ---
-order: 4
+order: 3
 nav:
   path: /
 group:
@@ -7,4 +7,5 @@ group:
   order: 3
 ---
 
-# JavaScript SDK
+# HTTP API
+

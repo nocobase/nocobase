@@ -4,6 +4,7 @@ import dbAuth from './db-auth';
 import dbSync from './db-sync';
 import install from './install';
 import start from './start';
+import upgrade from './upgrade';
 
 export function registerCli(app: Application) {
   console(app);
@@ -11,6 +12,7 @@ export function registerCli(app: Application) {
   dbSync(app);
   install(app);
   start(app);
+  upgrade(app);
 
   // development only with @nocobase/cli
   app.command('build').argument('[packages...]').description('development only');
@@ -19,5 +21,4 @@ export function registerCli(app: Application) {
   app.command('doc').argument('[cmd]', '', 'dev').description('development only');
   app.command('test').description('development only');
   app.command('umi').description('development only');
-  app.command('upgrade').description('development only');
 }

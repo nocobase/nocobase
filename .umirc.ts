@@ -3,7 +3,7 @@ import { defineConfig } from 'dumi';
 export default defineConfig({
   title: 'NocoBase',
   outputPath: 'docs-dist',
-  mode: 'doc',
+  mode: 'site',
   resolve: {
     includes: ['docs', 'packages/client'],
   },

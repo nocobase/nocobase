@@ -1,20 +1,21 @@
 ---
 order: 1
+nav:
+  path: /
 group:
-  title: Getting started
-  path: /getting-started
+  title: 快速开始
   order: 2
 ---
 
-# Installation
+# 安装
 
-NocoBase 支持 Docker 和 CLI 两种安装方式，如果你是新人推荐使用 Docker 安装。
+NocoBase 支持 Docker 和 CLI 两种安装方法，如果你是新人推荐使用 Docker 安装。
 
 ## Docker (👍Recommended)
 
 ---
 
-### 0. Requirements
+### 0. 先决条件
 
 ⚡⚡ 请确保你已经安装了 [Docker](https://docs.docker.com/get-docker/)
 
@@ -65,7 +66,7 @@ app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 ---
 
-### 0. Requirements
+### 0. 先决条件
 
 请确保你已经安装了 Node.js 12.x 或以上版本，如果你没有安装 Node.js 可以从官网下载并安装最新的 LTS 版本。如果你打算长期与 Node.js 打交道，推荐使用 nvm（Win 系统可以使用 nvm-windows ）来管理 Node.js 版本。
 
@@ -134,5 +135,8 @@ yarn install
 ### 4. 安装并启动 NocoBase
 
 ```bash
+# 生产环境下启动应用，源码有修改时，需要重新编译打包（yarn build）
 yarn start
+# 开发环境下启动应用，代码会实时编译
+yarn dev
 ```

@@ -104,6 +104,24 @@ exports.runInstall = async () => {
   }
 };
 
+exports.runAppCommand = async (command, args = []) => {
+  if (exports.isDev()) {
+    const argv = [
+      '-P',
+      './tsconfig.server.json',
+      '-r',
+      'tsconfig-paths/register',
+      './packages/app/server/src/index.ts',
+      command,
+      ...args,
+    ];
+    await exports.run('ts-node', argv);
+  } else {
+    const argv = ['./packages/app/server/lib/index.js', command, ...args];
+    await exports.run('node', argv);
+  }
+};
+
 exports.promptForTs = () => {
   console.log(chalk.green('WAIT: ') + 'TypeScript compiling...');
 };
@@ -116,6 +134,6 @@ exports.updateJsonFile = async (target, fn) => {
 
 exports.getVersion = async () => {
   const { stdout } = await execa('npm', ['v', '@nocobase/app-server', 'versions']);
-  const versions = (new Function(`return ${stdout}`))();
+  const versions = new Function(`return ${stdout}`)();
   return versions[versions.length - 1];
-}
+};

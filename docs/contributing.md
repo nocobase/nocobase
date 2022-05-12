@@ -1,5 +1,10 @@
 ---
-order: 9999
+order: 1
+nav:
+  path: /
+group:
+  title: 社区
+  order: 999
 ---
 
 # Contributing

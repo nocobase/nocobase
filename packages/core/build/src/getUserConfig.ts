@@ -1,17 +1,21 @@
 import AJV from 'ajv';
-import slash from 'slash2';
-import { relative, isAbsolute, resolve } from 'path';
-import signale from 'signale';
 import { existsSync } from 'fs';
+import { isAbsolute, relative, resolve } from 'path';
+import signale from 'signale';
+import slash from 'slash2';
 import schema from './schema';
-import { getExistFile } from './utils';
 import { IBundleOptions } from './types';
+import { getExistFile } from './utils';
 
 function testDefault(obj) {
   return obj.default || obj;
 }
 
 export const CONFIG_FILES = [
+  '.buildrc.js',
+  '.buildrc.jsx',
+  '.buildrc.ts',
+  '.buildrc.tsx',
   '.fatherrc.js',
   '.fatherrc.jsx',
   '.fatherrc.ts',

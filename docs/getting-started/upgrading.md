@@ -1,8 +1,14 @@
 ---
-order: 2
+order: 3
+nav:
+  title: 
+  path: /
+group:
+  title: 快速开始
+  order: 2
 ---
 
-# Upgrading
+# 升级
 
 升级前请务必将数据库数据进行备份
 
@@ -43,8 +49,6 @@ docker-compose logs app
 ```bash
 # 切换到对应的目录
 cd my-nocobase-app
-# 升级开发工具包
-yarn add @nocobase/cli @nocobase/devtools -W
 # 执行更新命令
 yarn nocobase upgrade
 # 启动

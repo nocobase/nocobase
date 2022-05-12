@@ -1,0 +1,31 @@
+@import (reference) '../style/variables.less';
+
+.@{prefix}-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  color: #fff;
+  font-size: 13px;
+  line-height: 20px;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px -2px rgba(0, 0, 0, 0.06);
+  border-radius: 1px;
+  vertical-align: top;
+
+  &:not([type]),
+  &[type='info'] {
+    background: #4569d4;
+  }
+
+  &[type='warning'] {
+    background: #ffc121;
+  }
+
+  &[type='success'] {
+    background: #8cd225;
+  }
+
+  &[type='error'] {
+    background: #ff4646;
+  }
+}
