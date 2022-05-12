@@ -25,26 +25,26 @@ NocoBase CLI 支持 ts-node 和 node 两种运行模式
 ```bash
 $ yarn nocobase -h
 
-Usage: nocobase [options] [command]
+Usage: nocobase [command] [options]
 
 Options:
-  -h, --help           display help for command
+  -h, --help
 
 Commands:
-  create-plugin
+  create-plugin         创建插件脚手架
   console
-  db:auth
-  db:sync
-  install
-  start
-  build                development only
-  clean                development only
-  dev                  启动应用，用于开发环境，实时编译
-  doc [cmd]            启动文本服务
-  test                 development only
-  umi                  development only
-  upgrade              development only
-  help [command]       display help for command
+  db:auth               校验数据库是否连接成功
+  db:sync               通过 collections 配置生成相关数据表和字段
+  install               安装
+  start                 生产环境启动应用
+  build                 编译打包
+  clean                 删除编译之后的文件
+  dev                   启动应用，用于开发环境，支持实时编译
+  doc                   文档开发
+  test                  测试
+  umi
+  upgrade               升级
+  help
 ```
 
 ## 在脚手架里应用
@@ -195,6 +195,8 @@ yarn rimraf -rf packages/*/*/{lib,esm,es,dist}
 ```
 
 ### `doc`
+
+文档开发
 
 ```bash
 # 启动文档
