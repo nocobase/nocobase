@@ -1,30 +1,8 @@
-import { ISchema, useForm } from '@formily/react';
-import { useResourceActionContext, useResourceContext } from '../../collection-manager';
-import { useActionContext } from '../../schema-component';
+import { ISchema } from '@formily/react';
 import { triggers } from '../triggers';
 import { executionSchema } from './executions';
 
 
-function createWorkflowAction() {
-  const form = useForm();
-  const ctx = useActionContext();
-  const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
-  return {
-    async run() {
-      await form.submit();
-      await resource.create({
-        values: {
-          ...form.values,
-          current: true
-        }
-      });
-      ctx.setVisible(false);
-      await form.reset();
-      refresh();
-    },
-  };
-};
 
 const collection = {
   name: 'workflows',
@@ -74,8 +52,8 @@ const collection = {
         title: '{{t("Status")}}',
         type: 'string',
         enum: [
-          { label: '{{t("Enabled")}}', value: true },
-          { label: '{{t("Disabled")}}', value: false },
+          { label: '{{t("Started")}}', value: true },
+          { label: '{{t("Stopped")}}', value: false },
         ],
         'x-component': 'Radio.Group',
         'x-decorator': 'FormItem',
@@ -145,6 +123,11 @@ export const workflowSchema: ISchema = {
                   type: 'void',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
+                  'x-decorator-props': {
+                    initialValue: {
+                      current: true
+                    }
+                  },
                   title: '{{t("Add new")}}',
                   properties: {
                     title: {
@@ -175,7 +158,7 @@ export const workflowSchema: ISchema = {
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
-                            useAction: createWorkflowAction,
+                            useAction: '{{ cm.useCreateAction }}',
                           },
                         },
                       },

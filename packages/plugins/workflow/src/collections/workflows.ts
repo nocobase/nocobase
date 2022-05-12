@@ -74,6 +74,13 @@ export default {
       type: 'boolean',
       name: 'current',
       defaultValue: false
+    },
+    {
+      type: 'hasMany',
+      name: 'revisions',
+      target: 'workflows',
+      foreignKey: 'key',
+      sourceKey: 'key'
     }
   ]
 } as CollectionOptions;

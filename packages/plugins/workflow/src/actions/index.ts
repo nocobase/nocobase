@@ -1,3 +1,4 @@
+import * as workflows from './workflows';
 import * as nodes from './nodes';
 
 function make(name, mod) {
@@ -9,6 +10,7 @@ function make(name, mod) {
 
 export default function(app) {
   app.actions({
+    ...make('workflows', workflows),
     ...make('workflows.nodes', {
       create: nodes.create,
       destroy: nodes.destroy

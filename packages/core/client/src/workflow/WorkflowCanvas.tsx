@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
-import { Dropdown, Menu, Button, Tag } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Dropdown, Menu, Button, Tag, Switch } from 'antd';
+import { PlusOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 
@@ -8,11 +8,14 @@ import {
   useAPIClient,
   useCompile,
   useDocumentTitle,
-  useResourceActionContext
+  useRecord,
+  useResourceActionContext,
+  useResourceContext
 } from '..';
 import { Instruction, instructions, Node } from './nodes';
-import { addButtonClass, branchBlockClass, branchClass, nodeCardClass, nodeMetaClass } from './style';
+import { addButtonClass, branchBlockClass, branchClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
 import { TriggerConfig } from './triggers';
+import { useHistory } from 'react-router-dom';
 
 
 
@@ -39,8 +42,9 @@ export function useFlowContext() {
 
 export function WorkflowCanvas() {
   const { t } = useTranslation();
+  const history = useHistory();
   const { data, refresh, loading } = useResourceActionContext();
-
+  const { resource, targetKey } = useResourceContext();
   const { setTitle } = useDocumentTitle();
   useEffect(() => {
     const { title } = data?.data ?? {};
@@ -51,11 +55,37 @@ export function WorkflowCanvas() {
     return <div>{t('Load failed')}</div>;
   }
 
-  const { nodes = [], ...workflow } = data?.data ?? {};
+  const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
 
   makeNodes(nodes);
 
   const entry = nodes.find(item => !item.upstream);
+
+  function onSwitchVersion({ key }) {
+    if (key != workflow.id) {
+      history.push(key);
+    }
+  }
+
+  async function onToggle(value) {
+    await resource.update({
+      filterByTk: workflow[targetKey],
+      values: {
+        enabled: value,
+        // NOTE: keep `key` field to adapter for backend
+        key: workflow.key
+      }
+    });
+    refresh();
+  }
+
+  async function onDuplicate() {
+    const { data: { data: duplicated } } = await resource.duplicate({
+      filterByTk: workflow[targetKey]
+    });
+
+    history.push(duplicated.id);
+  }
 
   return (
     <FlowContext.Provider value={{
@@ -64,6 +94,51 @@ export function WorkflowCanvas() {
       onNodeAdded: refresh,
       onNodeRemoved: refresh
     }}>
+      <div className="workflow-toolbar">
+        <header>
+          <strong>{workflow.title}</strong>
+        </header>
+        <aside>
+          <div className="workflow-versions">
+            <label>{t('Version')}</label>
+            <Dropdown
+              trigger={['click']}
+              overlay={
+                <Menu
+                  onClick={onSwitchVersion}
+                  defaultSelectedKeys={[workflow.id]}
+                  className={cx(workflowVersionDropdownClass)}
+                >
+                  {revisions.sort((a, b) => b.id - a.id).map(item => (
+                    <Menu.Item
+                      key={item.id}
+                      icon={item.current ? <RightOutlined /> : null}
+                      className={item.executed ? 'executed' : 'unexecuted'}
+                    >
+                      <strong>{`#${item.id}`}</strong>
+                      <time>{(new Date(item.createdAt)).toLocaleString()}</time>
+                    </Menu.Item>
+                  ))}
+                </Menu>
+              }
+            >
+              <Button type="link">{workflow?.id ? `#${workflow.id}` : null}<DownOutlined /></Button>
+            </Dropdown>
+          </div>
+          <Switch
+            checked={workflow.enabled}
+            onChange={onToggle}
+            checkedChildren={t('Started')}
+            unCheckedChildren={t('Stopped')}
+          />
+          {workflow.executed && !revisions.find(item => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt))
+            ? (
+              <Button onClick={onDuplicate}>{t('Copy to new version')}</Button>
+            )
+            : null
+          }
+        </aside>
+      </div>
       <div className="workflow-canvas">
         <TriggerConfig />
         <div className={branchBlockClass}>

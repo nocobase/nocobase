@@ -413,8 +413,11 @@ export default {
   'Trigger type': '触发方式',
   'Description': '描述',
   'Status': '状态',
-  'Enabled': '启用',
-  'Disabled': '禁用',
+  'Started': '启用',
+  'Stopped': '停用',
+  'Version': '版本',
+  'Copy to new version': '复制到新版本',
+
   'Load failed': '加载失败',
 
   'Trigger': '触发器',
