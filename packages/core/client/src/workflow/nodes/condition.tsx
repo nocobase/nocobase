@@ -33,7 +33,7 @@ function CalculationItem({ value, onChange, onRemove }) {
         )
         : <Calculation operands={operands} calculator={calculator} onChange={onChange} />
       }
-      <Button onClick={onRemove} type="text" icon={<CloseCircleOutlined />} />
+      <Button onClick={onRemove} type="link" icon={<CloseCircleOutlined />} />
     </div>
   );
 }
@@ -111,12 +111,16 @@ function CalculationGroup({ value, onChange }) {
         ))}
       </div>
       <div className={css`
-        a:not(:last-child){
-          margin-right: 1em;
+        button{
+          padding: 0;
+
+          &:not(:last-child){
+            margin-right: 1em;
+          }
         }
       `} >
-        <a onClick={onAddSingle}>{t('Add condition')}</a>
-        <a onClick={onAddGroup}>{t('Add condition group')}</a>
+        <Button type="link" onClick={onAddSingle}>{t('Add condition')}</Button>
+        <Button type="link" onClick={onAddGroup}>{t('Add condition group')}</Button>
       </div>
     </div>
   );

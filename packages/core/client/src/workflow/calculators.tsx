@@ -261,7 +261,7 @@ export function Operand({
 
   const { component, appendTypeValue } = Types[type] || {};
   const VariableComponent = typeof component === 'function' ? component(operand) : NullRender;
-  console.log(Types);
+
   return (
     <div className={css`
       display: flex;
@@ -417,6 +417,7 @@ export const CollectionFieldset = observer(({ value, onChange }: any) => {
                 ? parseStringValue(value[field.name], VTypes)
                 : { type: 'constant', value: value[field.name] };
 
+              // TODO: try to use <ObjectField> to replace this map
               return (
                 <Form.Item key={field.name} label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left" className={css`
                   .ant-form-item-control-input-content{

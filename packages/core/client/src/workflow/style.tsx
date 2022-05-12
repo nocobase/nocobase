@@ -5,6 +5,26 @@ export const workflowPageClass = css`
   width: 100%;
   overflow: auto;
 
+  .workflow-toolbar{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: #fff;
+
+    header{
+      display: flex;
+      align-items: center;
+      gap: .5em;
+    }
+
+    aside{
+      display: flex;
+      align-items: center;
+      gap: .5em;
+    }
+  }
+
   .workflow-canvas{
     width: min-content;
     min-width: 100%;
@@ -12,6 +32,25 @@ export const workflowPageClass = css`
     flex-direction: column;
     align-items: center;
     padding: 2em;
+  }
+`;
+
+export const workflowVersionDropdownClass = css`
+  .ant-dropdown-menu-item{
+
+    &.unexecuted{
+      font-style: italic;
+    }
+
+    .ant-dropdown-menu-title-content{
+      text-align: right;
+
+      time{
+        margin-left: 0.5rem;
+        color: #999;
+        font-size: 80%;
+      }
+    }
   }
 `;
 
@@ -116,6 +155,10 @@ export const nodeCardClass = css`
     color: #999;
     opacity: 0;
     transition: opacity .3s ease;
+
+    &[disabled]{
+      display: none;
+    }
 
     &:hover {
       color: red;
