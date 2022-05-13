@@ -13,6 +13,10 @@ export default {
     const options = execution.getParsedValue(params);
     const result = await (multiple ? repo.find : repo.findOne).call(repo, {
       ...options,
+      // NOTE: `raw` to avoid getting undefined value from Proxied model instance (#380)
+      // e.g. Object.prototype.hasOwnProperty.call(result, 'id') // false
+      // so the properties can not be get by json-templates(object-path)
+      raw: true,
       transaction: execution.tx
     });
 
