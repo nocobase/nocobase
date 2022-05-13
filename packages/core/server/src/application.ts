@@ -188,14 +188,23 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.listen?.port) {
       const listen = () =>
-        new Promise((resolve) => {
+        new Promise((resolve, reject) => {
           const Server = this.listen(options?.listen, () => {
             resolve(Server);
           });
+
+          Server.on('error', (err) => {
+            reject(err);
+          });
         });
 
-      // @ts-ignore
-      this.listenServer = await listen();
+      try {
+        //@ts-ignore
+        this.listenServer = await listen();
+      } catch (e) {
+        console.error(e);
+        process.exit(1);
+      }
     }
 
     await this.emitAsync('afterStart', this, options);
