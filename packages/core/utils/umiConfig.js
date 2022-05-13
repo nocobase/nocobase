@@ -5,7 +5,7 @@ function getUmiConfig() {
   const { SERVER_PORT, SERVER_BASE_URL } = process.env;
   const SERVER_BASE_PATH = process.env.SERVER_BASE_PATH || '/api/';
   const PROXY_TARGET_URL = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${SERVER_PORT}`;
-  const LOCAL_STORAGE_BASE_URL = process.env.LOCAL_STORAGE_BASE_URL || '/uploads';
+  const LOCAL_STORAGE_BASE_URL = process.env.LOCAL_STORAGE_BASE_URL || '/storage/uploads/';
 
   function getLocalStorageProxy() {
     if (LOCAL_STORAGE_BASE_URL.startsWith('http')) {

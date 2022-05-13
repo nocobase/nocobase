@@ -25,6 +25,12 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
   }
 
   async beforeLoad() {
+    const cmd = this.app.findCommand('install');
+    if (cmd) {
+      cmd.requiredOption('-e, --admin-email <adminEmail>');
+      cmd.requiredOption('-p, --admin-password <adminPassword>');
+      cmd.option('-n, --admin-nickname [adminNickname]');
+    }
     this.db.registerOperators({
       $isCurrentUser(_, ctx) {
         return {
@@ -106,30 +112,29 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     });
   }
 
-  getRootUserInfo() {
+  getInstallingData(options: any = {}) {
+    const { INIT_ADMIN_NICKNAME, INIT_ADMIN_PASSWORD, INIT_ADMIN_EMAIL } = process.env;
     const {
-      adminNickname = 'Super Admin',
-      adminEmail = 'admin@nocobase.com',
-      adminPassword = 'admin123',
-    } = this.options.installing || {};
-
+      adminEmail = INIT_ADMIN_EMAIL,
+      adminPassword = INIT_ADMIN_PASSWORD,
+      adminNickname = INIT_ADMIN_NICKNAME || 'Super Admin',
+    } = options.users || options?.cliArgs?.[0] || {};
     return {
-      adminNickname,
       adminEmail,
       adminPassword,
+      adminNickname,
     };
   }
 
-  async install() {
-    const { adminNickname, adminPassword, adminEmail } = this.getRootUserInfo();
-
+  async install(options) {
+    const { adminNickname, adminPassword, adminEmail } = this.getInstallingData(options);
     const User = this.db.getCollection('users');
     const user = await User.repository.create<UserModel>({
       values: {
         nickname: adminNickname,
         email: adminEmail,
         password: adminPassword,
-        roles: ['root', 'admin'],
+        roles: ['root', 'admin', 'member'],
       },
     });
 

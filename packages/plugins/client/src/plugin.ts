@@ -6,10 +6,10 @@ import { resolve } from 'path';
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {
-    const cmd = this.app.findCommand('install');
-    if (cmd) {
-      cmd.option('--import-demo');
-    }
+    // const cmd = this.app.findCommand('install');
+    // if (cmd) {
+    //   cmd.option('--import-demo');
+    // }
     this.app.on('afterInstall', async (app, options) => {
       const [opts] = options?.cliArgs || [{}];
       if (opts?.importDemo) {

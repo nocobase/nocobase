@@ -8,33 +8,26 @@ const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
 module.exports = (cli) => {
   cli
     .command('start')
-    .option('--pm2')
     .option('-p, --port [port]')
     .allowUnknownOption()
     .action(async (opts) => {
-      if (isDev() && !opts.pm2) {
-        promptForTs();
+      if (opts.port) {
+        process.env.SERVER_PORT = opts.port;
       }
-      await postCheck(opts);
-      await runInstall();
-      if (isDev() && !opts.pm2) {
-        const argv = [
+      if (process.argv.includes('-h') || process.argv.includes('--help')) {
+        promptForTs();
+        run('ts-node', [
           '-P',
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
           './packages/app/server/src/index.ts',
           ...process.argv.slice(2),
-        ];
-        run('ts-node-dev', argv);
-      } else {
-        const argv = [
-          'start',
-          'packages/app/server/lib/index.js',
-          '--',
-          ...process.argv.slice(2),
-        ];
-        run('pm2-runtime', argv);
+        ]);
+        return;
       }
+      await postCheck(opts);
+      await run('node', ['./packages/app/server/lib/index.js', 'install', '-s']);
+      run('pm2-runtime', ['start', 'packages/app/server/lib/index.js', '--', ...process.argv.slice(2)]);
     });
 };

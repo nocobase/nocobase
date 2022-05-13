@@ -3,11 +3,11 @@ import Application from '../application';
 export default (app: Application) => {
   app
     .command('start')
-    .option('-s, --silent', 'silent')
-    .option('--pm2')
+    .option('-s, --silent')
+    .option('-p, --port')
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
-      const port = opts.port || process.env.SERVER_PORT || 3000;
+      const port = opts.port || process.env.SERVER_PORT || 13000;
       const host = opts.host || process.env.SERVER_HOST || '0.0.0.0';
 
       await app.start({

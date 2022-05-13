@@ -18,7 +18,8 @@
     "commander": "^9.2.0",
     "dotenv": "^10.0.0",
     "execa": "^5.1.1",
-    "pm2": "^5.2.0"
+    "pm2": "^5.2.0",
+    "portfinder": "^1.0.28"
   },
   "devDependencies": {
     "@nocobase/devtools": "0.7.0-alpha.54"

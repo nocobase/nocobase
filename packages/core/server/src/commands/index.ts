@@ -1,24 +1,18 @@
 import Application from '../application';
-import console from './console';
-import dbAuth from './db-auth';
-import dbSync from './db-sync';
-import install from './install';
-import start from './start';
-import upgrade from './upgrade';
 
 export function registerCli(app: Application) {
-  console(app);
-  dbAuth(app);
-  dbSync(app);
-  install(app);
-  start(app);
-  upgrade(app);
+  require('./console').default(app);
+  require('./db-auth').default(app);
+  require('./db-sync').default(app);
+  require('./install').default(app);
+  require('./start').default(app);
+  require('./upgrade').default(app);
 
   // development only with @nocobase/cli
-  app.command('build').argument('[packages...]').description('development only');
-  app.command('clean', 'development only');
-  app.command('dev').description('development only');
-  app.command('doc').argument('[cmd]', '', 'dev').description('development only');
-  app.command('test').description('development only');
-  app.command('umi').description('development only');
+  app.command('build').argument('[packages...]');
+  app.command('clean');
+  app.command('dev').usage('[options]').option('-p, --port [port]').option('--client').option('--server');
+  app.command('doc').argument('[cmd]', '', 'dev');
+  app.command('test');
+  app.command('umi');
 }

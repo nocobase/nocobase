@@ -103,6 +103,18 @@ NocoBase 未安装时，会自动安装（参考 install 命令）
 </Alert>
 
 ```bash
+Usage: nocobase dev [options]
+
+Options:
+  -p, --port [port]
+  --client
+  --server
+  -h, --help
+```
+
+示例
+
+```bash
 # 启动应用，用于开发环境，实时编译
 yarn nocobase dev
 # 只启动服务端
@@ -123,6 +135,19 @@ yarn nocobase dev --client
 </Alert>
 
 ```bash
+$ yarn nocobase start -h
+
+Usage: nocobase start [options]
+
+Options:
+  -p, --port
+  -s, --silent
+  -h, --help
+```
+
+示例
+
+```bash
 # 启动应用，用于生产环境，
 yarn nocobase start
 ```
@@ -132,16 +157,30 @@ yarn nocobase start
 安装
 
 ```bash
-# 初次安装
-yarn nocobase install
-# 安装中文版本
-yarn nocobase install --lang=zh-CN
-# 初始化账号和密码
-yarn nocobase install --admin-email=admin@nocobase.com --admin-pwd=admin123
+$ yarn nocobase install -h
+
+Usage: nocobase install [options]
+
+Options:
+  -f, --force
+  -c, --clean
+  -s, --silent
+  -l, --lang [lang]
+  -e, --admin-email <adminEmail>
+  -p, --admin-password <adminPassword>
+  -n, --admin-nickname [adminNickname]
+  -h, --help
+```
+
+示例
+
+```bash
+# 初始安装
+yarn nocobase install -l zh-CN -e admin@nocobase.com -p admin123
 # 强制重新安装，会删除相关数据表
-yarn nocobase install -f # --force
+yarn nocobase install -f -l zh-CN -e admin@nocobase.com -p admin123
 # 清空数据库，并重新安装
-yarn nocobase install -c # --clean
+yarn nocobase install -c -l zh-CN -e admin@nocobase.com -p admin123
 ```
 
 <Alert>

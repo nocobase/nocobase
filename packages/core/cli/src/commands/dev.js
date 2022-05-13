@@ -1,6 +1,7 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
 const { runInstall, run, postCheck, nodeCheck, promptForTs } = require('../util');
+const { getPortPromise } = require('portfinder');
 
 /**
  *
@@ -9,25 +10,66 @@ const { runInstall, run, postCheck, nodeCheck, promptForTs } = require('../util'
 module.exports = (cli) => {
   cli
     .command('dev')
+    .option('-p, --port [port]')
+    .option('--client')
+    .option('--server')
     .allowUnknownOption()
     .action(async (opts) => {
       promptForTs();
+      if (process.argv.includes('-h') || process.argv.includes('--help')) {
+        run('ts-node', [
+          '-P',
+          './tsconfig.server.json',
+          '-r',
+          'tsconfig-paths/register',
+          './packages/app/server/src/index.ts',
+          ...process.argv.slice(2),
+        ]);
+        return;
+      }
+      const { port, client, server } = opts;
+      if (port) {
+        process.env.SERVER_PORT = opts.port;
+      }
+      const { SERVER_PORT } = process.env;
+      let clientPost = SERVER_PORT;
+      let serverPost;
       nodeCheck();
       await postCheck(opts);
+      if (server) {
+        serverPost = SERVER_PORT;
+      } else if (!server && !client) {
+        serverPost = await getPortPromise({
+          port: 1 * clientPost + 1,
+        });
+      }
       await runInstall();
-      run('ts-node-dev', [
-        '-P',
-        './tsconfig.server.json',
-        '-r',
-        'tsconfig-paths/register',
-        './packages/app/server/src/index.ts',
-        'start',
-        '-s',
-      ]);
-      run('umi', ['dev'], {
-        env: {
-          APP_ROOT: 'packages/app/client',
-        },
-      });
+      if (server || !client) {
+        console.log('starting server', serverPost);
+        const argv = [
+          '-P',
+          './tsconfig.server.json',
+          '-r',
+          'tsconfig-paths/register',
+          './packages/app/server/src/index.ts',
+          'start',
+          ...process.argv.slice(3),
+        ];
+        run('ts-node-dev', argv, {
+          env: {
+            SERVER_PORT: serverPost,
+          },
+        });
+      }
+      if (client || !server) {
+        console.log('starting client', clientPost);
+        run('umi', ['dev'], {
+          env: {
+            PORT: clientPost,
+            APP_ROOT: 'packages/app/client',
+            PROXY_TARGET_URL: serverPost ? `http://127.0.0.1:${serverPost}` : undefined,
+          },
+        });
+      }
     });
 };

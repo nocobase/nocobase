@@ -9,22 +9,21 @@ module.exports = (cli) => {
   cli
     .allowUnknownOption()
     .option('-h, --help')
-    .option('-tsnd, --ts-node-dev')
+    .option('--ts-node-dev')
     .action((options) => {
+      const { tsNodeDev } = options;
       if (isDev()) {
         promptForTs();
-        const argv = [
+        run(tsNodeDev ? 'ts-node-dev' : 'ts-node', [
           '-P',
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
           './packages/app/server/src/index.ts',
           ...process.argv.slice(2),
-        ];
-        run(options.tsNodeDev ? 'ts-node-dev' : 'ts-node', argv);
+        ]);
       } else {
-        const argv = ['./packages/app/server/lib/index.js', ...process.argv.slice(2)];
-        run('node', argv);
+        run('node', ['./packages/app/server/lib/index.js', ...process.argv.slice(2)]);
       }
     });
 };

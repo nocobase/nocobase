@@ -104,7 +104,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.acl = createACL();
     this.db = createDatabase(options);
     this.resourcer = createResourcer(options);
-    this.cli = new Command('nocobase');
+    this.cli = new Command('nocobase').usage('[command] [options]');
     this.i18n = createI18n(options);
 
     this.pm = new PluginManager({
