@@ -40,7 +40,7 @@ export default {
       type: 'integer',
       title: 'branch index'
     },
-    // for reasons:
+    // Note: for reasons:
     // 1. redirect type node to solve cycle flow.
     // 2. recognize as real next node after branches.
     {
@@ -53,14 +53,7 @@ export default {
       interface: 'select',
       type: 'string',
       name: 'type',
-      title: '类型',
-      // TODO: data for test only now
-      dataSource: [
-        { label: '数据处理', value: 'data' },
-        { label: '数据查询', value: 'query' },
-        { label: '等待人工输入', value: 'prompt' },
-        { label: '条件判断', value: 'condition' },
-      ]
+      title: '类型'
     },
     {
       interface: 'json',

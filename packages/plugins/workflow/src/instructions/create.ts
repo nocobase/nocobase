@@ -16,7 +16,8 @@ export default {
     });
 
     return {
-      result,
+      // NOTE: get() for non-proxied instance (#380)
+      result: result.get(),
       status: JOB_STATUS.RESOLVED
     };
   }
