@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow",
-  "version": "0.7.0-alpha.32",
+  "version": "0.7.0-alpha.33",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -15,14 +15,14 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/actions": "0.7.0-alpha.32",
-    "@nocobase/database": "0.7.0-alpha.32",
-    "@nocobase/server": "0.7.0-alpha.32",
-    "@nocobase/utils": "0.7.0-alpha.32",
+    "@nocobase/actions": "0.7.0-alpha.33",
+    "@nocobase/database": "0.7.0-alpha.33",
+    "@nocobase/server": "0.7.0-alpha.33",
+    "@nocobase/utils": "0.7.0-alpha.33",
     "json-templates": "^4.2.0"
   },
   "devDependencies": {
-    "@nocobase/test": "0.7.0-alpha.32"
+    "@nocobase/test": "0.7.0-alpha.33"
   },
   "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }
