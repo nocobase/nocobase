@@ -61,6 +61,7 @@ export const TriggerConfig = () => {
   const { type, config, executed } = data.data;
   const { title, fieldset, scope, components } = triggers.get(type);
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
+  const titleText = `${t('Trigger')}: ${compile(title)}`;
 
   return (
     <div className={cx(nodeCardClass)}>
@@ -77,7 +78,7 @@ export const TriggerConfig = () => {
           properties: {
             drawer: {
               type: 'void',
-              title: detailText,
+              title: titleText,
               'x-component': 'Action.Drawer',
               'x-decorator': 'Form',
               'x-decorator-props': {

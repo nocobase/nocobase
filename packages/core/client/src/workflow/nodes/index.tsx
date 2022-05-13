@@ -165,13 +165,14 @@ export function NodeDefaultView(props) {
   const { data, children } = props;
   const instruction = instructions.get(data.type);
   const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
+  const typeText = compile(instruction.title);
 
   return (
     <div className={cx(nodeClass, `workflow-node-type-${data.type}`)}>
       <div className={cx(nodeCardClass)}>
         <div className={cx(nodeHeaderClass)}>
           <div className={cx(nodeMetaClass)}>
-            <Tag>{compile(instruction.title)}</Tag>
+            <Tag>{typeText}</Tag>
           </div>
           <h4 className={cx(nodeTitleClass)}>
             <strong>{data.title}</strong>
@@ -196,7 +197,7 @@ export function NodeDefaultView(props) {
                 properties: {
                   drawer: {
                     type: 'void',
-                    title: detailText,
+                    title: typeText,
                     'x-component': 'Action.Drawer',
                     'x-decorator': 'Form',
                     'x-decorator-props': {
