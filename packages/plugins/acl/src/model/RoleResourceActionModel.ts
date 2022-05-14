@@ -20,9 +20,25 @@ export class RoleResourceActionModel extends Model {
     const fields = this.get('fields') as any;
 
     const actionPath = `${resourceName}:${actionName}`;
+
     const actionParams = {
       fields,
     };
+
+    const collection = db.getCollection(resourceName);
+
+    if (collection) {
+      const pk = collection.model['primaryKeyAttribute'];
+
+      const visibleFields = [...collection.fields.values()]
+        .filter((field) => {
+          const options = field.options;
+          return options['visible'] || false;
+        })
+        .map((field) => field.options['name']);
+
+      actionParams['appendFields'] = [pk, ...visibleFields];
+    }
 
     // @ts-ignore
     const scope = await this.getScope();
@@ -33,8 +49,6 @@ export class RoleResourceActionModel extends Model {
     }
 
     role.grantAction(actionPath, actionParams);
-
-    const collection = db.getCollection(resourceName);
 
     if (!collection) {
       return;

@@ -141,7 +141,12 @@ describe('acl', () => {
       values: {
         name: 'c1',
         title: 'table1',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'integer', name: 'age' },
+        ],
       },
+      context: {},
     });
 
     // create c2 collection
@@ -150,6 +155,7 @@ describe('acl', () => {
         name: 'c2',
         title: 'table2',
       },
+      context: {},
     });
 
     // create c1 published scope
@@ -215,7 +221,7 @@ describe('acl', () => {
       resource: 'c1',
       action: 'view',
       params: {
-        fields: ['age', 'title', 'id', 'createdAt', 'updatedAt'],
+        fields: ['age', 'title', 'id'],
       },
     });
 

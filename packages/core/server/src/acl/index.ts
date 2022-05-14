@@ -1,5 +1,6 @@
 import { ACL } from '@nocobase/acl';
 import { availableActions } from './available-action';
+import lodash from 'lodash';
 
 const configureResources = [
   'roles',

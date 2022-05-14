@@ -76,7 +76,8 @@ export class ACL extends EventEmitter {
         }
 
         if (actionName === 'view' && ctx.params.fields) {
-          const appendFields = ['id', 'createdAt', 'updatedAt'];
+          const appendFields = ctx.params.appendFields || [];
+
           ctx.params = {
             ...lodash.omit(ctx.params, 'fields'),
             fields: [...ctx.params.fields, ...appendFields],

@@ -322,6 +322,42 @@ describe('acl', () => {
     });
   });
 
+  it('should show visible fields', async () => {
+    acl.setAvailableAction('create', {
+      type: 'old-data',
+    });
+
+    acl.beforeGrantAction((ctx) => {
+      if (ctx.path === 'posts:create') {
+        ctx.params = {
+          filter: {
+            status: 'publish',
+          },
+        };
+      }
+    });
+
+    acl.define({
+      role: 'admin',
+      actions: {
+        'posts:create': {},
+      },
+    });
+
+    const results = acl.can({ role: 'admin', resource: 'posts', action: 'create' });
+
+    expect(results).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'create',
+      params: {
+        filter: {
+          status: 'publish',
+        },
+      },
+    });
+  });
+
   it('should to JSON', () => {
     acl.setAvailableAction('create', {
       displayName: 'create',
