@@ -24,7 +24,7 @@
     "start-server": "yarn nocobase start",
     "build": "lerna run build",
     "build-docs": "dumi build",
-    "test": "node ./jest.cli.js -i",
+    "test": "node ./jest.cli.js",
     "lint": "eslint .",
     "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
     "release:force": "lerna publish from-package --yes",
