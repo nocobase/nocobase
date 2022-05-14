@@ -1,8 +1,9 @@
 import { MoreOutlined, SettingOutlined } from '@ant-design/icons';
-import { ConfigProvider, Menu, MenuItemProps, Tooltip } from 'antd';
+import { ConfigProvider, Menu, MenuItemProps, Spin, Tooltip } from 'antd';
 import cls from 'classnames';
 import { get } from 'lodash';
 import React, { createContext, useContext } from 'react';
+import { useAPIClient, useRequest } from '../api-client';
 import { PluginManagerContext } from './context';
 
 export const usePrefixCls = (
@@ -106,4 +107,16 @@ PluginManager.Toolbar.Item = (props) => {
       {title}
     </Menu.Item>
   );
+};
+
+export const RemotePluginManagerToolbar = () => {
+  const api = useAPIClient();
+  const { data, loading } = useRequest({
+    resource: 'plugins',
+    action: 'getPinned',
+  });
+  if (loading) {
+    return <Spin />;
+  }
+  return <PluginManager.Toolbar items={data?.data} />;
 };
