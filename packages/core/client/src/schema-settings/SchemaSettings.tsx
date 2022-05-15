@@ -1,8 +1,9 @@
 import { css } from '@emotion/css';
 import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import { GeneralField } from '@formily/core';
-import { ISchema, Schema, SchemaOptionsContext } from '@formily/react';
+import { ISchema, Schema, SchemaOptionsContext, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import { useUpdateEffect } from 'ahooks';
 import { Dropdown, Menu, MenuItemProps, Modal, Select, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
@@ -11,11 +12,12 @@ import {
   ActionContext,
   createDesignable,
   Designable,
+  RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentOptions,
   useActionContext,
   useAPIClient,
-  useCollection
+  useCollection,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -458,6 +460,119 @@ SchemaSettings.PopupItem = (props) => {
           ...schema,
         }}
       />
+    </ActionContext.Provider>
+  );
+};
+
+SchemaSettings.ActionModalItem = (props) => {
+  const { onSubmit, ...others } = props;
+  const [visible, setVisible] = useState(false);
+  const [schemaUid, setSchemaUid] = useState(props.uid);
+  const { t } = useTranslation();
+  const fieldSchema = useFieldSchema();
+  const ctx = useContext(SchemaSettingsContext);
+  const { dn } = useSchemaSettings();
+  const api = useAPIClient();
+
+  useUpdateEffect(() => {
+    if (schemaUid) {
+      fieldSchema['x-action-settings'].schemaUid = schemaUid;
+      dn.emit('patch', { schema: fieldSchema });
+    }
+  }, [schemaUid]);
+
+  const useCancelAction = () => {
+    const form = useForm();
+    const actionContext = useActionContext();
+    return {
+      async run() {
+        actionContext.setVisible(false);
+        form.reset();
+      },
+    };
+  };
+  const useSubmitAction = () => {
+    const form = useForm();
+    const actionContext = useActionContext();
+    return {
+      async run() {
+        onSubmit?.(form.values);
+        actionContext.setVisible(false);
+        form.reset();
+      },
+    };
+  };
+
+  const openAssignedFieldValueHandler = async () => {
+    if (!schemaUid) {
+      const newUid = uid();
+      const schema: ISchema = {
+        type: 'void',
+        'x-uid': newUid,
+        properties: {
+          modal: {
+            'x-component': 'Action.Modal',
+            'x-component-props': {
+              width: 520,
+            },
+            'x-decorator': 'Form',
+            type: 'void',
+            title: '{{ t("Assigned field value") }}',
+            properties: {
+              tip: {
+                type: 'void',
+                'x-editable': false,
+                'x-decorator': 'FormItem',
+                'x-component': 'Markdown.Void',
+                'x-index': 0,
+                'x-component-props': {
+                  content: t('Save assigned field value after click button'),
+                },
+              },
+              grid: {
+                type: 'void',
+                'x-component': 'Grid',
+                'x-initializer': 'CustomFormItemInitializers',
+                properties: {},
+              },
+              footer: {
+                'x-component': 'Action.Modal.Footer',
+                type: 'void',
+                properties: {
+                  cancel: {
+                    title: '{{ t("Cancel") }}',
+                    'x-component': 'Action',
+                    'x-component-props': {
+                      useAction: '{{ useCancelAction }}',
+                    },
+                  },
+                  submit: {
+                    title: '{{ t("Submit") }}',
+                    'x-component': 'Action',
+                    'x-component-props': {
+                      type: 'primary',
+                      useAction: '{{ useSubmitAction }}',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      };
+      await api.resource('uiSchemas').insert({ values: schema });
+      setSchemaUid(newUid);
+    }
+    // actx.setVisible(false);
+    ctx.setVisible(false);
+    setVisible(true);
+  };
+  return (
+    <ActionContext.Provider value={{ visible, setVisible }}>
+      <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler}>
+        {props.children || props.title}
+      </SchemaSettings.Item>
+      {schemaUid && <RemoteSchemaComponent uid={schemaUid} scope={{ useCancelAction, useSubmitAction }} />}
     </ActionContext.Provider>
   );
 };

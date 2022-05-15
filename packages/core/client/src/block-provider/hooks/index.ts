@@ -133,6 +133,21 @@ export const useCreateActionProps = () => {
   };
 };
 
+export const useCustomizeUpdateActionProps = () => {
+  const { resource } = useBlockRequestContext();
+  const actionSchema = useFieldSchema();
+  return {
+    async onClick() {
+      const assignedValues = actionSchema?.['x-action-settings']?.assignedValues;
+      await resource.update({
+        values: {
+          ...assignedValues,
+        },
+      });
+    },
+  };
+};
+
 export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();

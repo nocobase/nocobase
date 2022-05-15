@@ -1,4 +1,3 @@
-
 // 表单的操作配置
 export const FormActionInitializers = {
   title: '{{t("Configure actions")}}',
@@ -15,6 +14,8 @@ export const FormActionInitializers = {
           schema: {
             'x-action-settings': {
               initialValues: {},
+              skipValidator: false,
+              overwriteValues: {},
               onSuccess: {
                 successMessage: '{{t("Submitted successfully")}}',
               },
@@ -40,6 +41,8 @@ export const FormActionInitializers = {
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               initialValues: {},
+              skipValidator: false,
+              overwriteValues: {},
               onSuccess: {
                 successMessage: '{{t("Submitted successfully")}}',
               },
@@ -68,7 +71,9 @@ export const CreateFormActionInitializers = {
           component: 'CreateSubmitActionInitializer',
           schema: {
             'x-action-settings': {
+              skipValidator: false,
               overwriteValues: {},
+              onSuccess: {},
             },
           },
         },
@@ -90,7 +95,9 @@ export const CreateFormActionInitializers = {
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-action-settings': {
+              skipValidator: false,
               overwriteValues: {},
+              onSuccess: {},
             },
             'x-component-props': {
               useProps: '{{ useCreateActionProps }}',
@@ -116,7 +123,9 @@ export const UpdateFormActionInitializers = {
           component: 'UpdateSubmitActionInitializer',
           schema: {
             'x-action-settings': {
+              skipValidator: false,
               overwriteValues: {},
+              onSuccess: {},
             },
           },
         },
@@ -138,7 +147,9 @@ export const UpdateFormActionInitializers = {
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-action-settings': {
+              skipValidator: false,
               overwriteValues: {},
+              onSuccess: {},
             },
             'x-component-props': {
               useProps: '{{ useUpdateActionProps }}',

@@ -288,4 +288,10 @@ export default {
 
   'Unsaved changes': 'Unsaved changes',
   'Are you sure you don\'t want to save?': 'Are you sure you don\'t want to save?',
+
+  'Popup window': 'Popup window',
+  'Trigger workflow': 'Trigger workflow',
+  'Request API': 'Request API',
+  'Assigned field value': 'Assigned field value',
+  'Save assigned field value after click button': 'Save assigned field value after click button:',
 }

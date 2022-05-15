@@ -480,4 +480,14 @@ export default {
   'Unsaved changes': '未保存修改',
   'Are you sure you don\'t want to save?': '你确定不保存修改吗？',
   'Dragging': '拖拽中',
+
+  'Popup window': '打开弹窗',
+  'Trigger workflow': '触发工作流',
+  'Request API': '请求API',
+  'Assigned field value': '字段赋值',
+  'Save assigned field value after click button': '点击按钮后，以下字段将被赋值并保存:',
+  'Constant value': '静态值',
+  'Dynamic value': '动态值',
+  'Current user': '当前用户',
+  'Current record': '当前记录',
 }

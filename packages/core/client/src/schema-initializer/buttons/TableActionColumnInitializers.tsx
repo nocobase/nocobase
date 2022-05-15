@@ -70,6 +70,67 @@ export const TableActionColumnInitializers = (props: any) => {
             },
           ],
         },
+        {
+          type: 'divider',
+        },
+        {
+          type: 'subMenu',
+          title: '{{t("Customize")}}',
+          children: [
+            {
+              type: 'item',
+              title: '{{t("Popup window")}}',
+              component: 'CustomizeActionInitializer',
+              schema: {
+                title: '{{ t("Popup window") }}',
+                'x-action': 'customizePopup',
+                'x-component': 'Action.Link',
+                'x-designer': 'Action.Designer',
+                'x-component-props': {
+                  useProps: '{{ useCreateActionProps }}',
+                  openMode: 'drawer',
+                },
+                properties: {
+                  drawer: {
+                    type: 'void',
+                    title: '{{ t("Popup window") }}',
+                    'x-component': 'Action.Container',
+                    'x-component-props': {
+                      className: 'nb-action-popup',
+                    },
+                    properties: {
+                      grid: {
+                        type: 'void',
+                        'x-component': 'Grid',
+                        'x-initializer': 'CreateFormBlockInitializers',
+                        properties: {},
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            {
+              type: 'item',
+              title: '{{t("Update record")}}',
+              component: 'CustomizeActionInitializer',
+              schema: {
+                title: '{{ t("Update record") }}',
+                'x-component': 'Action.Link',
+                'x-designer': 'Action.Designer',
+                'x-action-settings': {
+                  assignedValues: {},
+                  onSuccess: {
+                    successMessage: '{{t("Submitted successfully")}}',
+                  },
+                },
+                'x-component-props': {
+                  useProps: '{{ useCustomizeUpdateActionProps }}',
+                },
+              },
+            },
+          ],
+        },
       ]}
       component={<MenuOutlined style={{ cursor: 'pointer' }} />}
     />

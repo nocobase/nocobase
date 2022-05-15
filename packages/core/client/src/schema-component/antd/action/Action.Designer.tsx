@@ -1,7 +1,8 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { isValid } from '@formily/shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../..';
+import { useActionContext, useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
 export const ActionDesigner = (props) => {
@@ -9,7 +10,9 @@ export const ActionDesigner = (props) => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const isPopupAction = ['create', 'update', 'view'].includes(fieldSchema['x-action'] || '');
+  const isPopupAction = ['create', 'update', 'view', 'customizePopup'].includes(fieldSchema['x-action'] || '');
+  const context = useActionContext();
+
   return (
     <GeneralSchemaDesigner {...props} disableInitializer>
       <SchemaSettings.ModalItem
@@ -79,7 +82,23 @@ export const ActionDesigner = (props) => {
           }}
         />
       )}
-      {fieldSchema?.['x-action-settings'] && (
+      {isValid(fieldSchema?.['x-action-settings']?.assignedValues) && (
+        <SchemaSettings.ActionModalItem
+          title={t('Assigned field value')}
+          initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
+          uid={fieldSchema?.['x-action-settings']?.schemaUid}
+          onSubmit={(assignedValues) => {
+            fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-action-settings': fieldSchema['x-action-settings'],
+              },
+            });
+          }}
+        />
+      )}
+      {isValid(fieldSchema?.['x-action-settings']?.skipValidator) && (
         <SchemaSettings.SwitchItem
           title={t('Skip required validation')}
           checked={!!fieldSchema?.['x-action-settings']?.skipValidator}
@@ -96,7 +115,7 @@ export const ActionDesigner = (props) => {
           }}
         />
       )}
-      {fieldSchema?.['x-action-settings'] && (
+      {isValid(fieldSchema?.['x-action-settings']?.overwriteValues) && (
         <SchemaSettings.ModalItem
           title={t('Form values')}
           schema={
@@ -129,7 +148,7 @@ export const ActionDesigner = (props) => {
           }}
         />
       )}
-      {fieldSchema?.['x-action-settings'] && (
+      {isValid(fieldSchema?.['x-action-settings']?.['onSuccess']) && (
         <SchemaSettings.ModalItem
           title={t('After successful submission')}
           initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
@@ -191,7 +210,7 @@ export const ActionDesigner = (props) => {
           return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
         }}
         confirm={{
-          title: t('Delete action')
+          title: t('Delete action'),
         }}
       />
     </GeneralSchemaDesigner>
