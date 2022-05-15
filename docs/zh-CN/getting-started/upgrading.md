@@ -1,11 +1,5 @@
 ---
 order: 3
-nav:
-  title: 
-  path: /
-group:
-  title: 快速开始
-  order: 2
 ---
 
 # 升级
@@ -35,7 +29,7 @@ docker-compose stop app
 # 删除应用
 docker-compose rm app
 # 下载最新镜像并启动
-docker-compose up app -d
+docker-compose up -d app
 # 查看 app 进程的情况
 docker-compose logs app
 ```

@@ -13,6 +13,6 @@ export function registerCli(app: Application) {
   app.command('clean');
   app.command('dev').usage('[options]').option('-p, --port [port]').option('--client').option('--server');
   app.command('doc').argument('[cmd]', '', 'dev');
-  app.command('test');
+  app.command('test').option('-c, --clean');
   app.command('umi');
 }

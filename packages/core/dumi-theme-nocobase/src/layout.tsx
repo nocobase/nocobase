@@ -1,11 +1,11 @@
-import React, { useContext, useState, useEffect } from 'react';
 import type { IRouteComponentProps } from '@umijs/types';
 import { context, Link } from 'dumi/theme';
+import React, { useContext, useState } from 'react';
+import Dark from './components/Dark';
 import Navbar from './components/Navbar';
+import SearchBar from './components/SearchBar';
 import SideMenu from './components/SideMenu';
 import SlugList from './components/SlugList';
-import SearchBar from './components/SearchBar';
-import Dark from './components/Dark';
 import './style/layout.less';
 
 const Hero = hero => (
@@ -48,6 +48,7 @@ const Layout: React.FC<IRouteComponentProps> = ({ children, location }) => {
     meta,
     locale,
   } = useContext(context);
+  console.log(useContext(context));
   const { url: repoUrl, branch, platform } = repository;
   const [menuCollapsed, setMenuCollapsed] = useState<boolean>(true);
   const [darkSwitch, setDarkSwitch] = useState<boolean>(false);
@@ -102,6 +103,7 @@ const Layout: React.FC<IRouteComponentProps> = ({ children, location }) => {
         }}
       />
       <SideMenu
+        theme={darkSwitch ? 'dark' :  'light'}
         darkPrefix={
           <Dark
             darkSwitch={darkSwitch}

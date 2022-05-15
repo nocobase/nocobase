@@ -1,48 +1,50 @@
----
-order: 2
-nav:
-  path: /
-group:
-  title: 开发指南
-  order: 3
----
-
-# 环境变量
+# Environment variables
 
 ## 全局环境变量
 
-保存在 `.env` 文件里，也可以放置在操作系统的环境变量里
+保存在 `.env` 文件里
 
-### NOCOBASE_ENV
+### APP_ENV
 
-NocoBase 应用环境，包括 `production` 和 `development`
+应用环境，默认值 `development`，可选项包括：
 
-```bash
-NOCOBASE_ENV=production
-```
-
-### NOCOBASE_PORT
-
-NocoBase 服务器端口，默认值 `13000`
+- `production` 生产环境
+- `development` 开发环境
 
 ```bash
-NOCOBASE_PORT=13000
+APP_ENV=production
 ```
 
-### NOCOBASE_API
+### APP_HOST
+
+应用主机，默认值 `0.0.0.0`
+
+```bash
+APP_HOST=192.168.3.154
+```
+
+### APP_PORT
+
+应用端口，默认值 `80`
+
+```bash
+APP_PORT=81
+```
+
+### APP_API_PREFIX
 
 NocoBase API 地址前缀，默认值 `/api/`
 
 ```bash
-NOCOBASE_API=/api/
+APP_API_PREFIX=/api/
 ```
 
-### NOCOBASE_KEY
+### APP_KEY
 
 秘钥，用于 jwt 等场景
 
 ```bash
-NOCOBASE_KEY=1111
+APP_KEY=1111
 ```
 
 ### DB_DIALECT
@@ -113,9 +115,17 @@ DB_USER=nocobase
 DB_PASSWORD=nocobase
 ```
 
-### DB_LOG_SQL
+### DB_TABLE_PREFIX
 
-sql 日志开关，默认值 `off`，可选项包括：
+数据表前缀
+
+```bash
+DB_TABLE_PREFIX=nocobase_
+```
+
+### DB_LOGGING
+
+数据库日志开关，默认值 `off`，可选项包括：
 
 - `on` 打开
 - `off` 关闭

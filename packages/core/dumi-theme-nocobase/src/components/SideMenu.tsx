@@ -10,9 +10,10 @@ interface INavbarProps {
   mobileMenuCollapsed: boolean;
   location: any;
   darkPrefix?: React.ReactNode;
+  theme?: 'dark' | 'light';
 }
 
-const SideMenu: FC<INavbarProps> = ({ mobileMenuCollapsed, location, darkPrefix }) => {
+const SideMenu: FC<INavbarProps> = ({ theme, mobileMenuCollapsed, location, darkPrefix }) => {
   const {
     config: {
       logo,
@@ -28,7 +29,44 @@ const SideMenu: FC<INavbarProps> = ({ mobileMenuCollapsed, location, darkPrefix 
   } = useContext(context);
   const isHiddenMenus =
     Boolean((meta.hero || meta.features || meta.gapless) && mode === 'site') || meta.sidemenu === false || undefined;
-  console.log(JSON.stringify(menu, null, 2));
+  const renderMenuItems = (items) => {
+    return items?.map?.((item) => {
+      if (item.type === 'group') {
+        return (
+          <Menu.ItemGroup title={item.title} key={item.title}>
+            {renderMenuItems(item.children)}
+          </Menu.ItemGroup>
+        );
+      }
+      if (item.type === 'subMenu') {
+        return (
+          <Menu.SubMenu title={item.title} key={item.title}>
+            {renderMenuItems(item.children)}
+          </Menu.SubMenu>
+        );
+      }
+      return (
+        <Menu.Item eventKey={item.path}>
+          <NavLink to={item.path}>{item.title}</NavLink>
+        </Menu.Item>
+      );
+    });
+  };
+  const getSelectedKeys = (items = []) => {
+    for (const item of items) {
+      if (item.path === location.pathname) {
+        return [item.path];
+      } else if (item.children) {
+        const selectKeys = getSelectedKeys(item.children);
+        if (selectKeys.length) {
+          return [...selectKeys, item.title];
+        }
+      }
+    }
+    return [];
+  }
+  const selectKeys = getSelectedKeys(menu);
+  const openKeys = selectKeys;
   return (
     <div
       className="__dumi-default-menu"
@@ -88,27 +126,8 @@ const SideMenu: FC<INavbarProps> = ({ mobileMenuCollapsed, location, darkPrefix 
         </div>
         {/* menu list */}
         <div className="__dumi-default-menu-list22">
-          <Menu mode={'inline'} selectedKeys={[location.pathname]}>
-            {menu.map((item) => {
-              if (!item.path) {
-                return (
-                  <Menu.ItemGroup title={item.title} key={item.title}>
-                    {item?.children?.map((child) => {
-                      return (
-                        <Menu.Item eventKey={child.path}>
-                          <NavLink to={child.path}>{child.title}</NavLink>
-                        </Menu.Item>
-                      );
-                    })}
-                  </Menu.ItemGroup>
-                );
-              }
-              return (
-                <Menu.Item eventKey={item.path}>
-                  <NavLink to={item.path}>{item.title}</NavLink>
-                </Menu.Item>
-              );
-            })}
+          <Menu mode={'inline'} defaultOpenKeys={openKeys} selectedKeys={getSelectedKeys(menu)}>
+            {renderMenuItems(menu)}
           </Menu>
         </div>
       </div>

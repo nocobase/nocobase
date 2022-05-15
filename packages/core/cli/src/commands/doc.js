@@ -9,17 +9,21 @@ const { run, isDev } = require('../util');
 module.exports = (cli) => {
   cli
     .command('doc')
+    .option('--lang [lang]')
     .allowUnknownOption()
-    .action(() => {
+    .action((options) => {
       if (!isDev()) {
         return;
       }
+      process.env.DOC_LANG = options.lang || 'en-US';
       const docThemePath = process.env.DOC_THEME_PATH;
       if (!docThemePath) {
         process.env.DUMI_THEME = resolve(process.cwd(), 'packages/core/dumi-theme-nocobase/src');
       } else {
         process.env.DUMI_THEME = isAbsolute(docThemePath) ? docThemePath : resolve(process.cwd(), docThemePath);
       }
+      const index = process.argv.indexOf('--lang') || process.argv.indexOf('-l');
+      process.argv.splice(index, 1);
       const argv = process.argv.slice(3);
       const argument = argv.shift() || 'dev';
       run('dumi', [argument, ...argv]);

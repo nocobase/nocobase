@@ -1,13 +1,4 @@
----
-order: 1
-nav:
-  path: /
-group:
-  title: 开发指南
-  order: 3
----
-
-# 脚手架目录结构
+# Directory structure
 
 ## 应用脚手架
 

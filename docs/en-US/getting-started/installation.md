@@ -1,13 +1,8 @@
 ---
 order: 1
-nav:
-  path: /
-group:
-  title: 快速开始
-  order: 2
 ---
 
-# 安装
+# Installation
 
 NocoBase 支持 Docker 和 CLI 两种安装方法，如果你是新人推荐使用 Docker 安装。
 

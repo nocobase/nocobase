@@ -1,6 +1,6 @@
+import { usePrefersColor } from 'dumi/theme';
 import type { FC } from 'react';
 import React from 'react';
-import { usePrefersColor } from 'dumi/theme';
 import './Dark.less';
 
 interface darkProps {
@@ -10,6 +10,7 @@ interface darkProps {
 };
 
 const Dark: FC<darkProps> = ({ darkSwitch, onDarkSwitchClick, isSideMenu }) => {
+  return null;
   const allState = ['dark', 'light', 'auto'];
   const [color, setColor] = usePrefersColor();
   const prefersColor = color;

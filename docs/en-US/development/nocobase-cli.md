@@ -1,10 +1,5 @@
 ---
 order: 2
-nav:
-  path: /
-group:
-  title: 开发指南
-  order: 3
 ---
 
 # NocoBase CLI
@@ -201,7 +196,19 @@ yarn nocobase upgrade
 
 ### `test`
 
-测试
+jest 测试，支持所有 [jest-cli](https://jestjs.io/docs/cli) 的 options，除此之外还扩展了 `-c, --db-clean` 的支持。
+
+```bash
+$ yarn nocobase test -h
+
+Usage: nocobase test [options]
+
+Options:
+  -c, --db-clean        运行所有测试前清空数据库
+  -h, --help
+```
+
+示例
 
 ```bash
 # 运行所有测试文件
@@ -210,6 +217,10 @@ yarn nocobase test
 yarn nocobase test packages/core/server
 # 运行指定文件里的所有测试
 yarn nocobase test packages/core/database/src/__tests__/database.test.ts
+
+# 运行测试前，清空数据库
+yarn nocobase test -c
+yarn nocobase test packages/core/server -c
 ```
 
 ### `build`

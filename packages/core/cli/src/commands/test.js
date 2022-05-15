@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { nodeCheck } = require('../util');
+const { nodeCheck, runAppCommand } = require('../util');
 
 /**
  *
@@ -8,9 +8,13 @@ const { nodeCheck } = require('../util');
 module.exports = (cli) => {
   cli
     .command('test')
+    .option('-c, --db-clean')
     .allowUnknownOption()
-    .action(() => {
+    .action(async (options) => {
       nodeCheck();
+      if (options.dbClean) {
+        await runAppCommand('db:clean', '-y');
+      }
       process.argv.splice(2, 1, '-i');
       require('jest-cli/bin/jest');
     });

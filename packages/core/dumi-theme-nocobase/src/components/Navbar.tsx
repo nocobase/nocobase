@@ -37,6 +37,10 @@ const Navbar: FC<INavbarProps> = ({ onMobileMenuClick, navPrefix, location, dark
         {navPrefix}
         {/* nav */}
         {navItems.map(nav => {
+          if (nav.hidden) {
+            return null;
+          }
+
           const child = Boolean(nav.children?.length) && (
             <ul>
               {nav.children.map(item => (
