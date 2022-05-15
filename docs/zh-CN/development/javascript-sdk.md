@@ -1,7 +1,3 @@
----
-order: 4
----
-
 # JavaScript SDK
 
 ## 初始化实例
@@ -32,6 +28,6 @@ api.request({
 ## Request resource action
 
 ```ts
-api.resource('collection', collectionId);
-api.resource('collection.association', collectionId);
+api.resource('collection', collectionId)[action]();
+api.resource('collection.association', collectionId)[action]();
 ```

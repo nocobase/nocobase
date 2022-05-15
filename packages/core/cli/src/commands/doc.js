@@ -22,10 +22,16 @@ module.exports = (cli) => {
       } else {
         process.env.DUMI_THEME = isAbsolute(docThemePath) ? docThemePath : resolve(process.cwd(), docThemePath);
       }
-      const index = process.argv.indexOf('--lang') || process.argv.indexOf('-l');
-      process.argv.splice(index, 1);
+      const index = process.argv.indexOf('--lang=zh-CN') || process.argv.indexOf('--lang=en-US') || process.argv.indexOf('-l');
+      if (index > 0) {
+        process.argv.splice(index, 1);
+      }
       const argv = process.argv.slice(3);
       const argument = argv.shift() || 'dev';
-      run('dumi', [argument, ...argv]);
+      if (argument === 'serve') {
+        run('serve', [`${resolve(process.cwd(), 'docs/dist', process.env.DOC_LANG)}`, ...argv]);
+      } else {
+        run('dumi', [argument, ...argv]);
+      }
     });
 };

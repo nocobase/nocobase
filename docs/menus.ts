@@ -10,7 +10,7 @@ export default [
   },
   {
     title: 'Getting started',
-    'title.zh-CN': '快速上手',
+    'title.zh-CN': '快速开始',
     type: 'group',
     children: [
       '/getting-started/installation',
@@ -58,6 +58,7 @@ export default [
     children: [
       '/development/directory-structure',
       '/development/env',
+      '/development/nocobase-cli',
       '/development/http-api',
       '/development/javascript-sdk',
       {
@@ -66,6 +67,7 @@ export default [
         type: 'subMenu',
         children: [
           '/development/plugin-development/index',
+          '/development/plugin-development/collection',
           '/development/plugin-development/i18n',
         ],
       },
