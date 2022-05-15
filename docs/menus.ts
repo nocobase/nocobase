@@ -67,7 +67,11 @@ export default [
         type: 'subMenu',
         children: [
           '/development/plugin-development/index',
-          '/development/plugin-development/collection',
+          '/development/plugin-development/database',
+          '/development/plugin-development/resourcer',
+          '/development/plugin-development/acl',
+          '/development/plugin-development/middleware',
+          '/development/plugin-development/events',
           '/development/plugin-development/i18n',
         ],
       },
