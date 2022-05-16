@@ -2,8 +2,8 @@
 
 ![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
 
-What is NocoBase
-----------
+## What is NocoBase
+
 NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in minutes.
 
 Homepage:
@@ -15,8 +15,8 @@ https://demo.nocobase.com/new
 Contact Us:
 hello@nocobase.com
 
-Why choose NocoBase
-----------
+## Why choose NocoBase
+
 - **Open source and free**
 	- Unrestricted commercial use under the Apache-2.0 license
 	- Full code ownership, private deployment, private and secure data
@@ -41,8 +41,7 @@ Why choose NocoBase
 	- Progressive development, easy for getting-started, friendly to newcomers
 	- No binding, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
 
-Architecture
-----------
+## Architecture
 
 ![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
 
