@@ -6,8 +6,6 @@
 
 ## 下载项目
 
----
-
 ```bash
 # 替换为自己的仓库地址
 git clone https://github.com/nocobase/nocobase.git
@@ -17,8 +15,6 @@ yarn install
 ```
 
 ## 应用开发与测试
-
----
 
 ```bash
 # 安装并启动应用
@@ -32,8 +28,6 @@ yarn test <file>
 ```
 
 ## 文档预览
-
----
 
 ```bash
 # 启动文档
