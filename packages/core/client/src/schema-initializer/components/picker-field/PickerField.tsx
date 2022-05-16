@@ -1,35 +1,24 @@
-import { Field, onFieldValueChange } from '@formily/core';
-import { useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
+import { Field } from '@formily/core';
+import { useField, useFieldSchema } from '@formily/react';
 import { Cascader, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection } from '../../../collection-manager';
 import { SchemaComponent, useCompile, useFilterOptions } from '../../../schema-component';
 
 export const PickerField = (props: any) => {
-  const { onChange } = props;
   const { t } = useTranslation();
   const compile = useCompile();
-  const [type, setType] = useState<string>('constantValue');
-  const [value, setValue] = useState('');
-  const [options, setOptions] = useState<any[]>([]);
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
+  const [type, setType] = useState<string>('constantValue');
+  const [value, setValue] = useState(field?.value?.value ?? '');
+  const [options, setOptions] = useState<any[]>([]);
   const { getField } = useCollection();
-  const { getCollectionFields } = useCollectionManager();
   const collectionField = getField(fieldSchema.name);
   const { uiSchema } = collectionField;
   const currentUser = useFilterOptions('users');
   const currentRecord = useFilterOptions(collectionField.collectionName);
-  const form = useForm();
-
-  useFormEffects(() => {
-    onFieldValueChange(fieldSchema.name, (f: Field) => {
-      if (f.value[fieldSchema.name] && f.value.value !== value) {
-        setValue(f.value[fieldSchema.name]);
-      }
-    });
-  });
 
   useEffect(() => {
     const opt = [

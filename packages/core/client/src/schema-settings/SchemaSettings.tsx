@@ -21,7 +21,6 @@ import {
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
-
 interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
@@ -465,7 +464,7 @@ SchemaSettings.PopupItem = (props) => {
 };
 
 SchemaSettings.ActionModalItem = (props) => {
-  const { onSubmit, ...others } = props;
+  const { onSubmit, initialValues, ...others } = props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState(props.uid);
   const { t } = useTranslation();
@@ -484,10 +483,12 @@ SchemaSettings.ActionModalItem = (props) => {
   const useCancelAction = () => {
     const form = useForm();
     const actionContext = useActionContext();
+
     return {
       async run() {
-        actionContext.setVisible(false);
-        form.reset();
+        form.setValues(initialValues);
+        // actionContext.setVisible(false);
+        // form.reset();
       },
     };
   };
@@ -563,7 +564,6 @@ SchemaSettings.ActionModalItem = (props) => {
       await api.resource('uiSchemas').insert({ values: schema });
       setSchemaUid(newUid);
     }
-    // actx.setVisible(false);
     ctx.setVisible(false);
     setVisible(true);
   };

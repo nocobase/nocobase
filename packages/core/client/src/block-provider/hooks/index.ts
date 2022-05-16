@@ -3,7 +3,9 @@ import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useCollection } from '../../collection-manager';
+import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
+import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
@@ -136,13 +138,29 @@ export const useCreateActionProps = () => {
 export const useCustomizeUpdateActionProps = () => {
   const { resource } = useBlockRequestContext();
   const actionSchema = useFieldSchema();
+  const currentRecord = useRecord();
+  const ctx = useCurrentUserContext();
+  const compile = useCompile();
   return {
     async onClick() {
-      const assignedValues = actionSchema?.['x-action-settings']?.assignedValues;
+      const currentUser = ctx?.data?.data;
+      const dynamicValues = { currentUser, currentRecord };
+      const { assignedValues } = actionSchema?.['x-action-settings'];
+      const values = { ...currentRecord };
+      for (const key in assignedValues) {
+        if (assignedValues[key].type === 'constantValue') {
+          values[key] = assignedValues[key][key];
+        } else {
+          let value = dynamicValues;
+          for (const k of assignedValues[key].value) {
+            value = value[k];
+          }
+          values[key] = value;
+        }
+      }
+      console.log(ctx, currentRecord);
       await resource.update({
-        values: {
-          ...assignedValues,
-        },
+        values,
       });
     },
   };
