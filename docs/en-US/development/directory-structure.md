@@ -1,4 +1,4 @@
-# Directory structure
+# 目录结构
 
 ## 应用脚手架
 

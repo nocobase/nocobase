@@ -128,8 +128,9 @@ export default [
     type: 'group',
     children: [
       '/contributing',
-      '/faq',
       '/release-notes',
+      '/faq',
+      '/thanks',
     ],
   }
 ];

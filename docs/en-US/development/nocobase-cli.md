@@ -250,9 +250,11 @@ yarn rimraf -rf packages/*/*/{lib,esm,es,dist}
 
 ```bash
 # 启动文档
-yarn doc # 等同于 yarn doc dev
-# 构建文档，默认输出到 docs-dist 目录下
+yarn doc  --lang=zh-CN # 等同于 yarn doc dev
+# 构建文档，默认输出到 ./docs/dist/ 目录下
 yarn doc build
+# 查看 dist 输出的文档最终效果
+yarn doc serve --lang=zh-CN
 ```
 
 ### `db:auth`

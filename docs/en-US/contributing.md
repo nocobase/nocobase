@@ -1,12 +1,3 @@
----
-order: 1
-nav:
-  path: /
-group:
-  title: 社区
-  order: 999
----
-
 # Contributing
 
 - Fork 源代码到自己的仓库
@@ -40,19 +31,20 @@ yarn test <dir>
 yarn test <file>
 ```
 
-## 开发文档
+## 文档预览
 
 ---
 
 ```bash
 # 启动文档
-yarn doc
+yarn doc --lang=zh-CN
+yarn doc --lang=en-US
 ```
 
-文档在 docs 目录下，遵循 Markdown 语法，默认为英文，中文以 .zh-CN.md 结尾，如：
+文档在 docs 目录下，遵循 Markdown 语法
 
 ```bash
 |- /docs/
-  |- index.md # 英文文档
-  |- index.zh-CN.md 中文文档，缺失时，显示为 index.md 的内容
+  |- en-US
+  |- zh-CN
 ```
