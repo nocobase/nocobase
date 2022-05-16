@@ -37,18 +37,17 @@ NocoBase 是一个极易扩展的开源无代码开发平台。
    - 渐进式开发，上手难度低，对新人友好
    - 不绑架、不强依赖，可任意组合使用或扩展，可用于现有项目中
 
-说明
-----------
-
-如果你希望加入我们一起开发 NocoBase，或者探讨 NocoBase 未来发展，或者需要提供商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
-
-或者添加我们的微信：  
-
-![](https://www.nocobase.com/images/wechat.png)  
-
-
 NocoBase 架构
 ----------
 ![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
 
 [点此查看完整图片](https://www.nocobase.com/images/NocoBaseMindMap.png)
+
+联系
+----------
+
+如果你希望加入我们一起开发 NocoBase，或者需要提供商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
+
+或者添加我们的微信：  
+
+![](https://www.nocobase.com/images/wechat.png)  
