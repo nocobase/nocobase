@@ -50,6 +50,7 @@ const parseMenuItems = (items, lang = null) => {
       if (result) {
         menuItems.push({
           title: result.meta.title,
+          disabled: result.meta.disabled,
           path: getPath(item),
         });
       }
