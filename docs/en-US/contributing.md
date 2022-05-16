@@ -1,47 +1,41 @@
 # Contributing
 
-- Fork 源代码到自己的仓库
-- 修改源代码
-- 提交 Pull Request
+- Fork the source code to your own repository
+- Modify source code
+- Submit pull request
 
-## 下载项目
-
----
+## Download 
 
 ```bash
-# 替换为自己的仓库地址
+# Replace the following git address with your own repo
 git clone https://github.com/nocobase/nocobase.git
 cd nocobase
 cp .env.example .env
 yarn install
 ```
 
-## 应用开发与测试
-
----
+## Development and Testing
 
 ```bash
-# 安装并启动应用
+# Install and start the application
 yarn dev
-# 运行所有测试
+# Run all tests
 yarn test
-# 运行文件夹下所有测试文件
+# Run all test files in the folder
 yarn test <dir>
-# 运行单个测试文件
+# Run a single test file
 yarn test <file>
 ```
 
-## 文档预览
-
----
+## Documentation preview
 
 ```bash
-# 启动文档
+# Start documentation
 yarn doc --lang=zh-CN
 yarn doc --lang=en-US
 ```
 
-文档在 docs 目录下，遵循 Markdown 语法
+The documentation is in the docs directory and follows Markdown syntax
 
 ```bash
 |- /docs/
