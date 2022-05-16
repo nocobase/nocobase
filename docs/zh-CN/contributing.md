@@ -31,13 +31,14 @@ yarn test <dir>
 yarn test <file>
 ```
 
-## 贡献
+## 文档预览
 
 ---
 
 ```bash
 # 启动文档
-yarn doc
+yarn doc --lang=zh-CN
+yarn doc --lang=en-US
 ```
 
 文档在 docs 目录下，遵循 Markdown 语法
