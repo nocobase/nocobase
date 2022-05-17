@@ -4,29 +4,29 @@
 
 ```ts
 class APIClient {
-  // axios 实例
+  // axios instance
   axios: AxiosInstance;
-  // 构造器
+  // constructors
   constructor(instance?: AxiosInstance | AxiosRequestConfig);
-  // 客户端请求，支持 AxiosRequestConfig 和 ResourceActionOptions
+  // Client-side requests, support for AxiosRequestConfig and ResourceActionOptions
   request<T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D> | ResourceActionOptions): Promise<R>;
-  // 获取资源
+  // Get Resources
   resource<R = IResource>(name: string, of?: any): R;
 }
 ```
 
-初始化实例
+Initialize instance
 
 ```ts
 import axios from 'axios';
 import { APIClient } from '@nocobase/sdk';
 
-// 提供 AxiosRequestConfig 配置参数
+// Provide AxiosRequestConfig configuration parameters
 const api = new APIClient({
   baseURL: 'https://localhost:8000/api',
 });
 
-// 提供 AxiosInstance
+// Provide AxiosInstance
 const instance = axios.create({
   baseURL: 'https://localhost:8000/api',
 });
@@ -55,11 +55,11 @@ await api.request({ url: 'users:get' });
 ## Auth
 
 ```ts
-// 直接传 token
+// Pass token directly
 api.auth.token = '123';
-// 或者通过 signIn 登录
+// Or sign in via signIn
 api.auth.signIn();
-// 注销并删除 token 缓存
+// Log out and delete the token cache
 api.auth.signOut();
 ```
 
