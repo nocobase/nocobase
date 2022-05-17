@@ -1,4 +1,3 @@
-import { skip } from '@nocobase/acl';
 import { Plugin } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
@@ -19,12 +18,8 @@ export class ClientPlugin extends Plugin {
   }
 
   async load() {
-    this.app.acl.use(
-      skip({
-        resourceName: 'app',
-        actionName: 'getLang',
-      }),
-    );
+    this.app.acl.allow('app', 'getLang');
+    this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
     this.app.resource({
       name: 'app',
       actions: {
