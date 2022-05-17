@@ -464,7 +464,7 @@ SchemaSettings.PopupItem = (props) => {
 };
 
 SchemaSettings.ActionModalItem = (props) => {
-  const { onSubmit, initialValues, uid, ...others } = props;
+  const { onSubmit, initialValues, ...others } = props;
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState(null);
   const { t } = useTranslation();
