@@ -1,15 +1,19 @@
 # 更新日志
 
-## 未发布
+## 准备发布
 
-- 新增打包工具 `@nocobase/build`
-- 新增 cli 工具 `@nocobase/cli`
-- 新增 devtools 包 `@nocobase/devtools`
-- 新增 JavaScript 版本的 SDK `@nocobase/sdk`
+### 新功能
+
+- 打包工具 `@nocobase/build`
+- cli 工具 `@nocobase/cli`
+- devtools 包 `@nocobase/devtools`
+- JavaScript 版本的 SDK `@nocobase/sdk`
+- 全新的文档（v0.7）
+
+### 问题修复和改进
 - 将 NocoBase 无代码平台插件放到一起 `@nocobase/preset-nocobase`
 - 改进 create 脚手架 `create-nocobase-app`
 - 官网文档主题 `dumi-theme-nocobase`
-- 全新的文档（v0.7）
 
 ## 2022/05/14 ~ v0.7.0-alpha.34
 
