@@ -89,6 +89,7 @@ const Layout: React.FC<IRouteComponentProps> = ({ children, location }) => {
         navPrefix={<SearchBar />}
         darkPrefix={
           <Dark
+            location={location}
             darkSwitch={darkSwitch}
             onDarkSwitchClick={ev => {
               setDarkSwitch(val => !val);

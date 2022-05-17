@@ -4,13 +4,14 @@ import React from 'react';
 import './Dark.less';
 
 interface darkProps {
+  location?: any;
   darkSwitch: boolean;
   isSideMenu: boolean;
   onDarkSwitchClick?: (ev) => void;
 };
 
 const Dark: FC<darkProps> = ({ darkSwitch, onDarkSwitchClick, isSideMenu }) => {
-  return null;
+  return <div><a href={"https://docs.nocobase.com"+location.pathname}>EN</a> | <a href={"https://docs-cn.nocobase.com"+location.pathname}>中文</a></div>;
   const allState = ['dark', 'light', 'auto'];
   const [color, setColor] = usePrefersColor();
   const prefersColor = color;
