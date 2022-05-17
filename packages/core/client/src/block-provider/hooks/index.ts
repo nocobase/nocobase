@@ -1,5 +1,5 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { Modal } from 'antd';
+import { message, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useCollection } from '../../collection-manager';
@@ -140,6 +140,7 @@ export const useCustomizeUpdateActionProps = () => {
   const actionSchema = useFieldSchema();
   const currentRecord = useRecord();
   const ctx = useCurrentUserContext();
+  const history = useHistory();
   const compile = useCompile();
   return {
     async onClick() {
@@ -162,6 +163,26 @@ export const useCustomizeUpdateActionProps = () => {
       await resource.update({
         values,
       });
+      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
+      if (!onSuccess?.successMessage) {
+        return;
+      }
+      if (onSuccess?.manualClose) {
+        Modal.success({
+          title: compile(onSuccess?.successMessage),
+          onOk: async () => {
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                history.push(onSuccess.redirectTo);
+              }
+            }
+          },
+        });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
+      }
     },
   };
 };

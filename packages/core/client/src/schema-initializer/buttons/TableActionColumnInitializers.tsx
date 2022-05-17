@@ -138,6 +138,8 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-action-settings': {
                   assignedValues: {},
                   onSuccess: {
+                    manualClose: true,
+                    redirecting: false,
                     successMessage: '{{t("Submitted successfully")}}',
                   },
                 },

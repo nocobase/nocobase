@@ -88,7 +88,6 @@ export const ActionDesigner = (props) => {
           initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
           uid={fieldSchema?.['x-action-settings']?.schemaUid}
           onSubmit={(assignedValues) => {
-            debugger;
             fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
             dn.emit('patch', {
               schema: {
@@ -163,6 +162,17 @@ export const ActionDesigner = (props) => {
                   title: t('Pop-up message'),
                   'x-decorator': 'FormItem',
                   'x-component': 'Input.TextArea',
+                  'x-component-props': {},
+                },
+                manualClose: {
+                  title: t('Close method'),
+                  default: false,
+                  enum: [
+                    { label: t('Auto close'), value: false },
+                    { label: t('Manual close'), value: true },
+                  ],
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Radio.Group',
                   'x-component-props': {},
                 },
                 redirecting: {

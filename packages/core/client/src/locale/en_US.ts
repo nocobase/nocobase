@@ -294,4 +294,7 @@ export default {
   'Request API': 'Request API',
   'Assigned field value': 'Assigned field value',
   'Save assigned field value after click button': 'Save assigned field value after click button:',
+  'Close method': 'Close method',
+  'Auto close': 'Auto close',
+  'Manual close': 'Manual close',
 }
