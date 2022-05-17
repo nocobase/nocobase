@@ -8,8 +8,6 @@ order: 3
 
 ## Docker
 
----
-
 切换到对应的目录
 
 ```bash
@@ -35,8 +33,6 @@ docker-compose logs app
 ```
 
 ## CLI
-
----
 
 执行 `nocobase upgrade` 升级命令
 
