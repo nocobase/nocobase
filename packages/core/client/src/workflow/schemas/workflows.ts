@@ -2,6 +2,8 @@ import { ISchema } from '@formily/react';
 import { triggers } from '../triggers';
 import { executionSchema } from './executions';
 
+
+
 const collection = {
   name: 'workflows',
   fields: [
@@ -50,8 +52,8 @@ const collection = {
         title: '{{t("Status")}}',
         type: 'string',
         enum: [
-          { label: '{{t("Enabled")}}', value: true },
-          { label: '{{t("Disabled")}}', value: false },
+          { label: '{{t("Started")}}', value: true },
+          { label: '{{t("Stopped")}}', value: false },
         ],
         'x-component': 'Radio.Group',
         'x-decorator': 'FormItem',
@@ -75,7 +77,9 @@ export const workflowSchema: ISchema = {
           action: 'list',
           params: {
             pageSize: 50,
-            filter: {},
+            filter: {
+              current: true
+            },
             sort: ['createdAt'],
             except: ['config'],
           },
@@ -119,6 +123,11 @@ export const workflowSchema: ISchema = {
                   type: 'void',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
+                  'x-decorator-props': {
+                    initialValue: {
+                      current: true
+                    }
+                  },
                   title: '{{t("Add new")}}',
                   properties: {
                     title: {
@@ -138,14 +147,14 @@ export const workflowSchema: ISchema = {
                       'x-component': 'Action.Drawer.Footer',
                       properties: {
                         cancel: {
-                          title: 'Cancel',
+                          title: '{{ t("Cancel") }}',
                           'x-component': 'Action',
                           'x-component-props': {
                             useAction: '{{ cm.useCancelAction }}',
                           },
                         },
                         submit: {
-                          title: 'Submit',
+                          title: '{{ t("Submit") }}',
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',

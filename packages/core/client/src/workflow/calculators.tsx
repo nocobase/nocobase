@@ -1,7 +1,6 @@
 import React from "react";
 import { observer, useForm } from "@formily/react";
-import { FormItem } from "@formily/antd";
-import { Button, Cascader, Dropdown, Input, InputNumber, Menu, Select } from "antd";
+import { Button, Cascader, Dropdown, Input, InputNumber, Menu, Select, Form } from "antd";
 import { css } from "@emotion/css";
 import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
@@ -262,7 +261,7 @@ export function Operand({
 
   const { component, appendTypeValue } = Types[type] || {};
   const VariableComponent = typeof component === 'function' ? component(operand) : NullRender;
-  console.log(Types);
+
   return (
     <div className={css`
       display: flex;
@@ -418,9 +417,10 @@ export const CollectionFieldset = observer(({ value, onChange }: any) => {
                 ? parseStringValue(value[field.name], VTypes)
                 : { type: 'constant', value: value[field.name] };
 
+              // TODO: try to use <ObjectField> to replace this map
               return (
-                <FormItem key={field.name} label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left" className={css`
-                  .ant-formily-item-control-content-component{
+                <Form.Item key={field.name} label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left" className={css`
+                  .ant-form-item-control-input-content{
                     display: flex;
                   }
                 `}>
@@ -450,7 +450,7 @@ export const CollectionFieldset = observer(({ value, onChange }: any) => {
                       }}
                     />
                   </VariableTypesContext.Provider>
-                </FormItem>
+                </Form.Item>
               );
             })}
             {Object.keys(value).length < fields.length

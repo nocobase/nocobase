@@ -81,6 +81,7 @@ describe('option parser', () => {
       ],
     });
   });
+
   test('with sort option', () => {
     let options: any = {
       sort: ['id'],
@@ -181,5 +182,24 @@ describe('option parser', () => {
     params = parser.toSequelizeParams();
 
     expect(params['include'][0]['attributes']['exclude']).toContain('id');
+  });
+
+  test('option parser with multiple association', () => {
+    // fields with association field
+    const options = {
+      appends: ['user', 'comments.id', 'tags.id'],
+    };
+
+    const parser = new OptionsParser(options, {
+      collection: Post,
+    });
+
+    const params = parser.toSequelizeParams();
+    expect(params.include.length).toBe(3);
+    expect(params.include[0].association).toBe('user');
+    expect(params.include[1].association).toBe('comments');
+    expect(params.include[1].attributes).toEqual(['id']);
+    expect(params.include[2].association).toBe('tags');
+    expect(params.include[2].attributes).toEqual(['id']);
   });
 });

@@ -39,6 +39,24 @@ export class ClientPlugin extends Plugin {
         },
       },
     });
+    this.app.resource({
+      name: 'plugins',
+      actions: {
+        // TODO: 临时
+        async getPinned(ctx, next) {
+          ctx.body = [
+            { component: 'DesignableSwitch', pin: true },
+            { component: 'CollectionManagerShortcut', pin: true },
+            { component: 'ACLShortcut' },
+            { component: 'WorkflowShortcut' },
+            { component: 'SchemaTemplateShortcut' },
+            { component: 'SystemSettingsShortcut' },
+            { component: 'FileStorageShortcut' },
+          ];
+          await next();
+        },
+      },
+    });
     let root = this.options.dist;
     if (root && !root.startsWith('/')) {
       root = resolve(process.cwd(), root);
