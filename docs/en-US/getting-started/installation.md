@@ -4,27 +4,25 @@ order: 1
 
 # Installation
 
-NocoBase 支持 Docker 和 CLI 两种安装方法，如果你是新人推荐使用 Docker 安装。
+NocoBase supports both Docker and CLI installation methods. Docker is recommended if you are new to NocoBase.
 
 ## Docker (👍Recommended)
 
----
+### 0. Before start
 
-### 0. 先决条件
+⚡⚡ Please make sure you have installed [Docker](https://docs.docker.com/get-docker/)
 
-⚡⚡ 请确保你已经安装了 [Docker](https://docs.docker.com/get-docker/)
+### 1. Download NocoBase
 
-### 1. 将 NocoBase 下载到本地
-
-使用 Git 下载（或直接[下载 Zip 包](https://github.com/nocobase/nocobase/archive/refs/heads/main.zip)，并解压到 nocobase 目录下）
+Download with Git (or Download Zip，and extract it to the nocobase directory)
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git nocobase
 ```
 
-### 2. 选择数据库（任选其一）
+### 2. Select database (choose one)
 
-支持 SQLite、MySQL、PostgreSQL 数据库
+Supports SQLite, MySQL, PostgreSQL
 
 ```bash
 # SQLite
@@ -35,14 +33,14 @@ cd nocobase/docker/app-mysql
 cd nocobase/docker/app-postgres
 ```
 
-### 3. 安装并启动 NocoBase
+### 3. Install and start NocoBase
 
-安装过程可能需要等待几十秒钟
+It may take dozens of seconds
 
 ```bash
-# 在后台运行
+# run in the background
 $ docker-compose up -d
-# 查看 app 进程的情况
+# view app logs
 $ docker-compose logs app
 
 app-sqlite-app-1  | nginx started
@@ -57,13 +55,16 @@ app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
 app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 ```
 
+### 4. Log in to NocoBase
+
+Open [http://localhost:13000](http://localhost:13000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
+
+
 ## CLI
 
----
+### 0. Before start
 
-### 0. 先决条件
-
-请确保你已经安装了 Node.js 12.x 或以上版本，如果你没有安装 Node.js 可以从官网下载并安装最新的 LTS 版本。如果你打算长期与 Node.js 打交道，推荐使用 nvm（Win 系统可以使用 nvm-windows ）来管理 Node.js 版本。
+Please make sure you have Node.js 12.x or above installed. You can download and install the latest LTS version from the official website. It is recommended to use nvm (or nvm-windows for Win systems) to manage Node.js versions if you plan to work with Node.js for a long time.
 
 ```bash
 $ node -v
@@ -71,7 +72,7 @@ $ node -v
 v16.13.2
 ```
 
-推荐使用 yarn 包管理器。
+yarn package manager is recommend.
 
 ```bash
 $ npm install --global yarn
@@ -80,16 +81,9 @@ $ yarn -v
 1.22.10
 ```
 
-由于国内网络环境的原因，强烈建议你更换国内镜像。
+Also, make sure you have configured and started the required database, which supports SQLite, MySQL, PostgreSQL.
 
-```bash
-$ yarn config set registry https://registry.npmmirror.com/
-$ yarn config set sqlite3_binary_host_mirror https://npmmirror.com/mirrors/sqlite3/
-```
-
-最后，请确保你已经配置并启动所需数据库，数据库支持 SQLite（无需安装启动）、MySQL、PostgreSQL。
-
-### 1. 创建 NocoBase 项目
+### 1. Create a NocoBase project
 
 ```bash
 # SQLite
@@ -110,28 +104,28 @@ yarn create nocobase-app my-nocobase-app -d postgres \
    -e DB_PASSWORD=nocobase
 ```
 
-### 2. 切换目录
+### 2. switch to the project directory
 
 ```bash
 cd my-nocobase-app
 ```
 
-### 3. 安装依赖
+### 3. Install dependencies
 
-📢 由于网络环境、系统配置等因素影响，接下来这一步骤可能需要十几分钟时间。  
+📢 This next step may take more than ten minutes due to network environment, system configuration, and other factors.  
 
 ```bash
-# 生产环境部署时，可以只安装必要的依赖，减少依赖体积和下载时长
+# For production deployments, you can install only the necessary dependencies to reduce the dependency size and download time
 yarn install --production
-# 或者，安装完整的依赖
+# Or, install the full dependencies
 yarn install
 ```
 
-### 4. 安装并启动 NocoBase
+### 4. Install & Start NocoBase
 
 ```bash
-# 生产环境下启动应用，源码有修改时，需要重新编译打包（yarn build）
+# Start the application in a production environment. Recompile it if the source code has been modified (yarn build)
 yarn start
-# 开发环境下启动应用，代码会实时编译
+# Start the application in the development environment. The code will be compiled in real time
 yarn dev
 ```
