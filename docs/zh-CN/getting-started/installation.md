@@ -8,8 +8,6 @@ NocoBase 支持 Docker 和 CLI 两种安装方法，如果你是新人推荐使�
 
 ## Docker (👍Recommended)
 
----
-
 ### 0. 先决条件
 
 ⚡⚡ 请确保你已经安装了 [Docker](https://docs.docker.com/get-docker/)
@@ -57,9 +55,11 @@ app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
 app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 ```
 
-## CLI
+### 4. 登录 NocoBase
 
----
+使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+
+## CLI
 
 ### 0. 先决条件
 
