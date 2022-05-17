@@ -161,8 +161,6 @@ cd my-nocobase-app
 
 #### 3. Install dependencies
 
-📢 This next step may take more than ten minutes due to network environment, system configuration, and other factors.  
-
 ```bash
 yarn install
 ```
@@ -197,7 +195,9 @@ yarn install
 ### Development and Testing
 
 ```bash
-# Install and start the application
+# Install NocoBase
+yarn nocobase install --lang=en-US
+# Start NocoBase
 yarn start
 # Run all tests
 yarn test
