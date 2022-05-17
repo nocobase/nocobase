@@ -4,13 +4,11 @@ order: 3
 
 # Upgrading
 
-升级前请务必将数据库数据进行备份
+Make sure to back up your database before upgrading
 
 ## Docker
 
----
-
-切换到对应的目录
+Switch to the corresponding directory
 
 ```bash
 # SQLite
@@ -21,30 +19,28 @@ cd nocobase/docker/app-mysql
 cd nocobase/docker/app-postgres
 ```
 
-使用 docker-compose 停止、删除并下载最新镜像
+Use `docker-compose` to stop, delete the application, and download the latest image
 
 ```bash
-# 停止应用
+# Stop the app
 docker-compose stop app
-# 删除应用
+# Delete the app
 docker-compose rm app
-# 下载最新镜像并启动
+# Download the latest image and start it
 docker-compose up -d app
-# 查看 app 进程的情况
+# Check the status of the app process
 docker-compose logs app
 ```
 
 ## CLI
 
----
-
-执行 `nocobase upgrade` 升级命令
+Execute the `nocobase upgrad` upgrade command
 
 ```bash
-# 切换到对应的目录
+# Switch to the corresponding directory
 cd my-nocobase-app
-# 执行更新命令
+# Execute the update command
 yarn nocobase upgrade
-# 启动
+# Start
 yarn start
 ```
