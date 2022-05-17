@@ -465,6 +465,7 @@ SchemaSettings.PopupItem = (props) => {
 
 SchemaSettings.ActionModalItem = (props) => {
   const { onSubmit, initialValues, ...others } = props;
+
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState(null);
   const { t } = useTranslation();
@@ -476,9 +477,11 @@ SchemaSettings.ActionModalItem = (props) => {
     () =>
       createForm({
         initialValues,
+        values: initialValues,
       }),
     [],
   );
+  console.log('start=====', form.id, initialValues);
 
   const useCancelAction = () => {
     const form = useForm();
@@ -512,7 +515,6 @@ SchemaSettings.ActionModalItem = (props) => {
           'x-component-props': {
             width: 520,
           },
-          'x-decorator': 'Form',
           type: 'void',
           title: '{{ t("Assigned field value") }}',
           properties: {

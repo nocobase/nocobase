@@ -146,24 +146,23 @@ export const useCustomizeUpdateActionProps = () => {
     async onClick() {
       const currentUser = ctx?.data?.data;
       const dynamicValues = { currentUser, currentRecord };
-      const { assignedValues } = actionSchema?.['x-action-settings'];
+      const { assignedValues, onSuccess } = actionSchema?.['x-action-settings'];
       const values = { ...currentRecord };
       for (const key in assignedValues) {
         if (assignedValues[key].type === 'constantValue') {
-          values[key] = assignedValues[key][key];
+          values[key] = compile(assignedValues[key].fieldValue);
         } else {
           let value = dynamicValues;
-          for (const k of assignedValues[key].value) {
+          for (const k of assignedValues[key].fieldValue) {
             value = value[k];
           }
           values[key] = value;
         }
       }
-      console.log(ctx, currentRecord);
+      console.log(values);
       await resource.update({
         values,
       });
-      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
       if (!onSuccess?.successMessage) {
         return;
       }
