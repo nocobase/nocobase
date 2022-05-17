@@ -43,25 +43,24 @@ NocoBase 架构
 
 [点此查看完整图片](https://www.nocobase.com/images/NocoBaseMindMap.png)
 
-环境要求
+联系
 ----------
 
-Node:
+如果你希望加入我们一起开发 NocoBase，或者需要提供商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
 
-- Node.js 14+
+或者添加我们的微信：  
 
-Database（任选其一）:
+![](https://www.nocobase.com/images/wechat.png)  
 
-- PostgreSQL 10.x+
-- MySQL 8.x+
-- SQLite 3+
+## 安装
 
-安装 & 运行
-----------
+NocoBase 支持 Docker 和 CLI 两种安装方法，如果你是新人推荐使用 Docker 安装。
 
-### 使用 Docker 创建项目（👍推荐）
+### Docker (👍Recommended)
 
-⚡⚡请确保你已经安装了 [Docker](https://docs.docker.com/get-docker/)
+#### 0. 先决条件
+
+⚡⚡ 请确保你已经安装了 [Docker](https://docs.docker.com/get-docker/)
 
 #### 1. 将 NocoBase 下载到本地
 
@@ -110,51 +109,94 @@ app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
 
-### 通过 `create-nocobase-app` 创建项目
+### CLI
 
-~~~shell
-# 1. 创建项目
+#### 0. 先决条件
+
+请确保你已经安装了 Node.js 12.x 或以上版本，如果你没有安装 Node.js 可以从官网下载并安装最新的 LTS 版本。如果你打算长期与 Node.js 打交道，推荐使用 nvm（Win 系统可以使用 nvm-windows ）来管理 Node.js 版本。
+
+```bash
+$ node -v
+
+v16.13.2
+```
+
+推荐使用 yarn 包管理器。
+
+```bash
+$ npm install --global yarn
+$ yarn -v
+
+1.22.10
+```
+
+由于国内网络环境的原因，强烈建议你更换国内镜像。
+
+```bash
+$ yarn config set registry https://registry.npmmirror.com/
+$ yarn config set sqlite3_binary_host_mirror https://npmmirror.com/mirrors/sqlite3/
+```
+
+最后，请确保你已经配置并启动所需数据库，数据库支持 SQLite（无需安装启动）、MySQL、PostgreSQL。
+
+#### 1. 创建 NocoBase 项目
+
+```bash
 # SQLite
 yarn create nocobase-app my-nocobase-app -d sqlite
 # MySQL
 yarn create nocobase-app my-nocobase-app -d mysql \
-   -e DB_HOST=mysql \
+   -e DB_HOST=localhost \
    -e DB_PORT=3356 \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase
 # PostgreSQL
 yarn create nocobase-app my-nocobase-app -d postgres \
-   -e DB_HOST=postgres \
+   -e DB_HOST=localhost \
    -e DB_PORT=5432 \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase
+```
 
-# 2. 切换目录
+#### 2. 切换目录
+
+```bash
 cd my-nocobase-app
+```
 
-# 📢 由于网络环境、系统配置等因素影响，接下来这一步骤可能需要十几分钟时间
-# 📢 使用 SQLite 数据库时，需要配置 sqlite3_binary_host_mirror
-yarn config set sqlite3_binary_host_mirror https://npmmirror.com/mirrors/sqlite3/
+#### 3. 安装依赖
 
-# 3. 安装依赖（使用阿里云镜像）
-yarn install --registry=https://registry.npmmirror.com
+📢 由于网络环境、系统配置等因素影响，接下来这一步骤可能需要十几分钟时间。  
 
-# 4. 安装 NocoBase
-yarn nocobase install --lang=zh-CN
+```bash
+# 生产环境部署时，可以只安装必要的依赖，减少依赖体积和下载时长
+yarn install --production
+# 或者，安装完整的依赖
+yarn install
+```
 
-# 5. 启动
+#### 4. 安装并启动 NocoBase
+
+```bash
+# 生产环境下启动应用，源码有修改时，需要重新编译打包（yarn build）
 yarn start
-~~~
+# 开发环境下启动应用，代码会实时编译
+yarn dev
+```
 
-使用浏览器打开 http://localhost:8000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+#### 5. 登录 NocoBase
 
-### 参与贡献
+使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+
+## 贡献
 
 - Fork 源代码到自己的仓库
 - 修改源代码
 - 提交 Pull Request
+
+### 下载项目
 
 ```bash
 # 替换为自己的仓库地址
@@ -162,36 +204,33 @@ git clone https://github.com/nocobase/nocobase.git
 cd nocobase
 cp .env.example .env
 yarn install
-yarn nocobase install
-yarn start
 ```
 
-#### 打包
+### 应用开发与测试
 
 ```bash
-# For all packages
-yarn build
-
-# For specific package
-yarn build --scope @nocobase/database
-```
-
-#### 测试
-
-```bash
-# For all packages
+# 安装并启动应用
+yarn dev
+# 运行所有测试
 yarn test
-
-# For specific package
-yarn test packages/<name>
+# 运行文件夹下所有测试文件
+yarn test <dir>
+# 运行单个测试文件
+yarn test <file>
 ```
 
-联系
-----------
+### 文档预览
 
-如果你希望加入我们一起开发 NocoBase，或者需要提供商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
+```bash
+# 启动文档
+yarn doc --lang=zh-CN
+yarn doc --lang=en-US
+```
 
-或者添加我们的微信：  
+文档在 docs 目录下，遵循 Markdown 语法
 
-![](https://www.nocobase.com/images/wechat.png)  
-
+```bash
+|- /docs/
+  |- en-US
+  |- zh-CN
+```
