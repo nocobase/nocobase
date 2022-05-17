@@ -172,7 +172,7 @@ yarn cross-env \
 
 ### INIT_ADMIN_EMAIL
 
-创始人邮箱账号
+Root 用户邮箱
 
 ```bash
 yarn cross-env \
@@ -183,7 +183,7 @@ yarn cross-env \
 
 ### INIT_ADMIN_PASSWORD
 
-创始人账号密码
+Root 用户密码
 
 ```bash
 yarn cross-env \
@@ -195,7 +195,7 @@ yarn cross-env \
 
 ### INIT_ADMIN_NICKNAME
 
-创始人账号昵称
+Root 用户昵称
 
 ```bash
 yarn cross-env \
