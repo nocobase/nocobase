@@ -104,7 +104,7 @@ yarn create nocobase-app my-nocobase-app -d postgres \
    -e DB_PASSWORD=nocobase
 ```
 
-### 2. switch to the project directory
+### 2. Switch to the project directory
 
 ```bash
 cd my-nocobase-app
@@ -129,3 +129,7 @@ yarn start
 # Start the application in the development environment. The code will be compiled in real time
 yarn dev
 ```
+
+### 5. Log in to NocoBase
+
+Open [http://localhost:13000](http://localhost:13000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
