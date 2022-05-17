@@ -2,8 +2,8 @@ English | [中文](./README.zh-CN.md)
 
 ![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
 
-What is NocoBase
-----------
+## What is NocoBase
+
 NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in minutes.
 
 Homepage:
@@ -12,11 +12,15 @@ https://www.nocobase.com/
 Online Demo:
 https://demo.nocobase.com/new
 
+Documents:
+https://docs.nocobase.com/
+
+
 Contact Us:
 hello@nocobase.com
 
-Why choose NocoBase
-----------
+## Why choose NocoBase
+
 - **Open source and free**
 	- Unrestricted commercial use under the Apache-2.0 license
 	- Full code ownership, private deployment, private and secure data
@@ -41,36 +45,25 @@ Why choose NocoBase
 	- Progressive development, easy for getting-started, friendly to newcomers
 	- No binding, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
 
-Architecture
-----------
+## Architecture
 
 ![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
 
 [Click here to view the full image](https://www.nocobase.com/images/NocoBaseMindMap.png)
 
-Requirements
-----------
+## Installation
 
-Node:
+NocoBase supports both Docker and CLI installation methods. Docker is recommended if you are new to NocoBase.
 
-- Node.js 14+
+### Docker (👍Recommended)
 
-Database:(choose one)
-
-- PostgreSQL 10.x+
-- MySQL 8.x+
-- SQLite 3+
-
-Installation
-----------
-
-### Create a project with Docker (👍Recommended)
+#### 0. Before start
 
 ⚡⚡ Please make sure you have installed [Docker](https://docs.docker.com/get-docker/)
 
 #### 1. Download NocoBase
 
-Download with Git (or [Download Zip](https://github.com/nocobase/nocobase/archive/refs/heads/main.zip)，and extract it to the `nocobase` directory)
+Download with Git (or Download Zip，and extract it to the nocobase directory)
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git nocobase
@@ -115,47 +108,88 @@ app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 Open [http://localhost:13000](http://localhost:13000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
 
-### Create a project with `create-nocobase-app`
 
-~~~shell
-# 1. create project
+### CLI
+
+#### 0. Before start
+
+Please make sure you have Node.js 12.x or above installed. You can download and install the latest LTS version from the official website. It is recommended to use nvm (or nvm-windows for Win systems) to manage Node.js versions if you plan to work with Node.js for a long time.
+
+```bash
+$ node -v
+
+v16.13.2
+```
+
+yarn package manager is recommend.
+
+```bash
+$ npm install --global yarn
+$ yarn -v
+
+1.22.10
+```
+
+Also, make sure you have configured and started the required database, which supports SQLite, MySQL, PostgreSQL.
+
+#### 1. Create a NocoBase project
+
+```bash
 # SQLite
 yarn create nocobase-app my-nocobase-app -d sqlite
 # MySQL
 yarn create nocobase-app my-nocobase-app -d mysql \
-   -e DB_HOST=mysql \
+   -e DB_HOST=localhost \
    -e DB_PORT=3356 \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase
 # PostgreSQL
 yarn create nocobase-app my-nocobase-app -d postgres \
-   -e DB_HOST=postgres \
+   -e DB_HOST=localhost \
    -e DB_PORT=5432 \
-   -e DB_DATABASE=postgres \
-   -e DB_USER=postgres \
-   -e DB_PASSWORD=postgres
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase
+```
 
-# 2. switch to the project directory
+#### 2. Switch to the project directory
+
+```bash
 cd my-nocobase-app
+```
 
-# 3. Install dependencies
+#### 3. Install dependencies
+
+📢 This next step may take more than ten minutes due to network environment, system configuration, and other factors.  
+
+```bash
+# For production deployments, you can install only the necessary dependencies to reduce the dependency size and download time
+yarn install --production
+# Or, install the full dependencies
 yarn install
+```
 
-# 4. Install NocoBase
-yarn nocobase install --lang=en-US
+#### 4. Install & Start NocoBase
 
-# 5. start project
+```bash
+# Start the application in a production environment. Recompile it if the source code has been modified (yarn build)
 yarn start
-~~~
+# Start the application in the development environment. The code will be compiled in real time
+yarn dev
+```
 
-Open [http://localhost:8000](http://localhost:8000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
+#### 5. Log in to NocoBase
 
-### Contributing
+Open [http://localhost:13000](http://localhost:13000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
+
+## Contributing
 
 - Fork the source code to your own repository
 - Modify source code
 - Submit pull request
+
+### Download 
 
 ```bash
 # Replace the following git address with your own repo
@@ -163,26 +197,33 @@ git clone https://github.com/nocobase/nocobase.git
 cd nocobase
 cp .env.example .env
 yarn install
-yarn nocobase install
-yarn start
 ```
 
-#### Building
+### Development and Testing
 
 ```bash
-# For all packages
-yarn build
-
-# For specific package
-yarn build --scope @nocobase/database
-```
-
-#### Testing
-
-```bash
-# For all packages
+# Install and start the application
+yarn dev
+# Run all tests
 yarn test
+# Run all test files in the folder
+yarn test <dir>
+# Run a single test file
+yarn test <file>
+```
 
-# For specific package
-yarn test packages/<name>
+### Documentation preview
+
+```bash
+# Start documentation
+yarn doc --lang=zh-CN
+yarn doc --lang=en-US
+```
+
+The documentation is in the docs directory and follows Markdown syntax
+
+```bash
+|- /docs/
+  |- en-US
+  |- zh-CN
 ```
