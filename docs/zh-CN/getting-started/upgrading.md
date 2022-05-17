@@ -19,7 +19,7 @@ cd nocobase/docker/app-mysql
 cd nocobase/docker/app-postgres
 ```
 
-使用 docker-compose 停止、删除并下载最新镜像
+使用 `docker-compose` 停止、删除应用，并下载最新镜像
 
 ```bash
 # 停止应用
