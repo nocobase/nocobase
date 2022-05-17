@@ -5,6 +5,7 @@ import { ISchema, Schema, SchemaOptionsContext, useFieldSchema, useForm } from '
 import { uid } from '@formily/shared';
 import { Dropdown, Menu, MenuItemProps, Modal, Select, Switch } from 'antd';
 import classNames from 'classnames';
+import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -495,7 +496,7 @@ SchemaSettings.ActionModalItem = (props) => {
     const actionContext = useActionContext();
     return {
       async run() {
-        onSubmit?.(form.values);
+        onSubmit?.(cloneDeep(form.values));
         actionContext.setVisible(false);
         form.reset();
       },
