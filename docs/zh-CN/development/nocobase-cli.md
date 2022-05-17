@@ -172,7 +172,7 @@ Options:
 ```bash
 # 初始安装
 yarn nocobase install -l zh-CN -e admin@nocobase.com -p admin123
-# 强制重新安装，会删除相关数据表
+# 删除 NocoBase 的所有数据表，并重新安装
 yarn nocobase install -f -l zh-CN -e admin@nocobase.com -p admin123
 # 清空数据库，并重新安装
 yarn nocobase install -c -l zh-CN -e admin@nocobase.com -p admin123
@@ -181,7 +181,7 @@ yarn nocobase install -c -l zh-CN -e admin@nocobase.com -p admin123
 <Alert>
 
 `-f/--force` 和 `-c/--clean` 的区别
-- `-f/--force` 只删除 collections 配置的数据表
+- `-f/--force` 删除 NocoBase 的数据表
 - `-c/--clean` 清空数据库，所有数据表都会被删除
 
 </Alert>
@@ -273,7 +273,7 @@ Options:
 
 ### `db:sync`
 
-通过 collections 配置生成相关数据表和字段
+通过 collections 配置生成数据表和字段
 
 ```bash
 $ yarn nocobase db:sync -h
