@@ -164,24 +164,19 @@ cd my-nocobase-app
 📢 This next step may take more than ten minutes due to network environment, system configuration, and other factors.  
 
 ```bash
-# For production deployments, you can install only the necessary dependencies to reduce the dependency size and download time
-yarn install --production
-# Or, install the full dependencies
 yarn install
 ```
 
 #### 4. Install & Start NocoBase
 
 ```bash
-# Start the application in a production environment. Recompile it if the source code has been modified (yarn build)
+yarn nocobase install --lang=en-US
 yarn start
-# Start the application in the development environment. The code will be compiled in real time
-yarn dev
 ```
 
 #### 5. Log in to NocoBase
 
-Open [http://localhost:13000](http://localhost:13000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
+Open [http://localhost:8000](http://localhost:8000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
 
 ## Contributing
 
@@ -203,7 +198,7 @@ yarn install
 
 ```bash
 # Install and start the application
-yarn dev
+yarn start
 # Run all tests
 yarn test
 # Run all test files in the folder
