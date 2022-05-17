@@ -135,3 +135,7 @@ yarn start
 # 开发环境下启动应用，代码会实时编译
 yarn dev
 ```
+
+### 5. 登录 NocoBase
+
+使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
