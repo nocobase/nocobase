@@ -31,20 +31,20 @@ APP_HOST=192.168.3.154
 APP_PORT=81
 ```
 
-### APP_API_PREFIX
-
-NocoBase API 地址前缀，默认值 `/api/`
-
-```bash
-APP_API_PREFIX=/api/
-```
-
 ### APP_KEY
 
 秘钥，用于 jwt 等场景
 
 ```bash
 APP_KEY=1111
+```
+
+### API_BASE_PATH
+
+NocoBase API 地址前缀，默认值 `/api/`
+
+```bash
+API_BASE_PATH=/api/
 ```
 
 ### DB_DIALECT
@@ -131,7 +131,7 @@ DB_TABLE_PREFIX=nocobase_
 - `off` 关闭
 
 ```bash
-DB_LOG_SQL=on
+DB_LOGGING=on
 ```
 
 ## 临时环境变量
@@ -140,24 +140,24 @@ DB_LOG_SQL=on
 
 ```bash
 yarn cross-env \
-  && INTI_APP_LANG=zh-CN \
-  && INIT_ADMIN_EMAIL=demo@nocobase.com \
-  && INIT_ADMIN_PASSWORD=admin123 \
-  && INIT_ADMIN_NICKNAME="Super Admin"
-  && nocobase install
+  INIT_APP_LANG=zh-CN \
+  INIT_ROOT_EMAIL=demo@nocobase.com \
+  INIT_ROOT_PASSWORD=admin123 \
+  INIT_ROOT_NICKNAME="Super Admin" \
+  nocobase install
 
 # 等同于
 yarn nocobase install \
-  && --lang=zh-CN  \
-  && --admin-email=demo@nocobase.com \
-  && --admin-password=admin123 \
-  && --admin-nickname="Super Admin"
+  --lang=zh-CN  \
+  --root-email=demo@nocobase.com \
+  --root-password=admin123 \
+  --root-nickname="Super Admin"
 
 # 等同于
 yarn nocobase install -l zh-CN -e demo@nocobase.com -p admin123 -n "Super Admin"
 ```
 
-### INTI_APP_LANG
+### INIT_APP_LANG
 
 安装时的语言，默认值 `en-US`，可选项包括：
 
@@ -166,42 +166,42 @@ yarn nocobase install -l zh-CN -e demo@nocobase.com -p admin123 -n "Super Admin"
 
 ```bash
 yarn cross-env \
-  && INTI_APP_LANG=zh-CN \
-  && nocobase install
+  INIT_APP_LANG=zh-CN \
+  nocobase install
 ```
 
-### INIT_ADMIN_EMAIL
+### INIT_ROOT_EMAIL
 
 Root 用户邮箱
 
 ```bash
 yarn cross-env \
-  && INTI_APP_LANG=zh-CN \
-  && INIT_ADMIN_EMAIL=demo@nocobase.com \
-  && nocobase install
+  INIT_APP_LANG=zh-CN \
+  INIT_ROOT_EMAIL=demo@nocobase.com \
+  nocobase install
 ```
 
-### INIT_ADMIN_PASSWORD
+### INIT_ROOT_PASSWORD
 
 Root 用户密码
 
 ```bash
 yarn cross-env \
-  && INTI_APP_LANG=zh-CN \
-  && INIT_ADMIN_EMAIL=demo@nocobase.com \
-  && INIT_ADMIN_PASSWORD=admin123 \
-  && nocobase install
+  INIT_APP_LANG=zh-CN \
+  INIT_ROOT_EMAIL=demo@nocobase.com \
+  INIT_ROOT_PASSWORD=admin123 \
+  nocobase install
 ```
 
-### INIT_ADMIN_NICKNAME
+### INIT_ROOT_NICKNAME
 
 Root 用户昵称
 
 ```bash
 yarn cross-env \
-  && INTI_APP_LANG=zh-CN \
-  && INIT_ADMIN_EMAIL=demo@nocobase.com \
-  && INIT_ADMIN_PASSWORD=admin123 \
-  && INIT_ADMIN_NICKNAME="Super Admin"
-  && nocobase install
+  INIT_APP_LANG=zh-CN \
+  INIT_ROOT_EMAIL=demo@nocobase.com \
+  INIT_ROOT_PASSWORD=admin123 \
+  INIT_ROOT_NICKNAME="Super Admin" \
+  nocobase install
 ```

@@ -24,7 +24,7 @@ exports.hasTsNode = () => {
 };
 
 exports.isDev = function isDev() {
-  if (process.env.NOCOBASE_ENV === 'production') {
+  if (process.env.APP_ENV === 'production') {
     return false;
   }
   return exports.hasTsNode();
@@ -78,7 +78,7 @@ exports.isPortReachable = async (port, { timeout = 1000, host } = {}) => {
 };
 
 exports.postCheck = async (opts) => {
-  const port = opts.port || process.env.SERVER_PORT;
+  const port = opts.port || process.env.APP_PORT;
   const result = await exports.isPortReachable(port);
   if (result) {
     console.error(chalk.red(`post already in use ${port}`));

@@ -2,6 +2,7 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import lodash from 'lodash';
+import { isAbsolute, resolve } from 'path';
 import {
   ModelCtor,
   Op,
@@ -82,6 +83,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
         },
         ...options,
       };
+      if (options.storage && options.storage !== ':memory:') {
+        if (!isAbsolute(options.storage)) {
+          opts.storage = resolve(process.cwd(), options.storage);
+        }
+      }
       this.sequelize = new Sequelize(opts);
       this.options = opts;
     }

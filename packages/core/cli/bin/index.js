@@ -4,18 +4,18 @@ const dotenv = require('dotenv');
 const { resolve } = require('path');
 
 const env = {
-  NOCOBASE_ENV: 'development',
-  SERVER_PORT: 13000,
-  SERVER_BASE_PATH: '/api/',
+  APP_ENV: 'development',
+  APP_KEY: 'test-jwt-secret',
+  APP_PORT: 13000,
+  API_BASE_PATH: '/api/',
   DB_DIALECT: 'sqlite',
   DB_STORAGE: 'storage/db/nocobase.sqlite',
-  JWT_SECRET: 'test-jwt-secret',
   DEFAULT_STORAGE_TYPE: 'local',
   LOCAL_STORAGE_DEST: 'storage/uploads',
 };
 
 dotenv.config({
-  path: resolve(process.cwd(), process.env.NOCOBASE_ENV_PATH || '.env'),
+  path: resolve(process.cwd(), process.env.APP_ENV_PATH || '.env'),
 });
 
 for (const key in env) {

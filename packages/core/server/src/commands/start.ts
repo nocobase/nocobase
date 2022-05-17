@@ -7,8 +7,8 @@ export default (app: Application) => {
     .option('-p, --port')
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
-      const port = opts.port || process.env.SERVER_PORT || 13000;
-      const host = opts.host || process.env.SERVER_HOST || '0.0.0.0';
+      const port = opts.port || process.env.APP_PORT || 13000;
+      const host = opts.host || process.env.APP_HOST || '0.0.0.0';
 
       await app.start({
         cliArgs,

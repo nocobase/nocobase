@@ -2,7 +2,7 @@ import { skip } from '@nocobase/acl';
 import { Plugin } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
-import { resolve } from 'path';
+import { isAbsolute, resolve } from 'path';
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {
@@ -41,7 +41,7 @@ export class ClientPlugin extends Plugin {
           ctx.body = {
             version: this.app.getVersion(),
             lang: currentUser?.appLang || systemSetting?.appLang || process.env.APP_LANG || 'en-US',
-          }
+          };
           await next();
         },
         async getLang(ctx, next) {
@@ -55,12 +55,12 @@ export class ClientPlugin extends Plugin {
         },
       },
     });
-    let root = this.options.dist;
-    if (root && !root.startsWith('/')) {
+    let root = this.options.dist || `./packages/app/client/dist`;
+    if (!isAbsolute(root)) {
       root = resolve(process.cwd(), root);
     }
     this.app.middleware.unshift(async (ctx, next) => {
-      if (process.env.NOCOBASE_ENV === 'production') {
+      if (process.env.APP_ENV === 'production') {
         return next();
       }
       if (!root) {

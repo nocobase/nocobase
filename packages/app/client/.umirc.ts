@@ -1,4 +1,4 @@
-import { getUmiConfig, resolveNocobasePackagesAlias } from '@nocobase/utils/umiConfig';
+import { getUmiConfig, resolveNocobasePackagesAlias } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'umi';
 
 const umiConfig = getUmiConfig();
@@ -8,7 +8,7 @@ process.env.MFSU_AD = 'none';
 export default defineConfig({
   hash: true,
   define: {
-    'process.env.NOCOBASE_ENV': process.env.NOCOBASE_ENV,
+    'process.env.APP_ENV': process.env.APP_ENV,
     ...umiConfig.define,
   },
   // only proxy when using `umi dev`

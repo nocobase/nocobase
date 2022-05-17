@@ -12,7 +12,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (opts) => {
       if (opts.port) {
-        process.env.SERVER_PORT = opts.port;
+        process.env.APP_PORT = opts.port;
       }
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         promptForTs();

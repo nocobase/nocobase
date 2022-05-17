@@ -1,6 +1,6 @@
 export declare function getUmiConfig(): {
   define: {
-      'process.env.SERVER_BASE_URL': string;
+      'process.env.API_BASE_URL': string;
   };
   proxy: {
       [x: string]: {

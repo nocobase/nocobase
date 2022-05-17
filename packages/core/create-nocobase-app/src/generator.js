@@ -110,10 +110,10 @@ class AppGenerator extends Generator {
       dependencies: dependencies.join(`,\n    `),
       envs: envs.join(`\n`),
       env: {
-        SERVER_PORT: 13000,
-        NOCOBASE_ENV: 'development',
+        APP_PORT: 13000,
+        APP_ENV: 'development',
         DB_DIALECT: dbDialect,
-        JWT_SECRET: crypto.randomBytes(256).toString('base64'),
+        APP_KEY: crypto.randomBytes(256).toString('base64'),
         ...env,
       },
     };

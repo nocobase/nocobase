@@ -31,20 +31,20 @@ Application port, default value `80`
 APP_PORT=81
 ```
 
-### APP_API_PREFIX
-
-NocoBase API address prefix, default value `/api/`
-
-```bash
-APP_API_PREFIX=/api/
-```
-
 ### APP_KEY
 
 Secret key for scenarios such as jwt
 
 ```bash
 APP_KEY=1111
+```
+
+### API_BASE_PATH
+
+NocoBase API address prefix, default value `/api/`
+
+```bash
+API_BASE_PATH=/api/
 ```
 
 ### DB_DIALECT
@@ -131,7 +131,7 @@ Switching of logs, default value `off`, options include：
 - `off` Off
 
 ```bash
-DB_LOG_SQL=on
+DB_LOGGING=on
 ```
 
 ## Temporary environment variables
@@ -140,24 +140,24 @@ When installing NocoBase, you can assist in the installation by setting temporar
 
 ```bash
 yarn cross-env \
-  && INTI_APP_LANG=en-US \
-  && INIT_ADMIN_EMAIL=demo@nocobase.com \
-  && INIT_ADMIN_PASSWORD=admin123 \
-  && INIT_ADMIN_NICKNAME="Super Admin"
-  && nocobase install
+  INIT_APP_LANG=en-US \
+  INIT_ROOT_EMAIL=demo@nocobase.com \
+  INIT_ROOT_PASSWORD=admin123 \
+  INIT_ROOT_NICKNAME="Super Admin" \
+  nocobase install
 
 # Equivalent to
 yarn nocobase install \
-  && --lang=en-US  \
-  && --admin-email=demo@nocobase.com \
-  && --admin-password=admin123 \
-  && --admin-nickname="Super Admin"
+  --lang=en-US  \
+  --root-email=demo@nocobase.com \
+  --root-password=admin123 \
+  --root-nickname="Super Admin"
 
 # Equivalent to
 yarn nocobase install -l en-US -e demo@nocobase.com -p admin123 -n "Super Admin"
 ```
 
-### INTI_APP_LANG
+### INIT_APP_LANG
 
 Language at installation, default value `en-US`, options include
 
@@ -166,42 +166,42 @@ Language at installation, default value `en-US`, options include
 
 ```bash
 yarn cross-env \
-  && INTI_APP_LANG=en-US \
-  && nocobase install
+  INIT_APP_LANG=en-US \
+  nocobase install
 ```
 
-### INIT_ADMIN_EMAIL
+### INIT_ROOT_EMAIL
 
 Root user's email
 
 ```bash
 yarn cross-env \
-  && INTI_APP_LANG=en-US \
-  && INIT_ADMIN_EMAIL=demo@nocobase.com \
-  && nocobase install
+  INIT_APP_LANG=en-US \
+  INIT_ROOT_EMAIL=demo@nocobase.com \
+  nocobase install
 ```
 
-### INIT_ADMIN_PASSWORD
+### INIT_ROOT_PASSWORD
 
 Root user's password
 
 ```bash
 yarn cross-env \
-  && INTI_APP_LANG=en-US \
-  && INIT_ADMIN_EMAIL=demo@nocobase.com \
-  && INIT_ADMIN_PASSWORD=admin123 \
-  && nocobase install
+  INIT_APP_LANG=en-US \
+  INIT_ROOT_EMAIL=demo@nocobase.com \
+  INIT_ROOT_PASSWORD=admin123 \
+  nocobase install
 ```
 
-### INIT_ADMIN_NICKNAME
+### INIT_ROOT_NICKNAME
 
 Root user's name
 
 ```bash
 yarn cross-env \
-  && INTI_APP_LANG=en-US \
-  && INIT_ADMIN_EMAIL=demo@nocobase.com \
-  && INIT_ADMIN_PASSWORD=admin123 \
-  && INIT_ADMIN_NICKNAME="Super Admin"
-  && nocobase install
+  INIT_APP_LANG=en-US \
+  INIT_ROOT_EMAIL=demo@nocobase.com \
+  INIT_ROOT_PASSWORD=admin123 \
+  INIT_ROOT_NICKNAME="Super Admin" \
+  nocobase install
 ```

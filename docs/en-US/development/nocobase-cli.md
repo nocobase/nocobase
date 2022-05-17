@@ -161,9 +161,9 @@ Options:
   -c, --clean
   -s, --silent
   -l, --lang [lang]
-  -e, --admin-email <adminEmail>
-  -p, --admin-password <adminPassword>
-  -n, --admin-nickname [adminNickname]
+  -e, --root-email <rootEmail>
+  -p, --root-password <rootPassword>
+  -n, --root-nickname [rootNickname]
   -h, --help
 ```
 

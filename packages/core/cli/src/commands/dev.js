@@ -29,15 +29,15 @@ module.exports = (cli) => {
       }
       const { port, client, server } = opts;
       if (port) {
-        process.env.SERVER_PORT = opts.port;
+        process.env.APP_PORT = opts.port;
       }
-      const { SERVER_PORT } = process.env;
-      let clientPost = SERVER_PORT;
+      const { APP_PORT } = process.env;
+      let clientPost = APP_PORT;
       let serverPost;
       nodeCheck();
       await postCheck(opts);
       if (server) {
-        serverPost = SERVER_PORT;
+        serverPost = APP_PORT;
       } else if (!server && !client) {
         serverPost = await getPortPromise({
           port: 1 * clientPost + 1,
@@ -57,7 +57,7 @@ module.exports = (cli) => {
         ];
         run('ts-node-dev', argv, {
           env: {
-            SERVER_PORT: serverPost,
+            APP_PORT: serverPost,
           },
         });
       }

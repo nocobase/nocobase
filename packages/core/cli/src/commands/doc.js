@@ -22,7 +22,7 @@ module.exports = (cli) => {
       } else {
         process.env.DUMI_THEME = isAbsolute(docThemePath) ? docThemePath : resolve(process.cwd(), docThemePath);
       }
-      const index = process.argv.indexOf('--lang=zh-CN') || process.argv.indexOf('--lang=en-US') || process.argv.indexOf('-l');
+      const index = process.argv.indexOf(`--lang=${options.lang}`);
       if (index > 0) {
         process.argv.splice(index, 1);
       }

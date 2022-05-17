@@ -8,12 +8,6 @@ import { UserModel } from './models/UserModel';
 
 export interface UserPluginConfig {
   jwt: JwtOptions;
-
-  installing?: {
-    adminNickname: string;
-    adminEmail: string;
-    adminPassword: string;
-  };
 }
 
 export default class UsersPlugin extends Plugin<UserPluginConfig> {
@@ -21,15 +15,15 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
   constructor(app, options) {
     super(app, options);
-    this.jwtService = new JwtService(options?.jwt);
+    this.jwtService = new JwtService(options?.jwt || {});
   }
 
   async beforeLoad() {
     const cmd = this.app.findCommand('install');
     if (cmd) {
-      cmd.requiredOption('-e, --admin-email <adminEmail>');
-      cmd.requiredOption('-p, --admin-password <adminPassword>');
-      cmd.option('-n, --admin-nickname [adminNickname]');
+      cmd.requiredOption('-e, --root-email <rootEmail>', '', process.env.INIT_ROOT_EMAIL);
+      cmd.requiredOption('-p, --root-password <rootPassword>', '', process.env.INIT_ROOT_PASSWORD);
+      cmd.option('-n, --root-nickname [rootNickname]');
     }
     this.db.registerOperators({
       $isCurrentUser(_, ctx) {
@@ -113,27 +107,27 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
   }
 
   getInstallingData(options: any = {}) {
-    const { INIT_ADMIN_NICKNAME, INIT_ADMIN_PASSWORD, INIT_ADMIN_EMAIL } = process.env;
+    const { INIT_ROOT_NICKNAME, INIT_ROOT_PASSWORD, INIT_ROOT_EMAIL } = process.env;
     const {
-      adminEmail = INIT_ADMIN_EMAIL,
-      adminPassword = INIT_ADMIN_PASSWORD,
-      adminNickname = INIT_ADMIN_NICKNAME || 'Super Admin',
+      rootEmail = INIT_ROOT_EMAIL,
+      rootPassword = INIT_ROOT_PASSWORD,
+      rootNickname = INIT_ROOT_NICKNAME || 'Super Admin',
     } = options.users || options?.cliArgs?.[0] || {};
     return {
-      adminEmail,
-      adminPassword,
-      adminNickname,
+      rootEmail,
+      rootPassword,
+      rootNickname,
     };
   }
 
   async install(options) {
-    const { adminNickname, adminPassword, adminEmail } = this.getInstallingData(options);
+    const { rootNickname, rootPassword, rootEmail } = this.getInstallingData(options);
     const User = this.db.getCollection('users');
     const user = await User.repository.create<UserModel>({
       values: {
-        nickname: adminNickname,
-        email: adminEmail,
-        password: adminPassword,
+        email: rootEmail,
+        password: rootPassword,
+        nickname: rootNickname,
         roles: ['root', 'admin', 'member'],
       },
     });

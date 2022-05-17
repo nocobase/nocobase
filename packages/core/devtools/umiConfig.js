@@ -2,9 +2,9 @@ const { existsSync } = require('fs');
 const { resolve } = require('path');
 
 function getUmiConfig() {
-  const { SERVER_PORT, SERVER_BASE_URL } = process.env;
-  const SERVER_BASE_PATH = process.env.SERVER_BASE_PATH || '/api/';
-  const PROXY_TARGET_URL = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${SERVER_PORT}`;
+  const { APP_PORT, API_BASE_URL } = process.env;
+  const API_BASE_PATH = process.env.API_BASE_PATH || '/api/';
+  const PROXY_TARGET_URL = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${APP_PORT}`;
   const LOCAL_STORAGE_BASE_URL = process.env.LOCAL_STORAGE_BASE_URL || '/storage/uploads/';
 
   function getLocalStorageProxy() {
@@ -22,15 +22,15 @@ function getUmiConfig() {
 
   return {
     define: {
-      'process.env.SERVER_BASE_URL': SERVER_BASE_URL || SERVER_BASE_PATH,
+      'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,
     },
     // only proxy when using `umi dev`
     // if the assets are built, will not proxy
     proxy: {
-      [SERVER_BASE_PATH]: {
+      [API_BASE_PATH]: {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
-        pathRewrite: { [`^${SERVER_BASE_PATH}`]: SERVER_BASE_PATH },
+        pathRewrite: { [`^${API_BASE_PATH}`]: API_BASE_PATH },
       },
       // for local storage
       ...getLocalStorageProxy(),

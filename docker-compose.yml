@@ -57,6 +57,6 @@ services:
     volumes:
       - ./:/app
     expose:
-      - ${SERVER_PORT}
+      - ${APP_PORT}
     ports:
-      - "${SERVER_PORT}:${SERVER_PORT}"
+      - "${APP_PORT}:${APP_PORT}"
