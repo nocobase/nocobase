@@ -1,6 +1,6 @@
 # Filter operators
 
-## 通用
+## Common
 
 - $eq
 - $ne
