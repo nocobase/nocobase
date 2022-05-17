@@ -82,12 +82,12 @@ export const TableActionColumnInitializers = (props: any) => {
               title: '{{t("Popup window")}}',
               component: 'CustomizeActionInitializer',
               schema: {
+                type: 'void',
                 title: '{{ t("Popup window") }}',
-                'x-action': 'customizePopup',
-                'x-component': 'Action.Link',
+                'x-action': 'view',
                 'x-designer': 'Action.Designer',
+                'x-component': 'Action.Link',
                 'x-component-props': {
-                  useProps: '{{ useCreateActionProps }}',
                   openMode: 'drawer',
                 },
                 properties: {
@@ -99,11 +99,28 @@ export const TableActionColumnInitializers = (props: any) => {
                       className: 'nb-action-popup',
                     },
                     properties: {
-                      grid: {
+                      tabs: {
                         type: 'void',
-                        'x-component': 'Grid',
-                        'x-initializer': 'CreateFormBlockInitializers',
-                        properties: {},
+                        'x-component': 'Tabs',
+                        'x-component-props': {},
+                        'x-initializer': 'TabPaneInitializers',
+                        properties: {
+                          tab1: {
+                            type: 'void',
+                            title: '{{t("Details")}}',
+                            'x-component': 'Tabs.TabPane',
+                            'x-designer': 'Tabs.Designer',
+                            'x-component-props': {},
+                            properties: {
+                              grid: {
+                                type: 'void',
+                                'x-component': 'Grid',
+                                'x-initializer': 'RecordBlockInitializers',
+                                properties: {},
+                              },
+                            },
+                          },
+                        },
                       },
                     },
                   },
