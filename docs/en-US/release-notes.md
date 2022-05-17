@@ -1,6 +1,6 @@
 # Release Notes
 
-## Ready to release
+## Ready for release
 
 ### New features
 - Packaging tool `@nocobase/build`
