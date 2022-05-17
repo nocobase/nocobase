@@ -46,6 +46,7 @@ export default {
   "Sign out": "注销",
   "Cancel": "取消",
   "Submit": "提交",
+  "Close": "关闭",
   "Set the data scope": "设置数据范围",
   "Data blocks": "数据区块",
   "Table": "表格",
@@ -412,8 +413,11 @@ export default {
   'Trigger type': '触发方式',
   'Description': '描述',
   'Status': '状态',
-  'Enabled': '启用',
-  'Disabled': '禁用',
+  'Started': '启用',
+  'Stopped': '停用',
+  'Version': '版本',
+  'Copy to new version': '复制到新版本',
+
   'Load failed': '加载失败',
 
   'Trigger': '触发器',
@@ -477,6 +481,9 @@ export default {
   'Please select collection first': '请先选择数据表',
   'Only update records matching conditions': '只更新满足条件的数据',
   'Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.': '未被赋值的字段将被设置为默认值，没有默认值的设置为空值。',
+  'Trigger in executed workflow cannot be modified': '已经执行过工作流的触发器不能被修改',
+  'Node in executed workflow cannot be modified': '已经执行过工作流中的节点不能被修改',
+
   'Unsaved changes': '未保存修改',
   'Are you sure you don\'t want to save?': '你确定不保存修改吗？',
   'Dragging': '拖拽中',

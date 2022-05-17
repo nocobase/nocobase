@@ -33,7 +33,7 @@ describe('workflow > instructions > update', () => {
 
   describe('update one', () => {
     it('params: from context', async () => {
-      const n2 = await workflow.createNode({
+      const n1 = await workflow.createNode({
         type: 'update',
         config: {
           collection: 'posts',
@@ -58,5 +58,43 @@ describe('workflow > instructions > update', () => {
       const updatedPost = await PostModel.findByPk(post.id);
       expect(updatedPost.published).toBe(true);
     });
+  });
+
+  it('params: from job of node', async () => {
+    const n1 = await workflow.createNode({
+      type: 'query',
+      config: {
+        collection: 'posts',
+        params: {
+          filter: {
+            title: 'test'
+          }
+        }
+      }
+    });
+
+    const n2 = await workflow.createNode({
+      type: 'update',
+      config: {
+        collection: 'posts',
+        params: {
+          filter: {
+            id: `{{$jobsMapByNodeId.${n1.id}.id}}`
+          },
+          values: {
+            title: 'changed'
+          }
+        }
+      },
+      upstreamId: n1.id
+    });
+
+    await n1.setDownstream(n2);
+
+    // NOTE: the result of post immediately created will not be changed by workflow
+    const { id } = await PostModel.create({ title: 'test' });
+    // should get from db
+    const post = await PostModel.findByPk(id);
+    expect(post.title).toBe('changed');
   });
 });

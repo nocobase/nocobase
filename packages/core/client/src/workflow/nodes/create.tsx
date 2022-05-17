@@ -26,15 +26,7 @@ export default {
     //     disabled: true
     //   }
     // },
-    'config.params': {
-      type: 'object',
-      name: 'config.params',
-      title: '',
-      'x-decorator': 'FormItem',
-      properties: {
-        values
-      }
-    }
+    'config.params.values': values
   },
   view: {
 
