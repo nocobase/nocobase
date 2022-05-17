@@ -486,9 +486,8 @@ SchemaSettings.ActionModalItem = (props) => {
 
     return {
       async run() {
-        form.setValues(initialValues);
-        // actionContext.setVisible(false);
-        // form.reset();
+        actionContext.setVisible(false);
+        form.reset();
       },
     };
   };
