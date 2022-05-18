@@ -36,7 +36,7 @@ export default [
     children: [
       '/user-manual/introduction/5-minutes-to-get-started',
       {
-        title: 'Advanced Guide',
+        title: 'Advanced guide',
         'title.zh-CN': '深入 NocoBase',
         type: 'subMenu',
         children: [
