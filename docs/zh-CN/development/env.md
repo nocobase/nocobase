@@ -25,10 +25,10 @@ APP_HOST=192.168.3.154
 
 ### APP_PORT
 
-应用端口，默认值 `80`
+应用端口，默认值 `13000`
 
 ```bash
-APP_PORT=81
+APP_PORT=13000
 ```
 
 ### APP_KEY
@@ -36,7 +36,7 @@ APP_PORT=81
 秘钥，用于 jwt 等场景
 
 ```bash
-APP_KEY=1111
+APP_KEY=app-key-test
 ```
 
 ### API_BASE_PATH

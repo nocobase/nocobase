@@ -25,10 +25,10 @@ APP_HOST=192.168.3.154
 
 ### APP_PORT
 
-Application port, default value `80`
+Application port, default value `13000`
 
 ```bash
-APP_PORT=81
+APP_PORT=13000
 ```
 
 ### APP_KEY
@@ -36,7 +36,7 @@ APP_PORT=81
 Secret key for scenarios such as jwt
 
 ```bash
-APP_KEY=1111
+APP_KEY=app-key-test
 ```
 
 ### API_BASE_PATH

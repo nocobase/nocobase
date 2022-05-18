@@ -1,14 +1,16 @@
----
-order: 1
----
-
 # Installation
 
-NocoBase supports both Docker and CLI installation methods. Docker is recommended if you are new to NocoBase.
+NocoBase 支持三种安装方式：
 
-## Docker (👍Recommended)
+- 使用 Docker 安装（推荐）
+- 通过 `create-nocobase-app` 安装
+- Git 源码安装
 
-### 0. Before start
+## 使用 Docker 安装 (👍Recommended)
+
+---
+
+### 0. Prerequisites
 
 ⚡⚡ Please make sure you have installed [Docker](https://docs.docker.com/get-docker/)
 
@@ -60,11 +62,13 @@ app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 Open [http://localhost:13000](http://localhost:13000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
 
 
-## CLI
+## 使用 `create-nocobase-app` 安装
 
-### 0. Before start
+---
 
-Please make sure you have Node.js 12.x or above installed. You can download and install the latest LTS version from the official website. It is recommended to use nvm (or nvm-windows for Win systems) to manage Node.js versions if you plan to work with Node.js for a long time.
+### 0. Prerequisites
+
+Please make sure you have Node.js 14.x or above installed. You can download and install the latest LTS version from the official website. It is recommended to use nvm (or nvm-windows for Win systems) to manage Node.js versions if you plan to work with Node.js for a long time.
 
 ```bash
 $ node -v
@@ -126,10 +130,87 @@ yarn nocobase install
 
 ### 5. Start NocoBase
 
+Development
+
+```bash
+yarn dev
+```
+
+Production
+
 ```bash
 yarn start
 ```
 
+注：生产环境，如果代码有修改，需要执行 `yarn build`，再重新启动 NocoBase。
+
 ### 6. Log in to NocoBase
 
 Open [http://localhost:13000](http://localhost:13000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
+
+## Git 源码安装
+
+---
+
+### 0. 先决条件
+
+请确保你已经：
+
+- 安装了 Git、Node.js、Yarn
+- 配置并启动了所需数据库（SQLite、MySQL、PostgreSQL 任选其一）
+
+### 1. 将 NocoBase 下载到本地
+
+```bash
+git clone https://github.com/nocobase/nocobase.git my-nocobase-app
+```
+
+### 2. 切换目录
+
+```bash
+cd my-nocobase-app
+```
+
+### 3. 安装依赖
+
+📢 由于网络环境、系统配置等因素影响，接下来这一步骤可能需要十几分钟时间。  
+
+```bash
+yarn install
+```
+
+### 4. 设置环境变量
+
+根据实际情况修改环境变量，如果你不知道怎么改，[点此查看环境变量说明](../development/env.md)，也可以保持默认。
+
+```bash
+DB_DIALECT=sqlite
+DB_STORAGE=storage/db/nocobase.sqlite
+```
+
+### 5. 安装 NocoBase
+
+```bash
+yarn nocobase install --lang=zh-CN
+```
+
+### 6. 启动 NocoBase
+
+开发环境
+
+```bash
+yarn dev
+```
+
+生产环境
+
+```bash
+# 编译
+yarn build
+# 启动
+yarn start
+```
+
+### 7. 登录 NocoBase
+
+使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。

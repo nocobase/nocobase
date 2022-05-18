@@ -1,4 +1,3 @@
-const chalk = require('chalk');
 const { Command } = require('commander');
 const { run, isDev } = require('../util');
 const { resolve } = require('path');
@@ -17,9 +16,10 @@ module.exports = (cli) => {
       if (!isDev()) {
         return;
       }
-      if (!existsSync(resolve(process.cwd(), '.enva'))) {
-        const content = await readFile(resolve(process.cwd(), '.env.example'), 'utf-8');
-        await writeFile(resolve(process.cwd(), '.enva'), content, 'utf-8');
+      const cwd = process.cwd();
+      if (!existsSync(resolve(cwd, '.env')) && existsSync(resolve(cwd, '.env.example'))) {
+        const content = await readFile(resolve(cwd, '.env.example'), 'utf-8');
+        await writeFile(resolve(cwd, '.env'), content, 'utf-8');
       }
       run('umi', ['generate', 'tmp'], {
         stdio: 'pipe',

@@ -32,9 +32,9 @@ docker-compose up -d app
 docker-compose logs app
 ```
 
-## CLI
+## create-nocobase-app
 
-Execute the `nocobase upgrad` upgrade command
+Execute the `nocobase upgrad` command
 
 ```bash
 # Switch to the corresponding directory
@@ -42,5 +42,18 @@ cd my-nocobase-app
 # Execute the update command
 yarn nocobase upgrade
 # Start
+yarn start
+```
+
+## Git 源码
+
+```bash
+# 切换到对应的目录
+cd my-nocobase-app
+# pull 最新代码
+git pull
+# 执行更新命令
+yarn nocobase upgrade
+# 启动
 yarn start
 ```
