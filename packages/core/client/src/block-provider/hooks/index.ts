@@ -67,8 +67,8 @@ export const useCreateActionProps = () => {
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
-      const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
+      const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -109,28 +109,32 @@ export const useCreateActionProps = () => {
         values: {
           ...values,
           ...overwriteValues,
+          ...assignedValues,
         },
       });
       actionField.data.loading = false;
       __parent?.service?.refresh?.();
       setVisible?.(false);
-      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
       if (!onSuccess?.successMessage) {
         return;
       }
-      Modal.success({
-        title: compile(onSuccess?.successMessage),
-        onOk: async () => {
-          await form.reset();
-          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-            if (isURL(onSuccess.redirectTo)) {
-              window.location.href = onSuccess.redirectTo;
-            } else {
-              history.push(onSuccess.redirectTo);
+      if (onSuccess?.manualClose) {
+        Modal.success({
+          title: compile(onSuccess?.successMessage),
+          onOk: async () => {
+            await form.reset();
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                history.push(onSuccess.redirectTo);
+              }
             }
-          }
-        },
-      });
+          },
+        });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
+      }
     },
   };
 };
@@ -192,8 +196,8 @@ export const useUpdateActionProps = () => {
   const actionField = useField();
   return {
     async onClick() {
-      const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
-      const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
+      const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -243,6 +247,7 @@ export const useUpdateActionProps = () => {
         values: {
           ...values,
           ...overwriteValues,
+          ...assignedValues,
         },
       });
       actionField.data.loading = false;
@@ -251,8 +256,10 @@ export const useUpdateActionProps = () => {
         __parent?.__parent?.service?.refresh?.();
       }
       setVisible?.(false);
-      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
-      if (onSuccess?.successMessage) {
+      if (!onSuccess?.successMessage) {
+        return;
+      }
+      if (onSuccess?.manualClose) {
         Modal.success({
           title: compile(onSuccess?.successMessage),
           onOk: async () => {
@@ -266,6 +273,8 @@ export const useUpdateActionProps = () => {
             }
           },
         });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
       }
     },
   };

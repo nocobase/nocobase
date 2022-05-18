@@ -91,6 +91,7 @@ export const ActionDesigner = (props) => {
           uid={fieldSchema?.['x-action-settings']?.schemaUid}
           onSubmit={(assignedValues) => {
             fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],

@@ -93,7 +93,7 @@ export const FormActionInitializers = {
               },
             },
             'x-component-props': {
-              useProps: '{{ useCustomizeUpdateActionProps }}',
+              useProps: '{{ useCreateActionProps }}',
             },
           },
         },
@@ -196,7 +196,7 @@ export const CreateFormActionInitializers = {
               },
             },
             'x-component-props': {
-              useProps: '{{ useCustomizeUpdateActionProps }}',
+              useProps: '{{ useCreateActionProps }}',
             },
           },
         },
@@ -299,7 +299,7 @@ export const UpdateFormActionInitializers = {
               },
             },
             'x-component-props': {
-              useProps: '{{ useCustomizeUpdateActionProps }}',
+              useProps: '{{ useUpdateActionProps }}',
             },
           },
         },

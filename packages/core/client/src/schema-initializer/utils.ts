@@ -39,6 +39,19 @@ export const removeGridFormItem = (schema, cb) => {
   });
 };
 
+export const useRemoveGridFormItem = () => {
+  const form = useForm();
+  return (schema, cb) => {
+    cb(schema, {
+      removeParentsIfNoChildren: true,
+      breakRemoveOn: {
+        'x-component': 'Grid',
+      },
+    });
+    delete form.values?.[schema.name];
+  };
+};
+
 export const findTableColumn = (schema: Schema, key: string, action: string, deepth: number = 0) => {
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {
@@ -125,7 +138,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const { getInterface } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
-
+  const remove = useRemoveGridFormItem();
   return fields
     ?.filter((field) => {
       return field?.interface && !field?.uiSchema?.['x-read-pretty'];
@@ -144,7 +157,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
         component: 'CollectionFieldInitializer',
-        remove: removeGridFormItem,
+        remove: remove,
         schemaInitialize: (s) => {
           interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
         },
