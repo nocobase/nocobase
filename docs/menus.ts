@@ -5,6 +5,8 @@ export default [
     type: 'group',
     children: [
       '/index',
+      '/why',
+      '/who',
       '/roadmap',
     ],
   },
@@ -23,14 +25,7 @@ export default [
     type: 'group',
     children: [
       {
-        title: 'Introduction',
-        'title.zh-CN': '了解 NocoBase',
-        type: 'subMenu',
-        children: [
-          '/user-manual/introduction/5-minutes-to-get-started',
-          '/user-manual/introduction/important-features',
-          '/user-manual/introduction/why-nocobase',
-        ],
+        '/user-manual/introduction/5-minutes-to-get-started',
       },
       {
         title: 'Advanced Guide',
