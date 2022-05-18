@@ -6,6 +6,4 @@ NocoBase has a built-in layout template by default, and the interface of this la
 2. Menu area. At the top is the first level menu, and on the left side are the menus for the second level and lower tiers. Each menu item can be configured as a menu group, page, or link.
 3. Block container. This is the block container for the page, in which various blocks can be placed.
 
-Translated with [www.DeepL.com/Translator](http://www.deepl.com/Translator) (free version)
-
 ![3.zone.jpg](./functional-zoning/3.zone.jpg)
