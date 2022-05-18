@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
-import { resolve } from 'path';
+import { isAbsolute, resolve } from 'path';
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {
@@ -62,8 +62,8 @@ export class ClientPlugin extends Plugin {
         },
       },
     });
-    let root = this.options.dist;
-    if (root && !root.startsWith('/')) {
+    let root = this.options.dist || `./packages/app/client/dist`;
+    if (!isAbsolute(root)) {
       root = resolve(process.cwd(), root);
     }
     this.app.middleware.unshift(async (ctx, next) => {
