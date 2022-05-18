@@ -97,6 +97,7 @@ export const ActionDesigner = (props) => {
                 'x-action-settings': fieldSchema['x-action-settings'],
               },
             });
+            dn.refresh();
           }}
         />
       )}
