@@ -1,5 +1,8 @@
 const { Command } = require('commander');
 const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
+const { existsSync } = require('fs');
+const { resolve } = require('path');
+const chalk = require('chalk');
 
 /**
  *
@@ -25,6 +28,13 @@ module.exports = (cli) => {
           `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
           ...process.argv.slice(2),
         ]);
+        return;
+      }
+      if (!existsSync(resolve(process.cwd(), `./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`))) {
+        console.log('The code is not compiled, please execute it first');
+        console.log(chalk.yellow('$ yarn build'));
+        console.log('If you want to run in development mode, please execute');
+        console.log(chalk.yellow('$ yarn dev'));
         return;
       }
       await postCheck(opts);

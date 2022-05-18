@@ -87,37 +87,41 @@ exports.postCheck = async (opts) => {
 };
 
 exports.runInstall = async () => {
+  const { APP_PACKAGE_ROOT } = process.env;
+
   if (exports.isDev()) {
     const argv = [
       '-P',
       './tsconfig.server.json',
       '-r',
       'tsconfig-paths/register',
-      './packages/app/server/src/index.ts',
+      `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
       'install',
       '-s',
     ];
     await exports.run('ts-node', argv);
   } else {
-    const argv = ['./packages/app/server/lib/index.js', 'install', '-s'];
+    const argv = [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '-s'];
     await exports.run('node', argv);
   }
 };
 
 exports.runAppCommand = async (command, args = []) => {
+  const { APP_PACKAGE_ROOT } = process.env;
+
   if (exports.isDev()) {
     const argv = [
       '-P',
       './tsconfig.server.json',
       '-r',
       'tsconfig-paths/register',
-      './packages/app/server/src/index.ts',
+      `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
       command,
       ...args,
     ];
     await exports.run('ts-node', argv);
   } else {
-    const argv = ['./packages/app/server/lib/index.js', command, ...args];
+    const argv = [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, command, ...args];
     await exports.run('node', argv);
   }
 };
