@@ -12,14 +12,7 @@ export const FormActionInitializers = {
           title: '{{t("Submit")}}',
           component: 'CreateSubmitActionInitializer',
           schema: {
-            'x-action-settings': {
-              initialValues: {},
-              skipValidator: false,
-              overwriteValues: {},
-              onSuccess: {
-                successMessage: '{{t("Submitted successfully")}}',
-              },
-            },
+            'x-action-settings': {},
           },
         },
       ],
@@ -122,11 +115,7 @@ export const CreateFormActionInitializers = {
           title: '{{t("Submit")}}',
           component: 'CreateSubmitActionInitializer',
           schema: {
-            'x-action-settings': {
-              skipValidator: false,
-              overwriteValues: {},
-              onSuccess: {},
-            },
+            'x-action-settings': {},
           },
         },
       ],
