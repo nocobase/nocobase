@@ -10,7 +10,6 @@
 # Replace the following git address with your own repo
 git clone https://github.com/nocobase/nocobase.git
 cd nocobase
-cp .env.example .env
 yarn install
 ```
 
@@ -42,3 +41,7 @@ The documentation is in the docs directory and follows Markdown syntax
   |- en-US
   |- zh-CN
 ```
+
+## Others
+
+For more CLI instructions, please [refer to the NocoBase CLI chapter](./development/nocobase-cli.md)

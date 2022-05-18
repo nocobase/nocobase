@@ -10,7 +10,6 @@
 # 替换为自己的仓库地址
 git clone https://github.com/nocobase/nocobase.git
 cd nocobase
-cp .env.example .env
 yarn install
 ```
 
@@ -42,3 +41,7 @@ yarn doc --lang=en-US
   |- en-US
   |- zh-CN
 ```
+
+## 其他
+
+更多 Commands 使用说明 [参考 NocoBase CLI 章节](./development/nocobase-cli.md)
