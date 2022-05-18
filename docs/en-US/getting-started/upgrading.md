@@ -1,14 +1,10 @@
----
-order: 3
----
-
 # Upgrading
 
 Make sure to back up your database before upgrading
 
 ## Docker
 
-Switch to the corresponding directory
+Switch to the project directory
 
 ```bash
 # SQLite
@@ -37,7 +33,7 @@ docker-compose logs app
 Execute the `nocobase upgrad` command
 
 ```bash
-# Switch to the corresponding directory
+# Switch to the project directory
 cd my-nocobase-app
 # Execute the update command
 yarn nocobase upgrade
@@ -45,15 +41,15 @@ yarn nocobase upgrade
 yarn start
 ```
 
-## Git 源码
+## Git source code
 
 ```bash
-# 切换到对应的目录
+# Switch to the project directory
 cd my-nocobase-app
-# pull 最新代码
+# Pull latest source code
 git pull
-# 执行更新命令
+# Execute the update command
 yarn nocobase upgrade
-# 启动
+# Start
 yarn start
 ```

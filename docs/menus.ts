@@ -15,7 +15,17 @@ export default [
     'title.zh-CN': '快速开始',
     type: 'group',
     children: [
-      '/getting-started/installation',
+      {
+        title: 'Installation',
+        'title.zh-CN': '安装',
+        type: 'subMenu',
+        children: [
+          '/getting-started/installation/overview',
+          '/getting-started/installation/docker-compose',
+          '/getting-started/installation/create-nocobase-app',
+          '/getting-started/installation/git-clone',
+        ],
+      },
       '/getting-started/upgrading',
     ],
   },

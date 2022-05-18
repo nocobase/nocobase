@@ -16,8 +16,8 @@ module.exports = (cli) => {
       promptForTs();
       const version = await getVersion();
       if (hasCorePackages()) {
+        await run('yarn', ['install']);
         await runAppCommand('upgrade');
-        // console.log(chalk.yellow('The upgrade command can only be used in project scaffolding'));
         return;
       }
       if (!hasTsNode()) {
@@ -37,6 +37,5 @@ module.exports = (cli) => {
       await run('yarn', ['install']);
       await run('nocobase', ['build']);
       await runAppCommand('upgrade');
-      console.log(chalk.green(`✨  NocoBase has been upgraded to v${version}`));
     });
 };
