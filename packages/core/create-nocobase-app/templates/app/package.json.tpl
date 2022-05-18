@@ -5,13 +5,14 @@
     "packages/*/*"
   ],
   "scripts": {
+    "nocobase": "nocobase",
     "dev": "nocobase dev",
     "start": "nocobase start",
     "clean": "nocobase clean",
     "build": "nocobase build",
     "test": "nocobase test",
-    "lint": "eslint .",
-    "postinstall": "nocobase umi generate tmp"
+    "postinstall": "nocobase postinstall",
+    "lint": "eslint ."
   },
   "resolutions": {
     "@types/react": "^17.0.0",

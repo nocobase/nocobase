@@ -5,7 +5,7 @@
     "jsx": "react",
     "target": "esnext",
     "module": "esnext",
-    "allowJs": false,
+    "allowJs": true,
     "noUnusedLocals": false,
     "preserveConstEnums": true,
     "skipLibCheck": true,

@@ -48,6 +48,7 @@
     "react": "17.x",
     "react-dom": "17.x",
     "rimraf": "^3.0.0",
+    "serve": "^13.0.2",
     "ts-jest": "^26.0.0",
     "ts-loader": "^7.0.4",
     "ts-node": "^9.1.1",

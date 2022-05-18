@@ -1,19 +1,13 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "jsx": "react",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "moduleResolution": "node",
-    "allowJs": true,
-    "module": "commonjs",
-    "target": "es6",
-    "paths": {}
+    "target": "ES6",
+    "module": "CommonJS"
   },
   "exclude": [
-    "./packages/*/dist", 
-    "./packages/*/esm", 
-    "./packages/*/es", 
+    "./packages/*/esm",
+    "./packages/*/es",
+    "./packages/*/dist",
     "./packages/*/lib"
   ]
 }

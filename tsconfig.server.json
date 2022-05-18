@@ -1,31 +1,7 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "esModuleInterop": true,
-    "moduleResolution": "node",
-    "jsx": "react",
     "target": "ES6",
-    "module": "CommonJS",
-    "allowJs": false,
-    "noUnusedLocals": false,
-    "preserveConstEnums": true,
-    "skipLibCheck": true,
-    "sourceMap": true,
-    "inlineSources": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-    "experimentalDecorators": true,
-    "downlevelIteration": true,
-    "baseUrl": ".",
-    "paths": {
-      "@nocobase/app-*": [
-        "packages/app/*/src"
-      ],
-      "@nocobase/plugin-*": [
-        "packages/plugins/*/src"
-      ],
-      "@nocobase/*": [
-        "packages/core/*/src"
-      ]
-    }
+    "module": "CommonJS"
   }
 }

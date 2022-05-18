@@ -24,9 +24,7 @@ export default [
     'title.zh-CN': '用户手册',
     type: 'group',
     children: [
-      {
-        '/user-manual/introduction/5-minutes-to-get-started',
-      },
+      '/user-manual/introduction/5-minutes-to-get-started',
       {
         title: 'Advanced Guide',
         'title.zh-CN': '深入 NocoBase',
