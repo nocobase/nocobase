@@ -64,14 +64,16 @@ NocoBase is designed for you if you have the following needs.
 
 ## Installation
 
-[Docker (recommended)](https://docs.nocobase.com/getting-started/installation/docker-compose)
+NocoBase supports three installation methods:
 
-Suitable for no-code scenarios, no code to write. When upgrading, just download the latest image and reboot.
+- <a target="_blank" href="https://docs.nocobase.com/getting-started/installation/docker-compose">Installing With Docker (👍Recommended)</a>
 
-[create-nocobase-app](https://docs.nocobase.com/getting-started/installation/create-nocobase-app)
+  Suitable for no-code scenarios, no code to write. When upgrading, just download the latest image and reboot.
 
-The business code of the project is completely independent and supports low-code development.
+- <a target="_blank" href="https://docs.nocobase.com/getting-started/installation/create-nocobase-app">Installing from create-nocobase-app CLI</a>
 
-[Git source code](https://docs.nocobase.com/getting-started/installation/git-clone)
+  The business code of the project is completely independent and supports low-code development.
 
-If you want to experience the latest unreleased version, or want to participate in the contribution, you need to make changes and debug on the source code, it is recommended to choose this installation method, which requires a high level of development skills, and if the code has been updated, you can git pull the latest code.
+- <a target="_blank" href="https://docs.nocobase.com/getting-started/installation/git-clone">Installing from Git source code</a>
+
+  If you want to experience the latest unreleased version, or want to participate in the contribution, you need to make changes and debug on the source code, it is recommended to choose this installation method, which requires a high level of development skills, and if the code has been updated, you can git pull the latest code.
