@@ -4,7 +4,7 @@
 
 Most form-, table-, or process-driven codeless products create data structures directly in the user interface, such as Airtable, where adding a new column to a table is adding a new field. This has the advantage of simplicity of use, but the disadvantage of limited functionality and flexibility to meet the needs of more complex scenarios.
 
-NocoBase adopts the design idea of separating the data structure from the user interface, allowing you to create any number of blocks (data views) for the data collections, with different type, styles, content, and actions in each block. This takes into account the simplicity of codeless operation, but also the flexibility of native development.
+NocoBase adopts the design idea of separating the data structure from the user interface, allowing you to create any number of blocks (data views) for the data collections, with different type, styles, content, and actions in each block. This takes into account the simplicity of codeless operation, but also the flexibility like native development.
 
 ![2.collection-block.png](./user-manual/introduction/important-features/2.collection-block.png)
 
