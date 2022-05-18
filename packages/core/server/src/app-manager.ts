@@ -86,7 +86,7 @@ export class AppManager extends EventEmitter {
     };
   }
 
-  emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
 
 applyMixins(AppManager, [AsyncEmitter]);

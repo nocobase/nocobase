@@ -1,0 +1,12 @@
+**/*.md
+**/*.svg
+**/*.ejs
+**/*.html
+package.json
+.umi
+.umi-production
+.umi-test
+packages/**/lib/**
+packages/**/esm/**
+packages/**/node_modules/**
+packages/core/client/src/locale/*

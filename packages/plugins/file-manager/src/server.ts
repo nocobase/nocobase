@@ -32,7 +32,7 @@ export default class PluginFileManager extends Plugin {
     this.app.resourcer.use(uploadMiddleware);
     this.app.resourcer.registerActionHandler('upload', uploadAction);
 
-    if (process.env.NOCOBASE_ENV !== 'production') {
+    if (process.env.APP_ENV !== 'production') {
       await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
     }
 

@@ -4,11 +4,11 @@ import { Button } from 'antd';
 import React, { useContext } from 'react';
 import { navigate } from 'react-big-calendar/lib/utils/constants';
 import { useDesignable } from '../../hooks';
-import { ToolbarContext } from './context';
+import { CalendarToolbarContext } from './context';
 
 export const Nav = observer((props) => {
   const { DesignableBar } = useDesignable();
-  const { onNavigate } = useContext(ToolbarContext);
+  const { onNavigate } = useContext(CalendarToolbarContext);
   return (
     <div className="ant-btn-group">
       <Button icon={<LeftOutlined />} onClick={() => onNavigate(navigate.PREVIOUS)}></Button>

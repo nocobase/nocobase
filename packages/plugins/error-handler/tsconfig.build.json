@@ -1,9 +1,0 @@
-{
-  "extends": "../../../tsconfig.build.json",
-  "compilerOptions": {
-    "outDir": "./lib",
-    "declaration": true
-  },
-  "include": ["./src/**/*.ts", "./src/**/*.tsx"],
-  "exclude": ["./src/__tests__/*", "./esm/*", "./lib/*"]
-}

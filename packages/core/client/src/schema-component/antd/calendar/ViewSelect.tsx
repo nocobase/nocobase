@@ -2,7 +2,7 @@ import { observer } from '@formily/react';
 import { Select } from 'antd';
 import React, { useContext } from 'react';
 import { useDesignable } from '../../hooks';
-import { ToolbarContext } from './context';
+import { CalendarToolbarContext } from './context';
 
 export const ViewSelect = observer((props) => {
   const { DesignableBar } = useDesignable();
@@ -11,7 +11,7 @@ export const ViewSelect = observer((props) => {
     view,
     onView,
     localizer: { messages },
-  } = useContext(ToolbarContext);
+  } = useContext(CalendarToolbarContext);
   return (
     <div className="ant-btn-group">
       <Select value={view} onChange={onView}>

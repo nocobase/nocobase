@@ -85,7 +85,11 @@ export const KanbanCard: any = observer((props: any) => {
       {cardViewerSchema && (
         <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
           <RecordProvider record={card}>
-            <RecursionField name={cardViewerSchema.name} schema={cardViewerSchema} onlyRenderProperties />
+            <RecursionField
+              basePath={cardField.address.concat(`${columnIndex}.cardViewer.${cardIndex}`)}
+              schema={cardViewerSchema}
+              onlyRenderProperties
+            />
           </RecordProvider>
         </ActionContext.Provider>
       )}

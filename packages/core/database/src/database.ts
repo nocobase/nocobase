@@ -2,6 +2,7 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import lodash from 'lodash';
+import { isAbsolute, resolve } from 'path';
 import {
   ModelCtor,
   Op,
@@ -82,6 +83,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
         },
         ...options,
       };
+      if (options.storage && options.storage !== ':memory:') {
+        if (!isAbsolute(options.storage)) {
+          opts.storage = resolve(process.cwd(), options.storage);
+        }
+      }
       this.sequelize = new Sequelize(opts);
       this.options = opts;
     }
@@ -269,17 +275,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
   async auth(options: QueryOptions & { repeat?: number } = {}) {
     const { repeat = 10, ...others } = options;
     const delay = (ms) => new Promise((yea) => setTimeout(yea, ms));
-    let count = 0;
+    let count = 1;
     const authenticate = async () => {
       try {
         await this.sequelize.authenticate(others);
         console.log('Connection has been established successfully.');
         return true;
       } catch (error) {
-        console.log('reconnecting...', count);
         if (count >= repeat) {
           throw error;
         }
+        console.log('reconnecting...', count);
         ++count;
         await delay(500);
         return await authenticate();
@@ -353,7 +359,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return result;
   }
 
-  emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
 
 export function extend(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {

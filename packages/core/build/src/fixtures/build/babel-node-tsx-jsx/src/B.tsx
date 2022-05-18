@@ -1,0 +1,2 @@
+
+const b = 'foo';
