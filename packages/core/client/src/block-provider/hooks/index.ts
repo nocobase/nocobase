@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
-import { useActionContext, useCompile, useDesignable } from '../../schema-component';
+import { useActionContext, useCompile } from '../../schema-component';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
@@ -136,14 +136,14 @@ export const useCreateActionProps = () => {
 };
 
 export const useCustomizeUpdateActionProps = () => {
-  const { resource } = useBlockRequestContext();
+  const { resource, __parent, service } = useBlockRequestContext();
   const actionSchema = useFieldSchema();
   const currentRecord = useRecord();
   const ctx = useCurrentUserContext();
   const history = useHistory();
   const compile = useCompile();
   const form = useForm();
-  const { refresh } = useDesignable();
+
   return {
     async onClick() {
       const { assignedValues, onSuccess, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
@@ -153,7 +153,10 @@ export const useCustomizeUpdateActionProps = () => {
       await resource.update({
         values: { ...assignedValues },
       });
-      refresh();
+      service?.refresh?.();
+      if (!(resource instanceof TableFieldResource)) {
+        __parent?.service?.refresh?.();
+      }
       if (!onSuccess?.successMessage) {
         return;
       }
