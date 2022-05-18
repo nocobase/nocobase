@@ -145,24 +145,9 @@ export const useCustomizeUpdateActionProps = () => {
   const { refresh } = useDesignable();
   return {
     async onClick() {
-      const currentUser = ctx?.data?.data;
-      const dynamicValues = { currentUser, currentRecord };
-      const { assignedValues, onSuccess } = actionSchema?.['x-action-settings'];
-      const values = {};
-      for (const key in assignedValues) {
-        if (assignedValues[key].type === 'constantValue') {
-          values[key] = compile(assignedValues[key].fieldValue);
-        } else {
-          let value = dynamicValues;
-          for (const k of assignedValues[key].fieldValue) {
-            value = value[k];
-          }
-          values[key] = value;
-        }
-      }
-      console.log(values);
+      const { assignedValues, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
       await resource.update({
-        values,
+        values: { ...assignedValues },
       });
       refresh();
       if (!onSuccess?.successMessage) {

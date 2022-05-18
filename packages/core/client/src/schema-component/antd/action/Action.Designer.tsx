@@ -83,6 +83,7 @@ export const ActionDesigner = (props) => {
           }}
         />
       )}
+
       {isValid(fieldSchema?.['x-action-settings']?.assignedValues) && (
         <SchemaSettings.ActionModalItem
           title={t('Assigned field value')}

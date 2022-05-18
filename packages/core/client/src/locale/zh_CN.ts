@@ -497,7 +497,7 @@ export default {
   'Dynamic value': '动态值',
   'Current user': '当前用户',
   'Current record': '当前记录',
-  'Popup Close method': '弹窗关闭方式',
+  'Popup close method': '弹窗关闭方式',
   'Auto close': '自动关闭',
   'Manual close': '手动关闭',
   'After successful update': '更新成功后',

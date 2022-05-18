@@ -463,7 +463,7 @@ SchemaSettings.PopupItem = (props) => {
   );
 };
 
-SchemaSettings.ActionModalItem = (props) => {
+SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const { onSubmit, initialValues, ...others } = props;
 
   const [visible, setVisible] = useState(false);
@@ -476,12 +476,11 @@ SchemaSettings.ActionModalItem = (props) => {
   const form = useMemo(
     () =>
       createForm({
-        initialValues,
-        values: initialValues,
+        initialValues: cloneDeep(initialValues),
+        values: cloneDeep(initialValues),
       }),
     [],
   );
-  console.log('start=====', form.id, initialValues);
 
   const useCancelAction = () => {
     const form = useForm();
@@ -539,6 +538,7 @@ SchemaSettings.ActionModalItem = (props) => {
               type: 'void',
               properties: {
                 cancel: {
+                  type: 'void',
                   title: '{{ t("Cancel") }}',
                   'x-component': 'Action',
                   'x-component-props': {
@@ -546,6 +546,7 @@ SchemaSettings.ActionModalItem = (props) => {
                   },
                 },
                 submit: {
+                  type: 'void',
                   title: '{{ t("Submit") }}',
                   'x-component': 'Action',
                   'x-component-props': {
@@ -596,7 +597,7 @@ SchemaSettings.ActionModalItem = (props) => {
       </FormProvider>
     </ActionContext.Provider>
   );
-};
+});
 
 SchemaSettings.ModalItem = (props) => {
   const { hidden, title, components, scope, effects, schema, onSubmit, initialValues, ...others } = props;

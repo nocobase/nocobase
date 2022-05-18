@@ -1,6 +1,5 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
-import { Cascader, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionField, useCollection } from '../../../collection-manager';
@@ -17,7 +16,6 @@ export const PickerField = (props: any) => {
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
   const { uiSchema } = collectionField;
-  debugger;
   const currentUser = useFilterOptions('users');
   const currentRecord = useFilterOptions(collectionField.collectionName);
 
@@ -36,47 +34,37 @@ export const PickerField = (props: any) => {
     ];
     setOptions(compile(opt));
   }, []);
-  useEffect(() => {
-    field.value = value;
-  }, [type, value]);
 
-  const typeChangeHandler = (val) => {
-    setType(val);
-  };
   const valueChangeHandler = (val) => {
     setValue(val);
   };
 
-  if (!uiSchema) {
-    return null;
-  }
+  return <CollectionField {...props} value={field.value} onChange={valueChangeHandler} />;
 
-  return (
-    <Space>
-      <Select defaultValue={type} value={type} style={{ width: 120 }} onChange={typeChangeHandler}>
-        <Select.Option value="constantValue">{t('Constant value')}</Select.Option>
-        <Select.Option value="dynamicValue">{t('Dynamic value')}</Select.Option>
-      </Select>
+  // return (
+  //   <Space>
+  //     <Select defaultValue={type} value={type} style={{ width: 120 }} onChange={typeChangeHandler}>
+  //       <Select.Option value="constantValue">{t('Constant value')}</Select.Option>
+  //       <Select.Option value="dynamicValue">{t('Dynamic value')}</Select.Option>
+  //     </Select>
 
-      <div>
-        {type === 'constantValue' ? (
-          <CollectionField {...props} onChange={valueChangeHandler} />
-        ) : (
-          <Cascader
-            fieldNames={{
-              label: 'title',
-              value: 'name',
-              children: 'children',
-            }}
-            style={{
-              width: 150,
-            }}
-            options={options}
-            onChange={valueChangeHandler}
-            defaultValue={value}
-          />
-        )}
-      </div>
-    </Space>
-  );
+  //     {type === 'constantValue' ? (
+  //       <CollectionField {...props} onChange={valueChangeHandler} />
+  //     ) : (
+  //       <Cascader
+  //         fieldNames={{
+  //           label: 'title',
+  //           value: 'name',
+  //           children: 'children',
+  //         }}
+  //         style={{
+  //           width: 150,
+  //         }}
+  //         options={options}
+  //         onChange={valueChangeHandler}
+  //         defaultValue={value}
+  //       />
+  //     )}
+  //   </Space>
+  // );
 };

@@ -9,6 +9,7 @@ import { useCollectionField } from './hooks';
 // TODO: 初步适配
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
+
   const fieldSchema = useFieldSchema();
   const { name, interface: interfaceType, uiSchema } = useCollectionField();
   const component = useComponent(uiSchema?.['x-component']);
@@ -61,12 +62,10 @@ const InternalField: React.FC = (props) => {
   if (!uiSchema) {
     return null;
   }
-  debugger;
   return React.createElement(component, props, props.children);
 };
 
 export const CollectionField = connect((props) => {
-  debugger;
   const fieldSchema = useFieldSchema();
   return (
     <CollectionFieldProvider name={fieldSchema.name}>
