@@ -492,7 +492,6 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     return {
       async run() {
         actionContext.setVisible(false);
-        form.reset();
       },
     };
   };
@@ -503,7 +502,6 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       async run() {
         onSubmit?.(cloneDeep(form.values));
         actionContext.setVisible(false);
-        form.reset();
       },
     };
   };
@@ -519,8 +517,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
         url: `/uiSchemas:getJsonSchema/${props.uid}`,
         method: 'post',
       });
-      schema.properties['modal'].properties.grid = { ...data.data };
-      setSchema(schema);
+      setSchema({ ...data.data });
     }
 
     ctx.setVisible(false);
