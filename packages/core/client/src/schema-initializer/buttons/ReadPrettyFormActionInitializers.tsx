@@ -102,6 +102,9 @@ export const ReadPrettyFormActionInitializers = {
             'x-action-settings': {
               assignedValues: {},
               onSuccess: {
+                title: '{{ t("After successful update") }}',
+                manualClose: true,
+                redirecting: false,
                 successMessage: '{{t("Submitted successfully")}}',
               },
             },

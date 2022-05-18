@@ -501,5 +501,7 @@ export default {
   'Auto close': '自动关闭',
   'Manual close': '手动关闭',
   'After successful update': '更新成功后',
+  'Save data': '保存数据',
+  'After successful save': '保存成功后',
 
 }

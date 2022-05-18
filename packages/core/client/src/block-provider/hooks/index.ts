@@ -142,10 +142,14 @@ export const useCustomizeUpdateActionProps = () => {
   const ctx = useCurrentUserContext();
   const history = useHistory();
   const compile = useCompile();
+  const form = useForm();
   const { refresh } = useDesignable();
   return {
     async onClick() {
-      const { assignedValues, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
+      const { assignedValues, onSuccess, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+      if (skipValidator === false) {
+        await form.submit();
+      }
       await resource.update({
         values: { ...assignedValues },
       });

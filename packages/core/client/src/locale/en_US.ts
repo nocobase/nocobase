@@ -298,4 +298,6 @@ export default {
   'Auto close': 'Auto close',
   'Manual close': 'Manual close',
   'After successful update': 'After successful update',
+  'Save data': 'Save data',
+  'After successful save': 'After successful save',
 }
