@@ -61,10 +61,12 @@ const InternalField: React.FC = (props) => {
   if (!uiSchema) {
     return null;
   }
+  debugger;
   return React.createElement(component, props, props.children);
 };
 
 export const CollectionField = connect((props) => {
+  debugger;
   const fieldSchema = useFieldSchema();
   return (
     <CollectionFieldProvider name={fieldSchema.name}>

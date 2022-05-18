@@ -590,7 +590,9 @@ SchemaSettings.ActionModalItem = (props) => {
         {props.children || props.title}
       </SchemaSettings.Item>
       <FormProvider form={form}>
-        {schema && <SchemaComponent memoized schema={schema} scope={{ useCancelAction, useSubmitAction }} />}
+        <FormLayout layout={'vertical'}>
+          {schema && <SchemaComponent memoized schema={schema} scope={{ useCancelAction, useSubmitAction }} />}
+        </FormLayout>
       </FormProvider>
     </ActionContext.Provider>
   );
