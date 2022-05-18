@@ -1,5 +1,9 @@
+import chalk from 'chalk';
 import Application from '../application';
 
+/**
+ * TODO
+ */
 export default (app: Application) => {
   app
     .command('upgrade')
@@ -16,5 +20,6 @@ export default (app: Application) => {
       await app.stop({
         cliArgs,
       });
+      console.log(chalk.green(`✨  NocoBase has been upgraded to v${app.getVersion()}`));
     });
 };

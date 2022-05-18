@@ -7,6 +7,8 @@ const { run, nodeCheck, isPackageValid, promptForTs } = require('../util');
  * @param {Command} cli
  */
 module.exports = (cli) => {
+  const { APP_PACKAGE_ROOT } = process.env;
+  const clientPackage = `${APP_PACKAGE_ROOT}/client`;
   cli
     .command('build')
     .allowUnknownOption()
@@ -22,13 +24,13 @@ module.exports = (cli) => {
           });
         }
       }
-      if (!pkgs.length || !pkgs.includes('app/client') || (pkgs.includes('app/client') && pkgs.length > 1)) {
+      if (!pkgs.length || !pkgs.includes(clientPackage) || (pkgs.includes(clientPackage) && pkgs.length > 1)) {
         await run('nocobase-build', process.argv.slice(3));
       }
-      if (!pkgs.length || pkgs.includes('app/client')) {
+      if (!pkgs.length || pkgs.includes(clientPackage)) {
         await run('umi', ['build'], {
           env: {
-            APP_ROOT: 'packages/app/client',
+            APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
           },
         });
       }

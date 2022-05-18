@@ -8,6 +8,7 @@ const { getVersion, run, promptForTs, runAppCommand, hasCorePackages, updateJson
  * @param {Command} cli
  */
 module.exports = (cli) => {
+  const { APP_PACKAGE_ROOT } = process.env;
   cli
     .command('upgrade')
     .allowUnknownOption()
@@ -23,8 +24,8 @@ module.exports = (cli) => {
         return;
       }
       await run('yarn', ['add', '@nocobase/cli', '@nocobase/devtools', '-W']);
-      const clientPackage = resolve(process.cwd(), 'packages/app/client/package.json');
-      const serverPackage = resolve(process.cwd(), 'packages/app/server/package.json');
+      const clientPackage = resolve(process.cwd(), `packages/${APP_PACKAGE_ROOT}/client/package.json`);
+      const serverPackage = resolve(process.cwd(), `packages/${APP_PACKAGE_ROOT}/server/package.json`);
       await updateJsonFile(clientPackage, (data) => {
         data.devDependencies['@nocobase/client'] = version;
         return data;

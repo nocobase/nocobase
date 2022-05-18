@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { nodeCheck, runAppCommand } = require('../util');
+const { nodeCheck, runAppCommand, promptForTs } = require('../util');
 
 /**
  *
@@ -13,6 +13,7 @@ module.exports = (cli) => {
     .action(async (options) => {
       nodeCheck();
       if (options.dbClean) {
+        promptForTs();
         await runAppCommand('db:clean', '-y');
       }
       process.argv.splice(2, 1, '-i');

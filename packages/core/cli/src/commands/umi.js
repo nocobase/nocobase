@@ -7,6 +7,7 @@ const { run, isDev } = require('../util');
  * @param {Command} cli
  */
 module.exports = (cli) => {
+  const { APP_PACKAGE_ROOT } = process.env;
   cli
     .command('umi')
     .allowUnknownOption()
@@ -16,7 +17,7 @@ module.exports = (cli) => {
       }
       run('umi', process.argv.slice(3), {
         env: {
-          APP_ROOT: 'packages/app/client',
+          APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
         },
       });
     });

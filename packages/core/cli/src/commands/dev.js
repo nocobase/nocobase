@@ -8,6 +8,7 @@ const { getPortPromise } = require('portfinder');
  * @param {Command} cli
  */
 module.exports = (cli) => {
+  const { APP_PACKAGE_ROOT } = process.env;
   cli
     .command('dev')
     .option('-p, --port [port]')
@@ -22,7 +23,7 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          './packages/app/server/src/index.ts',
+          `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
           ...process.argv.slice(2),
         ]);
         return;
@@ -51,9 +52,10 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          './packages/app/server/src/index.ts',
+          `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
           'start',
           ...process.argv.slice(3),
+          `--port=${serverPost}`,
         ];
         run('ts-node-dev', argv, {
           env: {
@@ -62,11 +64,11 @@ module.exports = (cli) => {
         });
       }
       if (client || !server) {
-        console.log('starting client', clientPost);
+        console.log('starting client', 1 * clientPost);
         run('umi', ['dev'], {
           env: {
             PORT: clientPost,
-            APP_ROOT: 'packages/app/client',
+            APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
             PROXY_TARGET_URL: serverPost ? `http://127.0.0.1:${serverPost}` : undefined,
           },
         });

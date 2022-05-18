@@ -6,6 +6,7 @@ const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
  * @param {Command} cli
  */
 module.exports = (cli) => {
+  const { APP_PACKAGE_ROOT } = process.env;
   cli
     .command('start')
     .option('-p, --port [port]')
@@ -21,13 +22,13 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          './packages/app/server/src/index.ts',
+          `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
           ...process.argv.slice(2),
         ]);
         return;
       }
       await postCheck(opts);
-      await run('node', ['./packages/app/server/lib/index.js', 'install', '-s']);
-      run('pm2-runtime', ['start', 'packages/app/server/lib/index.js', '--', ...process.argv.slice(2)]);
+      await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '-s']);
+      run('pm2-runtime', ['start', `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, '--', ...process.argv.slice(2)]);
     });
 };

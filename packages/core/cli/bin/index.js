@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const { resolve } = require('path');
 
 const env = {
+  APP_PACKAGE_ROOT: 'app',
   APP_ENV: 'development',
   APP_KEY: 'test-jwt-secret',
   APP_PORT: 13000,
