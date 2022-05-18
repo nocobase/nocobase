@@ -15,7 +15,7 @@ https://demo.nocobase.com/new
 Contact Us:
 hello@nocobase.com
 
-## Why choose NocoBase
+## Features
 
 - **Open source and free**
 	- Unrestricted commercial use under the Apache-2.0 license
