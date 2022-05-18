@@ -218,11 +218,7 @@ export const UpdateFormActionInitializers = {
           title: '{{t("Submit")}}',
           component: 'UpdateSubmitActionInitializer',
           schema: {
-            'x-action-settings': {
-              skipValidator: false,
-              overwriteValues: {},
-              onSuccess: {},
-            },
+            'x-action-settings': {},
           },
         },
       ],
