@@ -2,7 +2,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { isValid } from '@formily/shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useActionContext, useDesignable } from '../..';
+import { useActionContext, useCompile, useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
 export const ActionDesigner = (props) => {
@@ -10,6 +10,7 @@ export const ActionDesigner = (props) => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const compile = useCompile();
   const isPopupAction = ['create', 'update', 'view', 'customizePopup'].includes(fieldSchema['x-action'] || '');
   const context = useActionContext();
 
@@ -150,12 +151,16 @@ export const ActionDesigner = (props) => {
       )}
       {isValid(fieldSchema?.['x-action-settings']?.['onSuccess']) && (
         <SchemaSettings.ModalItem
-          title={t('After successful submission')}
+          title={
+            compile(fieldSchema?.['x-action-settings']?.['onSuccess']?.['title']) ?? t('After successful submission')
+          }
           initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
           schema={
             {
               type: 'object',
-              title: t('After successful submission'),
+              title:
+                compile(fieldSchema?.['x-action-settings']?.['onSuccess']?.['title']) ??
+                t('After successful submission'),
               properties: {
                 successMessage: {
                   // default: t('Submitted successfully!'),
@@ -165,7 +170,7 @@ export const ActionDesigner = (props) => {
                   'x-component-props': {},
                 },
                 manualClose: {
-                  title: t('Close method'),
+                  title: t('Popup close method'),
                   default: false,
                   enum: [
                     { label: t('Auto close'), value: false },
