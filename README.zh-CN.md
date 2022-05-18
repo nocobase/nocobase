@@ -13,7 +13,7 @@ https://cn.nocobase.com/
 在线体验：  
 https://demo-cn.nocobase.com/new
 
-文档：
+文档：  
 https://docs-cn.nocobase.com/
 
 ## 适用场景
