@@ -12,12 +12,13 @@
     }
   ],
   "scripts": {
+    "nocobase": "nocobase",
     "dev": "nocobase dev",
     "start": "nocobase start",
     "build": "nocobase build",
     "test": "nocobase test",
     "doc": "nocobase doc",
-    "postinstall": "nocobase umi generate tmp",
+    "postinstall": "nocobase postinstall",
     "lint": "eslint .",
     "clean": "nocobase clean",
     "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",

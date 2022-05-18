@@ -14,4 +14,5 @@ module.exports = (cli) => {
   require('./doc')(cli);
   require('./umi')(cli);
   require('./upgrade')(cli);
+  require('./postinstall')(cli);
 }
