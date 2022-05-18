@@ -12,12 +12,13 @@ import {
   SyncOptions,
   Utils
 } from 'sequelize';
+import type { SequelizeHooks } from 'sequelize/types/lib/hooks';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
 import { Model } from './model';
-import { ModelHook } from './model-hook';
+import { HookProxy } from './hook-proxy';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
@@ -63,7 +64,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelCtor<any>, Collection>();
 
-  modelHook: ModelHook;
+  hookProxy: HookProxy;
 
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
 
@@ -87,7 +88,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     this.collections = new Map();
-    this.modelHook = new ModelHook(this);
+    this.hookProxy = new HookProxy(this);
 
     this.on('afterDefineCollection', (collection: Collection) => {
       // after collection defined, call bind method on pending fields
@@ -316,16 +317,51 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.close();
   }
 
-  on(event: string | symbol, listener: (...args: any[]) => void): this {
-    const modelEventName = this.modelHook.isModelHook(event);
-
-    if (modelEventName && !this.modelHook.hasBindEvent(modelEventName)) {
-      this.sequelize.addHook(modelEventName, this.modelHook.sequelizeHookBuilder(modelEventName));
-
-      this.modelHook.bindEvent(modelEventName);
+  on(event: string | symbol, name = null, listener?): this {
+    if (typeof name === 'function') {
+      listener = name;
+      name = null;
     }
 
-    return super.on(event, listener);
+    // NOTE: to match if event is a sequelize or model type
+    const matcher = this.hookProxy.match(event);
+
+    if (!matcher) {
+      return super.on(event, listener);
+    }
+
+    if (!this.hookProxy.hasBoundEvent(...matcher, name)) {
+      super.on(event, this.hookProxy.getProxyHandler(...matcher));
+      const [type] = matcher;
+      if (this.hookProxy.isSequelizeHook(type) && !this.hookProxy.hasBoundEvent(type)) {
+        this.sequelize.addHook(<keyof SequelizeHooks>type, name, this.hookProxy.buildSequelizeHook(type));
+      }
+    }
+    this.hookProxy.bindEvent(...matcher, name, listener);
+
+    return this;
+  }
+
+  off(event, name?, listener?) {
+    if (typeof name === 'function') {
+      listener = name;
+      name = null;
+    }
+
+    const matcher = this.hookProxy.match(event);
+    if (!matcher) {
+      return super.off(event, listener);
+    }
+
+    this.hookProxy.unbindEvent(...matcher, name, listener);
+    if (!this.hookProxy.hasBoundEvent(...matcher, name)) {
+      const [type] = matcher;
+      if (type) {
+        this.sequelize.removeHook(<keyof SequelizeHooks>type, name);
+      }
+    }
+
+    return this;
   }
 
   async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>> {

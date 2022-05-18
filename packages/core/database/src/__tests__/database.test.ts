@@ -91,14 +91,14 @@ describe('database', () => {
   });
 
   test('collection beforeBulkCreate event', async () => {
-    const listener = jest.fn();
-
-    db.on('posts.beforeBulkUpdate', listener);
-
     const Post = db.collection({
       name: 'posts',
       fields: [{ type: 'string', name: 'title' }],
     });
+
+    const listener = jest.fn();
+
+    db.on('posts.beforeBulkUpdate', listener);
 
     await db.sync();
 
@@ -170,14 +170,14 @@ describe('database', () => {
   });
 
   test('collection afterCreate model event', async () => {
-    const postAfterCreateListener = jest.fn();
-
-    db.on('posts.afterCreate', postAfterCreateListener);
-
     const Post = db.collection({
       name: 'posts',
       fields: [{ type: 'string', name: 'title' }],
     });
+
+    const postAfterCreateListener = jest.fn();
+
+    db.on('posts.afterCreate', postAfterCreateListener);
 
     await db.sync();
 
@@ -202,6 +202,53 @@ describe('database', () => {
     });
 
     expect(listener).toHaveBeenCalled();
+  });
+
+  test('off collection event', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    const postAfterCreateListener = jest.fn();
+
+    db.on('posts.afterCreate', postAfterCreateListener);
+
+    await db.sync();
+
+    db.off('posts.afterCreate');
+
+    await Post.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
+
+    expect(postAfterCreateListener).toHaveBeenCalledTimes(0);
+  });
+
+  test('off global event', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    const postAfterCreateListener = jest.fn();
+
+    db.on('posts.afterCreate', postAfterCreateListener);
+    db.on('afterCreate', postAfterCreateListener);
+
+    await db.sync();
+
+    db.off('afterCreate', postAfterCreateListener);
+
+    await Post.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
+
+    expect(postAfterCreateListener).toHaveBeenCalledTimes(1);
   });
 
   test('custom model', async () => {
