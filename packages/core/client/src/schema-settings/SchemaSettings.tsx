@@ -464,11 +464,12 @@ SchemaSettings.PopupItem = (props) => {
 };
 
 SchemaSettings.ActionModalItem = React.memo((props: any) => {
-  const { onSubmit, initialValues, ...others } = props;
+  const { onSubmit, initialValues, initialSchema, ...others } = props;
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState(null);
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+
   const ctx = useContext(SchemaSettingsContext);
   const { dn } = useSchemaSettings();
   const api = useAPIClient();
@@ -508,81 +509,19 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   };
 
   const openAssignedFieldValueHandler = async () => {
-    const schema: ISchema = {
-      type: 'void',
-      properties: {
-        modal: {
-          'x-component': 'Action.Modal',
-          'x-component-props': {
-            width: 520,
-          },
-          type: 'void',
-          title: '{{ t("Assigned field value") }}',
-          properties: {
-            tip: {
-              type: 'void',
-              'x-editable': false,
-              'x-decorator': 'FormItem',
-              'x-component': 'Markdown.Void',
-              'x-index': 0,
-              'x-component-props': {
-                content: t('Save assigned field value after click button'),
-              },
-            },
-            grid: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'CustomFormItemInitializers',
-              properties: {},
-            },
-            footer: {
-              'x-component': 'Action.Modal.Footer',
-              type: 'void',
-              properties: {
-                cancel: {
-                  type: 'void',
-                  title: '{{ t("Cancel") }}',
-                  'x-component': 'Action',
-                  'x-component-props': {
-                    useAction: '{{ useCancelAction }}',
-                  },
-                },
-                submit: {
-                  type: 'void',
-                  title: '{{ t("Submit") }}',
-                  'x-component': 'Action',
-                  'x-component-props': {
-                    type: 'primary',
-                    useAction: '{{ useSubmitAction }}',
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    };
     if (!props.uid) {
-      const schemaUid = uid();
-      const gridSchema = {
-        'x-uid': schemaUid,
-        type: 'void',
-        'x-component': 'Grid',
-        'x-initializer': 'CustomFormItemInitializers',
-        properties: {},
-      };
-      schema.properties['modal'].properties.grid = { ...gridSchema };
-      fieldSchema['x-action-settings'].schemaUid = schemaUid;
+      fieldSchema['x-action-settings'].schemaUid = initialSchema.uid;
       dn.emit('patch', { schema: fieldSchema });
-      await api.resource('uiSchemas').insert({ values: gridSchema });
+      await api.resource('uiSchemas').insert({ values: initialSchema.schema });
+      setSchema(initialSchema.schema);
     } else {
       const { data } = await api.request({
         url: `/uiSchemas:getJsonSchema/${props.uid}`,
         method: 'post',
       });
       schema.properties['modal'].properties.grid = { ...data.data };
+      setSchema(schema);
     }
-    setSchema(schema);
 
     ctx.setVisible(false);
     setVisible(true);
