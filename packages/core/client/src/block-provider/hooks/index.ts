@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
-import { useActionContext, useCompile } from '../../schema-component';
+import { useActionContext, useCompile, useDesignable } from '../../schema-component';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
@@ -142,12 +142,13 @@ export const useCustomizeUpdateActionProps = () => {
   const ctx = useCurrentUserContext();
   const history = useHistory();
   const compile = useCompile();
+  const { refresh } = useDesignable();
   return {
     async onClick() {
       const currentUser = ctx?.data?.data;
       const dynamicValues = { currentUser, currentRecord };
       const { assignedValues, onSuccess } = actionSchema?.['x-action-settings'];
-      const values = { ...currentRecord };
+      const values = {};
       for (const key in assignedValues) {
         if (assignedValues[key].type === 'constantValue') {
           values[key] = compile(assignedValues[key].fieldValue);
@@ -163,6 +164,7 @@ export const useCustomizeUpdateActionProps = () => {
       await resource.update({
         values,
       });
+      refresh();
       if (!onSuccess?.successMessage) {
         return;
       }
