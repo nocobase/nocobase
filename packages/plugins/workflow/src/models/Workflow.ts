@@ -16,6 +16,7 @@ export default class WorkflowModel extends Model {
   declare type: string;
   declare config: any;
   declare useTransaction: boolean;
+  declare executed: boolean;
 
   declare createdAt: Date;
   declare updatedAt: Date;
@@ -100,6 +101,10 @@ export default class WorkflowModel extends Model {
     execution.workflow = this;
 
     await execution.start({ transaction });
+
+    if (!this.executed) {
+      await this.update({ executed: true }, { transaction });
+    }
 
     if (transaction && (!options.transaction || options.transaction.finished)) {
       await transaction.commit();

@@ -186,7 +186,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.cli.parseAsync(argv);
   }
 
-  async start(options?: StartOptions) {
+  async start(options: StartOptions = {}) {
     // reconnect database
     if (this.db.closed()) {
       await this.db.reconnect();
@@ -196,14 +196,23 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.listen?.port) {
       const listen = () =>
-        new Promise((resolve) => {
+        new Promise((resolve, reject) => {
           const Server = this.listen(options?.listen, () => {
             resolve(Server);
           });
+
+          Server.on('error', (err) => {
+            reject(err);
+          });
         });
 
-      // @ts-ignore
-      this.listenServer = await listen();
+      try {
+        //@ts-ignore
+        this.listenServer = await listen();
+      } catch (e) {
+        console.error(e);
+        process.exit(1);
+      }
     }
 
     await this.emitAsync('afterStart', this, options);
@@ -213,7 +222,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.appManager.listen(...args);
   }
 
-  async stop(options?: any) {
+  async stop(options: any = {}) {
     await this.emitAsync('beforeStop', this, options);
 
     try {
@@ -243,13 +252,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStop', this, options);
   }
 
-  async destroy(options?: any) {
+  async destroy(options: any = {}) {
     await this.emitAsync('beforeDestroy', this, options);
     await this.stop(options);
     await this.emitAsync('afterDestroy', this, options);
   }
 
-  async install(options?: InstallOptions) {
+  async install(options: InstallOptions = {}) {
     await this.emitAsync('beforeInstall', this, options);
 
     if (options?.clean) {

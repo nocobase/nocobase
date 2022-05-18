@@ -1,8 +1,9 @@
 import { JOB_STATUS } from "../constants";
+import ExecutionModel from "../models/Execution";
 import FlowNodeModel from "../models/FlowNode";
 
 export default {
-  async run(this: FlowNodeModel, input, execution) {
+  async run(this: FlowNodeModel, input, execution: ExecutionModel) {
     const {
       collection,
       multiple = false,
@@ -13,7 +14,7 @@ export default {
     const options = execution.getParsedValue(params);
     const result = await repo.update({
       ...options,
-      transaction: execution.transaction
+      transaction: execution.tx
     });
 
     return {

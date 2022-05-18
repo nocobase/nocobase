@@ -5,4 +5,5 @@ export default {
   ...require('./empty').default,
   ...require('./string').default,
   ...require('./ne').default,
+  ...require('./notIn').default,
 };

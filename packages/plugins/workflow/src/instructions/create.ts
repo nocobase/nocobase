@@ -12,11 +12,12 @@ export default {
     const options = execution.getParsedValue(params);
     const result = await repo.create({
       ...options,
-      transaction: execution.transaction
+      transaction: execution.tx
     });
 
     return {
-      result,
+      // NOTE: get() for non-proxied instance (#380)
+      result: result.get(),
       status: JOB_STATUS.RESOLVED
     };
   }

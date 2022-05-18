@@ -1,8 +1,7 @@
-import { skip } from '@nocobase/acl';
 import { Plugin } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
-import { isAbsolute, resolve } from 'path';
+import { resolve } from 'path';
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {
@@ -19,18 +18,8 @@ export class ClientPlugin extends Plugin {
   }
 
   async load() {
-    this.app.acl.use(
-      skip({
-        resourceName: 'app',
-        actionName: 'getLang',
-      }),
-    );
-    this.app.acl.use(
-      skip({
-        resourceName: 'app',
-        actionName: 'getInfo',
-      }),
-    );
+    this.app.acl.allow('app', 'getLang');
+    this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
     this.app.resource({
       name: 'app',
       actions: {
@@ -55,8 +44,26 @@ export class ClientPlugin extends Plugin {
         },
       },
     });
-    let root = this.options.dist || `./packages/app/client/dist`;
-    if (!isAbsolute(root)) {
+    this.app.resource({
+      name: 'plugins',
+      actions: {
+        // TODO: 临时
+        async getPinned(ctx, next) {
+          ctx.body = [
+            { component: 'DesignableSwitch', pin: true },
+            { component: 'CollectionManagerShortcut', pin: true },
+            { component: 'ACLShortcut' },
+            { component: 'WorkflowShortcut' },
+            { component: 'SchemaTemplateShortcut' },
+            { component: 'SystemSettingsShortcut' },
+            { component: 'FileStorageShortcut' },
+          ];
+          await next();
+        },
+      },
+    });
+    let root = this.options.dist;
+    if (root && !root.startsWith('/')) {
       root = resolve(process.cwd(), root);
     }
     this.app.middleware.unshift(async (ctx, next) => {

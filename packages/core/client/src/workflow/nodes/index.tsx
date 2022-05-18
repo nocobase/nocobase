@@ -2,10 +2,10 @@ import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
 import { Registry } from '@nocobase/utils';
-import { Button, Modal, Tag } from 'antd';
+import { Button, message, Modal, Tag } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaComponent, useActionContext, useAPIClient, useCollection, useCompile, useRequest, useResourceActionContext } from '../..';
+import { SchemaComponent, useActionContext, useAPIClient, useCollection, useCompile, useRecord, useRequest, useResourceActionContext } from '../..';
 import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { AddButton, useFlowContext } from '../WorkflowCanvas';
 
@@ -44,13 +44,19 @@ instructions.register('parallel', parallel);
 instructions.register('calculation', calculation);
 
 function useUpdateAction() {
+  const { t } = useTranslation();
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const data = useNodeContext();
+  const { workflow } = useFlowContext();
   return {
     async run() {
+      if (workflow.executed) {
+        message.error(t('Node in executed workflow cannot be modified'));
+        return;
+      }
       await form.submit();
       await api.resource('flow_nodes', data.id).update({
         filterByTk: data.id,
@@ -72,46 +78,51 @@ export function useNodeContext() {
 }
 
 export function Node({ data }) {
+
   const instruction = instructions.get(data.type);
 
   return (
-    <div className={cx(nodeBlockClass)}>
-      {instruction.render
-        ? instruction.render(data)
-        : <NodeDefaultView data={data} />
-      }
-      {!instruction.endding
-        ? <AddButton upstream={data} />
-        : (
-          <div
-            className={css`
-              flex-grow: 1;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              width: 1px;
-              height: 6em;
-              padding: 2em 0;
-              background-color: #f0f2f5;
+    <NodeContext.Provider value={data}>
+      <div className={cx(nodeBlockClass)}>
+        {instruction.render
+          ? instruction.render(data)
+          : <NodeDefaultView data={data} />
+        }
+        {!instruction.endding
+          ? <AddButton upstream={data} />
+          : (
+            <div
+              className={css`
+                flex-grow: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                width: 1px;
+                height: 6em;
+                padding: 2em 0;
+                background-color: #f0f2f5;
 
-              .anticon{
-                font-size: 1.5em;
-                line-height: 100%;
-              }
-            `}
-          >
-            <CloseOutlined />
-          </div>
-        )
-      }
-    </div>
+                .anticon{
+                  font-size: 1.5em;
+                  line-height: 100%;
+                }
+              `}
+            >
+              <CloseOutlined />
+            </div>
+          )
+        }
+      </div>
+    </NodeContext.Provider>
   );
 }
 
 export function RemoveButton() {
   const { t } = useTranslation();
-  const { resource } = useCollection();
+  const api = useAPIClient();
+  const { workflow } = useFlowContext();
+  const resource = api.resource('workflows.nodes', workflow.id);
   const current = useNodeContext();
   const { nodes, onNodeRemoved } = useFlowContext();
 
@@ -135,7 +146,9 @@ export function RemoveButton() {
     });
   }
 
-  return (
+  return workflow.executed
+  ? null
+  : (
     <Button
       type="text"
       shape="circle"
@@ -147,98 +160,110 @@ export function RemoveButton() {
 }
 
 export function NodeDefaultView(props) {
-  const { data, children } = props;
   const compile = useCompile();
+  const { workflow } = useFlowContext();
+  const { data, children } = props;
   const instruction = instructions.get(data.type);
+  const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
 
   return (
-    <NodeContext.Provider value={data}>
-      <div className={cx(nodeClass, `workflow-node-type-${data.type}`)}>
-        <div className={cx(nodeCardClass)}>
-          <div className={cx(nodeHeaderClass)}>
-            <div className={cx(nodeMetaClass)}>
-              <Tag>{compile(instruction.title)}</Tag>
-            </div>
-            <h4 className={cx(nodeTitleClass)}>
-              <strong>{data.title}</strong>
-              <span className="workflow-node-id">#{data.id}</span>
-            </h4>
-            <RemoveButton />
+    <div className={cx(nodeClass, `workflow-node-type-${data.type}`)}>
+      <div className={cx(nodeCardClass)}>
+        <div className={cx(nodeHeaderClass)}>
+          <div className={cx(nodeMetaClass)}>
+            <Tag>{compile(instruction.title)}</Tag>
           </div>
-          <SchemaComponent
-            scope={instruction.scope}
-            components={instruction.components}
-            schema={{
-              type: 'void',
-              properties: {
-                view: instruction.view,
-                config: {
-                  type: 'void',
-                  title: '{{t("Configure")}}',
-                  'x-component': 'Action.Link',
-                  'x-component-props': {
-                    type: 'primary',
-                  },
-                  properties: {
-                    drawer: {
-                      type: 'void',
-                      title: '{{t("Configure")}}',
-                      'x-component': 'Action.Drawer',
-                      'x-decorator': 'Form',
-                      'x-decorator-props': {
-                        useValues(options) {
-                          const d = useNodeContext();
-                          return useRequest(() => {
-                            return Promise.resolve({ data: d });
-                          }, options);
-                        }
+          <h4 className={cx(nodeTitleClass)}>
+            <strong>{data.title}</strong>
+            <span className="workflow-node-id">#{data.id}</span>
+          </h4>
+          <RemoveButton />
+        </div>
+        <SchemaComponent
+          scope={instruction.scope}
+          components={instruction.components}
+          schema={{
+            type: 'void',
+            properties: {
+              view: instruction.view,
+              config: {
+                type: 'void',
+                title: detailText,
+                'x-component': 'Action.Link',
+                'x-component-props': {
+                  type: 'primary',
+                },
+                properties: {
+                  [instruction.type]: {
+                    type: 'void',
+                    title: instruction.title,
+                    'x-component': 'Action.Drawer',
+                    'x-decorator': 'Form',
+                    'x-decorator-props': {
+                      useValues(options) {
+                        const d = useNodeContext();
+                        return useRequest(() => {
+                          return Promise.resolve({ data: d });
+                        }, options);
+                      }
+                    },
+                    properties: {
+                      title: {
+                        type: 'string',
+                        name: 'title',
+                        title: '{{t("Name")}}',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Input',
                       },
-                      properties: {
-                        title: {
-                          type: 'string',
-                          name: 'title',
-                          title: '{{t("Name")}}',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Input',
+                      config: {
+                        type: 'void',
+                        name: 'config',
+                        'x-component': 'fieldset',
+                        'x-component-props': {
+                          disabled: workflow.executed
                         },
-                        config: {
-                          type: 'void',
-                          name: 'config',
-                          'x-component': 'fieldset',
-                          'x-component-props': {},
-                          properties: instruction.fieldset
-                        },
-                        actions: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
-                          properties: {
-                            cancel: {
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
-                              },
+                        properties: instruction.fieldset
+                      },
+                      actions: {
+                        type: 'void',
+                        'x-component': 'Action.Drawer.Footer',
+                        properties: workflow.executed
+                        ? {
+                          close: {
+                            title: '{{t("Close")}}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ cm.useCancelAction }}',
                             },
-                            submit: {
-                              title: '{{t("Submit")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                type: 'primary',
-                                useAction: useUpdateAction,
-                              },
+                          }
+                        }
+                        : {
+                          cancel: {
+                            title: '{{t("Cancel")}}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ cm.useCancelAction }}',
                             },
                           },
-                        } as ISchema
-                      }
+                          submit: {
+                            title: '{{t("Submit")}}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              type: 'primary',
+                              useAction: useUpdateAction,
+                            },
+                          },
+                        },
+                      } as ISchema
                     }
                   }
                 }
               }
-            }}
-          />
-        </div>
-        {children}
+            }
+          }}
+        />
       </div>
-    </NodeContext.Provider>
+      {children}
+    </div>
   );
 }

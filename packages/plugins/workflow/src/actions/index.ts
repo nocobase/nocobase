@@ -1,4 +1,5 @@
-import * as flow_nodes from './flow_nodes';
+import * as workflows from './workflows';
+import * as nodes from './nodes';
 
 function make(name, mod) {
   return Object.keys(mod).reduce((result, key) => ({
@@ -9,6 +10,13 @@ function make(name, mod) {
 
 export default function(app) {
   app.actions({
-    ...make('flow_nodes', flow_nodes)
+    ...make('workflows', workflows),
+    ...make('workflows.nodes', {
+      create: nodes.create,
+      destroy: nodes.destroy
+    }),
+    ...make('flow_nodes', {
+      update: nodes.update
+    })
   });
 }

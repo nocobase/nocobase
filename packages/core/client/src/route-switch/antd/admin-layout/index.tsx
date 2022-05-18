@@ -9,8 +9,8 @@ import {
   CurrentUserProvider,
   findByUid,
   findMenuItem,
-  PluginManager,
   RemoteCollectionManagerProvider,
+  RemotePluginManagerToolbar,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
   useACLRoleContext,
@@ -151,17 +151,7 @@ const InternalAdminLayout = (props: any) => {
         </div>
         <div style={{ position: 'absolute', top: 0, right: 0 }}>
           <ACLAllowConfigure>
-            <PluginManager.Toolbar
-              items={[
-                { component: 'DesignableSwitch', pin: true },
-                { component: 'CollectionManagerShortcut', pin: true },
-                { component: 'ACLShortcut', pin: true },
-                { component: 'WorkflowShortcut', pin: true },
-                { component: 'SchemaTemplateShortcut', pin: true },
-                { component: 'SystemSettingsShortcut' },
-                { component: 'FileStorageShortcut' },
-              ]}
-            />
+            <RemotePluginManagerToolbar />
           </ACLAllowConfigure>
           <CurrentUser />
         </div>
