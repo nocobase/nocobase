@@ -10,10 +10,12 @@ import Koa from 'koa';
 import { isBoolean } from 'lodash';
 import { createACL } from './acl';
 import { AppManager } from './app-manager';
-import { createCli } from './commands';
+import { registerCli } from './commands';
 import { createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+
+const packageJson = require('../package.json');
 
 export type PluginConfiguration = string | [string, any];
 export type PluginsConfigurations = Array<PluginConfiguration>;
@@ -33,12 +35,12 @@ export interface ApplicationOptions {
   plugins?: PluginsConfigurations;
 }
 
-interface DefaultState {
+export interface DefaultState {
   currentUser?: any;
   [key: string]: any;
 }
 
-interface DefaultContext {
+export interface DefaultContext {
   db: Database;
   resourcer: Resourcer;
   [key: string]: any;
@@ -102,7 +104,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.acl = createACL();
     this.db = createDatabase(options);
     this.resourcer = createResourcer(options);
-    this.cli = createCli(this);
+    this.cli = new Command('nocobase').usage('[command] [options]');
     this.i18n = createI18n(options);
 
     this.pm = new PluginManager({
@@ -118,6 +120,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this.loadPluginConfig(options.plugins || []);
+
+    registerCli(this);
+  }
+
+  getVersion() {
+    return packageJson.version;
   }
 
   plugin<O = any>(pluginClass: any, options?: O): Plugin<O> {
@@ -158,7 +166,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   command(name: string, desc?: string, opts?: CommandOptions): Command {
-    return this.cli.command(name, desc, opts);
+    return this.cli.command(name, desc, opts).allowUnknownOption();
   }
 
   findCommand(name: string): Command {
@@ -262,7 +270,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterInstall', this, options);
   }
 
-  emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
 
 applyMixins(Application, [AsyncEmitter]);

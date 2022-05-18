@@ -1,35 +1,19 @@
-import { Command } from 'commander';
 import Application from '../application';
 
-export function createCli(app: Application) {
-  const program = new Command();
+export function registerCli(app: Application) {
+  require('./console').default(app);
+  require('./db-auth').default(app);
+  require('./db-clean').default(app);
+  require('./db-sync').default(app);
+  require('./install').default(app);
+  require('./start').default(app);
+  require('./upgrade').default(app);
 
-  const runSubCommand =
-    (name) =>
-    (...cliArgs) => {
-      const command = require(`./${name}`).default;
-
-      Promise.resolve()
-        .then(() => {
-          return command({ app, cliArgs });
-        })
-        .catch((error) => {
-          console.error(error);
-          process.exit(1);
-        });
-    };
-
-  program.command('start').description('start NocoBase application').option('-s, --silent').action(runSubCommand('start'));
-  program.command('install').option('-f, --force').option('-c, --clean').option('-s, --silent').action(runSubCommand('install'));
-  program.command('db:sync').option('-f, --force').action(runSubCommand('db-sync'));
-  program.command('db:auth').option('-r, --repeat [repeat]').action(runSubCommand('db-auth'));
-  program.command('console').action(runSubCommand('console'));
-
-  program
-    .command('create-plugin')
-    .argument('<name>', 'name of plugin')
-    .description('create NocoBase plugin')
-    .action(runSubCommand('create-plugin'));
-
-  return program;
+  // development only with @nocobase/cli
+  app.command('build').argument('[packages...]');
+  app.command('clean');
+  app.command('dev').usage('[options]').option('-p, --port [port]').option('--client').option('--server');
+  app.command('doc').argument('[cmd]', '', 'dev');
+  app.command('test').option('-c, --db-clean');
+  app.command('umi');
 }

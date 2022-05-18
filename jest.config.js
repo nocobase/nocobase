@@ -1,7 +1,8 @@
 const { pathsToModuleNameMapper } = require('ts-jest/utils');
-const { compilerOptions } = require('./tsconfig.jest.json');
+const { compilerOptions } = require('./tsconfig.json');
 
 module.exports = {
+  rootDir: process.cwd(),
   collectCoverage: false,
   verbose: true,
   testEnvironment: 'jsdom',
@@ -18,7 +19,7 @@ module.exports = {
       diagnostics: false,
     },
   },
-  modulePathIgnorePatterns: ['/esm/', '/lib/'],
+  modulePathIgnorePatterns: ['/esm/', '/es/', '/dist/', '/lib/'],
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',

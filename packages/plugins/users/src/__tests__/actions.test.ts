@@ -14,6 +14,9 @@ describe('actions', () => {
   beforeEach(async () => {
     api = mockServer();
     await api.cleanDb();
+    process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
+    process.env.INIT_ROOT_PASSWORD = '123456';
+    process.env.INIT_ROOT_NICKNAME = 'Test';
     api.plugin(PluginUsers, userPluginConfig);
     api.plugin(PluginACL);
 
@@ -29,14 +32,14 @@ describe('actions', () => {
   });
 
   it('should login user with password', async () => {
-    const { adminEmail, adminPassword } = userPluginConfig.installing;
+    const { INIT_ROOT_EMAIL, INIT_ROOT_PASSWORD } = process.env;
 
     let response = await api.agent().resource('users').check();
     expect(response.body.data.id).toBeUndefined();
 
     response = await agent.post('/users:signin').send({
-      email: adminEmail,
-      password: adminPassword,
+      email: INIT_ROOT_EMAIL,
+      password: INIT_ROOT_PASSWORD,
     });
 
     expect(response.statusCode).toEqual(200);

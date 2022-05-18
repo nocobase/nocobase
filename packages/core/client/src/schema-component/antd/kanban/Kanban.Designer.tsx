@@ -1,7 +1,8 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useResourceActionContext } from '../../../collection-manager';
+import { useKanbanBlockContext } from '../../../block-provider';
+import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
@@ -12,23 +13,22 @@ export const KanbanDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
-  const ctx = useResourceActionContext();
+  const { service } = useKanbanBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.request?.params?.filter || {};
+  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const template = useSchemaTemplate();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.ModalItem
-        title={'设置数据范围'}
+        title={t('Set the data scope')}
         schema={
           {
             type: 'object',
-            title: '设置数据范围',
+            title: t('Set the data scope'),
             properties: {
               filter: {
                 default: defaultFilter,
-                title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
                 'x-component-props': {},
@@ -37,11 +37,11 @@ export const KanbanDesigner = () => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
-          const params = field.decoratorProps.request.params || {};
+          const params = field.decoratorProps.params || {};
           params.filter = filter;
-          field.decoratorProps.request.params = params;
-          fieldSchema['x-decorator-props']['request']['params'] = params;
-          ctx.run({ ...ctx.params?.[0], filter });
+          field.decoratorProps.params = params;
+          fieldSchema['x-decorator-props']['params'] = params;
+          service.run({ ...service.params?.[0], filter });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
