@@ -17,3 +17,5 @@ NocoBase is used to develop relatively complex business systems. In these scenar
 ## 3. Everything is plugins
 
 NocoBase adopts plugin architecture, all new features can be implemented by developing and installing plugins. In the future, we will build a plug-in marketplace where extending functionality is as easy as installing an APP on your phone.
+
+![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
