@@ -1,6 +1,6 @@
 # 更新日志
 
-## 准备发布
+## 2022/05/19 ~ v0.7.0-alpha.57
 
 ### 新功能
 
@@ -14,6 +14,7 @@
 - 将 NocoBase 无代码平台插件放到一起 `@nocobase/preset-nocobase`
 - 改进 create 脚手架 `create-nocobase-app`
 - 官网文档主题 `dumi-theme-nocobase`
+
 
 ## 2022/05/14 ~ v0.7.0-alpha.34
 
