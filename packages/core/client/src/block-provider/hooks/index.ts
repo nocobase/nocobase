@@ -141,6 +141,7 @@ export const useCreateActionProps = () => {
 
 export const useCustomizeUpdateActionProps = () => {
   const { resource, __parent, service } = useBlockRequestContext();
+  const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const currentRecord = useRecord();
   const ctx = useCurrentUserContext();
@@ -155,6 +156,7 @@ export const useCustomizeUpdateActionProps = () => {
         await form.submit();
       }
       await resource.update({
+        filterByTk,
         values: { ...assignedValues },
       });
       service?.refresh?.();
