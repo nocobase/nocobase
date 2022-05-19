@@ -66,9 +66,9 @@ class AppGenerator extends Generator {
     const env = this.env;
     const envs = [];
     const dependencies = [];
-    const { dbDialect, allDbDeps } = this.args;
+    const { dbDialect, allDbDialect } = this.args;
 
-    if (allDbDeps) {
+    if (allDbDialect) {
       dependencies.push(`"mysql2": "^2.3.3"`);
       dependencies.push(`"pg": "^8.7.3"`);
       dependencies.push(`"pg-hstore": "^2.3.4"`);
@@ -77,13 +77,13 @@ class AppGenerator extends Generator {
 
     switch (dbDialect) {
       case 'sqlite':
-        if (!allDbDeps) {
+        if (!allDbDialect) {
           dependencies.push(`"sqlite3": "^5.0.8"`);
         }
         envs.push(`DB_STORAGE=${env.DB_STORAGE || 'storages/db/nocobase.sqlite'}`);
         break;
       case 'mysql':
-        if (!allDbDeps) {
+        if (!allDbDialect) {
           dependencies.push(`"mysql2": "^2.3.3"`);
         }
         envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
@@ -93,7 +93,7 @@ class AppGenerator extends Generator {
         envs.push(`DB_PASSWORD=${env.DB_PASSWORD || ''}`);
         break;
       case 'postgres':
-        if (!allDbDeps) {
+        if (!allDbDialect) {
           dependencies.push(`"pg": "^8.7.3"`);
           dependencies.push(`"pg-hstore": "^2.3.4"`);
         }
@@ -125,7 +125,7 @@ class AppGenerator extends Generator {
     const serverPackageDir = resolve(this.cwd, 'packages/app/server');
     await downloadPackageFromNpm('@nocobase/app-server', serverPackageDir);
     await updateJsonFile(resolve(serverPackageDir, 'package.json'), (data) => {
-      data['name'] = `@${name}/server`;
+      data['name'] = `@${name}/app-server`;
       data['version'] = '0.1.0';
       return data;
     });
@@ -137,7 +137,7 @@ class AppGenerator extends Generator {
     const clientPackageDir = resolve(this.cwd, 'packages/app/client');
     await downloadPackageFromNpm('@nocobase/app-client', clientPackageDir);
     await updateJsonFile(resolve(clientPackageDir, 'package.json'), (data) => {
-      data['name'] = `@${name}/client`;
+      data['name'] = `@${name}/app-client`;
       data['version'] = '0.1.0';
       return data;
     });
