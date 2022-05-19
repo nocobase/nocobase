@@ -37,7 +37,7 @@ export const ActionDesigner = (props) => {
               'x-component': 'Markdown.Void',
               'x-index': 0,
               'x-component-props': {
-                content: t('Save assigned field value after click button'),
+                content: '{{ t("Save assigned field value after click button") }}',
               },
             },
             grid: {
