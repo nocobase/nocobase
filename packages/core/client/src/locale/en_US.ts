@@ -300,4 +300,5 @@ export default {
   'After successful update': 'After successful update',
   'Save data': 'Save data',
   'After successful save': 'After successful save',
+  'When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.': 'When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.'
 }

@@ -82,6 +82,10 @@ export const FormActionInitializers = {
             title: '{{ t("Save data") }}',
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
+            'x-designer-props': {
+              actionModalTipContent:
+                '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
+            },
             'x-action-settings': {
               assignedValues: {},
               skipValidator: false,
@@ -185,6 +189,10 @@ export const CreateFormActionInitializers = {
             title: '{{ t("Save data") }}',
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
+            'x-designer-props': {
+              actionModalTipContent:
+                '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
+            },
             'x-action-settings': {
               assignedValues: {},
               skipValidator: false,
@@ -288,6 +296,10 @@ export const UpdateFormActionInitializers = {
             title: '{{ t("Save data") }}',
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
+            'x-designer-props': {
+              actionModalTipContent:
+                '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
+            },
             'x-action-settings': {
               assignedValues: {},
               skipValidator: false,

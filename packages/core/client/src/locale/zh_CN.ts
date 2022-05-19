@@ -503,5 +503,6 @@ export default {
   'After successful update': '更新成功后',
   'Save data': '保存数据',
   'After successful save': '保存成功后',
+  'When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.': '点击按钮后，以下字段将赋值，并连同表单里的字段一起保存；若有字段重叠，此处的值将会覆盖表单里的值。'
 
 }

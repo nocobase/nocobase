@@ -7,6 +7,7 @@ import { useActionContext, useCompile, useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
 export const ActionDesigner = (props) => {
+  const { actionModalTipContent, ...restProps } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -37,7 +38,7 @@ export const ActionDesigner = (props) => {
               'x-component': 'Markdown.Void',
               'x-index': 0,
               'x-component-props': {
-                content: '{{ t("Save assigned field value after click button") }}',
+                content: actionModalTipContent ?? '{{ t("Save assigned field value after click button") }}',
               },
             },
             grid: {
@@ -76,7 +77,7 @@ export const ActionDesigner = (props) => {
     setInitialSchema({ uid: schemaUid, schema });
   }, [field.address]);
   return (
-    <GeneralSchemaDesigner {...props} disableInitializer>
+    <GeneralSchemaDesigner {...restProps} disableInitializer>
       <SchemaSettings.ModalItem
         title={t('Edit button')}
         schema={
