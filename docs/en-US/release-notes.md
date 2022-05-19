@@ -1,6 +1,6 @@
 # Release Notes
 
-## Ready for release
+## 2022/05/19 ~ v0.7.0-alpha.57
 
 ### New features
 - Packaging tool `@nocobase/build`
