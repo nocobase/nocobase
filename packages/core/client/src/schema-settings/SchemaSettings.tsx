@@ -13,6 +13,7 @@ import {
   createDesignable,
   Designable,
   FormProvider,
+  RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentOptions,
   useActionContext,
@@ -466,7 +467,7 @@ SchemaSettings.PopupItem = (props) => {
 SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const { onSubmit, initialValues, initialSchema, ...others } = props;
   const [visible, setVisible] = useState(false);
-  const [schema, setSchema] = useState(null);
+  const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
 
@@ -507,22 +508,20 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   };
 
   const openAssignedFieldValueHandler = async () => {
-    let schemaUid = props.uid;
     if (!schemaUid) {
       fieldSchema['x-action-settings'].schemaUid = initialSchema.uid;
       dn.emit('patch', { schema: fieldSchema });
       await api.resource('uiSchemas').insert({ values: initialSchema.schema });
-      schemaUid = initialSchema.uid;
+      setSchemaUid(initialSchema.uid);
     }
-    const { data } = await api.request({
-      url: `/uiSchemas:getJsonSchema/${schemaUid}`,
-      method: 'post',
-    });
-    setSchema({ ...data.data });
 
     ctx.setVisible(false);
     setVisible(true);
   };
+  console.log('===========', schemaUid);
+  useEffect(() => {
+    // console.log('===========render', schema);
+  }, []);
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler}>
@@ -530,7 +529,8 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       </SchemaSettings.Item>
       <FormProvider form={form}>
         <FormLayout layout={'vertical'}>
-          {schema && <SchemaComponent memoized schema={schema} scope={{ useCancelAction, useSubmitAction }} />}
+          {/* {schema && <SchemaComponent memoized schema={schema} scope={{ useCancelAction, useSubmitAction }} />} */}
+          {schemaUid && <RemoteSchemaComponent noForm uid={schemaUid} scope={{ useCancelAction, useSubmitAction }} />}
         </FormLayout>
       </FormProvider>
     </ActionContext.Provider>
