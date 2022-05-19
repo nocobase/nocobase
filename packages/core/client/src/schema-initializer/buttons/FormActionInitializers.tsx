@@ -31,7 +31,7 @@ export const FormActionInitializers = {
           schema: {
             type: 'void',
             title: '{{ t("Popup window") }}',
-            'x-action': 'view',
+            'x-action': 'customizePopup',
             'x-designer': 'Action.Designer',
             'x-component': 'Action',
             'x-component-props': {
@@ -134,7 +134,7 @@ export const CreateFormActionInitializers = {
           schema: {
             type: 'void',
             title: '{{ t("Popup window") }}',
-            'x-action': 'view',
+            'x-action': 'customizePopup',
             'x-designer': 'Action.Designer',
             'x-component': 'Action',
             'x-component-props': {
@@ -237,7 +237,7 @@ export const UpdateFormActionInitializers = {
           schema: {
             type: 'void',
             title: '{{ t("Popup window") }}',
-            'x-action': 'view',
+            'x-action': 'customizePopup',
             'x-designer': 'Action.Designer',
             'x-component': 'Action',
             'x-component-props': {

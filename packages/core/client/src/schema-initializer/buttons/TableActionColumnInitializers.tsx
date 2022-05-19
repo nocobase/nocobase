@@ -84,7 +84,7 @@ export const TableActionColumnInitializers = (props: any) => {
               schema: {
                 type: 'void',
                 title: '{{ t("Popup window") }}',
-                'x-action': 'view',
+                'x-action': 'customizePopup',
                 'x-designer': 'Action.Designer',
                 'x-component': 'Action.Link',
                 'x-component-props': {

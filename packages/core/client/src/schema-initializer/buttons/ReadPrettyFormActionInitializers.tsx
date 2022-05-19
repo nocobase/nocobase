@@ -48,7 +48,7 @@ export const ReadPrettyFormActionInitializers = {
           schema: {
             type: 'void',
             title: '{{ t("Popup window") }}',
-            'x-action': 'view',
+            'x-action': 'customizePopup',
             'x-designer': 'Action.Designer',
             'x-component': 'Action',
             'x-component-props': {
