@@ -74,7 +74,7 @@ export const ActionDesigner = (props) => {
       },
     };
     setInitialSchema({ uid: schemaUid, schema });
-  }, []);
+  }, [field.address]);
   return (
     <GeneralSchemaDesigner {...props} disableInitializer>
       <SchemaSettings.ModalItem

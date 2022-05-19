@@ -507,18 +507,18 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   };
 
   const openAssignedFieldValueHandler = async () => {
-    if (!props.uid) {
+    let schemaUid = props.uid;
+    if (!schemaUid) {
       fieldSchema['x-action-settings'].schemaUid = initialSchema.uid;
       dn.emit('patch', { schema: fieldSchema });
       await api.resource('uiSchemas').insert({ values: initialSchema.schema });
-      setSchema(initialSchema.schema);
-    } else {
-      const { data } = await api.request({
-        url: `/uiSchemas:getJsonSchema/${props.uid}`,
-        method: 'post',
-      });
-      setSchema({ ...data.data });
+      schemaUid = initialSchema.uid;
     }
+    const { data } = await api.request({
+      url: `/uiSchemas:getJsonSchema/${schemaUid}`,
+      method: 'post',
+    });
+    setSchema({ ...data.data });
 
     ctx.setVisible(false);
     setVisible(true);
