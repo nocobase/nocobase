@@ -470,7 +470,6 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-
   const ctx = useContext(SchemaSettingsContext);
   const { dn } = useSchemaSettings();
   const api = useAPIClient();
@@ -518,10 +517,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     ctx.setVisible(false);
     setVisible(true);
   };
-  console.log('===========', schemaUid);
-  useEffect(() => {
-    // console.log('===========render', schema);
-  }, []);
+
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler}>
@@ -529,8 +525,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       </SchemaSettings.Item>
       <FormProvider form={form}>
         <FormLayout layout={'vertical'}>
-          {/* {schema && <SchemaComponent memoized schema={schema} scope={{ useCancelAction, useSubmitAction }} />} */}
-          {schemaUid && <RemoteSchemaComponent noForm uid={schemaUid} scope={{ useCancelAction, useSubmitAction }} />}
+          {visible && <RemoteSchemaComponent noForm uid={schemaUid} scope={{ useCancelAction, useSubmitAction }} />}
         </FormLayout>
       </FormProvider>
     </ActionContext.Provider>
