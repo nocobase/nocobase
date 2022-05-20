@@ -156,7 +156,7 @@ describe('workflow > instructions > query', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.result).toMatchObject(JSON.parse(JSON.stringify(tag)));
+      expect(job.result.id).toBe(tag.id);
     });
 
     it('params.appends: with associations', async () => {
