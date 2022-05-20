@@ -16,6 +16,14 @@ export default {
       type: 'integer',
       name: 'read',
       defaultValue: 0
+    },
+    {
+      type: 'hasMany',
+      name: 'comments'
+    },
+    {
+      type: 'belongsToMany',
+      name: 'tags'
     }
   ]
 } as CollectionOptions;
