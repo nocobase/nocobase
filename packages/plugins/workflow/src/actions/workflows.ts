@@ -1,5 +1,3 @@
-import parse from 'json-templates';
-
 import { Context, utils } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 

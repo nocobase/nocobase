@@ -8,7 +8,7 @@ function make(name, mod) {
   }), {})
 }
 
-export default function(app) {
+export default function({ app }) {
   app.actions({
     ...make('workflows', workflows),
     ...make('workflows.nodes', {

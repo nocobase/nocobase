@@ -7,7 +7,7 @@ import { getApp } from '..';
 describe('workflow > instructions > destroy', () => {
   let app: Application;
   let db: Database;
-  let PostModel;
+  let PostRepo;
   let WorkflowModel;
   let workflow;
 
@@ -16,7 +16,7 @@ describe('workflow > instructions > destroy', () => {
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
-    PostModel = db.getCollection('posts').model;
+    PostRepo = db.getCollection('posts').repository;
 
     workflow = await WorkflowModel.create({
       title: 'test workflow',
@@ -45,13 +45,13 @@ describe('workflow > instructions > destroy', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(1);
 
-      const count = await PostModel.count();
+      const count = await PostRepo.count();
       expect(count).toBe(0);
     });
   });
