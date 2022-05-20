@@ -99,6 +99,9 @@ export const ReadPrettyFormActionInitializers = {
             title: '{{ t("Update record") }}',
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
+            'x-designer-props': {
+              modalTip: '{{ t("Save assigned field value after click button") }}',
+            },
             'x-action-settings': {
               assignedValues: {},
               onSuccess: {

@@ -7,7 +7,7 @@ import { useActionContext, useCompile, useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
 export const ActionDesigner = (props) => {
-  const { actionModalTipContent, ...restProps } = props;
+  const { modalTip, ...restProps } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -15,66 +15,17 @@ export const ActionDesigner = (props) => {
   const compile = useCompile();
   const isPopupAction = ['create', 'update', 'view', 'customizePopup'].includes(fieldSchema['x-action'] || '');
   const context = useActionContext();
-  const [initialSchema, setInitialSchema] = useState<{ uid: string; schema: ISchema }>();
+  const [initialSchema, setInitialSchema] = useState<ISchema>();
 
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
       type: 'void',
       'x-uid': schemaUid,
-      properties: {
-        modal: {
-          'x-component': 'Action.Modal',
-          'x-component-props': {
-            width: 520,
-          },
-          type: 'void',
-          title: '{{ t("Assigned field value") }}',
-          properties: {
-            tip: {
-              type: 'void',
-              'x-editable': false,
-              'x-decorator': 'FormItem',
-              'x-component': 'Markdown.Void',
-              'x-index': 0,
-              'x-component-props': {
-                content: actionModalTipContent ?? '{{ t("Save assigned field value after click button") }}',
-              },
-            },
-            grid: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'CustomFormItemInitializers',
-              properties: {},
-            },
-            footer: {
-              'x-component': 'Action.Modal.Footer',
-              type: 'void',
-              properties: {
-                cancel: {
-                  type: 'void',
-                  title: '{{ t("Cancel") }}',
-                  'x-component': 'Action',
-                  'x-component-props': {
-                    useAction: '{{ useCancelAction }}',
-                  },
-                },
-                submit: {
-                  type: 'void',
-                  title: '{{ t("Submit") }}',
-                  'x-component': 'Action',
-                  'x-component-props': {
-                    type: 'primary',
-                    useAction: '{{ useSubmitAction }}',
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      'x-component': 'Grid',
+      'x-initializer': 'CustomFormItemInitializers',
     };
-    setInitialSchema({ uid: schemaUid, schema });
+    setInitialSchema(schema);
   }, [field.address]);
   return (
     <GeneralSchemaDesigner {...restProps} disableInitializer>
@@ -151,10 +102,10 @@ export const ActionDesigner = (props) => {
           title={t('Assigned field value')}
           initialSchema={initialSchema}
           initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
+          modalTip={modalTip}
           uid={fieldSchema?.['x-action-settings']?.schemaUid}
           onSubmit={(assignedValues) => {
             fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
-
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],

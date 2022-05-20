@@ -135,6 +135,9 @@ export const TableActionColumnInitializers = (props: any) => {
                 title: '{{ t("Update record") }}',
                 'x-component': 'Action.Link',
                 'x-designer': 'Action.Designer',
+                'x-designer-props': {
+                  modalTip: '{{ t("Save assigned field value after click button") }}',
+                },
                 'x-action-settings': {
                   assignedValues: {},
                   onSuccess: {

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { CollectionField, useCollection } from '../../../collection-manager';
 import { useCompile, useFilterOptions } from '../../../schema-component';
 
-export const PickerField = (props: any) => {
+export const AssignedField = (props: any) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const field = useField<Field>();

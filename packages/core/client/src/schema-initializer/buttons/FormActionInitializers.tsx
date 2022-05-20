@@ -83,7 +83,7 @@ export const FormActionInitializers = {
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-designer-props': {
-              actionModalTipContent:
+              modalTip:
                 '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
             },
             'x-action-settings': {
@@ -190,7 +190,7 @@ export const CreateFormActionInitializers = {
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-designer-props': {
-              actionModalTipContent:
+              modalTip:
                 '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
             },
             'x-action-settings': {
@@ -297,7 +297,7 @@ export const UpdateFormActionInitializers = {
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-designer-props': {
-              actionModalTipContent:
+              modalTip:
                 '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
             },
             'x-action-settings': {

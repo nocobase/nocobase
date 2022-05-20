@@ -1,9 +1,9 @@
 import { css } from '@emotion/css';
 import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import { createForm, GeneralField } from '@formily/core';
-import { ISchema, Schema, SchemaOptionsContext, useFieldSchema, useForm } from '@formily/react';
+import { ISchema, Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Dropdown, Menu, MenuItemProps, Modal, Select, Switch } from 'antd';
+import { Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -19,7 +19,9 @@ import {
   useActionContext,
   useAPIClient,
   useCollection,
+  useCompile,
 } from '..';
+import { MarkdownVoid } from '../schema-component/antd/markdown/Markdown.Void';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 interface SchemaSettingsProps {
@@ -465,13 +467,14 @@ SchemaSettings.PopupItem = (props) => {
 };
 
 SchemaSettings.ActionModalItem = React.memo((props: any) => {
-  const { onSubmit, initialValues, initialSchema, ...others } = props;
+  const { title, onSubmit, initialValues, initialSchema, modalTip, ...others } = props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const ctx = useContext(SchemaSettingsContext);
   const { dn } = useSchemaSettings();
+  const compile = useCompile();
   const api = useAPIClient();
   const form = useMemo(
     () =>
@@ -485,33 +488,24 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     form.setValues(initialValues);
   }, [initialValues]);
 
-  const useCancelAction = () => {
-    const form = useForm();
-    const actionContext = useActionContext();
-
-    return {
-      async run() {
-        actionContext.setVisible(false);
-      },
-    };
+  const cancelHandler = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setVisible(false);
   };
-  const useSubmitAction = () => {
-    const form = useForm();
-    const actionContext = useActionContext();
-    return {
-      async run() {
-        onSubmit?.(cloneDeep(form.values));
-        actionContext.setVisible(false);
-      },
-    };
+  const submitHandler = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSubmit?.(cloneDeep(form.values));
+    setVisible(false);
   };
 
   const openAssignedFieldValueHandler = async () => {
-    if (!schemaUid) {
-      fieldSchema['x-action-settings'].schemaUid = initialSchema.uid;
+    if (!schemaUid && initialSchema['x-uid']) {
+      fieldSchema['x-action-settings'].schemaUid = initialSchema['x-uid'];
       dn.emit('patch', { schema: fieldSchema });
-      await api.resource('uiSchemas').insert({ values: initialSchema.schema });
-      setSchemaUid(initialSchema.uid);
+      await api.resource('uiSchemas').insert({ values: initialSchema });
+      setSchemaUid(initialSchema['x-uid']);
     }
 
     ctx.setVisible(false);
@@ -519,16 +513,40 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   };
 
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <div
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
       <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler}>
         {props.children || props.title}
       </SchemaSettings.Item>
-      <FormProvider form={form}>
-        <FormLayout layout={'vertical'}>
-          {visible && <RemoteSchemaComponent noForm uid={schemaUid} scope={{ useCancelAction, useSubmitAction }} />}
-        </FormLayout>
-      </FormProvider>
-    </ActionContext.Provider>
+
+      <Modal
+        width={'50%'}
+        title={compile(title)}
+        {...others}
+        destroyOnClose
+        visible={visible}
+        onCancel={cancelHandler}
+        footer={
+          <Space>
+            <Button onClick={cancelHandler}>{t('Cancel')}</Button>
+            <Button type="primary" onClick={submitHandler}>
+              {t('Submit')}
+            </Button>
+          </Space>
+        }
+      >
+        <FormProvider form={form}>
+          <FormLayout layout={'vertical'}>
+            <MarkdownVoid content={compile(modalTip)} />
+            {visible && <RemoteSchemaComponent noForm uid={schemaUid} />}
+          </FormLayout>
+        </FormProvider>
+      </Modal>
+    </div>
   );
 });
 

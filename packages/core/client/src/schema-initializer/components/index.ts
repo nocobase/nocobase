@@ -1,1 +1,1 @@
-export * from './picker-field';
+export * from './assigned-field';
