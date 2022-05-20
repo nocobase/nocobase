@@ -103,7 +103,7 @@ export const useFilterActionProps = () => {
       const defaultFilter = removeNullCondition(props.params.filter);
       // filter parameter for the filter action
       const filter = removeNullCondition(values?.filter);
-      service.run({ ...service.params?.[0], filter: mergeFilter(defaultFilter, filter) });
+      service.run({ ...service.params?.[0], page: 1, filter: mergeFilter(defaultFilter, filter) });
       const items = filter?.$and || filter?.$or;
       if (items?.length) {
         field.title = t('{{count}} filter items', { count: items?.length || 0 });
@@ -113,7 +113,7 @@ export const useFilterActionProps = () => {
     },
     onReset() {
       const filter = removeNullCondition(props.params.filter);
-      service.run({ ...service.params?.[0], filter });
+      service.run({ ...service.params?.[0], filter, page: 1 });
       field.title = t('Filter');
     },
   };
