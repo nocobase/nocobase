@@ -26,6 +26,8 @@ export const CurrentUser = () => {
           }}
           overlay={
             <Menu>
+              <Menu.Item disabled>Version {process.env.VERSION}</Menu.Item>
+              <Menu.Divider />
               <EditProfile />
               <ChangePassword />
               <SwitchRole />
