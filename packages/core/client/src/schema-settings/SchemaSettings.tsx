@@ -6,7 +6,7 @@ import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContext,
@@ -483,10 +483,6 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       }),
     [],
   );
-
-  useEffect(() => {
-    form.setValues(initialValues);
-  }, [initialValues]);
 
   const cancelHandler = (e: React.MouseEvent) => {
     e.preventDefault();
