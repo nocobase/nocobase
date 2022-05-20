@@ -6,4 +6,5 @@ export default {
   ...require('./string').default,
   ...require('./ne').default,
   ...require('./notIn').default,
+  ...require('./boolean').default,
 };
