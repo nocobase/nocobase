@@ -484,14 +484,10 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     [],
   );
 
-  const cancelHandler = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const cancelHandler = () => {
     setVisible(false);
   };
-  const submitHandler = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const submitHandler = () => {
     onSubmit?.(cloneDeep(form.values));
     setVisible(false);
   };
