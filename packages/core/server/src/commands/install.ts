@@ -7,12 +7,13 @@ export default (app: Application) => {
     .option('-f, --force')
     .option('-c, --clean')
     .option('-s, --silent')
+    .option('-r, --repeat [repeat]')
     .action(async (...cliArgs) => {
       let installed = false;
       const [opts] = cliArgs;
 
       try {
-        await app.db.auth({ repeat: 1 });
+        await app.db.auth({ repeat: opts.repeat || 1 });
       } catch (error) {
         console.log(chalk.red('Unable to connect to the database. Please check the database environment variables in the .env file.'));
         return;

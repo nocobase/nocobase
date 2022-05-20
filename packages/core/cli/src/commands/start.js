@@ -13,6 +13,7 @@ module.exports = (cli) => {
   cli
     .command('start')
     .option('-p, --port [port]')
+    .option('--db-sync')
     .allowUnknownOption()
     .action(async (opts) => {
       if (opts.port) {
@@ -38,7 +39,10 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
-      await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '-s']);
+      await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--silent']);
+      if (opts.dbSync) {
+        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
+      }
       run('pm2-runtime', ['start', `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, '--', ...process.argv.slice(2)]);
     });
 };

@@ -1,6 +1,6 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
-const { runInstall, run, postCheck, nodeCheck, promptForTs } = require('../util');
+const { runAppCommand, runInstall, run, postCheck, nodeCheck, promptForTs } = require('../util');
 const { getPortPromise } = require('portfinder');
 
 /**
@@ -14,6 +14,7 @@ module.exports = (cli) => {
     .option('-p, --port [port]')
     .option('--client')
     .option('--server')
+    .option('--db-sync')
     .allowUnknownOption()
     .action(async (opts) => {
       promptForTs();
@@ -44,7 +45,10 @@ module.exports = (cli) => {
           port: 1 * clientPost + 1,
         });
       }
-      await runInstall();
+      await runAppCommand('install', ['--silent']);
+      if (opts.dbSync) {
+        await runAppCommand('db:sync');
+      }
       if (server || !client) {
         console.log('starting server', serverPost);
         const argv = [
