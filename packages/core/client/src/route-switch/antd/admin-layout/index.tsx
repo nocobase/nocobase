@@ -163,11 +163,16 @@ const InternalAdminLayout = (props: any) => {
             min-height: calc(100vh - 46px);
             position: relative;
             padding-bottom: 70px;
+            > div {
+              position: relative;
+              z-index: 1;
+            }
             .ant-layout-footer {
               position: absolute;
               bottom: 0;
               text-align: center;
               width: 100%;
+              z-index: 0;
             }
           `}
         >
