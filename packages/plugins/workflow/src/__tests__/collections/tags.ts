@@ -1,16 +1,15 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  name: 'approvals',
+  name: 'tags',
   fields: [
     {
-      type: 'belongsTo',
-      name: 'post',
+      type: 'belongsToMany',
+      name: 'posts',
     },
     {
-      type: 'integer',
-      name: 'status',
-      defaultValue: 0
+      type: 'string',
+      name: 'name'
     }
   ],
 } as CollectionOptions;
