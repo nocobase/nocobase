@@ -3,7 +3,7 @@ import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import { createForm, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
+import { Alert, Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
@@ -19,9 +19,8 @@ import {
   useActionContext,
   useAPIClient,
   useCollection,
-  useCompile,
+  useCompile
 } from '..';
-import { MarkdownVoid } from '../schema-component/antd/markdown/Markdown.Void';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 interface SchemaSettingsProps {
@@ -533,7 +532,8 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       >
         <FormProvider form={form}>
           <FormLayout layout={'vertical'}>
-            <MarkdownVoid content={compile(modalTip)} />
+            {modalTip && <Alert message={modalTip} />}
+            {modalTip && <br />}
             {visible && <RemoteSchemaComponent noForm uid={schemaUid} />}
           </FormLayout>
         </FormProvider>

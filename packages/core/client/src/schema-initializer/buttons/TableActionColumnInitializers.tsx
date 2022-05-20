@@ -79,12 +79,12 @@ export const TableActionColumnInitializers = (props: any) => {
           children: [
             {
               type: 'item',
-              title: '{{t("Popup window")}}',
+              title: '{{t("Pop up drawer/dialog")}}',
               component: 'CustomizeActionInitializer',
               schema: {
                 type: 'void',
-                title: '{{ t("Popup window") }}',
-                'x-action': 'customizePopup',
+                title: '{{ t("Popup") }}',
+                'x-action': 'customize:popup',
                 'x-designer': 'Action.Designer',
                 'x-component': 'Action.Link',
                 'x-component-props': {
@@ -93,7 +93,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 properties: {
                   drawer: {
                     type: 'void',
-                    title: '{{ t("Popup window") }}',
+                    title: '{{ t("Popup") }}',
                     'x-component': 'Action.Container',
                     'x-component-props': {
                       className: 'nb-action-popup',
@@ -134,17 +134,14 @@ export const TableActionColumnInitializers = (props: any) => {
               schema: {
                 title: '{{ t("Update record") }}',
                 'x-component': 'Action.Link',
+                'x-action': 'customize:update',
                 'x-designer': 'Action.Designer',
-                'x-designer-props': {
-                  modalTip: '{{ t("Save assigned field value after click button") }}',
-                },
                 'x-action-settings': {
                   assignedValues: {},
                   onSuccess: {
-                    title: '{{ t("After successful update") }}',
                     manualClose: true,
                     redirecting: false,
-                    successMessage: '{{t("Submitted successfully")}}',
+                    successMessage: '{{t("Updated successfully")}}',
                   },
                 },
                 'x-component-props': {

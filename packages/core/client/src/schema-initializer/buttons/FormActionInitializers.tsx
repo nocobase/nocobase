@@ -26,12 +26,12 @@ export const FormActionInitializers = {
       children: [
         {
           type: 'item',
-          title: '{{t("Popup window")}}',
+          title: '{{t("Pop up drawer/dialog")}}',
           component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
-            title: '{{ t("Popup window") }}',
-            'x-action': 'customizePopup',
+            title: '{{ t("Popup") }}',
+            'x-action': 'customize:popup',
             'x-designer': 'Action.Designer',
             'x-component': 'Action',
             'x-component-props': {
@@ -40,7 +40,7 @@ export const FormActionInitializers = {
             properties: {
               drawer: {
                 type: 'void',
-                title: '{{ t("Popup window") }}',
+                title: '{{ t("Popup") }}',
                 'x-component': 'Action.Container',
                 'x-component-props': {
                   className: 'nb-action-popup',
@@ -76,10 +76,11 @@ export const FormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Save data")}}',
+          title: '{{t("Save record")}}',
           component: 'CustomizeActionInitializer',
           schema: {
-            title: '{{ t("Save data") }}',
+            title: '{{ t("Save record") }}',
+            'x-action': 'customize:save',
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-designer-props': {
@@ -90,10 +91,9 @@ export const FormActionInitializers = {
               assignedValues: {},
               skipValidator: false,
               onSuccess: {
-                title: '{{ t("After successful save") }}',
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Submitted successfully")}}',
+                successMessage: '{{t("Saved successfully")}}',
               },
             },
             'x-component-props': {
@@ -133,12 +133,12 @@ export const CreateFormActionInitializers = {
       children: [
         {
           type: 'item',
-          title: '{{t("Popup window")}}',
+          title: '{{t("Pop up drawer/dialog")}}',
           component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
-            title: '{{ t("Popup window") }}',
-            'x-action': 'customizePopup',
+            title: '{{ t("Popup") }}',
+            'x-action': 'customize:popup',
             'x-designer': 'Action.Designer',
             'x-component': 'Action',
             'x-component-props': {
@@ -147,7 +147,7 @@ export const CreateFormActionInitializers = {
             properties: {
               drawer: {
                 type: 'void',
-                title: '{{ t("Popup window") }}',
+                title: '{{ t("Popup") }}',
                 'x-component': 'Action.Container',
                 'x-component-props': {
                   className: 'nb-action-popup',
@@ -183,10 +183,11 @@ export const CreateFormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Save data")}}',
+          title: '{{t("Save record")}}',
           component: 'CustomizeActionInitializer',
           schema: {
-            title: '{{ t("Save data") }}',
+            title: '{{ t("Save record") }}',
+            'x-action': 'customize:save',
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-designer-props': {
@@ -197,10 +198,9 @@ export const CreateFormActionInitializers = {
               assignedValues: {},
               skipValidator: false,
               onSuccess: {
-                title: '{{ t("After successful save") }}',
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Submitted successfully")}}',
+                successMessage: '{{t("Saved successfully")}}',
               },
             },
             'x-component-props': {
@@ -240,12 +240,12 @@ export const UpdateFormActionInitializers = {
       children: [
         {
           type: 'item',
-          title: '{{t("Popup window")}}',
+          title: '{{t("Pop up drawer/dialog")}}',
           component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
-            title: '{{ t("Popup window") }}',
-            'x-action': 'customizePopup',
+            title: '{{ t("Popup") }}',
+            'x-action': 'customize:popup',
             'x-designer': 'Action.Designer',
             'x-component': 'Action',
             'x-component-props': {
@@ -254,7 +254,7 @@ export const UpdateFormActionInitializers = {
             properties: {
               drawer: {
                 type: 'void',
-                title: '{{ t("Popup window") }}',
+                title: '{{ t("Popup") }}',
                 'x-component': 'Action.Container',
                 'x-component-props': {
                   className: 'nb-action-popup',
@@ -290,11 +290,12 @@ export const UpdateFormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Save data")}}',
+          title: '{{t("Save record")}}',
           component: 'CustomizeActionInitializer',
           schema: {
-            title: '{{ t("Save data") }}',
+            title: '{{ t("Save") }}',
             'x-component': 'Action',
+            'x-action': 'customize:save',
             'x-designer': 'Action.Designer',
             'x-designer-props': {
               modalTip:
@@ -304,10 +305,9 @@ export const UpdateFormActionInitializers = {
               assignedValues: {},
               skipValidator: false,
               onSuccess: {
-                title: '{{ t("After successful save") }}',
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Submitted successfully")}}',
+                successMessage: '{{t("Saved successfully")}}',
               },
             },
             'x-component-props': {

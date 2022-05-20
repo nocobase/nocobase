@@ -289,16 +289,14 @@ export default {
   'Unsaved changes': 'Unsaved changes',
   'Are you sure you don\'t want to save?': 'Are you sure you don\'t want to save?',
 
-  'Popup window': 'Popup window',
+  'Popup': 'Popup',
   'Trigger workflow': 'Trigger workflow',
   'Request API': 'Request API',
-  'Assigned field value': 'Assigned field value',
-  'Save assigned field value after click button': 'Save assigned field value after click button:',
-  'Popup close method': 'Popup Close method',
-  'Auto close': 'Auto close',
-  'Manual close': 'Manual close',
+  'Assign field values': 'Assign field values',
+  'Popup close method': 'Popup close method',
+  'Automatic close': 'Automatic close',
+  'Manually close': 'Manually close',
   'After successful update': 'After successful update',
-  'Save data': 'Save data',
+  'Save record': 'Save record',
   'After successful save': 'After successful save',
-  'When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.': 'When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.'
 }

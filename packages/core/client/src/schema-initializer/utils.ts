@@ -149,6 +149,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
         type: 'string',
         name: field.name,
         title: field?.uiSchema?.title || field.name,
+        'x-designer': 'FormItem.Designer',
         'x-component': 'AssignedField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
