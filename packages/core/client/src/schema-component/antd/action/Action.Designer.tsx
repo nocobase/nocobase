@@ -196,7 +196,10 @@ export const ActionDesigner = (props) => {
         {isValid(fieldSchema?.['x-action-settings']?.['onSuccess']) && (
           <SchemaSettings.ModalItem
             title={
-              compile(fieldSchema?.['x-action-settings']?.['onSuccess']?.['title']) ?? t('After successful submission')
+              {
+                'customize:save': t('After successful save'),
+                'customize:update': t('After successful update'),
+              }[actionType]
             }
             initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
             schema={
