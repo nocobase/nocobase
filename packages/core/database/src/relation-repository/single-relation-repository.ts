@@ -1,24 +1,24 @@
 import lodash from 'lodash';
-import { SingleAssociationAccessors } from 'sequelize';
+import { SingleAssociationAccessors, Transactionable } from 'sequelize';
 import { Model } from '../model';
-import { Appends, Except, Fields, Filter, TargetKey, TransactionAble, UpdateOptions } from '../repository';
+import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import { RelationRepository, transaction } from './relation-repository';
 
-export interface SingleRelationFindOption extends TransactionAble {
+export interface SingleRelationFindOption extends Transactionable {
   fields?: Fields;
   except?: Except;
   appends?: Appends;
   filter?: Filter;
 }
 
-interface SetOption extends TransactionAble {
+interface SetOption extends Transactionable {
   tk?: TargetKey;
 }
 
 export abstract class SingleRelationRepository extends RelationRepository {
   @transaction()
-  async remove(options?: TransactionAble): Promise<void> {
+  async remove(options?: Transactionable): Promise<void> {
     const transaction = await this.getTransaction(options);
     const sourceModel = await this.getSourceModel(transaction);
     return await sourceModel[this.accessors().set](null, {
@@ -63,7 +63,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
   }
 
   @transaction()
-  async destroy(options?: TransactionAble): Promise<Boolean> {
+  async destroy(options?: Transactionable): Promise<Boolean> {
     const transaction = await this.getTransaction(options);
 
     const target = await this.find({

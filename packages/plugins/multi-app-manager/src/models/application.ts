@@ -1,9 +1,9 @@
-import Database, { IDatabaseOptions, Model, TransactionAble } from '@nocobase/database';
+import Database, { IDatabaseOptions, Model, Transactionable } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import lodash from 'lodash';
 import * as path from 'path';
 
-export interface registerAppOptions extends TransactionAble {
+export interface registerAppOptions extends Transactionable {
   skipInstall?: boolean;
 }
 
