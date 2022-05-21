@@ -288,4 +288,15 @@ export default {
 
   'Unsaved changes': 'Unsaved changes',
   'Are you sure you don\'t want to save?': 'Are you sure you don\'t want to save?',
+
+  'Popup': 'Popup',
+  'Trigger workflow': 'Trigger workflow',
+  'Request API': 'Request API',
+  'Assign field values': 'Assign field values',
+  'Popup close method': 'Popup close method',
+  'Automatic close': 'Automatic close',
+  'Manually close': 'Manually close',
+  'After successful update': 'After successful update',
+  'Save record': 'Save record',
+  'After successful save': 'After successful save',
 }

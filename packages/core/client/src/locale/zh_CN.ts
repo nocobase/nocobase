@@ -365,7 +365,7 @@ export default {
   'Tab name': '标签名称',
   'Current record blocks': '当前数据区块',
 
-  'Pop-up message': '弹窗提示消息',
+  'Popup message': '弹窗提示消息',
 
   'Delete role': '删除角色',
 
@@ -487,4 +487,22 @@ export default {
   'Unsaved changes': '未保存修改',
   'Are you sure you don\'t want to save?': '你确定不保存修改吗？',
   'Dragging': '拖拽中',
+
+  'Popup': '打开弹窗',
+  'Trigger workflow': '触发工作流',
+  'Request API': '请求API',
+  'Assign field values': '字段赋值',
+  'Constant value': '静态值',
+  'Dynamic value': '动态值',
+  'Current user': '当前用户',
+  'Current record': '当前记录',
+  'Popup close method': '弹窗关闭方式',
+  'Automatic close': '自动关闭',
+  'Manually close': '手动关闭',
+  'After successful update': '更新成功后',
+  'Save record': '保存数据',
+  'Updated successfully': '更新成功',
+  'After successful save': '保存成功后',
+  'After clicking the custom button, the following field values will be assigned according to the following form.': '点击当前自定义按钮时，以下字段值将按照以下表单赋值。',
+  'After clicking the custom button, The following fields of the current record will be saved according to the following form.': '点击当前自定义按钮时，当前数据以下字段将按照以下表单保存。',
 }

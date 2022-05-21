@@ -20,7 +20,7 @@ import {
   createTableSelectorSchema,
   useCollectionDataSourceItems,
   useCurrentSchema,
-  useRecordCollectionDataSourceItems
+  useRecordCollectionDataSourceItems,
 } from '../utils';
 
 // Block
