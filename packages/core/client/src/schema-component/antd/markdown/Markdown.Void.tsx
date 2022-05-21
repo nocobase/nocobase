@@ -46,7 +46,7 @@ export const MarkdownVoid: any = observer((props: any) => {
   const schema = useFieldSchema();
   const { dn } = useDesignable();
   const { onSave, onCancel } = props;
-  return field.editable ? (
+  return field?.editable ? (
     <MarkdownEditor
       {...props}
       defaultValue={content}

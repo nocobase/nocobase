@@ -25,11 +25,11 @@ export const useActionContext = () => {
               content: t("Are you sure you don't want to save?"),
               async onOk() {
                 ctx.setFormValueChanged(false);
-                ctx.setVisible(false);
+                ctx.setVisible?.(false);
               },
             });
           } else {
-            ctx.setVisible(false);
+            ctx?.setVisible?.(false);
           }
         } else {
           ctx?.setVisible?.(visible);

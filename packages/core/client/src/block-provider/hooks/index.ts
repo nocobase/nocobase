@@ -1,9 +1,11 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { Modal } from 'antd';
+import { message, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useCollection } from '../../collection-manager';
+import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
+import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
@@ -65,8 +67,8 @@ export const useCreateActionProps = () => {
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
-      const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
+      const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -107,28 +109,79 @@ export const useCreateActionProps = () => {
         values: {
           ...values,
           ...overwriteValues,
+          ...assignedValues,
         },
       });
       actionField.data.loading = false;
       __parent?.service?.refresh?.();
       setVisible?.(false);
-      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
       if (!onSuccess?.successMessage) {
         return;
       }
-      Modal.success({
-        title: compile(onSuccess?.successMessage),
-        onOk: async () => {
-          await form.reset();
-          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-            if (isURL(onSuccess.redirectTo)) {
-              window.location.href = onSuccess.redirectTo;
-            } else {
-              history.push(onSuccess.redirectTo);
+      if (onSuccess?.manualClose) {
+        Modal.success({
+          title: compile(onSuccess?.successMessage),
+          onOk: async () => {
+            await form.reset();
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                history.push(onSuccess.redirectTo);
+              }
             }
-          }
-        },
+          },
+        });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
+      }
+    },
+  };
+};
+
+export const useCustomizeUpdateActionProps = () => {
+  const { resource, __parent, service } = useBlockRequestContext();
+  const filterByTk = useFilterByTk();
+  const actionSchema = useFieldSchema();
+  const currentRecord = useRecord();
+  const ctx = useCurrentUserContext();
+  const history = useHistory();
+  const compile = useCompile();
+  const form = useForm();
+
+  return {
+    async onClick() {
+      const { assignedValues, onSuccess, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+      if (skipValidator === false) {
+        await form.submit();
+      }
+      await resource.update({
+        filterByTk,
+        values: { ...assignedValues },
       });
+      service?.refresh?.();
+      if (!(resource instanceof TableFieldResource)) {
+        __parent?.service?.refresh?.();
+      }
+      if (!onSuccess?.successMessage) {
+        return;
+      }
+      if (onSuccess?.manualClose) {
+        Modal.success({
+          title: compile(onSuccess?.successMessage),
+          onOk: async () => {
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                history.push(onSuccess.redirectTo);
+              }
+            }
+          },
+        });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
+      }
     },
   };
 };
@@ -145,8 +198,8 @@ export const useUpdateActionProps = () => {
   const actionField = useField();
   return {
     async onClick() {
-      const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
-      const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
+      const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -196,6 +249,7 @@ export const useUpdateActionProps = () => {
         values: {
           ...values,
           ...overwriteValues,
+          ...assignedValues,
         },
       });
       actionField.data.loading = false;
@@ -204,8 +258,10 @@ export const useUpdateActionProps = () => {
         __parent?.__parent?.service?.refresh?.();
       }
       setVisible?.(false);
-      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
-      if (onSuccess?.successMessage) {
+      if (!onSuccess?.successMessage) {
+        return;
+      }
+      if (onSuccess?.manualClose) {
         Modal.success({
           title: compile(onSuccess?.successMessage),
           onOk: async () => {
@@ -219,6 +275,8 @@ export const useUpdateActionProps = () => {
             }
           },
         });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
       }
     },
   };
