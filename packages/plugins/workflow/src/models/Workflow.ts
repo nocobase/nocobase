@@ -1,5 +1,5 @@
 import { Database, Model } from '@nocobase/database';
-import { HasManyCountAssociationsMixin, HasManyCreateAssociationMixin, HasManyGetAssociationsMixin } from 'sequelize';
+import { HasManyCountAssociationsMixin, HasManyCreateAssociationMixin, HasManyGetAssociationsMixin, Transactionable } from 'sequelize';
 
 import { EXECUTION_STATUS } from '../constants';
 import ExecutionModel from './Execution';
@@ -31,7 +31,7 @@ export default class WorkflowModel extends Model {
 
   getTransaction(options) {
     if (!this.useTransaction) {
-      return undefined;
+      return null;
     }
 
     return options.transaction && !options.transaction.finished
@@ -39,7 +39,7 @@ export default class WorkflowModel extends Model {
       : (<typeof WorkflowModel>this.constructor).database.sequelize.transaction();
   }
 
-  trigger = async (context: Object, options) => {
+  trigger = async (context: Object, options = {}) => {
     // `null` means not to trigger
     if (context === null) {
       return;
@@ -73,9 +73,11 @@ export default class WorkflowModel extends Model {
     await execution.start({ transaction });
 
     if (!this.executed) {
-      await this.update({ executed: true }, { transaction });
+      // NOTE: not to trigger afterUpdate hook here
+      await this.update({ executed: true }, { transaction, hooks: false });
     }
 
+    // @ts-ignore
     if (transaction && (!options.transaction || options.transaction.finished)) {
       await transaction.commit();
     }

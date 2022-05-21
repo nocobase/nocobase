@@ -23,7 +23,7 @@ MODE_BITMAP_EVENTS.set(MODE_BITMAP.DESTROY, 'afterDestroy');
 
 
 function getHookId(workflow, type) {
-  return `${type}#${workflow.get('id')}`;
+  return `${type}#${workflow.id}`;
 }
 
 // async function, should return promise
@@ -43,12 +43,23 @@ function handler(this: WorkflowModel, data: Model, options) {
 }
 
 export default class CollectionTrigger implements Trigger {
+  db;
+
   events = new Map();
 
+  constructor({ app }) {
+    this.db = app.db;
+  }
+
   on(workflow: WorkflowModel) {
-    const { database } = <typeof WorkflowModel>workflow.constructor;
+    // NOTE: remove previous listener if config updated
+    const prev = workflow.previous();
+    if (prev.config) {
+      this.off({ ...workflow.get(), ...prev });
+    }
+
     const { collection, mode } = workflow.config;
-    const Collection = database.getCollection(collection);
+    const Collection = this.db.getCollection(collection);
     if (!Collection) {
       return;
     }
@@ -60,12 +71,12 @@ export default class CollectionTrigger implements Trigger {
         if (!this.events.has(name)) {
           const listener = handler.bind(workflow);
           this.events.set(name, listener);
-          database.on(event, listener);
+          this.db.on(event, listener);
         }
       } else {
         const listener = this.events.get(name);
         if (listener) {
-          database.off(event, listener);
+          this.db.off(event, listener);
           this.events.delete(name);
         }
       }
@@ -73,9 +84,8 @@ export default class CollectionTrigger implements Trigger {
   }
 
   off(workflow: WorkflowModel) {
-    const { database } = <typeof WorkflowModel>workflow.constructor;
     const { collection, mode } = workflow.config;
-    const Collection = database.getCollection(collection);
+    const Collection = this.db.getCollection(collection);
     if (!Collection) {
       return;
     }
@@ -85,7 +95,7 @@ export default class CollectionTrigger implements Trigger {
       if (mode & key) {
         const listener = this.events.get(name);
         if (listener) {
-          database.off(event, listener);
+          this.db.off(event, listener);
           this.events.delete(name);
         }
       }
