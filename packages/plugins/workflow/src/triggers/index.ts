@@ -7,7 +7,8 @@ export interface Trigger {
   off(workflow: WorkflowModel): void;
 }
 
-export default function({ triggers }) {
-  triggers.register('collection', new Collection());
-  // triggers.register('schedule', new Schedule());
+export default function(plugin) {
+  const { triggers } = plugin;
+  triggers.register('collection', new Collection(plugin));
+  // triggers.register('schedule', new Schedule(plugin));
 }
