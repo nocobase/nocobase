@@ -43,7 +43,7 @@ export const ReadPrettyFormActionInitializers = {
       children: [
         {
           type: 'item',
-          title: '{{t("Pop up drawer/dialog")}}',
+          title: '{{t("Popup")}}',
           component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',

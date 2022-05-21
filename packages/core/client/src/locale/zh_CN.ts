@@ -365,7 +365,7 @@ export default {
   'Tab name': '标签名称',
   'Current record blocks': '当前数据区块',
 
-  'Pop-up message': '弹窗提示消息',
+  'Popup message': '弹窗提示消息',
 
   'Delete role': '删除角色',
 

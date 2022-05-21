@@ -26,7 +26,7 @@ export const FormActionInitializers = {
       children: [
         {
           type: 'item',
-          title: '{{t("Pop up drawer/dialog")}}',
+          title: '{{t("Popup")}}',
           component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
@@ -133,7 +133,7 @@ export const CreateFormActionInitializers = {
       children: [
         {
           type: 'item',
-          title: '{{t("Pop up drawer/dialog")}}',
+          title: '{{t("Popup")}}',
           component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
@@ -240,7 +240,7 @@ export const UpdateFormActionInitializers = {
       children: [
         {
           type: 'item',
-          title: '{{t("Pop up drawer/dialog")}}',
+          title: '{{t("Popup")}}',
           component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',

@@ -208,7 +208,7 @@ export const ActionDesigner = (props) => {
                 }[actionType],
                 properties: {
                   successMessage: {
-                    title: t('Pop-up message'),
+                    title: t('Popup message'),
                     'x-decorator': 'FormItem',
                     'x-component': 'Input.TextArea',
                     'x-component-props': {},
