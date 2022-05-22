@@ -15,7 +15,7 @@ export default class WorkflowModel extends Model {
   declare type: string;
   declare config: any;
   declare useTransaction: boolean;
-  declare executed: boolean;
+  declare executed: number;
 
   declare createdAt: Date;
   declare updatedAt: Date;
@@ -68,14 +68,14 @@ export default class WorkflowModel extends Model {
       transaction: transaction.id
     }, { transaction });
 
+    const executed = await this.countExecutions({ transaction });
+
+    // NOTE: not to trigger afterUpdate hook here
+    await this.update({ executed }, { transaction, hooks: false });
+
     execution.workflow = this;
 
     await execution.start({ transaction });
-
-    if (!this.executed) {
-      // NOTE: not to trigger afterUpdate hook here
-      await this.update({ executed: true }, { transaction, hooks: false });
-    }
 
     // @ts-ignore
     if (transaction && (!options.transaction || options.transaction.finished)) {
