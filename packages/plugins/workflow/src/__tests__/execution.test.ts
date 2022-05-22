@@ -3,7 +3,7 @@ import Database from '@nocobase/database';
 import { getApp } from '.';
 import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
-jest.setTimeout(300000);
+
 
 describe('execution', () => {
   let app: Application;
