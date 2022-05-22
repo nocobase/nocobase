@@ -1,4 +1,4 @@
-import { Repository, TransactionAble } from '@nocobase/database';
+import { Repository, Transactionable } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import lodash from 'lodash';
 import { Transaction } from 'sequelize';
@@ -13,7 +13,7 @@ type BreakRemoveOnType = {
   [key: string]: any;
 };
 
-export interface removeParentOptions extends TransactionAble {
+export interface removeParentOptions extends Transactionable {
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: BreakRemoveOnType;
 }
@@ -144,7 +144,7 @@ export class UiSchemaRepository extends Repository {
     return carry;
   }
 
-  async getProperties(uid: string, options: TransactionAble = {}) {
+  async getProperties(uid: string, options: Transactionable = {}) {
     const { transaction } = options;
 
     const db = this.database;
@@ -256,7 +256,7 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
-  async clearAncestor(uid: string, options?: TransactionAble) {
+  async clearAncestor(uid: string, options?: Transactionable) {
     const db = this.database;
     const treeTable = this.uiSchemaTreePathTableName;
 
@@ -397,7 +397,7 @@ export class UiSchemaRepository extends Repository {
     return null;
   }
 
-  async removeEmptyParents(options: TransactionAble & { uid: string; breakRemoveOn?: BreakRemoveOnType }) {
+  async removeEmptyParents(options: Transactionable & { uid: string; breakRemoveOn?: BreakRemoveOnType }) {
     const { transaction, uid, breakRemoveOn } = options;
 
     const removeParent = async (nodeUid: string) => {
@@ -429,7 +429,7 @@ export class UiSchemaRepository extends Repository {
     return true;
   }
 
-  async recursivelyRemoveIfNoChildren(options: TransactionAble & { uid: string; breakRemoveOn?: BreakRemoveOnType }) {
+  async recursivelyRemoveIfNoChildren(options: Transactionable & { uid: string; breakRemoveOn?: BreakRemoveOnType }) {
     const { uid, transaction, breakRemoveOn } = options;
 
     const removeLeafNode = async (nodeUid: string) => {
@@ -456,7 +456,7 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
-  async remove(uid: string, options?: TransactionAble & removeParentOptions) {
+  async remove(uid: string, options?: Transactionable & removeParentOptions) {
     let { transaction } = options;
 
     if (options?.removeParentsIfNoChildren) {
@@ -548,7 +548,7 @@ export class UiSchemaRepository extends Repository {
     });
   }
 
-  private async schemaExists(schema: any, options?: TransactionAble): Promise<boolean> {
+  private async schemaExists(schema: any, options?: Transactionable): Promise<boolean> {
     if (lodash.isObject(schema) && !schema['x-uid']) {
       return false;
     }
@@ -631,7 +631,7 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
-  async insertNodes(nodes: SchemaNode[], options?: TransactionAble) {
+  async insertNodes(nodes: SchemaNode[], options?: Transactionable) {
     const { transaction } = options;
 
     const insertedNodes = [];
@@ -649,7 +649,7 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
-  async insert(schema: any, options?: TransactionAble) {
+  async insert(schema: any, options?: Transactionable) {
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
     const insertedNodes = await this.insertNodes(nodes, options);
     return this.getJsonSchema(insertedNodes[0].get('x-uid'), {
@@ -660,7 +660,7 @@ export class UiSchemaRepository extends Repository {
   @transaction()
   async insertNewSchema(
     schema: any,
-    options?: TransactionAble & {
+    options?: Transactionable & {
       returnNode?: boolean;
     },
   ) {
@@ -760,7 +760,7 @@ export class UiSchemaRepository extends Repository {
     return { uid, name, async, childOptions };
   }
 
-  async insertSingleNode(schema: SchemaNode, options: TransactionAble & removeParentOptions) {
+  async insertSingleNode(schema: SchemaNode, options: Transactionable & removeParentOptions) {
     const { transaction } = options;
 
     const db = this.database;
