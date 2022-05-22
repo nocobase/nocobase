@@ -16,5 +16,6 @@ export async function get(ctx: Context, next) {
   });
 
   ctx.body = instance;
+
   await next();
 }

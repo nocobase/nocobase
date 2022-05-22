@@ -73,6 +73,9 @@ export class ClientPlugin extends Plugin {
       if (!root) {
         return next();
       }
+      if (ctx.path.startsWith(this.app.resourcer.options.prefix)) {
+        return next();
+      }
       await serve(root)(ctx, next);
       // console.log('koa-send', root, ctx.status);
       if (ctx.status == 404) {
