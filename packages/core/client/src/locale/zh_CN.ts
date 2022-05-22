@@ -504,5 +504,5 @@ export default {
   'Updated successfully': '更新成功',
   'After successful save': '保存成功后',
   'After clicking the custom button, the following field values will be assigned according to the following form.': '点击当前自定义按钮时，以下字段值将按照以下表单赋值。',
-  'After clicking the custom button, The following fields of the current record will be saved according to the following form.': '点击当前自定义按钮时，当前数据以下字段将按照以下表单保存。',
+  'After clicking the custom button, the following fields of the current record will be saved according to the following form.': '点击当前自定义按钮时，当前数据以下字段将按照以下表单保存。',
 }

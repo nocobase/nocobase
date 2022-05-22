@@ -47,10 +47,10 @@ export const ActionDesigner = (props) => {
 
   const tips = {
     'customize:update': t(
-      'After clicking the custom button, The following fields of the current record will be saved according to the following form.',
+      'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
     ),
     'customize:save': t(
-      'After clicking the custom button, The following fields of the current record will be saved according to the following form.',
+      'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
     ),
   };
   return (
@@ -160,7 +160,7 @@ export const ActionDesigner = (props) => {
             }}
           />
         )}
-        {isValid(fieldSchema?.['x-action-settings']?.overwriteValues) && (
+        {/* {isValid(fieldSchema?.['x-action-settings']?.overwriteValues) && (
           <SchemaSettings.ModalItem
             title={t('Form values')}
             schema={
@@ -192,7 +192,7 @@ export const ActionDesigner = (props) => {
               } catch (e) {}
             }}
           />
-        )}
+        )} */}
         {isValid(fieldSchema?.['x-action-settings']?.['onSuccess']) && (
           <SchemaSettings.ModalItem
             title={
