@@ -7,19 +7,23 @@ export function dataWrapping() {
     if (ctx.withoutDataWrapping) {
       return;
     }
+
     if (!ctx?.action?.params) {
       return;
     }
+ 
     if (ctx.body instanceof Buffer) {
       return;
     }
-
-    if (ctx.body === undefined) {
-      ctx.body = {};
+ 
+    if (!ctx.body) {
+      if (ctx.action.actionName == 'get') {
+        ctx.status = 404;
+      }
     }
 
     const { rows, ...meta } = ctx.body || {};
-
+ 
     if (rows) {
       ctx.body = {
         data: rows,
@@ -29,10 +33,6 @@ export function dataWrapping() {
       ctx.body = {
         data: ctx.body,
       };
-
-      if (ctx.status === 204) {
-        ctx.status = 200;
-      }
     }
   };
 }
