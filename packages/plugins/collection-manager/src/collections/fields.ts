@@ -41,6 +41,7 @@ export default {
       target: 'collections',
       foreignKey: 'collectionName',
       targetKey: 'name',
+      onDelete: 'CASCADE',
     },
     {
       type: 'hasMany',
@@ -60,7 +61,7 @@ export default {
       type: 'belongsTo',
       name: 'uiSchema',
       target: 'uiSchemas',
-      foreignKey: 'uiSchemaUid'
+      foreignKey: 'uiSchemaUid',
     },
     {
       type: 'json',
