@@ -2,6 +2,8 @@
 
 ## 2022/05/23 ~ v0.7.0-alpha.59
 
+- feat(docs): add alert message
+- fix(create-nocobase-app): storage path error
 - fix(client): improve translation
 - fix(cli): nocobase test command --db-clean option is invalid
 - refactor(plugin-workflow): change column type of executed from boolean to integer (#411)
@@ -34,6 +36,10 @@
 - `@nocobase/preset-nocobase`
 - create scaffolding `create-nocobase-app`
 - Documents theme `dumi-theme-nocobase`
+
+### Breaking changes
+
+📢 Previously created projects need to be recreated.
 
 ## 2022/05/14 ~ v0.7.0-alpha.34
 

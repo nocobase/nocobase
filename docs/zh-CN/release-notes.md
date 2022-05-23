@@ -1,7 +1,9 @@
 # 更新日志
 
-## 2022/05/23 ~ v0.7.0-alpha.59
+## 2022/05/23 ~ v0.7.0-alpha.62
 
+- feat(docs): add alert message
+- fix(create-nocobase-app): storage path error
 - fix(client): improve translation
 - fix(cli): nocobase test command --db-clean option is invalid
 - refactor(plugin-workflow): change column type of executed from boolean to integer (#411)
@@ -36,6 +38,10 @@
 - 将 NocoBase 无代码平台插件放到一起 `@nocobase/preset-nocobase`
 - 改进 create 脚手架 `create-nocobase-app`
 - 官网文档主题 `dumi-theme-nocobase`
+
+### Breaking changes
+
+📢 在此之前创建的项目需要重新创建。
 
 ## 2022/05/14 ~ v0.7.0-alpha.34
 
