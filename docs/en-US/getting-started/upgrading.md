@@ -1,5 +1,11 @@
 # Upgrading
 
+<Alert>
+
+This document only applies to versions after v0.7.0-alpha.57. Projects created before need to be recreated.
+
+</Alert>
+
 Make sure to back up your database before upgrading
 
 ## Docker

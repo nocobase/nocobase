@@ -37,6 +37,10 @@
 - 改进 create 脚手架 `create-nocobase-app`
 - 官网文档主题 `dumi-theme-nocobase`
 
+### Breaking changes
+
+📢 在此之前创建的项目需要重新创建。
+
 ## 2022/05/14 ~ v0.7.0-alpha.34
 
 - feat: add plugins:getPinned action api

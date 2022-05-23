@@ -35,6 +35,10 @@
 - create scaffolding `create-nocobase-app`
 - Documents theme `dumi-theme-nocobase`
 
+### Breaking changes
+
+📢 Previously created projects need to be recreated.
+
 ## 2022/05/14 ~ v0.7.0-alpha.34
 
 - feat: add plugins:getPinned action api
