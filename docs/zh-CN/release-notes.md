@@ -1,7 +1,9 @@
 # 更新日志
 
-## 2022/05/23 ~ v0.7.0-alpha.59
+## 2022/05/23 ~ v0.7.0-alpha.62
 
+- feat(docs): add alert message
+- fix(create-nocobase-app): storage path error
 - fix(client): improve translation
 - fix(cli): nocobase test command --db-clean option is invalid
 - refactor(plugin-workflow): change column type of executed from boolean to integer (#411)
