@@ -1,6 +1,6 @@
 # Release Notes
 
-## 2022/05/22 ~ v0.7.0-alpha.59
+## 2022/05/23 ~ v0.7.0-alpha.59
 
 - fix(client): improve translation
 - fix(cli): nocobase test command --db-clean option is invalid
