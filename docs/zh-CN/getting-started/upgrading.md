@@ -21,14 +21,17 @@ cd nocobase/docker/app-mysql
 cd nocobase/docker/app-postgres
 ```
 
-使用 `docker-compose` 停止、删除应用，并下载最新镜像
+`docker-compose.yml` 文件，app 容器的 image 替换为最新版本
+
+```yml
+services:
+  app:
+    image: nocobase/nocobase:0.7.0-alpha.62
+```
+
+下载最新镜像并启动容器
 
 ```bash
-# 停止应用
-docker-compose stop app
-# 删除应用
-docker-compose rm app
-# 下载最新镜像并启动
 docker-compose up -d app
 # 查看 app 进程的情况
 docker-compose logs app
