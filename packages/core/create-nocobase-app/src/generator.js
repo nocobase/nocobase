@@ -80,7 +80,7 @@ class AppGenerator extends Generator {
         if (!allDbDialect) {
           dependencies.push(`"sqlite3": "^5.0.8"`);
         }
-        envs.push(`DB_STORAGE=${env.DB_STORAGE || 'storages/db/nocobase.sqlite'}`);
+        envs.push(`DB_STORAGE=${env.DB_STORAGE || 'storage/db/nocobase.sqlite'}`);
         break;
       case 'mysql':
         if (!allDbDialect) {
