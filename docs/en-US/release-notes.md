@@ -1,5 +1,26 @@
 # Release Notes
 
+## 2022/05/22 ~ v0.7.0-alpha.59
+
+- fix(client): improve translation
+- fix(cli): nocobase test command --db-clean option is invalid
+- refactor(plugin-workflow): change column type of executed from boolean to integer (#411)
+
+## 2022/05/22 ~ v0.7.0-alpha.58
+
+- fix: 204 no content response (#378)
+- feat: destroy association field after target collection destroy (#376)
+- fix(type): use sequelize native Transactionable instead of TransactionAble (#410)
+- fix(plugin-workflow): remove previous listeners when collection changed in config (#409)
+- fix(plugin-acl): missing pagination parameters (#394)
+- feat(client): add custom action (#396)
+- refactor(plugin-workflow): multiple instances and event management (fix #384) (#408)
+- feat(cli): --db-sync options
+- fix(client): pagination dropdown menu is blocked (#398)
+- feat: display version number (#386)
+- fix: missing isTruly/isFalsy filter operators (#390)
+- fix(client): reset page number to first page (#399)
+
 ## 2022/05/19 ~ v0.7.0-alpha.57
 
 ### New features
