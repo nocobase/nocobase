@@ -15,7 +15,7 @@ The directory structure of the application scaffold created by `create-nocobase-
       ├── client      # Client-side modules
       ├── server      # Server-side modules
     ├── plugins       # Plugins directory
-  ├── storages        # For database files, attachments, cache, etc.
+  ├── storage        # For database files, attachments, cache, etc.
     ├── db
   ├── .env            # Environment variables
   ├── .buildrc.ts     # Packaging configuration for packages, supports cjs, esm and umd packaging.
