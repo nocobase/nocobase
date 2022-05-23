@@ -1,5 +1,8 @@
 const { existsSync } = require('fs');
 const { resolve } = require('path');
+const packageJson = require('./package.json');
+
+console.log('VERSION: ', packageJson?.version);
 
 function getUmiConfig() {
   const { APP_PORT, API_BASE_URL } = process.env;
@@ -23,6 +26,8 @@ function getUmiConfig() {
   return {
     define: {
       'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,
+      'process.env.APP_ENV': process.env.APP_ENV,
+      'process.env.VERSION': packageJson?.version,
     },
     // only proxy when using `umi dev`
     // if the assets are built, will not proxy

@@ -15,7 +15,7 @@ $ yarn create nocobase-app my-nocobase-app
       ├── client      # 客户端模块
       ├── server      # 服务端模块
     ├── plugins       # 插件目录
-  ├── storages        # 用于存放数据库文件、附件、缓存等
+  ├── storage        # 用于存放数据库文件、附件、缓存等
     ├── db
   ├── .env            # 环境变量
   ├── .buildrc.ts     # packages 的打包配置，支持 cjs、esm 和 umd 三种格式的打包。
