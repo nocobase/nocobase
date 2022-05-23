@@ -4,28 +4,29 @@
 
 - `core` Roles & Permissions
 - `core` Upgrading
-- `core` Relationships
 - `plugin` Workflow
+- `core` Custom actions
 - `doc` Development Doc
 
 ## Developing
 
-- `core` Custom actions
 - `plugin` Action logs
-- `plugin` Database connection
+- `plugin` Export
+- `core` Plugins manager
 
 ## Planning
 
+- `plugin` Reference and copy data from related tables
+- `plugin` Formula
 - `ui` Mobile version
-- `plugin` Export
-- `plugin` Open API
-- `core` Plugins manager
+- `plugin` Data visualization(low code)
+- `plugin` Aggregate calculation
 
 ## Future
 
+- `plugin` Database connection
 - `plugin` Approval
 - `plugin` Full-text search
 - `plugin` Shared pages
-- `plugin` Reference and copy data from other tables
-- `plugin` Formula
-- `plugin` Data visualization
+- `plugin` Data visualization(no code)
+- `plugin` Open API
