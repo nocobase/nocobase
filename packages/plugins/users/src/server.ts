@@ -1,8 +1,10 @@
 import { Collection, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
+import { namespace } from './';
 import * as actions from './actions/users';
 import { JwtOptions, JwtService } from './jwt-service';
+import { enUS, zhCN } from './locale';
 import * as middlewares from './middlewares';
 import { UserModel } from './models/UserModel';
 
@@ -19,6 +21,8 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
   }
 
   async beforeLoad() {
+    this.app.i18n.addResources('zh-CN', namespace, zhCN);
+    this.app.i18n.addResources('en-US', namespace, enUS);
     const cmd = this.app.findCommand('install');
     if (cmd) {
       cmd.requiredOption('-e, --root-email <rootEmail>', '', process.env.INIT_ROOT_EMAIL);

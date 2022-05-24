@@ -59,6 +59,7 @@ export class APIClient {
   authMiddleware() {
     this.axios.interceptors.request.use((config) => {
       const token = localStorage.getItem(this.tokenKey);
+      config.headers['X-Locale'] = localStorage.getItem('NOCOBASE_LANG');
       config.headers['X-Hostname'] = window.location.hostname;
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
