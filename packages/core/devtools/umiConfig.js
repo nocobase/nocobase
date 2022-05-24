@@ -2,7 +2,7 @@ const { existsSync } = require('fs');
 const { resolve } = require('path');
 const packageJson = require('./package.json');
 
-console.log('VERSION: ', packageJson?.version);
+console.log('VERSION: ', packageJson.version);
 
 function getUmiConfig() {
   const { APP_PORT, API_BASE_URL } = process.env;
