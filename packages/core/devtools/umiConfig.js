@@ -27,7 +27,7 @@ function getUmiConfig() {
     define: {
       'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,
       'process.env.APP_ENV': process.env.APP_ENV,
-      'process.env.VERSION': packageJson?.version,
+      'process.env.VERSION': packageJson.version,
     },
     // only proxy when using `umi dev`
     // if the assets are built, will not proxy
