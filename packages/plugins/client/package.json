@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-client",
-  "version": "0.7.0-alpha.72",
+  "version": "0.7.0-alpha.78",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -10,10 +10,10 @@
     }
   ],
   "dependencies": {
-    "@nocobase/server": "0.7.0-alpha.72"
+    "@nocobase/server": "0.7.0-alpha.78"
   },
   "devDependencies": {
-    "@nocobase/test": "0.7.0-alpha.72"
+    "@nocobase/test": "0.7.0-alpha.78"
   },
   "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }
