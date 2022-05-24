@@ -1,7 +1,6 @@
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
-import { Command } from 'commander';
 import i18next from 'i18next';
 import { DefaultContext, DefaultState } from 'koa';
 import bodyParser from 'koa-bodyparser';
@@ -56,7 +55,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     const i18n = app.i18n.cloneInstance({ initImmediate: false });
     ctx.i18n = i18n;
     ctx.t = i18n.t.bind(i18n);
-    const lng = (ctx.request.query.locale as string) || ctx.acceptsLanguages().shift();
+    const lng = ctx.get('X-Locale') || (ctx.request.query.locale as string) || ctx.acceptsLanguages().shift() || 'en-US';
     if (lng !== '*' && lng) {
       i18n.changeLanguage(lng);
     }
