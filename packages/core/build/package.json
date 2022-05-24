@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/build",
-  "version": "0.7.0-alpha.63",
+  "version": "0.7.0-alpha.64",
   "description": "Library build tool based on rollup.",
   "main": "lib/index.js",
   "bin": {
