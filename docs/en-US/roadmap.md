@@ -4,6 +4,7 @@
 
 - `core` Roles & Permissions
 - `core` Upgrades & Migrations
+- `core` Datatable relationship
 - `plugin` Workflow
 - `core` Custom actions
 - `doc` Development Doc
