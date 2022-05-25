@@ -15,4 +15,5 @@ module.exports = (cli) => {
   require('./umi')(cli);
   require('./upgrade')(cli);
   require('./postinstall')(cli);
+  require('./create-plugin')(cli);
 }
