@@ -37,6 +37,9 @@ const filterByACL = (schema, options) => {
         if (element['x-uid'] && !allowMenuItemIds.includes(element['x-uid'])) {
           delete s.properties[key];
         }
+        if (element['x-uid']) {
+          filterSchema(element);
+        }
       }
     }
   };
