@@ -4,6 +4,7 @@
 
 - `core` 角色和权限
 - `core` 升级和迁移
+- `core` 表关联
 - `plugin` 工作流
 - `core` 自定义操作
 - `doc` 开发文档
