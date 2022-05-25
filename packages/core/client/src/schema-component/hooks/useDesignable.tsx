@@ -1,6 +1,7 @@
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { message } from 'antd';
+import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import set from 'lodash/set';
 import React, { useContext } from 'react';
@@ -325,6 +326,8 @@ export class Designable {
       if (removeParentsIfNoChildren) {
         opts['removed'] = this.recursiveRemoveIfNoChildren(schema.parent, { breakRemoveOn });
       }
+    } else if (schema) {
+      schema = cloneDeep(schema);
     }
     const properties = {};
     let start = false;
@@ -382,6 +385,8 @@ export class Designable {
       if (removeParentsIfNoChildren) {
         opts['removed'] = this.recursiveRemoveIfNoChildren(schema.parent, { breakRemoveOn });
       }
+    } else if (schema) {
+      schema = cloneDeep(schema);
     }
     const properties = {};
     let order = 1;
@@ -430,6 +435,8 @@ export class Designable {
       if (removeParentsIfNoChildren) {
         opts['removed'] = this.recursiveRemoveIfNoChildren(schema.parent, { breakRemoveOn });
       }
+    } else if (schema) {
+      schema = cloneDeep(schema);
     }
     this.prepareProperty(schema);
     const wrapped = wrap(schema);
@@ -466,6 +473,8 @@ export class Designable {
         opts['removed'] = this.recursiveRemoveIfNoChildren(schema.parent, { breakRemoveOn });
       }
       schema.parent = null;
+    } else if (schema) {
+      schema = cloneDeep(schema);
     }
 
     let order = 0;
