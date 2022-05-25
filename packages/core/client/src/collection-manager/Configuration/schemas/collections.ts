@@ -26,7 +26,7 @@ const collection: CollectionOptions = {
         title: '{{ t("Collection name") }}',
         type: 'string',
         'x-component': 'Input',
-        // description: '使用英文',
+        description: '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
       },
     },
     {
