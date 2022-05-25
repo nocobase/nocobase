@@ -17,17 +17,17 @@ In this order management system, we need to have the information of `Customers`,
     - Description
     - Images
     - Price
-    - Order Details (In which orders the product was purchased, data from `Order Details`, each product data belongs to multiple order details data)
+    - Order Items (In which orders the product was purchased, data from `Order Items`, each product data belongs to multiple Order Items data)
 - Orders
     - Serial number
     - Total
     - Note
     - Address
     - Customer (Customers who own the order, data from `Customers`, each order data belongs to a customer data)
-    - Order details (The products in the order, data from `Order Details`, each order data contains multiple order details data)
-- Order Details
-    - Order (The order to which the detail belongs, data from `Orders`, each order detail data belongs to an order data)
-    - Product (The products contained in this detail, data from `Products`, each order detail data contains a product data)
+    - Order Items (The products in the order, data from `Order Items`, each order data contains multiple Order Items data)
+- Order Items
+    - Order (The order to which the item belongs, data from `Orders`, each order item data belongs to an order data)
+    - Product (The products contained in this item, data from `Products`, each order item data contains a product data)
     - Quantity
 
 Where the fields with underscores are relational fields, associated to other data tables.
@@ -44,13 +44,13 @@ In the same way, add Birthday, Gender, and Phone for `Customers`, which are the 
 
 ![1.fields.jpg](./5-minutes-to-get-started/1.fields.jpg)
 
-In the same way, create Collections `Products`, `Orders`, `Order Details` and their fields.
+In the same way, create Collections `Products`, `Orders`, `Order Items` and their fields.
 
 ![1.collections.jpg](./5-minutes-to-get-started/1.collections.jpg)
 
  
 
-In this case, for the relationship fields, we have to select the Link to type, thus creating an association between the data collections. In this example, we associate `Products` with `Orders` and use `Order Details` as an junction collection.
+In this case, for the relationship fields, we have to select the Link to type, thus creating an association between the data collections. In this example, we associate `Products` with `Orders` and use `Order Items` as an junction collection.
 
 ![1.relation.jpg](./5-minutes-to-get-started/1.relation.jpg)
 
@@ -72,7 +72,7 @@ After adding menus and pages, we can add and configure blocks within the pages.
 
 ## 3. Adding and Configuring Blocks
 
-NocoBase currently supports table, kanban, calendar, form, details, and other types of blocks that present data from a data collection and allow manipulation of the data. Obviously, customers, orders, and products are suitable for displaying and manipulating in a table block.
+NocoBase currently supports table, kanban, calendar, form, items, and other types of blocks that present data from a data collection and allow manipulation of the data. Obviously, customers, orders, and products are suitable for displaying and manipulating in a table block.
 
 We add a table block to the "All Orders" page, select Collection `Orders` as the data source, and configure the columns to be displayed for this table block.
 
@@ -82,7 +82,7 @@ Configure actions for this table block, including filter, add, delete, view, and
 
 ![1.action.gif](./5-minutes-to-get-started/1.action.gif)
 
-Configure form and detail blocks for add, edit, view actions.
+Configure form and item blocks for add, edit, view actions.
 
 ![1.action-block.gif](./5-minutes-to-get-started/1.action-block.gif)
 
