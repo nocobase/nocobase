@@ -346,6 +346,7 @@ export default {
   'Accept': '文件格式',
   'Rich Text': '富文本',
   'Junction collection': '中间表',
+  'Leave it blank, unless you need a custom intermediate table': '默认留空，除非你需要一个自定义的中间表',
   'Fields': '字段',
   'Edit field title': '编辑字段标题',
   'Field title': '字段标题',
