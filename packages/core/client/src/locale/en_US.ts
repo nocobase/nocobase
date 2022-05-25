@@ -299,4 +299,7 @@ export default {
   'After successful update': 'After successful update',
   'Save record': 'Save record',
   'After successful save': 'After successful save',
+  'Button background color': 'Button background color',
+  'Highlight': 'Highlight',
+  'Danger red': 'Danger red'
 }
