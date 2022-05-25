@@ -506,4 +506,7 @@ export default {
   'After successful save': '保存成功后',
   'After clicking the custom button, the following field values will be assigned according to the following form.': '点击当前自定义按钮时，以下字段值将按照以下表单赋值。',
   'After clicking the custom button, the following fields of the current record will be saved according to the following form.': '点击当前自定义按钮时，当前数据以下字段将按照以下表单保存。',
+  'Button background color': '按钮颜色',
+  'Highlight': '高亮',
+  'Danger red': '红色'
 }

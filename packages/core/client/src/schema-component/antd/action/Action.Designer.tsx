@@ -79,16 +79,35 @@ export const ActionDesigner = (props) => {
                   'x-component-props': {},
                   // description: `原字段标题：${collectionField?.uiSchema?.title}`,
                 },
+                type: {
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Radio.Group',
+                  title: t('Button background color'),
+                  default: fieldSchema?.['x-component-props']?.danger
+                    ? 'danger'
+                    : fieldSchema?.['x-component-props']?.type === 'primary'
+                    ? 'primary'
+                    : 'default',
+                  enum: [
+                    { value: 'default', label: '{{t("Default")}}' },
+                    { value: 'primary', label: '{{t("Highlight")}}' },
+                    { value: 'danger', label: '{{t("Danger red")}}' },
+                  ],
+                },
               },
             } as ISchema
           }
-          onSubmit={({ title, icon }) => {
+          onSubmit={({ title, icon, type }) => {
             if (title) {
               fieldSchema.title = title;
               field.title = title;
               field.componentProps.icon = icon;
+              field.componentProps.danger = type === 'danger';
+              field.componentProps.type = type;
               fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
               fieldSchema['x-component-props'].icon = icon;
+              fieldSchema['x-component-props'].danger = type === 'danger';
+              fieldSchema['x-component-props'].type = type;
               dn.emit('patch', {
                 schema: {
                   ['x-uid']: fieldSchema['x-uid'],
