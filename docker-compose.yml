@@ -46,9 +46,7 @@ services:
     volumes:
       - ./:/var/www/app
   nocobase:
-    build:
-      context: .
-      dockerfile: ./docker/node/Dockerfile
+    image: node:16-stretch-slim
     networks:
       - nocobase
     command: [ "yarn", "start" ]
