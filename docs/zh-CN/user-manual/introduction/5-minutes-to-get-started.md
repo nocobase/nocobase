@@ -17,15 +17,15 @@
     - 描述
     - 图片
     - 价格
-    - 订单明细（在哪些订单中购买了该商品，数据来自`Order Details`，每条商品数据属于多条订单明细数据）
+    - 订单明细（在哪些订单中购买了该商品，数据来自`Order Items`，每条商品数据属于多条订单明细数据）
 - Orders
     - 订单编号
     - 总价
     - 备注
     - 地址
     - 顾客（该订单所属的顾客，数据来自`Customers`，每条订单数据属于一条顾客数据）
-    - 订单明细（该订单中的商品，数据来自`Order Details`，每条订单数据包含多条订单明细数据）
-- Order Details
+    - 订单明细（该订单中的商品，数据来自`Order Items`，每条订单数据包含多条订单明细数据）
+- Order Items
     - 订单（该明细所属的订单，数据来自`Orders`，每条订单明细数据属于一条订单数据）
     - 商品（该明细所包含的商品，数据来自`Products`，每条订单明细数据包含一条商品数据）
     - 数量
@@ -44,13 +44,13 @@
 
 ![1.fields.jpg](./5-minutes-to-get-started/1.fields.jpg)
 
-用同样的方法，创建 Collection `Products`、`Orders`、`Order Details` 以及它们的字段。
+用同样的方法，创建 Collection `Products`、`Orders`、`Order Items` 以及它们的字段。
 
 ![1.collections.jpg](./5-minutes-to-get-started/1.collections.jpg)
 
  
 
-其中，对于关系字段，我们要选择 Link to 类型，从而建立数据表之间的关联。在这个例子中，我们将 `Products` 与 `Orders` 关联，并使用 `Order Details` 作为中间表。
+其中，对于关系字段，我们要选择 Link to 类型，从而建立数据表之间的关联。在这个例子中，我们将 `Products` 与 `Orders` 关联，并使用 `Order Items` 作为中间表。
 
 ![1.relation.jpg](./5-minutes-to-get-started/1.relation.jpg)
 
