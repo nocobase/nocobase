@@ -486,6 +486,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const cancelHandler = () => {
     setVisible(false);
   };
+
   const submitHandler = () => {
     onSubmit?.(cloneDeep(form.values));
     setVisible(false);
@@ -504,12 +505,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   };
 
   return (
-    <div
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-    >
+    <>
       <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler}>
         {props.children || props.title}
       </SchemaSettings.Item>
@@ -538,7 +534,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
           </FormLayout>
         </FormProvider>
       </Modal>
-    </div>
+    </>
   );
 });
 
