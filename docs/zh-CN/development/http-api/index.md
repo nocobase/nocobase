@@ -281,12 +281,6 @@ Response 200 (application/json)
   data: {
     id: 1
   },
-  meta: {
-    count: 1
-    page: 1,
-    pageSize: 1,
-    totalPage: 1
-  },
 }
 ```
 

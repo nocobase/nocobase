@@ -1,5 +1,31 @@
 # Release Notes
 
+## 2022/05/26 ~ v0.7.0-alpha.82
+
+- feat(client,sdk): improve api client
+
+### Breaking Change
+
+There are major changes to the `@nocobase/sdk` API, see details [JavaScript SDK](./development/http-api/javascript-sdk.md)
+
+## 2022/05/25 ~ v0.7.0-alpha.81
+
+- feat: add create-plugin command (#423)
+- fix: "typescript": "4.5.5"
+- docs: update documentation
+- fix(client): filter menu item schema by permissions
+- fix(database): cannot read properties of null (reading 'substring')
+- fix(client): add description
+- fix(client): clone schema before insert
+- feat(client): add a description to the junction collection field
+- fix(devtools): unexpected token '.'
+
+## 2022/05/24 ~ v0.7.0-alpha.78
+
+- fix(client): add RemoteDocumentTitleProvider
+- fix(client): incomplete calendar events
+- fix(plugin-users): add translations (#416)
+
 ## 2022/05/23 ~ v0.7.0-alpha.59
 
 - feat(docs): add alert message

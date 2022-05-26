@@ -52,15 +52,67 @@ mock.onGet('users:get').reply(200, {
 await api.request({ url: 'users:get' });
 ```
 
+## Storage
+
+APIClient 默认使用的 localStorage，你也可以自定义 Storage，如：
+
+```ts
+import { Storage } from '@nocobase/sdk';
+
+class MemoryStorage extends Storage {
+  items = new Map();
+
+  clear() {
+    this.items.clear();
+  }
+
+  getItem(key: string) {
+    return this.items.get(key);
+  }
+
+  setItem(key: string, value: string) {
+    return this.items.set(key, value);
+  }
+
+  removeItem(key: string) {
+    return this.items.delete(key);
+  }
+}
+
+const api = new APIClient({
+  baseURL: 'https://localhost:8000/api',
+  storageClass: CustomStorage,
+});
+```
+
 ## Auth
 
 ```ts
-// 直接传 token
-api.auth.token = '123';
-// 或者通过 signIn 登录
-api.auth.signIn();
-// 注销并删除 token 缓存
+// 登录并记录 token
+api.auth.signIn({ email, password });
+// 注销并删除 token
 api.auth.signOut();
+// 设置 token
+api.auth.setToken('123');
+// 设置 role（当需要多角色时）
+api.auth.setRole('admin');
+// 设置 locale（当需要多语言时）
+api.auth.setLocale('zh-CN');
+```
+
+自定义 Auth
+
+```ts
+import { Auth } from '@nocobase/sdk';
+
+class CustomAuth extends Auth {
+
+}
+
+const api = new APIClient({
+  baseURL: 'https://localhost:8000/api',
+  authClass: CustomAuth,
+});
 ```
 
 ## Request
