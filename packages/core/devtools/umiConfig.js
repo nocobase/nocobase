@@ -46,11 +46,14 @@ function getUmiConfig() {
 function resolveNocobasePackagesAlias(config) {
   const clientSrc = resolve(process.cwd(), './packages/core/client/src');
   const utilsSrc = resolve(process.cwd(), './packages/core/utils/src');
+  const sdkSrc = resolve(process.cwd(), './packages/core/sdk/src');
   if (existsSync(clientSrc)) {
     config.module.rules.get('ts-in-node_modules').include.add(clientSrc);
     config.resolve.alias.set('@nocobase/client', clientSrc);
     config.module.rules.get('ts-in-node_modules').include.add(utilsSrc);
     config.resolve.alias.set('@nocobase/utils', utilsSrc);
+    config.module.rules.get('ts-in-node_modules').include.add(sdkSrc);
+    config.resolve.alias.set('@nocobase/sdk', sdkSrc);
   }
 }
 

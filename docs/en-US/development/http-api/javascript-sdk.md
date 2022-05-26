@@ -52,15 +52,67 @@ mock.onGet('users:get').reply(200, {
 await api.request({ url: 'users:get' });
 ```
 
+## Storage
+
+APIClient uses localStorage by default, you can also custom storage.
+
+```ts
+import { Storage } from '@nocobase/sdk';
+
+class MemoryStorage extends Storage {
+  items = new Map();
+
+  clear() {
+    this.items.clear();
+  }
+
+  getItem(key: string) {
+    return this.items.get(key);
+  }
+
+  setItem(key: string, value: string) {
+    return this.items.set(key, value);
+  }
+
+  removeItem(key: string) {
+    return this.items.delete(key);
+  }
+}
+
+const api = new APIClient({
+  baseURL: 'https://localhost:8000/api',
+  storageClass: CustomStorage,
+});
+```
+
 ## Auth
 
 ```ts
-// Pass token directly
-api.auth.token = '123';
-// Or sign in via signIn
-api.auth.signIn();
-// Log out and delete the token cache
+// sign in and remember the current token
+api.auth.signIn({ email, password });
+// sign out and delete the token
 api.auth.signOut();
+// set the token
+api.auth.setToken('123');
+// set the role (multiple roles)
+api.auth.setRole('admin');
+// set the locale (multiple languages)
+api.auth.setLocale('zh-CN');
+```
+
+Custom Auth
+
+```ts
+import { Auth } from '@nocobase/sdk';
+
+class CustomAuth extends Auth {
+
+}
+
+const api = new APIClient({
+  baseURL: 'https://localhost:8000/api',
+  authClass: CustomAuth,
+});
 ```
 
 ## Request

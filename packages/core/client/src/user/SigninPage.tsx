@@ -68,13 +68,8 @@ const useSignin = () => {
   return {
     async run() {
       await form.submit();
-      const response = await api.resource('users').signin({
-        values: form.values,
-      });
-      if (response?.data?.data?.token) {
-        api.setBearerToken(response?.data?.data?.token);
-        history.push(redirect || '/admin');
-      }
+      await api.auth.signIn(form.values);
+      history.push(redirect || '/admin');
     },
   };
 };
