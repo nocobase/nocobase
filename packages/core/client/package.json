@@ -18,6 +18,7 @@
     "@formily/antd": "2.0.20",
     "@formily/core": "2.0.20",
     "@formily/react": "2.0.20",
+    "@nocobase/sdk": "0.7.0-alpha.81",
     "@nocobase/utils": "0.7.0-alpha.81",
     "ahooks": "^3.0.5",
     "antd": "~4.19.5",

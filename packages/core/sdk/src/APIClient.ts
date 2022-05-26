@@ -24,29 +24,55 @@ export interface IResource {
 
 class Auth {
   protected api: APIClient;
-  protected token: string;
-  protected role: string;
+
+  public token: string;
+
+  public role: string;
+
+  public locale: string;
 
   constructor(api: APIClient) {
     this.api = api;
-    this.api.axios.interceptors.request.use((config) => {
-      config.headers['X-Hostname'] = window.location.hostname;
-      if (this.role) {
-        config.headers['X-Role'] = this.role;
-      }
-      if (this.token) {
-        config.headers['Authorization'] = `Bearer ${this.token}`;
-      }
-      return config;
-    });
+    this.initFromStorage();
+    this.api.axios.interceptors.request.use(this.middleware.bind(this));
+  }
+
+  middleware(config) {
+    if (this.locale) {
+      config.headers['X-Locale'] = this.locale;
+    }
+    if (this.role) {
+      config.headers['X-Role'] = this.role;
+    }
+    if (this.token) {
+      config.headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    return config;
+  }
+
+  initFromStorage() {
+    this.token = localStorage.getItem('NOCOBASE_TOKEN');
+    this.role = localStorage.getItem('NOCOBASE_ROLE');
+    this.locale = localStorage.getItem('NOCOBASE_LOCALE');
+  }
+
+  setLocale(locale: string) {
+    this.locale = locale;
+    localStorage.setItem('NOCOBASE_LOCALE', locale || '');
   }
 
   setToken(token: string) {
     this.token = token;
+    localStorage.setItem('NOCOBASE_TOKEN', token || '');
+    if (!token) {
+      this.setRole(null);
+      this.setLocale(null);
+    }
   }
 
   setRole(role: string) {
     this.role = role;
+    localStorage.setItem('NOCOBASE_ROLE', role || '');
   }
 
   async signIn(values) {
@@ -56,7 +82,7 @@ class Auth {
       data: values,
     });
     const data = response?.data?.data;
-    this.token = data;
+    this.setToken(data?.token);
     return data;
   }
 
@@ -65,7 +91,7 @@ class Auth {
       method: 'post',
       url: 'users:signout',
     });
-    this.token = null;
+    this.setToken(null);
   }
 }
 
@@ -73,17 +99,18 @@ export class APIClient {
   axios: AxiosInstance;
   auth: Auth;
 
-  constructor(instance?: AxiosInstance | AxiosRequestConfig) {
+  constructor(instance?: AxiosInstance | AxiosRequestConfig, customAuth?: typeof Auth) {
     if (typeof instance === 'function') {
       this.axios = instance;
     } else {
       this.axios = axios.create(instance);
     }
-    this.auth = new Auth(this);
-    this.qsMiddleware();
+    const Authorization = customAuth || Auth;
+    this.auth = new Authorization(this);
+    this.paramsSerializer();
   }
 
-  qsMiddleware() {
+  paramsSerializer() {
     this.axios.interceptors.request.use((config) => {
       config.paramsSerializer = (params) => {
         return qs.stringify(params, {

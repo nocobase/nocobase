@@ -7,7 +7,7 @@ const log = require('debug')('i18next');
 export const i18n = i18next.createInstance();
 
 i18n.use(initReactI18next).init({
-  lng: localStorage.getItem('NOCOBASE_LANG') || 'en-US',
+  lng: localStorage.getItem('NOCOBASE_LOCALE') || 'en-US',
   // debug: true,
   defaultNS: 'client',
   // parseMissingKeyHandler: (key) => {
@@ -29,9 +29,9 @@ function setMomentLng(language) {
   moment.locale(lng);
 }
 
-setMomentLng(localStorage.getItem('NOCOBASE_LANG'));
+setMomentLng(localStorage.getItem('NOCOBASE_LOCALE'));
 
 i18n.on('languageChanged', (lng) => {
-  localStorage.setItem('NOCOBASE_LANG', lng);
+  localStorage.setItem('NOCOBASE_LOCALE', lng);
   setMomentLng(lng);
 });
