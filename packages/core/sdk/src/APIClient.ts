@@ -22,42 +22,100 @@ export interface IResource {
   [key: string]: (params?: ActionParams) => Promise<any>;
 }
 
-class Auth {
+export class Auth {
   protected api: APIClient;
-  protected token: string;
-  protected role: string;
+
+  protected options = {
+    token: null,
+    locale: null,
+    role: null,
+  };
 
   constructor(api: APIClient) {
     this.api = api;
-    this.api.axios.interceptors.request.use((config) => {
-      config.headers['X-Hostname'] = window.location.hostname;
-      if (this.role) {
-        config.headers['X-Role'] = this.role;
-      }
-      if (this.token) {
-        config.headers['Authorization'] = `Bearer ${this.token}`;
-      }
-      return config;
-    });
+    this.locale = this.getLocale();
+    this.role = this.getRole();
+    this.token = this.getToken();
+    this.api.axios.interceptors.request.use(this.middleware.bind(this));
+  }
+
+  get locale() {
+    return this.getLocale();
+  }
+
+  get role() {
+    return this.getRole();
+  }
+
+  get token() {
+    return this.getToken();
+  }
+
+  set locale(value) {
+    this.setLocale(value);
+  }
+
+  set role(value) {
+    this.setRole(value);
+  }
+
+  set token(value) {
+    this.setToken(value);
+  }
+
+  middleware(config: AxiosRequestConfig) {
+    if (this.locale) {
+      config.headers['X-Locale'] = this.locale;
+    }
+    if (this.role) {
+      config.headers['X-Role'] = this.role;
+    }
+    if (this.token) {
+      config.headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    return config;
+  }
+
+  getLocale() {
+    return this.api.storage.getItem('NOCOBASE_LOCALE');
+  }
+
+  setLocale(locale: string) {
+    this.options.locale = locale;
+    this.api.storage.setItem('NOCOBASE_LOCALE', locale || '');
+  }
+
+  getToken() {
+    return this.api.storage.getItem('NOCOBASE_TOKEN');
   }
 
   setToken(token: string) {
-    this.token = token;
+    this.options.token = token;
+    this.api.storage.setItem('NOCOBASE_TOKEN', token || '');
+    if (!token) {
+      this.setRole(null);
+      this.setLocale(null);
+    }
+  }
+
+  getRole() {
+    return this.api.storage.getItem('NOCOBASE_ROLE');
   }
 
   setRole(role: string) {
-    this.role = role;
+    this.options.role = role;
+    this.api.storage.setItem('NOCOBASE_ROLE', role || '');
   }
 
-  async signIn(values) {
+  async signIn(values): Promise<AxiosResponse<any>> {
     const response = await this.api.request({
       method: 'post',
       url: 'users:signin',
       data: values,
     });
     const data = response?.data?.data;
-    this.token = data;
-    return data;
+    this.setToken(data?.token);
+    return response;
   }
 
   async signOut() {
@@ -65,25 +123,78 @@ class Auth {
       method: 'post',
       url: 'users:signout',
     });
-    this.token = null;
+    this.setToken(null);
   }
+}
+
+export abstract class Storage {
+  abstract clear(): void;
+  abstract getItem(key: string): string | null;
+  abstract removeItem(key: string): void;
+  abstract setItem(key: string, value: string): void;
+}
+
+export class MemoryStorage extends Storage {
+  items = new Map();
+
+  clear() {
+    this.items.clear();
+  }
+
+  getItem(key: string) {
+    return this.items.get(key);
+  }
+
+  setItem(key: string, value: string) {
+    return this.items.set(key, value);
+  }
+
+  removeItem(key: string) {
+    return this.items.delete(key);
+  }
+}
+
+interface ExtendedOptions {
+  authClass?: any;
+  storageClass?: any;
 }
 
 export class APIClient {
   axios: AxiosInstance;
   auth: Auth;
+  storage: Storage;
 
-  constructor(instance?: AxiosInstance | AxiosRequestConfig) {
+  constructor(instance?: AxiosInstance | (AxiosRequestConfig & ExtendedOptions)) {
     if (typeof instance === 'function') {
       this.axios = instance;
     } else {
-      this.axios = axios.create(instance);
+      const { authClass, storageClass, ...others } = instance || {};
+      this.axios = axios.create(others);
+      this.initStorage(storageClass);
+      if (authClass) {
+        this.auth = new authClass(this);
+      }
     }
-    this.auth = new Auth(this);
-    this.qsMiddleware();
+    if (!this.storage) {
+      this.initStorage();
+    }
+    if (!this.auth) {
+      this.auth = new Auth(this);
+    }
+    this.paramsSerializer();
   }
 
-  qsMiddleware() {
+  private initStorage(storage?: any) {
+    if (storage) {
+      this.storage = new storage(this);
+    } else if (localStorage) {
+      this.storage = localStorage;
+    } else {
+      this.storage = new MemoryStorage();
+    }
+  }
+
+  paramsSerializer() {
     this.axios.interceptors.request.use((config) => {
       config.paramsSerializer = (params) => {
         return qs.stringify(params, {

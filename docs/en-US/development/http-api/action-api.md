@@ -34,7 +34,6 @@ Request Body
 Response 200 (application/json)
 {
   "data": {},
-  "meta": {}
 }
 ```
 
@@ -51,7 +50,6 @@ Request Body
 Response 200 (application/json)
 {
   "data": {},
-  "meta": {}
 }
 ```
 
@@ -75,8 +73,7 @@ Response 200 (application/json)
     "user": {
       "id": 1
     }
-  },
-  "meta": {}
+  }
 }
 ```
 
@@ -117,8 +114,7 @@ Response 200 (application/json)
         "id": 2
       }
     }
-  ],
-  "meta": {}
+  ]
 }
 ```
 

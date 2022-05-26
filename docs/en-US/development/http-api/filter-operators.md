@@ -37,8 +37,8 @@
 
 ## boolean
 
-- $truthy
-- $falsy
+- $isTruthy
+- $isFalsy
 
 ## date
 
