@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/resourcer",
-  "version": "0.7.0-alpha.81",
+  "version": "0.7.0-alpha.82",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
