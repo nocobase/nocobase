@@ -168,7 +168,7 @@ export class APIClient {
     if (typeof instance === 'function') {
       this.axios = instance;
     } else {
-      const { authClass, storageClass, ...others } = instance;
+      const { authClass, storageClass, ...others } = instance || {};
       this.axios = axios.create(others);
       this.initStorage(storageClass);
       if (authClass) {
