@@ -22,22 +22,48 @@ export interface IResource {
   [key: string]: (params?: ActionParams) => Promise<any>;
 }
 
-class Auth {
+export class Auth {
   protected api: APIClient;
 
-  public token: string;
-
-  public role: string;
-
-  public locale: string;
+  protected options = {
+    token: null,
+    locale: null,
+    role: null,
+  };
 
   constructor(api: APIClient) {
     this.api = api;
-    this.initFromStorage();
+    this.locale = this.getLocale();
+    this.role = this.getRole();
+    this.token = this.getToken();
     this.api.axios.interceptors.request.use(this.middleware.bind(this));
   }
 
-  middleware(config) {
+  get locale() {
+    return this.getLocale();
+  }
+
+  get role() {
+    return this.getRole();
+  }
+
+  get token() {
+    return this.getToken();
+  }
+
+  set locale(value) {
+    this.setLocale(value);
+  }
+
+  set role(value) {
+    this.setRole(value);
+  }
+
+  set token(value) {
+    this.setToken(value);
+  }
+
+  middleware(config: AxiosRequestConfig) {
     if (this.locale) {
       config.headers['X-Locale'] = this.locale;
     }
@@ -50,32 +76,38 @@ class Auth {
     return config;
   }
 
-  initFromStorage() {
-    this.token = localStorage.getItem('NOCOBASE_TOKEN');
-    this.role = localStorage.getItem('NOCOBASE_ROLE');
-    this.locale = localStorage.getItem('NOCOBASE_LOCALE');
+  getLocale() {
+    return this.api.storage.getItem('NOCOBASE_LOCALE');
   }
 
   setLocale(locale: string) {
-    this.locale = locale;
-    localStorage.setItem('NOCOBASE_LOCALE', locale || '');
+    this.options.locale = locale;
+    this.api.storage.setItem('NOCOBASE_LOCALE', locale || '');
+  }
+
+  getToken() {
+    return this.api.storage.getItem('NOCOBASE_TOKEN');
   }
 
   setToken(token: string) {
-    this.token = token;
-    localStorage.setItem('NOCOBASE_TOKEN', token || '');
+    this.options.token = token;
+    this.api.storage.setItem('NOCOBASE_TOKEN', token || '');
     if (!token) {
       this.setRole(null);
       this.setLocale(null);
     }
   }
 
-  setRole(role: string) {
-    this.role = role;
-    localStorage.setItem('NOCOBASE_ROLE', role || '');
+  getRole() {
+    return this.api.storage.getItem('NOCOBASE_ROLE');
   }
 
-  async signIn(values) {
+  setRole(role: string) {
+    this.options.role = role;
+    this.api.storage.setItem('NOCOBASE_ROLE', role || '');
+  }
+
+  async signIn(values): Promise<AxiosResponse<any>> {
     const response = await this.api.request({
       method: 'post',
       url: 'users:signin',
@@ -83,7 +115,7 @@ class Auth {
     });
     const data = response?.data?.data;
     this.setToken(data?.token);
-    return data;
+    return response;
   }
 
   async signOut() {
@@ -95,19 +127,71 @@ class Auth {
   }
 }
 
+export abstract class Storage {
+  abstract clear(): void;
+  abstract getItem(key: string): string | null;
+  abstract removeItem(key: string): void;
+  abstract setItem(key: string, value: string): void;
+}
+
+export class MemoryStorage extends Storage {
+  items = new Map();
+
+  clear() {
+    this.items.clear();
+  }
+
+  getItem(key: string) {
+    return this.items.get(key);
+  }
+
+  setItem(key: string, value: string) {
+    return this.items.set(key, value);
+  }
+
+  removeItem(key: string) {
+    return this.items.delete(key);
+  }
+}
+
+interface ExtendedOptions {
+  authClass?: any;
+  storageClass?: any;
+}
+
 export class APIClient {
   axios: AxiosInstance;
   auth: Auth;
+  storage: Storage;
 
-  constructor(instance?: AxiosInstance | AxiosRequestConfig, customAuth?: typeof Auth) {
+  constructor(instance?: AxiosInstance | (AxiosRequestConfig & ExtendedOptions)) {
     if (typeof instance === 'function') {
       this.axios = instance;
     } else {
-      this.axios = axios.create(instance);
+      const { authClass, storageClass, ...others } = instance;
+      this.axios = axios.create(others);
+      this.initStorage(storageClass);
+      if (authClass) {
+        this.auth = new authClass(this);
+      }
     }
-    const Authorization = customAuth || Auth;
-    this.auth = new Authorization(this);
+    if (!this.storage) {
+      this.initStorage();
+    }
+    if (!this.auth) {
+      this.auth = new Auth(this);
+    }
     this.paramsSerializer();
+  }
+
+  private initStorage(storage?: any) {
+    if (storage) {
+      this.storage = new storage(this);
+    } else if (localStorage) {
+      this.storage = localStorage;
+    } else {
+      this.storage = new MemoryStorage();
+    }
   }
 
   paramsSerializer() {
