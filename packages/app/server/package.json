@@ -1,12 +1,12 @@
 {
   "name": "@nocobase/app-server",
-  "version": "0.7.0-alpha.81",
+  "version": "0.7.0-alpha.82",
   "description": "",
   "license": "MIT",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/preset-nocobase": "0.7.0-alpha.81"
+    "@nocobase/preset-nocobase": "0.7.0-alpha.82"
   },
   "repository": {
     "type": "git",
