@@ -47,8 +47,7 @@ export default class extends Plugin {
         this.toggle(workflow);
       });
 
-      db.on('workflows.afterCreate', (model: WorkflowModel) => this.toggle(model));
-      db.on('workflows.afterUpdate', (model: WorkflowModel) => this.toggle(model));
+      db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));
       db.on('workflows.afterDestroy', (model: WorkflowModel) => this.toggle(model, false));
     });
 
@@ -56,13 +55,18 @@ export default class extends Plugin {
     // this.app.on('db.init', async () => {});
   }
 
-  async toggle(workflow: WorkflowModel, enable?: boolean) {
+  toggle(workflow: WorkflowModel, enable?: boolean) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (typeof enable !== 'undefined' ? enable : workflow.get('enabled')) {
-      await trigger.on(workflow);
+      // NOTE: remove previous listener if config updated
+      const prev = workflow.previous();
+      if (prev.config) {
+        trigger.off({ ...workflow.get(), ...prev });
+      }
+      trigger.on(workflow);
     } else {
-      await trigger.off(workflow);
+      trigger.off(workflow);
     }
   }
 }

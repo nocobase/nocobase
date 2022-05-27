@@ -19,9 +19,24 @@ describe('workflow > triggers > schedule', () => {
     PostRepo = db.getCollection('posts').repository;
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.stop());
 
-  describe('cron', () => {
+  describe('constant mode', () => {
+    it('no cron configurated', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 0
+        }
+      });
+
+      await sleep(3000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+
     it('on every 2 seconds', async () => {
       const now = new Date();
       // NOTE: align to even(0, 2, ...) + 0.5 seconds to start
@@ -31,20 +46,38 @@ describe('workflow > triggers > schedule', () => {
         enabled: true,
         type: 'schedule',
         config: {
+          mode: 0,
           cron: '*/2 * * * * *',
         }
       });
-      // after create at 0.5s immediately trigger 1st time
 
       await sleep(4000);
-      // sleep 1.5s at 2s trigger 2nd time
-      // sleep 3.5s at 4s trigger 3rd time
-
-      // stop by disabled
-      await workflow.update({ enabled: false });
+      // sleep 1.5s at 2s trigger 1st time
+      // sleep 3.5s at 4s trigger 2nd time
 
       const executions = await workflow.getExecutions();
-      expect(executions.length).toBe(3);
+      expect(executions.length).toBe(2);
+    });
+
+    it('on every 2 seconds and limit once', async () => {
+      const now = new Date();
+      // NOTE: align to even(0, 2, ...) + 0.5 seconds to start
+      await sleep((2.5 - now.getSeconds() % 2) * 1000 - now.getMilliseconds());
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 0,
+          cron: '*/2 * * * * *',
+          limit: 1
+        }
+      });
+
+      await sleep(5000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
     });
 
     it('on certain second', async () => {
@@ -56,13 +89,12 @@ describe('workflow > triggers > schedule', () => {
         enabled: true,
         type: 'schedule',
         config: {
+          mode: 0,
           cron: `${now.getSeconds()} * * * * *`,
         }
       });
 
       await sleep(5000);
-
-      await workflow.update({ enabled: false });
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
@@ -78,6 +110,7 @@ describe('workflow > triggers > schedule', () => {
         enabled: true,
         type: 'schedule',
         config: {
+          mode: 0,
           cron: `${now.getSeconds()} * * * * *`,
         }
       });
@@ -86,6 +119,7 @@ describe('workflow > triggers > schedule', () => {
         enabled: true,
         type: 'schedule',
         config: {
+          mode: 0,
           cron: `${now.getSeconds()} * * * * *`,
         }
       });
@@ -101,6 +135,132 @@ describe('workflow > triggers > schedule', () => {
       const [e2] = await w1.getExecutions();
       expect(e2).toBeDefined();
       expect(e2.context.date).toBe(now.toISOString());
+    });
+  });
+
+  describe('collection field mode', () => {
+    it('starts on post.createdAt with offset', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt',
+            offset: 2000
+          }
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' }});
+
+      await sleep(1000);
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+
+      await sleep(1000);
+      const [execution] = await workflow.getExecutions();
+      expect(execution).toBeDefined();
+      expect(execution.context.data.id).toBe(post.id);
+
+      const triggerTime = new Date(post.createdAt.getTime() + 2000);
+      triggerTime.setMilliseconds(0);
+      expect(execution.context.date).toBe(triggerTime.toISOString());
+    });
+
+    it('starts on post.createdAt and cron', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt'
+          },
+          cron: '*/2 * * * * *'
+        }
+      });
+
+      const now = new Date();
+      await sleep((2.5 - now.getSeconds() % 2) * 1000 - now.getMilliseconds());
+      const startTime = new Date();
+      startTime.setMilliseconds(500);
+
+      const post = await PostRepo.create({ values: { title: 't1' }});
+
+      await sleep(5000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(2);
+      const d1 = Date.parse(executions[0].context.date);
+      expect(d1 - 1500).toBe(startTime.getTime());
+      const d2 = Date.parse(executions[1].context.date);
+      expect(d2 - 3500).toBe(startTime.getTime());
+    });
+
+    it('starts on post.createdAt and cron with endsOn at certain time', async () => {
+      const now = new Date();
+      await sleep((2.5 - now.getSeconds() % 2) * 1000 - now.getMilliseconds());
+      const startTime = new Date();
+      startTime.setMilliseconds(500);
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt'
+          },
+          cron: '*/2 * * * * *',
+          endsOn: new Date(startTime.getTime() + 2500).toISOString()
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' }});
+      console.log(startTime);
+
+      await sleep(5000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      const d1 = Date.parse(executions[0].context.date);
+      expect(d1 - 1500).toBe(startTime.getTime());
+    });
+
+    it('starts on post.createdAt and cron with endsOn by offset', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt'
+          },
+          cron: '*/2 * * * * *',
+          endsOn: {
+            field: 'createdAt',
+            offset: 3000
+          }
+        }
+      });
+
+      const now = new Date();
+      await sleep((2.5 - now.getSeconds() % 2) * 1000 - now.getMilliseconds());
+      const startTime = new Date();
+      startTime.setMilliseconds(500);
+
+      const post = await PostRepo.create({ values: { title: 't1' }});
+
+      await sleep(5000);
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      const d1 = Date.parse(executions[0].context.date);
+      expect(d1 - 1500).toBe(startTime.getTime());
     });
   });
 });
