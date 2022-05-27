@@ -34,15 +34,15 @@ module.exports = (cli) => {
         process.env.APP_PORT = opts.port;
       }
       const { APP_PORT } = process.env;
-      let clientPost = APP_PORT;
-      let serverPost;
+      let clientPort = APP_PORT;
+      let serverPort;
       nodeCheck();
       await postCheck(opts);
       if (server) {
-        serverPost = APP_PORT;
+        serverPort = APP_PORT;
       } else if (!server && !client) {
-        serverPost = await getPortPromise({
-          port: 1 * clientPost + 1,
+        serverPort = await getPortPromise({
+          port: 1 * clientPort + 1,
         });
       }
       await runAppCommand('install', ['--silent']);
@@ -50,7 +50,7 @@ module.exports = (cli) => {
         await runAppCommand('db:sync');
       }
       if (server || !client) {
-        console.log('starting server', serverPost);
+        console.log('starting server', serverPort);
         const argv = [
           '-P',
           './tsconfig.server.json',
@@ -59,21 +59,21 @@ module.exports = (cli) => {
           `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
           'start',
           ...process.argv.slice(3),
-          `--port=${serverPost}`,
+          `--port=${serverPort}`,
         ];
         run('ts-node-dev', argv, {
           env: {
-            APP_PORT: serverPost,
+            APP_PORT: serverPort,
           },
         });
       }
       if (client || !server) {
-        console.log('starting client', 1 * clientPost);
+        console.log('starting client', 1 * clientPort);
         run('umi', ['dev'], {
           env: {
-            PORT: clientPost,
+            PORT: clientPort,
             APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
-            PROXY_TARGET_URL: serverPost ? `http://127.0.0.1:${serverPost}` : undefined,
+            PROXY_TARGET_URL: serverPort ? `http://127.0.0.1:${serverPort}` : undefined,
           },
         });
       }
