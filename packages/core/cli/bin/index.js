@@ -15,6 +15,10 @@ const env = {
   LOCAL_STORAGE_DEST: 'storage/uploads',
 };
 
+if ('v18' === process.version.split('.').shift()) {
+  process.env.NODE_OPTIONS = '--openssl-legacy-provider';
+}
+
 dotenv.config({
   path: resolve(process.cwd(), process.env.APP_ENV_PATH || '.env'),
 });
