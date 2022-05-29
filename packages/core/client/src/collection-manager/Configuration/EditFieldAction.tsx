@@ -83,6 +83,25 @@ const useUpdateCollectionField = () => {
           };
         }),
       );
+      
+      function recursiveChildren(children = [], prefix = 'children') {
+        children.forEach((item, index) => {
+          const itemOptions = item.uiSchema?.enum?.slice() || [];
+          form.setValuesIn(
+            `${prefix}[${index}].uiSchema.enum`,
+            itemOptions.map((option) => {
+              return {
+                value: uid(),
+                ...option,
+              };
+            }),
+          );
+          recursiveChildren(item.children, `${prefix}[${index}].children`);
+        });
+      }
+
+      recursiveChildren(form?.values?.children);
+      
       await run();
       await refreshCM();
     },
