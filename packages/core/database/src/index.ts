@@ -4,6 +4,7 @@ export * from './database';
 export { Database as default } from './database';
 export * from './fields';
 export * from './magic-attribute-model';
+export * from './migration';
 export * from './mock-database';
 export * from './model';
 export * from './relation-repository/belongs-to-many-repository';

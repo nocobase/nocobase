@@ -13,10 +13,12 @@ import {
   SyncOptions,
   Utils
 } from 'sequelize';
+import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
+import { Migrations } from './migration';
 import { Model } from './model';
 import { ModelHook } from './model-hook';
 import extendOperators from './operators';
@@ -36,9 +38,10 @@ interface MapOf<T> {
 
 export interface IDatabaseOptions extends Options {
   tablePrefix?: string;
+  migrator?: any;
 }
 
-export type DatabaseOptions = IDatabaseOptions | Sequelize;
+export type DatabaseOptions = IDatabaseOptions;
 
 interface RegisterOperatorsContext {
   db?: Database;
@@ -55,6 +58,8 @@ type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
 
 export class Database extends EventEmitter implements AsyncEmitter {
   sequelize: Sequelize;
+  migrator: Umzug;
+  migrations: Migrations;
   fieldTypes = new Map();
   options: IDatabaseOptions;
   models = new Map<string, ModelCtor<Model>>();
@@ -71,27 +76,24 @@ export class Database extends EventEmitter implements AsyncEmitter {
   constructor(options: DatabaseOptions) {
     super();
 
-    if (options instanceof Sequelize) {
-      this.sequelize = options;
-    } else {
-      const opts = {
-        sync: {
-          alter: {
-            drop: false,
-          },
-          force: false,
+    const opts = {
+      sync: {
+        alter: {
+          drop: false,
         },
-        ...options,
-      };
-      if (options.storage && options.storage !== ':memory:') {
-        if (!isAbsolute(options.storage)) {
-          opts.storage = resolve(process.cwd(), options.storage);
-        }
+        force: false,
+      },
+      ...options,
+    };
+
+    if (options.storage && options.storage !== ':memory:') {
+      if (!isAbsolute(options.storage)) {
+        opts.storage = resolve(process.cwd(), options.storage);
       }
-      this.sequelize = new Sequelize(opts);
-      this.options = opts;
     }
 
+    this.sequelize = new Sequelize(opts);
+    this.options = opts;
     this.collections = new Map();
     this.modelHook = new ModelHook(this);
 
@@ -116,6 +118,32 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     this.initOperators();
+
+    const migratorOptions: any = this.options.migrator || {};
+
+    const context = {
+      db: this,
+      sequelize: this.sequelize,
+      queryInterface: this.sequelize.getQueryInterface(),
+      ...migratorOptions.context,
+    };
+
+    this.migrations = new Migrations(context);
+
+    this.migrator = new Umzug({
+      logger: migratorOptions.logger || console,
+      migrations: this.migrations.callback(),
+      context,
+      storage: new SequelizeStorage({
+        modelName: `${this.options.tablePrefix||''}migrations`,
+        ...migratorOptions.storage,
+        sequelize: this.sequelize,
+      }),
+    });
+  }
+
+  addMigration(item) {
+    return this.migrations.add(item);
   }
 
   /**
