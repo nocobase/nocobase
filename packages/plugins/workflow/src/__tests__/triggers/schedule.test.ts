@@ -101,7 +101,7 @@ describe('workflow > triggers > schedule', () => {
       expect(executions[0].context.date).toBe(now.toISOString());
     });
 
-    it('multiple workflows', async () => {
+    it('multiple workflows trigger at same time', async () => {
       const now = new Date();
       now.setSeconds(now.getSeconds() + 2);
       now.setMilliseconds(0);
@@ -125,14 +125,13 @@ describe('workflow > triggers > schedule', () => {
       });
 
       await sleep(3000);
-      await w1.update({ enabled: false });
-      await w2.update({ enabled: false });
+      await WorkflowModel.update({ enabled: false }, { where: { enabled: true } });
 
       const [e1] = await w1.getExecutions();
       expect(e1).toBeDefined();
       expect(e1.context.date).toBe(now.toISOString());
 
-      const [e2] = await w1.getExecutions();
+      const [e2] = await w2.getExecutions();
       expect(e2).toBeDefined();
       expect(e2.context.date).toBe(now.toISOString());
     });

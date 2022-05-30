@@ -134,7 +134,6 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
           return;
         }
         if (endTime && endTime <= timestamp) {
-          console.log(now, startTime, endTime);
           return;
         }
         if (!cronInCycle.call(this, workflow, now)) {
@@ -299,6 +298,7 @@ export default class ScheduleTrigger implements Trigger {
       const timestamp = now.getTime();
       const interval = parser.parseExpression(cron, { currentDate });
       let next = interval.next();
+
       if (next.getTime() === timestamp) {
         return true;
       }
@@ -322,6 +322,7 @@ export default class ScheduleTrigger implements Trigger {
 
   constructor({ app }) {
     this.db = app.db;
+
     app.on('beforeStop', () => {
       if (this.timer) {
         clearInterval(this.timer);
@@ -365,11 +366,19 @@ export default class ScheduleTrigger implements Trigger {
   };
 
   async onTick(now) {
-    for (const workflow of this.cache.values()) {
-      if (this.shouldTrigger(workflow, now)) {
-        this.trigger(workflow, now);
+    // NOTE: trigger workflows in sequence when sqlite due to only one transaction
+    const isSqlite = this.db.options.dialect === 'sqlite';
+
+    return Array.from(this.cache.values()).reduce((prev, workflow) => {
+      if (!this.shouldTrigger(workflow, now)) {
+        return prev;
       }
-    }
+      if (isSqlite) {
+        return prev.then(() => this.trigger(workflow, now));
+      }
+      this.trigger(workflow, now);
+      return null;
+    }, isSqlite ? Promise.resolve() : null);
   }
 
   async reload() {
