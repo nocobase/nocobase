@@ -191,6 +191,8 @@ describe('workflow > triggers > schedule', () => {
       const post = await PostRepo.create({ values: { title: 't1' }});
 
       await sleep(5000);
+      // sleep 1.5s at 2s trigger 1st time
+      // sleep 3.5s at 4s trigger 2nd time
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(2);

@@ -58,19 +58,19 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
   }
 });
 
-function getDateRangeFilter(on, now: Date, op = '$gte', range = 0) {
+function getDateRangeFilter(on: ScheduleOnField, now: Date, dir: number) {
   const timestamp = now.getTime();
-  const dir = op === '$gte' ? 1 : -1;
+  const op = dir < 0 ? '$lt' : '$gte';
   switch (typeof on) {
     case 'string':
       const time = Date.parse(on);
-      if (!time || (op === '$gte' ? (time < timestamp) : (time > timestamp + range))) {
+      if (!time || (dir < 0 ? (timestamp < time) : (time <= timestamp))) {
         return null;
       }
       break;
     case 'object':
       const { field, offset = 0, unit = 1000 } = on;
-      return { [field]: { [op]: new Date(timestamp - offset * unit * dir) } };
+      return { [field]: { [op]: new Date(timestamp + offset * unit * dir) } };
     default:
       break;
   }
@@ -162,11 +162,11 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
 
   async shouldCache(workflow, now) {
     const { startsOn, endsOn, collection } = workflow.config;
-    const starts = getDateRangeFilter(startsOn, now, '$gte', this.cacheCycle);
+    const starts = getDateRangeFilter(startsOn, now, -1);
     if (!starts) {
       return false;
     }
-    const ends = getDateRangeFilter(endsOn, now, '$lt', this.cacheCycle);
+    const ends = getDateRangeFilter(endsOn, now, 1);
     if (!ends) {
       return false;
     }
