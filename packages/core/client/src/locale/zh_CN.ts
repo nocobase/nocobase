@@ -432,6 +432,34 @@ export default {
   'Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.': '只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增或删除数据时，任意字段都被认为发生变动。',
   'Only triggers when match conditions': '满足以下条件才触发',
 
+  'Schedule event': '定时任务',
+  'Trigger mode': '触发模式',
+  'Based on certain date': '自定义时间',
+  'Based on date field of collection': '根据数据表时间字段',
+  'Starts on': '开始于',
+  'Ends on': '结束于',
+  'Exactly at': '当时',
+  'Repeat mode': '重复模式',
+  'Repeat limit': '重复次数',
+  'No limit': '不限',
+  'Seconds': '秒',
+  'Minutes': '分钟',
+  'Hours': '小时',
+  'Days': '天',
+  'Months': '月',
+
+  'No repeat': '不重复',
+  'Every': '每',
+
+  'By minute': '按分钟',
+  'By hour': '按小时',
+  'By date': '按日(月)',
+  'By month': '按月',
+  'By day of week': '按天(周)',
+
+  'By field': '数据表字段',
+  'By custom date': '自定义时间',
+
   'End': '结束',
 
   'Trigger context': '触发数据',

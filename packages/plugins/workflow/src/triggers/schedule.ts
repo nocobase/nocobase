@@ -4,7 +4,9 @@ import { Trigger } from '.';
 
 export type ScheduleOnField = string | {
   field: string;
+  // in seconds
   offset?: number;
+  unit?: 1000 | 60000 | 3600000 | 86400000;
 };
 export interface ScheduleTriggerConfig {
   // trigger mode
@@ -67,8 +69,8 @@ function getDateRangeFilter(on, now: Date, op = '$gte', range = 0) {
       }
       break;
     case 'object':
-      const { field, offset = 0 } = on;
-      return { [field]: { [op]: new Date(timestamp - offset * dir) } };
+      const { field, offset = 0, unit = 1000 } = on;
+      return { [field]: { [op]: new Date(timestamp - offset * unit * dir) } };
     default:
       break;
   }
@@ -82,8 +84,8 @@ function getDataOptionTime(data, on, now: Date, dir = 1) {
       const time = Date.parse(on);
       return time ? time : null;
     case 'object':
-      const { field, offset = 0 } = on;
-      return data[field] ? data[field].getTime() - offset * dir : null;
+      const { field, offset = 0, unit = 1000 } = on;
+      return data[field] ? data[field].getTime() - offset * unit * dir : null;
     default:
       return null;
   }
@@ -196,7 +198,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     }
 
     const timestamp = date.getTime();
-    const startTimestamp = timestamp - (startsOn.offset ?? 0);
+    const startTimestamp = timestamp - (startsOn.offset ?? 0) * (startsOn.unit ?? 1000);
 
     let filter
     if (!cron) {
@@ -224,7 +226,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
           break;
         case 'object':
           filter[endsOn.field] = {
-            $gte: new Date(timestamp - (endsOn.offset ?? 0) + 1000)
+            $gte: new Date(timestamp - (endsOn.offset ?? 0) * (endsOn.unit ?? 1000) + 1000)
           };
           break;
         default:

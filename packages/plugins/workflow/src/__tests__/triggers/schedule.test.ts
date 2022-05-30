@@ -148,7 +148,7 @@ describe('workflow > triggers > schedule', () => {
           collection: 'posts',
           startsOn: {
             field: 'createdAt',
-            offset: 2000
+            offset: 2
           }
         }
       });
@@ -244,7 +244,7 @@ describe('workflow > triggers > schedule', () => {
           cron: '*/2 * * * * *',
           endsOn: {
             field: 'createdAt',
-            offset: 3000
+            offset: 3
           }
         }
       });

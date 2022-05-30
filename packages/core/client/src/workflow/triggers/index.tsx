@@ -8,6 +8,7 @@ import { message, Tag } from "antd";
 import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRecord, useRequest, useResourceActionContext } from '../../';
 import collection from './collection';
 import { nodeCardClass, nodeMetaClass } from "../style";
+import schedule from "./schedule";
 
 
 function useUpdateConfigAction() {
@@ -50,6 +51,7 @@ export interface Trigger {
 export const triggers = new Registry<Trigger>();
 
 triggers.register(collection.type, collection);
+triggers.register(schedule.type, schedule);
 
 export const TriggerConfig = () => {
   const { t } = useTranslation();
