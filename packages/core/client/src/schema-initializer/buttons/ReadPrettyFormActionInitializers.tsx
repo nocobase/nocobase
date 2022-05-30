@@ -113,6 +113,28 @@ export const ReadPrettyFormActionInitializers = {
             },
           },
         },
+        {
+          type: 'item',
+          title: '{{t("Custom request api")}}',
+          component: 'CustomizeActionInitializer',
+          schema: {
+            title: '{{ t("Custom request api") }}',
+            'x-component': 'Action',
+            'x-action': 'customize:api',
+            'x-designer': 'Action.Designer',
+            'x-action-settings': {
+              requestSettings: {},
+              onSuccess: {
+                manualClose: false,
+                redirecting: false,
+                successMessage: '{{t("Request success")}}',
+              },
+            },
+            'x-component-props': {
+              useProps: '{{ useCustomizeRequestActionProps }}',
+            },
+          },
+        },
       ],
     },
   ],

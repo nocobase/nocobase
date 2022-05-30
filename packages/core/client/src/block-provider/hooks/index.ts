@@ -2,6 +2,7 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 import { message, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
+import { APIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
@@ -163,6 +164,46 @@ export const useCustomizeUpdateActionProps = () => {
       if (!(resource instanceof TableFieldResource)) {
         __parent?.service?.refresh?.();
       }
+      if (!onSuccess?.successMessage) {
+        return;
+      }
+      if (onSuccess?.manualClose) {
+        Modal.success({
+          title: compile(onSuccess?.successMessage),
+          onOk: async () => {
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                history.push(onSuccess.redirectTo);
+              }
+            }
+          },
+        });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
+      }
+    },
+  };
+};
+
+export const useCustomizeRequestActionProps = () => {
+  const apiClient = new APIClient({
+    baseURL: process.env.API_BASE_URL,
+    headers: {
+      'X-Hostname': window?.location?.hostname,
+    },
+  });
+  const history = useHistory();
+  const actionSchema = useFieldSchema();
+  const compile = useCompile();
+  return {
+    async onClick() {
+      const { onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      await apiClient.request({
+        ...requestSettings,
+      });
+
       if (!onSuccess?.successMessage) {
         return;
       }

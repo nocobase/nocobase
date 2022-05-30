@@ -301,5 +301,13 @@ export default {
   'After successful save': 'After successful save',
   'Button background color': 'Button background color',
   'Highlight': 'Highlight',
-  'Danger red': 'Danger red'
+  'Danger red': 'Danger red',
+  'Custom request api': 'Custom request api',
+  'Request settings': 'Request settings',
+  'Request API URL': 'Request API URL',
+  'Request API method': 'Request API method',
+  'Request API parameters': 'Request API parameters(JSON)',
+  'Request API headers': 'Request API headers(JSON)',
+  'Request API body': 'Request API body(JSON)',
+  'Request success': 'Request success',
 }
