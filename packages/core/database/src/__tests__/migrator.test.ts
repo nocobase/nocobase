@@ -2,11 +2,10 @@ import { Database, Migration, mockDatabase } from '@nocobase/database';
 
 const names = (migrations: Array<{ name: string }>) => migrations.map(m => m.name);
 
-describe('model', () => {
+describe('migrator', () => {
   let db: Database;
 
   beforeEach(async () => {
-    console.log(__dirname);
 
     db = mockDatabase({
       tablePrefix: 'test_',
@@ -19,7 +18,7 @@ describe('model', () => {
     await db.close();
   });
 
-  it('should return null when belongsTo association empty', async () => {
+  test('up and down', async () => {
     const spy = jest.fn();
     db.addMigration({
       name: 'migration1',

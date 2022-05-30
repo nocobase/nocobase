@@ -135,7 +135,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       migrations: this.migrations.callback(),
       context,
       storage: new SequelizeStorage({
-        modelName: `${this.options.tablePrefix}migrations`,
+        modelName: `${this.options.tablePrefix||''}migrations`,
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),
