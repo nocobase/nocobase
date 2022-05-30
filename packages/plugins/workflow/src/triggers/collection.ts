@@ -52,12 +52,6 @@ export default class CollectionTrigger implements Trigger {
   }
 
   on(workflow: WorkflowModel) {
-    // NOTE: remove previous listener if config updated
-    const prev = workflow.previous();
-    if (prev.config) {
-      this.off({ ...workflow.get(), ...prev });
-    }
-
     const { collection, mode } = workflow.config;
     const Collection = this.db.getCollection(collection);
     if (!Collection) {

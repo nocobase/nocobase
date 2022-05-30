@@ -1,6 +1,6 @@
 import WorkflowModel from '../models/Workflow';
 import Collection from './collection';
-// import Schedule from './schedule';
+import Schedule from './schedule';
 
 export interface Trigger {
   on(workflow: WorkflowModel): void;
@@ -10,5 +10,5 @@ export interface Trigger {
 export default function(plugin) {
   const { triggers } = plugin;
   triggers.register('collection', new Collection(plugin));
-  // triggers.register('schedule', new Schedule(plugin));
+  triggers.register('schedule', new Schedule(plugin));
 }

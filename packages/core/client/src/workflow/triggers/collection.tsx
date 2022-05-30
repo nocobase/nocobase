@@ -26,7 +26,7 @@ const FieldsSelect = observer((props) => {
           && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true)
         ))
         .map(field => (
-          <Select.Option value={field.name}>{compile(field.uiSchema?.title)}</Select.Option>
+          <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema?.title)}</Select.Option>
         ))}
     </Select>
   );
