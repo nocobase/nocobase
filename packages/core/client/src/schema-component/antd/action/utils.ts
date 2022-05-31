@@ -24,14 +24,14 @@ export const requestSettingsSchema: ISchema = {
   properties: {
     url: {
       type: 'string',
-      title: '{{t("Request API URL")}}',
+      title: '{{t("Request URL")}}',
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Input',
     },
     method: {
       type: 'string',
-      title: '{{t("Request API method")}}',
+      title: '{{t("Request method")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       default: 'POST',
@@ -45,21 +45,21 @@ export const requestSettingsSchema: ISchema = {
     },
     headers: {
       type: 'string',
-      title: '{{t("Request API headers")}}',
+      title: '{{t("Request headers parameters")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-validator': validateJSON,
     },
     params: {
       type: 'string',
-      title: '{{t("Request API parameters")}}',
+      title: '{{t("Request query parameters")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-validator': validateJSON,
     },
     data: {
       type: 'string',
-      title: '{{t("Request API body")}}',
+      title: '{{t("Request body")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-validator': validateJSON,
