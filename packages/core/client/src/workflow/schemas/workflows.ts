@@ -52,8 +52,8 @@ const collection = {
         title: '{{t("Status")}}',
         type: 'string',
         enum: [
-          { label: '{{t("Started")}}', value: true },
-          { label: '{{t("Stopped")}}', value: false },
+          { label: '{{t("On")}}', value: true },
+          { label: '{{t("Off")}}', value: false },
         ],
         'x-component': 'Radio.Group',
         'x-decorator': 'FormItem',
