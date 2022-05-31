@@ -17,7 +17,8 @@
     "deepmerge": "^4.2.2",
     "flat": "^5.0.2",
     "glob": "^7.1.6",
-    "sequelize": "^6.9.0"
+    "sequelize": "^6.9.0",
+    "umzug": "^3.1.1"
   },
   "repository": {
     "type": "git",
