@@ -150,7 +150,7 @@ GET /api/posts?filter[user.email.$includes]=gmail
 GET /api/posts?filter={"user.email.$includes":"gmail"}
 ```
 
-[Click here for more infomation about filter operators](http-api/filter-operators) 
+[Click here for more information about filter operators](http-api/filter-operators) 
 
 ### filterByTk
 
