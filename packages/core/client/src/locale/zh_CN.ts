@@ -514,7 +514,7 @@ export default {
   'Request URL': '请求地址',
   'Request method': '请求方法',
   'Request query parameters': '请求查询参数(JSON格式)',
-  'Request headers parameters': '请求头参数(JSON格式)',
+  'Request headers': '请求头参数(JSON格式)',
   'Request body': '请求体(JSON格式)',
   'Request success': '请求成功',
   'Invalid JSON format': '非法JSON格式',

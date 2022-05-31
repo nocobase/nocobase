@@ -307,7 +307,7 @@ export default {
   'Request URL': 'Request URL',
   'Request method': 'Request method',
   'Request query parameters': 'Request query parameters(JSON)',
-  'Request headers parameters': 'Request headers(JSON)',
+  'Request headers': 'Request headers(JSON)',
   'Request body': 'Request body(JSON)',
   'Request success': 'Request success',
   'Invalid JSON format': 'Invalid JSON format',

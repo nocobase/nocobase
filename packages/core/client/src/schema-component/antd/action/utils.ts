@@ -45,7 +45,7 @@ export const requestSettingsSchema: ISchema = {
     },
     headers: {
       type: 'string',
-      title: '{{t("Request headers parameters")}}',
+      title: '{{t("Request headers")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-validator': validateJSON,
