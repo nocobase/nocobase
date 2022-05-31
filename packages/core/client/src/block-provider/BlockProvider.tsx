@@ -4,7 +4,7 @@ import { useRequest } from 'ahooks';
 import template from 'lodash/template';
 import React, { createContext, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { ACLCollectionProvider, TableFieldResource, useAPIClient, useRecord } from '../';
+import { ACLCollectionProvider, TableFieldResource, useAPIClient, useRecord, WithoutTableFieldResource } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
 
@@ -49,8 +49,9 @@ const useReousrce = (props: UseReousrceProps) => {
     };
     return new TableFieldResource(options);
   }
+  const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
-  if (__parent?.block === 'TableField' && __parent?.resource instanceof TableFieldResource) {
+  if (!withoutTableFieldResource && __parent?.block === 'TableField' && __parent?.resource instanceof TableFieldResource) {
     return __parent.resource;
   }
   if (!association) {
@@ -143,8 +144,11 @@ export const useFilterByTk = () => {
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
   const assoc = useContext(BlockAssociationContext);
-  if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
-    return recordIndex;
+  const withoutTableFieldResource = useContext(WithoutTableFieldResource);
+  if (!withoutTableFieldResource) {
+    if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
+      return recordIndex;
+    }
   }
   if (assoc) {
     const association = getCollectionField(assoc);
