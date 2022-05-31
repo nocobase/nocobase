@@ -120,7 +120,7 @@ export const ReadPrettyFormActionInitializers = {
           schema: {
             title: '{{ t("Custom request") }}',
             'x-component': 'Action',
-            'x-action': 'customize:form:api',
+            'x-action': 'customize:form:request',
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               requestSettings: {},

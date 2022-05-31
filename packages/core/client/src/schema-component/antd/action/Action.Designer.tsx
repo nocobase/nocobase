@@ -16,13 +16,17 @@ const MenuGroup = (props) => {
     'customize:popup': t('Popup'),
     'customize:update': t('Update record'),
     'customize:save': t('Save record'),
-    'customize:table:api': t('Custom request'),
-    'customize:form:api': t('Custom request'),
+    'customize:table:request': t('Custom request'),
+    'customize:form:request': t('Custom request'),
   };
   if (
-    !['customize:popup', 'customize:update', 'customize:save', 'customize:table:api', 'customize:form:api'].includes(
-      actionType,
-    )
+    ![
+      'customize:popup',
+      'customize:update',
+      'customize:save',
+      'customize:table:request',
+      'customize:form:request',
+    ].includes(actionType)
   ) {
     return <>{props.children}</>;
   }
@@ -242,8 +246,8 @@ export const ActionDesigner = (props) => {
               {
                 'customize:save': t('After successful save'),
                 'customize:update': t('After successful update'),
-                'customize:table:api': t('After successful request'),
-                'customize:form:api': t('After successful request'),
+                'customize:table:request': t('After successful request'),
+                'customize:form:request': t('After successful request'),
               }[actionType]
             }
             initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
@@ -253,8 +257,8 @@ export const ActionDesigner = (props) => {
                 title: {
                   'customize:save': t('After successful save'),
                   'customize:update': t('After successful update'),
-                  'customize:table:api': t('After successful request'),
-                  'customize:form:api': t('After successful request'),
+                  'customize:table:request': t('After successful request'),
+                  'customize:form:request': t('After successful request'),
                 }[actionType],
                 properties: {
                   successMessage: {

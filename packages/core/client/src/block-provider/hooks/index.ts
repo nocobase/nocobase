@@ -225,7 +225,7 @@ export const useCustomizeRequestActionProps = () => {
       const params = requestSettings['params'] ? JSON.parse(requestSettings['params']) : {};
       const data = requestSettings['data'] ? JSON.parse(requestSettings['data']) : {};
       const methods = ['POST', 'PUT', 'PATCH'];
-      if (actionSchema['x-action'] === 'customize:form:api' && methods.includes(requestSettings['method'])) {
+      if (actionSchema['x-action'] === 'customize:form:request' && methods.includes(requestSettings['method'])) {
         const fieldNames = fields.map((field) => field.name);
         const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
         Object.assign(data, values);
