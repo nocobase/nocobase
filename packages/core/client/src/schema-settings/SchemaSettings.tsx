@@ -7,6 +7,7 @@ import { Alert, Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Swi
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContext,
@@ -19,7 +20,7 @@ import {
   useActionContext,
   useAPIClient,
   useCollection,
-  useCompile
+  useCompile,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -466,7 +467,7 @@ SchemaSettings.PopupItem = (props) => {
 };
 
 SchemaSettings.ActionModalItem = React.memo((props: any) => {
-  const { title, onSubmit, initialValues, initialSchema, modalTip, ...others } = props;
+  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, ...others } = props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -487,13 +488,14 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     setVisible(false);
   };
 
-  const submitHandler = () => {
+  const submitHandler = async () => {
+    await form.submit();
     onSubmit?.(cloneDeep(form.values));
     setVisible(false);
   };
 
   const openAssignedFieldValueHandler = async () => {
-    if (!schemaUid && initialSchema['x-uid']) {
+    if (!schemaUid && initialSchema?.['x-uid']) {
       fieldSchema['x-action-settings'].schemaUid = initialSchema['x-uid'];
       dn.emit('patch', { schema: fieldSchema });
       await api.resource('uiSchemas').insert({ values: initialSchema });
@@ -509,31 +511,40 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler}>
         {props.children || props.title}
       </SchemaSettings.Item>
-
-      <Modal
-        width={'50%'}
-        title={compile(title)}
-        {...others}
-        destroyOnClose
-        visible={visible}
-        onCancel={cancelHandler}
-        footer={
-          <Space>
-            <Button onClick={cancelHandler}>{t('Cancel')}</Button>
-            <Button type="primary" onClick={submitHandler}>
-              {t('Submit')}
-            </Button>
-          </Space>
-        }
-      >
-        <FormProvider form={form}>
-          <FormLayout layout={'vertical'}>
-            {modalTip && <Alert message={modalTip} />}
-            {modalTip && <br />}
-            {visible && <RemoteSchemaComponent noForm uid={schemaUid} />}
-          </FormLayout>
-        </FormProvider>
-      </Modal>
+      {createPortal(
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <Modal
+            width={'50%'}
+            title={compile(title)}
+            {...others}
+            destroyOnClose
+            visible={visible}
+            onCancel={cancelHandler}
+            footer={
+              <Space>
+                <Button onClick={cancelHandler}>{t('Cancel')}</Button>
+                <Button type="primary" onClick={submitHandler}>
+                  {t('Submit')}
+                </Button>
+              </Space>
+            }
+          >
+            <FormProvider form={form}>
+              <FormLayout layout={'vertical'}>
+                {modalTip && <Alert message={modalTip} />}
+                {modalTip && <br />}
+                {visible && schemaUid && <RemoteSchemaComponent noForm components={components} uid={schemaUid} />}
+                {visible && schema && <SchemaComponent components={components} schema={schema} />}
+              </FormLayout>
+            </FormProvider>
+          </Modal>
+        </div>,
+        document.body,
+      )}
     </>
   );
 });
