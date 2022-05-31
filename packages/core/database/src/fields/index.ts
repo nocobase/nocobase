@@ -24,6 +24,7 @@ import { TimeFieldOptions } from './time-field';
 import { UidFieldOptions } from './uid-field';
 import { UUIDFieldOptions } from './uuid-field';
 import { VirtualFieldOptions } from './virtual-field';
+import { FormulaFieldOptions } from './formula-field'
 
 export * from './array-field';
 export * from './belongs-to-field';
@@ -46,6 +47,7 @@ export * from './time-field';
 export * from './uid-field';
 export * from './uuid-field';
 export * from './virtual-field';
+export * from './formula-field';
 
 export type FieldOptions =
   | BaseFieldOptions
@@ -62,6 +64,7 @@ export type FieldOptions =
   | SortFieldOptions
   | TextFieldOptions
   | VirtualFieldOptions
+  | FormulaFieldOptions
   | ArrayFieldOptions
   | TimeFieldOptions
   | DateFieldOptions
