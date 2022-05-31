@@ -1,10 +1,10 @@
-import path from 'path';
 import multer from '@koa/multer';
 import { Context, Next } from '@nocobase/actions';
-import { getStorageConfig } from '../storages';
-import * as Rules from '../rules';
-import { FILE_FIELD_NAME, LIMIT_FILES, LIMIT_MAX_FILE_SIZE } from '../constants';
 import { BelongsToManyRepository, BelongsToRepository } from '@nocobase/database';
+import path from 'path';
+import { FILE_FIELD_NAME, LIMIT_FILES, LIMIT_MAX_FILE_SIZE } from '../constants';
+import * as Rules from '../rules';
+import { getStorageConfig } from '../storages';
 
 function getRules(ctx: Context) {
   const { resourceField } = ctx;
@@ -111,7 +111,7 @@ export async function action(ctx: Context, next: Next) {
 
   const attachment = await ctx.db.sequelize.transaction(async (transaction) => {
     // TODO(optimize): 应使用关联 accessors 获取
-    const result = await storage.createAttachment(data, { transaction });
+    const result = await storage.createAttachment(data, { context: ctx, transaction });
 
     const { associatedName, associatedIndex, resourceName } = ctx.action.params;
     const AssociatedCollection = ctx.db.getCollection(associatedName);
