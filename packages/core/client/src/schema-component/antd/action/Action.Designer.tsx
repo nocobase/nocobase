@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext, useCompile, useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { requestSettingsSchema } from './utils';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -15,8 +16,18 @@ const MenuGroup = (props) => {
     'customize:popup': t('Popup'),
     'customize:update': t('Update record'),
     'customize:save': t('Save record'),
+    'customize:table:request': t('Custom request'),
+    'customize:form:request': t('Custom request'),
   };
-  if (!['customize:popup', 'customize:update', 'customize:save'].includes(actionType)) {
+  if (
+    ![
+      'customize:popup',
+      'customize:update',
+      'customize:save',
+      'customize:table:request',
+      'customize:form:request',
+    ].includes(actionType)
+  ) {
     return <>{props.children}</>;
   }
   return <Menu.ItemGroup title={`${t('Customize')} > ${actionTitles[actionType]}`}>{props.children}</Menu.ItemGroup>;
@@ -162,6 +173,23 @@ export const ActionDesigner = (props) => {
             }}
           />
         )}
+        {isValid(fieldSchema?.['x-action-settings']?.requestSettings) && (
+          <SchemaSettings.ActionModalItem
+            title={t('Request settings')}
+            schema={requestSettingsSchema}
+            initialValues={fieldSchema?.['x-action-settings']?.requestSettings}
+            onSubmit={(requestSettings) => {
+              fieldSchema['x-action-settings']['requestSettings'] = requestSettings;
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: fieldSchema['x-uid'],
+                  'x-action-settings': fieldSchema['x-action-settings'],
+                },
+              });
+              dn.refresh();
+            }}
+          />
+        )}
         {isValid(fieldSchema?.['x-action-settings']?.skipValidator) && (
           <SchemaSettings.SwitchItem
             title={t('Skip required validation')}
@@ -218,6 +246,8 @@ export const ActionDesigner = (props) => {
               {
                 'customize:save': t('After successful save'),
                 'customize:update': t('After successful update'),
+                'customize:table:request': t('After successful request'),
+                'customize:form:request': t('After successful request'),
               }[actionType]
             }
             initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
@@ -227,6 +257,8 @@ export const ActionDesigner = (props) => {
                 title: {
                   'customize:save': t('After successful save'),
                   'customize:update': t('After successful update'),
+                  'customize:table:request': t('After successful request'),
+                  'customize:form:request': t('After successful request'),
                 }[actionType],
                 properties: {
                   successMessage: {

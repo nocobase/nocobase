@@ -540,5 +540,15 @@ export default {
   'After clicking the custom button, the following fields of the current record will be saved according to the following form.': '点击当前自定义按钮时，当前数据以下字段将按照以下表单保存。',
   'Button background color': '按钮颜色',
   'Highlight': '高亮',
-  'Danger red': '红色'
+  'Danger red': '红色',
+  'Custom request': '自定义请求',
+  'Request settings': '请求设置',
+  'Request URL': '请求地址',
+  'Request method': '请求方法',
+  'Request query parameters': '请求查询参数(JSON格式)',
+  'Request headers': '请求头参数(JSON格式)',
+  'Request body': '请求体(JSON格式)',
+  'Request success': '请求成功',
+  'Invalid JSON format': '非法JSON格式',
+  'After successful request': '请求成功之后'
 }
