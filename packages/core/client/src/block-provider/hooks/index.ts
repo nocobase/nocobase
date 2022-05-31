@@ -55,17 +55,19 @@ const filterValue = (value) => {
   return obj;
 };
 
-function getFormValues(field, form, fieldNames, getField, resource) {
+function getFormValues(filterByTk, field, form, fieldNames, getField, resource) {
   let values = {};
   for (const key in form.values) {
     if (fieldNames.includes(key)) {
       const collectionField = getField(key);
-      if (collectionField.interface === 'subTable') {
-        values[key] = form.values[key];
-        continue;
-      }
-      if (field.added && !field.added.has(key)) {
-        continue;
+      if (filterByTk) {
+        if (collectionField.interface === 'subTable') {
+          values[key] = form.values[key];
+          continue;
+        }
+        if (field.added && !field.added.has(key)) {
+          continue;
+        }
       }
       const items = form.values[key];
       if (collectionField.interface === 'linkTo') {
@@ -107,6 +109,7 @@ export const useCreateActionProps = () => {
   const actionField = useField();
   const { fields, getField } = useCollection();
   const compile = useCompile();
+  const filterByTk = useFilterByTk();
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
@@ -115,7 +118,7 @@ export const useCreateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      const values = getFormValues(field, form, fieldNames, getField, resource);
+      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       await resource.create({
@@ -202,6 +205,7 @@ export const useCustomizeUpdateActionProps = () => {
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
   const history = useHistory();
+  const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
@@ -220,7 +224,7 @@ export const useCustomizeRequestActionProps = () => {
       const methods = ['POST', 'PUT', 'PATCH'];
       if (actionSchema['x-action'] === 'customize:form:api' && methods.includes(requestSettings['method'])) {
         const fieldNames = fields.map((field) => field.name);
-        const values = getFormValues(field, form, fieldNames, getField, resource);
+        const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
         Object.assign(data, values);
       }
       await apiClient.request({
@@ -271,7 +275,7 @@ export const useUpdateActionProps = () => {
         await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
-      const values = getFormValues(field, form, fieldNames, getField, resource);
+      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       await resource.update({
