@@ -3,6 +3,8 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   name: 'attachments',
   title: '文件管理器',
+  createdBy: true,
+  updatedBy: true,
   fields: [
     {
       comment: '用户文件名（不含扩展名）',
