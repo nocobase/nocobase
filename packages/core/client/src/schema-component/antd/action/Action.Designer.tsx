@@ -16,8 +16,8 @@ const MenuGroup = (props) => {
     'customize:popup': t('Popup'),
     'customize:update': t('Update record'),
     'customize:save': t('Save record'),
-    'customize:table:api': t('Custom request api'),
-    'customize:form:api': t('Custom request api'),
+    'customize:table:api': t('Custom request'),
+    'customize:form:api': t('Custom request'),
   };
   if (
     !['customize:popup', 'customize:update', 'customize:save', 'customize:table:api', 'customize:form:api'].includes(

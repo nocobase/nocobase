@@ -302,7 +302,7 @@ export default {
   'Button background color': 'Button background color',
   'Highlight': 'Highlight',
   'Danger red': 'Danger red',
-  'Custom request api': 'Custom request api',
+  'Custom request': 'Custom request',
   'Request settings': 'Request settings',
   'Request URL': 'Request URL',
   'Request method': 'Request method',

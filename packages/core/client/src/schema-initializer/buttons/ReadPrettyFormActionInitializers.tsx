@@ -115,10 +115,10 @@ export const ReadPrettyFormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Custom request api")}}',
+          title: '{{t("Custom request")}}',
           component: 'CustomizeActionInitializer',
           schema: {
-            title: '{{ t("Custom request api") }}',
+            title: '{{ t("Custom request") }}',
             'x-component': 'Action',
             'x-action': 'customize:form:api',
             'x-designer': 'Action.Designer',

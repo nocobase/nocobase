@@ -509,7 +509,7 @@ export default {
   'Button background color': '按钮颜色',
   'Highlight': '高亮',
   'Danger red': '红色',
-  'Custom request api': '自定义请求',
+  'Custom request': '自定义请求',
   'Request settings': '请求设置',
   'Request URL': '请求地址',
   'Request method': '请求方法',

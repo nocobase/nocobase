@@ -103,10 +103,10 @@ export const FormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Custom request api")}}',
+          title: '{{t("Custom request")}}',
           component: 'CustomizeActionInitializer',
           schema: {
-            title: '{{ t("Custom request api") }}',
+            title: '{{ t("Custom request") }}',
             'x-component': 'Action',
             'x-action': 'customize:form:api',
             'x-designer': 'Action.Designer',
@@ -232,10 +232,10 @@ export const CreateFormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Custom request api")}}',
+          title: '{{t("Custom request")}}',
           component: 'CustomizeActionInitializer',
           schema: {
-            title: '{{ t("Custom request api") }}',
+            title: '{{ t("Custom request") }}',
             'x-component': 'Action',
             'x-action': 'customize:form:api',
             'x-designer': 'Action.Designer',
@@ -361,10 +361,10 @@ export const UpdateFormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Custom request api")}}',
+          title: '{{t("Custom request")}}',
           component: 'CustomizeActionInitializer',
           schema: {
-            title: '{{ t("Custom request api") }}',
+            title: '{{ t("Custom request") }}',
             'x-component': 'Action',
             'x-action': 'customize:form:api',
             'x-designer': 'Action.Designer',
