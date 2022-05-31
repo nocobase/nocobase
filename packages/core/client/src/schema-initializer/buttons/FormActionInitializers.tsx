@@ -108,7 +108,7 @@ export const FormActionInitializers = {
           schema: {
             title: '{{ t("Custom request api") }}',
             'x-component': 'Action',
-            'x-action': 'customize:api',
+            'x-action': 'customize:form:api',
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               requestSettings: {},
@@ -237,7 +237,7 @@ export const CreateFormActionInitializers = {
           schema: {
             title: '{{ t("Custom request api") }}',
             'x-component': 'Action',
-            'x-action': 'customize:api',
+            'x-action': 'customize:form:api',
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               requestSettings: {},
@@ -366,7 +366,7 @@ export const UpdateFormActionInitializers = {
           schema: {
             title: '{{ t("Custom request api") }}',
             'x-component': 'Action',
-            'x-action': 'customize:api',
+            'x-action': 'customize:form:api',
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               requestSettings: {},

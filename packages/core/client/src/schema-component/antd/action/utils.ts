@@ -1,11 +1,23 @@
-/*
- * @Author: Semmy Wong
- * @Date: 2022-05-29 16:19:48
- * @LastEditors: Semmy Wong
- * @LastEditTime: 2022-05-30 21:39:05
- * @Description: 描述
- */
 import type { ISchema } from '@formily/react';
+
+const validateJSON = {
+  validator: `{{(value, rule)=> {
+    if (!value) {
+      return '';
+    }
+    try {
+      const val = JSON.parse(value);
+      if(!isNaN(val)) {
+        return false;
+      }
+      return true;
+    } catch(error) {
+      console.error(error);
+      return false;
+    }
+  }}}`,
+  message: '{{t("Invalid JSON format")}}',
+};
 
 export const requestSettingsSchema: ISchema = {
   type: 'object',
@@ -21,6 +33,7 @@ export const requestSettingsSchema: ISchema = {
       title: '{{t("Request API method")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
+      default: 'POST',
       enum: [
         { label: 'POST', value: 'POST' },
         { label: 'GET', value: 'GET' },
@@ -34,18 +47,21 @@ export const requestSettingsSchema: ISchema = {
       title: '{{t("Request API headers")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
+      'x-validator': validateJSON,
     },
     params: {
       type: 'string',
       title: '{{t("Request API parameters")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
+      'x-validator': validateJSON,
     },
     data: {
       type: 'string',
       title: '{{t("Request API body")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
+      'x-validator': validateJSON,
     },
   },
 };

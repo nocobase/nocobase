@@ -2,7 +2,7 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 import { message, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { APIClient } from '../../api-client';
+import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
@@ -55,6 +55,48 @@ const filterValue = (value) => {
   return obj;
 };
 
+function getFormValues(field, form, fieldNames, getField, resource) {
+  let values = {};
+  for (const key in form.values) {
+    if (fieldNames.includes(key)) {
+      const collectionField = getField(key);
+      if (collectionField.interface === 'subTable') {
+        values[key] = form.values[key];
+        continue;
+      }
+      if (field.added && !field.added.has(key)) {
+        continue;
+      }
+      const items = form.values[key];
+      if (collectionField.interface === 'linkTo') {
+        const targetKey = collectionField.targetKey || 'id';
+        if (resource instanceof TableFieldResource) {
+          if (Array.isArray(items)) {
+            values[key] = filterValue(items);
+          } else if (items && typeof items === 'object') {
+            values[key] = filterValue(items);
+          } else {
+            values[key] = items;
+          }
+        } else {
+          if (Array.isArray(items)) {
+            values[key] = items.map((item) => item[targetKey]);
+          } else if (items && typeof items === 'object') {
+            values[key] = items[targetKey];
+          } else {
+            values[key] = items;
+          }
+        }
+      } else {
+        values[key] = form.values[key];
+      }
+    } else {
+      values[key] = form.values[key];
+    }
+  }
+  return values;
+}
+
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
@@ -73,37 +115,7 @@ export const useCreateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      let values = {};
-      for (const key in form.values) {
-        if (fieldNames.includes(key)) {
-          const items = form.values[key];
-          const collectionField = getField(key);
-          if (collectionField.interface === 'linkTo') {
-            const targetKey = collectionField.targetKey || 'id';
-            if (resource instanceof TableFieldResource) {
-              if (Array.isArray(items)) {
-                values[key] = filterValue(items);
-              } else if (items && typeof items === 'object') {
-                values[key] = filterValue(items);
-              } else {
-                values[key] = items;
-              }
-            } else {
-              if (Array.isArray(items)) {
-                values[key] = items.map((item) => item[targetKey]);
-              } else if (items && typeof items === 'object') {
-                values[key] = items[targetKey];
-              } else {
-                values[key] = items;
-              }
-            }
-          } else {
-            values[key] = form.values[key];
-          }
-        } else {
-          values[key] = form.values[key];
-        }
-      }
+      const values = getFormValues(field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       await resource.create({
@@ -188,20 +200,34 @@ export const useCustomizeUpdateActionProps = () => {
 };
 
 export const useCustomizeRequestActionProps = () => {
-  const apiClient = new APIClient({
-    baseURL: process.env.API_BASE_URL,
-    headers: {
-      'X-Hostname': window?.location?.hostname,
-    },
-  });
+  const apiClient = useAPIClient();
   const history = useHistory();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
+  const form = useForm();
+  const { fields, getField } = useCollection();
+  const { field, resource } = useBlockRequestContext();
   return {
     async onClick() {
-      const { onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      if (skipValidator === false) {
+        await form.submit();
+      }
+
+      const headers = requestSettings['headers'] ? JSON.parse(requestSettings['headers']) : {};
+      const params = requestSettings['params'] ? JSON.parse(requestSettings['params']) : {};
+      const data = requestSettings['data'] ? JSON.parse(requestSettings['data']) : {};
+      const methods = ['POST', 'PUT', 'PATCH'];
+      if (actionSchema['x-action'] === 'customize:form:api' && methods.includes(requestSettings['method'])) {
+        const fieldNames = fields.map((field) => field.name);
+        const values = getFormValues(field, form, fieldNames, getField, resource);
+        Object.assign(data, values);
+      }
       await apiClient.request({
         ...requestSettings,
+        headers,
+        params,
+        data,
       });
 
       if (!onSuccess?.successMessage) {
@@ -245,44 +271,7 @@ export const useUpdateActionProps = () => {
         await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
-      let values = {};
-      for (const key in form.values) {
-        if (fieldNames.includes(key)) {
-          const collectionField = getField(key);
-          if (collectionField.interface === 'subTable') {
-            values[key] = form.values[key];
-            continue;
-          }
-          if (field.added && !field.added.has(key)) {
-            continue;
-          }
-          const items = form.values[key];
-          if (collectionField.interface === 'linkTo') {
-            const targetKey = collectionField.targetKey || 'id';
-            if (resource instanceof TableFieldResource) {
-              if (Array.isArray(items)) {
-                values[key] = filterValue(items);
-              } else if (items && typeof items === 'object') {
-                values[key] = filterValue(items);
-              } else {
-                values[key] = items;
-              }
-            } else {
-              if (Array.isArray(items)) {
-                values[key] = items.map((item) => item[targetKey]);
-              } else if (items && typeof items === 'object') {
-                values[key] = items[targetKey];
-              } else {
-                values[key] = items;
-              }
-            }
-          } else {
-            values[key] = form.values[key];
-          }
-        } else {
-          values[key] = form.values[key];
-        }
-      }
+      const values = getFormValues(field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       await resource.update({

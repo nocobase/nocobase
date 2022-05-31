@@ -9,7 +9,7 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps
+  SchemaInitializerItemProps,
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -129,7 +129,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
             ...style,
           }}
           {...others}
-          icon={<Icon type={icon as string}/>}
+          icon={<Icon type={icon as string} />}
         >
           {compile(props.children || props.title)}
         </Button>

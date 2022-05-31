@@ -16,9 +16,14 @@ const MenuGroup = (props) => {
     'customize:popup': t('Popup'),
     'customize:update': t('Update record'),
     'customize:save': t('Save record'),
-    'customize:api': t('Custom request api'),
+    'customize:table:api': t('Custom request api'),
+    'customize:form:api': t('Custom request api'),
   };
-  if (!['customize:popup', 'customize:update', 'customize:save', 'customize:api'].includes(actionType)) {
+  if (
+    !['customize:popup', 'customize:update', 'customize:save', 'customize:table:api', 'customize:form:api'].includes(
+      actionType,
+    )
+  ) {
     return <>{props.children}</>;
   }
   return <Menu.ItemGroup title={`${t('Customize')} > ${actionTitles[actionType]}`}>{props.children}</Menu.ItemGroup>;
@@ -170,27 +175,6 @@ export const ActionDesigner = (props) => {
             schema={requestSettingsSchema}
             initialValues={fieldSchema?.['x-action-settings']?.requestSettings}
             onSubmit={(requestSettings) => {
-              if (requestSettings['headers']) {
-                try {
-                  requestSettings['headers'] = JSON.parse(requestSettings['headers']);
-                } catch (error) {
-                  throw new Error(t('Invalid JSON format'));
-                }
-              }
-              if (requestSettings['params']) {
-                try {
-                  requestSettings['params'] = JSON.parse(requestSettings['params']);
-                } catch (error) {
-                  throw new Error(t('Invalid JSON format'));
-                }
-              }
-              if (requestSettings['data']) {
-                try {
-                  requestSettings['data'] = JSON.parse(requestSettings['data']);
-                } catch (error) {
-                  throw new Error(t('Invalid JSON format'));
-                }
-              }
               fieldSchema['x-action-settings']['requestSettings'] = requestSettings;
               dn.emit('patch', {
                 schema: {

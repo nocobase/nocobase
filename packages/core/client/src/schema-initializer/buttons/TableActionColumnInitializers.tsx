@@ -156,7 +156,7 @@ export const TableActionColumnInitializers = (props: any) => {
               schema: {
                 title: '{{ t("Custom request api") }}',
                 'x-component': 'Action.Link',
-                'x-action': 'customize:api',
+                'x-action': 'customize:table:api',
                 'x-designer': 'Action.Designer',
                 'x-action-settings': {
                   requestSettings: {},
