@@ -517,5 +517,6 @@ export default {
   'Request API headers': '请求API头(JSON格式)',
   'Request API body': '请求API内容(JSON格式)',
   'Request success': '请求成功',
-  'Invalid JSON format': '非法JSON格式'
+  'Invalid JSON format': '非法JSON格式',
+  'After successful request': '请求成功之后'
 }

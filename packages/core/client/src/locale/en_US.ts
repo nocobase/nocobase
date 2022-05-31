@@ -310,5 +310,6 @@ export default {
   'Request API headers': 'Request API headers(JSON)',
   'Request API body': 'Request API body(JSON)',
   'Request success': 'Request success',
-  'Invalid JSON format': 'Invalid JSON format'
+  'Invalid JSON format': 'Invalid JSON format',
+  'After successful request': 'After successful request'
 }

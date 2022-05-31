@@ -242,6 +242,8 @@ export const ActionDesigner = (props) => {
               {
                 'customize:save': t('After successful save'),
                 'customize:update': t('After successful update'),
+                'customize:table:api': t('After successful request'),
+                'customize:form:api': t('After successful request'),
               }[actionType]
             }
             initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
@@ -251,6 +253,8 @@ export const ActionDesigner = (props) => {
                 title: {
                   'customize:save': t('After successful save'),
                   'customize:update': t('After successful update'),
+                  'customize:table:api': t('After successful request'),
+                  'customize:form:api': t('After successful request'),
                 }[actionType],
                 properties: {
                   successMessage: {
