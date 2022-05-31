@@ -488,7 +488,8 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     setVisible(false);
   };
 
-  const submitHandler = () => {
+  const submitHandler = async () => {
+    await form.submit();
     onSubmit?.(cloneDeep(form.values));
     setVisible(false);
   };

@@ -214,6 +214,9 @@ export const useCustomizeRequestActionProps = () => {
   return {
     async onClick() {
       const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      if (!requestSettings['url']) {
+        return;
+      }
       if (skipValidator === false) {
         await form.submit();
       }

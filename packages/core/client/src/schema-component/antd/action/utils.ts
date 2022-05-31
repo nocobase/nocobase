@@ -25,6 +25,7 @@ export const requestSettingsSchema: ISchema = {
     url: {
       type: 'string',
       title: '{{t("Request API URL")}}',
+      required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Input',
     },
