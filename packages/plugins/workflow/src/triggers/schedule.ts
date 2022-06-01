@@ -139,6 +139,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
         if (!cronInCycle.call(this, workflow, now)) {
           return;
         }
+        console.log('set cache', now);
 
         this.setCache(workflow);
       };
@@ -235,6 +236,10 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     const instances = await repo.find({
       filter
     });
+
+    if (instances.length) {
+      console.log(workflow.id, 'trigger at', date);
+    }
 
     instances.forEach(item => {
       workflow.trigger({
