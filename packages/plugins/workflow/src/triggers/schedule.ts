@@ -236,7 +236,10 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     const instances = await repo.find({
       filter
     });
-    console.log('trigger at', date);
+
+    if (instances.length) {
+      console.log(workflow.id, 'trigger at', date);
+    }
 
     instances.forEach(item => {
       workflow.trigger({

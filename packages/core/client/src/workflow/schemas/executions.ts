@@ -27,7 +27,7 @@ const collection = {
         'x-decorator': 'FormItem',
         enum: [
           { value: 0, label: '{{t("On going")}}' },
-          { value: 1, label: '{{t("Success")}}' },
+          { value: 1, label: '{{t("Succeeded")}}' },
           { value: -1, label: '{{t("Failed")}}' },
           { value: -2, label: '{{t("Canceled")}}' },
         ],
@@ -88,6 +88,9 @@ export const executionSchema = {
               createdAt: {
                 type: 'datetime',
                 'x-component': 'CollectionField',
+                'x-component-props': {
+                  showTime: true
+                },
                 'x-read-pretty': true,
               },
             }
