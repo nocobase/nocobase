@@ -1,8 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
-import React from 'react';
-import { ForeignKey, SourceKey, TargetKey } from './components';
 import { recordPickerSelector, recordPickerViewer } from './properties';
 import { IField } from './types';
 
@@ -121,12 +119,10 @@ export const o2m: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 source: {
-                  type: 'string',
+                  type: 'void',
                   title: '{{t("Source collection")}}',
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
-                  'x-disabled': true,
+                  'x-component': 'SourceCollection',
                 },
               },
             },
@@ -156,13 +152,12 @@ export const o2m: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'string',
-                  title: <SourceKey />,
+                  type: 'void',
+                  title: '{{t("Source key")}}',
                   default: 'id',
                   enum: [{ label: 'ID', value: 'id' }],
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
-                  'x-disabled': '{{ !createOnly }}',
+                  'x-component': 'SourceKey',
                 },
               },
             },
@@ -172,11 +167,9 @@ export const o2m: IField = {
               properties: {
                 foreignKey: {
                   type: 'string',
-                  title: <ForeignKey />,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  title: '{{t("Foreign key")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
-                  'x-disabled': true,
+                  'x-component': 'TargetForeignKey',
                 },
               },
             },
@@ -197,12 +190,10 @@ export const o2m: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 targetKey: {
-                  type: 'string',
-                  title: <TargetKey/>,
-                  default: 'id',
-                  enum: [{ label: 'ID', value: 'id' }],
+                  type: 'void',
+                  title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'TargetKey',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },

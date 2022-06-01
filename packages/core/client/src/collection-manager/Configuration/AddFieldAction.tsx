@@ -12,6 +12,7 @@ import { ActionContext, SchemaComponent, useCompile } from '../../schema-compone
 import { useCreateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import * as components from './components';
 import { options } from './interfaces';
 
 const getSchema = (schema: IField): ISchema => {
@@ -142,7 +143,7 @@ export const AddFieldAction = () => {
           {t('Add field')}
         </Button>
       </Dropdown>
-      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ createOnly: true, useCreateCollectionField }} />
+      <SchemaComponent schema={schema} components={{ ...components, ArrayTable }} scope={{ createOnly: true, useCreateCollectionField }} />
     </ActionContext.Provider>
   );
 };

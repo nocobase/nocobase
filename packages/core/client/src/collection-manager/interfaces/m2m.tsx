@@ -1,8 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
-import React from 'react';
-import { ForeignKey1, ForeignKey2, SourceKey, TargetKey, ThroughCollection } from './components';
 import { defaultProps, recordPickerSelector, recordPickerViewer } from './properties';
 import { IField } from './types';
 
@@ -107,9 +105,8 @@ export const m2m: IField = {
                 source: {
                   type: 'string',
                   title: '{{t("Source collection")}}',
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'SourceCollection',
                   'x-disabled': true,
                 },
               },
@@ -120,12 +117,15 @@ export const m2m: IField = {
               properties: {
                 through: {
                   type: 'string',
-                  title: <ThroughCollection/>,
+                  title: '{{t("Through collection")}}',
                   'x-disabled': '{{ !createOnly }}',
                   'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
-                  'x-component-props': {},
+                  'x-component-props': {
+                    allowClear: true,
+                    placeholder: '留空时，自动生成中间表'
+                  },
                 },
               },
             },
@@ -155,12 +155,10 @@ export const m2m: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'string',
-                  title: <SourceKey />,
-                  default: 'id',
-                  enum: [{ label: 'ID', value: 'id' }],
+                  type: 'void',
+                  title: '{{t("Source key")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'SourceKey',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },
@@ -171,10 +169,9 @@ export const m2m: IField = {
               properties: {
                 foreignKey: {
                   type: 'string',
-                  title: <ForeignKey1/>,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  title: '{{t("Foreign key 1")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'ThroughForeignKey',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },
@@ -182,8 +179,7 @@ export const m2m: IField = {
             col23: {
               type: 'void',
               'x-component': 'Grid.Col',
-              properties: {
-              },
+              properties: {},
             },
           },
         },
@@ -194,8 +190,7 @@ export const m2m: IField = {
             col21: {
               type: 'void',
               'x-component': 'Grid.Col',
-              properties: {
-              },
+              properties: {},
             },
             col22: {
               type: 'void',
@@ -203,10 +198,9 @@ export const m2m: IField = {
               properties: {
                 otherKey: {
                   type: 'string',
-                  title: <ForeignKey2 />,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  title: '{{t("Foreign key 2")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'ThroughForeignKey',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },
@@ -216,12 +210,10 @@ export const m2m: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 targetKey: {
-                  type: 'string',
-                  title: <TargetKey/>,
-                  default: 'id',
-                  enum: [{ label: 'ID', value: 'id' }],
+                  type: 'void',
+                  title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'TargetKey',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },

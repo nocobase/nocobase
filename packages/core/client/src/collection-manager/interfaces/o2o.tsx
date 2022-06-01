@@ -1,8 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
-import React from 'react';
-import { ForeignKey, SourceKey } from './components';
 import { recordPickerSelector, recordPickerViewer } from './properties';
 import { IField } from './types';
 
@@ -121,11 +119,10 @@ export const o2o: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 source: {
-                  type: 'string',
+                  type: 'void',
                   title: '{{t("Source collection")}}',
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'SourceCollection',
                   'x-disabled': true,
                 },
               },
@@ -156,13 +153,10 @@ export const o2o: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'string',
-                  title: <SourceKey />,
-                  default: 'id',
-                  enum: [{ label: 'ID', value: 'id' }],
+                  type: 'void',
+                  title: '{{t("Source key")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
-                  'x-disabled': '{{ !createOnly }}',
+                  'x-component': 'SourceKey',
                 },
               },
             },
@@ -172,11 +166,9 @@ export const o2o: IField = {
               properties: {
                 foreignKey: {
                   type: 'string',
-                  title: <ForeignKey />,
-                  default: 'id',
-                  enum: [{ label: 'ID', value: 'id' }],
+                  title: '{{t("Foreign key")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'TargetForeignKey',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },

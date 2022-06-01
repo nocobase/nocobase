@@ -1,8 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
-import React from 'react';
-import { ForeignKey, TargetKey } from './components';
 import { recordPickerSelector, recordPickerViewer } from './properties';
 import { IField } from './types';
 
@@ -121,11 +119,10 @@ export const m2o: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 source: {
-                  type: 'string',
+                  type: 'void',
                   title: '{{t("Source collection")}}',
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'SourceCollection',
                   'x-disabled': true,
                 },
               },
@@ -157,10 +154,9 @@ export const m2o: IField = {
               properties: {
                 foreignKey: {
                   type: 'string',
-                  title: <ForeignKey />,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  title: '{{t("Foreign key")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'SourceForeignKey',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },
@@ -170,13 +166,10 @@ export const m2o: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 targetKey: {
-                  type: 'string',
-                  title: <TargetKey/>,
-                  default: 'id',
-                  enum: [{ label: 'ID', value: 'id' }],
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  type: 'void',
+                  title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Select',
+                  'x-component': 'TargetKey',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },

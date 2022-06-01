@@ -10,6 +10,7 @@ import { ActionContext, SchemaComponent } from '../../schema-component';
 import { useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import * as components from './components';
 
 const getSchema = (schema: IField): ISchema => {
   if (!schema) {
@@ -114,7 +115,11 @@ export const EditFieldAction = (props) => {
       >
         {t('Edit')}
       </a>
-      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ useUpdateCollectionField }} />
+      <SchemaComponent
+        schema={schema}
+        components={{ ...components, ArrayTable }}
+        scope={{ useUpdateCollectionField }}
+      />
     </ActionContext.Provider>
   );
 };
