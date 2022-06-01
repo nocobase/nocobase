@@ -9,7 +9,7 @@ export const formula: IField = {
   title: '{{t("Formula")}}',
   sortable: true,
   default: {
-    type: 'float',
+    type: 'formula',
     // name,
     uiSchema: {
       type: 'number',
@@ -24,7 +24,7 @@ export const formula: IField = {
   },
   properties: {
     ...defaultProps,
-    'uiSchema.x-component-props.expression': {
+    'expression': {
       type: 'string',
       title: '{{t("Expression")}}',
       required: true,

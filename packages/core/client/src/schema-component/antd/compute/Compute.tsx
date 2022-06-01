@@ -5,9 +5,17 @@ import React, { useState } from 'react';
 import * as math from 'mathjs';
 import _ from 'lodash';
 import { ReadPretty } from '../input-number/ReadPretty';
+import { useCollectionField } from '../../../collection-manager/hooks';
 
 const AntdCompute = (props) => {
-  const { value, onChange, expression } = props;
+  const { value, onChange } = props;
+  // console.log('props', props);
+  const field = useCollectionField();
+  let expression = '';
+  // if (field.expression) {
+  //   expression = field.expression;
+  // }
+  console.log('field', field, field.expression);
   const [computeValue, setComputeValue] = useState(value);
 
   useFormEffects(() => {

@@ -18,7 +18,8 @@
     "flat": "^5.0.2",
     "glob": "^7.1.6",
     "sequelize": "^6.9.0",
-    "umzug": "^3.1.1"
+    "umzug": "^3.1.1",
+    "mathjs": "^10.6.1"
   },
   "repository": {
     "type": "git",
