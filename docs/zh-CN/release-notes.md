@@ -82,7 +82,7 @@ There are major changes to the `APIClient` API, see details [JavaScript SDK](./d
 - fix: link-to field data scope error  (#1337)
 - feat(plugin workflow): revisions (#379)
 - fix(database): fix option-parser include list index (#371)
-- fix(plugin-worklfow): fix duplicated description in fields values (#368)
+- fix(plugin-workflow): fix duplicated description in fields values (#368)
 - fix(database): fix type and transaction in repository (#366)
 - fix(plugin workflow): fix transaction of execution (#364)
 
