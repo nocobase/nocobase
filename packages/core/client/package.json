@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/client",
-  "version": "0.7.0-alpha.82",
+  "version": "0.7.0-alpha.83",
   "license": "Apache-2.0",
   "licenses": [
     {
@@ -18,8 +18,8 @@
     "@formily/antd": "2.0.20",
     "@formily/core": "2.0.20",
     "@formily/react": "2.0.20",
-    "@nocobase/sdk": "0.7.0-alpha.82",
-    "@nocobase/utils": "0.7.0-alpha.82",
+    "@nocobase/sdk": "0.7.0-alpha.83",
+    "@nocobase/utils": "0.7.0-alpha.83",
     "ahooks": "^3.0.5",
     "antd": "~4.19.5",
     "axios": "^0.26.1",
