@@ -1,7 +1,7 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
-import { col, ModelCtor, ModelOptions, SyncOptions } from 'sequelize';
+import { ModelCtor, ModelOptions, SyncOptions } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
