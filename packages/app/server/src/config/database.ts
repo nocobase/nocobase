@@ -9,4 +9,5 @@ export default {
   database: process.env.DB_DATABASE,
   host: process.env.DB_HOST,
   port: process.env.DB_PORT as any,
+  timezone: process.env.DB_TIMEZONE,
 } as IDatabaseOptions;

@@ -92,6 +92,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     }
 
+    if (options.dialect === 'sqlite') {
+      delete opts.timezone;
+    }
+
     this.sequelize = new Sequelize(opts);
     this.options = opts;
     this.collections = new Map();
