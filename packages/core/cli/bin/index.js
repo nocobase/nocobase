@@ -11,6 +11,7 @@ const env = {
   API_BASE_PATH: '/api/',
   DB_DIALECT: 'sqlite',
   DB_STORAGE: 'storage/db/nocobase.sqlite',
+  DB_TIMEZONE: '+00:00',
   DEFAULT_STORAGE_TYPE: 'local',
   LOCAL_STORAGE_DEST: 'storage/uploads',
 };

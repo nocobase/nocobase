@@ -2,7 +2,7 @@
 
 NocoBase's HTTP API is a superset of the REST API, and the standard CRUD API also supports the RESTful style.
 
-## Collection rescources
+## Collection resources
 
 ---
 

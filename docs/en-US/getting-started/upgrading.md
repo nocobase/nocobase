@@ -40,7 +40,7 @@ docker-compose logs app
 
 ## create-nocobase-app
 
-Execute the `nocobase upgrad` command
+Execute the `nocobase upgrade` command
 
 ```bash
 # Switch to the project directory
