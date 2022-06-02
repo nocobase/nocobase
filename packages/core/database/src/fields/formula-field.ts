@@ -7,35 +7,38 @@ export class FormulaField extends Field {
     return DataTypes.FLOAT;
   }
 
+  caculate(expression, scope) {
+    let result;
+    try {
+      result = math.evaluate(expression, scope);
+      result = math.round(result, 9);
+    } catch {}
+    return result;
+  }
+
   async initFieldData({ transaction }) {
-    console.log('initFieldData-----', this.options);
-    // const { expression } = options;
-    if (this.options.id) {
-      const { expression, name } = this.options;
+    const { expression, name } = this.options;
+    console.log('initFieldData', expression, name);
 
-      const records = await this.collection.repository.find({
-        order: [this.collection.model.primaryKeyAttribute],
-        transaction,
-      });
+    const records = await this.collection.repository.find({
+      order: [this.collection.model.primaryKeyAttribute],
+      transaction,
+    });
 
-      for (const record of records) {
-        const scope = record.toJSON();
-        let result;
-        try {
-          result = math.evaluate(expression, scope);
-          result = math.round(result, 9);
-        } catch {}
-        if (result) {
-          await record.update(
-            {
-              [name]: result,
-            },
-            {
-              transaction,
-              silent: true,
-            },
-          );
-        }
+    for (const record of records) {
+      const scope = record.toJSON();
+      const result = this.caculate(expression, scope);
+      if (result) {
+        await record.update(
+          {
+            [name]: result,
+          },
+          {
+            transaction,
+            silent: true,
+            hooks: false,
+          },
+        );
       }
     }
   }
@@ -69,7 +72,7 @@ export class FormulaField extends Field {
 }
 
 export interface FormulaFieldOptions extends BaseColumnFieldOptions {
-  type: 'float';
+  type: 'formula';
 
   expression: string;
 }

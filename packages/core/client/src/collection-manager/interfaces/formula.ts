@@ -15,7 +15,7 @@ export const formula: IField = {
       type: 'number',
       // title,
       "x-disabled": true,
-      'x-component': 'Compute',
+      'x-component': 'Formula.Result',
       'x-component-props': {
         stringMode: true,
         step: '1',
@@ -29,7 +29,7 @@ export const formula: IField = {
       title: '{{t("Expression")}}',
       required: true,
       description: '{{t("Input +、-、*、/、( ) to calculate, input @ to open field variables.")}}',
-      'x-component': 'FormulaInput',
+      'x-component': 'Formula.Expression',
       'x-decorator': 'FormItem',
     },
     'uiSchema.x-component-props.step': {
