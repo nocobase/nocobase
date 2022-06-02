@@ -1,14 +1,9 @@
-import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
-import { useFormLayout } from '@formily/antd';
-import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
-import { isValid } from '@formily/shared';
-import { useRecord } from '@nocobase/client';
-import { Button, Input, Popover, Tag, Menu, Dropdown } from 'antd';
+import { connect, mapProps } from '@formily/react';
+import { Dropdown, Menu } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
-import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../collection-manager/hooks';
-import { hasIcon, Icon, icons } from '../../../icon';
+import { useRecord } from '../../../record-provider';
 
 const AntdFormulaInput = (props) => {
   const { value, onChange } = props;

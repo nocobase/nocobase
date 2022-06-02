@@ -1,11 +1,11 @@
 import { onFormValuesChange } from '@formily/core';
 import { connect, mapReadPretty, useFieldSchema, useFormEffects } from '@formily/react';
 import { InputNumber } from 'antd';
-import React, { useState } from 'react';
-import * as math from 'mathjs';
 import _ from 'lodash';
+import * as math from 'mathjs';
+import React, { useState } from 'react';
+import { useCollection } from '../../../collection-manager/hooks';
 import { ReadPretty } from '../input-number/ReadPretty';
-import { useCollection, useCollectionField } from '../../../collection-manager/hooks';
 
 const AntdCompute = (props) => {
   const { value, onChange, step } = props;
