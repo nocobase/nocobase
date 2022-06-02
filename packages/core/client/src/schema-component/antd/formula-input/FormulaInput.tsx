@@ -12,7 +12,6 @@ import { hasIcon, Icon, icons } from '../../../icon';
 
 const AntdFormulaInput = (props) => {
   const { value, onChange } = props;
-  console.log('p', props);
   const record = useRecord();
   const { getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(record.collectionName || record.name) as any[];
@@ -39,7 +38,6 @@ const AntdFormulaInput = (props) => {
   useEffect(() => {
     if (onChange && formula) {
       let v = formula;
-      console.log('a', formula, html);
       numColumns.forEach((value, key) => {
         v = v.replaceAll(value, key);
       })
@@ -47,23 +45,10 @@ const AntdFormulaInput = (props) => {
         onChange(v);
       }
     }
-
-    // if (value && !formula) {
-    //   console.log('v1', value);
-    //   let v = value;
-    //   let h = value;
-    //   numColumns.forEach((value, key) => {
-    //     v = v.replaceAll(key, value);
-    //     h = h.replaceAll(key, `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;">${value}</span>`)
-    //   })
-    //   setFormula(v);
-    //   setHtml(h);
-    // }
   }, [formula])
 
   const menu = (
     <Menu onClick={async (args) => {
-      // document.execCommand("insertHTML", false, '<span contentEditable="false">123</span>');
       const replaceFormula = formula.replace('@', numColumns.get(args.key));
       const replaceHtml = html.replace('@', `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;">${numColumns.get(args.key)}</span>`);
       setFormula(replaceFormula);

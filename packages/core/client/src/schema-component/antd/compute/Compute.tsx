@@ -1,21 +1,19 @@
 import { onFormValuesChange } from '@formily/core';
-import { connect, mapReadPretty, useFormEffects } from '@formily/react';
+import { connect, mapReadPretty, useFieldSchema, useFormEffects } from '@formily/react';
 import { InputNumber } from 'antd';
 import React, { useState } from 'react';
 import * as math from 'mathjs';
 import _ from 'lodash';
 import { ReadPretty } from '../input-number/ReadPretty';
-import { useCollectionField } from '../../../collection-manager/hooks';
+import { useCollection, useCollectionField } from '../../../collection-manager/hooks';
 
 const AntdCompute = (props) => {
-  const { value, onChange } = props;
-  // console.log('props', props);
-  const field = useCollectionField();
-  let expression = '';
-  // if (field.expression) {
-  //   expression = field.expression;
-  // }
-  console.log('field', field, field.expression);
+  const { value, onChange, step } = props;
+  // const { expression } = useCollectionField();
+  const { getField } = useCollection();
+  const fieldSchema = useFieldSchema();
+  const options = getField(fieldSchema.name);
+  const { expression } = options;
   const [computeValue, setComputeValue] = useState(value);
 
   useFormEffects(() => {
@@ -24,6 +22,7 @@ const AntdCompute = (props) => {
       let result;
       try {
         result = math.evaluate(expression, scope);
+        result = math.round(result, 9);
       } catch {}
       if (result) {
         setComputeValue(result);
@@ -35,7 +34,7 @@ const AntdCompute = (props) => {
   })
   
   return (
-    <InputNumber readOnly value={computeValue} />
+    <InputNumber readOnly value={computeValue} stringMode={true} step={step} />
   );
 }
 

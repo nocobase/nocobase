@@ -32,7 +32,7 @@ export const formula: IField = {
       'x-component': 'FormulaInput',
       'x-decorator': 'FormItem',
     },
-    'uiSchema.x-component-props.precision': {
+    'uiSchema.x-component-props.step': {
       type: 'string',
       title: '{{t("Precision")}}',
       'x-component': 'Select',
