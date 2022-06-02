@@ -21,6 +21,7 @@
     "@nocobase/plugin-ui-routes-storage": "0.7.0-alpha.82",
     "@nocobase/plugin-ui-schema-storage": "0.7.0-alpha.82",
     "@nocobase/plugin-users": "0.7.0-alpha.82",
+    "@nocobase/plugin-export": "0.7.0-alpha.82",
     "@nocobase/plugin-workflow": "0.7.0-alpha.82",
     "@nocobase/server": "0.7.0-alpha.82"
   },
