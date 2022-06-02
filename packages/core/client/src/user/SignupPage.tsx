@@ -85,7 +85,7 @@ const schema: ISchema = {
   },
 };
 
-const useSignup = () => {
+export const useSignup = () => {
   const history = useHistory();
   const form = useForm();
   const api = useAPIClient();
