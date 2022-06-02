@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/utils",
-  "version": "0.7.0-alpha.82",
+  "version": "0.7.0-alpha.83",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",

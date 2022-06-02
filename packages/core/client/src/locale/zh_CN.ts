@@ -299,6 +299,8 @@ export default {
   "Button title":  "按钮标题",
   "Button icon":  "按钮图标",
   "Submitted successfully": "提交成功",
+  "Operation succeeded": "操作成功",
+  "Operation failed": "操作失败",
   "Open mode": "打开方式",
   'Menu item title': '菜单项名称',
   'Menu item icon': '菜单项图标',
@@ -418,8 +420,8 @@ export default {
   'Trigger type': '触发方式',
   'Description': '描述',
   'Status': '状态',
-  'Started': '启用',
-  'Stopped': '停用',
+  'On': '启用',
+  'Off': '停用',
   'Version': '版本',
   'Copy to new version': '复制到新版本',
 
@@ -478,7 +480,7 @@ export default {
   'String operation': '字符串',
 
   'On going': '进行中',
-  'Success': '成功',
+  'Succeeded': '成功',
   'Failed': '失败',
   'Canceled': '已取消',
 

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/acl",
-  "version": "0.7.0-alpha.82",
+  "version": "0.7.0-alpha.83",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -12,7 +12,7 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/resourcer": "0.7.0-alpha.82",
+    "@nocobase/resourcer": "0.7.0-alpha.83",
     "json-templates": "^4.2.0"
   },
   "repository": {

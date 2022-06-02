@@ -30,18 +30,20 @@ export class ModelHook {
       if (arg?._previousDataValues) {
         return (<Model>arg).constructor.name;
       }
-
       if (lodash.isPlainObject(arg)) {
         if (arg['model']) {
           return arg['model'].name;
         }
-
-        if (lodash.get(arg, 'name.plural')) {
-          return lodash.get(arg, 'name.plural');
+        const plural = arg?.name?.plural;
+        if (this.database.sequelize.isDefined(plural)) {
+          return plural;
+        }
+        const singular = arg?.name?.singular;
+        if (this.database.sequelize.isDefined(singular)) {
+          return singular;
         }
       }
     }
-
     return null;
   }
 
