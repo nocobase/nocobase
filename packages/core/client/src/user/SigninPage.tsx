@@ -59,7 +59,7 @@ const schema: ISchema = {
   },
 };
 
-const useSignin = () => {
+export const useSignin = () => {
   const location = useLocation<any>();
   const history = useHistory();
   const form = useForm();
