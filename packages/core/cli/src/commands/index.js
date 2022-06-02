@@ -1,4 +1,5 @@
 const { Command } = require('commander');
+const { isPackageValid } = require('../util');
 
 /**
  *
@@ -15,5 +16,7 @@ module.exports = (cli) => {
   require('./umi')(cli);
   require('./upgrade')(cli);
   require('./postinstall')(cli);
-  require('./create-plugin')(cli);
+  if (isPackageValid('@umijs/utils')) {
+    require('./create-plugin')(cli);
+  }
 }
