@@ -108,11 +108,15 @@ export class TableFieldResource {
   }
 }
 
+export const WithoutTableFieldResource = createContext(null);
+
 export const TableFieldProvider = (props) => {
   return (
-    <BlockProvider block={'TableField'} {...props}>
-      <InternalTableFieldProvider {...props} />
-    </BlockProvider>
+    <WithoutTableFieldResource.Provider value={false}>
+      <BlockProvider block={'TableField'} {...props}>
+        <InternalTableFieldProvider {...props} />
+      </BlockProvider>
+    </WithoutTableFieldResource.Provider>
   );
 };
 
