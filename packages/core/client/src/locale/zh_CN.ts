@@ -118,6 +118,7 @@ export default {
   "Number": "数字",
   "Percent": "百分比",
   "Password": "密码",
+  "Formula": "公式",
   "Choices": "选择类型",
   "Checkbox": "勾选",
   "Single select": "下拉菜单（单选）",
@@ -345,6 +346,9 @@ export default {
   'Role UID': '角色标识',
 
   'Precision': '精确度',
+  'Formula mode': '计算方式',
+  'Expression': '表达式',
+  'Input +、-、*、/、( ) to calculate, input @ to open field variables.': '英文输入+、-、*、/、( ) 进行运算，输入@打开可用字段变量。',
   'Accept': '文件格式',
   'Rich Text': '富文本',
   'Junction collection': '中间表',
