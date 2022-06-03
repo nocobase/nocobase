@@ -1,17 +1,21 @@
 import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd';
-import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
+import { Field, onFormSubmitValidateStart } from '@formily/core';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useFormEffects } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { useRecord } from '@nocobase/client';
 import { Button, Input, Popover, Tag, Menu, Dropdown } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useTranslation } from 'react-i18next';
+import * as math from 'mathjs';
 import { useCollectionManager } from '../../../collection-manager/hooks';
 import { hasIcon, Icon, icons } from '../../../icon';
 
 const AntdFormulaInput = (props) => {
-  const { value, onChange } = props;
+  const { value, onChange, supports } = props;
+  const field = useField<Field>();
+  const { t } = useTranslation();
   const record = useRecord();
   const { getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(record.collectionName || record.name) as any[];
@@ -22,8 +26,10 @@ const AntdFormulaInput = (props) => {
   const [html, setHtml] = useState(null);
 
   const numColumns = new Map<string, string>();
-  fields.filter(field => field.interface === 'number').forEach(field => {
+  const scope = {};
+  fields.filter(field => supports.includes(field.interface)).forEach(field => {
     numColumns.set(field.name, field.uiSchema.title);
+    scope[field.name] = 1;
   })
   const keys = Array.from(numColumns.keys());
 
@@ -37,7 +43,7 @@ const AntdFormulaInput = (props) => {
 
   useEffect(() => {
     if (onChange && formula) {
-      let v = formula;
+      let v = formula || '';
       numColumns.forEach((value, key) => {
         v = v.replaceAll(value, key);
       })
@@ -65,6 +71,9 @@ const AntdFormulaInput = (props) => {
     const current = inputRef.current as any;
     setFormula(e.currentTarget.textContent);
     setHtml(current.innerHTML);
+    if (e.currentTarget.textContent == '' && onChange) {
+      onChange(null);
+    }
   }
 
   const handleKeyDown = (e) => {
@@ -82,6 +91,21 @@ const AntdFormulaInput = (props) => {
         break;
     }
   }
+
+  useFormEffects(() => {
+    onFormSubmitValidateStart(() => {
+      try {
+        math.evaluate(field.value, scope);
+        field.feedbacks = [];
+      } catch {
+        field.setFeedback({
+          type: 'error',
+          code: 'FormulaError',
+          messages: [t('Formula error.')],
+        });
+      }
+    })
+  })
 
   return (
     <Dropdown overlay={menu} visible={dropdownVisible}>
