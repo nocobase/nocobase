@@ -69,7 +69,6 @@ export class FormulaField extends Field {
       for (const record of records) {
         const scope = record.toJSON();
         const result = this.caculate(expression, scope);
-        console.log('r', result);
         await record.update(
           {
             [name]: result,

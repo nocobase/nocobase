@@ -39,7 +39,7 @@ describe('formula field', () => {
   });
 
   it('auto set formula field with create or update data', async () => {
-    const expression = 'price*count*80%sdfasdf';
+    const expression = 'price*count';
     const Test = db.collection({
       name: 'tests',
       fields: [{ type: 'float', name: 'price' }, { type: 'float', name: 'count' }, {name: 'sum', type: 'formula', expression}],
@@ -53,7 +53,6 @@ describe('formula field', () => {
     });
 
     const sumField = Test.getField<FormulaField>('sum');
-    console.log('r', test.get('sum'));
     expect(test.get('sum')).toEqual(sumField.caculate(expression, test.toJSON()));
 
     test.set('count', '6');
