@@ -18,7 +18,6 @@ export class FormulaField extends Field {
 
   async initFieldData({ transaction }) {
     const { expression, name } = this.options;
-    console.log('initFieldData', expression, name);
 
     const records = await this.collection.repository.find({
       order: [this.collection.model.primaryKeyAttribute],
@@ -57,7 +56,7 @@ export class FormulaField extends Field {
   }
 
   async updateFieldData(instance, { transaction }) {
-    if (instance.name == this.options.name) {
+    if (this.collection.name === instance.collectionName && instance.name === this.options.name) {
       this.options = Object.assign(this.options, instance.options);
       const { name, expression } = this.options;
 

@@ -5,14 +5,14 @@ import { ReadPretty } from '../input-number/ReadPretty';
 
 export const Percent = connect(
   (props) => {
-    const { value, onChange, step } = props;
+    const { value, onChange } = props;
 
     return (
       <InputNumber 
+        {...props}
         addonAfter="%" 
         value={value * 100}
-        step={step}
-        onChange={(v) => {
+        onChange={(v: any) => {
           if (onChange) {
             onChange(v / 100);
           }
