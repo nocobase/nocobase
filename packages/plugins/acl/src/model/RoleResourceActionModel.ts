@@ -44,6 +44,12 @@ export class RoleResourceActionModel extends Model {
 
     for (const field of fields) {
       const collectionField = collection.getField(field);
+
+      if (!collectionField) {
+        console.log(`${field} does not exist`);
+        continue;
+      }
+
       const fieldType = collectionField.get('interface') as string;
 
       const fieldActions: AssociationFieldAction = associationFieldsActions?.[fieldType]?.[availableAction];
