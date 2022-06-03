@@ -1,5 +1,5 @@
 import parser from 'cron-parser';
-import { merge } from 'lodash';
+import { literal, Op } from 'sequelize';
 import { Trigger } from '.';
 
 export type ScheduleOnField = string | {
@@ -12,7 +12,7 @@ export interface ScheduleTriggerConfig {
   // trigger mode
   mode: number;
   // how to repeat
-  cron?: string;
+  repeat?: string | number | null;
   // limit of repeat times
   limit?: number;
 
@@ -36,11 +36,17 @@ const ScheduleModes = new Map<number, ScheduleMode>();
 
 ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
   shouldCache(workflow, now) {
-    const { startsOn, endsOn } = workflow.config;
+    const { startsOn, endsOn, repeat } = workflow.config;
     const timestamp = now.getTime();
     if (startsOn) {
       const startTime = Date.parse(startsOn);
       if (!startTime || (startTime > timestamp + this.cacheCycle)) {
+        return false;
+      }
+      if (typeof repeat === 'number'
+        && repeat > this.cacheCycle
+        && (timestamp - startTime) % repeat > this.cacheCycle
+      ) {
         return false;
       }
     }
@@ -54,13 +60,20 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
     return true;
   },
   trigger(workflow, date) {
+    const { startsOn, endsOn, repeat } = workflow.config;
+    if (startsOn && typeof repeat === 'number') {
+      const startTime = Date.parse(startsOn);
+      if ((startTime - date.getTime()) % repeat) {
+        return;
+      }
+    }
     return workflow.trigger({ date });
   }
 });
 
 function getDateRangeFilter(on: ScheduleOnField, now: Date, dir: number) {
   const timestamp = now.getTime();
-  const op = dir < 0 ? '$lt' : '$gte';
+  const op = dir < 0 ? Op.lt : Op.gte;
   switch (typeof on) {
     case 'string':
       const time = Date.parse(on);
@@ -78,7 +91,7 @@ function getDateRangeFilter(on: ScheduleOnField, now: Date, dir: number) {
   return {};
 }
 
-function getDataOptionTime(data, on, now: Date, dir = 1) {
+function getDataOptionTime(data, on, dir = 1) {
   switch (typeof on) {
     case 'string':
       const time = Date.parse(on);
@@ -95,14 +108,27 @@ function getHookId(workflow, type) {
   return `${type}#${workflow.id}`;
 }
 
+const DialectTimestampFnMap: { [key: string]: Function } = {
+  postgres(col) {
+    return `extract(epoch from "${col}")`;
+  },
+  mysql(col) {
+    return `UNIX_TIMESTAMP(${col})`;
+  },
+  sqlite(col) {
+    return `unixepoch(${col})`;
+  }
+};
+DialectTimestampFnMap.mariadb = DialectTimestampFnMap.mysql;
+
 ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
   on(workflow) {
-    const { collection, startsOn, endsOn, cron } = workflow.config;
+    const { collection, startsOn, endsOn, repeat } = workflow.config;
     const event = `${collection}.afterSave`;
     const name = getHookId(workflow, event);
     if (!this.events.has(name)) {
       // NOTE: toggle cache depends on new date
-      const listener = (data, options) => {
+      const listener = async (data, options) => {
         // check if saved collection data in cache cycle
         //   in: add workflow to cache
         //   out: 1. do nothing because if any other data in
@@ -113,21 +139,21 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
         // how to check?
         // * startsOn only      : startsOn in cycle
         // * endsOn only        : invalid
-        // * cron only          : invalid
+        // * repeat only          : invalid
         // * startsOn and endsOn: equal to only startsOn
-        // * startsOn and cron  : startsOn in cycle and cron in cycle
-        // * endsOn and cron    : invalid
+        // * startsOn and repeat  : startsOn in cycle and repeat in cycle
+        // * endsOn and repeat    : invalid
         // * all                : all rules effect
         // * none               : invalid
-        // this means, startsOn and cron should be present at least one
-        // and no startsOn equals run on cron, and could ends on endsOn,
+        // this means, startsOn and repeat should be present at least one
+        // and no startsOn equals run on repeat, and could ends on endsOn,
         // this will be a little wired, only means the end date should use collection field.
         const now = new Date();
         now.setMilliseconds(0);
         const timestamp = now.getTime();
-        const startTime = getDataOptionTime(data, startsOn, now);
-        const endTime = getDataOptionTime(data, endsOn, now, -1);
-        if (!startTime && !cron) {
+        const startTime = getDataOptionTime(data, startsOn);
+        const endTime = getDataOptionTime(data, endsOn, -1);
+        if (!startTime && !repeat) {
           return;
         }
         if (startTime && startTime > timestamp + this.cacheCycle) {
@@ -136,7 +162,13 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
         if (endTime && endTime <= timestamp) {
           return;
         }
-        if (!cronInCycle.call(this, workflow, now)) {
+        if (!nextInCycle.call(this, workflow, now)) {
+          return;
+        }
+        if (typeof repeat === 'number'
+          && repeat > this.cacheCycle
+          && (timestamp - startTime) % repeat > this.cacheCycle
+        ) {
           return;
         }
         console.log('set cache', now);
@@ -160,25 +192,32 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
   },
 
   async shouldCache(workflow, now) {
-    const { startsOn, endsOn, collection } = workflow.config;
+    const { startsOn, endsOn, repeat, collection } = workflow.config;
     const starts = getDateRangeFilter(startsOn, now, -1);
-    if (!starts) {
+    if (!starts || !Object.keys(starts).length) {
       return false;
     }
     const ends = getDateRangeFilter(endsOn, now, 1);
     if (!ends) {
       return false;
     }
-    const filter = merge(starts, ends);
-    // if neither startsOn nor endsOn is provided
-    if (!Object.keys(filter).length) {
-      // consider as invalid
-      return false;
+
+    const conditions: any[] = [starts, ends].filter(item => Boolean(Object.keys(item).length));
+    // when repeat is number, means repeat after startsOn
+    // (now - startsOn) % repeat <= cacheCycle
+    const tsFn = DialectTimestampFnMap[this.db.options.dialect];
+    if (repeat
+      && typeof repeat === 'number'
+      && repeat > this.cacheCycle
+      && tsFn
+    ) {
+      const uts = now.getTime();
+      conditions.push(literal(`mod(${uts} - ${tsFn(startsOn.field)} * 1000, ${repeat}) < ${this.cacheCycle}`));
     }
 
-    const repo = this.db.getCollection(collection).repository;
-    const count = await repo.count({
-      filter
+    const { model } = this.db.getCollection(collection);
+    const count = await model.count({
+      where: { [Op.and]: conditions }
     });
 
     return Boolean(count);
@@ -189,7 +228,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
       collection,
       startsOn,
       endsOn,
-      cron
+      repeat
     } = workflow.config;
 
     if (typeof startsOn !== 'object') {
@@ -199,22 +238,28 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     const timestamp = date.getTime();
     const startTimestamp = timestamp - (startsOn.offset ?? 0) * (startsOn.unit ?? 1000);
 
-    let filter
-    if (!cron) {
+    const conditions = [];
+    if (!repeat) {
       // startsOn exactly equal to now in 1s
-      filter = {
+      conditions.push({
         [startsOn.field]: {
-          $gte: new Date(startTimestamp),
-          $lt: new Date(startTimestamp + 1000)
+          [Op.gte]: new Date(startTimestamp),
+          [Op.lt]: new Date(startTimestamp + 1000)
         }
-      };
+      });
     } else {
       // startsOn not after now
-      filter = {
+      conditions.push({
         [startsOn.field]: {
-          $lt: new Date(startTimestamp)
+          [Op.lt]: new Date(startTimestamp)
         }
-      };
+      });
+
+      const tsFn = DialectTimestampFnMap[this.db.options.dialect];
+      if (typeof repeat === 'number' && tsFn) {
+        const uts = timestamp;
+        conditions.push(literal(`mod(${uts} - floor(${tsFn(startsOn.field)}) * 1000, ${repeat}) = 0`));
+      }
 
       switch (typeof endsOn) {
         case 'string':
@@ -224,21 +269,26 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
           }
           break;
         case 'object':
-          filter[endsOn.field] = {
-            $gte: new Date(timestamp - (endsOn.offset ?? 0) * (endsOn.unit ?? 1000) + 1000)
-          };
+          conditions.push({
+            [endsOn.field]: {
+              [Op.gte]: new Date(timestamp - (endsOn.offset ?? 0) * (endsOn.unit ?? 1000) + 1000)
+            }
+          });
           break;
         default:
           break;
       }
     }
-    const repo = this.db.getCollection(collection).repository;
-    const instances = await repo.find({
-      filter
+
+    const { model } = this.db.getCollection(collection);
+    const instances = await model.findAll({
+      where: {
+        [Op.and]: conditions
+      }
     });
 
     if (instances.length) {
-      console.log(workflow.id, 'trigger at', date);
+      console.log(instances.length, 'rows trigger at', date);
     }
 
     instances.forEach(item => {
@@ -251,20 +301,27 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
 });
 
 
-function cronInCycle(this: ScheduleTrigger, workflow, now: Date): boolean {
-  const { cron } = workflow.config;
-  // no cron means no need to rerun
+function nextInCycle(this: ScheduleTrigger, workflow, now: Date): boolean {
+  const { repeat } = workflow.config;
+  // no repeat means no need to rerun
   // but if in current cycle, should be put in cache
-  // no cron but in current cycle means startsOn or endsOn has been configured
+  // no repeat but in current cycle means startsOn has been configured
   // so we need to more info to determine if necessary config items
-  if (!cron) {
+  if (!repeat) {
     return true;
+  }
+
+  switch (typeof repeat) {
+    case 'string':
+      break;
+    default:
+      return true;
   }
 
   const currentDate = new Date(now);
   currentDate.setMilliseconds(-1);
   const timestamp = now.getTime();
-  const interval = parser.parseExpression(cron, { currentDate });
+  const interval = parser.parseExpression(repeat, { currentDate });
   let next = interval.next();
 
   // NOTE: cache all workflows will be matched in current cycle
@@ -278,8 +335,8 @@ export default class ScheduleTrigger implements Trigger {
   static CacheRules = [
     // ({ enabled }) => enabled,
     ({ config, executed }) => config.limit ? executed < config.limit : true,
-    ({ config }) => ['cron', 'startsOn'].some(key => config[key]),
-    cronInCycle,
+    ({ config }) => ['repeat', 'startsOn'].some(key => config[key]),
+    nextInCycle,
     function(workflow, now) {
       const { mode } = workflow.config;
       const modeHandlers = ScheduleModes.get(mode);
@@ -289,17 +346,17 @@ export default class ScheduleTrigger implements Trigger {
 
   static TriggerRules = [
     ({ config, executed }) => config.limit ? executed < config.limit : true,
-    ({ config }) => ['cron', 'startsOn'].some(key => config[key]),
+    ({ config }) => ['repeat', 'startsOn'].some(key => config[key]),
     function (workflow, now) {
-      const { cron } = workflow.config;
-      if (!cron) {
+      const { repeat } = workflow.config;
+      if (typeof repeat !== 'string') {
         return true;
       }
 
       const currentDate = new Date(now);
       currentDate.setMilliseconds(-1);
       const timestamp = now.getTime();
-      const interval = parser.parseExpression(cron, { currentDate });
+      const interval = parser.parseExpression(repeat, { currentDate });
       let next = interval.next();
 
       if (next.getTime() === timestamp) {
