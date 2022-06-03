@@ -14,7 +14,7 @@ export const percent: IField = {
     uiSchema: {
       type: 'string',
       // title,
-      'x-component': 'InputNumber',
+      'x-component': 'Percent',
       'x-component-props': {
         stringMode: true,
         step: '0',
