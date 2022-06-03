@@ -1,7 +1,7 @@
-import { Database, Model } from '@nocobase/database';
 import { ACL, ACLResource, ACLRole } from '@nocobase/acl';
-import { RoleResourceActionModel } from './RoleResourceActionModel';
+import { Model } from '@nocobase/database';
 import { AssociationFieldsActions, GrantHelper } from '../server';
+import { RoleResourceActionModel } from './RoleResourceActionModel';
 
 export class RoleResourceModel extends Model {
   async revoke(options: { role: ACLRole; resourceName: string; grantHelper: GrantHelper }) {
@@ -35,6 +35,11 @@ export class RoleResourceModel extends Model {
     const resourceName = this.get('name') as string;
     const roleName = this.get('roleName') as string;
     const role = acl.getRole(roleName);
+
+    if (!role) {
+      console.log(`${roleName} role does not exist`);
+      return;
+    }
 
     // revoke resource of role
     await this.revoke({ role, resourceName, grantHelper });
