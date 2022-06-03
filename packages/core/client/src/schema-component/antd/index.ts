@@ -33,5 +33,5 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './formula-input';
-export * from './compute';
+export * from './percent';
 import './index.less';

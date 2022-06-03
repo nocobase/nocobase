@@ -28,9 +28,12 @@ export const formula: IField = {
       type: 'string',
       title: '{{t("Expression")}}',
       required: true,
-      description: '{{t("Input +、-、*、/、( ) to calculate, input @ to open field variables.")}}',
+      description: '{{t("Input +, -, *, /, ( ) to calculate, input @ to open field variables.")}}',
       'x-component': 'Formula.Expression',
       'x-decorator': 'FormItem',
+      'x-component-props': {
+        'supports': ['number', 'percent']
+      }
     },
     'uiSchema.x-component-props.step': {
       type: 'string',
