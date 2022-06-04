@@ -2,22 +2,17 @@ import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd';
 import { Field, onFormSubmitValidateStart } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useFormEffects } from '@formily/react';
-import { isValid } from '@formily/shared';
 import { Button, Input, Popover, Tag, Menu, Dropdown } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useTranslation } from 'react-i18next';
 import * as math from 'mathjs';
-import { useCollectionManager } from '../../../collection-manager/hooks';
-import { useRecord } from '../../../record-provider';
 
 const AntdFormulaInput = (props) => {
-  const { value, onChange, supports } = props;
+  const { value, onChange, supports, useCurrentFields } = props;
   const field = useField<Field>();
   const { t } = useTranslation();
-  const record = useRecord();
-  const { getCollectionFields } = useCollectionManager();
-  const fields = getCollectionFields(record.collectionName || record.name) as any[];
+  const fields = useCurrentFields();
 
   const inputRef = useRef();
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -121,7 +116,8 @@ const AntdFormulaInput = (props) => {
 
 export const FormulaInput = connect(
   AntdFormulaInput,
-  mapProps(),
+  mapProps({
+  }),
 );
 
 export default FormulaInput;

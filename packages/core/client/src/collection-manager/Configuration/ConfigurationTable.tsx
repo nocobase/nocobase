@@ -1,11 +1,14 @@
-import { useForm } from '@formily/react';
+import { Field } from '@formily/core';
+import { useFieldSchema, useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
 import { SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useCollection } from '../hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
+import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
@@ -149,6 +152,19 @@ const useBulkDestroySubField = () => {
   };
 };
 
+const useCurrentFields = () => {
+  const record = useRecord();
+
+  if (record.__parent && record.__parent.interface === 'subTable') {
+    const ctx = useContext(DataSourceContext);
+    return ctx.dataSource;
+  }
+
+  const { getCollectionFields } = useCollectionManager();
+  const fields = getCollectionFields(record.collectionName || record.name) as any[];
+  return fields;
+}
+
 export const ConfigurationTable = () => {
   const { collections = [] } = useCollectionManager();
   const compile = useCompile();
@@ -173,6 +189,7 @@ export const ConfigurationTable = () => {
           useCollectionValues,
           useAsyncDataSource,
           loadCollections,
+          useCurrentFields,
         }}
       />
     </div>
