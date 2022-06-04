@@ -5,6 +5,7 @@ import * as globals from './buttons';
 import * as initializerComponents from './components';
 import * as items from './items';
 import { SchemaInitializer } from './SchemaInitializer';
+import { SchemaInitializerPluginProvider } from './SchemaInitializerPluginProvider';
 
 export const SchemaInitializerContext = createContext<any>({});
 
@@ -15,7 +16,6 @@ export interface SchemaInitializerProviderProps {
 
 export const useSchemaInitializer = (name: string) => {
   const initializers = useContext(SchemaInitializerContext);
-
   const render = (component?: any, props?: any) => {
     return component && React.createElement(component, props);
   };
@@ -46,12 +46,14 @@ export const useSchemaInitializer = (name: string) => {
   };
 };
 
+export const SchemaInitializerPluginContext = createContext(null);
+
 export const SchemaInitializerProvider: React.FC<SchemaInitializerProviderProps> = (props) => {
   const { initializers, components, children } = props;
   return (
     <SchemaInitializerContext.Provider value={{ ...globals, ...initializers }}>
       <SchemaComponentOptions components={{ ...items, ...components, ...initializerComponents }}>
-        {children}
+        <SchemaInitializerPluginProvider>{children}</SchemaInitializerPluginProvider>
       </SchemaComponentOptions>
     </SchemaInitializerContext.Provider>
   );
