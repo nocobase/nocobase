@@ -1,5 +1,3 @@
-import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
-import { useFormLayout } from '@formily/antd';
 import { Field, onFormSubmitValidateStart } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useFormEffects } from '@formily/react';
 import { Button, Input, Popover, Tag, Menu, Dropdown } from 'antd';

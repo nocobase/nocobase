@@ -21,6 +21,6 @@ export const Percent = connect(
     );
   },
   mapReadPretty((props) => {
-    return (<ReadPretty {...props} value={props.value ? props.value : null} />);
+    return (<ReadPretty {...props} value={props.value ? props.value * 100 : null} />);
   }),
 );
