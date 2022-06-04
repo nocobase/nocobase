@@ -9,24 +9,25 @@ import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRecord,
 import collection from './collection';
 import { nodeCardClass, nodeMetaClass } from "../style";
 import schedule from "./schedule";
+import { useFlowContext } from "../WorkflowCanvas";
 
 
 function useUpdateConfigAction() {
   const { t } = useTranslation();
   const form = useForm();
   const api = useAPIClient();
-  const record = useRecord();
+  const { workflow } = useFlowContext();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   return {
     async run() {
-      if (record.executed) {
+      if (workflow.executed) {
         message.error(t('Trigger in executed workflow cannot be modified'));
         return;
       }
       await form.submit();
-      await api.resource('workflows', record.id).update({
-        filterByTk: record.id,
+      await api.resource('workflows').update({
+        filterByTk: workflow.id,
         values: form.values
       });
       ctx.setVisible(false);
