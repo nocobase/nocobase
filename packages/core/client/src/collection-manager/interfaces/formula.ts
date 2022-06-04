@@ -32,8 +32,9 @@ export const formula: IField = {
       'x-component': 'Formula.Expression',
       'x-decorator': 'FormItem',
       'x-component-props': {
-        'supports': ['number', 'percent']
-      }
+        'supports': ['number', 'percent'],
+        'useCurrentFields': '{{ useCurrentFields }}'
+      },
     },
     'uiSchema.x-component-props.step': {
       type: 'string',
