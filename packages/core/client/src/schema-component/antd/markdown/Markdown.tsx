@@ -20,8 +20,8 @@ export const Markdown: any = connect(
   }),
   mapReadPretty((props) => {
     let text = convertToText(props.value);
-    let value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: markdown(text) }} />;
-    return <InputReadPretty.TextArea {...props} text={text} value={value} />;
+    let value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: markdown(props.value) }} />;
+    return <InputReadPretty.TextArea {...props} autop={false} text={text} value={value} />;
   }),
 );
 
