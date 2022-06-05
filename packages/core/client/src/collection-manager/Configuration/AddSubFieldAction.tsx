@@ -11,6 +11,7 @@ import { RecordProvider } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import * as components from './components';
 import { options } from './interfaces';
 
 const getSchema = (schema: IField): ISchema => {
@@ -133,7 +134,7 @@ export const AddSubFieldAction = () => {
         </Button>
       </Dropdown>
       <RecordProvider record={{}}>
-        <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ createOnly: true, useCreateSubField }} />
+        <SchemaComponent schema={schema} components={{ ...components, ArrayTable }} scope={{ createOnly: true, useCreateSubField }} />
       </RecordProvider>
     </ActionContext.Provider>
   );
