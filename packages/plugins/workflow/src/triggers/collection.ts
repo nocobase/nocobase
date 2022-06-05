@@ -27,16 +27,30 @@ function getHookId(workflow, type) {
 }
 
 // async function, should return promise
-function handler(this: WorkflowModel, data: Model, options) {
-  const { condition, changed } = this.config;
+async function handler(this: WorkflowModel, data: Model, options) {
+  const { collection, condition, changed } = this.config;
   // NOTE: if no configured fields changed, do not trigger
   if (changed && changed.length && changed.every(name => !data.changed(name))) {
-    return;
+    // TODO: temp comment out
+    // return;
   }
   // NOTE: if no configured condition match, do not trigger
-  if (condition && condition.$and.length) {
-    // TODO: check all conditions in condition against data
+  if (condition && condition.$and?.length) {
+    // TODO: change to map filter format to calculation format
     // const calculation = toCalculation(condition);
+    const { repository, model } = (<typeof WorkflowModel>this.constructor).database.getCollection(collection);
+    const count = await repository.count({
+      filter: {
+        $and: [
+          condition,
+          { [model.primaryKeyAttribute]: data[model.primaryKeyAttribute] }
+        ]
+      }
+    });
+
+    if (!count) {
+      return;
+    }
   }
 
   return this.trigger({ data: data.get() }, options);
