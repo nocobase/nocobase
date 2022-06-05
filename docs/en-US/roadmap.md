@@ -4,23 +4,25 @@
 
 - `core` Roles & Permissions
 - `core` Upgrades & Migrations
-- `core` Datatable relationship
 - `plugin` Workflow
 - `core` Custom actions
 - `doc` Development Doc
+- `plugin` Formula (collection field)
 
 ## Developing
 
 - `plugin` Revision history
 - `plugin` Export
 - `core` Plugin manager
+- `core` Datatable relationship
+- `plugin` Data visualization(low code)
 
 ## Planning
 
+- `core` fileds default value/read-only
+- `plugin` form validator
 - `plugin` Reference and copy data from related tables (collection field)
-- `plugin` Formula (collection field)
 - `ui` Mobile responsive
-- `plugin` Data visualization(low code)
 - `plugin` Aggregate calculation
 
 ## Future
