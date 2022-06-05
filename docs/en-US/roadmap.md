@@ -8,13 +8,13 @@
 - `core` Custom actions
 - `doc` Development Doc
 - `plugin` Formula (collection field)
+- `core` Datatable relationship
 
 ## Developing
 
 - `plugin` Revision history
 - `plugin` Export
 - `core` Plugin manager
-- `core` Datatable relationship
 - `plugin` Data visualization(low code)
 
 ## Planning
