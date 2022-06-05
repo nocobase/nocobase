@@ -39,13 +39,15 @@ async function handler(this: WorkflowModel, data: Model, options) {
     // TODO: change to map filter format to calculation format
     // const calculation = toCalculation(condition);
     const { repository, model } = (<typeof WorkflowModel>this.constructor).database.getCollection(collection);
+    const { transaction } = options;
     const count = await repository.count({
       filter: {
         $and: [
           condition,
           { [model.primaryKeyAttribute]: data[model.primaryKeyAttribute] }
         ]
-      }
+      },
+      transaction
     });
 
     if (!count) {
