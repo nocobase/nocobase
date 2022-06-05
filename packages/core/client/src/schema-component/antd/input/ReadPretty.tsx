@@ -44,11 +44,10 @@ ReadPretty.TextArea = (props) => {
     />
   );
   console.log('value', value);
-  const content = (
-    <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
-      {ellipsis ? text || value : html}
-    </EllipsisWithTooltip>
-  );
+  const content = ellipsis ?
+    (<EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
+      {text}
+    </EllipsisWithTooltip>) : value || html;
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
