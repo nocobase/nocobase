@@ -1,6 +1,6 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
-import { updateAssociation, updateAssociations } from '../update-associations';
+import { updateAssociations } from '../update-associations';
 import { mockDatabase } from './';
 
 describe('update associations', () => {
@@ -389,7 +389,12 @@ describe('update associations', () => {
     afterEach(async () => {
       await db.close();
     });
-    test('set through value', async () => {
+    test.only('set through value', async () => {
+
+      db.on('posts.afterCreateWithAssociations', async (instance) => {
+        console.log(instance.changedWithAssociations());
+      });
+
       const p1 = await Post.repository.create({
         values: {
           title: 'hello',
