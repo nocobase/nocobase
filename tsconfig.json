@@ -27,5 +27,10 @@
         "packages/core/*/src"
       ]
     }
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    }
   }
 }
