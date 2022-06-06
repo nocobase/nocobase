@@ -16,7 +16,7 @@ export const useBlockResource = () => {
   return useContext(BlockResourceContext);
 };
 
-interface UseReousrceProps {
+interface UseResourceProps {
   resource: any;
   association?: any;
   useSourceId?: any;
@@ -33,7 +33,7 @@ const useAssociation = (props) => {
   }
 };
 
-const useReousrce = (props: UseReousrceProps) => {
+const useResource = (props: UseResourceProps) => {
   const { block, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
@@ -120,7 +120,7 @@ export const useBlockRequestContext = () => {
 
 export const BlockProvider = (props) => {
   const { collection, association } = props;
-  const resource = useReousrce(props);
+  const resource = useResource(props);
   return (
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
