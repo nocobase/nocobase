@@ -297,7 +297,7 @@ export async function updateSingleAssociation(
       // @ts-ignore
       dataKey = association.targetKey;
     } else {
-      M = association.source as ModelCtor<Model>;
+      M = association.target as ModelCtor<Model>;
       dataKey = M.primaryKeyAttribute;
     }
 
