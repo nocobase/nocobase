@@ -146,6 +146,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
         sequelize: this.sequelize,
       }),
     });
+
+    this.on('afterCreate', async (instance) => {
+      instance.toChangedWithAssociations();
+    });
+
+    this.on('afterUpdate', async (instance) => {
+      instance.toChangedWithAssociations();
+    });
   }
 
   addMigration(item) {
