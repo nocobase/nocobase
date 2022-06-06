@@ -5,7 +5,7 @@ function getInterfaceRender(name: string): Function {
 }
 
 function renderHeader(params, ctx) {
-  const { fields, headers = [], rowIndex = 0 } = params;
+  const { columns, fields, headers = [], rowIndex = 0 } = params;
 
   let { colIndex = 0 } = params;
 
@@ -13,34 +13,34 @@ function renderHeader(params, ctx) {
     headers.push([]);
   }
   const row = headers[rowIndex];
-
   fields.forEach((field, i) => {
     const nextColIndex = colIndex + i;
     row.push({
+      column: columns[i],
       field,
       rowIndex,
       colIndex: nextColIndex,
     });
-    if (field.interface === 'subTable') {
-      const subTable = ctx.db.getTable(field.target);
-      const subFields = subTable.getOptions().fields.filter((field) => Boolean(field.__index));
-      renderHeader(
-        {
-          fields: subFields,
-          headers,
-          rowIndex: rowIndex + 1,
-          colIndex: nextColIndex,
-        },
-        ctx,
-      );
-      colIndex += subFields.length;
-    }
+    // if (field.interface === 'subTable') {
+    //   const subTable = ctx.db.getTable(field.target);
+    //   const subFields = subTable.getOptions().fields.filter((field) => Boolean(field.__index));
+    //   renderHeader(
+    //     {
+    //       fields: subFields,
+    //       headers,
+    //       rowIndex: rowIndex + 1,
+    //       colIndex: nextColIndex,
+    //     },
+    //     ctx,
+    //   );
+    //   colIndex += subFields.length;
+    // }
   });
 
   Object.assign(params, { headers });
 }
 
-function renderRows({ fields, data }, ctx) {
+function renderRows({ columns, fields, data }, ctx) {
   return data.reduce((result, row) => {
     const thisRow = [];
     const rowIndex = 0;
@@ -53,7 +53,7 @@ function renderRows({ fields, data }, ctx) {
       if (field.interface !== 'subTable') {
         const render = getInterfaceRender(field.interface);
         cells.push({
-          value: render(field, row),
+          value: render(field, row, columns[i]),
           rowIndex: result.length + rowIndex,
           colIndex: i + colOffset,
         });
@@ -62,7 +62,9 @@ function renderRows({ fields, data }, ctx) {
 
       const subTable = ctx.db.getTable(field.target);
       const subFields = subTable.getOptions().fields.filter((item) => Boolean(item.__index));
-      const subRows = renderRows({ fields: subFields, data: row.get(field.name) || [] }, ctx);
+      //TODO: must provide sub-table columns
+      const subTableColumns = [];
+      const subRows = renderRows({ columns: subTableColumns, fields: subFields, data: row.get(field.name) || [] }, ctx);
 
       // const { rows: subRowGroups } = subTableRows;
       subRows.forEach((cells, j) => {
@@ -99,15 +101,9 @@ function renderRows({ fields, data }, ctx) {
   }, []);
 }
 
-export default function ({ fields, data }, ctx) {
+export default function ({ columns, fields, data }, ctx) {
   const headers = [];
-  renderHeader(
-    {
-      fields,
-      headers,
-    },
-    ctx,
-  );
+  renderHeader({ columns, fields, headers }, ctx);
   const ranges = [];
   // 计算全表最大的列索引（由于无论如何最大列都是单个单元格，所以等价于长度）
   const maxColIndex = Math.max(...headers.map((row) => row[row.length - 1].colIndex));
@@ -137,7 +133,7 @@ export default function ({ fields, data }, ctx) {
     });
   });
 
-  const rows = renderRows({ fields, data }, ctx).map((row) => {
+  const rows = renderRows({ columns, fields, data }, ctx).map((row) => {
     const cells = Array(maxColIndex).fill(null);
     row.forEach((cell) => {
       cells.splice(cell.colIndex, 1, cell.value);
@@ -156,7 +152,9 @@ export default function ({ fields, data }, ctx) {
       ...headers.map((row) => {
         // 补齐无数据单元格，以供合并
         const cells = Array(maxColIndex).fill(null);
-        row.forEach((cell) => cells.splice(cell.colIndex, 1, cell.field.title));
+        row.forEach((cell) =>
+          cells.splice(cell.colIndex, 1, cell.column.title ?? cell.column.dataIndex[cell.column.dataIndex.length - 1]),
+        );
         return cells;
       }),
       ...rows,

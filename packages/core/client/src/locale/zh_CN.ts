@@ -546,5 +546,7 @@ export default {
   'Request body': '请求体(JSON格式)',
   'Request success': '请求成功',
   'Invalid JSON format': '非法JSON格式',
-  'After successful request': '请求成功之后'
+  'After successful request': '请求成功之后',
+  'Add exported field': '添加导出字段',
+  'Exported table header name': '导出表头名称'
 }

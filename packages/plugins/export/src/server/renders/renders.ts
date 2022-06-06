@@ -1,7 +1,13 @@
 import moment from 'moment';
 
-export function _(field, row) {
-  return row.get(field.name);
+export function _(field, row, column?: any) {
+  if (column?.dataIndex.length > 1) {
+    return column.dataIndex.reduce((result, col) => {
+      return result?.[col];
+    }, row);
+  } else {
+    return row.get(field.name);
+  }
 }
 
 export function datetime(field, row) {

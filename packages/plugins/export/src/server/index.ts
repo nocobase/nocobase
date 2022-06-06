@@ -9,14 +9,15 @@ export class ExportPlugin extends Plugin {
   beforeLoad() {}
 
   async load() {
-    // Visit: http://localhost:13000/api/export:xlsx
-    this.app.resource({
-      name: 'export',
-      actions: {
-        xlsx: exportXlsx,
-      },
-    });
-    this.app.acl.allow('export', 'xlsx');
+    // Visit: http://localhost:13000/api/xxx:exportXlsx
+    this.app.resourcer.registerActionHandler('exportXlsx', exportXlsx);
+    // this.app.resource({
+    //   name: 'export',
+    //   actions: {
+    //     xlsx: exportXlsx,
+    //   },
+    // });
+    this.app.acl.allow('*', 'exportXlsx');
   }
 
   async install(options: InstallOptions) {}

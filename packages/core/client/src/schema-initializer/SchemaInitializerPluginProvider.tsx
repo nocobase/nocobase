@@ -1,4 +1,9 @@
-import { ExportActionInitializer, ExportDesigner, ExportProvider } from '@nocobase/plugin-export/src/client';
+import {
+  ExportActionInitializer,
+  ExportDesigner,
+  ExportProvider,
+  useExportAction,
+} from '@nocobase/plugin-export/src/client';
 import React from 'react';
 import { SchemaComponentOptions } from '../schema-component';
 
@@ -14,7 +19,7 @@ export const SchemaInitializerPluginProvider = (props: any) => {
     );
   });
   return (
-    <SchemaComponentOptions components={{ ExportActionInitializer, ExportDesigner }}>
+    <SchemaComponentOptions components={{ ExportActionInitializer, ExportDesigner }} scope={{ useExportAction }}>
       <Root>{props.children}</Root>
     </SchemaComponentOptions>
   );
