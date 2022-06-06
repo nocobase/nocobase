@@ -90,6 +90,12 @@ export abstract class SingleRelationRepository extends RelationRepository {
       transaction,
     });
 
+    if (options.hooks !== false) {
+      await this.db.emitAsync(`${this.targetCollection.name}.afterUpdateWithAssociations`, target, {...options, transaction});
+      await this.db.emitAsync(`${this.targetCollection.name}.afterSaveWithAssociations`, target, {...options, transaction});
+      target.clearChangedWithAssociations();
+    }
+
     return target;
   }
 

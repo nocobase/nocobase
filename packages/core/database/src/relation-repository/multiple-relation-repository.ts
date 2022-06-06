@@ -167,6 +167,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       if (options.hooks !== false) {
         await this.db.emitAsync(`${this.targetCollection.name}.afterUpdateWithAssociations`, instance, {...options, transaction});
         await this.db.emitAsync(`${this.targetCollection.name}.afterSaveWithAssociations`, instance, {...options, transaction});
+        instance.clearChangedWithAssociations();
       }
     }
 

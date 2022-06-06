@@ -68,6 +68,7 @@ export abstract class RelationRepository {
       });
       const eventName = `${this.targetCollection.name}.afterSaveWithAssociations`;
       await this.db.emitAsync(eventName, instance, { ...options, transaction });
+      instance.clearChangedWithAssociations();
     }
 
     return instance;

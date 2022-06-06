@@ -2,7 +2,7 @@ import lodash from 'lodash';
 import { BelongsToMany, Op, Transaction } from 'sequelize';
 import { Model } from '../model';
 import { CreateOptions, DestroyOptions, FindOptions, TargetKey, UpdateOptions } from '../repository';
-import { updateThroughTableValue } from '../update-associations';
+import { updateAssociations, updateThroughTableValue } from '../update-associations';
 import { FindAndCountOptions, FindOneOptions, MultipleRelationRepository } from './multiple-relation-repository';
 import { transaction } from './relation-repository';
 import { AssociatedOptions, PrimaryKeyWithThroughValues } from './types';
@@ -45,7 +45,20 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       transaction,
     };
 
-    return sourceModel[createAccessor](values, createOptions);
+    const instance = sourceModel[createAccessor](values, createOptions);
+    await updateAssociations(instance, values, { ...options, transaction });
+
+    if (options.hooks !== false) {
+      await this.db.emitAsync(`${this.targetCollection.name}.afterCreateWithAssociations`, instance, {
+        ...options,
+        transaction,
+      });
+      const eventName = `${this.targetCollection.name}.afterSaveWithAssociations`;
+      await this.db.emitAsync(eventName, instance, { ...options, transaction });
+      instance.clearChangedWithAssociations();
+    }
+
+    return instance;
   }
 
   @transaction((args, transaction) => {
