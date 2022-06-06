@@ -7,9 +7,9 @@ import {
   useDesignable,
   useResourceActionContext,
 } from '@nocobase/client';
-import { uid } from '@nocobase/utils';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ExportSettings } from './ExportSettings';
 
 export const ExportDesigner = () => {
   const { name, title } = useCollection();
@@ -18,19 +18,24 @@ export const ExportDesigner = () => {
   const ctx = useResourceActionContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.request?.params?.filter || {};
-  const [initialSchema, setInitialSchema] = useState<ISchema>();
+  const [schema, setSchema] = useState<ISchema>();
 
   useEffect(() => {
-    const schemaUid = uid();
     const schema: ISchema = {
       type: 'void',
-      'x-uid': schemaUid,
       'x-component': 'Grid',
-      'x-initializer': 'CustomFormItemInitializers',
+      properties: {
+        exportSettings: {
+          type: 'array',
+          'x-component': 'ExportSettings',
+          'x-component-props': {
+            initialValues: fieldSchema?.['x-action-settings']?.['export'],
+          },
+        },
+      },
     };
-    setInitialSchema(schema);
-  }, [field.address]);
+    setSchema(schema);
+  }, [field.address, fieldSchema?.['x-action-settings']?.['export']]);
 
   return (
     <GeneralSchemaDesigner disableInitializer>
@@ -101,11 +106,13 @@ export const ExportDesigner = () => {
       />
       <SchemaSettings.ActionModalItem
         title={t('Export fields')}
-        initialSchema={initialSchema}
-        initialValues={fieldSchema?.['x-action-settings']?.export?.value}
-        uid={fieldSchema?.['x-action-settings']?.schemaUid}
-        onSubmit={(value) => {
-          fieldSchema['x-action-settings']['export'] = value;
+        schema={schema}
+        initialValues={fieldSchema?.['x-action-settings']?.export}
+        components={{ ExportSettings }}
+        onSubmit={({ exportSettings }) => {
+          fieldSchema['x-action-settings']['export'] = exportSettings?.filter(
+            (fieldItem) => fieldItem?.dataIndex?.length,
+          );
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],

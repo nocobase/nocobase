@@ -37,13 +37,14 @@ export const ExportActionInitializer = (props) => {
     title: '{{ t("Export") }}',
     'x-action': 'export',
     'x-action-settings': {
-      export: {},
+      export: [],
     },
     'x-designer': 'ExportDesigner',
     'x-component': 'Action',
     'x-component-props': {
       icon: 'PlusOutlined',
       type: 'primary',
+      useProps: '{{ useExportAction }}',
     },
   };
   const { item, insert } = props;

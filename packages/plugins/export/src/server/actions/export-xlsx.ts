@@ -6,10 +6,10 @@ import render from '../renders';
 export async function exportXlsx(ctx: Context, next: Next) {
   let { title, columns, associatedName, associatedIndex, resourceName, filter, fields, appends, except } =
     ctx.action.params;
-  debugger;
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
   }
+  columns = columns?.filter((col) => col?.dataIndex?.length > 0);
 
   let repository: Repository;
   let collection: Collection;
@@ -24,21 +24,14 @@ export async function exportXlsx(ctx: Context, next: Next) {
     repository = collection.repository;
   }
 
-  const data = repository.find({
+  const data = await repository.find({
     filter,
     fields,
     appends,
     except,
   });
-
-  const { rows, ranges } = render(
-    {
-      fields: collection.fields,
-      data,
-    },
-    ctx,
-  );
-
+  const collectionFields = columns.map((col) => collection.fields.get(col.dataIndex[0]));
+  const { rows, ranges } = render({ columns, fields: collectionFields, data }, ctx);
   ctx.body = xlsx.build([
     {
       name: title,
