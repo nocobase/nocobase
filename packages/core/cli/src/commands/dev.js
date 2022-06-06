@@ -73,7 +73,7 @@ module.exports = (cli) => {
           env: {
             PORT: clientPort,
             APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
-            PROXY_TARGET_URL: serverPort ? `http://127.0.0.1:${serverPort}` : undefined,
+            PROXY_TARGET_URL: process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
           },
         });
       }
