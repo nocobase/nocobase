@@ -38,10 +38,12 @@ export async function multipleSelect(field, row, ctx) {
   const values = row.get(field.name);
   const repository = ctx.db.getCollection('uiSchemas').repository;
   const { schema } = await repository.findById(field.options.uiSchemaUid);
-  return values?.map((value) => {
-    const option = schema.enum.find((item) => item.value === value);
-    return option?.label;
-  });
+  return values
+    ?.map((value) => {
+      const option = schema.enum.find((item) => item.value === value);
+      return option?.label;
+    })
+    ?.join();
 }
 
 export const radio = select;
