@@ -102,10 +102,11 @@ const providers = [
     {
       initializers: {
         MenuItemInitializers,
-        SchemaInitializerPluginProvider,
+        // SchemaInitializerPluginProvider,
       },
     },
   ],
+  SchemaInitializerPluginProvider,
   BlockSchemaComponentProvider,
   AntdSchemaComponentProvider,
   ACLProvider,
