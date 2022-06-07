@@ -38,9 +38,10 @@ export const BlockInitializer = (props) => {
 };
 
 export const G2PlotInitializer = (props) => {
-  const { item, insert } = props;
+  const { item, insert, ...others } = props;
   return (
     <SchemaInitializer.Item
+      {...others}
       onClick={() => {
         insert({
           ...item.schema,

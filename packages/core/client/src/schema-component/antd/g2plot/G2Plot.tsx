@@ -2,6 +2,7 @@ import { Area, Bar, Column, Line, Pie } from '@antv/g2plot';
 import { observer, useField } from '@formily/react';
 import cls from 'classnames';
 import React, { forwardRef, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { G2PlotDesigner } from './G2PlotDesigner';
 
 export type ReactG2PlotProps<O> = {
@@ -10,7 +11,9 @@ export type ReactG2PlotProps<O> = {
   readonly config: O;
 };
 
-export const G2Plot: any = forwardRef(function <O = any>(props: ReactG2PlotProps<O>, ref: any) {
+const plots = { Area, Column, Line, Pie, Bar };
+
+export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotProps<O>, ref: any) {
   const { className, plot, config } = props;
 
   const containerRef = useRef(undefined);
@@ -51,18 +54,20 @@ export const G2Plot: any = forwardRef(function <O = any>(props: ReactG2PlotProps
   return <div className={cls(['g2plot', className])} ref={containerRef} />;
 });
 
-G2Plot.Designer = G2PlotDesigner;
-
-const plots = { Area, Column, Line, Pie, Bar };
-
-Object.keys(plots).forEach((key) => {
-  G2Plot[key] = observer((props: any) => {
-    const field = useField();
-    return (
-      <div>
-        {field.title && <h2>{field.title}</h2>}
-        <G2Plot plot={plots[key]} config={props.config} />
-      </div>
-    );
-  });
+export const G2Plot: any = observer((props: any) => {
+  const { plot, config } = props;
+  const field = useField();
+  const { t } = useTranslation();
+  if (!plot || !config) {
+    return <div style={{ opacity: .3 }}>{t('In configuration')}...</div>
+  }
+  return (
+    <div>
+      {field.title && <h2>{field.title}</h2>}
+      <G2PlotRenderer plot={plots[plot]} config={config} />
+    </div>
+  );
 });
+
+G2Plot.Designer = G2PlotDesigner;
+G2Plot.plots = plots;

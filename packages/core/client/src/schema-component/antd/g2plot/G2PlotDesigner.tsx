@@ -45,6 +45,14 @@ export const G2PlotDesigner = () => {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
               },
+              plot: {
+                title: t('Chart type'),
+                type: 'string',
+                default: fieldSchema?.['x-component-props']?.plot,
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                'x-disabled': !!fieldSchema?.['x-component-props']?.plot,
+              },
               config: {
                 title: t('Chart config'),
                 type: 'string',
@@ -52,17 +60,19 @@ export const G2PlotDesigner = () => {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input.TextArea',
                 'x-component-props': {
-                  autoSize: true,
+                  autoSize: { minRows: 8, maxRows: 16 },
                 },
                 'x-validator': validateJSON,
               },
             },
           } as ISchema
         }
-        onSubmit={({ title, config }) => {
+        onSubmit={({ plot, title, config }) => {
           field.title = compile(title);
-          fieldSchema.title = title;
+          field.componentProps.plot = plot;
           field.componentProps.config = compile(JSON.parse(config));
+          fieldSchema.title = title;
+          fieldSchema['x-component-props']['plot'] = plot;
           fieldSchema['x-component-props']['config'] = JSON.parse(config);
           dn.emit('patch', {
             schema: {
