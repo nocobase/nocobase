@@ -33,9 +33,9 @@ import {
   useRoutes,
   WorkflowPage,
   WorkflowRouteProvider,
-  WorkflowShortcut,
+  WorkflowShortcut
 } from '@nocobase/client';
-import { SchemaInitializerPluginProvider } from '@nocobase/plugin-export';
+import { SchemaInitializerPluginProvider } from '@nocobase/plugin-export/client';
 import { notification } from 'antd';
 import 'antd/dist/antd.css';
 import React from 'react';

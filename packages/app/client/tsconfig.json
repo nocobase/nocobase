@@ -11,7 +11,7 @@
     "baseUrl": "./",
     "strict": true,
     "paths": {
-      "@nocobase/plugin-*": ["../../plugins/*/src/client"],
+      "@nocobase/plugin-*/client": ["../../plugins/*/src/client"],
       "@nocobase/*": ["../../core/*/src/"],
       "@/*": ["src/*"],
       "@@/*": ["src/.umi/*"]
