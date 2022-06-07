@@ -14,17 +14,17 @@ describe('model hook', () => {
 
   describe('match', () => {
     test('sequelize db hooks', async () => {
-      const matcher = db.hookProxy.match('beforeDefine');
+      const matcher = db.modelHook.match('beforeDefine');
       expect(matcher).toEqual('beforeDefine');
     });
 
     test('sequelize global model hooks', async () => {
-      const matcher = db.hookProxy.match('beforeCreate');
+      const matcher = db.modelHook.match('beforeCreate');
       expect(matcher).toEqual('beforeCreate');
     });
 
     test('sequelize model hooks without existing collection', async () => {
-      const matcher = db.hookProxy.match('posts.beforeCreate');
+      const matcher = db.modelHook.match('posts.beforeCreate');
       expect(matcher).toEqual('beforeCreate');
     });
 
@@ -33,12 +33,12 @@ describe('model hook', () => {
         name: 'posts',
         fields: []
       });
-      const matcher = db.hookProxy.match('posts.beforeCreate');
+      const matcher = db.modelHook.match('posts.beforeCreate');
       expect(matcher).toEqual('beforeCreate');
     });
 
     test('customized global hooks', async () => {
-      const matcher = db.hookProxy.match('beforeDefineCollection');
+      const matcher = db.modelHook.match('beforeDefineCollection');
       expect(matcher).toBeNull();
     });
 
@@ -47,7 +47,7 @@ describe('model hook', () => {
         name: 'posts',
         fields: []
       });
-      const matcher = db.hookProxy.match('posts.beforeCreateWithAssociations');
+      const matcher = db.modelHook.match('posts.beforeCreateWithAssociations');
       expect(matcher).toBeNull();
     });
   });

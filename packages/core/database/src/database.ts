@@ -17,7 +17,7 @@ import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
 import { Model } from './model';
-import { HookProxy } from './hook-proxy';
+import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
@@ -63,7 +63,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelCtor<any>, Collection>();
 
-  hookProxy: HookProxy;
+  modelHook: ModelHook;
 
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
 
@@ -87,7 +87,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     this.collections = new Map();
-    this.hookProxy = new HookProxy(this);
+    this.modelHook = new ModelHook(this);
 
     this.on('afterDefineCollection', (collection: Collection) => {
       // after collection defined, call bind method on pending fields
@@ -318,11 +318,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   on(event: string | symbol, listener): this {
     // NOTE: to match if event is a sequelize or model type
-    const type = this.hookProxy.match(event);
+    const type = this.modelHook.match(event);
 
-    if (type && !this.hookProxy.hasBoundEvent(type)) {
-      this.sequelize.addHook(type, this.hookProxy.buildSequelizeHook(type));
-      this.hookProxy.bindEvent(type);
+    if (type && !this.modelHook.hasBoundEvent(type)) {
+      this.sequelize.addHook(type, this.modelHook.buildSequelizeHook(type));
+      this.modelHook.bindEvent(type);
     }
 
     return super.on(event, listener);

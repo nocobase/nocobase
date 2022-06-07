@@ -3,45 +3,19 @@ import Database from './database';
 import { Model } from './model';
 import type { SequelizeHooks } from 'sequelize/types/lib/hooks';
 
-const { hooks: sequelizeHooks } = require('sequelize/lib/hooks');
-
-export const hooks = {
-  beforeDefineCollection: { params: 1, sync: true, noModel: true },
-  afterDefineCollection: { params: 1, sync: true, noModel: true },
-  beforeRemoveCollection: { params: 1, sync: true, noModel: true },
-  afterRemoveCollection: { params: 1, sync: true, noModel: true },
-  afterCreateWithAssociations: { params: 2 },
-  afterUpdateWithAssociations: { params: 2 },
-  afterSaveWithAssociations: { params: 2 },
-};
+const { hooks } = require('sequelize/lib/hooks');
 
 
-export class HookProxy {
+
+export class ModelHook {
   database: Database;
-  // e.g.
-  // {
-  //   [type]: {
-  //     // global
-  //     '': new Set(),
-  //     model: new Set()
-  //   }
-  // }
+
   boundEvents = new Set<string>();
 
   constructor(database: Database) {
     this.database = database;
   }
 
-  // 'afterDefine'
-  //   -> ['afterDefine', '']
-  // 'afterCreate'
-  //   -> ['afterCreate', '']
-  // '<collection>.afterCreate'
-  //   -> ['afterCreate', '<collection>']
-  // '<collection>.afterCreateWithAssociations'
-  //   -> ['afterCreateWithAssociations', '<collection>']
-  // non-collection hooks
-  //   -> null
   match(event: string | Symbol): keyof SequelizeHooks | null {
     // NOTE: skip Symbol event
     if (!lodash.isString(event)) {
@@ -50,7 +24,7 @@ export class HookProxy {
 
     const type = event.split('.').pop();
 
-    return type in sequelizeHooks ? <keyof SequelizeHooks>type : null;
+    return type in hooks ? <keyof SequelizeHooks>type : null;
   }
 
   findModelName(hookArgs) {

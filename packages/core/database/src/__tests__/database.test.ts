@@ -91,14 +91,14 @@ describe('database', () => {
   });
 
   test('collection beforeBulkCreate event', async () => {
+    const listener = jest.fn();
+
+    db.on('posts.beforeBulkUpdate', listener);
+
     const Post = db.collection({
       name: 'posts',
       fields: [{ type: 'string', name: 'title' }],
     });
-
-    const listener = jest.fn();
-
-    db.on('posts.beforeBulkUpdate', listener);
 
     await db.sync();
 
@@ -170,14 +170,14 @@ describe('database', () => {
   });
 
   test('collection afterCreate model event', async () => {
+    const postAfterCreateListener = jest.fn();
+
+    db.on('posts.afterCreate', postAfterCreateListener);
+
     const Post = db.collection({
       name: 'posts',
       fields: [{ type: 'string', name: 'title' }],
     });
-
-    const postAfterCreateListener = jest.fn();
-
-    db.on('posts.afterCreate', postAfterCreateListener);
 
     await db.sync();
 
