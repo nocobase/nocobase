@@ -1,11 +1,6 @@
-import {
-  ExportActionInitializer,
-  ExportDesigner,
-  ExportProvider,
-  useExportAction,
-} from '@nocobase/plugin-export/src/client';
+import { SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
-import { SchemaComponentOptions } from '../schema-component';
+import { ExportActionInitializer, ExportDesigner, ExportProvider, useExportAction } from './';
 
 const Blank = ({ children }) => children || null;
 

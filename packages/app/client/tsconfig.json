@@ -11,27 +11,13 @@
     "baseUrl": "./",
     "strict": true,
     "paths": {
+      "@nocobase/plugin-*": ["../../plugins/*/src/client"],
+      "@nocobase/*": ["../../core/*/src/"],
       "@/*": ["src/*"],
       "@@/*": ["src/.umi/*"]
     },
     "allowSyntheticDefaultImports": true
   },
-  "include": [
-    "mock/**/*",
-    "src/**/*",
-    "config/**/*",
-    ".umirc.ts",
-    "typings.d.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "lib",
-    "es",
-    "dist",
-    "typings",
-    "**/__test__",
-    "test",
-    "docs",
-    "tests"
-  ]
+  "include": ["mock/**/*", "src/**/*", "config/**/*", ".umirc.ts", "typings.d.ts"],
+  "exclude": ["node_modules", "lib", "es", "dist", "typings", "**/__test__", "test", "docs", "tests"]
 }

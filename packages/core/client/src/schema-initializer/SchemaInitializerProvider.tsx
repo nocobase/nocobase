@@ -5,7 +5,6 @@ import * as globals from './buttons';
 import * as initializerComponents from './components';
 import * as items from './items';
 import { SchemaInitializer } from './SchemaInitializer';
-import { SchemaInitializerPluginProvider } from './SchemaInitializerPluginProvider';
 
 export const SchemaInitializerContext = createContext<any>({});
 
@@ -53,7 +52,7 @@ export const SchemaInitializerProvider: React.FC<SchemaInitializerProviderProps>
   return (
     <SchemaInitializerContext.Provider value={{ ...globals, ...initializers }}>
       <SchemaComponentOptions components={{ ...items, ...components, ...initializerComponents }}>
-        <SchemaInitializerPluginProvider>{children}</SchemaInitializerPluginProvider>
+        {children}
       </SchemaComponentOptions>
     </SchemaInitializerContext.Provider>
   );
