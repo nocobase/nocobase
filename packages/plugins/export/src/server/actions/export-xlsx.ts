@@ -23,7 +23,6 @@ export async function exportXlsx(ctx: Context, next: Next) {
     collection = ctx.db.getCollection(resourceName);
     repository = collection.repository;
   }
-
   const data = await repository.find({
     filter,
     fields,

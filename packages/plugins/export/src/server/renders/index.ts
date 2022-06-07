@@ -50,10 +50,10 @@ function renderRows({ columns, fields, data }, ctx) {
         thisRow.push([]);
       }
       const cells = thisRow[rowIndex];
-      if (field.interface !== 'subTable') {
-        const render = getInterfaceRender(field.interface);
+      if (field.options.interface !== 'subTable') {
+        const render = getInterfaceRender(field.options.interface);
         cells.push({
-          value: render(field, row, columns[i]),
+          value: render(field, row, ctx, columns[i]),
           rowIndex: result.length + rowIndex,
           colIndex: i + colOffset,
         });
