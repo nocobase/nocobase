@@ -30,7 +30,7 @@ export async function exportXlsx(ctx: Context, next: Next) {
     except,
   });
   const collectionFields = columns.map((col) => collection.fields.get(col.dataIndex[0]));
-  const { rows, ranges } = render({ columns, fields: collectionFields, data }, ctx);
+  const { rows, ranges } = await render({ columns, fields: collectionFields, data }, ctx);
   ctx.body = xlsx.build([
     {
       name: title,

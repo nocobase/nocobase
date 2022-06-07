@@ -40,12 +40,15 @@ function renderHeader(params, ctx) {
   Object.assign(params, { headers });
 }
 
-function renderRows({ columns, fields, data }, ctx) {
-  return data.reduce((result, row) => {
+async function renderRows({ columns, fields, data }, ctx) {
+  return await data.reduce(async (preResult, row) => {
+    const result = await preResult;
     const thisRow = [];
     const rowIndex = 0;
     let colOffset = 0;
-    fields.forEach((field, i) => {
+    for (let i = 0, iLen = fields.length; i < iLen; i++) {
+      const field = fields[i];
+
       if (!thisRow[rowIndex]) {
         thisRow.push([]);
       }
@@ -53,37 +56,38 @@ function renderRows({ columns, fields, data }, ctx) {
       if (field.options.interface !== 'subTable') {
         const render = getInterfaceRender(field.options.interface);
         cells.push({
-          value: render(field, row, ctx, columns[i]),
+          value: await render(field, row, ctx, columns[i]),
           rowIndex: result.length + rowIndex,
           colIndex: i + colOffset,
         });
-        return;
-      }
-
-      const subTable = ctx.db.getTable(field.target);
-      const subFields = subTable.getOptions().fields.filter((item) => Boolean(item.__index));
-      //TODO: must provide sub-table columns
-      const subTableColumns = [];
-      const subRows = renderRows({ columns: subTableColumns, fields: subFields, data: row.get(field.name) || [] }, ctx);
-
-      // const { rows: subRowGroups } = subTableRows;
-      subRows.forEach((cells, j) => {
-        const subRowIndex = rowIndex + j;
-        if (!thisRow[subRowIndex]) {
-          thisRow.push([]);
-        }
-        const subCells = thisRow[subRowIndex];
-        subCells.push(
-          ...cells.map((cell) => ({
-            ...cell,
-            rowIndex: result.length + subRowIndex,
-            colIndex: cell.colIndex + i,
-          })),
+      } else {
+        const subTable = ctx.db.getTable(field.target);
+        const subFields = subTable.getOptions().fields.filter((item) => Boolean(item.__index));
+        //TODO: must provide sub-table columns
+        const subTableColumns = [];
+        const subRows = await renderRows(
+          { columns: subTableColumns, fields: subFields, data: row.get(field.name) || [] },
+          ctx,
         );
-      });
-      colOffset += subFields.length;
-    });
 
+        // const { rows: subRowGroups } = subTableRows;
+        subRows.forEach((cells, j) => {
+          const subRowIndex = rowIndex + j;
+          if (!thisRow[subRowIndex]) {
+            thisRow.push([]);
+          }
+          const subCells = thisRow[subRowIndex];
+          subCells.push(
+            ...cells.map((cell) => ({
+              ...cell,
+              rowIndex: result.length + subRowIndex,
+              colIndex: cell.colIndex + i,
+            })),
+          );
+        });
+        colOffset += subFields.length;
+      }
+    }
     thisRow.forEach((cells) => {
       cells.forEach((cell) => {
         const relRowIndex = cell.rowIndex - result.length;
@@ -98,10 +102,10 @@ function renderRows({ columns, fields, data }, ctx) {
     });
 
     return result.concat(thisRow);
-  }, []);
+  }, Promise.resolve([]));
 }
 
-export default function ({ columns, fields, data }, ctx) {
+export default async function ({ columns, fields, data }, ctx) {
   const headers = [];
   renderHeader({ columns, fields, headers }, ctx);
   const ranges = [];
@@ -133,7 +137,7 @@ export default function ({ columns, fields, data }, ctx) {
     });
   });
 
-  const rows = renderRows({ columns, fields, data }, ctx).map((row) => {
+  const rows = (await renderRows({ columns, fields, data }, ctx)).map((row) => {
     const cells = Array(maxColIndex).fill(null);
     row.forEach((cell) => {
       cells.splice(cell.colIndex, 1, cell.value);
