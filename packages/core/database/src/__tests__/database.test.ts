@@ -216,7 +216,7 @@ describe('database', () => {
 
     await db.sync();
 
-    db.off('posts.afterCreate');
+    db.off('posts.afterCreate', postAfterCreateListener);
 
     await Post.repository.create({
       values: {

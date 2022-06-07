@@ -12,7 +12,6 @@ import {
   SyncOptions,
   Utils
 } from 'sequelize';
-import type { SequelizeHooks } from 'sequelize/types/lib/hooks';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';
@@ -317,51 +316,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.close();
   }
 
-  on(event: string | symbol, name = null, listener?): this {
-    if (typeof name === 'function') {
-      listener = name;
-      name = null;
-    }
-
+  on(event: string | symbol, listener): this {
     // NOTE: to match if event is a sequelize or model type
-    const matcher = this.hookProxy.match(event);
+    const type = this.hookProxy.match(event);
 
-    if (!matcher) {
-      return super.on(event, listener);
+    if (type && !this.hookProxy.hasBoundEvent(type)) {
+      this.sequelize.addHook(type, this.hookProxy.buildSequelizeHook(type));
+      this.hookProxy.bindEvent(type);
     }
 
-    if (!this.hookProxy.hasBoundEvent(...matcher, name)) {
-      super.on(event, this.hookProxy.getProxyHandler(...matcher));
-      const [type] = matcher;
-      if (this.hookProxy.isSequelizeHook(type) && !this.hookProxy.hasBoundEvent(type)) {
-        this.sequelize.addHook(<keyof SequelizeHooks>type, name, this.hookProxy.buildSequelizeHook(type));
-      }
-    }
-    this.hookProxy.bindEvent(...matcher, name, listener);
-
-    return this;
-  }
-
-  off(event, name?, listener?) {
-    if (typeof name === 'function') {
-      listener = name;
-      name = null;
-    }
-
-    const matcher = this.hookProxy.match(event);
-    if (!matcher) {
-      return super.off(event, listener);
-    }
-
-    this.hookProxy.unbindEvent(...matcher, name, listener);
-    if (!this.hookProxy.hasBoundEvent(...matcher, name)) {
-      const [type] = matcher;
-      if (type) {
-        this.sequelize.removeHook(<keyof SequelizeHooks>type, name);
-      }
-    }
-
-    return this;
+    return super.on(event, listener);
   }
 
   async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>> {
