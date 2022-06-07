@@ -102,6 +102,7 @@ const providers = [
     {
       initializers: {
         MenuItemInitializers,
+        // SchemaInitializerPluginProvider,
       },
     },
   ],

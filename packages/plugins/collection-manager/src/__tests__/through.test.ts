@@ -1,5 +1,5 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import CollectionManagerPlugin from '../plugin';
+import CollectionManagerPlugin from '../server';
 
 describe('collections repository', () => {
   let app: MockServer;
