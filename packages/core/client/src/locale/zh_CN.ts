@@ -453,6 +453,7 @@ export default {
   'Minutes': '分钟',
   'Hours': '小时',
   'Days': '天',
+  'Weeks': '周',
   'Months': '月',
 
   'No repeat': '不重复',
@@ -460,12 +461,14 @@ export default {
 
   'By minute': '按分钟',
   'By hour': '按小时',
-  'By date': '按日(月)',
+  'By day': '按天',
+  'By week': '按周',
   'By month': '按月',
-  'By day of week': '按天(周)',
 
   'By field': '数据表字段',
   'By custom date': '自定义时间',
+
+  'Advance': '高级模式',
 
   'End': '结束',
 

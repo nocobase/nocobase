@@ -83,6 +83,9 @@ function getDateRangeFilter(on: ScheduleOnField, now: Date, dir: number) {
       break;
     case 'object':
       const { field, offset = 0, unit = 1000 } = on;
+      if (!field) {
+        return {};
+      }
       return { [field]: { [op]: new Date(timestamp + offset * unit * dir) } };
     default:
       break;
@@ -129,25 +132,6 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     if (!this.events.has(name)) {
       // NOTE: toggle cache depends on new date
       const listener = async (data, options) => {
-        // check if saved collection data in cache cycle
-        //   in: add workflow to cache
-        //   out: 1. do nothing because if any other data in
-        //        2. another way is always check all data to match cycle
-        //           by calling: inspect(workflow)
-        //           this may lead to performance issues
-        //        so we can only check single row and only set in if true
-        // how to check?
-        // * startsOn only      : startsOn in cycle
-        // * endsOn only        : invalid
-        // * repeat only          : invalid
-        // * startsOn and endsOn: equal to only startsOn
-        // * startsOn and repeat  : startsOn in cycle and repeat in cycle
-        // * endsOn and repeat    : invalid
-        // * all                : all rules effect
-        // * none               : invalid
-        // this means, startsOn and repeat should be present at least one
-        // and no startsOn equals run on repeat, and could ends on endsOn,
-        // this will be a little wired, only means the end date should use collection field.
         const now = new Date();
         now.setMilliseconds(0);
         const timestamp = now.getTime();
@@ -269,11 +253,13 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
           }
           break;
         case 'object':
-          conditions.push({
-            [endsOn.field]: {
-              [Op.gte]: new Date(timestamp - (endsOn.offset ?? 0) * (endsOn.unit ?? 1000) + 1000)
-            }
-          });
+          if (endsOn.field) {
+            conditions.push({
+              [endsOn.field]: {
+                [Op.gte]: new Date(timestamp - (endsOn.offset ?? 0) * (endsOn.unit ?? 1000) + 1000)
+              }
+            });
+          }
           break;
         default:
           break;
