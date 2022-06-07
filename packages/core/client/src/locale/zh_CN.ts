@@ -58,11 +58,18 @@ export default {
   "Media": "多媒体",
   "Markdown": "Markdown",
   "Wysiwyg": "富文本",
-  "Charts": "图表",
+  "Chart blocks": "图表区块",
   "Column chart": "柱状图",
   "Bar chart": "条形图",
   "Line chart": "折线图",
   "Pie chart": "饼图",
+  "Area chart": "面积图",
+  "Other chart": "其他图表",
+  "Other blocks": "其他区块",
+  "In configuration": "配置中",
+  "Chart title": "图表标题",
+  "Chart type": "图表类型",
+  "Chart config": "图表配置",
   "Templates": "模板",
   "Select template": "选择模板",
   "Action logs": "操作日志",
@@ -453,6 +460,7 @@ export default {
   'Minutes': '分钟',
   'Hours': '小时',
   'Days': '天',
+  'Weeks': '周',
   'Months': '月',
 
   'No repeat': '不重复',
@@ -460,12 +468,14 @@ export default {
 
   'By minute': '按分钟',
   'By hour': '按小时',
-  'By date': '按日(月)',
+  'By day': '按天',
+  'By week': '按周',
   'By month': '按月',
-  'By day of week': '按天(周)',
 
   'By field': '数据表字段',
   'By custom date': '自定义时间',
+
+  'Advance': '高级模式',
 
   'End': '结束',
 

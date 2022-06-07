@@ -20,7 +20,7 @@ import {
   createTableSelectorSchema,
   useCollectionDataSourceItems,
   useCurrentSchema,
-  useRecordCollectionDataSourceItems,
+  useRecordCollectionDataSourceItems
 } from '../utils';
 
 // Block
@@ -28,6 +28,20 @@ export const BlockInitializer = (props) => {
   const { item, insert } = props;
   return (
     <SchemaInitializer.Item
+      onClick={() => {
+        insert({
+          ...item.schema,
+        });
+      }}
+    />
+  );
+};
+
+export const G2PlotInitializer = (props) => {
+  const { item, insert, ...others } = props;
+  return (
+    <SchemaInitializer.Item
+      {...others}
       onClick={() => {
         insert({
           ...item.schema,
