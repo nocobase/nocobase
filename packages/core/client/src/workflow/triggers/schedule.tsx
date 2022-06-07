@@ -32,7 +32,7 @@ const DateFieldsSelect: React.FC<any> = observer((props) => {
   );
 });
 
-const OnField = ({ value, onChange }) => {
+function OnField({ value, onChange }) {
   const { t } = useTranslation();
   const [dir, setDir] = useState(value.offset ? value.offset / Math.abs(value.offset) : 0);
 
@@ -99,11 +99,6 @@ function EndsByField({ value, onChange }) {
 }
 
 function parseCronRule(cron: string) {
-  if (!cron) {
-    return {
-      mode: 0
-    }
-  }
   const rules = cron.split(/\s+/).slice(1).map(v => v.split('/'));
   let index = rules.findIndex(rule => rule[0] === '*');
   if (index === -1) {
@@ -129,6 +124,34 @@ const CronUnits = [
   { value: 5, option: 'By day of week', unitText: 'Days', conflict: true },
 ];
 
+const RepeatOptions = [
+  { value: 'none', text: 'No repeat' },
+  { value: 60_000, text: 'By minute', unitText: 'Minutes' },
+  { value: 3600_000, text: 'By hour', unitText: 'Hours' },
+  { value: 86400_000, text: 'By day', unitText: 'Days' },
+  { value: 604800_000, text: 'By week', unitText: 'Weeks' },
+  // { value: 18144_000_000, text: 'By 30 days' },
+  { value: 'cron', text: 'Advance', disabled: true }
+];
+
+function getNumberOption(v) {
+  const opts = RepeatOptions.filter(option => typeof option.value === 'number').reverse() as any[];
+  return opts.find(item => !(v % item.value));
+}
+
+function getRepeatTypeValue(v) {
+  switch (typeof v) {
+    case 'number':
+      const option = getNumberOption(v);
+      return option ? option.value : 'none';
+    case 'string':
+      return 'cron';
+    default:
+      break;
+  }
+  return 'none';
+}
+
 function getChangedCron({ mode, step }) {
   const m = mode - 1;
   const left = [0, ...Array(m).fill(null).map((_, i) => {
@@ -146,34 +169,77 @@ function getChangedCron({ mode, step }) {
   return `${left} ${!step || step == 1 ? '*' : `*/${step}`}${right ? ` ${right}` : ''}`;
 }
 
-const CronField = ({ value = '', onChange }) => {
+function CronField({ value, onChange }) {
   const { t } = useTranslation();
   const cron = parseCronRule(value);
   const unit = CronUnits[cron.mode - 1];
+
+  return (
+
+    <InputNumber
+      value={cron.step}
+      onChange={v => onChange(getChangedCron({ step: v, mode: cron.mode }))}
+      min={1}
+      addonBefore={t('Every')}
+      addonAfter={t(unit.unitText)}
+    />
+  );
+}
+
+function CommonRepeatField({ value, onChange }) {
+  const { t } = useTranslation();
+  const option = getNumberOption(value);
+
+  return (
+    <InputNumber
+      value={value / option.value}
+      onChange={v => onChange(v * option.value)}
+      min={1}
+      addonBefore={t('Every')}
+      addonAfter={t(option.unitText)}
+    />
+  );
+}
+
+function RepeatField({ value = null, onChange }) {
+  const { t } = useTranslation();
+  const typeValue = getRepeatTypeValue(value);
+  function onTypeChange(v) {
+    if (v === 'none') {
+      onChange(null);
+      return;
+    }
+    if (v === 'cron') {
+      onChange('0 * * * * *');
+      return;
+    }
+    onChange(v);
+  }
+
   return (
     <fieldset className={css`
       display: flex;
       gap: .5em;
     `}>
       <Select
-        value={cron.mode}
-        onChange={v => onChange(v ? getChangedCron({ step: cron.step, mode: v }) : '')}
+        value={typeValue}
+        onChange={onTypeChange}
       >
-        <Select.Option value={0}>{t('No repeat')}</Select.Option>
-        {CronUnits.map(item => (
-          <Select.Option key={item.value} value={item.value}>{t(item.option)}</Select.Option>
+        {RepeatOptions.map(item => (
+          <Select.Option
+            key={item.value}
+            value={item.value}
+            disabled={item.disabled}
+          >
+            {t(item.text)}
+          </Select.Option>
         ))}
       </Select>
-      {cron.mode
-        ? (
-          <InputNumber
-            value={cron.step}
-            onChange={v => onChange(getChangedCron({ step: v, mode: cron.mode }))}
-            min={1}
-            addonBefore={t('Every')}
-            addonAfter={t(unit.unitText)}
-          />
-        )
+      {typeof typeValue === 'number'
+        ? <CommonRepeatField value={value} onChange={onChange} />
+        : null}
+      {typeValue === 'cron'
+        ? <CronField value={value} onChange={onChange} />
         : null}
     </fieldset>
   );
@@ -192,12 +258,12 @@ const ModeFieldsets = {
       },
       required: true
     },
-    cron: {
+    repeat: {
       type: 'string',
-      name: 'cron',
+      name: 'repeat',
       title: '{{t("Repeat mode")}}',
       'x-decorator': 'FormItem',
-      'x-component': 'CronField',
+      'x-component': 'RepeatField',
       'x-reactions': [
         {
           target: 'config.endsOn',
@@ -260,14 +326,24 @@ const ModeFieldsets = {
       title: '{{t("Starts on")}}',
       'x-decorator': 'FormItem',
       'x-component': 'OnField',
+      'x-reactions': [
+        {
+          target: 'config.repeat',
+          fulfill: {
+            state: {
+              visible: '{{!!$self.value}}',
+            },
+          }
+        }
+      ],
       required: true
     },
-    cron: {
+    repeat: {
       type: 'string',
-      name: 'cron',
+      name: 'repeat',
       title: '{{t("Repeat mode")}}',
       'x-decorator': 'FormItem',
-      'x-component': 'CronField',
+      'x-component': 'RepeatField',
       'x-reactions': [
         {
           target: 'config.endsOn',
@@ -316,8 +392,9 @@ const ScheduleConfig = () => {
       setMode(field.value);
       clearFormGraph('config.collection');
       clearFormGraph('config.startsOn');
-      clearFormGraph('config.cron');
+      clearFormGraph('config.repeat');
       clearFormGraph('config.endsOn');
+      clearFormGraph('config.limit');
     })
   });
 
@@ -350,7 +427,7 @@ const ScheduleConfig = () => {
                 className: css`
                   .ant-select{
                     width: auto;
-                    min-width: 4em;
+                    min-width: 6em;
                   }
 
                   .ant-input-number{
@@ -369,7 +446,7 @@ const ScheduleConfig = () => {
         components={{
           DateFieldsSelect,
           OnField,
-          CronField,
+          RepeatField,
           EndsByField
         }}
       />

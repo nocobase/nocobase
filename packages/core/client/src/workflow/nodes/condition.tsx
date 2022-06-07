@@ -89,6 +89,7 @@ function CalculationGroup({ value, onChange }) {
 
         .ant-select{
           width: auto;
+          min-width: 6em;
         }
       `}>
         <Trans>
