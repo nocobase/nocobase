@@ -47,7 +47,7 @@ function resolveNocobasePackagesAlias(config) {
   const clientSrc = resolve(process.cwd(), './packages/core/client/src');
   const utilsSrc = resolve(process.cwd(), './packages/core/utils/src');
   const sdkSrc = resolve(process.cwd(), './packages/core/sdk/src');
-  const pluginExportSrc = resolve(process.cwd(), './packages/plugins/export/src/client');
+  const exportPluginSrc = resolve(process.cwd(), './packages/plugins/export/src/client');
   if (existsSync(clientSrc)) {
     config.module.rules.get('ts-in-node_modules').include.add(clientSrc);
     config.resolve.alias.set('@nocobase/client', clientSrc);
@@ -55,10 +55,9 @@ function resolveNocobasePackagesAlias(config) {
     config.resolve.alias.set('@nocobase/utils', utilsSrc);
     config.module.rules.get('ts-in-node_modules').include.add(sdkSrc);
     config.resolve.alias.set('@nocobase/sdk', sdkSrc);
+    config.module.rules.get('ts-in-node_modules').include.add(exportPluginSrc);
+    config.resolve.alias.set('@nocobase/plugin-export/client', exportPluginSrc);
   }
-
-  config.module.rules.get('ts-in-node_modules').include.add(pluginExportSrc);
-  config.resolve.alias.set('@nocobase/plugin-export', pluginExportSrc);
 }
 
 exports.getUmiConfig = getUmiConfig;
