@@ -1,4 +1,4 @@
-import { useFieldSchema, useForm } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { useAPIClient, useBlockRequestContext, useCollection, useCompile } from '@nocobase/client';
 
 export const useExportAction = () => {
@@ -7,7 +7,6 @@ export const useExportAction = () => {
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const { name, title } = useCollection();
-  const form = useForm();
 
   return {
     async onClick() {
@@ -17,7 +16,7 @@ export const useExportAction = () => {
         method: 'get',
         responseType: 'blob',
         params: {
-          title,
+          title: compile(title),
           columns: JSON.stringify(exportSettings),
           appends: service.params[0]?.appends?.join(),
           filter: JSON.stringify(service.params[0]?.filter),
@@ -27,7 +26,7 @@ export const useExportAction = () => {
       let blob = new Blob([data], { type: 'application/x-xls' });
       const a = document.createElement('a');
       const blobUrl = window.URL.createObjectURL(blob);
-      a.download = `${title}.xlsx`;
+      a.download = `${compile(title)}.xlsx`;
       a.href = blobUrl;
       document.body.appendChild(a);
       a.click();

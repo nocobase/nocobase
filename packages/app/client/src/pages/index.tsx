@@ -33,7 +33,7 @@ import {
   useRoutes,
   WorkflowPage,
   WorkflowRouteProvider,
-  WorkflowShortcut
+  WorkflowShortcut,
 } from '@nocobase/client';
 import { SchemaInitializerPluginProvider } from '@nocobase/plugin-export/client';
 import { notification } from 'antd';
@@ -102,10 +102,10 @@ const providers = [
     {
       initializers: {
         MenuItemInitializers,
-        SchemaInitializerPluginProvider,
       },
     },
   ],
+  SchemaInitializerPluginProvider,
   BlockSchemaComponentProvider,
   AntdSchemaComponentProvider,
   ACLProvider,

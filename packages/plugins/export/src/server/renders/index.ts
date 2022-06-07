@@ -157,7 +157,11 @@ export default async function ({ columns, fields, data }, ctx) {
         // 补齐无数据单元格，以供合并
         const cells = Array(maxColIndex).fill(null);
         row.forEach((cell) =>
-          cells.splice(cell.colIndex, 1, cell.column.title ?? cell.column.dataIndex[cell.column.dataIndex.length - 1]),
+          cells.splice(
+            cell.colIndex,
+            1,
+            cell.column.title ?? cell.column.defaultTitle ?? cell.column.dataIndex[cell.column.dataIndex.length - 1],
+          ),
         );
         return cells;
       }),

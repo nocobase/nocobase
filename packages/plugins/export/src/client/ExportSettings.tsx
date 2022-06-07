@@ -2,7 +2,6 @@ import { ArrayField } from '@formily/core';
 import { observer, useField } from '@formily/react';
 import { useCollection } from '@nocobase/client';
 import { uid } from '@nocobase/utils';
-import { Space } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,20 +29,18 @@ export const ExportSettings = observer((props: any) => {
 
   return (
     <>
-      <Space direction="vertical">
-        {field.value?.map((val, index) => {
-          return (
-            <FieldItem
-              key={uid()}
-              fields={fields}
-              index={index}
-              value={val}
-              values={field.value}
-              removeFieldItem={removeFieldItemHandler(index)}
-            />
-          );
-        })}
-      </Space>
+      {field.value?.map((val, index) => {
+        return (
+          <FieldItem
+            key={uid()}
+            fields={fields}
+            index={index}
+            value={val}
+            values={field.value}
+            removeFieldItem={removeFieldItemHandler(index)}
+          />
+        );
+      })}
       <div style={{ marginTop: 8, marginBottom: 8 }}>
         <a
           onClick={() => {
