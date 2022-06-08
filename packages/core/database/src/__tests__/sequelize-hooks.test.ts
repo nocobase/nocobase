@@ -14,6 +14,33 @@ describe('sequelize-hooks', () => {
     await db.close();
   });
 
+  test.only('exec order', async () => {
+    const collection = db.collection({
+      name: 't_test',
+    });
+    const orders = [];
+    db.on('beforeCreate', () => {
+      orders.push('beforeCreate');
+    });
+    db.on('t_test.beforeCreate', () => {
+      orders.push('model.beforeCreate');
+    });
+    db.on('afterCreate', () => {
+      orders.push('afterCreate');
+    });
+    db.on('t_test.afterCreate', () => {
+      orders.push('model.afterCreate');
+    });
+    await collection.sync();
+    await collection.model.create();
+    expect(orders).toEqual([
+      'model.beforeCreate',
+      'beforeCreate',
+      'model.afterCreate',
+      'afterCreate'
+    ]);
+  });
+
   describe('afterSync', () => {
     test('singular name', async () => {
       const collection = db.collection({
