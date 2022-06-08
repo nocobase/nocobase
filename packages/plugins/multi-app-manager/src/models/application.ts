@@ -52,10 +52,11 @@ export class ApplicationModel extends Model {
         const { Client } = require('pg');
 
         const client = new Client({
-          user: username,
           host,
-          password: password,
           port,
+          user: username,
+          password,
+          database: 'postgres'
         });
 
         await client.connect();
