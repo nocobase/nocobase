@@ -19,8 +19,8 @@
 
 ## Planning
 
-- `core` fileds default value/read-only
-- `plugin` form validator
+- `core` Fileds default value/read-only
+- `plugin` Form validator
 - `plugin` Reference and copy data from related tables (collection field)
 - `ui` Mobile responsive
 - `plugin` Aggregate calculation
