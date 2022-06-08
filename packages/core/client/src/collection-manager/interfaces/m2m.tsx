@@ -171,7 +171,7 @@ export const m2m: IField = {
                   type: 'string',
                   title: '{{t("Foreign key 1")}}',
                   required: true,
-                  default: `f_${uid()}`,
+                  default: '{{ useNewId("f_") }}',
                   description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
@@ -206,7 +206,7 @@ export const m2m: IField = {
                   type: 'string',
                   title: '{{t("Foreign key 2")}}',
                   required: true,
-                  default: `f_${uid()}`,
+                  default: '{{ useNewId("f_") }}',
                   description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',

@@ -1,5 +1,4 @@
 import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
 import { recordPickerSelector, recordPickerViewer } from './properties';
 import { IField } from './types';
@@ -31,7 +30,6 @@ export const o2m: IField = {
     reverseField: {
       interface: 'm2o',
       type: 'belongsTo',
-      title: '{{t("Many to one")}}',
       // name,
       uiSchema: {
         // title,
@@ -56,25 +54,6 @@ export const o2m: IField = {
       schema['properties'] = {
         selector: cloneDeep(recordPickerSelector),
       };
-    }
-  },
-  initialize: (values: any) => {
-    if (values.type === 'belongsToMany') {
-      if (!values.through) {
-        values.through = `t_${uid()}`;
-      }
-      if (!values.foreignKey) {
-        values.foreignKey = `f_${uid()}`;
-      }
-      if (!values.otherKey) {
-        values.otherKey = `f_${uid()}`;
-      }
-      if (!values.sourceKey) {
-        values.sourceKey = 'id';
-      }
-      if (!values.targetKey) {
-        values.targetKey = 'id';
-      }
     }
   },
   properties: {
@@ -172,7 +151,7 @@ export const o2m: IField = {
                   type: 'string',
                   title: '{{t("Foreign key")}}',
                   required: true,
-                  default: `f_${uid()}`,
+                  default: '{{ useNewId("f_") }}',
                   description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
