@@ -16,14 +16,14 @@ export const o2m: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'TableField',
       'x-component-props': {
         // mode: 'tags',
-        multiple: true,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
+        // multiple: true,
+        // fieldNames: {
+        //   label: 'id',
+        //   value: 'id',
+        // },
       },
     },
     reverseField: {
@@ -35,7 +35,7 @@ export const o2m: IField = {
         'x-component': 'RecordPicker',
         'x-component-props': {
           // mode: 'tags',
-          multiple: true,
+          multiple: false,
           fieldNames: {
             label: 'id',
             value: 'id',
@@ -44,16 +44,56 @@ export const o2m: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
-    if (readPretty) {
-      schema['properties'] = {
-        viewer: cloneDeep(recordPickerViewer),
-      };
-    } else {
-      schema['properties'] = {
-        selector: cloneDeep(recordPickerSelector),
-      };
-    }
+  schemaInitialize(schema: ISchema, { field, readPretty }) {
+    const association = `${field.collectionName}.${field.name}`;
+    schema['type'] = 'void';
+    schema['x-component'] = 'TableField';
+    schema['properties'] = {
+      block: {
+        type: 'void',
+        'x-decorator': 'TableFieldProvider',
+        'x-decorator-props': {
+          collection: field.target,
+          association: association,
+          resource: association,
+          action: 'list',
+          params: {
+            paginate: false,
+          },
+          showIndex: true,
+          dragSort: false,
+        },
+        properties: {
+          actions: {
+            type: 'void',
+            'x-initializer': 'SubTableActionInitializers',
+            'x-component': 'TableField.ActionBar',
+            'x-component-props': {},
+          },
+          [field.name]: {
+            type: 'array',
+            'x-initializer': 'TableColumnInitializers',
+            'x-component': 'TableV2',
+            'x-component-props': {
+              rowSelection: {
+                type: 'checkbox',
+              },
+              useProps: '{{ useTableFieldProps }}',
+            },
+          },
+        },
+      },
+    };
+
+    // if (readPretty) {
+    //   schema['properties'] = {
+    //     viewer: cloneDeep(recordPickerViewer),
+    //   };
+    // } else {
+    //   schema['properties'] = {
+    //     selector: cloneDeep(recordPickerSelector),
+    //   };
+    // }
   },
   initialize: (values: any) => {
     if (values.type === 'belongsToMany') {
