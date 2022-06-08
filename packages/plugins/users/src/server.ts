@@ -1,19 +1,15 @@
 import { Collection, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
+import { namespace } from './';
 import * as actions from './actions/users';
 import { JwtOptions, JwtService } from './jwt-service';
+import { enUS, zhCN } from './locale';
 import * as middlewares from './middlewares';
 import { UserModel } from './models/UserModel';
 
 export interface UserPluginConfig {
   jwt: JwtOptions;
-
-  installing?: {
-    adminNickname: string;
-    adminEmail: string;
-    adminPassword: string;
-  };
 }
 
 export default class UsersPlugin extends Plugin<UserPluginConfig> {
@@ -21,10 +17,18 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
   constructor(app, options) {
     super(app, options);
-    this.jwtService = new JwtService(options?.jwt);
+    this.jwtService = new JwtService(options?.jwt || {});
   }
 
   async beforeLoad() {
+    this.app.i18n.addResources('zh-CN', namespace, zhCN);
+    this.app.i18n.addResources('en-US', namespace, enUS);
+    const cmd = this.app.findCommand('install');
+    if (cmd) {
+      cmd.requiredOption('-e, --root-email <rootEmail>', '', process.env.INIT_ROOT_EMAIL);
+      cmd.requiredOption('-p, --root-password <rootPassword>', '', process.env.INIT_ROOT_PASSWORD);
+      cmd.option('-n, --root-nickname [rootNickname]');
+    }
     this.db.registerOperators({
       $isCurrentUser(_, ctx) {
         return {
@@ -106,30 +110,29 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     });
   }
 
-  getRootUserInfo() {
+  getInstallingData(options: any = {}) {
+    const { INIT_ROOT_NICKNAME, INIT_ROOT_PASSWORD, INIT_ROOT_EMAIL } = process.env;
     const {
-      adminNickname = 'Super Admin',
-      adminEmail = 'admin@nocobase.com',
-      adminPassword = 'admin123',
-    } = this.options.installing || {};
-
+      rootEmail = INIT_ROOT_EMAIL,
+      rootPassword = INIT_ROOT_PASSWORD,
+      rootNickname = INIT_ROOT_NICKNAME || 'Super Admin',
+    } = options.users || options?.cliArgs?.[0] || {};
     return {
-      adminNickname,
-      adminEmail,
-      adminPassword,
+      rootEmail,
+      rootPassword,
+      rootNickname,
     };
   }
 
-  async install() {
-    const { adminNickname, adminPassword, adminEmail } = this.getRootUserInfo();
-
+  async install(options) {
+    const { rootNickname, rootPassword, rootEmail } = this.getInstallingData(options);
     const User = this.db.getCollection('users');
     const user = await User.repository.create<UserModel>({
       values: {
-        nickname: adminNickname,
-        email: adminEmail,
-        password: adminPassword,
-        roles: ['root', 'admin'],
+        email: rootEmail,
+        password: rootPassword,
+        nickname: rootNickname,
+        roles: ['root', 'admin', 'member'],
       },
     });
 

@@ -5,20 +5,14 @@ group:
   path: /schema-components
 ---
 
-# Calendar
+# CalendarV2
 
 ## Examples
 
-### Calendar
-
-#### general calendar
+#### Basic
 
 <code src="./demos/demo1.tsx" />
 
-#### view calendar detail
+### CalendarBlockProvider
 
 <code src="./demos/demo2.tsx" />
-
-#### view calendar detail used initializer
-
-<code src="./demos/demo3.tsx" />

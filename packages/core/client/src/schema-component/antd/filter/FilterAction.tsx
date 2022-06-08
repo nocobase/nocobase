@@ -83,7 +83,7 @@ export const FilterAction = observer((props: any) => {
           </form>
         }
       >
-        <Action {...others} />
+        <Action {...others} title={field.title} />
       </Popover>
     </FilterActionContext.Provider>
   );

@@ -1,0 +1,18 @@
+@import (reference) '../style/variables.less';
+
+ul[role='slug-list'] {
+  &:empty {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  li {
+    > a.active {
+      color: darken(@c-primary, 2%);
+    }
+
+    &[data-depth='3'] {
+      padding-left: 12px;
+    }
+  }
+}

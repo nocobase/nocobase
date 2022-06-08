@@ -1,8 +1,0 @@
-{
-  "extends": "../../../tsconfig.json",
-  "compilerOptions": {
-    "resolveJsonModule": true
-  },
-  "include": ["./src/**/*.ts", "./src/**/*.tsx"],
-  "exclude": ["./esm/*", "./lib/*"]
-}

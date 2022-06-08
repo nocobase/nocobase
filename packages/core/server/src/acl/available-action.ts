@@ -14,11 +14,11 @@ const availableActions: {
   //   type: 'new-data',
   //   scope: false,
   // },
-  export: {
-    displayName: '{{t("Export")}}',
-    type: 'old-data',
-    allowConfigureFields: true,
-  },
+  // export: {
+  //   displayName: '{{t("Export")}}',
+  //   type: 'old-data',
+  //   allowConfigureFields: true,
+  // },
   view: {
     displayName: '{{t("View")}}',
     type: 'old-data',

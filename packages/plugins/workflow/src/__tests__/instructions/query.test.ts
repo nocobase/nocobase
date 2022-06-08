@@ -7,7 +7,9 @@ import { getApp } from '..';
 describe('workflow > instructions > query', () => {
   let app: Application;
   let db: Database;
-  let PostModel;
+  let PostCollection;
+  let PostRepo;
+  let TagModel;
   let WorkflowModel;
   let workflow;
 
@@ -16,7 +18,9 @@ describe('workflow > instructions > query', () => {
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
-    PostModel = db.getCollection('posts').model;
+    PostCollection = db.getCollection('posts');
+    PostRepo = PostCollection.repository;
+    TagModel = db.getCollection('tags').model;
 
     workflow = await WorkflowModel.create({
       title: 'test workflow',
@@ -40,7 +44,7 @@ describe('workflow > instructions > query', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -60,7 +64,7 @@ describe('workflow > instructions > query', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -80,7 +84,7 @@ describe('workflow > instructions > query', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -100,7 +104,7 @@ describe('workflow > instructions > query', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -125,11 +129,56 @@ describe('workflow > instructions > query', () => {
       });
       await n1.setDownstream(n2);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs[1].result.title).toBe(post.title);
+    });
+
+    it('params.filter: by association field', async () => {
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'tags',
+          params: {
+            filter: {
+              'posts.id': `{{$context.data.id}}`
+            }
+          }
+        }
+      });
+
+      const tag = await TagModel.create({ name: 'tag1' });
+      const post = await PostCollection.repository.create({
+        values: { title: 't1', tags: [tag.id] }
+      });
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result.id).toBe(tag.id);
+    });
+
+    it('params.appends: with associations', async () => {
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'tags',
+          params: {
+            appends: ['posts']
+          }
+        }
+      });
+
+      const tag = await TagModel.create({ name: 'tag1' });
+      const post = await PostCollection.repository.create({
+        values: { title: 't1', tags: [tag.id] }
+      });
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result.posts.length).toBe(1);
+      expect(job.result.posts[0].id).toBe(post.id);
     });
 
     it('params.sort', async () => {
@@ -143,8 +192,8 @@ describe('workflow > instructions > query', () => {
         }
       });
 
-      const p1 = await PostModel.create({ title: 't1' });
-      const p2 = await PostModel.create({ title: 't2' });
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
 
       // get the 2nd execution
       const [execution] = await workflow.getExecutions({ order: [['id', 'DESC']] });
@@ -164,7 +213,7 @@ describe('workflow > instructions > query', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -186,7 +235,7 @@ describe('workflow > instructions > query', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -208,7 +257,7 @@ describe('workflow > instructions > query', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();

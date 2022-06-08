@@ -1,7 +1,0 @@
-import { Plugin } from '@nocobase/server';
-
-export default class Plugin<%= className %> extends Plugin {
-  getName(): string {
-    return 'plugin-<%= name %>';
-  }
-}

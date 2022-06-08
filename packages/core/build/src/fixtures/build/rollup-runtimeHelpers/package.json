@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@babel/runtime": "0.1.0"
+  }
+}

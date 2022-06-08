@@ -39,6 +39,19 @@ export const removeGridFormItem = (schema, cb) => {
   });
 };
 
+export const useRemoveGridFormItem = () => {
+  const form = useForm();
+  return (schema, cb) => {
+    cb(schema, {
+      removeParentsIfNoChildren: true,
+      breakRemoveOn: {
+        'x-component': 'Grid',
+      },
+    });
+    delete form.values?.[schema.name];
+  };
+};
+
 export const findTableColumn = (schema: Schema, key: string, action: string, deepth: number = 0) => {
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {
@@ -92,6 +105,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { getInterface } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
+
   return fields
     ?.filter((field) => field?.interface)
     ?.map((field) => {
@@ -111,6 +125,40 @@ export const useFormItemInitializerFields = (options?: any) => {
         title: field?.uiSchema?.title || field.name,
         component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
+        schemaInitialize: (s) => {
+          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
+        },
+        schema,
+      } as SchemaInitializerItemOptions;
+    });
+};
+
+export const useCustomFormItemInitializerFields = (options?: any) => {
+  const { name, fields } = useCollection();
+  const { getInterface } = useCollectionManager();
+  const form = useForm();
+  const { readPretty = form.readPretty, block = 'Form' } = options || {};
+  const remove = useRemoveGridFormItem();
+  return fields
+    ?.filter((field) => {
+      return field?.interface && !field?.uiSchema?.['x-read-pretty'];
+    })
+    ?.map((field) => {
+      const interfaceConfig = getInterface(field.interface);
+      const schema = {
+        type: 'string',
+        name: field.name,
+        title: field?.uiSchema?.title || field.name,
+        'x-designer': 'FormItem.Designer',
+        'x-component': 'AssignedField',
+        'x-decorator': 'FormItem',
+        'x-collection-field': `${name}.${field.name}`,
+      };
+      return {
+        type: 'item',
+        title: field?.uiSchema?.title || field.name,
+        component: 'CollectionFieldInitializer',
+        remove: remove,
         schemaInitialize: (s) => {
           interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
         },

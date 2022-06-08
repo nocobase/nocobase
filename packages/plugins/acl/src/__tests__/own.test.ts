@@ -1,11 +1,10 @@
-import { mockServer, MockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
 import { ACL } from '@nocobase/acl';
-import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
-import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
-import PluginCollectionManager from '@nocobase/plugin-collection-manager';
+import { Database } from '@nocobase/database';
 import PluginACL from '@nocobase/plugin-acl';
+import PluginCollectionManager from '@nocobase/plugin-collection-manager';
+import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
 import PluginUser from '@nocobase/plugin-users';
+import { mockServer, MockServer } from '@nocobase/test';
 import supertest from 'supertest';
 
 describe('own test', () => {
@@ -38,7 +37,7 @@ describe('own test', () => {
     app.plugin(PluginCollectionManager);
     app.plugin(PluginUser, {
       jwt: {
-        secret: process.env.JWT_SECRET || '09f26e402586e2faa8da4c98a35f1b20d6b033c60',
+        secret: process.env.APP_KEY || 'test-key',
       },
     });
 

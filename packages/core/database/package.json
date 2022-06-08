@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/database",
-  "version": "0.7.0-alpha.34",
+  "version": "0.7.0-alpha.83",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -11,18 +11,15 @@
       "url": "http://www.apache.org/licenses/LICENSE-2.0"
     }
   ],
-  "scripts": {
-    "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
-    "build:cjs": "tsc --project tsconfig.build.json",
-    "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
-  },
   "dependencies": {
-    "@nocobase/utils": "0.7.0-alpha.34",
+    "@nocobase/utils": "0.7.0-alpha.83",
     "async-mutex": "^0.3.2",
     "deepmerge": "^4.2.2",
     "flat": "^5.0.2",
     "glob": "^7.1.6",
-    "sequelize": "^6.9.0"
+    "sequelize": "^6.9.0",
+    "umzug": "^3.1.1",
+    "mathjs": "^10.6.1"
   },
   "repository": {
     "type": "git",

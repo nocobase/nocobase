@@ -1,25 +1,29 @@
 import { css } from '@emotion/css';
 import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
-import { GeneralField } from '@formily/core';
-import { ISchema, Schema, SchemaOptionsContext } from '@formily/react';
+import { createForm, GeneralField } from '@formily/core';
+import { ISchema, Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Dropdown, Menu, MenuItemProps, Modal, Select, Switch } from 'antd';
+import { Alert, Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, useContext, useState } from 'react';
+import { cloneDeep } from 'lodash';
+import React, { createContext, useContext, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContext,
   createDesignable,
   Designable,
+  FormProvider,
+  RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentOptions,
   useActionContext,
   useAPIClient,
-  useCollection
+  useCollection,
+  useCompile,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
-
 interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
@@ -461,6 +465,89 @@ SchemaSettings.PopupItem = (props) => {
     </ActionContext.Provider>
   );
 };
+
+SchemaSettings.ActionModalItem = React.memo((props: any) => {
+  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, ...others } = props;
+  const [visible, setVisible] = useState(false);
+  const [schemaUid, setSchemaUid] = useState<string>(props.uid);
+  const { t } = useTranslation();
+  const fieldSchema = useFieldSchema();
+  const ctx = useContext(SchemaSettingsContext);
+  const { dn } = useSchemaSettings();
+  const compile = useCompile();
+  const api = useAPIClient();
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: cloneDeep(initialValues),
+      }),
+    [],
+  );
+
+  const cancelHandler = () => {
+    setVisible(false);
+  };
+
+  const submitHandler = async () => {
+    await form.submit();
+    onSubmit?.(cloneDeep(form.values));
+    setVisible(false);
+  };
+
+  const openAssignedFieldValueHandler = async () => {
+    if (!schemaUid && initialSchema?.['x-uid']) {
+      fieldSchema['x-action-settings'].schemaUid = initialSchema['x-uid'];
+      dn.emit('patch', { schema: fieldSchema });
+      await api.resource('uiSchemas').insert({ values: initialSchema });
+      setSchemaUid(initialSchema['x-uid']);
+    }
+
+    ctx.setVisible(false);
+    setVisible(true);
+  };
+
+  return (
+    <>
+      <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler}>
+        {props.children || props.title}
+      </SchemaSettings.Item>
+      {createPortal(
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <Modal
+            width={'50%'}
+            title={compile(title)}
+            {...others}
+            destroyOnClose
+            visible={visible}
+            onCancel={cancelHandler}
+            footer={
+              <Space>
+                <Button onClick={cancelHandler}>{t('Cancel')}</Button>
+                <Button type="primary" onClick={submitHandler}>
+                  {t('Submit')}
+                </Button>
+              </Space>
+            }
+          >
+            <FormProvider form={form}>
+              <FormLayout layout={'vertical'}>
+                {modalTip && <Alert message={modalTip} />}
+                {modalTip && <br />}
+                {visible && schemaUid && <RemoteSchemaComponent noForm components={components} uid={schemaUid} />}
+                {visible && schema && <SchemaComponent components={components} schema={schema} />}
+              </FormLayout>
+            </FormProvider>
+          </Modal>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+});
 
 SchemaSettings.ModalItem = (props) => {
   const { hidden, title, components, scope, effects, schema, onSubmit, initialValues, ...others } = props;

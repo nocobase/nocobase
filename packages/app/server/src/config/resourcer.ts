@@ -1,3 +1,3 @@
 export default {
-  prefix: process.env.SERVER_BASE_PATH,
+  prefix: process.env.API_BASE_PATH,
 };

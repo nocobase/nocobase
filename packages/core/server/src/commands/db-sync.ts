@@ -1,17 +1,21 @@
-export default async ({ app, cliArgs }) => {
-  const [opts] = cliArgs;
-  console.log('db sync...');
-  await app.db.sync(
-    opts.force
-      ? {
-          force: true,
-          alter: {
-            drop: true,
-          },
-        }
-      : {},
-  );
-  await app.stop({
-    cliArgs,
-  });
+import Application from '../application';
+
+export default (app: Application) => {
+  app
+    .command('db:sync')
+    .option('-f, --force')
+    .action(async (...cliArgs) => {
+      const [opts] = cliArgs;
+      console.log('db sync...');
+      const force = !!opts.force;
+      await app.db.sync({
+        force,
+        alter: {
+          drop: force,
+        },
+      });
+      await app.stop({
+        cliArgs,
+      });
+    });
 };

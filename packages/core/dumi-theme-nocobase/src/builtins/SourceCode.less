@@ -1,0 +1,103 @@
+@import (reference) '../style/variables.less';
+
+.@{prefix}-code-block {
+  position: relative;
+  font-size: 14px;
+  background-color: @c-light-bg;
+
+  [data-prefers-color=dark] & {
+    color: @c-text-dark;
+    background: #262626;
+  }
+
+  & + &,
+  & + table {
+    margin-top: 16px;
+  }
+
+  > pre[class*='language-'] {
+    margin: 0;
+    background: transparent;
+
+    .token-line:not(:last-child) .plain:empty {
+      display: inline-block;
+      min-height: 1em;
+    }
+  }
+
+  &-copy-btn {
+    position: absolute;
+    top: 1.1em;
+    right: 1em;
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    outline: none;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s, background 0.2s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+
+    &:active {
+      opacity: 0.9;
+    }
+
+    &[data-status='ready'] {
+      background-position: -54px 0;
+    }
+
+    &[data-status='copied'] {
+      opacity: 1;
+      pointer-events: none;
+      background-position: -54px -16px;
+    }
+  }
+
+  &:not(:hover) &-copy-btn {
+    visibility: hidden;
+    opacity: 0;
+  }
+}
+
+code[class*="language-"], pre[class*="language-"] {
+  &::selection, & ::selection{
+    color: inherit;
+  }
+}
+
+[data-prefers-color=dark] {
+  code[class*="language-"], pre[class*="language-"] {
+    color: @c-text-dark;
+    text-shadow: 0 1px #000;
+
+    &::selection, & ::selection{
+      background-color: #364a63;
+    }
+  }
+  .token.operator, .token.entity, .token.url, .language-css .token.string, .style .token.string {
+    background: transparent;
+  }
+  .token.property, .token.tag, .token.constant, .token.symbol, .token.deleted {
+    color: #f92672;
+  }
+  .token.selector, .token.attr-name, .token.string, .token.char, .token.builtin, .token.inserted {
+    color: #a6e22e;
+  }
+  .token.atrule, .token.attr-value, .token.keyword {
+    color: #e6db74;
+  }
+  .token.punctuation {
+    color: @c-text-dark;
+  }
+  .token.keyword {
+    color: #66d9ef;
+  }
+  .token.boolean, .token.number {
+    color: #ae81ff;
+  }
+}

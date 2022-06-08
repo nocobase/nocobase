@@ -29,7 +29,7 @@ const InternalCalendarBlockProvider = (props) => {
 
 export const CalendarBlockProvider = (props) => {
   return (
-    <BlockProvider {...props}>
+    <BlockProvider {...props} params={{ ...props.params, paginate: false }}>
       <InternalCalendarBlockProvider {...props} />
     </BlockProvider>
   );

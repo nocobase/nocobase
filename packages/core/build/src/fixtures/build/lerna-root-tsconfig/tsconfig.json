@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "declaration": false,
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "jsx": "react",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "exclude": ["node_modules", "es", "lib", "dist"]
+}

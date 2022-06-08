@@ -13,11 +13,11 @@ import {
   CollectionManagerShortcut,
   compose,
   DesignableSwitch,
-  DocumentTitleProvider,
   FileStorageShortcut,
   i18n,
   MenuItemInitializers,
   PluginManagerProvider,
+  RemoteDocumentTitleProvider,
   RemoteRouteSwitchProvider,
   // RemoteCollectionManagerProvider,
   RouteSchemaComponent,
@@ -47,7 +47,7 @@ apiClient.axios.interceptors.response.use(
   (error) => {
     const redirectTo = error?.response?.data?.redirectTo;
     if (redirectTo) {
-      return window.location.href = redirectTo;
+      return (window.location.href = redirectTo);
     }
     notification.error({
       message: error?.response?.data?.errors?.map?.((error: any) => {
@@ -109,7 +109,7 @@ const providers = [
   ACLProvider,
   ChinaRegionProvider,
   WorkflowRouteProvider,
-  [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
+  RemoteDocumentTitleProvider,
 ];
 
 const App = compose(...providers)(() => {

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import { useSystemSettings } from '../system-settings';
 
 interface DocumentTitleContextProps {
   title?: any;
@@ -29,6 +30,15 @@ export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?
       </Helmet>
       {props.children}
     </DocumentTitleContext.Provider>
+  );
+};
+
+export const RemoteDocumentTitleProvider: React.FC = (props) => {
+  const ctx = useSystemSettings();
+  return (
+    <DocumentTitleProvider addonAfter={ctx?.data?.data?.title}>
+      {props.children}
+    </DocumentTitleProvider>
   );
 };
 

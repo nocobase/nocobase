@@ -8,7 +8,7 @@ import {
   FindOptions as SequelizeFindOptions,
   ModelCtor,
   Op,
-  Transaction,
+  Transactionable,
   UpdateOptions as SequelizeUpdateOptions
 } from 'sequelize';
 import { Collection } from './collection';
@@ -34,9 +34,7 @@ interface CreateManyOptions extends BulkCreateOptions {
   records: Values[];
 }
 
-export interface TransactionAble {
-  transaction?: Transaction;
-}
+export { Transactionable } from 'sequelize';
 
 export interface FilterAble {
   filter: Filter;
@@ -57,7 +55,7 @@ export type AssociationKeysToBeUpdate = string[];
 
 export type Values = any;
 
-export interface CountOptions extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'>, TransactionAble {
+export interface CountOptions extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'>, Transactionable {
   fields?: Fields;
   filter?: Filter;
 }
@@ -68,7 +66,7 @@ export interface FilterByTk {
 
 export interface FindOptions extends SequelizeFindOptions, CommonFindOptions, FilterByTk {}
 
-export interface CommonFindOptions extends TransactionAble {
+export interface CommonFindOptions extends Transactionable {
   filter?: Filter;
   fields?: Fields;
   appends?: Appends;

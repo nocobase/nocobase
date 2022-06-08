@@ -1,158 +1,146 @@
 import { ArrayField } from '@formily/core';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Spin, Tag } from 'antd';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { SchemaComponentOptions } from '../..';
-import { AsyncDataProvider, RecordProvider, useRequest } from '../../../';
+import { RecordProvider } from '../../../';
+import { useCreateActionProps as useCAP } from '../../../block-provider/hooks';
 import { Board } from '../../../board';
 import '../../../board/style.less';
-import { Action } from '../action';
+import { useProps } from '../../hooks/useProps';
 import { KanbanCardContext, KanbanColumnContext } from './context';
-import { KanbanCard } from './Kanban.Card';
-import { KanbanCardDesigner } from './Kanban.Card.Designer';
-import { KanbanCardViewer } from './Kanban.CardViewer';
-import { KanbanDesigner } from './Kanban.Designer';
-import { toGroupDataSource } from './utils';
+import './index.less';
 
-const useRequestProps = (props) => {
-  const { request, dataSource } = props;
-  if (request) {
-    return request;
-  }
-  return (params: any = {}) => {
-    return Promise.resolve({
-      data: dataSource,
-    });
+const useCreateActionProps = () => {
+  const form = useForm();
+  const { column, groupField } = useContext(KanbanColumnContext);
+  const { onClick } = useCAP();
+  return {
+    async onClick() {
+      form.setValuesIn(groupField.name, column.id);
+      await onClick();
+    },
   };
 };
 
-const useDefDataSource = (options, props) => {
-  return useRequest(useRequestProps(props), options);
-};
-
-const useCreateKanbanCardValues = (options) => {
-  const { column, groupField } = useContext(KanbanColumnContext);
-  return useRequest(
-    () =>
-      Promise.resolve({
-        data: {
-          [groupField.name]: column.id === '__unknown__' ? undefined : column.id,
-        },
-      }),
-    {
-      ...options,
-      refreshDeps: [column.id],
+export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
+  const columns = {
+    __unknown__: {
+      id: '__unknown__',
+      title: 'Unknown',
+      color: 'default',
+      cards: [],
     },
-  );
+  };
+  groupField.uiSchema.enum.forEach((item) => {
+    columns[item.value] = {
+      id: item.value,
+      title: item.label,
+      color: item.color,
+      cards: [],
+    };
+  });
+  dataSource.forEach((ds) => {
+    const value = ds[groupField.name];
+    if (value && columns[value]) {
+      columns[value].cards.push(ds);
+    } else {
+      columns.__unknown__.cards.push(ds);
+    }
+  });
+  if (columns.__unknown__.cards.length === 0) {
+    delete columns.__unknown__;
+  }
+  return Object.values(columns);
 };
 
-export const Kanban: ComposedKanban = observer((props: any) => {
-  const { useDataSource = useDefDataSource, groupField, useEvents, ...restProps } = props;
+export const Kanban: any = observer((props: any) => {
+  const { groupField, onCardDragEnd, ...restProps } = useProps(props);
   const field = useField<ArrayField>();
   const fieldSchema = useFieldSchema();
-  const [board, setBoard] = useState<any>({ columns: [] });
-  const [visible, setVisible] = useState(false);
-  const [record, setRecord] = useState<any>({});
-  const { onCardDragEnd } = useEvents?.() ?? {};
   const [disableCardDrag, setDisableCardDrag] = useState(false);
-  const result = useDataSource(
-    {
-      uid: fieldSchema['x-uid'],
-      // refreshDeps: [props.dataSource],
-      onSuccess({ data }) {
-        const ds = toGroupDataSource(groupField, data);
-        setBoard(ds);
-        field.value = ds.columns;
-      },
-    },
-    props,
+  const schemas = useMemo(
+    () =>
+      fieldSchema.reduceProperties(
+        (buf, current) => {
+          if (current['x-component'].endsWith('.Card')) {
+            buf.card = current;
+          } else if (current['x-component'].endsWith('.CardAdder')) {
+            buf.cardAdder = current;
+          } else if (current['x-component'].endsWith('.CardViewer')) {
+            buf.cardViewer = current;
+          }
+          return buf;
+        },
+        { card: null, cardAdder: null, cardViewer: null },
+      ),
+    [],
   );
-  const cardSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
-    if (current['x-component'] === 'Kanban.Card') {
-      return current;
-    }
-    return buf;
-  }, null);
-  const cardAdderSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
-    if (current['x-component'] === 'Kanban.CardAdder') {
-      return current;
-    }
-    return buf;
-  }, null);
-  const cardViewerSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
-    if (current['x-component'] === 'Kanban.CardViewer') {
-      return current;
-    }
-    return buf;
-  }, null);
-
-  const cardRemoveHandler = (card, column) => {
+  const handleCardRemove = (card, column) => {
     const updatedBoard = Board.removeCard({ columns: field.value }, column, card);
     field.value = updatedBoard.columns;
   };
-  const cardDragEndHandler = (card, fromColumn, toColumn) => {
+  const handleCardDragEnd = (card, fromColumn, toColumn) => {
     onCardDragEnd?.({ columns: field.value, groupField }, fromColumn, toColumn);
     const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
     field.value = updatedBoard.columns;
   };
   return (
-    <Spin spinning={result.loading}>
-      <AsyncDataProvider value={result}>
-        <Board
-          disableCardDrag={disableCardDrag}
-          onCardRemove={cardRemoveHandler}
-          onCardDragEnd={cardDragEndHandler}
-          renderColumnHeader={({ title, color }) => (
-            <div className={'react-kanban-column-header'}>
-              <Tag color={color}>{title}</Tag>
-            </div>
-          )}
-          renderCard={(card, { column, dragging }) => {
-            const columnIndex = field.value?.indexOf(column);
-            const cardIndex = column?.cards?.indexOf(card);
-            return (
-              cardSchema && (
-                <RecordProvider record={card}>
-                  <KanbanCardContext.Provider
-                    value={{
-                      setDisableCardDrag,
-                      cardViewerSchema,
-                      cardField: field,
-                      card,
-                      column,
-                      dragging,
-                      columnIndex,
-                      cardIndex,
-                    }}
-                  >
-                    <RecursionField name={cardSchema.name} schema={cardSchema} />
-                  </KanbanCardContext.Provider>
-                </RecordProvider>
-              )
-            );
-          }}
-          renderCardAdder={({ column }) => {
-            return (
-              <KanbanColumnContext.Provider value={{ column, groupField }}>
-                <SchemaComponentOptions scope={{ useCreateKanbanCardValues }}>
-                  <RecursionField name={cardAdderSchema.name} schema={cardAdderSchema} />
-                </SchemaComponentOptions>
-              </KanbanColumnContext.Provider>
-            );
-          }}
-          {...restProps}
-        >
-          {{
-            columns: field.value?.slice() || [],
-          }}
-        </Board>
-      </AsyncDataProvider>
+    <Spin spinning={field.loading || false}>
+      <Board
+        {...restProps}
+        allowAddCard={!!schemas.cardAdder}
+        disableColumnDrag
+        cardAdderPosition={'bottom'}
+        disableCardDrag={restProps.disableCardDrag || disableCardDrag}
+        onCardRemove={handleCardRemove}
+        onCardDragEnd={handleCardDragEnd}
+        renderColumnHeader={({ title, color }) => (
+          <div className={'react-kanban-column-header'}>
+            <Tag color={color}>{title}</Tag>
+          </div>
+        )}
+        renderCard={(card, { column, dragging }) => {
+          const columnIndex = field.value?.indexOf(column);
+          const cardIndex = column?.cards?.indexOf(card);
+          return (
+            schemas.card && (
+              <RecordProvider record={card}>
+                <KanbanCardContext.Provider
+                  value={{
+                    setDisableCardDrag,
+                    cardViewerSchema: schemas.cardViewer,
+                    cardField: field,
+                    card,
+                    column,
+                    dragging,
+                    columnIndex,
+                    cardIndex,
+                  }}
+                >
+                  <RecursionField name={schemas.card.name} schema={schemas.card} />
+                </KanbanCardContext.Provider>
+              </RecordProvider>
+            )
+          );
+        }}
+        renderCardAdder={({ column }) => {
+          if (!schemas.cardAdder) {
+            return null;
+          }
+          return (
+            <KanbanColumnContext.Provider value={{ column, groupField }}>
+              <SchemaComponentOptions scope={{ useCreateActionProps }}>
+                <RecursionField name={schemas.cardAdder.name} schema={schemas.cardAdder} />
+              </SchemaComponentOptions>
+            </KanbanColumnContext.Provider>
+          );
+        }}
+      >
+        {{
+          columns: field.value || [],
+        }}
+      </Board>
     </Spin>
   );
 });
-
-Kanban.Card = KanbanCard;
-Kanban.CardAdder = Action;
-Kanban.CardViewer = KanbanCardViewer;
-Kanban.Card.Designer = KanbanCardDesigner;
-Kanban.Designer = KanbanDesigner;

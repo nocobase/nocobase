@@ -10,6 +10,7 @@ import { ActionContext, SchemaComponent } from '../../schema-component';
 import { useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import * as components from './components';
 
 const getSchema = (schema: IField): ISchema => {
   if (!schema) {
@@ -83,6 +84,25 @@ const useUpdateCollectionField = () => {
           };
         }),
       );
+      
+      function recursiveChildren(children = [], prefix = 'children') {
+        children.forEach((item, index) => {
+          const itemOptions = item.uiSchema?.enum?.slice() || [];
+          form.setValuesIn(
+            `${prefix}[${index}].uiSchema.enum`,
+            itemOptions.map((option) => {
+              return {
+                value: uid(),
+                ...option,
+              };
+            }),
+          );
+          recursiveChildren(item.children, `${prefix}[${index}].children`);
+        });
+      }
+
+      recursiveChildren(form?.values?.children);
+      
       await run();
       await refreshCM();
     },
@@ -114,7 +134,11 @@ export const EditFieldAction = (props) => {
       >
         {t('Edit')}
       </a>
-      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ useUpdateCollectionField }} />
+      <SchemaComponent
+        schema={schema}
+        components={{ ...components, ArrayTable }}
+        scope={{ useUpdateCollectionField }}
+      />
     </ActionContext.Provider>
   );
 };

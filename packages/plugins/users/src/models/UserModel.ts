@@ -1,7 +1,7 @@
-import Database, { Model, TransactionAble } from '@nocobase/database';
+import Database, { Model, Transactionable } from '@nocobase/database';
 
 export class UserModel extends Model {
-  async setDefaultRole(roleName: string, options: TransactionAble = {}) {
+  async setDefaultRole(roleName: string, options: Transactionable = {}) {
     if (roleName == 'anonymous') {
       return false;
     }

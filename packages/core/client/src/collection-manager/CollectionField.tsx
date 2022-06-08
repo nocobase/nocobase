@@ -9,6 +9,7 @@ import { useCollectionField } from './hooks';
 // TODO: 初步适配
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
+
   const fieldSchema = useFieldSchema();
   const { name, interface: interfaceType, uiSchema } = useCollectionField();
   const component = useComponent(uiSchema?.['x-component']);

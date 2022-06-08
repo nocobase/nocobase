@@ -7,7 +7,7 @@ import { getApp } from '..';
 describe('workflow > instructions > update', () => {
   let app: Application;
   let db: Database;
-  let PostModel;
+  let PostRepo;
   let WorkflowModel;
   let workflow;
 
@@ -16,7 +16,7 @@ describe('workflow > instructions > update', () => {
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
-    PostModel = db.getCollection('posts').model;
+    PostRepo = db.getCollection('posts').repository;
 
     workflow = await WorkflowModel.create({
       title: 'test workflow',
@@ -48,14 +48,14 @@ describe('workflow > instructions > update', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
       expect(post.published).toBe(false);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.published).toBe(true);
 
-      const updatedPost = await PostModel.findByPk(post.id);
+      const updatedPost = await PostRepo.findById(post.id);
       expect(updatedPost.published).toBe(true);
     });
   });
@@ -92,9 +92,9 @@ describe('workflow > instructions > update', () => {
     await n1.setDownstream(n2);
 
     // NOTE: the result of post immediately created will not be changed by workflow
-    const { id } = await PostModel.create({ title: 'test' });
+    const { id } = await PostRepo.create({ values: { title: 'test' } });
     // should get from db
-    const post = await PostModel.findByPk(id);
+    const post = await PostRepo.findById(id);
     expect(post.title).toBe('changed');
   });
 });

@@ -20,6 +20,8 @@ export class PasswordField extends Field {
   }
 
   async verify(password: string, hash: string) {
+    password = password || '';
+    hash = hash || '';
     const { length = 64, randomBytesSize = 8 } = this.options;
     return new Promise((resolve, reject) => {
       const salt = hash.substring(0, randomBytesSize * 2);

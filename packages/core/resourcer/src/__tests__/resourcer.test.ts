@@ -1,6 +1,6 @@
-import Resourcer, { ResourcerContext, Action } from '..';
-import Resource from '../resource';
 import path from 'path';
+import Resourcer, { Action, ResourcerContext } from '..';
+import Resource from '../resource';
 
 describe('resourcer', () => {
   it('action', async () => {
@@ -280,7 +280,7 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await expect(async () => {
+    try {
       await resourcer.execute(
         {
           resource: 'test',
@@ -288,7 +288,9 @@ describe('resourcer', () => {
         },
         context,
       );
-    }).rejects.toThrow('test action is not allowed');
+    } catch (error) {
+      expect(error.message).toEqual('test action is not allowed');
+    }
   });
 
   it('except', async () => {
@@ -330,7 +332,7 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await expect(async () => {
+    try {
       await resourcer.execute(
         {
           resource: 'test',
@@ -338,7 +340,9 @@ describe('resourcer', () => {
         },
         context,
       );
-    }).rejects.toThrow('test action is not allowed');
+    } catch (error) {
+      expect(error.message).toEqual('test action is not allowed');
+    }
   });
 
   it('middlewares', async () => {

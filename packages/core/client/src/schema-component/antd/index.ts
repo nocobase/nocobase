@@ -1,8 +1,6 @@
 export * from './action';
 export * from './block-item';
-// export * from './blocks';
 export * from './calendar';
-export * from './calendar-v2';
 export * from './card-item';
 export * from './cascader';
 export * from './chart';
@@ -13,17 +11,19 @@ export * from './filter';
 export * from './form';
 export * from './form-item';
 export * from './form-v2';
+export * from './formula-input';
+export * from './g2plot';
 export * from './grid';
 export * from './icon-picker';
 export * from './input';
 export * from './input-number';
 export * from './kanban';
-export * from './kanban-v2';
 export * from './markdown';
 export * from './menu';
 export * from './page';
 export * from './pagination';
 export * from './password';
+export * from './percent';
 export * from './radio';
 export * from './record-picker';
 export * from './rich-text';
@@ -36,5 +36,3 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 import './index.less';
-
-

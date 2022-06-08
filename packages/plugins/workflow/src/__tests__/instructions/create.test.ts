@@ -7,7 +7,7 @@ import { getApp } from '..';
 describe('workflow > instructions > create', () => {
   let app: Application;
   let db: Database;
-  let PostModel;
+  let PostRepo;
   let WorkflowModel;
   let workflow;
 
@@ -16,7 +16,7 @@ describe('workflow > instructions > create', () => {
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
-    PostModel = db.getCollection('posts').model;
+    PostRepo = db.getCollection('posts').repository;
 
     workflow = await WorkflowModel.create({
       title: 'test workflow',
@@ -36,7 +36,7 @@ describe('workflow > instructions > create', () => {
       const n1 = await workflow.createNode({
         type: 'create',
         config: {
-          collection: 'approvals',
+          collection: 'comments',
           params: {
             values: {
               postId: '{{$context.data.id}}'
@@ -45,7 +45,7 @@ describe('workflow > instructions > create', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();

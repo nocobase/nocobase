@@ -1,6 +1,8 @@
+import { Model } from "@nocobase/database";
+import { Trigger } from ".";
 import WorkflowModel from "../models/Workflow";
 
-export interface ModelChangeTriggerConfig {
+export interface CollectionChangeTriggerConfig {
   collection: string;
   mode: number;
   // TODO: ICondition
@@ -14,58 +16,98 @@ const MODE_BITMAP = {
 };
 
 const MODE_BITMAP_EVENTS = new Map();
-MODE_BITMAP_EVENTS.set(MODE_BITMAP.CREATE, 'afterCreate');
-MODE_BITMAP_EVENTS.set(MODE_BITMAP.UPDATE, 'afterUpdate');
+MODE_BITMAP_EVENTS.set(MODE_BITMAP.CREATE, 'afterCreateWithAssociations');
+MODE_BITMAP_EVENTS.set(MODE_BITMAP.UPDATE, 'afterUpdateWithAssociations');
 MODE_BITMAP_EVENTS.set(MODE_BITMAP.DESTROY, 'afterDestroy');
 
-// async function, should return promise
-function bindHandler(this: WorkflowModel, callback: Function) {
-  const { condition, changed } = this.config;
-  return (data: any, options) => {
-    // NOTE: if no configured fields changed, do not trigger
-    if (changed && changed.length && changed.every(name => !data.changed(name))) {
-      return;
-    }
-    // NOTE: if no configured condition match, do not trigger
-    if (condition && condition.$and.length) {
-      // TODO: check all conditions in condition against data
-      // const calculation = toCalculation(condition);
-    }
 
-    return callback({ data: data.get() }, options);
-  };
+
+function getHookId(workflow, type) {
+  return `${type}#${workflow.id}`;
 }
 
-export default {
-  name: 'collection',
-  on(this: WorkflowModel, callback: Function) {
-    const { database } = <typeof WorkflowModel>this.constructor;
-    const { collection, mode } = this.config;
-    const Collection = database.getCollection(collection);
+// async function, should return promise
+async function handler(this: WorkflowModel, data: Model, options) {
+  const { collection, condition, changed } = this.config;
+  // NOTE: if no configured fields changed, do not trigger
+  if (changed && changed.length && changed.every(name => !data.changed(name))) {
+    // TODO: temp comment out
+    // return;
+  }
+  // NOTE: if no configured condition match, do not trigger
+  if (condition && condition.$and?.length) {
+    // TODO: change to map filter format to calculation format
+    // const calculation = toCalculation(condition);
+    const { repository, model } = (<typeof WorkflowModel>this.constructor).database.getCollection(collection);
+    const { transaction } = options;
+    const count = await repository.count({
+      filter: {
+        $and: [
+          condition,
+          { [model.primaryKeyAttribute]: data[model.primaryKeyAttribute] }
+        ]
+      },
+      transaction
+    });
+
+    if (!count) {
+      return;
+    }
+  }
+
+  return this.trigger({ data: data.get() }, options);
+}
+
+export default class CollectionTrigger implements Trigger {
+  db;
+
+  events = new Map();
+
+  constructor({ app }) {
+    this.db = app.db;
+  }
+
+  on(workflow: WorkflowModel) {
+    const { collection, mode } = workflow.config;
+    const Collection = this.db.getCollection(collection);
     if (!Collection) {
       return;
     }
 
-    for (let [key, event] of MODE_BITMAP_EVENTS.entries()) {
+    for (let [key, type] of MODE_BITMAP_EVENTS.entries()) {
+      const event = `${collection}.${type}`;
+      const name = getHookId(workflow, event);
       if (mode & key) {
-        if (!Collection.model.options.hooks[event]?.find(item => item.name && item.name === this.getHookId())) {
-          Collection.model.addHook(event, this.getHookId(), bindHandler.call(this, callback));
+        if (!this.events.has(name)) {
+          const listener = handler.bind(workflow);
+          this.events.set(name, listener);
+          this.db.on(event, listener);
         }
       } else {
-        Collection.model.removeHook(event, this.getHookId());
+        const listener = this.events.get(name);
+        if (listener) {
+          this.db.off(event, listener);
+          this.events.delete(name);
+        }
       }
     }
-  },
-  off(this: WorkflowModel) {
-    const { database } = <typeof WorkflowModel>this.constructor;
-    const { collection, mode } = this.config;
-    const Collection = database.getCollection(collection);
+  }
+
+  off(workflow: WorkflowModel) {
+    const { collection, mode } = workflow.config;
+    const Collection = this.db.getCollection(collection);
     if (!Collection) {
       return;
     }
-    for (let [key, event] of MODE_BITMAP_EVENTS.entries()) {
+    for (let [key, type] of MODE_BITMAP_EVENTS.entries()) {
+      const event = `${collection}.${type}`;
+      const name = getHookId(workflow, event);
       if (mode & key) {
-        Collection.model.removeHook(event, this.getHookId());
+        const listener = this.events.get(name);
+        if (listener) {
+          this.db.off(event, listener);
+          this.events.delete(name);
+        }
       }
     }
   }

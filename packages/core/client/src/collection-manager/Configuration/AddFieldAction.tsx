@@ -12,6 +12,7 @@ import { ActionContext, SchemaComponent, useCompile } from '../../schema-compone
 import { useCreateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import * as components from './components';
 import { options } from './interfaces';
 
 const getSchema = (schema: IField): ISchema => {
@@ -94,6 +95,24 @@ const useCreateCollectionField = () => {
           }),
         );
       }
+      function recursiveChildren(children = [], prefix = 'children') {
+        children.forEach((item, index) => {
+          const itemOptions = item.uiSchema?.enum?.slice() || [];
+          form.setValuesIn(
+            `${prefix}[${index}].uiSchema.enum`,
+            itemOptions.map((option) => {
+              return {
+                value: uid(),
+                ...option,
+              };
+            }),
+          );
+          recursiveChildren(item.children, `${prefix}[${index}].children`);
+        });
+      }
+
+      recursiveChildren(form?.values?.children);
+
       if (form?.values?.interface === 'linkTo' && title) {
         form.setValuesIn('reverseField.uiSchema.title', title);
       }
@@ -142,7 +161,7 @@ export const AddFieldAction = () => {
           {t('Add field')}
         </Button>
       </Dropdown>
-      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ createOnly: true, useCreateCollectionField }} />
+      <SchemaComponent schema={schema} components={{ ...components, ArrayTable }} scope={{ createOnly: true, useCreateCollectionField }} />
     </ActionContext.Provider>
   );
 };

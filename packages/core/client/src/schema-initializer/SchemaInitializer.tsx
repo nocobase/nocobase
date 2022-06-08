@@ -129,7 +129,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
             ...style,
           }}
           {...others}
-          icon={<Icon type={icon as string}/>}
+          icon={<Icon type={icon as string} />}
         >
           {compile(props.children || props.title)}
         </Button>
@@ -141,7 +141,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
 SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
   const { index, info } = useContext(SchemaInitializerItemContext);
   const compile = useCompile();
-  const { items = [], children = info?.title, icon, onClick, ...others } = props;
+  const { eventKey, items = [], children = info?.title, icon, onClick, ...others } = props;
   if (items?.length > 0) {
     const renderMenuItem = (items: SchemaInitializerItemOptions[]) => {
       if (!items?.length) {
@@ -164,6 +164,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
           );
         }
         if (item.type === 'subMenu') {
+          console.log('item.key', item.key);
           return (
             <Menu.SubMenu
               // @ts-ignore
@@ -189,16 +190,21 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
       });
     };
     return (
-      // @ts-ignore
-      <Menu.SubMenu eventKey={index} key={index} title={compile(children)} icon={icon}>
+      <Menu.SubMenu
+        // @ts-ignore
+        eventKey={eventKey ? `${eventKey}-${index}` : index}
+        key={eventKey ? `${eventKey}-${index}` : index}
+        title={compile(children)}
+        icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
+      >
         {renderMenuItem(items)}
       </Menu.SubMenu>
     );
   }
   return (
     <Menu.Item
-      eventKey={index}
-      icon={icon}
+      eventKey={eventKey ? `${eventKey}-${index}` : index}
+      icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
       onClick={(opts) => {
         onClick({ ...opts, item: info });
       }}

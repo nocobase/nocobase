@@ -1,23 +1,9 @@
 {
   "name": "@nocobase/app-client",
-  "version": "0.7.0-alpha.34",
+  "version": "0.7.0-alpha.83",
   "license": "MIT",
-  "scripts": {
-    "start": "umi dev",
-    "build": "umi build",
-    "postinstall": "node ./umi.cli.js generate tmp",
-    "test": "umi-test",
-    "test:coverage": "umi-test --coverage"
-  },
   "devDependencies": {
-    "@nocobase/client": "0.7.0-alpha.34",
-    "@types/react": "^17.0.0",
-    "@types/react-dom": "^17.0.0",
-    "@umijs/test": "^3.5.20",
-    "antd": "~4.19.5",
-    "react": "17.x",
-    "react-dom": "17.x",
-    "umi": "^3.5.20"
+    "@nocobase/client": "0.7.0-alpha.83"
   },
   "repository": {
     "type": "git",

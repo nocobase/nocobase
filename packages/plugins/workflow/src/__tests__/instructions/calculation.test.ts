@@ -7,7 +7,7 @@ import { getApp } from '..';
 describe('workflow > instructions > calculation', () => {
   let app: Application;
   let db: Database;
-  let PostModel;
+  let PostRepo;
   let WorkflowModel;
   let workflow;
 
@@ -16,7 +16,7 @@ describe('workflow > instructions > calculation', () => {
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
-    PostModel = db.getCollection('posts').model;
+    PostRepo = db.getCollection('posts').repository;
 
     workflow = await WorkflowModel.create({
       title: 'test workflow',
@@ -46,7 +46,7 @@ describe('workflow > instructions > calculation', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(2);
@@ -66,7 +66,7 @@ describe('workflow > instructions > calculation', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(1);
@@ -86,7 +86,7 @@ describe('workflow > instructions > calculation', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(1);
@@ -113,7 +113,7 @@ describe('workflow > instructions > calculation', () => {
 
       await n1.setDownstream(n2);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
       const [execution] = await workflow.getExecutions();
       const [n1Job, n2Job] = await execution.getJobs({ order: [['id', 'ASC']]});
       expect(n2Job.result).toBe(1);
@@ -140,7 +140,7 @@ describe('workflow > instructions > calculation', () => {
 
       await n1.setDownstream(n2);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
       const [execution] = await workflow.getExecutions();
       const [n1Job, n2Job] = await execution.getJobs({ order: [['id', 'ASC']]});
       expect(n2Job.result).toBe(1);
@@ -160,7 +160,7 @@ describe('workflow > instructions > calculation', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(2);
@@ -191,7 +191,7 @@ describe('workflow > instructions > calculation', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(-1);

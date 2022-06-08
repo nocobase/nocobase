@@ -1,20 +1,13 @@
-import { getUmiConfig } from '@nocobase/utils/umiConfig';
-import dotenv from 'dotenv';
-import { resolve } from 'path';
+import { getUmiConfig, resolveNocobasePackagesAlias } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'umi';
 
 const umiConfig = getUmiConfig();
-
-dotenv.config({
-  path: resolve(__dirname, '../../../.env'),
-});
 
 process.env.MFSU_AD = 'none';
 
 export default defineConfig({
   hash: true,
   define: {
-    'process.env.NOCOBASE_ENV': process.env.NOCOBASE_ENV,
     ...umiConfig.define,
   },
   // only proxy when using `umi dev`
@@ -28,11 +21,6 @@ export default defineConfig({
   routes: [{ path: '/', exact: false, component: '@/pages/index' }],
   // fastRefresh: {},
   chainWebpack(config) {
-    const clientSrc = resolve(__dirname, '../../core/client/src');
-    const utilsSrc = resolve(__dirname, '../../core/utils/src');
-    config.module.rules.get('ts-in-node_modules').include.add(clientSrc);
-    config.resolve.alias.set('@nocobase/client', clientSrc);
-    config.module.rules.get('ts-in-node_modules').include.add(utilsSrc);
-    config.resolve.alias.set('@nocobase/utils', utilsSrc);
+    resolveNocobasePackagesAlias(config);
   },
 });

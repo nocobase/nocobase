@@ -1,7 +1,6 @@
 import { Database, Model } from '@nocobase/database';
-import { HasManyCountAssociationsMixin, HasManyCreateAssociationMixin, HasManyGetAssociationsMixin } from 'sequelize';
+import { HasManyCountAssociationsMixin, HasManyCreateAssociationMixin, HasManyGetAssociationsMixin, Transactionable } from 'sequelize';
 
-import triggers from '../triggers';
 import { EXECUTION_STATUS } from '../constants';
 import ExecutionModel from './Execution';
 import FlowNodeModel from './FlowNode';
@@ -16,7 +15,7 @@ export default class WorkflowModel extends Model {
   declare type: string;
   declare config: any;
   declare useTransaction: boolean;
-  declare executed: boolean;
+  declare executed: number;
 
   declare createdAt: Date;
   declare updatedAt: Date;
@@ -30,28 +29,9 @@ export default class WorkflowModel extends Model {
   declare getExecutions: HasManyGetAssociationsMixin<ExecutionModel>;
   declare createExecution: HasManyCreateAssociationMixin<ExecutionModel>;
 
-  static async mount() {
-    const collection = this.database.getCollection('workflows');
-    const workflows = await collection.repository.find({
-      filter: { enabled: true },
-    });
-
-    workflows.forEach((workflow: WorkflowModel) => {
-      workflow.toggle();
-    });
-
-    this.addHook('afterCreate', (model: WorkflowModel) => model.toggle());
-    this.addHook('afterUpdate', (model: WorkflowModel) => model.toggle());
-    this.addHook('afterDestroy', (model: WorkflowModel) => model.toggle(false));
-  }
-
-  getHookId() {
-    return `workflow-${this.get('id')}`;
-  }
-
   getTransaction(options) {
     if (!this.useTransaction) {
-      return undefined;
+      return null;
     }
 
     return options.transaction && !options.transaction.finished
@@ -59,17 +39,7 @@ export default class WorkflowModel extends Model {
       : (<typeof WorkflowModel>this.constructor).database.sequelize.transaction();
   }
 
-  async toggle(enable?: boolean) {
-    const type = this.get('type');
-    const { on, off } = triggers.get(type);
-    if (typeof enable !== 'undefined' ? enable : this.get('enabled')) {
-      on.call(this, this.trigger.bind(this));
-    } else {
-      off.call(this);
-    }
-  }
-
-  async trigger(context: Object, options) {
+  trigger = async (context: Object, options = {}) => {
     // `null` means not to trigger
     if (context === null) {
       return;
@@ -98,14 +68,16 @@ export default class WorkflowModel extends Model {
       transaction: transaction.id
     }, { transaction });
 
+    const executed = await this.countExecutions({ transaction });
+
+    // NOTE: not to trigger afterUpdate hook here
+    await this.update({ executed }, { transaction, hooks: false });
+
     execution.workflow = this;
 
     await execution.start({ transaction });
 
-    if (!this.executed) {
-      await this.update({ executed: true }, { transaction });
-    }
-
+    // @ts-ignore
     if (transaction && (!options.transaction || options.transaction.finished)) {
       await transaction.commit();
     }

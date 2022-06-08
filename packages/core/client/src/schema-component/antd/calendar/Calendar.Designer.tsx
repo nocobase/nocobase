@@ -1,107 +1,106 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
-import { useCollection, useResourceActionContext } from '../../../collection-manager';
+import { useCalendarBlockContext } from '../../../block-provider';
+import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 
-export const CalendarDesigner = () => {
-  const field = useField();
-  const fieldSchema = useFieldSchema();
-  const { name, title, fields } = useCollection();
-  const dataSource = useCollectionFilterOptions(name);
-  const ctx = useResourceActionContext();
-  const { dn } = useDesignable();
+const useOptions = () => {
   const compile = useCompile();
-  const template = useSchemaTemplate();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.request?.params?.filter || {};
+  const { fields } = useCollection();
   const options = fields?.map((field) => {
     return {
       value: field.name,
       label: compile(field?.uiSchema?.title),
     };
   });
-  const calendarSchema = fieldSchema.properties.calendar;
-  const fieldNames = calendarSchema?.['x-component-props']?.['fieldNames'] || {};
+  return options;
+}
+
+export const CalendarDesigner = () => {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { name, title, fields } = useCollection();
+  const dataSource = useCollectionFilterOptions(name);
+  const { service } = useCalendarBlockContext();
+  const { dn } = useDesignable();
+  const compile = useCompile();
+  const { t } = useTranslation();
+  const template = useSchemaTemplate();
+  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
+  const options = useOptions();
+  const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.SelectItem
-        title={'标题字段'}
+        title={t('Title field')}
         value={fieldNames.title}
         options={options}
         onChange={(title) => {
-          field.query(field.address.concat('calendar')).take((f) => {
-            f.componentProps.fieldNames = {
-              ...f.componentProps.fieldNames,
-              title,
-            };
-            calendarSchema['x-component-props']['fieldNames'] = f.componentProps.fieldNames;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: calendarSchema['x-uid'],
-                'x-component-props': calendarSchema['x-component-props'],
-              },
-            });
-            dn.refresh();
-            ctx.refresh();
+          const fieldNames = field.decoratorProps.fieldNames || {};
+          fieldNames['title'] = title;
+          field.decoratorProps.params = fieldNames;
+          fieldSchema['x-decorator-props']['params'] = fieldNames;
+          service.refresh();
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': field.decoratorProps,
+            },
           });
+          dn.refresh();
         }}
       />
       <SchemaSettings.SelectItem
-        title={'开始日期字段'}
+        title={t('Start date field')}
         value={fieldNames.start}
         options={options}
         onChange={(start) => {
-          field.query(field.address.concat('calendar')).take((f) => {
-            f.componentProps.fieldNames = {
-              ...f.componentProps.fieldNames,
-              start,
-            };
-            calendarSchema['x-component-props']['fieldNames'] = f.componentProps.fieldNames;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: calendarSchema['x-uid'],
-                'x-component-props': calendarSchema['x-component-props'],
-              },
-            });
-            dn.refresh();
-            ctx.refresh();
+          const fieldNames = field.decoratorProps.fieldNames || {};
+          fieldNames['start'] = start;
+          field.decoratorProps.params = fieldNames;
+          fieldSchema['x-decorator-props']['params'] = fieldNames;
+          service.refresh();
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': field.decoratorProps,
+            },
           });
+          dn.refresh();
         }}
       />
       <SchemaSettings.SelectItem
-        title={'结束日期字段'}
+        title={t('End date field')}
         value={fieldNames.end}
         options={options}
         onChange={(end) => {
-          field.query(field.address.concat('calendar')).take((f) => {
-            f.componentProps.fieldNames = {
-              ...f.componentProps.fieldNames,
-              end,
-            };
-            calendarSchema['x-component-props']['fieldNames'] = f.componentProps.fieldNames;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: calendarSchema['x-uid'],
-                'x-component-props': calendarSchema['x-component-props'],
-              },
-            });
-            dn.refresh();
-            ctx.refresh();
+          const fieldNames = field.decoratorProps.fieldNames || {};
+          fieldNames['end'] = end;
+          field.decoratorProps.params = fieldNames;
+          fieldSchema['x-decorator-props']['params'] = fieldNames;
+          service.refresh();
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': field.decoratorProps,
+            },
           });
+          dn.refresh();
         }}
       />
       <SchemaSettings.ModalItem
-        title={'设置数据范围'}
+        title={t('Set the data scope')}
         schema={
           {
             type: 'object',
-            title: '设置数据范围',
+            title: t('Set the data scope'),
             properties: {
               filter: {
                 default: defaultFilter,
-                title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
                 'x-component-props': {},
@@ -116,11 +115,11 @@ export const CalendarDesigner = () => {
           }
         }
         onSubmit={({ filter }) => {
-          const params = field.decoratorProps.request.params || {};
+          const params = field.decoratorProps.params || {};
           params.filter = filter;
-          field.decoratorProps.request.params = params;
-          fieldSchema['x-decorator-props']['request']['params'] = params;
-          ctx.run({ filter });
+          field.decoratorProps.params = params;
+          fieldSchema['x-decorator-props']['params'] = params;
+          service.run({ ...service?.params?.[0], filter });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],

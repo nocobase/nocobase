@@ -3,7 +3,7 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import { toArr } from '@formily/shared';
 import { Space } from 'antd';
 import React, { useState } from 'react';
-import { BlockAssociationContext } from '../../../block-provider';
+import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { RecordProvider } from '../../../record-provider';
 import { FormProvider } from '../../core';
@@ -44,9 +44,11 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
           </Space>
           <ActionContext.Provider value={{ visible, setVisible, openMode: 'drawer' }}>
             <RecordProvider record={record}>
-              <FormProvider>
-                <RecursionField schema={fieldSchema} onlyRenderProperties />
-              </FormProvider>
+              <WithoutTableFieldResource.Provider value={true}>
+                <FormProvider>
+                  <RecursionField schema={fieldSchema} onlyRenderProperties />
+                </FormProvider>
+              </WithoutTableFieldResource.Provider>
             </RecordProvider>
           </ActionContext.Provider>
         </CollectionProvider>

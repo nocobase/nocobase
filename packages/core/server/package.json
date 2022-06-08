@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/server",
-  "version": "0.7.0-alpha.34",
+  "version": "0.7.0-alpha.83",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
@@ -10,21 +10,15 @@
       "url": "http://www.apache.org/licenses/LICENSE-2.0"
     }
   ],
-  "scripts": {
-    "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
-    "build:cjs": "tsc --project tsconfig.build.json",
-    "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
-  },
   "dependencies": {
     "@koa/cors": "^3.1.0",
     "@koa/router": "^9.4.0",
-    "@nocobase/acl": "0.7.0-alpha.34",
-    "@nocobase/actions": "0.7.0-alpha.34",
-    "@nocobase/database": "0.7.0-alpha.34",
-    "@nocobase/resourcer": "0.7.0-alpha.34",
+    "@nocobase/acl": "0.7.0-alpha.83",
+    "@nocobase/actions": "0.7.0-alpha.83",
+    "@nocobase/database": "0.7.0-alpha.83",
+    "@nocobase/resourcer": "0.7.0-alpha.83",
     "chalk": "^4.1.1",
-    "commander": "^8.1.0",
-    "dotenv": "^8.2.0",
+    "commander": "^9.2.0",
     "find-package-json": "^1.2.0",
     "i18next": "^21.3.2",
     "koa": "^2.13.4",

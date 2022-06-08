@@ -1,5 +1,5 @@
 import { omit } from 'lodash';
-import { MultiAssociationAccessors, Op, Sequelize, Transaction } from 'sequelize';
+import { MultiAssociationAccessors, Op, Sequelize, Transaction, Transactionable } from 'sequelize';
 import {
   CommonFindOptions,
   CountOptions,
@@ -9,7 +9,6 @@ import {
   FindOptions,
   TargetKey,
   TK,
-  TransactionAble,
   UpdateOptions
 } from '../repository';
 import { updateModelByValues } from '../update-associations';
@@ -20,7 +19,7 @@ export interface FindAndCountOptions extends CommonFindOptions {}
 
 export interface FindOneOptions extends CommonFindOptions, FilterByTk {}
 
-export interface AssociatedOptions extends TransactionAble {
+export interface AssociatedOptions extends Transactionable {
   tk?: TK;
 }
 

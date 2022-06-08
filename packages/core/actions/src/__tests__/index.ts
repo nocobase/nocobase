@@ -1,10 +1,10 @@
-import qs from 'qs';
-import Koa from 'koa';
+import Database, { CollectionOptions, DatabaseOptions } from '@nocobase/database';
+import { Handlers, ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import merge from 'deepmerge';
+import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
+import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
-import { Resourcer, Handlers, ResourceOptions } from '@nocobase/resourcer';
-import Database, { DatabaseOptions, CollectionOptions } from '@nocobase/database';
 import table2resource from '../../../server/src/middlewares/table2resource';
 
 export function generatePrefixByPath() {
@@ -28,7 +28,7 @@ export function getConfig(config = {}, options?: any): DatabaseOptions {
       port: process.env.DB_PORT,
       dialect: process.env.DB_DIALECT,
       storage: process.env.DB_STORAGE,
-      logging: process.env.DB_LOG_SQL === 'on',
+      logging: process.env.DB_LOGGING === 'on',
       sync: {
         force: true,
       },

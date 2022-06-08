@@ -202,7 +202,7 @@ SettingsForm.Drawer = () => {
       style={{ width: 200 }}
       onClick={async () => {
         setDropdownVisible(false);
-        const values = await FormDrawer('Pop-up form', () => {
+        const values = await FormDrawer('Popup form', () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components, FormItem }}>
               <FormLayout layout={'vertical'}>

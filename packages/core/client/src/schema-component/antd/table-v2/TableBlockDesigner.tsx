@@ -72,7 +72,7 @@ export const TableBlockDesigner = () => {
           params.filter = filter;
           field.decoratorProps.params = params;
           fieldSchema['x-decorator-props']['params'] = params;
-          service.run({ ...service.params?.[0], filter });
+          service.run({ ...service.params?.[0], filter, page: 1 });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -190,7 +190,7 @@ export const TableBlockDesigner = () => {
           params.pageSize = pageSize;
           field.decoratorProps.params = params;
           fieldSchema['x-decorator-props']['params'] = params;
-          service.run({ ...service.params?.[0], pageSize });
+          service.run({ ...service.params?.[0], pageSize, page: 1 });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],

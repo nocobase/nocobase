@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/resourcer",
-  "version": "0.7.0-alpha.34",
+  "version": "0.7.0-alpha.83",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -11,11 +11,6 @@
       "url": "http://www.apache.org/licenses/LICENSE-2.0"
     }
   ],
-  "scripts": {
-    "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
-    "build:cjs": "tsc --project tsconfig.build.json",
-    "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
-  },
   "dependencies": {
     "deepmerge": "^4.2.2",
     "koa-compose": "^4.1.0",

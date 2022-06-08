@@ -1,5 +1,4 @@
 import { PluginsConfigurations } from '@nocobase/server';
-import { resolve } from 'path';
 
 export default [
   '@nocobase/plugin-error-handler',
@@ -8,21 +7,9 @@ export default [
   '@nocobase/plugin-ui-routes-storage',
   '@nocobase/plugin-file-manager',
   '@nocobase/plugin-system-settings',
-  [
-    '@nocobase/plugin-users',
-    {
-      jwt: {
-        secret: process.env.JWT_SECRET,
-      },
-    },
-  ],
+  '@nocobase/plugin-users',
   '@nocobase/plugin-acl',
   '@nocobase/plugin-china-region',
   '@nocobase/plugin-workflow',
-  [
-    '@nocobase/plugin-client',
-    {
-      dist: resolve(process.cwd(), 'packages/app/client/dist'),
-    },
-  ],
+  '@nocobase/plugin-client',
 ] as PluginsConfigurations;

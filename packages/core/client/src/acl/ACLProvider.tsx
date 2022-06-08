@@ -1,9 +1,8 @@
 import { useFieldSchema } from '@formily/react';
-import { useCookieState } from 'ahooks';
 import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 import { Redirect } from 'react-router-dom';
-import { useRequest } from '../api-client';
+import { useAPIClient, useRequest } from '../api-client';
 import { useCollection } from '../collection-manager';
 import { useRecordIsOwn } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
@@ -22,7 +21,7 @@ export const ACLProvider = (props) => {
 
 export const ACLRolesCheckProvider = (props) => {
   const { setDesignable } = useDesignable();
-  const [roleName, setRoleName] = useCookieState('currentRoleName');
+  const api = useAPIClient();
   const result = useRequest(
     {
       url: 'roles:check',
@@ -32,8 +31,8 @@ export const ACLRolesCheckProvider = (props) => {
         if (!data?.data?.allowConfigure && !data?.data?.allowAll) {
           setDesignable(false);
         }
-        if (data?.data?.role !== roleName) {
-          setRoleName(data?.data?.role);
+        if (data?.data?.role !== api.auth.role) {
+          api.auth.setRole(data?.data?.role);
         }
       },
     },

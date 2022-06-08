@@ -288,4 +288,28 @@ export default {
 
   'Unsaved changes': 'Unsaved changes',
   'Are you sure you don\'t want to save?': 'Are you sure you don\'t want to save?',
+
+  'Popup': 'Popup',
+  'Trigger workflow': 'Trigger workflow',
+  'Request API': 'Request API',
+  'Assign field values': 'Assign field values',
+  'Popup close method': 'Popup close method',
+  'Automatic close': 'Automatic close',
+  'Manually close': 'Manually close',
+  'After successful update': 'After successful update',
+  'Save record': 'Save record',
+  'After successful save': 'After successful save',
+  'Button background color': 'Button background color',
+  'Highlight': 'Highlight',
+  'Danger red': 'Danger red',
+  'Custom request': 'Custom request',
+  'Request settings': 'Request settings',
+  'Request URL': 'Request URL',
+  'Request method': 'Request method',
+  'Request query parameters': 'Request query parameters(JSON)',
+  'Request headers': 'Request headers(JSON)',
+  'Request body': 'Request body(JSON)',
+  'Request success': 'Request success',
+  'Invalid JSON format': 'Invalid JSON format',
+  'After successful request': 'After successful request'
 }

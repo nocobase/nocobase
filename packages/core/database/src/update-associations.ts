@@ -9,7 +9,6 @@ import {
   Transactionable,
 } from 'sequelize';
 import { Model } from './model';
-import { TransactionAble } from './repository';
 import { UpdateGuard } from './update-guard';
 
 function isUndefinedOrNull(value: any) {
@@ -46,7 +45,7 @@ export function modelAssociationByKey(instance: Model, key: string): Association
 
 type UpdateValue = { [key: string]: any };
 
-interface UpdateOptions extends TransactionAble {
+interface UpdateOptions extends Transactionable {
   filter?: any;
   filterByTk?: number | string;
   // 字段白名单
@@ -298,7 +297,7 @@ export async function updateSingleAssociation(
       // @ts-ignore
       dataKey = association.targetKey;
     } else {
-      M = association.source as ModelCtor<Model>;
+      M = association.target as ModelCtor<Model>;
       dataKey = M.primaryKeyAttribute;
     }
 

@@ -1,0 +1,30 @@
+{
+  "name": "dumi-theme-nocobase",
+  "version": "0.7.0-alpha.83",
+  "private": true,
+  "files": [
+    "es",
+    "src"
+  ],
+  "sideEffects": [
+    "./**/*.less"
+  ],
+  "dependencies": {
+    "lodash.throttle": "^4.1.1",
+    "prism-react-renderer": "^1.1.1",
+    "prismjs": "^1.21.0",
+    "rc-motion": "^2.4.1",
+    "rc-tabs": "^11.7.1",
+    "rc-tree": "^5.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.11.3",
+    "@testing-library/react": "^10.4.8",
+    "react-test-renderer": "^16.13.1"
+  },
+  "peerDependencies": {
+    "@umijs/preset-dumi": "1.x",
+    "react": "^16.13.1 || ^17.0.0"
+  },
+  "license": "MIT"
+}

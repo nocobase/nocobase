@@ -2,6 +2,7 @@
 export function check(options) {
   return async function check(ctx, next) {
     const { currentUser } = ctx.state;
+
     if (!currentUser) {
       return ctx.throw(401, 'Unauthorized');
     }

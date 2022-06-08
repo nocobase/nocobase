@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { Dropdown, Menu, Button, Tag, Switch } from 'antd';
+import { Dropdown, Menu, Button, Tag, Switch, message } from 'antd';
 import { PlusOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
@@ -83,8 +83,9 @@ export function WorkflowCanvas() {
     const { data: { data: duplicated } } = await resource.duplicate({
       filterByTk: workflow[targetKey]
     });
+    message.success(t('Operation succeeded'));
 
-    history.push(duplicated.id);
+    history.push(`${duplicated.id}`);
   }
 
   return (
@@ -128,8 +129,8 @@ export function WorkflowCanvas() {
           <Switch
             checked={workflow.enabled}
             onChange={onToggle}
-            checkedChildren={t('Started')}
-            unCheckedChildren={t('Stopped')}
+            checkedChildren={t('On')}
+            unCheckedChildren={t('Off')}
           />
           {workflow.executed && !revisions.find(item => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt))
             ? (

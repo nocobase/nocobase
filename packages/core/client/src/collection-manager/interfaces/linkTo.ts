@@ -92,6 +92,9 @@ export const linkTo: IField = {
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-decorator': 'FormItem',
       'x-component': 'Select',
+      'x-component-props': {
+        placeholder: '{{t("Leave it blank, unless you need a custom intermediate table")}}',
+      },
     },
     // 'reverseField.uiSchema.title': {
     //   type: 'string',

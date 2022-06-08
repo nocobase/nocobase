@@ -46,17 +46,15 @@ services:
     volumes:
       - ./:/var/www/app
   nocobase:
-    build:
-      context: .
-      dockerfile: ./docker/node/Dockerfile
+    image: node:16-stretch-slim
     networks:
       - nocobase
-    command: [ "yarn", "start-pm2" ]
+    command: [ "yarn", "start" ]
     working_dir: /app
     env_file: ./.env
     volumes:
       - ./:/app
     expose:
-      - ${SERVER_PORT}
+      - ${APP_PORT}
     ports:
-      - "${SERVER_PORT}:${SERVER_PORT}"
+      - "${APP_PORT}:${APP_PORT}"

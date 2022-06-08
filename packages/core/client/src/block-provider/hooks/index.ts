@@ -1,9 +1,12 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { Modal } from 'antd';
+import { message, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
+import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
+import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
+import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
@@ -52,6 +55,50 @@ const filterValue = (value) => {
   return obj;
 };
 
+function getFormValues(filterByTk, field, form, fieldNames, getField, resource) {
+  let values = {};
+  for (const key in form.values) {
+    if (fieldNames.includes(key)) {
+      const collectionField = getField(key);
+      if (filterByTk) {
+        if (collectionField.interface === 'subTable') {
+          values[key] = form.values[key];
+          continue;
+        }
+        if (field.added && !field.added.has(key)) {
+          continue;
+        }
+      }
+      const items = form.values[key];
+      if (collectionField.interface === 'linkTo') {
+        const targetKey = collectionField.targetKey || 'id';
+        if (resource instanceof TableFieldResource) {
+          if (Array.isArray(items)) {
+            values[key] = filterValue(items);
+          } else if (items && typeof items === 'object') {
+            values[key] = filterValue(items);
+          } else {
+            values[key] = items;
+          }
+        } else {
+          if (Array.isArray(items)) {
+            values[key] = items.map((item) => item[targetKey]);
+          } else if (items && typeof items === 'object') {
+            values[key] = items[targetKey];
+          } else {
+            values[key] = items;
+          }
+        }
+      } else {
+        values[key] = form.values[key];
+      }
+    } else {
+      values[key] = form.values[key];
+    }
+  }
+  return values;
+}
+
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
@@ -62,73 +109,153 @@ export const useCreateActionProps = () => {
   const actionField = useField();
   const { fields, getField } = useCollection();
   const compile = useCompile();
+  const filterByTk = useFilterByTk();
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
-      const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
+      const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+
       if (!skipValidator) {
         await form.submit();
       }
-      let values = {};
-      for (const key in form.values) {
-        if (fieldNames.includes(key)) {
-          const items = form.values[key];
-          const collectionField = getField(key);
-          if (collectionField.interface === 'linkTo') {
-            const targetKey = collectionField.targetKey || 'id';
-            if (resource instanceof TableFieldResource) {
-              if (Array.isArray(items)) {
-                values[key] = filterValue(items);
-              } else if (items && typeof items === 'object') {
-                values[key] = filterValue(items);
-              } else {
-                values[key] = items;
-              }
-            } else {
-              if (Array.isArray(items)) {
-                values[key] = items.map((item) => item[targetKey]);
-              } else if (items && typeof items === 'object') {
-                values[key] = items[targetKey];
-              } else {
-                values[key] = items;
-              }
-            }
-          } else {
-            values[key] = form.values[key];
-          }
-        } else {
-          values[key] = form.values[key];
-        }
-      }
+      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       await resource.create({
         values: {
           ...values,
           ...overwriteValues,
+          ...assignedValues,
         },
       });
       actionField.data.loading = false;
       __parent?.service?.refresh?.();
       setVisible?.(false);
-      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
       if (!onSuccess?.successMessage) {
         return;
       }
-      Modal.success({
-        title: compile(onSuccess?.successMessage),
-        onOk: async () => {
-          await form.reset();
-          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-            if (isURL(onSuccess.redirectTo)) {
-              window.location.href = onSuccess.redirectTo;
-            } else {
-              history.push(onSuccess.redirectTo);
+      if (onSuccess?.manualClose) {
+        Modal.success({
+          title: compile(onSuccess?.successMessage),
+          onOk: async () => {
+            await form.reset();
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                history.push(onSuccess.redirectTo);
+              }
             }
-          }
-        },
+          },
+        });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
+      }
+    },
+  };
+};
+
+export const useCustomizeUpdateActionProps = () => {
+  const { resource, __parent, service } = useBlockRequestContext();
+  const filterByTk = useFilterByTk();
+  const actionSchema = useFieldSchema();
+  const currentRecord = useRecord();
+  const ctx = useCurrentUserContext();
+  const history = useHistory();
+  const compile = useCompile();
+  const form = useForm();
+
+  return {
+    async onClick() {
+      const { assignedValues, onSuccess, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+      if (skipValidator === false) {
+        await form.submit();
+      }
+      await resource.update({
+        filterByTk,
+        values: { ...assignedValues },
       });
+      service?.refresh?.();
+      if (!(resource instanceof TableFieldResource)) {
+        __parent?.service?.refresh?.();
+      }
+      if (!onSuccess?.successMessage) {
+        return;
+      }
+      if (onSuccess?.manualClose) {
+        Modal.success({
+          title: compile(onSuccess?.successMessage),
+          onOk: async () => {
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                history.push(onSuccess.redirectTo);
+              }
+            }
+          },
+        });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
+      }
+    },
+  };
+};
+
+export const useCustomizeRequestActionProps = () => {
+  const apiClient = useAPIClient();
+  const history = useHistory();
+  const filterByTk = useFilterByTk();
+  const actionSchema = useFieldSchema();
+  const compile = useCompile();
+  const form = useForm();
+  const { fields, getField } = useCollection();
+  const { field, resource } = useBlockRequestContext();
+  return {
+    async onClick() {
+      const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      if (!requestSettings['url']) {
+        return;
+      }
+      if (skipValidator === false) {
+        await form.submit();
+      }
+
+      const headers = requestSettings['headers'] ? JSON.parse(requestSettings['headers']) : {};
+      const params = requestSettings['params'] ? JSON.parse(requestSettings['params']) : {};
+      const data = requestSettings['data'] ? JSON.parse(requestSettings['data']) : {};
+      const methods = ['POST', 'PUT', 'PATCH'];
+      if (actionSchema['x-action'] === 'customize:form:request' && methods.includes(requestSettings['method'])) {
+        const fieldNames = fields.map((field) => field.name);
+        const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+        Object.assign(data, values);
+      }
+      await apiClient.request({
+        ...requestSettings,
+        headers,
+        params,
+        data,
+      });
+
+      if (!onSuccess?.successMessage) {
+        return;
+      }
+      if (onSuccess?.manualClose) {
+        Modal.success({
+          title: compile(onSuccess?.successMessage),
+          onOk: async () => {
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                history.push(onSuccess.redirectTo);
+              }
+            }
+          },
+        });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
+      }
     },
   };
 };
@@ -145,50 +272,13 @@ export const useUpdateActionProps = () => {
   const actionField = useField();
   return {
     async onClick() {
-      const skipValidator = actionSchema?.['x-action-settings']?.skipValidator;
-      const overwriteValues = actionSchema?.['x-action-settings']?.overwriteValues;
+      const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+
       if (!skipValidator) {
         await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
-      let values = {};
-      for (const key in form.values) {
-        if (fieldNames.includes(key)) {
-          const collectionField = getField(key);
-          if (collectionField.interface === 'subTable') {
-            values[key] = form.values[key];
-            continue;
-          }
-          if (field.added && !field.added.has(key)) {
-            continue;
-          }
-          const items = form.values[key];
-          if (collectionField.interface === 'linkTo') {
-            const targetKey = collectionField.targetKey || 'id';
-            if (resource instanceof TableFieldResource) {
-              if (Array.isArray(items)) {
-                values[key] = filterValue(items);
-              } else if (items && typeof items === 'object') {
-                values[key] = filterValue(items);
-              } else {
-                values[key] = items;
-              }
-            } else {
-              if (Array.isArray(items)) {
-                values[key] = items.map((item) => item[targetKey]);
-              } else if (items && typeof items === 'object') {
-                values[key] = items[targetKey];
-              } else {
-                values[key] = items;
-              }
-            }
-          } else {
-            values[key] = form.values[key];
-          }
-        } else {
-          values[key] = form.values[key];
-        }
-      }
+      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       await resource.update({
@@ -196,6 +286,7 @@ export const useUpdateActionProps = () => {
         values: {
           ...values,
           ...overwriteValues,
+          ...assignedValues,
         },
       });
       actionField.data.loading = false;
@@ -204,8 +295,10 @@ export const useUpdateActionProps = () => {
         __parent?.__parent?.service?.refresh?.();
       }
       setVisible?.(false);
-      const onSuccess = actionSchema?.['x-action-settings']?.onSuccess;
-      if (onSuccess?.successMessage) {
+      if (!onSuccess?.successMessage) {
+        return;
+      }
+      if (onSuccess?.manualClose) {
         Modal.success({
           title: compile(onSuccess?.successMessage),
           onOk: async () => {
@@ -219,6 +312,8 @@ export const useUpdateActionProps = () => {
             }
           },
         });
+      } else {
+        message.success(compile(onSuccess?.successMessage));
       }
     },
   };

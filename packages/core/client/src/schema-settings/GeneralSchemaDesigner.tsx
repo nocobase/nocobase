@@ -76,7 +76,7 @@ export const GeneralSchemaDesigner = (props: any) => {
             ctx?.renderSchemaInitializer?.({
               insertPosition: 'afterEnd',
               wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
-              component: <PlusOutlined style={{ cursor: 'pointer', fontSize: 12 }} />,
+              component: <PlusOutlined style={{ cursor: 'pointer', fontSize: 14 }} />,
             })}
           <SchemaSettings title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />} {...schemaSettingsProps}>
             {props.children}

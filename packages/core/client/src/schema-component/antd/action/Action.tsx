@@ -76,6 +76,7 @@ export const Action: ComposedAction = observer((props: any) => {
     className,
     disabled,
     icon,
+    title,
     ...others
   } = props;
   const { onClick } = useProps(props);
@@ -113,7 +114,7 @@ export const Action: ComposedAction = observer((props: any) => {
       component={component || Button}
       className={classnames(className, actionDesignerCss)}
     >
-      {compile(fieldSchema.title)}
+      {title || compile(fieldSchema.title)}
       <Designer {...designerProps} />
     </SortableItem>
   );

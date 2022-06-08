@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/utils",
-  "version": "0.7.0-alpha.34",
+  "version": "0.7.0-alpha.83",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
@@ -10,11 +10,6 @@
       "url": "http://www.apache.org/licenses/LICENSE-2.0"
     }
   ],
-  "scripts": {
-    "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
-    "build:cjs": "tsc --project tsconfig.build.json",
-    "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
-  },
   "dependencies": {
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1"

@@ -1,6 +1,7 @@
 export * from './BlockInitializers';
 export * from './CalendarActionInitializers';
 export * from './CreateFormBlockInitializers';
+export * from './CustomFormItemInitializers';
 export * from './DetailsActionInitializers';
 export * from './FormActionInitializers';
 export * from './FormItemInitializers';
@@ -15,4 +16,3 @@ export * from './TableActionInitializers';
 export * from './TableColumnInitializers';
 export * from './TableSelectorInitializers';
 export * from './TabPaneInitializers';
-

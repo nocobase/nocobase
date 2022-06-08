@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-error-handler",
-  "version": "0.7.0-alpha.34",
+  "version": "0.7.0-alpha.83",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -11,14 +11,9 @@
   ],
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
-  "scripts": {
-    "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
-    "build:cjs": "tsc --project tsconfig.build.json",
-    "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
-  },
   "dependencies": {
     "@formily/json-schema": "^2.0.15",
-    "@nocobase/server": "0.7.0-alpha.34"
+    "@nocobase/server": "0.7.0-alpha.83"
   },
   "repository": {
     "type": "git",

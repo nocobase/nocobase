@@ -3,12 +3,12 @@ import Database from '@nocobase/database';
 import { getApp } from '.';
 import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
-jest.setTimeout(300000);
+
 
 describe('execution', () => {
   let app: Application;
   let db: Database;
-  let PostModel;
+  let PostRepo;
   let WorkflowModel;
   let workflow;
 
@@ -17,7 +17,7 @@ describe('execution', () => {
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
-    PostModel = db.getCollection('posts').model;
+    PostRepo = db.getCollection('posts').repository;
 
     workflow = await WorkflowModel.create({
       title: 'test workflow',
@@ -34,7 +34,7 @@ describe('execution', () => {
 
   describe('base', () => {
     it('empty workflow without any nodes', async () => {
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
@@ -47,7 +47,7 @@ describe('execution', () => {
         type: 'echo'
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -64,7 +64,7 @@ describe('execution', () => {
         type: 'echo'
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
@@ -91,7 +91,7 @@ describe('execution', () => {
 
       await n1.setDownstream(n2);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
@@ -110,7 +110,7 @@ describe('execution', () => {
         type: 'error'
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
@@ -138,7 +138,7 @@ describe('execution', () => {
 
       await n1.setDownstream(n2);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -170,7 +170,7 @@ describe('execution', () => {
       });
       await n1.setDownstream(n2);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -211,7 +211,7 @@ describe('execution', () => {
         upstreamId: n1.id
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -245,7 +245,7 @@ describe('execution', () => {
 
       await n1.setDownstream(n3);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -280,7 +280,7 @@ describe('execution', () => {
 
       await n1.setDownstream(n3);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -317,7 +317,7 @@ describe('execution', () => {
 
       await n1.setDownstream(n3);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -353,7 +353,7 @@ describe('execution', () => {
 
       await n1.setDownstream(n4);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -389,7 +389,7 @@ describe('execution', () => {
 
       await n1.setDownstream(n4);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -440,7 +440,7 @@ describe('execution', () => {
 
       await n1.setDownstream(n5);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -492,7 +492,7 @@ describe('execution', () => {
 
       await n1.setDownstream(n5);
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -524,9 +524,9 @@ describe('execution', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
-      const posts = await PostModel.findAll();
+      const posts = await PostRepo.find();
       expect(posts.length).toBe(2);
 
       const [execution] = await workflow.getExecutions();

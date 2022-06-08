@@ -26,6 +26,8 @@ export const CurrentUser = () => {
           }}
           overlay={
             <Menu>
+              <Menu.Item disabled>Version {process.env.VERSION}</Menu.Item>
+              <Menu.Divider />
               <EditProfile />
               <ChangePassword />
               <SwitchRole />
@@ -34,7 +36,7 @@ export const CurrentUser = () => {
               <Menu.Item
                 onClick={async () => {
                   await api.resource('users').signout();
-                  api.setBearerToken(null);
+                  api.auth.setToken(null);
                   history.push('/signin');
                 }}
               >

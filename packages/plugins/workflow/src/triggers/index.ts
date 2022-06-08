@@ -1,15 +1,14 @@
-import { Registry } from '@nocobase/utils';
 import WorkflowModel from '../models/Workflow';
-import collectionlTrigger from './collection';
+import Collection from './collection';
+import Schedule from './schedule';
 
 export interface Trigger {
-  name: string;
-  on(this: WorkflowModel, callback: Function): void;
-  off(this: WorkflowModel): void;
+  on(workflow: WorkflowModel): void;
+  off(workflow: WorkflowModel): void;
 }
 
-export const triggers = new Registry<Trigger>();
-
-export default triggers;
-
-triggers.register(collectionlTrigger.name, collectionlTrigger);
+export default function(plugin) {
+  const { triggers } = plugin;
+  triggers.register('collection', new Collection(plugin));
+  triggers.register('schedule', new Schedule(plugin));
+}

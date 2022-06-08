@@ -1,6 +1,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { PasswordField } from '@nocobase/database';
 import crypto from 'crypto';
+import { namespace } from '../';
 
 export async function check(ctx: Context, next: Next) {
   if (ctx.state.currentUser) {
@@ -16,7 +17,7 @@ export async function signin(ctx: Context, next: Next) {
   const { uniqueField = 'email', values } = ctx.action.params;
 
   if (!values[uniqueField]) {
-    ctx.throw(401, '请填写邮箱账号');
+    ctx.throw(401, ctx.t('Please fill in your email address', { ns: namespace }));
   }
   const User = ctx.db.getCollection('users');
   const user = await User.model.findOne<any>({
@@ -25,12 +26,12 @@ export async function signin(ctx: Context, next: Next) {
     },
   });
   if (!user) {
-    ctx.throw(401, '邮箱账号未注册');
+    ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
   }
   const pwd = User.getField<PasswordField>('password');
   const isValid = await pwd.verify(values.password, user.password);
   if (!isValid) {
-    ctx.throw(401, '密码错误，请您重新输入');
+    ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
   }
 
   const pluginUser = ctx.app.getPlugin('@nocobase/plugin-users');
@@ -62,7 +63,7 @@ export async function lostpassword(ctx: Context, next: Next) {
     values: { email },
   } = ctx.action.params;
   if (!email) {
-    ctx.throw(401, '请填写邮箱账号');
+    ctx.throw(401, ctx.t('Please fill in your email address', { ns: namespace }));
   }
   const User = ctx.db.getCollection('users');
   const user = await User.model.findOne<any>({
@@ -71,7 +72,7 @@ export async function lostpassword(ctx: Context, next: Next) {
     },
   });
   if (!user) {
-    ctx.throw(401, '邮箱账号未注册');
+    ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
   }
   user.resetToken = crypto.randomBytes(20).toString('hex');
   await user.save();
@@ -142,7 +143,7 @@ export async function changePassword(ctx: Context, next: Next) {
   const pwd = User.getField<PasswordField>('password');
   const isValid = await pwd.verify(oldPassword, user.password);
   if (!isValid) {
-    ctx.throw(401, '密码错误，请您重新输入');
+    ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
   }
   user.password = newPassword;
   user.save();

@@ -2,18 +2,24 @@ import { Database } from '@nocobase/database';
 
 type UsingConfigType = 'strategy' | 'resourceAction';
 
+function totalPage(total, pageSize): number {
+  return Math.ceil(total / pageSize);
+}
+
 const roleCollectionsResource = {
   name: 'roles.collections',
   actions: {
     async list(ctx, next) {
       const role = ctx.action.params.associatedIndex;
+      const { page = 1, pageSize = 20 } = ctx.action.params;
 
       const db: Database = ctx.db;
       const collectionRepository = db.getRepository('collections');
 
       // all collections
-      const collections = await collectionRepository.find({
+      const [collections, count] = await collectionRepository.findAndCount({
         filter: ctx.action.params.filter,
+        sort: 'sort',
       });
 
       // role collections
@@ -29,8 +35,9 @@ const roleCollectionsResource = {
         .filter((roleResources) => roleResources.get('usingActionsConfig'))
         .map((roleResources) => roleResources.get('name'));
 
-      ctx.body = collections
-        .map((collection) => {
+      ctx.body = {
+        count,
+        rows: collections.map((collection) => {
           const exists = roleResourcesNames.includes(collection.get('name'));
 
           const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(collection.get('name'))
@@ -44,8 +51,11 @@ const roleCollectionsResource = {
             usingConfig,
             exists,
           };
-        })
-        .sort((a, b) => (a.name > b.name ? 1 : -1));
+        }),
+        page: Number(page),
+        pageSize: Number(pageSize),
+        totalPage: totalPage(count, pageSize),
+      };
 
       await next();
     },

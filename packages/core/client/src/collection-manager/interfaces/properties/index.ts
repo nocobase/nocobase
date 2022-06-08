@@ -22,10 +22,10 @@ export const type: ISchema = {
     { label: 'Virtual', value: 'virtual' },
     { label: 'JSON', value: 'json' },
     { label: 'Password', value: 'password' },
-    { label: 'HasOne', value: 'hasOne' },
-    { label: 'HasMany', value: 'hasMany' },
-    { label: 'BelongsTo', value: 'belongsTo' },
-    { label: 'BelongsToMany', value: 'belongsToMany' },
+    { label: 'One to one', value: 'hasOne' },
+    { label: 'One to many', value: 'hasMany' },
+    { label: 'Many to one', value: 'belongsTo' },
+    { label: 'Many to many', value: 'belongsToMany' },
   ],
 };
 

@@ -1,14 +1,14 @@
 import { Plugin } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
-import { resolve } from 'path';
+import { isAbsolute, resolve } from 'path';
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {
-    const cmd = this.app.findCommand('install');
-    if (cmd) {
-      cmd.option('--import-demo');
-    }
+    // const cmd = this.app.findCommand('install');
+    // if (cmd) {
+    //   cmd.option('--import-demo');
+    // }
     this.app.on('afterInstall', async (app, options) => {
       const [opts] = options?.cliArgs || [{}];
       if (opts?.importDemo) {
@@ -23,6 +23,16 @@ export class ClientPlugin extends Plugin {
     this.app.resource({
       name: 'app',
       actions: {
+        async getInfo(ctx, next) {
+          const SystemSetting = ctx.db.getRepository('systemSettings');
+          const systemSetting = await SystemSetting.findOne();
+          const currentUser = ctx.state.currentUser;
+          ctx.body = {
+            version: this.app.getVersion(),
+            lang: currentUser?.appLang || systemSetting?.appLang || process.env.APP_LANG || 'en-US',
+          };
+          await next();
+        },
         async getLang(ctx, next) {
           const SystemSetting = ctx.db.getRepository('systemSettings');
           const systemSetting = await SystemSetting.findOne();
@@ -52,15 +62,18 @@ export class ClientPlugin extends Plugin {
         },
       },
     });
-    let root = this.options.dist;
-    if (root && !root.startsWith('/')) {
+    let root = this.options.dist || `./packages/app/client/dist`;
+    if (!isAbsolute(root)) {
       root = resolve(process.cwd(), root);
     }
     this.app.middleware.unshift(async (ctx, next) => {
-      if (process.env.NOCOBASE_ENV === 'production') {
+      if (process.env.APP_ENV === 'production') {
         return next();
       }
       if (!root) {
+        return next();
+      }
+      if (ctx.path.startsWith(this.app.resourcer.options.prefix)) {
         return next();
       }
       await serve(root)(ctx, next);

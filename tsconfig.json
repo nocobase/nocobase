@@ -3,9 +3,9 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "jsx": "react",
-    "module": "commonjs",
-    "target": "es6",
-    "allowJs": false,
+    "target": "esnext",
+    "module": "esnext",
+    "allowJs": true,
     "noUnusedLocals": false,
     "preserveConstEnums": true,
     "skipLibCheck": true,
@@ -26,6 +26,11 @@
       "@nocobase/*": [
         "packages/core/*/src"
       ]
+    }
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
     }
   }
 }

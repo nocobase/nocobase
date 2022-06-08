@@ -1,55 +1,51 @@
 /**
  * title: Calendar
  */
-
-import { observable } from '@formily/reactive';
 import {
   AntdSchemaComponentProvider,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerProvider,
+  SchemaInitializerProvider
 } from '@nocobase/client';
 import React from 'react';
 import defaultValues from './defaultValues';
 
-const dataSource = observable(defaultValues);
 const schema = {
-  type: 'void',
+  type: 'array',
   name: 'calendar1',
-  'x-component': 'Calendar',
-  'x-component-props': {
-    dataSource: dataSource,
-  },
+  'x-component': 'CalendarV2',
+  'x-component-props': {},
+  default: defaultValues,
   properties: {
     toolBar: {
       type: 'void',
-      'x-component': 'Calendar.ActionBar',
+      'x-component': 'CalendarV2.ActionBar',
       properties: {
         today: {
           type: 'void',
           title: '今天',
-          'x-component': 'Calendar.Today',
+          'x-component': 'CalendarV2.Today',
           'x-action': 'calendar:today',
           'x-align': 'left',
         },
         nav: {
           type: 'void',
           title: '翻页',
-          'x-component': 'Calendar.Nav',
+          'x-component': 'CalendarV2.Nav',
           'x-action': 'calendar:nav',
           'x-align': 'left',
         },
         title: {
           type: 'void',
           title: '标题',
-          'x-component': 'Calendar.Title',
+          'x-component': 'CalendarV2.Title',
           'x-action': 'calendar:title',
           'x-align': 'left',
         },
         viewSelect: {
           type: 'void',
           title: '视图切换',
-          'x-component': 'Calendar.ViewSelect',
+          'x-component': 'CalendarV2.ViewSelect',
           'x-action': 'calendar:viewSelect',
           'x-align': 'right',
         },

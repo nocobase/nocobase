@@ -1,42 +1,53 @@
 import chalk from 'chalk';
+import Application from '../application';
 
-export default async ({ app, cliArgs }) => {
-  const [opts] = cliArgs;
+export default (app: Application) => {
+  app
+    .command('install')
+    .option('-f, --force')
+    .option('-c, --clean')
+    .option('-s, --silent')
+    .option('-r, --repeat [repeat]')
+    .action(async (...cliArgs) => {
+      let installed = false;
+      const [opts] = cliArgs;
 
-  if (!opts?.clean && !opts?.force) {
-    const tables = await app.db.sequelize.getQueryInterface().showAllTables();
-    if (tables.includes('collections')) {
-      if (!opts.silent) {
-        console.log();
-        console.log();
-        console.log(chalk.yellow('NocoBase is already installed. To reinstall, please execute:'));
-        console.log();
-        let command = 'yarn nocobase install -f';
-        console.log(chalk.yellow(command));
-        console.log();
-        console.log();
+      try {
+        await app.db.auth({ repeat: opts.repeat || 1 });
+      } catch (error) {
+        console.log(chalk.red('Unable to connect to the database. Please check the database environment variables in the .env file.'));
+        return;
       }
-      return;
-    }
-  }
+  
+      if (!opts?.clean && !opts?.force) {
+        const tables = await app.db.sequelize.getQueryInterface().showAllTables();
+        if (tables.includes('collections')) {
+          installed = true;
+          if (!opts.silent) {
+            console.log('NocoBase is already installed. To reinstall, please execute:');
+            console.log();
+            let command = '$ yarn nocobase install -f';
+            console.log(chalk.yellow(command));
+            console.log();
+          }
+          return;
+        }
+      }
 
-  if (!opts.silent) {
-    console.log(`NocoBase installing`);
-  }
+      if (!opts.silent || !installed) {
+        console.log(`Start installing NocoBase`);
+      }
 
-  await app.install({
-    cliArgs,
-    clean: opts.clean,
-    sync: {
-      force: opts.force,
-    },
-  });
+      await app.install({
+        cliArgs,
+        clean: opts.clean,
+        sync: {
+          force: opts.force,
+        },
+      });
 
-  await app.stop({
-    cliArgs,
-  });
-
-  if (!opts.silent) {
-    console.log(`NocoBase installed`);
-  }
+      await app.stop({
+        cliArgs,
+      });
+    });
 };

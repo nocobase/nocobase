@@ -16,7 +16,7 @@ export const PoweredBy = () => {
         a {
           color: rgba(0, 0, 0, 0.45);
           &:hover {
-            color: rgba(0,0,0,.85);
+            color: rgba(0, 0, 0, 0.85);
           }
         }
       `}

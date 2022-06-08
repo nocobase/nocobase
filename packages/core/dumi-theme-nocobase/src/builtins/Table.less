@@ -1,0 +1,43 @@
+.__dumi-default-table {
+  margin: 16px 0 32px;
+  transform: translate(0, 0);
+
+  &-content {
+    overflow: auto;
+
+    &::before,
+    &::after {
+      content: '';
+      display: block;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      pointer-events: none;
+    }
+
+    &[data-left-folded]::before {
+      left: 0;
+      background-image: linear-gradient(to right, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
+
+      [data-prefers-color=dark] & {
+        background-image: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+      }
+    }
+
+    &[data-right-folded]::after {
+      right: 0;
+      background-image: linear-gradient(to left, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
+
+      [data-prefers-color=dark] & {
+        background-image: linear-gradient(to left, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+      }
+    }
+
+    > table > thead > tr > th,
+    > table > tr > th {
+      white-space: nowrap;
+    }
+  }
+}

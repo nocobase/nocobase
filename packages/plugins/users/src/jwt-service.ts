@@ -13,7 +13,7 @@ export class JwtService {
   }
 
   private secret() {
-    return this.options.secret;
+    return this.options.secret || process.env.APP_KEY;
   }
 
   sign(payload: any) {

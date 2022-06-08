@@ -1,5 +1,6 @@
-import { formatMomentValue, momentable } from '@formily/antd/lib/__builtins__';
+import { formatMomentValue } from '@formily/antd/lib/__builtins__';
 import type { DatePickerProps } from 'antd/lib/date-picker';
+import moment from 'moment';
 
 export const getDefaultFormat = (props: DatePickerProps & { dateFormat: string; timeFormat: string }) => {
   if (props.format) {
@@ -30,8 +31,8 @@ export const mapDateFormat = function () {
     return {
       ...props,
       format: format,
-
-      value: momentable(props.value, format === 'YYYY-wo' ? 'YYYY-w' : format),
+      value: props.value && moment(props.value).isValid() ? moment(props.value) : undefined,
+      // value: momentable(props.value, format === 'YYYY-wo' ? 'YYYY-w' : format),
       onChange: (value: moment.Moment | moment.Moment[]) => {
         if (onChange) {
           onChange(formatMomentValue(value, format));

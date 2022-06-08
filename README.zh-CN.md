@@ -2,17 +2,33 @@
 
 ![](https://www.nocobase.com/images/demo/11.png)  
 
-NocoBase 是什么
-----------
+## NocoBase 是什么
+
 NocoBase 是一个极易扩展的开源无代码开发平台。
 无需编程，使用 NocoBase 搭建自己的协作平台、管理系统，只需要几分钟时间。 
 
-官网：https://cn.nocobase.com/
+中文官网：  
+https://cn.nocobase.com/
 
-在线体验：https://demo-cn.nocobase.com/new
+在线体验：  
+https://demo-cn.nocobase.com/new
 
-为什么选择 NocoBase
-----------
+文档：  
+https://docs-cn.nocobase.com/
+
+## 适用场景
+
+如果你有以下需求，NocoBase 就是为你设计的：
+
+- 开发组织内部管理系统
+- 通过无代码开发，满足大部分业务需求
+- 通过扩展开发，满足个性化业务需求
+- 系统功能需要频繁变动
+- 私有部署，掌控全部代码和数据
+- 可免费使用，也可以付费获得更多技术支持
+
+## 为什么选择 NocoBase
+
 - **开源免费**
    - 采用 Apache-2.0 许可协议，不限制商业使用
    - 拥有全部代码，私有化部署，保障数据私有和安全
@@ -37,14 +53,13 @@ NocoBase 是一个极易扩展的开源无代码开发平台。
    - 渐进式开发，上手难度低，对新人友好
    - 不绑架、不强依赖，可任意组合使用或扩展，可用于现有项目中
 
-NocoBase 架构
-----------
+## NocoBase 架构
+
 ![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
 
 [点此查看完整图片](https://www.nocobase.com/images/NocoBaseMindMap.png)
 
-联系
-----------
+## 联系
 
 如果你希望加入我们一起开发 NocoBase，或者需要提供商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
 
@@ -54,180 +69,16 @@ NocoBase 架构
 
 ## 安装
 
-NocoBase 支持 Docker 和 CLI 两种安装方法，如果你是新人推荐使用 Docker 安装。
+NocoBase 支持三种安装方式：
 
-### Docker (👍Recommended)
+- <a target="_blank" href="https://docs-cn.nocobase.com/getting-started/installation/docker-compose">Docker 安装（推荐）</a>
 
-#### 0. 先决条件
+   适合无代码场景，不需要写代码。升级时，下载最新镜像并重启即可。
 
-⚡⚡ 请确保你已经安装了 [Docker](https://docs.docker.com/get-docker/)
+- <a target="_blank" href="https://docs-cn.nocobase.com/getting-started/installation/create-nocobase-app">create-nocobase-app 安装</a>
 
-#### 1. 将 NocoBase 下载到本地
+   项目的业务代码完全独立，支持低代码开发。
 
-使用 Git 下载（或直接[下载 Zip 包](https://github.com/nocobase/nocobase/archive/refs/heads/main.zip)，并解压到 nocobase 目录下）
+- <a target="_blank" href="https://docs-cn.nocobase.com/getting-started/installation/git-clone">Git 源码安装</a>
 
-```bash
-git clone https://github.com/nocobase/nocobase.git nocobase
-```
-
-#### 2. 选择数据库（任选其一）
-
-支持 SQLite、MySQL、PostgreSQL 数据库
-
-```bash
-# SQLite
-cd nocobase/docker/app-sqlite
-# MySQL
-cd nocobase/docker/app-mysql
-# PostgreSQL
-cd nocobase/docker/app-postgres
-```
-
-#### 3. 安装并启动 NocoBase
-
-安装过程可能需要等待几十秒钟
-
-```bash
-# 在后台运行
-$ docker-compose up -d
-# 查看 app 进程的情况
-$ docker-compose logs app
-
-app-sqlite-app-1  | nginx started
-app-sqlite-app-1  | yarn run v1.22.15
-app-sqlite-app-1  | $ cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js install -s
-app-sqlite-app-1  | Done in 2.72s.
-app-sqlite-app-1  | yarn run v1.22.15
-app-sqlite-app-1  | $ pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start
-app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: Launching in no daemon mode
-app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] starting in -fork mode-
-app-sqlite-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
-app-sqlite-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
-```
-
-#### 4. 登录 NocoBase
-
-使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
-
-### CLI
-
-#### 0. 先决条件
-
-请确保你已经安装了 Node.js 12.x 或以上版本，如果你没有安装 Node.js 可以从官网下载并安装最新的 LTS 版本。如果你打算长期与 Node.js 打交道，推荐使用 nvm（Win 系统可以使用 nvm-windows ）来管理 Node.js 版本。
-
-```bash
-$ node -v
-
-v16.13.2
-```
-
-推荐使用 yarn 包管理器。
-
-```bash
-$ npm install --global yarn
-$ yarn -v
-
-1.22.10
-```
-
-由于国内网络环境的原因，强烈建议你更换国内镜像。
-
-```bash
-$ yarn config set registry https://registry.npmmirror.com/
-$ yarn config set sqlite3_binary_host_mirror https://npmmirror.com/mirrors/sqlite3/
-```
-
-最后，请确保你已经配置并启动所需数据库，数据库支持 SQLite（无需安装启动）、MySQL、PostgreSQL。
-
-#### 1. 创建 NocoBase 项目
-
-```bash
-# SQLite
-yarn create nocobase-app my-nocobase-app -d sqlite
-# MySQL
-yarn create nocobase-app my-nocobase-app -d mysql \
-   -e DB_HOST=localhost \
-   -e DB_PORT=3356 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase
-# PostgreSQL
-yarn create nocobase-app my-nocobase-app -d postgres \
-   -e DB_HOST=localhost \
-   -e DB_PORT=5432 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase
-```
-
-#### 2. 切换目录
-
-```bash
-cd my-nocobase-app
-```
-
-#### 3. 安装依赖
-
-📢 由于网络环境、系统配置等因素影响，接下来这一步骤可能需要十几分钟时间。  
-
-```bash
-yarn install
-```
-
-#### 4. 安装并启动 NocoBase
-
-```bash
-yarn nocobase install --lang=zh-CN
-yarn start
-```
-
-#### 5. 登录 NocoBase
-
-使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
-
-## 贡献
-
-- Fork 源代码到自己的仓库
-- 修改源代码
-- 提交 Pull Request
-
-### 下载项目
-
-```bash
-# 替换为自己的仓库地址
-git clone https://github.com/nocobase/nocobase.git
-cd nocobase
-cp .env.example .env
-yarn install
-```
-
-### 应用开发与测试
-
-```bash
-# 安装
-yarn nocobase install --lang=zh-CN
-# 启动应用
-yarn start
-# 运行所有测试
-yarn test
-# 运行文件夹下所有测试文件
-yarn test <dir>
-# 运行单个测试文件
-yarn test <file>
-```
-
-### 文档预览
-
-```bash
-# 启动文档
-yarn doc --lang=zh-CN
-yarn doc --lang=en-US
-```
-
-文档在 docs 目录下，遵循 Markdown 语法
-
-```bash
-|- /docs/
-  |- en-US
-  |- zh-CN
-```
+   如果你想体验最新未发布版本，或者想参与贡献，需要在源码上进行修改、调试，建议选择这种安装方式，对开发技术水平要求较高，如果代码有更新，可以走 git 流程拉取最新代码。

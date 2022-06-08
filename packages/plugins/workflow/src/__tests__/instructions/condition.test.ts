@@ -8,7 +8,7 @@ import { EXECUTION_STATUS, BRANCH_INDEX } from '../../constants';
 describe('workflow > instructions > condition', () => {
   let app: Application;
   let db: Database;
-  let PostModel;
+  let PostRepo;
   let WorkflowModel;
   let workflow;
 
@@ -17,7 +17,7 @@ describe('workflow > instructions > condition', () => {
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
-    PostModel = db.getCollection('posts').model;
+    PostRepo = db.getCollection('posts').repository;
 
     workflow = await WorkflowModel.create({
       title: 'test workflow',
@@ -65,7 +65,7 @@ describe('workflow > instructions > condition', () => {
         upstreamId: n1.id
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -102,7 +102,7 @@ describe('workflow > instructions > condition', () => {
         upstreamId: n1.id
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -140,7 +140,7 @@ describe('workflow > instructions > condition', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -169,7 +169,7 @@ describe('workflow > instructions > condition', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -198,7 +198,7 @@ describe('workflow > instructions > condition', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions({ include: ['jobs'] });
       const [job] = execution.jobs;
@@ -227,7 +227,7 @@ describe('workflow > instructions > condition', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -261,7 +261,7 @@ describe('workflow > instructions > condition', () => {
         }
       });
 
-      const post = await PostModel.create({ title: 't1' });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();

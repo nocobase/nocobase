@@ -58,6 +58,28 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
+    this.app.db.on('collections.afterDestroy', async (model, { transaction }) => {
+      const name = model.get('name');
+
+      const fields = await this.app.db.getRepository('fields').find({
+        filter: {
+          'type.$in': ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'],
+        },
+        transaction,
+      });
+
+      const deleteFieldsKey = fields
+        .filter((field) => (field.get('options') as any)?.target === name)
+        .map((field) => field.get('key') as string);
+
+      await this.app.db.getRepository('fields').destroy({
+        filter: {
+          'key.$in': deleteFieldsKey,
+        },
+        transaction,
+      });
+    });
+
     this.app.db.on('fields.afterCreate', async (model, { context, transaction }) => {
       if (context) {
         await model.migrate({ transaction });
