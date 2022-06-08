@@ -8,7 +8,7 @@ NocoBase adopts the design idea of separating the data structure from the user i
 
 ![2.collection-block.png](./user-manual/introduction/important-features/2.collection-block.png)
 
-## 2. Integrate "Configuration" and "use"
+## 2. Integrate "system configuration" and "system use"
 
 NocoBase enables the development of complex and distinctive business systems, but this does not mean that complex and specialized operations are required. With a single click, configuration options can be displayed on the usage interface, which means that administrators with system configuration rights can configure the user interface directly with WYSIWYG operations.
 
