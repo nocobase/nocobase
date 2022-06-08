@@ -17,6 +17,8 @@ export const o2m: IField = {
     uiSchema: {
       // title,
       'x-component': 'RecordPicker',
+      // type: 'void',
+      // 'x-component': 'TableField',
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
@@ -29,13 +31,14 @@ export const o2m: IField = {
     reverseField: {
       interface: 'm2o',
       type: 'belongsTo',
+      title: '{{t("Many to one")}}',
       // name,
       uiSchema: {
         // title,
         'x-component': 'RecordPicker',
         'x-component-props': {
           // mode: 'tags',
-          multiple: true,
+          multiple: false,
           fieldNames: {
             label: 'id',
             value: 'id',
@@ -100,10 +103,10 @@ export const o2m: IField = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       enum: [
-        { label: 'One to one', value: 'hasOne' },
-        { label: 'One to many', value: 'hasMany' },
-        { label: 'Many to one', value: 'belongsTo' },
-        { label: 'Many to many', value: 'belongsToMany' },
+        { label: "{{t('One to one')}}", value: 'hasOne' },
+        { label: "{{t('One to many')}}", value: 'hasMany' },
+        { label: "{{t('Many to one')}}", value: 'belongsTo' },
+        { label: "{{t('Many to many')}}", value: 'belongsToMany' },
       ],
     },
     grid: {
@@ -168,8 +171,13 @@ export const o2m: IField = {
                 foreignKey: {
                   type: 'string',
                   title: '{{t("Foreign key")}}',
+                  required: true,
+                  default: `f_${uid()}`,
+                  description:
+        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'TargetForeignKey',
+                  'x-component': 'Input',
+                  'x-disabled': '{{ !createOnly }}',
                 },
               },
             },
