@@ -1,28 +1,30 @@
 import lodash from 'lodash';
-import type { SequelizeHooks } from 'sequelize/types/lib/hooks';
 import Database from './database';
 import { Model } from './model';
+import type { SequelizeHooks } from 'sequelize/types/lib/hooks';
 
 const { hooks } = require('sequelize/lib/hooks');
 
+
+
 export class ModelHook {
   database: Database;
-  boundEvent = new Set<string>();
+
+  boundEvents = new Set<string>();
 
   constructor(database: Database) {
     this.database = database;
   }
 
-  isModelHook(eventName: string | symbol): keyof SequelizeHooks | false {
-    if (lodash.isString(eventName)) {
-      const hookType = eventName.split('.').pop();
-
-      if (hooks[hookType]) {
-        return <keyof SequelizeHooks>hookType;
-      }
+  match(event: string | Symbol): keyof SequelizeHooks | null {
+    // NOTE: skip Symbol event
+    if (!lodash.isString(event)) {
+      return null;
     }
 
-    return false;
+    const type = event.split('.').pop();
+
+    return type in hooks ? <keyof SequelizeHooks>type : null;
   }
 
   findModelName(hookArgs) {
@@ -47,25 +49,24 @@ export class ModelHook {
     return null;
   }
 
-  bindEvent(eventName) {
-    this.boundEvent.add(eventName);
+  bindEvent(type) {
+    this.boundEvents.add(type);
   }
 
-  hasBindEvent(eventName) {
-    return this.boundEvent.has(eventName);
+  hasBoundEvent(type): boolean {
+    return this.boundEvents.has(type);
   }
 
-  sequelizeHookBuilder(eventName) {
+  buildSequelizeHook(type) {
     return async (...args: any[]) => {
       const modelName = this.findModelName(args);
-
       if (modelName) {
         // emit model event
-        await this.database.emitAsync(`${modelName}.${eventName}`, ...args);
+        await this.database.emitAsync(`${modelName}.${type}`, ...args);
       }
 
       // emit sequelize global event
-      await this.database.emitAsync(eventName, ...args);
+      await this.database.emitAsync(type, ...args);
     };
   }
 }

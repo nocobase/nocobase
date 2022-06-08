@@ -204,6 +204,53 @@ describe('database', () => {
     expect(listener).toHaveBeenCalled();
   });
 
+  test('off collection event', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    const postAfterCreateListener = jest.fn();
+
+    db.on('posts.afterCreate', postAfterCreateListener);
+
+    await db.sync();
+
+    db.off('posts.afterCreate', postAfterCreateListener);
+
+    await Post.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
+
+    expect(postAfterCreateListener).toHaveBeenCalledTimes(0);
+  });
+
+  test('off global event', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    const postAfterCreateListener = jest.fn();
+
+    db.on('posts.afterCreate', postAfterCreateListener);
+    db.on('afterCreate', postAfterCreateListener);
+
+    await db.sync();
+
+    db.off('afterCreate', postAfterCreateListener);
+
+    await Post.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
+
+    expect(postAfterCreateListener).toHaveBeenCalledTimes(1);
+  });
+
   test('custom model', async () => {
     class CustomModel extends Model {
       customMethod() {

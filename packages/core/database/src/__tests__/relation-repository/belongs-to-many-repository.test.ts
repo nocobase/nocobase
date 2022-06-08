@@ -308,7 +308,7 @@ describe('belongs to many', () => {
       offset: 0,
     });
 
-    console.log(tags);
+    // console.log(tags);
   });
 
   test('update raw attribute', async () => {
