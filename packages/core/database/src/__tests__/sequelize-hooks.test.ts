@@ -14,7 +14,7 @@ describe('sequelize-hooks', () => {
     await db.close();
   });
 
-  test.only('exec order', async () => {
+  test('exec order', async () => {
     const collection = db.collection({
       name: 't_test',
     });

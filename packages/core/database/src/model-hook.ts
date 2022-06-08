@@ -59,20 +59,14 @@ export class ModelHook {
 
   buildSequelizeHook(type) {
     return async (...args: any[]) => {
-      const before = type.startsWith('before');
-      if (before) {
-        await this.database.emitAsync(type, ...args);
-      }
-
       const modelName = this.findModelName(args);
       if (modelName) {
         // emit model event
         await this.database.emitAsync(`${modelName}.${type}`, ...args);
       }
 
-      if (!before) {
-        await this.database.emitAsync(type, ...args);
-      }
+      // emit sequelize global event
+      await this.database.emitAsync(type, ...args);
     };
   }
 }
