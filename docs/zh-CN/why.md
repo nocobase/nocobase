@@ -8,9 +8,8 @@ NocoBase 采用数据结构与使用界面分离的设计思路，可以为数�
 
 ![2.collection-block.png](./user-manual/introduction/important-features/2.collection-block.png)
 
-## 2. “系统配置”与“系统使用”分离
-
-NocoBase 用来开发相对复杂的业务系统。在这些场景中，我们希望系统开发者与系统使用者是不同的角色。使用者看到的是一个成熟的、经过精心设计的系统，就像原生开发出来的产品一样，而不是僵化的、可以自由拖拽的、随时修改的系统；而开发者则可以采用所见即所得的方式快速开发系统。
+## 2. “配置”与“使用”融为一体
+NocoBase 可以开发复杂和有特色的业务系统，但这并意味着需要复杂和专业的操作。只需一次点击，就可以在使用界面上显示出配置选项，这意味着具备系统配置权限的管理员可以用所见即所得的操作方式，直接配置用户的使用界面。
 
 ![2.user-root.gif](./user-manual/introduction/important-features/2.user-root.gif)
 
