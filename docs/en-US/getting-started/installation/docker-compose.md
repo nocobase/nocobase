@@ -14,18 +14,42 @@ git clone https://github.com/nocobase/nocobase.git nocobase
 
 ## 2. Select database (choose one)
 
-Supports SQLite, MySQL, PostgreSQL
+Change the directory to the folder downloaded in the first step.
 
 ```bash
-# SQLite
-cd nocobase/docker/app-sqlite
-# MySQL
-cd nocobase/docker/app-mysql
-# PostgreSQL
-cd nocobase/docker/app-postgres
+# MacOS, Linux...
+cd /your/path/nocobase
+# Windows
+cd C:\your\path\nocobase
+```
+
+The docker configuration of different databases is slightly different, please choose to switch to the corresponding directory.
+
+### SQLite
+
+```bash
+cd docker/app-sqlite
+```
+
+### MySQL
+
+```bash
+cd docker/app-mysql
+```
+
+### PostgreSQL
+
+```bash
+cd docker/app-postgres
 ```
 
 ## 3. Configure docker-compose.yml (optional)
+
+<Alert>
+
+Non-developers skip this step. If you know development, you can also learn more about how to configure `docker-compose.yml`.
+
+</Alert>
 
 Directory structure (related to docker)
 

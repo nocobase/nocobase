@@ -152,9 +152,10 @@ const useBulkDestroySubField = () => {
   };
 };
 
+// 获取当前字段列表
 const useCurrentFields = () => {
   const record = useRecord();
-
+  // 仅当当前字段为子表单时，从DataSourceContext中获取已配置的字段列表
   if (record.__parent && record.__parent.interface === 'subTable') {
     const ctx = useContext(DataSourceContext);
     return ctx.dataSource;
@@ -163,6 +164,10 @@ const useCurrentFields = () => {
   const { getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(record.collectionName || record.name) as any[];
   return fields;
+}
+
+const useNewId = (prefix) => {
+  return `${prefix || ''}${uid()}`;
 }
 
 export const ConfigurationTable = () => {
@@ -190,6 +195,7 @@ export const ConfigurationTable = () => {
           useAsyncDataSource,
           loadCollections,
           useCurrentFields,
+          useNewId,
         }}
       />
     </div>

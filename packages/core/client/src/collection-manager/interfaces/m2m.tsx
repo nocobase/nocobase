@@ -84,10 +84,10 @@ export const m2m: IField = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       enum: [
-        { label: 'One to one', value: 'hasOne' },
-        { label: 'One to many', value: 'hasMany' },
-        { label: 'Many to one', value: 'belongsTo' },
-        { label: 'Many to many', value: 'belongsToMany' },
+        { label: "{{t('One to one')}}", value: 'hasOne' },
+        { label: "{{t('One to many')}}", value: 'hasMany' },
+        { label: "{{t('Many to one')}}", value: 'belongsTo' },
+        { label: "{{t('Many to many')}}", value: 'belongsToMany' },
       ],
     },
     grid: {
@@ -118,9 +118,9 @@ export const m2m: IField = {
                 through: {
                   type: 'string',
                   title: '{{t("Through collection")}}',
+                  'x-decorator': 'FormItem',
                   'x-disabled': '{{ !createOnly }}',
                   'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
-                  'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-component-props': {
                     allowClear: true,
@@ -170,8 +170,12 @@ export const m2m: IField = {
                 foreignKey: {
                   type: 'string',
                   title: '{{t("Foreign key 1")}}',
+                  required: true,
+                  default: '{{ useNewId("f_") }}',
+                  description:
+        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'ThroughForeignKey',
+                  'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },
@@ -179,7 +183,9 @@ export const m2m: IField = {
             col23: {
               type: 'void',
               'x-component': 'Grid.Col',
-              properties: {},
+              properties: {
+
+              },
             },
           },
         },
@@ -199,8 +205,12 @@ export const m2m: IField = {
                 otherKey: {
                   type: 'string',
                   title: '{{t("Foreign key 2")}}',
+                  required: true,
+                  default: '{{ useNewId("f_") }}',
+                  description:
+        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'ThroughForeignKey',
+                  'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },

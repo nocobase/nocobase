@@ -1,5 +1,4 @@
 import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
 import { recordPickerSelector, recordPickerViewer } from './properties';
 import { IField } from './types';
@@ -55,25 +54,6 @@ export const m2o: IField = {
       };
     }
   },
-  initialize: (values: any) => {
-    if (values.type === 'belongsToMany') {
-      if (!values.through) {
-        values.through = `t_${uid()}`;
-      }
-      if (!values.foreignKey) {
-        values.foreignKey = `f_${uid()}`;
-      }
-      if (!values.otherKey) {
-        values.otherKey = `f_${uid()}`;
-      }
-      if (!values.sourceKey) {
-        values.sourceKey = 'id';
-      }
-      if (!values.targetKey) {
-        values.targetKey = 'id';
-      }
-    }
-  },
   properties: {
     'uiSchema.title': {
       type: 'string',
@@ -100,10 +80,10 @@ export const m2o: IField = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       enum: [
-        { label: 'One to one', value: 'hasOne' },
-        { label: 'One to many', value: 'hasMany' },
-        { label: 'Many to one', value: 'belongsTo' },
-        { label: 'Many to many', value: 'belongsToMany' },
+        { label: "{{t('One to one')}}", value: 'hasOne' },
+        { label: "{{t('One to many')}}", value: 'hasMany' },
+        { label: "{{t('Many to one')}}", value: 'belongsTo' },
+        { label: "{{t('Many to many')}}", value: 'belongsToMany' },
       ],
     },
     grid: {
@@ -155,8 +135,12 @@ export const m2o: IField = {
                 foreignKey: {
                   type: 'string',
                   title: '{{t("Foreign key")}}',
+                  required: true,
+                  default: '{{ useNewId("f_") }}',
+                  description:
+        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'SourceForeignKey',
+                  'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },
