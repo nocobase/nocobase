@@ -1,12 +1,10 @@
-import { Field } from '@formily/core';
-import { useFieldSchema, useForm } from '@formily/react';
+import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useEffect, useState } from 'react';
 import { useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
 import { SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useCollection } from '../hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
@@ -33,6 +31,7 @@ const useCollectionValues = (options) => {
           createdBy: true,
           updatedBy: true,
           sortable: true,
+          logging: true,
           fields: [
             {
               name: 'id',

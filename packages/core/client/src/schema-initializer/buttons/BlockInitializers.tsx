@@ -164,6 +164,12 @@ export const BlockInitializers = {
           title: '{{t("Markdown")}}',
           component: 'MarkdownBlockInitializer',
         },
+        {
+          key: 'auditLogs',
+          type: 'item',
+          title: '{{t("Audit logs")}}',
+          component: 'AuditLogsBlockInitializer',
+        },
       ],
     },
   ],
