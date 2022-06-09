@@ -1,9 +1,8 @@
 import { ConfigProvider, Spin } from 'antd';
-import enUS from 'antd/lib/locale/en_US';
-import zhCN from 'antd/lib/locale/zh_CN';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
+import locale from '../locale';
 
 export function AntdConfigProvider(props) {
   const { remoteLocale, ...others } = props;
@@ -28,7 +27,7 @@ export function AntdConfigProvider(props) {
     return <Spin />;
   }
   return (
-    <ConfigProvider {...others} locale={i18n.language === 'zh-CN' ? zhCN : enUS}>
+    <ConfigProvider {...others} locale={locale[i18n.language].antd}>
       {props.children}
     </ConfigProvider>
   );

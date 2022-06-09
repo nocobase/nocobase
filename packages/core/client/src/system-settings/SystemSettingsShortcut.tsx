@@ -89,6 +89,19 @@ const schema: ISchema = {
             { label: '简体中文', value: 'zh-CN' },
           ],
         },
+        enabledLanguages: {
+          type: 'array',
+          title: '{{t("Enabled languages")}}',
+          'x-component': 'Select',
+          "x-component-props": {
+            mode: 'multiple',
+          },
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: 'English', value: 'en-US' },
+            { label: '简体中文', value: 'zh-CN' },
+          ],
+        },
         allowSignUp: {
           type: 'boolean',
           default: true,
