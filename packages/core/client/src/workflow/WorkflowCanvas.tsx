@@ -8,7 +8,6 @@ import {
   useAPIClient,
   useCompile,
   useDocumentTitle,
-  useRecord,
   useResourceActionContext,
   useResourceContext
 } from '..';
@@ -79,13 +78,13 @@ export function WorkflowCanvas() {
     refresh();
   }
 
-  async function onDuplicate() {
-    const { data: { data: duplicated } } = await resource.duplicate({
+  async function onRevision() {
+    const { data: { data: revision } } = await resource.revision({
       filterByTk: workflow[targetKey]
     });
     message.success(t('Operation succeeded'));
 
-    history.push(`${duplicated.id}`);
+    history.push(`${revision.id}`);
   }
 
   return (
@@ -134,7 +133,7 @@ export function WorkflowCanvas() {
           />
           {workflow.executed && !revisions.find(item => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt))
             ? (
-              <Button onClick={onDuplicate}>{t('Copy to new version')}</Button>
+              <Button onClick={onRevision}>{t('Copy to new version')}</Button>
             )
             : null
           }
