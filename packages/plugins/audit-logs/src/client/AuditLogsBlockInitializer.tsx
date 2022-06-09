@@ -14,9 +14,17 @@ export const AuditLogsBlockInitializer = (props) => {
         insert({
           type: 'void',
           'x-designer': 'AuditLogs.Designer',
-          'x-component': 'AuditLogs',
-          'x-component-props': {},
-          'x-decorator': 'CardItem',
+          'x-decorator': 'AuditLogs.Decorator',
+          'x-decorator-props': {
+            params: {},
+          },
+          'x-component': 'CardItem',
+          properties: {
+            auditLogs: {
+              type: 'void',
+              'x-component': 'AuditLogs',
+            },
+          },
         });
       }}
       title={t('Audit Logs')}
