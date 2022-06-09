@@ -173,7 +173,7 @@ describe('update associations', () => {
       await updateAssociations(user1, {
         posts: post1,
       });
-      console.log(JSON.stringify(user1, null, 2));
+
       expect(user1.toJSON()).toMatchObject({
         name: 'user1',
       });
@@ -191,7 +191,7 @@ describe('update associations', () => {
           name: 'post111',
         },
       });
-      console.log(JSON.stringify(user1, null, 2));
+
       expect(user1.toJSON()).toMatchObject({
         name: 'user1',
       });
@@ -216,7 +216,7 @@ describe('update associations', () => {
           post3,
         ],
       });
-      console.log(JSON.stringify(user1, null, 2));
+
       expect(user1.toJSON()).toMatchObject({
         name: 'user1',
       });

@@ -356,13 +356,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.close();
   }
 
-  on(event: string | symbol, listener: (...args: any[]) => void): this {
-    const modelEventName = this.modelHook.isModelHook(event);
+  on(event: string | symbol, listener): this {
+    // NOTE: to match if event is a sequelize or model type
+    const type = this.modelHook.match(event);
 
-    if (modelEventName && !this.modelHook.hasBindEvent(modelEventName)) {
-      this.sequelize.addHook(modelEventName, this.modelHook.sequelizeHookBuilder(modelEventName));
-
-      this.modelHook.bindEvent(modelEventName);
+    if (type && !this.modelHook.hasBoundEvent(type)) {
+      this.sequelize.addHook(type, this.modelHook.buildSequelizeHook(type));
+      this.modelHook.bindEvent(type);
     }
 
     return super.on(event, listener);

@@ -113,7 +113,7 @@ const useCreateCollectionField = () => {
 
       recursiveChildren(form?.values?.children);
 
-      if (form?.values?.interface === 'linkTo' && title) {
+      if (['o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(form?.values?.interface) && title) {
         form.setValuesIn('reverseField.uiSchema.title', title);
       }
       await run();

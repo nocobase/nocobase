@@ -8,13 +8,13 @@ NocoBase adopts the design idea of separating the data structure from the user i
 
 ![2.collection-block.png](./user-manual/introduction/important-features/2.collection-block.png)
 
-## 2. Separate "system configuration" and "system usage"
+## 2. Integrate "system configuration" and "system use"
 
-NocoBase is used to develop relatively complex business systems. In these scenarios, we want the system developers and the system users to be different roles. The user sees a mature, well-designed system, like a product developed natively, rather than a rigid, drag-and-drop free system that can be modified at any time; while the developer can quickly develop the system using a WYSIWYG approach.
+NocoBase enables the development of complex and distinctive business systems, but this does not mean that complex and specialized operations are required. With a single click, configuration options can be displayed on the usage interface, which means that administrators with system configuration rights can configure the user interface directly with WYSIWYG operations.
 
 ![2.user-root.gif](./user-manual/introduction/important-features/2.user-root.gif)
 
-## 3. Everything is plugins
+## 3. Everything is a plugin
 
 NocoBase adopts plugin architecture, all new features can be implemented by developing and installing plugins. In the future, we will build a plug-in marketplace where extending functionality is as easy as installing an APP on your phone.
 

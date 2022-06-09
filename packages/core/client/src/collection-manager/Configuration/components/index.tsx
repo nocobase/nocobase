@@ -3,6 +3,7 @@ import { observer, useField, useForm } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
 import { useRecord } from '../../../record-provider';
+import { useCompile } from '../../../schema-component';
 import { useCollectionManager } from '../../hooks';
 
 export const SourceForeignKey = observer(() => {
@@ -79,9 +80,10 @@ export const SourceCollection = observer(() => {
   const record = useRecord();
   const { getCollection } = useCollectionManager();
   const collection = record?.collectionName ? getCollection(record.collectionName) : record;
+  const compile = useCompile();
   return (
     <div>
-      <Select disabled value={collection.name} options={[{ value: collection.name, label: collection.title }]} />
+      <Select disabled value={collection.name} options={[{ value: collection.name, label: compile(collection.title) }]} />
     </div>
   );
 });
