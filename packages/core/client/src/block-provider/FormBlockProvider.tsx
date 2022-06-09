@@ -3,6 +3,7 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { useCollectionManager } from '../collection-manager';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -33,6 +34,14 @@ const InternalFormBlockProvider = (props) => {
       {props.children}
     </FormBlockContext.Provider>
   );
+};
+
+const useAssociationNames = (collection) => {
+  const { getCollectionFields } = useCollectionManager();
+  const names = getCollectionFields(collection)
+    ?.filter((field) => field.target)
+    .map((field) => field.name);
+  return names;
 };
 
 export const FormBlockProvider = (props) => {

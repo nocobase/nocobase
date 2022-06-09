@@ -16,7 +16,7 @@ export const useBlockResource = () => {
   return useContext(BlockResourceContext);
 };
 
-interface UseReousrceProps {
+interface UseResourceProps {
   resource: any;
   association?: any;
   useSourceId?: any;
@@ -33,12 +33,13 @@ const useAssociation = (props) => {
   }
 };
 
-const useReousrce = (props: UseReousrceProps) => {
+const useResource = (props: UseResourceProps) => {
   const { block, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
+
   const field = useField<Field>();
   if (block === 'TableField') {
     const options = {
@@ -60,6 +61,7 @@ const useReousrce = (props: UseReousrceProps) => {
   if (sourceId) {
     return api.resource(resource, sourceId);
   }
+  
   return api.resource(resource, record[association?.sourceKey || 'id']);
 };
 
@@ -121,7 +123,7 @@ export const useBlockRequestContext = () => {
 
 export const BlockProvider = (props) => {
   const { collection, association } = props;
-  const resource = useReousrce(props);
+  const resource = useResource(props);
   return (
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
@@ -150,9 +152,9 @@ export const useFilterByTk = () => {
       return recordIndex;
     }
   }
-  if (assoc) {
+  if (assoc) { 
     const association = getCollectionField(assoc);
-    return record?.[association.targetKey || 'id'];
+    return record?.[association.name]?.[association.targetKey || 'id'];
   }
   return record?.[collection.filterTargetKey || 'id'];
 };

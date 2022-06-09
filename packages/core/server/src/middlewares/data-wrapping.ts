@@ -18,7 +18,7 @@ export function dataWrapping() {
  
     if (!ctx.body) {
       if (ctx.action.actionName == 'get') {
-        ctx.status = 404;
+        ctx.status = 200;
       }
     }
 

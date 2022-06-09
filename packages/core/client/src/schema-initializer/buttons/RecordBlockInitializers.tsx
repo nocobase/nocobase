@@ -5,9 +5,57 @@ import { gridRowColWrap } from '../utils';
 
 const useRelationFields = () => {
   const { fields } = useCollection();
-  return fields
-    .filter((field) => ['linkTo', 'subTable'].includes(field.interface))
+  const relationFields = fields
+    .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'o2o', 'm2o'].includes(field.interface))
     .map((field) => {
+      if (['hasOne', 'belongsTo'].includes(field.type)) {
+        return {
+          key: field.name,
+          type: 'subMenu',
+          title: field?.uiSchema?.title || field.name,
+          children: [
+            {
+              key: `${field.name}_details_0`,
+              type: 'item',
+              title: '{{t("Details")}}',
+              field,
+              component: 'RecordReadPrettyAssociationFormBlockInitializer',
+            },
+            {
+              key: `${field.name}_form_1`,
+              type: 'item',
+              title: '{{t("Form")}}',
+              field,
+              component: 'RecordAssociationFormBlockInitializer',
+            },
+          ],
+        }
+      }
+
+      if (['hasMany', 'belongsToMany'].includes(field.type)) {
+        return {
+          key: field.name,
+          type: 'subMenu',
+          title: field?.uiSchema?.title || field.name,
+          children: [
+            {
+              key: `${field.name}_table_0`,
+              type: 'item',
+              title: '{{t("Table")}}',
+              field,
+              component: 'RecordAssociationBlockInitializer',
+            },
+            {
+              key: `${field.name}_form_1`,
+              type: 'item',
+              title: '{{t("Form")}}',
+              field,
+              component: 'RecordAssociationFormBlockInitializer',
+            },
+          ],
+        }
+      }
+
       return {
         key: field.name,
         type: 'item',
@@ -16,6 +64,7 @@ const useRelationFields = () => {
         component: 'RecordAssociationBlockInitializer',
       };
     }) as any;
+    return relationFields;
 };
 
 export const RecordBlockInitializers = (props: any) => {

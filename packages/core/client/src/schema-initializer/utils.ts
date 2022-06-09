@@ -197,11 +197,11 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   };
 };
 
-export const useRecordCollectionDataSourceItems = (componentName) => {
+export const useRecordCollectionDataSourceItems = (componentName, item = null, collectionName = null) => {
   const { t } = useTranslation();
   const collection = useCollection();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
-  const templates = getTemplatesByCollection(collection.name).filter((template) => {
+  const templates = getTemplatesByCollection(collectionName || collection.name).filter((template) => {
     return componentName && template.componentName === componentName;
   });
   if (!templates.length) {
@@ -210,15 +210,17 @@ export const useRecordCollectionDataSourceItems = (componentName) => {
   const index = 0;
   return [
     {
+      key: `${collectionName || componentName}_table_blank`,
       type: 'item',
       name: collection.name,
       title: t('Blank block'),
+      item,
     },
     {
       type: 'divider',
     },
     {
-      key: `${componentName}_table_subMenu_${index}_copy`,
+      key: `${collectionName || componentName}_table_subMenu_${index}_copy`,
       type: 'subMenu',
       name: 'copy',
       title: t('Duplicate template'),
@@ -230,12 +232,13 @@ export const useRecordCollectionDataSourceItems = (componentName) => {
           mode: 'copy',
           name: collection.name,
           template,
+          item,
           title: templateName || t('Untitled'),
         };
       }),
     },
     {
-      key: `${componentName}_table_subMenu_${index}_ref`,
+      key: `${collectionName || componentName}_table_subMenu_${index}_ref`,
       type: 'subMenu',
       name: 'ref',
       title: t('Reference template'),
@@ -247,6 +250,7 @@ export const useRecordCollectionDataSourceItems = (componentName) => {
           mode: 'reference',
           name: collection.name,
           template,
+          item,
           title: templateName || t('Untitled'),
         };
       }),
@@ -412,6 +416,7 @@ export const createFormBlockSchema = (options) => {
     template,
     ...others
   } = options;
+  console.log('createFormBlockSchema', options);
   const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
