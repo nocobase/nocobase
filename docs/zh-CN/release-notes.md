@@ -1,5 +1,45 @@
 # 更新日志
 
+## To be released
+
+- fix(plugin-multi-app-manager): fix pg cannot create database block tests
+- refactor(database): hook proxy (#402) 
+- feat: chart blocks (#484) 
+- refactor(plugin workflow): support number in repeat config for schedule
+- chore(debug): add debug config (#475)
+- fix: has one bug 
+- feat: relationships (#473) 
+- fix(plugin-workflow): fix collection trigger transaction (#474)
+- fix(plugin-workflow): temporary solution for collection trigger conditions
+- fix: markdown component (#469)
+- fix: formula field and percent field (#467) 
+- fix(plugin-workflow): fix update workflow action (#464)
+- fix(acl): skip when field does not exist
+- fix: update formula field and percent field (#461)
+- fix(client): export useSignin and useSignup
+- fix(ci): node_version = 14
+- fix(cli): yarn install --production error
+- fix(client): build error
+- feat: add formula field type (#457) 
+- fix: the details of the associated data in the subtable are not displayed
+- fix(plugin-workflow): fix languages (#451) 
+- fix: afterSync hook not triggered (#450)
+
+## 2022/06/01 ~ v0.7.0-alpha.83
+
+- fix: default value of time zone
+- fix(database): add timezone support
+- docs(various): Improve readability (#447) 
+- fix(client): datetime with timezone
+- feat(plugin-file-manager): record the creator of the attachment
+- feat: custom request (#439)
+- feat(plugin workflow): schedule trigger (#438) 
+- feat(database): db migrator (#432) 
+- fix(client): select component cannot be opened in sub-table block (#431)
+- fix: error message "error:0308010C:digital envelope routines::unsupported
+- docs(github): change to markdown format (#430)
+- fix(cli): typo (#429)
+
 ## 2022/05/26 ~ v0.7.0-alpha.82
 
 - feat(client,sdk): improve api client
