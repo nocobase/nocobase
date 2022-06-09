@@ -62,12 +62,14 @@ export const G2Plot: any = observer((props: any) => {
   const { t } = useTranslation();
   useEffect(() => {
     field.data = field.data || {};
-    field.data.loaded = false;
     if (typeof config?.data?.then === 'function') {
+      field.data.loaded = false;
       config?.data?.then((data) => {
         field.componentProps.config.data = data;
         field.data.loaded = true;
       });
+    } else {
+      field.data.loaded = true;
     }
   }, []);
   if (!plot || !config) {
