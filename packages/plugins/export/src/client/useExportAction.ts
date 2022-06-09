@@ -10,7 +10,7 @@ export const useExportAction = () => {
 
   return {
     async onClick() {
-      const { export: exportSettings } = actionSchema?.['x-action-settings'] ?? {};
+      const { exportSettings } = actionSchema?.['x-action-settings'] ?? {};
       const { data } = await apiClient.request({
         url: `/${name}:exportXlsx`,
         method: 'get',

@@ -468,6 +468,7 @@ SchemaSettings.PopupItem = (props) => {
 
 SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, ...others } = props;
+  debugger;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -476,10 +477,12 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const { dn } = useSchemaSettings();
   const compile = useCompile();
   const api = useAPIClient();
+
   const form = useMemo(
     () =>
       createForm({
         initialValues: cloneDeep(initialValues),
+        values: cloneDeep(initialValues),
       }),
     [],
   );
@@ -508,7 +511,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
 
   return (
     <>
-      <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler}>
+      <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler} onKeyDown={(e) => e.stopPropagation()}>
         {props.children || props.title}
       </SchemaSettings.Item>
       {createPortal(

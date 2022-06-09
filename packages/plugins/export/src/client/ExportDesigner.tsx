@@ -1,41 +1,22 @@
+import { ArrayItems } from '@formily/antd';
 import type { ISchema } from '@formily/react';
 import { useField, useFieldSchema } from '@formily/react';
-import {
-  GeneralSchemaDesigner,
-  SchemaSettings,
-  useCollection,
-  useDesignable,
-  useResourceActionContext,
-} from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExportSettings } from './ExportSettings';
+import { useShared } from './useShared';
 
 export const ExportDesigner = () => {
-  const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const ctx = useResourceActionContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const [schema, setSchema] = useState<ISchema>();
+  const { schema: pageSchema } = useShared();
 
   useEffect(() => {
-    const schema: ISchema = {
-      type: 'void',
-      'x-component': 'Grid',
-      properties: {
-        exportSettings: {
-          type: 'array',
-          'x-component': 'ExportSettings',
-          'x-component-props': {
-            initialValues: fieldSchema?.['x-action-settings']?.['export'],
-          },
-        },
-      },
-    };
-    setSchema(schema);
-  }, [field.address, fieldSchema?.['x-action-settings']?.['export']]);
+    setSchema(pageSchema);
+  }, [field.address, fieldSchema?.['x-action-settings']?.['exportSettings']]);
 
   return (
     <GeneralSchemaDesigner disableInitializer>
@@ -107,12 +88,18 @@ export const ExportDesigner = () => {
       <SchemaSettings.ActionModalItem
         title={t('Export fields')}
         schema={schema}
-        initialValues={fieldSchema?.['x-action-settings']?.export}
-        components={{ ExportSettings }}
+        initialValues={{ exportSettings: fieldSchema?.['x-action-settings']?.exportSettings }}
+        components={{ ArrayItems }}
         onSubmit={({ exportSettings }) => {
-          fieldSchema['x-action-settings']['export'] = exportSettings?.filter(
-            (fieldItem) => fieldItem?.dataIndex?.length,
-          );
+          debugger;
+          fieldSchema['x-action-settings']['exportSettings'] = exportSettings
+            ?.filter((fieldItem) => fieldItem?.dataIndex?.length)
+            ?.map((item) => {
+              return {
+                ...item,
+                defaultTitle: item.dataIndex[item.dataIndex.length - 1],
+              };
+            });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],

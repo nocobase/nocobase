@@ -37,7 +37,7 @@ export const ExportActionInitializer = (props) => {
     title: '{{ t("Export") }}',
     'x-action': 'export',
     'x-action-settings': {
-      export: [],
+      exportSettings: [],
     },
     'x-designer': 'ExportDesigner',
     'x-component': 'Action',
