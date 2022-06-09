@@ -13,8 +13,6 @@ export default class PluginActionLogs extends Plugin {
     await this.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
-
-    console.log(this.db.getCollection('auditLogs').fields);
   }
 
   getName(): string {
