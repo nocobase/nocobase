@@ -11,7 +11,7 @@ export const ExecutionResourceProvider = ({ request, ...others }) => {
         ...request?.params,
         filter: {
           ...(request?.params?.filter),
-          workflowId: workflow.id
+          key: workflow.key
         }
       }
     },
