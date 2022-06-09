@@ -5,6 +5,7 @@ import { gridRowColWrap } from '../utils';
 
 const useRelationFields = () => {
   const { fields } = useCollection();
+  console.log('f', fields);
   const relationFields = fields
     .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'o2o', 'm2o'].includes(field.interface))
     .map((field) => {
@@ -15,14 +16,14 @@ const useRelationFields = () => {
           title: field?.uiSchema?.title || field.name,
           children: [
             {
-              key: `${field.name}_details_0`,
+              key: `${field.name}_details`,
               type: 'item',
               title: '{{t("Details")}}',
               field,
               component: 'RecordReadPrettyAssociationFormBlockInitializer',
             },
             {
-              key: `${field.name}_form_1`,
+              key: `${field.name}_form`,
               type: 'item',
               title: '{{t("Form")}}',
               field,
@@ -39,14 +40,21 @@ const useRelationFields = () => {
           title: field?.uiSchema?.title || field.name,
           children: [
             {
-              key: `${field.name}_table_0`,
+              key: `${field.name}_table`,
               type: 'item',
               title: '{{t("Table")}}',
               field,
               component: 'RecordAssociationBlockInitializer',
             },
             {
-              key: `${field.name}_form_1`,
+              key: `${field.name}_details`,
+              type: 'item',
+              title: '{{t("Details")}}',
+              field,
+              component: 'RecordAssociationDetailsBlockInitializer',
+            },
+            {
+              key: `${field.name}_form`,
               type: 'item',
               title: '{{t("Form")}}',
               field,

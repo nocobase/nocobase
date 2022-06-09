@@ -81,6 +81,7 @@ export const ActionInitializer = (props) => {
 export const DataBlockInitializer = (props) => {
   const { templateWrap, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  console.log('DataBlockInitializer', props);
   return (
     <SchemaInitializer.Item
       icon={<TableOutlined />}
@@ -797,6 +798,36 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
     />
   );
 };
+
+export const RecordAssociationDetailsBlockInitializer = (props) => {
+  const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  return (
+    <SchemaInitializer.Item
+      icon={<FormOutlined />}
+      {...others}
+      onClick={async ({ item }) => {
+        console.log('item', item);
+        const field = item.field || item.item?.field;
+
+        if (item.template) {
+          const s = await getTemplateSchemaByMode(item);
+          insert(s);
+        } else {
+          insert(
+            createDetailsBlockSchema({
+              collection: field.target,
+              resource: `${field.collectionName}.${field.name}`,
+              association: `${field.collectionName}.${field.name}`,
+              rowKey: field.targetKey || 'id',
+            }),
+          );
+        }
+      }}
+      items={useRecordCollectionDataSourceItems('Details', props.item, props.item?.field?.target)}
+    />
+  );
+}
 
 export const RecordAssociationBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
