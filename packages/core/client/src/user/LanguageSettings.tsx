@@ -11,7 +11,7 @@ export const LanguageSettings = () => {
   const ctx = useCurrentUserContext();
   const { data } = useSystemSettings();
   const enabledLanguages: string[] = data?.data?.enabledLanguages || [];
-  if (!enabledLanguages.length) {
+  if (enabledLanguages.length < 2) {
     return null;
   }
   // console.log('data', data?.data?.enabledLanguages);
