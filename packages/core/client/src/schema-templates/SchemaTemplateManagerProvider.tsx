@@ -119,10 +119,11 @@ export const useSchemaTemplateManager = () => {
     getTemplateById(key) {
       return templates?.find((template) => template.key === key);
     },
-    getTemplatesByCollection(collectionName: string) {
-      const items = templates?.filter?.((template) => template.collectionName === collectionName);
+    getTemplatesByCollection(collectionName: string, resourceName: string = null) {
+      const items = templates?.filter?.((template) => (!template.resourceName && template.collectionName === collectionName) || (template.resourceName && template.resourceName === resourceName));
       return items || [];
     },
+
   };
 };
 

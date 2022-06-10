@@ -20,10 +20,11 @@ export const FormDesigner = () => {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { visible } = useActionContext();
+  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       {/* <SchemaSettings.Template componentName={'FormItem'} collectionName={name} /> */}
-      <SchemaSettings.FormItemTemplate componentName={'FormItem'} collectionName={name} />
+      <SchemaSettings.FormItemTemplate componentName={'FormItem'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
@@ -38,6 +39,8 @@ export const FormDesigner = () => {
 export const ReadPrettyFormDesigner = () => {
   const { name, title } = useCollection();
   const template = useSchemaTemplate();
+  const fieldSchema = useFieldSchema();
+  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       {/* <SchemaSettings.Template componentName={'ReadPrettyForm'} collectionName={name} /> */}
@@ -45,6 +48,7 @@ export const ReadPrettyFormDesigner = () => {
         insertAdjacentPosition={'beforeEnd'}
         componentName={'ReadPrettyFormItem'}
         collectionName={name}
+        resourceName={defaultResource}
       />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
@@ -69,6 +73,7 @@ export const DetailsDesigner = () => {
   const sortFields = useSortFields(name);
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
+  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -204,7 +209,7 @@ export const DetailsDesigner = () => {
           service.run({ ...service.params?.[0], sort: sortArr });
         }}
       />
-      <SchemaSettings.Template componentName={'Details'} collectionName={name} />
+      <SchemaSettings.Template componentName={'Details'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

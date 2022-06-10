@@ -5,7 +5,6 @@ import { gridRowColWrap } from '../utils';
 
 const useRelationFields = () => {
   const { fields } = useCollection();
-  console.log('f', fields);
   const relationFields = fields
     .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'o2o', 'm2o'].includes(field.interface))
     .map((field) => {
@@ -22,13 +21,13 @@ const useRelationFields = () => {
               field,
               component: 'RecordReadPrettyAssociationFormBlockInitializer',
             },
-            {
-              key: `${field.name}_form`,
-              type: 'item',
-              title: '{{t("Form")}}',
-              field,
-              component: 'RecordAssociationFormBlockInitializer',
-            },
+            // {
+            //   key: `${field.name}_form`,
+            //   type: 'item',
+            //   title: '{{t("Form")}}',
+            //   field,
+            //   component: 'RecordAssociationFormBlockInitializer',
+            // },
           ],
         }
       }

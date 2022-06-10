@@ -17,6 +17,7 @@ export const KanbanDesigner = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
+  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const template = useSchemaTemplate();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
@@ -51,7 +52,7 @@ export const KanbanDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Kanban'} collectionName={name} />
+      <SchemaSettings.Template componentName={'Kanban'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

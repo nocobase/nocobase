@@ -22,6 +22,10 @@ export default defineCollection({
       name: 'associationName',
     },
     {
+      type: 'string',
+      name: 'resourceName',
+    },
+    {
       type: 'belongsTo',
       name: 'uiSchema',
       target: 'uiSchemas',
