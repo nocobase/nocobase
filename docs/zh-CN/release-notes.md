@@ -2,6 +2,8 @@
 
 ## To be released
 
+- feat(client): improve locale
+- refactor(plugin-workflow): add revision column to execution (#491)
 - fix(plugin-multi-app-manager): fix pg cannot create database block tests
 - refactor(database): hook proxy (#402) 
 - feat: chart blocks (#484) 
@@ -25,6 +27,15 @@
 - fix(plugin-workflow): fix languages (#451) 
 - fix: afterSync hook not triggered (#450)
 
+### New Features
+
+- Fields: formula、relationships(o2o, o2m, m2o, m2m)
+- Blocks: charts(g2plot)
+
+### Break Changes
+
+- The value of the percentage field, such as 20%, the new version is 0.2, the old version is 20
+
 ## 2022/06/01 ~ v0.7.0-alpha.83
 
 - fix: default value of time zone
@@ -39,6 +50,10 @@
 - fix: error message "error:0308010C:digital envelope routines::unsupported
 - docs(github): change to markdown format (#430)
 - fix(cli): typo (#429)
+
+### New Features
+
+- Core: db migrator
 
 ## 2022/05/26 ~ v0.7.0-alpha.82
 
