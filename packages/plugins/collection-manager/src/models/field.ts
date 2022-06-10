@@ -22,7 +22,16 @@ export class FieldModel extends MagicAttributeModel {
     if (skipExist && collection.hasField(name)) {
       return collection.getField(name);
     }
-    return collection.setField(name, this.get());
+    const options = this.get();
+    if (options.uiSchemaUid) {
+      const UISchema = this.db.getModel('uiSchemas');
+      const uiSchema = await UISchema.findByPk(options.uiSchemaUid, {
+        transaction: loadOptions.transaction,
+      });
+      return collection.setField(name, { ...options, uiSchema });
+    } else {
+      return collection.setField(name, options);
+    }
   }
 
   async migrate(options?: SyncOptions & Transactionable) {

@@ -576,5 +576,10 @@ export default {
   'Request body': '请求体(JSON格式)',
   'Request success': '请求成功',
   'Invalid JSON format': '非法JSON格式',
-  'After successful request': '请求成功之后'
+  'After successful request': '请求成功之后',
+  "Audit logs": "操作记录",
+  "Record ID": "数据 ID",
+  "User": "用户",
+  "Field": "字段",
+  "Field value changes": "变更记录",
 }

@@ -1,3 +1,4 @@
+export { useCollectionFilterOptions, useSortFields } from './action-hooks';
 export * from './CollectionField';
 export * from './CollectionFieldProvider';
 export * from './CollectionManagerProvider';
