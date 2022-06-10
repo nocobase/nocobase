@@ -6,7 +6,6 @@ import { css } from '@emotion/css';
 import { SchemaComponent } from '@nocobase/client';
 
 import { collection } from '../../schemas/collection';
-// import { DateFieldsSelect } from './DateFieldsSelect';
 import { OnField } from './OnField';
 import { EndsByField } from './EndsByField';
 import { RepeatField } from './RepeatField';
@@ -191,11 +190,6 @@ export const ScheduleConfig = () => {
               'x-component': 'fieldset',
               'x-component-props': {
                 className: css`
-                  .ant-select{
-                    width: auto;
-                    min-width: 6em;
-                  }
-
                   .ant-input-number{
                     width: 4em;
                   }
@@ -210,7 +204,6 @@ export const ScheduleConfig = () => {
           }
         }}
         components={{
-          // DateFieldsSelect,
           OnField,
           RepeatField,
           EndsByField
