@@ -59,6 +59,13 @@ const useRelationFields = () => {
               field,
               component: 'RecordAssociationFormBlockInitializer',
             },
+            {
+              key: `${field.name}_calendar`,
+              type: 'item',
+              title: '{{t("Calendar")}}',
+              field,
+              component: 'RecordAssociationCalendarBlockInitializer',
+            },
           ],
         }
       }
