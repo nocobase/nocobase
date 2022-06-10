@@ -31,11 +31,11 @@ export async function afterUpdate(model, options) {
     return;
   }
   try {
-    const log = await AuditLog.repository.create({
+    await AuditLog.repository.create({
       values: {
         type: LOG_TYPE_UPDATE,
         collectionName: model.constructor.name,
-        collectionIndex: model.get(model.constructor.primaryKeyAttribute),
+        recordId: model.get(model.constructor.primaryKeyAttribute),
         createdAt: model.get('updatedAt'),
         userId: currentUserId,
         changes,

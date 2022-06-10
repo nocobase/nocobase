@@ -30,7 +30,7 @@ export async function afterCreate(model, options) {
       values: {
         type: LOG_TYPE_CREATE,
         collectionName: model.constructor.name,
-        collectionIndex: model.get(model.constructor.primaryKeyAttribute),
+        recordId: model.get(model.constructor.primaryKeyAttribute),
         createdAt: model.get('createdAt'),
         userId: currentUserId,
         changes,

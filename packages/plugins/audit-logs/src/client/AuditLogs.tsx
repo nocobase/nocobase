@@ -36,13 +36,13 @@ const collection = {
       interface: 'select',
       uiSchema: {
         type: 'string',
-        title: '{{t("Audit type")}}',
+        title: '{{t("Action type")}}',
         'x-component': 'Select',
         'x-read-pretty': true,
         enum: [
-          { label: '{{t("Create action")}}', value: 'create', color: 'lime' },
-          { label: '{{t("Update action")}}', value: 'update', color: 'gold' },
-          { label: '{{t("Delete action")}}', value: 'destroy', color: 'magenta' },
+          { label: '{{t("Create record")}}', value: 'create', color: 'lime' },
+          { label: '{{t("Update record")}}', value: 'update', color: 'gold' },
+          { label: '{{t("Delete record")}}', value: 'destroy', color: 'magenta' },
         ],
       },
     },
@@ -99,9 +99,9 @@ export const AuditLogs: any = () => {
     ext['column31'] = {
       type: 'void',
       'x-component': 'TableV2.Column',
-      title: '{{t("Collection index")}}',
+      title: '{{t("Record ID")}}',
       properties: {
-        collectionIndex: {
+        recordId: {
           'x-component': 'Input',
           'x-read-pretty': true,
         },
@@ -292,7 +292,7 @@ export const AuditLogs: any = () => {
                                                             properties: {
                                                               user: {
                                                                 type: 'string',
-                                                                title: '{{t("Username")}}',
+                                                                title: '{{t("User")}}',
                                                                 'x-component': 'Username',
                                                                 'x-decorator': 'FormItem',
                                                                 'x-read-pretty': true,
@@ -311,7 +311,7 @@ export const AuditLogs: any = () => {
                                                             properties: {
                                                               changes: {
                                                                 type: 'array',
-                                                                title: '{{t("Field changes")}}',
+                                                                title: '{{t("Field value changes")}}',
                                                                 'x-decorator': 'FormItem',
                                                                 'x-component': 'ArrayTable',
                                                                 'x-component-props': {
@@ -326,7 +326,7 @@ export const AuditLogs: any = () => {
                                                                       'x-component': 'ArrayTable.Column',
                                                                       'x-component-props': {
                                                                         width: 200,
-                                                                        title: 'Field',
+                                                                        title: '{{t("Field")}}',
                                                                       },
                                                                       properties: {
                                                                         field: {
@@ -341,7 +341,7 @@ export const AuditLogs: any = () => {
                                                                       'x-component': 'ArrayTable.Column',
                                                                       'x-component-props': {
                                                                         width: 200,
-                                                                        title: 'Before',
+                                                                        title: '{{t("Before change")}}',
                                                                       },
                                                                       properties: {
                                                                         before: {
@@ -356,7 +356,7 @@ export const AuditLogs: any = () => {
                                                                       'x-component': 'ArrayTable.Column',
                                                                       'x-component-props': {
                                                                         width: 200,
-                                                                        title: 'After',
+                                                                        title: '{{t("After change")}}',
                                                                       },
                                                                       properties: {
                                                                         after: {
@@ -430,7 +430,7 @@ export const AuditLogs: any = () => {
               column4: {
                 type: 'void',
                 'x-component': 'TableV2.Column',
-                title: '{{t("Username")}}',
+                title: '{{t("User")}}',
                 properties: {
                   user: {
                     'x-component': 'Username',
@@ -457,13 +457,13 @@ AuditLogs.Decorator = observer((props: any) => {
       filter = {
         $and: [filter, {
           collectionName: parent.name,
-          collectionIndex: filterByTk,
+          recordId: filterByTk,
         }],
       };
     } else {
       filter = {
         collectionName: parent.name,
-        collectionIndex: filterByTk,
+        recordId: filterByTk,
       };
     }
   }

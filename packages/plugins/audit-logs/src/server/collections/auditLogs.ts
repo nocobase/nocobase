@@ -16,7 +16,7 @@ export default defineCollection({
     },
     {
       type: 'string',
-      name: 'collectionIndex',
+      name: 'recordId',
     },
     {
       type: 'string',

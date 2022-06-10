@@ -27,7 +27,7 @@ export async function afterDestroy(model, options) {
       values: {
         type: LOG_TYPE_DESTROY,
         collectionName: model.constructor.name,
-        collectionIndex: model.get(model.constructor.primaryKeyAttribute),
+        recordId: model.get(model.constructor.primaryKeyAttribute),
         userId: currentUserId,
         changes,
       },
