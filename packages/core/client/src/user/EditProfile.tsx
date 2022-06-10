@@ -105,6 +105,7 @@ export const EditProfile = () => {
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Menu.Item
+        key="profile"
         eventKey={'EditProfile'}
         onClick={() => {
           setVisible(true);
