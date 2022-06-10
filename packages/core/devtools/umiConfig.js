@@ -1,6 +1,7 @@
 const { existsSync } = require('fs');
 const { resolve } = require('path');
 const packageJson = require('./package.json');
+const fs = require('fs');
 
 console.log('VERSION: ', packageJson.version);
 
@@ -44,16 +45,21 @@ function getUmiConfig() {
 }
 
 function resolveNocobasePackagesAlias(config) {
-  const clientSrc = resolve(process.cwd(), './packages/core/client/src');
-  const utilsSrc = resolve(process.cwd(), './packages/core/utils/src');
-  const sdkSrc = resolve(process.cwd(), './packages/core/sdk/src');
-  if (existsSync(clientSrc)) {
-    config.module.rules.get('ts-in-node_modules').include.add(clientSrc);
-    config.resolve.alias.set('@nocobase/client', clientSrc);
-    config.module.rules.get('ts-in-node_modules').include.add(utilsSrc);
-    config.resolve.alias.set('@nocobase/utils', utilsSrc);
-    config.module.rules.get('ts-in-node_modules').include.add(sdkSrc);
-    config.resolve.alias.set('@nocobase/sdk', sdkSrc);
+  const cores = fs.readdirSync(resolve(process.cwd(), './packages/core'));
+  for (const package of cores) {
+    const packageSrc = resolve(process.cwd(), './packages/core/', package, 'src');
+    if (existsSync(packageSrc)) {
+      config.module.rules.get('ts-in-node_modules').include.add(packageSrc);
+      config.resolve.alias.set(`@nocobase/${package}`, packageSrc);
+    }
+  }
+  const plugins = fs.readdirSync(resolve(process.cwd(), './packages/plugins'));
+  for (const package of plugins) {
+    const packageSrc = resolve(process.cwd(), './packages/plugins/', package, 'src');
+    if (existsSync(packageSrc)) {
+      config.module.rules.get('ts-in-node_modules').include.add(packageSrc);
+      config.resolve.alias.set(`@nocobase/plugin-${package}`, packageSrc);
+    }
   }
 }
 

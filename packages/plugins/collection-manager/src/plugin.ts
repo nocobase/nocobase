@@ -8,7 +8,7 @@ import {
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
-  beforeInitOptions,
+  beforeInitOptions
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
 
@@ -83,6 +83,12 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('fields.afterCreate', async (model, { context, transaction }) => {
       if (context) {
         await model.migrate({ transaction });
+      }
+    });
+
+    this.app.db.on('fields.afterCreateWithAssociations', async (model, { context, transaction }) => {
+      if (context) {
+        await model.load({ transaction });
       }
     });
 

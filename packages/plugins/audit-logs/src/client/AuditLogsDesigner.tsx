@@ -1,46 +1,44 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { GeneralSchemaDesigner, SchemaSettings, useCollection, useCollectionFilterOptions, useDesignable, useSortFields, useTableBlockContext } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useResourceActionContext } from '../collection-manager';
-import { useCollectionFilterOptions } from '../collection-manager/action-hooks';
-import { useDesignable } from '../schema-component/hooks';
-import { GeneralSchemaDesigner, SchemaSettings } from '../schema-settings';
 
-export const ActionLogDesigner = () => {
-  const { name, title } = useCollection();
+export const AuditLogsDesigner = () => {
+  const { name, title, sortable } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
-  const ctx = useResourceActionContext();
+  const sortFields = useSortFields(name);
+  const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.request?.params?.filter || {};
-
+  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
+  const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   return (
     <GeneralSchemaDesigner title={title || name}>
       <SchemaSettings.ModalItem
-        title={'设置数据范围'}
+        title={t('Set the data scope')}
         schema={
           {
             type: 'object',
-            title: '设置数据范围',
+            title: t('Set the data scope'),
             properties: {
               filter: {
                 default: defaultFilter,
-                title: '数据范围',
+                // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-component-props': {},
+                'x-decorator-props': {},
               },
             },
           } as ISchema
         }
         onSubmit={({ filter }) => {
-          const params = field.decoratorProps.request.params || {};
+          const params = field.decoratorProps.params || {};
           params.filter = filter;
-          field.decoratorProps.request.params = params;
-          fieldSchema['x-decorator-props']['request']['params'] = params;
-          ctx.run({ ...ctx.params?.[0], filter });
+          field.decoratorProps.params = params;
+          fieldSchema['x-decorator-props']['params'] = params;
+          service.run({ ...service.params?.[0], filter, page: 1 });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -49,10 +47,9 @@ export const ActionLogDesigner = () => {
           });
         }}
       />
-
       <SchemaSettings.SelectItem
-        title={'每页显示'}
-        value={field.decoratorProps.request.params?.pageSize || 20}
+        title={t('Records per page')}
+        value={field.decoratorProps?.params?.pageSize || 20}
         options={[
           { label: '10', value: 10 },
           { label: '20', value: 20 },
@@ -61,11 +58,11 @@ export const ActionLogDesigner = () => {
           { label: '200', value: 200 },
         ]}
         onChange={(pageSize) => {
-          const params = field.decoratorProps.request.params || {};
+          const params = field.decoratorProps.params || {};
           params.pageSize = pageSize;
-          field.decoratorProps.request.params = params;
-          fieldSchema['x-decorator-props']['request']['params'] = params;
-          ctx.run({ ...ctx.params?.[0], pageSize });
+          field.decoratorProps.params = params;
+          fieldSchema['x-decorator-props']['params'] = params;
+          service.run({ ...service.params?.[0], pageSize, page: 1 });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],

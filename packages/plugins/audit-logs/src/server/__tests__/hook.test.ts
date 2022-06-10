@@ -1,6 +1,6 @@
 import Database from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
-import logPlugin from '../server';
+import logPlugin from '../';
 
 describe('hook', () => {
   let api: MockServer;
@@ -47,8 +47,8 @@ describe('hook', () => {
     const post = await Post.create({ title: 't1' });
     await post.update({ title: 't2' });
     await post.destroy();
-    const ActionLog = db.getCollection('action_logs').model;
-    const count = await ActionLog.count();
+    const AuditLog = db.getCollection('auditLogs').model;
+    const count = await AuditLog.count();
     expect(count).toBe(3);
   });
 
@@ -56,7 +56,7 @@ describe('hook', () => {
     const Post = db.getCollection('posts');
     const User = db.getCollection('users').model;
     const user = await User.create({ nickname: 'a', token: 'token1' });
-    await Post.repository.create({
+    const post = await Post.repository.create({
       values: { title: 't1' },
       context: {
         state: {
@@ -64,14 +64,15 @@ describe('hook', () => {
         },
       },
     });
-    const ActionLog = db.getCollection('action_logs');
-    const log = await ActionLog.repository.findOne({
+    const AuditLog = db.getCollection('auditLogs');
+    const log = await AuditLog.repository.findOne({
       appends: ['changes'],
     });
     expect(log.toJSON()).toMatchObject({
       collectionName: 'posts',
       type: 'create',
       userId: 1,
+      recordId: `${post.get('id')}`,
       changes: [
         {
           field: {
@@ -85,21 +86,21 @@ describe('hook', () => {
     });
   });
 
-  it.skip('resource', async () => {
-    const agent = api.agent();
-    agent.set('Authorization', `Bearer token1`);
-    const response = await agent.resource('posts').create({
-      values: { title: 't1' },
-    });
-    await agent.resource('posts').update({
-      resourceIndex: response.body.data.id,
-      values: { title: 't2' },
-    });
-    await agent.resource('posts').destroy({
-      resourceIndex: response.body.data.id,
-    });
-    const ActionLog = db.getCollection('action_logs').model;
-    const count = await ActionLog.count();
-    expect(count).toBe(3);
-  });
+  // it.skip('resource', async () => {
+  //   const agent = api.agent();
+  //   agent.set('Authorization', `Bearer token1`);
+  //   const response = await agent.resource('posts').create({
+  //     values: { title: 't1' },
+  //   });
+  //   await agent.resource('posts').update({
+  //     resourceIndex: response.body.data.id,
+  //     values: { title: 't2' },
+  //   });
+  //   await agent.resource('posts').destroy({
+  //     resourceIndex: response.body.data.id,
+  //   });
+  //   const ActionLog = db.getCollection('action_logs').model;
+  //   const count = await ActionLog.count();
+  //   expect(count).toBe(3);
+  // });
 });
