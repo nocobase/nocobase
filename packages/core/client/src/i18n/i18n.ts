@@ -1,10 +1,16 @@
 import i18next from 'i18next';
 import moment from 'moment';
 import { initReactI18next } from 'react-i18next';
-import { resources } from '../locale';
+import locale from '../locale';
 const log = require('debug')('i18next');
 
 export const i18n = i18next.createInstance();
+
+const resources = {};
+
+Object.keys(locale).forEach((lang) => {
+  resources[lang] = locale[lang].resources;
+});
 
 i18n.use(initReactI18next).init({
   lng: localStorage.getItem('NOCOBASE_LOCALE') || 'en-US',
@@ -18,13 +24,8 @@ i18n.use(initReactI18next).init({
   resources,
 });
 
-const momentLngs = {
-  'en-US': 'en',
-  'zh-CN': 'zh-cn',
-};
-
 function setMomentLng(language) {
-  const lng = momentLngs[language || 'en-US'] || 'en';
+  const lng = locale[language || 'en-US'].moment || 'en';
   log(lng);
   moment.locale(lng);
 }

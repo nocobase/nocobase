@@ -26,19 +26,29 @@ export class ClientPlugin extends Plugin {
         async getInfo(ctx, next) {
           const SystemSetting = ctx.db.getRepository('systemSettings');
           const systemSetting = await SystemSetting.findOne();
+          const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
           const currentUser = ctx.state.currentUser;
+          let lang = systemSetting?.appLang || process.env.APP_LANG || 'en-US';
+          if (enabledLanguages.includes(currentUser?.appLang)) {
+            lang = currentUser?.appLang;
+          }
           ctx.body = {
             version: this.app.getVersion(),
-            lang: currentUser?.appLang || systemSetting?.appLang || process.env.APP_LANG || 'en-US',
+            lang,
           };
           await next();
         },
         async getLang(ctx, next) {
           const SystemSetting = ctx.db.getRepository('systemSettings');
           const systemSetting = await SystemSetting.findOne();
+          const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
           const currentUser = ctx.state.currentUser;
+          let lang = systemSetting?.appLang || process.env.APP_LANG || 'en-US';
+          if (enabledLanguages.includes(currentUser?.appLang)) {
+            lang = currentUser?.appLang;
+          }
           ctx.body = {
-            lang: currentUser?.appLang || systemSetting?.appLang || process.env.APP_LANG || 'en-US',
+            lang,
           };
           await next();
         },

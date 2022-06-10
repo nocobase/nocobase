@@ -131,6 +131,7 @@ export default [
     type: 'group',
     children: [
       '/contributing',
+      '/translations',
       '/release-notes',
       '/faq',
       '/thanks',

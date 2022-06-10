@@ -17,6 +17,17 @@ const collection = {
       } as ISchema,
     },
     {
+      interface: 'number',
+      type: 'number',
+      name: 'workflowId',
+      uiSchema: {
+        type: 'number',
+        title: '{{t("Version")}}',
+        'x-component': 'InputNumber',
+        'x-read-pretty': true,
+      } as ISchema,
+    },
+    {
       type: 'number',
       name: 'status',
       interface: 'select',
@@ -91,6 +102,18 @@ export const executionSchema = {
                 'x-component-props': {
                   showTime: true
                 },
+                'x-read-pretty': true,
+              },
+            }
+          },
+          workflowId: {
+            type: 'void',
+            'x-decorator': 'Table.Column.Decorator',
+            'x-component': 'Table.Column',
+            properties: {
+              workflowId: {
+                type: 'number',
+                'x-component': 'CollectionField',
                 'x-read-pretty': true,
               },
             }

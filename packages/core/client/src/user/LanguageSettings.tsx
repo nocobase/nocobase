@@ -1,13 +1,20 @@
 import { Menu, Select } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useCurrentUserContext } from '..';
+import { useAPIClient, useCurrentUserContext, useSystemSettings } from '..';
+import locale from '../locale';
 
 export const LanguageSettings = () => {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const api = useAPIClient();
   const ctx = useCurrentUserContext();
+  const { data } = useSystemSettings();
+  const enabledLanguages: string[] = data?.data?.enabledLanguages || [];
+  if (enabledLanguages.length < 2) {
+    return null;
+  }
+  // console.log('data', data?.data?.enabledLanguages);
   return (
     <Menu.Item
       eventKey={'LanguageSettings'}
@@ -23,10 +30,14 @@ export const LanguageSettings = () => {
         onDropdownVisibleChange={(open) => {
           setOpen(open);
         }}
-        options={[
-          { label: '简体中文', value: 'zh-CN' },
-          { label: 'English', value: 'en-US' },
-        ]}
+        options={Object.keys(locale)
+          .filter((lang) => enabledLanguages.includes(lang))
+          .map((lang) => {
+            return {
+              label: locale[lang].label,
+              value: lang,
+            };
+          })}
         value={i18n.language}
         onChange={async (lang) => {
           await api.resource('users').updateProfile({

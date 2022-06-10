@@ -1,5 +1,7 @@
 import { Area, Bar, Column, Line, Pie } from '@antv/g2plot';
+import { Field } from '@formily/core';
 import { observer, useField } from '@formily/react';
+import { Spin } from 'antd';
 import cls from 'classnames';
 import React, { forwardRef, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -56,10 +58,25 @@ export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotPr
 
 export const G2Plot: any = observer((props: any) => {
   const { plot, config } = props;
-  const field = useField();
+  const field = useField<Field>();
   const { t } = useTranslation();
+  useEffect(() => {
+    field.data = field.data || {};
+    if (typeof config?.data?.then === 'function') {
+      field.data.loaded = false;
+      config?.data?.then((data) => {
+        field.componentProps.config.data = data;
+        field.data.loaded = true;
+      });
+    } else {
+      field.data.loaded = true;
+    }
+  }, []);
   if (!plot || !config) {
-    return <div style={{ opacity: .3 }}>{t('In configuration')}...</div>
+    return <div style={{ opacity: 0.3 }}>{t('In configuration')}...</div>;
+  }
+  if (!field?.data?.loaded) {
+    return <Spin />;
   }
   return (
     <div>

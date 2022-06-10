@@ -320,7 +320,7 @@ function nextInCycle(this: ScheduleTrigger, workflow, now: Date): boolean {
 export default class ScheduleTrigger implements Trigger {
   static CacheRules = [
     // ({ enabled }) => enabled,
-    ({ config, executed }) => config.limit ? executed < config.limit : true,
+    ({ config, allExecuted }) => config.limit ? allExecuted < config.limit : true,
     ({ config }) => ['repeat', 'startsOn'].some(key => config[key]),
     nextInCycle,
     function(workflow, now) {
@@ -331,7 +331,7 @@ export default class ScheduleTrigger implements Trigger {
   ];
 
   static TriggerRules = [
-    ({ config, executed }) => config.limit ? executed < config.limit : true,
+    ({ config, allExecuted }) => config.limit ? allExecuted < config.limit : true,
     ({ config }) => ['repeat', 'startsOn'].some(key => config[key]),
     function (workflow, now) {
       const { repeat } = workflow.config;

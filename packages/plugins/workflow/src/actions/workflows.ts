@@ -1,52 +1,6 @@
 import { Context, utils } from '@nocobase/actions';
-import { Op } from '@nocobase/database';
 
 
-
-export async function update(context: Context, next) {
-  const { db } = context;
-  const repository = utils.getRepositoryFromParams(context);
-  const { filterByTk, values, whitelist, blacklist, filter, updateAssociationValues } = context.action.params;
-
-  context.body = await db.sequelize.transaction(async transaction => {
-    const others: { enabled?: boolean, current?: boolean } = {};
-
-    if (values.enabled) {
-      values.current = true;
-      others.enabled = false;
-    }
-
-    if (values.current) {
-      others.current = false;
-      await repository.update({
-        filter: {
-          key: values.key,
-          id: {
-            [Op.ne]: filterByTk
-          }
-        },
-        values: others,
-        context,
-        transaction
-      });
-    }
-
-    const instance = await repository.update({
-      filterByTk,
-      values,
-      whitelist,
-      blacklist,
-      filter,
-      updateAssociationValues,
-      context,
-      transaction
-    });
-
-    return instance;
-  });
-
-  await next();
-}
 
 function typeOf(value) {
   if (Array.isArray(value)) {
@@ -81,7 +35,7 @@ function migrateConfig(config, oldToNew) {
   return migrate(config);
 }
 
-export async function duplicate(context: Context, next) {
+export async function revision(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk } = context.action.params;
