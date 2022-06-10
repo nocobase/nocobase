@@ -5,7 +5,15 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSystemSettings } from '.';
 import { PluginManager, useAPIClient, useRequest } from '..';
+import locale from '../locale';
 import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
+
+const langs = Object.keys(locale).map((lang) => {
+  return {
+    label: locale[lang].label,
+    value: lang,
+  };
+});
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -79,28 +87,22 @@ const schema: ISchema = {
             // accept: 'jpg,png'
           },
         },
-        appLang: {
-          type: 'string',
-          title: '{{t("Language")}}',
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
-            { label: 'English', value: 'en-US' },
-            { label: '简体中文', value: 'zh-CN' },
-          ],
-        },
         enabledLanguages: {
           type: 'array',
           title: '{{t("Enabled languages")}}',
           'x-component': 'Select',
-          "x-component-props": {
+          'x-component-props': {
             mode: 'multiple',
           },
           'x-decorator': 'FormItem',
-          enum: [
-            { label: 'English', value: 'en-US' },
-            { label: '简体中文', value: 'zh-CN' },
-          ],
+          enum: langs,
+        },
+        appLang: {
+          type: 'string',
+          title: '{{t("Default language")}}',
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: langs,
         },
         allowSignUp: {
           type: 'boolean',
