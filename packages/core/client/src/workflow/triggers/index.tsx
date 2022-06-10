@@ -1,6 +1,6 @@
 import React from "react";
 import { ISchema, useForm } from "@formily/react";
-import { cx } from "@emotion/css";
+import { css, cx } from "@emotion/css";
 import { Registry } from "@nocobase/utils";
 import { useTranslation } from "react-i18next";
 import { message, Tag } from "antd";
@@ -93,7 +93,13 @@ export const TriggerConfig = () => {
                   type: 'void',
                   name: 'config',
                   'x-component': 'fieldset',
-                  'x-component-props': {},
+                  'x-component-props': {
+                    className: css`
+                      .ant-select{
+                        width: auto;
+                      }
+                    `
+                  },
                   properties: fieldset
                 },
                 actions: {

@@ -2,12 +2,14 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
 import { Cascader, Select, Space } from 'antd';
 import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
 import { RemoveConditionContext } from './context';
 import { DynamicComponent } from './DynamicComponent';
 import { useValues } from './useValues';
 
 export const FilterItem = observer((props: any) => {
+  const { t } = useTranslation();
   const compile = useCompile();
   const remove = useContext(RemoveConditionContext);
   const { schema, fields, operators, dataIndex, operator, setDataIndex, setOperator, value, setValue } = useValues();
@@ -20,15 +22,13 @@ export const FilterItem = observer((props: any) => {
             value: 'name',
             children: 'children',
           }}
-          style={{
-            width: 150,
-          }}
           changeOnSelect={false}
           value={dataIndex}
           options={compile(fields)}
           onChange={(value) => {
             setDataIndex(value);
           }}
+          placeholder={t('Select Field')}
         />
         <Select
           value={operator?.value}
@@ -36,9 +36,7 @@ export const FilterItem = observer((props: any) => {
           onChange={(value) => {
             setOperator(value);
           }}
-          style={{
-            minWidth: 100,
-          }}
+          placeholder={t('Comparison')}
         />
         {!operator?.noValue &&
           React.createElement(DynamicComponent, {

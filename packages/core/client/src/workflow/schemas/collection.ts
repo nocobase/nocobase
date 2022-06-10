@@ -10,6 +10,9 @@ export const collection = {
   'x-reactions': ['{{useCollectionDataSource()}}'],
   'x-decorator': 'FormItem',
   'x-component': 'Select',
+  'x-component-props': {
+    placeholder: '{{t("Select collection")}}'
+  }
 };
 
 export const values = {

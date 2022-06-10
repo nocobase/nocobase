@@ -19,7 +19,7 @@ export default {
   prefixMonths: '的',
   prefixMonthDays: '的',
   prefixWeekDays: '的',
-  prefixWeekDaysForMonthAndYearPeriod: '和',
+  prefixWeekDaysForMonthAndYearPeriod: '并且',
   prefixHours: '的',
   prefixMinutes: ':',
   prefixMinutesForHourPeriod: '的',
