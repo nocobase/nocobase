@@ -56,7 +56,7 @@ describe('hook', () => {
     const Post = db.getCollection('posts');
     const User = db.getCollection('users').model;
     const user = await User.create({ nickname: 'a', token: 'token1' });
-    await Post.repository.create({
+    const post = await Post.repository.create({
       values: { title: 't1' },
       context: {
         state: {
@@ -72,6 +72,7 @@ describe('hook', () => {
       collectionName: 'posts',
       type: 'create',
       userId: 1,
+      recordId: `${post.get('id')}`,
       changes: [
         {
           field: {
