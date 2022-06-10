@@ -3,15 +3,20 @@ import { observer, useForm } from "@formily/react";
 import { Select } from "antd";
 
 import { useCollectionManager, useCompile } from "@nocobase/client";
+import { useTranslation } from "react-i18next";
 
 export const DateFieldsSelect: React.FC<any> = observer((props) => {
+  const { t } = useTranslation();
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
   const { values } = useForm();
   const fields = getCollectionFields(values?.config?.collection);
 
   return (
-    <Select {...props}>
+    <Select
+      placeholder={t('Select Field')}
+      {...props}
+    >
       {fields
         .filter(field => (
           !field.hidden

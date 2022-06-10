@@ -9,7 +9,6 @@ import { useFlowContext } from "./WorkflowCanvas";
 import { triggers } from "./triggers";
 import { SchemaComponent, useCollectionManager, useCompile } from "..";
 import { useTranslation } from "react-i18next";
-import { t } from "i18next";
 
 function NullRender() {
   return null;
@@ -109,7 +108,11 @@ const ConstantTypes = {
     component({ onChange, type, options, value }) {
       const { t } = useTranslation();
       return (
-        <Select value={value} onChange={v => onChange({ value: v, type, options })}>
+        <Select
+          value={value}
+          onChange={v => onChange({ value: v, type, options })}
+          placeholder={t('Select')}
+        >
           <Select.Option value={true}>{t('True')}</Select.Option>
           <Select.Option value={false}>{t('False')}</Select.Option>
         </Select>
@@ -306,6 +309,7 @@ export function Operand({
 }
 
 export function Calculation({ calculator, operands = [], onChange }) {
+  const { t } = useTranslation();
   const compile = useCompile();
   return (
     <VariableTypesContext.Provider value={VariableTypes}>
@@ -316,14 +320,17 @@ export function Calculation({ calculator, operands = [], onChange }) {
 
         .ant-select{
           width: auto;
-          min-width: 6em;
         }
       `}>
         <Operand value={operands[0]} onChange={(v => onChange({ calculator, operands: [v, operands[1]] }))} />
         {operands[0]
           ? (
             <>
-              <Select value={calculator} onChange={v => onChange({ operands, calculator: v })}>
+              <Select
+                value={calculator}
+                onChange={v => onChange({ operands, calculator: v })}
+                placeholder={t('Calculator')}
+              >
                 {calculators.map(group => (
                   <Select.OptGroup key={group.value} label={compile(group.title)}>
                     {group.children.map(item => (

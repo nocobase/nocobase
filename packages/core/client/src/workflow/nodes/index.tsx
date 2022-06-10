@@ -220,7 +220,12 @@ export function NodeDefaultView(props) {
                         name: 'config',
                         'x-component': 'fieldset',
                         'x-component-props': {
-                          disabled: workflow.executed
+                          disabled: workflow.executed,
+                          className: css`
+                            .ant-select{
+                              width: auto;
+                            }
+                          `
                         },
                         properties: instruction.fieldset
                       },

@@ -24,7 +24,6 @@ export default {
     useCollectionDataSource
   },
   components: {
-    // FieldsSelect
     ScheduleConfig
   },
   getter({ type, options, onChange }) {
