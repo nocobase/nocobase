@@ -26,7 +26,7 @@ export const CurrentUser = () => {
           }}
           overlay={
             <Menu>
-              <Menu.Item disabled>Version {process.env.VERSION}</Menu.Item>
+              <Menu.Item key="version" disabled>Version {process.env.VERSION}</Menu.Item>
               <Menu.Divider />
               <EditProfile />
               <ChangePassword />
@@ -34,6 +34,7 @@ export const CurrentUser = () => {
               <LanguageSettings />
               <Menu.Divider />
               <Menu.Item
+                key="signout"
                 onClick={async () => {
                   await api.resource('users').signout();
                   api.auth.setToken(null);

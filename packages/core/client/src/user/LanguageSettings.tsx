@@ -17,6 +17,7 @@ export const LanguageSettings = () => {
   // console.log('data', data?.data?.enabledLanguages);
   return (
     <Menu.Item
+      key="language"
       eventKey={'LanguageSettings'}
       onClick={() => {
         setOpen(true);

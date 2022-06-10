@@ -33,7 +33,7 @@ export const SwitchRole = () => {
     return null;
   }
   return (
-    <Menu.Item eventKey={'SwitchRole'}>
+    <Menu.Item key="role" eventKey={'SwitchRole'}>
       {t('Switch role')}{' '}
       <Select
         style={{ minWidth: 100 }}
