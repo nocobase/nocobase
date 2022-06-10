@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { InputNumber, Select } from 'antd';
 import { observer, useForm, useFormEffects } from '@formily/react';
+import { Cron } from 'react-js-cron';
 
 import { useCollectionDataSource, useCollectionManager } from '../../collection-manager';
 import { SchemaComponent, useCompile, DatePicker } from '../../schema-component';
@@ -98,31 +99,6 @@ function EndsByField({ value, onChange }) {
   );
 }
 
-function parseCronRule(cron: string) {
-  const rules = cron.split(/\s+/).slice(1).map(v => v.split('/'));
-  let index = rules.findIndex(rule => rule[0] === '*');
-  if (index === -1) {
-    return {
-      mode: 0
-    }
-  }
-  // fix days of week
-  if (index === 3 && rules[4][0] === '*') {
-    index = 4;
-  }
-  return {
-    mode: index + 1,
-    step: rules[index][1] ?? 1
-  };
-}
-
-const CronUnits = [
-  { value: 1, option: 'By minute', unitText: 'Minutes' },
-  { value: 2, option: 'By hour', unitText: 'Hours' },
-  { value: 3, option: 'By date', unitText: 'Days', conflict: true, startFrom: 1 },
-  { value: 4, option: 'By month', unitText: 'Months', startFrom: 1 },
-  { value: 5, option: 'By day of week', unitText: 'Days', conflict: true },
-];
 
 const RepeatOptions = [
   { value: 'none', text: 'No repeat' },
@@ -131,7 +107,7 @@ const RepeatOptions = [
   { value: 86400_000, text: 'By day', unitText: 'Days' },
   { value: 604800_000, text: 'By week', unitText: 'Weeks' },
   // { value: 18144_000_000, text: 'By 30 days' },
-  { value: 'cron', text: 'Advance', disabled: true }
+  { value: 'cron', text: 'Advance' }
 ];
 
 function getNumberOption(v) {
@@ -152,39 +128,6 @@ function getRepeatTypeValue(v) {
   return 'none';
 }
 
-function getChangedCron({ mode, step }) {
-  const m = mode - 1;
-  const left = [0, ...Array(m).fill(null).map((_, i) => {
-    if (CronUnits[m].conflict && CronUnits[i].conflict) {
-      return '?';
-    }
-    return i === 3 ? '*' : CronUnits[i].startFrom ?? 0;
-  })].join(' ');
-  const right = Array(5 - mode).fill(null).map((_, i) => {
-    if (CronUnits[m].conflict && CronUnits[mode + i].conflict || mode === 4) {
-      return '?';
-    }
-    return '*';
-  }).join(' ');
-  return `${left} ${!step || step == 1 ? '*' : `*/${step}`}${right ? ` ${right}` : ''}`;
-}
-
-function CronField({ value, onChange }) {
-  const { t } = useTranslation();
-  const cron = parseCronRule(value);
-  const unit = CronUnits[cron.mode - 1];
-
-  return (
-
-    <InputNumber
-      value={cron.step}
-      onChange={v => onChange(getChangedCron({ step: v, mode: cron.mode }))}
-      min={1}
-      addonBefore={t('Every')}
-      addonAfter={t(unit.unitText)}
-    />
-  );
-}
 
 function CommonRepeatField({ value, onChange }) {
   const { t } = useTranslation();
@@ -219,7 +162,21 @@ function RepeatField({ value = null, onChange }) {
   return (
     <fieldset className={css`
       display: flex;
+      flex-direction: ${typeValue === 'cron' ? 'column' : 'row'};
+      align-items: flex-start;
       gap: .5em;
+
+      .react-js-cron-field{
+        margin-bottom: .5em;
+
+        > span{
+          margin: 0 .5em 0 0;
+        }
+
+        > .react-js-cron-select{
+          margin: 0 .5em 0 0;
+        }
+      }
     `}>
       <Select
         value={typeValue}
@@ -229,7 +186,6 @@ function RepeatField({ value = null, onChange }) {
           <Select.Option
             key={item.value}
             value={item.value}
-            disabled={item.disabled}
           >
             {t(item.text)}
           </Select.Option>
@@ -239,7 +195,13 @@ function RepeatField({ value = null, onChange }) {
         ? <CommonRepeatField value={value} onChange={onChange} />
         : null}
       {typeValue === 'cron'
-        ? <CronField value={value} onChange={onChange} />
+        ? (
+          <Cron
+            value={value.trim().split(/\s+/).slice(1).join(' ')}
+            setValue={v => onChange(`0 ${v}`)}
+            clearButton={false}
+          />
+        )
         : null}
     </fieldset>
   );
