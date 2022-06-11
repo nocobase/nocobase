@@ -22,25 +22,33 @@ export async function percent(field, row, ctx) {
 
 export async function boolean(field, row, ctx) {
   const value = row.get(field.name);
-  // TODO(feature): i18n
+  // FIXME: i18n
   return value ? '是' : '否';
 }
 
-export async function select(field, row, ctx) {
+export async function select(field, row, ctx, column?: any) {
   const value = row.get(field.name);
-  const repository = ctx.db.getCollection('uiSchemas').repository;
-  const { schema } = await repository.findById(field.options.uiSchemaUid);
-  const option = schema.enum.find((item) => item.value === value);
+  let { enum: enumData } = column ?? {};
+  if (!enumData) {
+    const repository = ctx.db.getCollection('uiSchemas').repository;
+    const model = await repository.findById(field.options.uiSchemaUid);
+    enumData = model.get('enum');
+  }
+  const option = enumData.find((item) => item.value === value);
   return option?.label;
 }
 
-export async function multipleSelect(field, row, ctx) {
+export async function multipleSelect(field, row, ctx, column?: any) {
   const values = row.get(field.name);
-  const repository = ctx.db.getCollection('uiSchemas').repository;
-  const { schema } = await repository.findById(field.options.uiSchemaUid);
+  let { enum: enumData } = column ?? {};
+  if (!enumData) {
+    const repository = ctx.db.getCollection('uiSchemas').repository;
+    const model = await repository.findById(field.options.uiSchemaUid);
+    enumData = model.get('enum');
+  }
   return values
     ?.map((value) => {
-      const option = schema.enum.find((item) => item.value === value);
+      const option = enumData.find((item) => item.value === value);
       return option?.label;
     })
     ?.join();

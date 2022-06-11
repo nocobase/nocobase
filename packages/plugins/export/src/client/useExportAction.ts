@@ -1,16 +1,27 @@
 import { useFieldSchema } from '@formily/react';
-import { useAPIClient, useBlockRequestContext, useCollection, useCompile } from '@nocobase/client';
+import {
+  useAPIClient,
+  useBlockRequestContext,
+  useCollection,
+  useCollectionManager,
+  useCompile,
+} from '@nocobase/client';
 
 export const useExportAction = () => {
   const { service } = useBlockRequestContext();
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
-  const { name, title } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager();
+  const { name, title, getField } = useCollection();
 
   return {
     async onClick() {
       const { exportSettings } = actionSchema?.['x-action-settings'] ?? {};
+      exportSettings.forEach((es) => {
+        const { uiSchema } = getCollectionJoinField(`${name}.${es.dataIndex.map((di) => di.name).join('.')}`) ?? {};
+        es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
+      });
       const { data } = await apiClient.request({
         url: `/${name}:exportXlsx`,
         method: 'get',
