@@ -1,4 +1,4 @@
-import Database, { updateAssociations } from '@nocobase/database';
+import Database from '@nocobase/database';
 import { LOG_TYPE_UPDATE } from '../constants';
 
 export async function afterUpdate(model, options) {
@@ -12,14 +12,14 @@ export async function afterUpdate(model, options) {
     return;
   }
   const transaction = options.transaction;
-  const ActionLog = db.getCollection('action_logs');
+  const AuditLog = db.getCollection('auditLogs');
   const currentUserId = options?.context?.state?.currentUser?.id;
   const changes = [];
   changed.forEach((key: string) => {
     const field = collection.findField((field) => {
       return field.name === key || field.options.field === key;
     });
-    if (field && !field.options.hidden && field.options.type !== 'formula') {
+    if (field && !field.options.hidden) {
       changes.push({
         field: field.options,
         after: model.get(key),
@@ -31,20 +31,18 @@ export async function afterUpdate(model, options) {
     return;
   }
   try {
-    const log = await ActionLog.model.create(
-      {
+    await AuditLog.repository.create({
+      values: {
         type: LOG_TYPE_UPDATE,
         collectionName: model.constructor.name,
-        index: model.get(model.constructor.primaryKeyAttribute),
+        recordId: model.get(model.constructor.primaryKeyAttribute),
         createdAt: model.get('updatedAt'),
         userId: currentUserId,
+        changes,
       },
-      {
-        transaction,
-        hooks: false,
-      },
-    );
-    await updateAssociations(log, { changes }, { transaction });
+      transaction,
+      hooks: false,
+    });
     // if (!options.transaction) {
     //   await transaction.commit();
     // }

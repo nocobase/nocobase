@@ -120,6 +120,7 @@ export const ChangePassword = () => {
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Menu.Item
+        key="password"
         eventKey={'ChangePassword'}
         onClick={() => {
           ctx?.setVisible?.(false);

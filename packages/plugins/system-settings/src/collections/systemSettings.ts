@@ -22,6 +22,10 @@ export default defineCollection({
       target: 'attachments',
     },
     {
+      type: 'array',
+      name: 'enabledLanguages',
+    },
+    {
       type: 'string',
       name: 'appLang',
     },

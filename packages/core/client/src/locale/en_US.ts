@@ -526,5 +526,10 @@ export default {
   "Invalid JSON format": "Invalid JSON format",
   "After successful request": "After successful request",
   "Add exported field": "Add exported field",
-  "Exported table header name": "Exported table header name"
+  "Exported table header name": "Exported table header name",
+  "Audit logs": "Audit logs",
+  "Record ID": "Record ID",
+  "User": "User",
+  "Field": "Field",
+  "Field value changes": "Field value changes",
 }

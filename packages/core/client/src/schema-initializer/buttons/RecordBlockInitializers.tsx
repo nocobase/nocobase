@@ -117,13 +117,19 @@ export const RecordBlockInitializers = (props: any) => {
         },
         {
           type: 'itemGroup',
-          title: '{{t("Media")}}',
+          title: '{{t("Other blocks")}}',
           children: [
             {
               key: 'markdown',
               type: 'item',
               title: '{{t("Markdown")}}',
               component: 'MarkdownBlockInitializer',
+            },
+            {
+              key: 'auditLogs',
+              type: 'item',
+              title: '{{t("Audit logs")}}',
+              component: 'AuditLogsBlockInitializer',
             },
           ],
         },

@@ -7,6 +7,7 @@ export default {
   model: 'UserModel',
   createdBy: true,
   updatedBy: true,
+  logging: true,
   fields: [
     {
       name: 'id',
