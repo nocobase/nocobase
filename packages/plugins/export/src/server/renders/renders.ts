@@ -3,7 +3,7 @@ import moment from 'moment';
 export async function _(field, row, ctx, column?: any) {
   if (column?.dataIndex.length > 1) {
     return column.dataIndex.reduce((result, col) => {
-      return result?.[col];
+      return result?.[col.name];
     }, row);
   } else {
     return row.get(field.name);
@@ -55,8 +55,14 @@ export async function subTable(field, row, ctx) {
   return (row.get(field.name) || []).map((item) => item[field.sourceKey]);
 }
 
-export async function linkTo(field, row, ctx) {
-  return (row.get(field.name) || []).map((item) => item[field.labelField]);
+export async function linkTo(field, row, ctx, column?: any) {
+  return (row.get(field.name) || []).map((item) => {
+    return column.dataIndex.reduce((buf, cur) => {
+      buf = item[cur.name];
+      return buf;
+    });
+  });
+  // return (row.get(field.name) || []).map((item) => item[field.labelField]);
 }
 
 export async function attachment(field, row, ctx) {

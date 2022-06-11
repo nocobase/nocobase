@@ -17,7 +17,7 @@ export const useExportAction = () => {
         responseType: 'blob',
         params: {
           title: compile(title),
-          columns: JSON.stringify(exportSettings),
+          columns: JSON.stringify(compile(exportSettings)),
           appends: service.params[0]?.appends?.join(),
           filter: JSON.stringify(service.params[0]?.filter),
         },
