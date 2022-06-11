@@ -10,6 +10,7 @@ export const linkTo: IField = {
   group: 'relation',
   order: 1,
   title: '{{t("Link to")}}',
+  description: '{{t("Link to description")}}',
   isAssociation: true,
   default: {
     type: 'belongsToMany',
