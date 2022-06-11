@@ -1,5 +1,5 @@
-import { SyncOptions, Transactionable } from 'sequelize';
 import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
+import { SyncOptions, Transactionable } from 'sequelize';
 import { FieldModel } from './field';
 
 interface LoadOptions extends Transactionable {
@@ -50,16 +50,36 @@ export class CollectionModel extends MagicAttributeModel {
     }
   }
 
+  /**
+   * TODO: drop table from the database
+   * 
+   * @param options 
+   * @returns 
+   */
+  async remove(options?: any) {
+    const name = this.get('name');
+    // delete from memory
+    const result = this.db.removeCollection(name);
+    // TODO: drop table from the database
+    // this.db.sequelize.getQueryInterface().dropTable(this.get('name'));
+    return result;
+  }
+
   async migrate(options?: SyncOptions & Transactionable) {
     const collection = await this.load({
       transaction: options?.transaction,
     });
-    await collection.sync({
-      force: false,
-      alter: {
-        drop: false,
-      },
-      ...options,
-    });
+    try {
+      await collection.sync({
+        force: false,
+        alter: {
+          drop: false,
+        },
+        ...options,
+      });
+    } catch (error) {
+      const name = this.get('name');
+      this.db.removeCollection(name);
+    }
   }
 }

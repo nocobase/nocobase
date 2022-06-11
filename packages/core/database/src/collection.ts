@@ -186,6 +186,10 @@ export class Collection<
     }
   }
 
+  remove() {
+    this.context.database.removeCollection(this.name);
+  }
+
   removeField(name) {
     if (!this.fields.has(name)) {
       return;

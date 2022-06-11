@@ -198,6 +198,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (result) {
       this.emit('afterRemoveCollection', collection);
     }
+
+    return result;
   }
 
   getModel<M extends Model>(name: string) {
