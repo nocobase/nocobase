@@ -1,6 +1,5 @@
 import { Collection } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import { uid } from '@nocobase/utils';
 import lodash from 'lodash';
 import path from 'path';
 import { CollectionRepository } from '.';
@@ -92,124 +91,125 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
-    this.app.db.on('fields.afterCreateWithAssociations', async (model, { context, transaction }) => {
-      if (!context) {
-        return;
-      }
-      if (!model.get('through')) {
-        return;
-      }
-      const [throughName, sourceName, targetName] = [
-        model.get('through'),
-        model.get('collectionName'),
-        model.get('target'),
-      ];
-      const db = this.app.db;
-      const through = await db.getRepository('collections').findOne({
-        filter: {
-          name: throughName,
-        },
-        transaction,
-      });
-      if (!through) {
-        return;
-      }
-      const repository = db.getRepository('collections.fields', throughName);
-      await repository.create({
-        transaction,
-        values: {
-          name: `f_${uid()}`,
-          type: 'belongsTo',
-          target: sourceName,
-          targetKey: model.get('sourceKey'),
-          foreignKey: model.get('foreignKey'),
-          interface: 'linkTo',
-          reverseField: {
-            interface: 'subTable',
-            uiSchema: {
-              type: 'void',
-              title: through.get('title'),
-              'x-component': 'TableField',
-              'x-component-props': {},
-            },
-            // uiSchema: {
-            //   title: through.get('title'),
-            //   'x-component': 'RecordPicker',
-            //   'x-component-props': {
-            //     // mode: 'tags',
-            //     multiple: true,
-            //     fieldNames: {
-            //       label: 'id',
-            //       value: 'id',
-            //     },
-            //   },
-            // },
-          },
-          uiSchema: {
-            title: db.getCollection(sourceName)?.options?.title || sourceName,
-            'x-component': 'RecordPicker',
-            'x-component-props': {
-              // mode: 'tags',
-              multiple: false,
-              fieldNames: {
-                label: 'id',
-                value: 'id',
-              },
-            },
-          },
-        },
-      });
-      await repository.create({
-        transaction,
-        values: {
-          name: `f_${uid()}`,
-          type: 'belongsTo',
-          target: targetName,
-          targetKey: model.get('targetKey'),
-          foreignKey: model.get('otherKey'),
-          interface: 'linkTo',
-          reverseField: {
-            interface: 'subTable',
-            uiSchema: {
-              type: 'void',
-              title: through.get('title'),
-              'x-component': 'TableField',
-              'x-component-props': {},
-            },
-            // interface: 'linkTo',
-            // uiSchema: {
-            //   title: through.get('title'),
-            //   'x-component': 'RecordPicker',
-            //   'x-component-props': {
-            //     // mode: 'tags',
-            //     multiple: true,
-            //     fieldNames: {
-            //       label: 'id',
-            //       value: 'id',
-            //     },
-            //   },
-            // },
-          },
-          uiSchema: {
-            title: db.getCollection(targetName)?.options?.title || targetName,
-            'x-component': 'RecordPicker',
-            'x-component-props': {
-              // mode: 'tags',
-              multiple: false,
-              fieldNames: {
-                label: 'id',
-                value: 'id',
-              },
-            },
-          },
-        },
-      });
-      await db.getRepository<CollectionRepository>('collections').load({
-        filter: {
-          'name.$in': [throughName, sourceName, targetName],
-        },
-      });
-    });
+    // this.app.db.on('fields.afterCreateWithAssociations', async (model, { context, transaction }) => {
+    //   return;
+    //   if (!context) {
+    //     return;
+    //   }
+    //   if (!model.get('through')) {
+    //     return;
+    //   }
+    //   const [throughName, sourceName, targetName] = [
+    //     model.get('through'),
+    //     model.get('collectionName'),
+    //     model.get('target'),
+    //   ];
+    //   const db = this.app.db;
+    //   const through = await db.getRepository('collections').findOne({
+    //     filter: {
+    //       name: throughName,
+    //     },
+    //     transaction,
+    //   });
+    //   if (!through) {
+    //     return;
+    //   }
+    //   const repository = db.getRepository('collections.fields', throughName);
+    //   await repository.create({
+    //     transaction,
+    //     values: {
+    //       name: `f_${uid()}`,
+    //       type: 'belongsTo',
+    //       target: sourceName,
+    //       targetKey: model.get('sourceKey'),
+    //       foreignKey: model.get('foreignKey'),
+    //       interface: 'linkTo',
+    //       reverseField: {
+    //         interface: 'subTable',
+    //         uiSchema: {
+    //           type: 'void',
+    //           title: through.get('title'),
+    //           'x-component': 'TableField',
+    //           'x-component-props': {},
+    //         },
+    //         // uiSchema: {
+    //         //   title: through.get('title'),
+    //         //   'x-component': 'RecordPicker',
+    //         //   'x-component-props': {
+    //         //     // mode: 'tags',
+    //         //     multiple: true,
+    //         //     fieldNames: {
+    //         //       label: 'id',
+    //         //       value: 'id',
+    //         //     },
+    //         //   },
+    //         // },
+    //       },
+    //       uiSchema: {
+    //         title: db.getCollection(sourceName)?.options?.title || sourceName,
+    //         'x-component': 'RecordPicker',
+    //         'x-component-props': {
+    //           // mode: 'tags',
+    //           multiple: false,
+    //           fieldNames: {
+    //             label: 'id',
+    //             value: 'id',
+    //           },
+    //         },
+    //       },
+    //     },
+    //   });
+    //   await repository.create({
+    //     transaction,
+    //     values: {
+    //       name: `f_${uid()}`,
+    //       type: 'belongsTo',
+    //       target: targetName,
+    //       targetKey: model.get('targetKey'),
+    //       foreignKey: model.get('otherKey'),
+    //       interface: 'linkTo',
+    //       reverseField: {
+    //         interface: 'subTable',
+    //         uiSchema: {
+    //           type: 'void',
+    //           title: through.get('title'),
+    //           'x-component': 'TableField',
+    //           'x-component-props': {},
+    //         },
+    //         // interface: 'linkTo',
+    //         // uiSchema: {
+    //         //   title: through.get('title'),
+    //         //   'x-component': 'RecordPicker',
+    //         //   'x-component-props': {
+    //         //     // mode: 'tags',
+    //         //     multiple: true,
+    //         //     fieldNames: {
+    //         //       label: 'id',
+    //         //       value: 'id',
+    //         //     },
+    //         //   },
+    //         // },
+    //       },
+    //       uiSchema: {
+    //         title: db.getCollection(targetName)?.options?.title || targetName,
+    //         'x-component': 'RecordPicker',
+    //         'x-component-props': {
+    //           // mode: 'tags',
+    //           multiple: false,
+    //           fieldNames: {
+    //             label: 'id',
+    //             value: 'id',
+    //           },
+    //         },
+    //       },
+    //     },
+    //   });
+    //   await db.getRepository<CollectionRepository>('collections').load({
+    //     filter: {
+    //       'name.$in': [throughName, sourceName, targetName],
+    //     },
+    //   });
+    // });
 
     this.app.db.on('fields.afterDestroy', async (model, options) => {
       await model.remove(options);
