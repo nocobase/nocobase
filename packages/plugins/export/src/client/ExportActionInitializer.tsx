@@ -42,7 +42,8 @@ const initExportSettings = (fields) => {
         const childDI = [];
         preFields.dataIndex.push({ name: cur.name, title: cur.title });
         preFields.defaultTitle = cur.title;
-        generateDataIndex(childDI, preFields, cur.children);
+        generateDataIndex(childDI, cloneDeep(preFields), cur.children);
+        preFields.dataIndex.pop();
         di.push(...childDI);
       } else {
         child.dataIndex.push({ name: cur.name, title: cur.title });
@@ -52,16 +53,7 @@ const initExportSettings = (fields) => {
       }
     }, []);
   };
-  fields.reduce((buf, cur) => {
-    const item = { dataIndex: [{ name: cur.name, title: cur.title }], defaultTitle: cur.title };
-    if (cur.children) {
-      const di = [];
-      generateDataIndex(di, item, cur.children);
-      exportSettings.push(...di);
-    } else {
-      exportSettings.push(item);
-    }
-  }, []);
+  generateDataIndex(exportSettings, { dataIndex: [] }, fields);
   return exportSettings;
 };
 
