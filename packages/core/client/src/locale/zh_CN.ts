@@ -499,6 +499,7 @@ export default {
   'Boolean': '逻辑值',
   'String': '字符串',
 
+  'Calculator': '运算',
   'Comparison': '值比较',
   'Arithmetic calculation': '算术运算',
   'String operation': '字符串',
@@ -578,5 +579,12 @@ export default {
   'Invalid JSON format': '非法JSON格式',
   'After successful request': '请求成功之后',
   'Add exported field': '添加导出字段',
-  'Exported table header name': '导出表头名称'
+  'Exported table header name': '导出表头名称',
+  "Audit logs": "操作记录",
+  "Record ID": "数据 ID",
+  "User": "用户",
+  "Field": "字段",
+  "Select": "选择",
+  "Select Field": "选择字段",
+  "Field value changes": "变更记录",
 }

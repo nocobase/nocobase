@@ -33,8 +33,9 @@ import {
   useRoutes,
   WorkflowPage,
   WorkflowRouteProvider,
-  WorkflowShortcut,
+  WorkflowShortcut
 } from '@nocobase/client';
+import { AuditLogsProvider } from '@nocobase/plugin-audit-logs/client';
 import { SchemaInitializerPluginProvider } from '@nocobase/plugin-export/client';
 import { notification } from 'antd';
 import 'antd/dist/antd.css';
@@ -106,6 +107,7 @@ const providers = [
     },
   ],
   SchemaInitializerPluginProvider,
+  AuditLogsProvider,
   BlockSchemaComponentProvider,
   AntdSchemaComponentProvider,
   ACLProvider,

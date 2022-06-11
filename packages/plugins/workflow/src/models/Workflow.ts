@@ -9,8 +9,10 @@ export default class WorkflowModel extends Model {
   declare static database: Database;
 
   declare id: number;
+  declare key: string;
   declare title: string;
   declare enabled: boolean;
+  declare current: boolean;
   declare description?: string;
   declare type: string;
   declare config: any;
@@ -63,6 +65,7 @@ export default class WorkflowModel extends Model {
 
     const execution = await this.createExecution({
       context,
+      key: this.key,
       status: EXECUTION_STATUS.STARTED,
       useTransaction: this.useTransaction,
       transaction: transaction.id
@@ -72,6 +75,21 @@ export default class WorkflowModel extends Model {
 
     // NOTE: not to trigger afterUpdate hook here
     await this.update({ executed }, { transaction, hooks: false });
+
+    const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
+      where: {
+        key: this.key
+      },
+      transaction
+    });
+    await (<typeof WorkflowModel>this.constructor).update({
+      allExecuted
+    }, {
+      where: {
+        key: this.key
+      },
+      transaction
+    });
 
     execution.workflow = this;
 

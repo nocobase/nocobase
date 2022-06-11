@@ -13,4 +13,5 @@ export default [
   '@nocobase/plugin-workflow',
   '@nocobase/plugin-client',
   '@nocobase/plugin-export',
+  '@nocobase/plugin-audit-logs',
 ] as PluginsConfigurations;

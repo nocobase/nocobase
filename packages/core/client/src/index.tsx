@@ -1,7 +1,6 @@
 import './global.less';
 
 export * from './acl';
-export * from './action-logs';
 export * from './antd-config-provider';
 export * from './api-client';
 export * from './application';

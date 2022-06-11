@@ -1,15 +1,16 @@
 import React from "react";
 import { ISchema, useForm } from "@formily/react";
-import { cx } from "@emotion/css";
+import { css, cx } from "@emotion/css";
 import { Registry } from "@nocobase/utils";
 import { useTranslation } from "react-i18next";
 import { message, Tag } from "antd";
 
-import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRecord, useRequest, useResourceActionContext } from '../../';
-import collection from './collection';
+import { SchemaComponent, useActionContext, useAPIClient, useCompile, useResourceActionContext } from '../../';
+
 import { nodeCardClass, nodeMetaClass } from "../style";
-import schedule from "./schedule";
 import { useFlowContext } from "../WorkflowCanvas";
+import collection from './collection';
+import schedule from "./schedule/";
 
 
 function useUpdateConfigAction() {
@@ -92,7 +93,13 @@ export const TriggerConfig = () => {
                   type: 'void',
                   name: 'config',
                   'x-component': 'fieldset',
-                  'x-component-props': {},
+                  'x-component-props': {
+                    className: css`
+                      .ant-select{
+                        width: auto;
+                      }
+                    `
+                  },
                   properties: fieldset
                 },
                 actions: {

@@ -1,6 +1,6 @@
-import path from 'path';
-import { afterCreate, afterUpdate, afterDestroy } from './hooks';
 import { Plugin } from '@nocobase/server';
+import path from 'path';
+import { afterCreate, afterDestroy, afterUpdate } from './hooks';
 
 export default class PluginActionLogs extends Plugin {
   async beforeLoad() {

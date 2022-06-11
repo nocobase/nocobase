@@ -27,7 +27,7 @@ export const CreateFormBlockInitializers = (props: any) => {
         },
         {
           type: 'itemGroup',
-          title: '{{t("Media")}}',
+          title: '{{t("Other blocks")}}',
           children: [
             {
               type: 'item',
