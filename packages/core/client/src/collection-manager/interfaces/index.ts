@@ -19,7 +19,7 @@ export * from './o2m';
 export * from './o2o';
 export * from './password';
 export * from './percent';
-// export * from './phone';
+export * from './phone';
 export * from './radioGroup';
 export * from './richText';
 export * from './select';
