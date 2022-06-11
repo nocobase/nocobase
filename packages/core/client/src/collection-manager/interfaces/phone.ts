@@ -15,7 +15,10 @@ export const phone: IField = {
       type: 'string',
       // title,
       'x-component': 'Input',
-      'x-validator': 'phone',
+      'x-component-props': {
+        type: 'tel'
+      },
+      // 'x-validator': 'phone',
     },
   },
   properties: {
