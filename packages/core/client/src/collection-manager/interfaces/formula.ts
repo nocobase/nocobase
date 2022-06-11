@@ -4,9 +4,10 @@ import { IField } from './types';
 export const formula: IField = {
   name: 'formula',
   type: 'object',
-  group: 'basic',
-  order: 9,
+  group: 'advance',
+  order: 1,
   title: '{{t("Formula")}}',
+  description: '{{t("Formula description")}}',
   sortable: true,
   default: {
     type: 'formula',

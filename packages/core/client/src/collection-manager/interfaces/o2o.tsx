@@ -9,6 +9,7 @@ export const o2o: IField = {
   group: 'relation',
   order: 3,
   title: '{{t("One to one")}}',
+  description: '{{t("One to one description")}}',
   isAssociation: true,
   default: {
     type: 'hasOne',

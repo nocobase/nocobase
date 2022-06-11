@@ -6,13 +6,14 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent } from '../../schema-component';
+import { ActionContext, SchemaComponent, useCompile } from '../../schema-component';
 import { useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
+import { Typography } from 'antd';
 
-const getSchema = (schema: IField): ISchema => {
+const getSchema = (schema: IField, record: any, compile): ISchema => {
   if (!schema) {
     return;
   }
@@ -36,8 +37,15 @@ const getSchema = (schema: IField): ISchema => {
             );
           },
         },
-        title: '{{ t("Edit field") }}',
+        title: `${record.__parent?.title} - ${compile('{{ t("Edit field") }}')}`,
         properties: {
+          summary: {
+            type: 'void',
+            'x-component': 'FieldSummary',
+            'x-component-props': {
+              schemaKey: schema.name
+            }
+          },
           // @ts-ignore
           ...properties,
           footer: {
@@ -116,6 +124,7 @@ export const EditFieldAction = (props) => {
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
   const { t } = useTranslation();
+  const compile = useCompile();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <a
@@ -127,7 +136,7 @@ export const EditFieldAction = (props) => {
           const schema = getSchema({
             ...getInterface(record.interface),
             default: data?.data,
-          });
+          }, record, compile);
           setSchema(schema);
           setVisible(true);
         }}

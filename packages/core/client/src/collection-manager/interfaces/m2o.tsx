@@ -9,6 +9,7 @@ export const m2o: IField = {
   group: 'relation',
   order: 5,
   title: '{{t("Many to one")}}',
+  description: '{{t("Many to one description")}}',
   isAssociation: true,
   default: {
     type: 'belongsTo',

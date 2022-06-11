@@ -1,4 +1,7 @@
 import { ISchema } from '@formily/react';
+import { useTranslation } from 'react-i18next';
+import { useRecord } from '../../../record-provider';
+import { useCompile } from '../../../schema-component';
 import { CollectionOptions } from '../../types';
 import { collectionFieldSchema } from './collectionFields';
 
@@ -197,7 +200,12 @@ export const collectionSchema: ISchema = {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
-                          title: '{{ t("Configure fields") }}',
+                          'x-reactions': (field) => { 
+                            const i = field.path.segments[1];
+                            const table = field.form.getValuesIn(`table.${i}`);
+                            const compile = useCompile();
+                            field.title = `${compile(table.title)} - ${compile('{{ t("Configure fields") }}')}`;
+                          },
                           properties: {
                             collectionFieldSchema,
                           },
