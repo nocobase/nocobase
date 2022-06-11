@@ -7,6 +7,7 @@ export const o2m: IField = {
   group: 'relation',
   order: 4,
   title: '{{t("One to many")}}',
+  description: '{{t("One to many description")}}',
   isAssociation: true,
   default: {
     type: 'hasMany',

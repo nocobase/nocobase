@@ -126,6 +126,7 @@ export default {
   "Percent": "百分比",
   "Password": "密码",
   "Formula": "公式",
+  "Formula description": "基于同一条记录中的其他字段计算出一个值。",
   "Choices": "选择类型",
   "Checkbox": "勾选",
   "Single select": "下拉菜单（单选）",
@@ -138,6 +139,7 @@ export default {
   "Datetime": "日期",
   "Relation": "关系类型",
   "Link to": "关联",
+  "Link to description": "用于快速创建表关系，可兼容大多数普通场景。适合非开发人员使用。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。创建后，将同时在目标数据表中生成当前数据表的关联字段。",
   "Sub-table": "子表格",
   "System info": "系统信息",
   "Created at": "创建日期",
@@ -169,7 +171,10 @@ export default {
   "Many to many": "多对多",
   "Foreign key 1": "外键1",
   "Foreign key 2": "外键2",
-
+  "One to one description": "用于创建一对一关系，比如一个用户会有一套个人资料。",
+  "One to many description": "用于创建一对多关系，比如一个国家会有多个城市。作为字段存在时，它是一个子表格用于显示目标数据表的数据。创建后，会在目标数据表里自动生成一个 Many to one 字段。",
+  "Many to one description": "用于创建多对一关系，比如一个城市只能属于一个国家，一个国家可以有多个城市。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。创建后，会在目标数据表里自动生成一个 One to many 字段。",
+  "Many to many description": "用于创建多对多关系，比如一个学生会有多个老师，一个老师也会有多个学生。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。",
   "Add filter": "添加筛选条件",
   "Add filter group": "添加筛选分组",
   "is": "等于",
@@ -489,6 +494,7 @@ export default {
   'By custom date': '自定义时间',
 
   'Advance': '高级模式',
+  'Advance type': '高级类型',
 
   'End': '结束',
 

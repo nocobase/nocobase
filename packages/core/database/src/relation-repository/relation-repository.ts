@@ -48,6 +48,7 @@ export abstract class RelationRepository {
     return (<BelongsTo | HasOne | HasMany | BelongsToMany>this.association).accessors;
   }
 
+  @transaction()
   async create(options?: CreateOptions): Promise<any> {
     const createAccessor = this.accessors().create;
 

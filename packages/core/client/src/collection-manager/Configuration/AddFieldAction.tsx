@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, Menu, Typography } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +15,7 @@ import { IField } from '../interfaces/types';
 import * as components from './components';
 import { options } from './interfaces';
 
-const getSchema = (schema: IField): ISchema => {
+const getSchema = (schema: IField, record: any, compile): ISchema => {
   if (!schema) {
     return;
   }
@@ -44,8 +44,15 @@ const getSchema = (schema: IField): ISchema => {
             );
           },
         },
-        title: '{{ t("Add field") }}',
+        title: `${record.title} - ${compile('{{ t("Add field") }}')}`,
         properties: {
+          summary: {
+            type: 'void',
+            'x-component': 'FieldSummary',
+            'x-component-props': {
+              schemaKey: schema.name
+            }
+          },
           // @ts-ignore
           ...properties,
           footer: {
@@ -128,6 +135,7 @@ export const AddFieldAction = () => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const record = useRecord();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
@@ -138,7 +146,7 @@ export const AddFieldAction = () => {
               overflow: 'auto',
             }}
             onClick={(info) => {
-              const schema = getSchema(getInterface(info.key));
+              const schema = getSchema(getInterface(info.key), record, compile);
               setSchema(schema);
               setVisible(true);
             }}
