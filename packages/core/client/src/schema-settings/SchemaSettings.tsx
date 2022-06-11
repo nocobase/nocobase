@@ -468,7 +468,6 @@ SchemaSettings.PopupItem = (props) => {
 
 SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, ...others } = props;
-  debugger;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();

@@ -91,13 +91,12 @@ export const ExportDesigner = () => {
         initialValues={{ exportSettings: fieldSchema?.['x-action-settings']?.exportSettings }}
         components={{ ArrayItems }}
         onSubmit={({ exportSettings }) => {
-          debugger;
           fieldSchema['x-action-settings']['exportSettings'] = exportSettings
             ?.filter((fieldItem) => fieldItem?.dataIndex?.length)
             ?.map((item) => {
               return {
-                ...item,
-                defaultTitle: item.dataIndex[item.dataIndex.length - 1],
+                dataIndex: item.dataIndex,
+                defaultTitle: item.dataIndex[item.dataIndex.length - 1].title,
               };
             });
           dn.emit('patch', {
@@ -109,6 +108,7 @@ export const ExportDesigner = () => {
           dn.refresh();
         }}
       />
+      <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
         breakRemoveOn={(s) => {
