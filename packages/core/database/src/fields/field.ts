@@ -75,6 +75,10 @@ export abstract class Field {
     return this.options[name];
   }
 
+  remove() {
+    return this.collection.removeField(this.name);
+  }
+
   merge(obj: any) {
     Object.assign(this.options, obj);
   }

@@ -12,7 +12,6 @@ export async function create(ctx: Context, next) {
     updateAssociationValues,
     context: ctx,
   });
-
   ctx.body = instance;
 
   await next();
