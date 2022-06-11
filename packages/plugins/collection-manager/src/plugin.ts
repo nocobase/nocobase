@@ -211,6 +211,14 @@ export class CollectionManagerPlugin extends Plugin {
       });
     });
 
+    this.app.db.on('fields.afterDestroy', async (model, options) => {
+      await model.remove(options);
+    });
+
+    this.app.db.on('collections.afterDestroy', async (model, options) => {
+      await model.remove(options);
+    });
+
     this.app.on('beforeStart', async () => {
       await this.app.db.getRepository<CollectionRepository>('collections').load();
     });
