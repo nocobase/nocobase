@@ -17,7 +17,7 @@ export function registerGroupLabel(key: string, label: string) {
   groupLabels[key] = label;
 }
 
-Object.keys(types).forEach((type) => {
+Object.keys(types).filter((type) => !['subTable'].includes(type)).forEach((type) => {
   const schema = types[type];
   registerField(schema.group || 'others', type, { order: 0, ...schema });
 });
