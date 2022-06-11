@@ -85,6 +85,10 @@ export const collectionFieldSchema: ISchema = {
   //   collection,
   // },
   properties: {
+    summary: {
+      type: 'void',
+      'x-component': 'FieldSummary',
+    },
     actions: {
       type: 'void',
       'x-component': 'ActionBar',

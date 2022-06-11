@@ -10,6 +10,7 @@ export const m2m: IField = {
   group: 'relation',
   order: 6,
   title: '{{t("Many to many")}}',
+  description: '{{t("Many to many description")}}',
   isAssociation: true,
   default: {
     type: 'belongsToMany',
