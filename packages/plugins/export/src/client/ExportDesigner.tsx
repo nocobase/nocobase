@@ -97,6 +97,7 @@ export const ExportDesigner = () => {
               return {
                 dataIndex: item.dataIndex,
                 defaultTitle: item.dataIndex[item.dataIndex.length - 1].title,
+                title: item.title,
               };
             });
           dn.emit('patch', {
