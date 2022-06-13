@@ -1,7 +1,7 @@
 import lodash from 'lodash';
+import type { SequelizeHooks } from 'sequelize/types/lib/hooks';
 import Database from './database';
 import { Model } from './model';
-import type { SequelizeHooks } from 'sequelize/types/lib/hooks';
 
 const { hooks } = require('sequelize/lib/hooks');
 
@@ -60,7 +60,12 @@ export class ModelHook {
   buildSequelizeHook(type) {
     return async (...args: any[]) => {
       const modelName = this.findModelName(args);
+
       if (modelName) {
+        const m = this.database.sequelize.models[modelName];
+        if (m && !(m.constructor as any).database) {
+          return;
+        }
         // emit model event
         await this.database.emitAsync(`${modelName}.${type}`, ...args);
       }

@@ -86,17 +86,17 @@ export const linkTo: IField = {
       'x-component': 'Select',
       'x-disabled': '{{ !createOnly }}',
     },
-    through: {
-      type: 'string',
-      title: '{{t("Junction collection")}}',
-      'x-disabled': '{{ !createOnly }}',
-      'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      'x-component-props': {
-        placeholder: '{{t("Leave it blank, unless you need a custom intermediate table")}}',
-      },
-    },
+    // through: {
+    //   type: 'string',
+    //   title: '{{t("Junction collection")}}',
+    //   'x-disabled': '{{ !createOnly }}',
+    //   'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+    //   'x-decorator': 'FormItem',
+    //   'x-component': 'Select',
+    //   'x-component-props': {
+    //     placeholder: '{{t("Leave it blank, unless you need a custom intermediate table")}}',
+    //   },
+    // },
     // 'reverseField.uiSchema.title': {
     //   type: 'string',
     //   title: '{{t("Reverse field display name")}}',

@@ -61,7 +61,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
     if (fieldNames.includes(key)) {
       const collectionField = getField(key);
       if (filterByTk) {
-        if (collectionField.interface === 'subTable') {
+        if (['subTable', 'o2m'].includes(collectionField.interface)) {
           values[key] = form.values[key];
           continue;
         }
@@ -70,7 +70,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
         }
       }
       const items = form.values[key];
-      if (collectionField.interface === 'linkTo') {
+      if (['linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) {
         const targetKey = collectionField.targetKey || 'id';
         if (resource instanceof TableFieldResource) {
           if (Array.isArray(items)) {

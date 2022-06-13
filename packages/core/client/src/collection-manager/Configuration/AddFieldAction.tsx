@@ -50,8 +50,8 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
             type: 'void',
             'x-component': 'FieldSummary',
             'x-component-props': {
-              schemaKey: schema.name
-            }
+              schemaKey: schema.name,
+            },
           },
           // @ts-ignore
           ...properties,
@@ -123,7 +123,7 @@ const useCreateCollectionField = () => {
       if (['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(form?.values?.interface) && title) {
         form.setValuesIn('reverseField.uiSchema.title', title);
       }
-      
+
       await run();
       await refreshCM();
     },
@@ -156,9 +156,11 @@ export const AddFieldAction = () => {
               return (
                 option.children.length > 0 && (
                   <Menu.ItemGroup key={option.label} title={compile(option.label)}>
-                    {option.children.map((child) => {
-                      return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
-                    })}
+                    {option.children
+                      .filter((child) => !['o2o', 'subTable'].includes(child.name))
+                      .map((child) => {
+                        return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
+                      })}
                   </Menu.ItemGroup>
                 )
               );
@@ -170,7 +172,11 @@ export const AddFieldAction = () => {
           {t('Add field')}
         </Button>
       </Dropdown>
-      <SchemaComponent schema={schema} components={{ ...components, ArrayTable }} scope={{ createOnly: true, useCreateCollectionField }} />
+      <SchemaComponent
+        schema={schema}
+        components={{ ...components, ArrayTable }}
+        scope={{ createOnly: true, useCreateCollectionField }}
+      />
     </ActionContext.Provider>
   );
 };

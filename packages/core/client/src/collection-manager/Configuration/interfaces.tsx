@@ -35,7 +35,6 @@ export const options = Object.keys(groupLabels).map((groupName) => {
   return {
     label: groupLabels[groupName],
     children: Object.keys(fields[groupName] || {})
-      .filter((type) => !['o2o', 'subTable'].includes(type))
       .map((type) => {
         const field = fields[groupName][type];
         return {
