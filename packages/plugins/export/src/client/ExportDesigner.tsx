@@ -91,15 +91,10 @@ export const ExportDesigner = () => {
         initialValues={{ exportSettings: fieldSchema?.['x-action-settings']?.exportSettings }}
         components={{ ArrayItems }}
         onSubmit={({ exportSettings }) => {
-          fieldSchema['x-action-settings']['exportSettings'] = exportSettings
-            ?.filter((fieldItem) => fieldItem?.dataIndex?.length)
-            ?.map((item) => {
-              return {
-                dataIndex: item.dataIndex,
-                defaultTitle: item.dataIndex[item.dataIndex.length - 1].title,
-                title: item.title,
-              };
-            });
+          fieldSchema['x-action-settings']['exportSettings'] = exportSettings?.filter(
+            (fieldItem) => fieldItem?.dataIndex?.length,
+          );
+
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],

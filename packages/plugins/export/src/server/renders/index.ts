@@ -55,8 +55,9 @@ async function renderRows({ columns, fields, data }, ctx) {
       const cells = thisRow[rowIndex];
       if (field.options.interface !== 'subTable') {
         const render = getInterfaceRender(field.options.interface);
+        const value = await render(field, row, ctx, columns[i]);
         cells.push({
-          value: await render(field, row, ctx, columns[i]),
+          value,
           rowIndex: result.length + rowIndex,
           colIndex: i + colOffset,
         });

@@ -40,14 +40,12 @@ const initExportSettings = (fields) => {
     fNodes.reduce((buf, cur) => {
       if (cur.children) {
         const childDI = [];
-        preFields.dataIndex.push({ name: cur.name, title: cur.title });
-        preFields.defaultTitle = cur.title;
+        preFields.dataIndex.push(cur.name);
         generateDataIndex(childDI, cloneDeep(preFields), cur.children);
         preFields.dataIndex.pop();
         di.push(...childDI);
       } else {
-        child.dataIndex.push({ name: cur.name, title: cur.title });
-        child.defaultTitle = cur.title;
+        child.dataIndex.push(cur.name);
         di.push(child);
         child = cloneDeep(preFields);
       }

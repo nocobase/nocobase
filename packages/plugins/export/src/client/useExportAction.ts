@@ -19,8 +19,9 @@ export const useExportAction = () => {
     async onClick() {
       const { exportSettings } = actionSchema?.['x-action-settings'] ?? {};
       exportSettings.forEach((es) => {
-        const { uiSchema } = getCollectionJoinField(`${name}.${es.dataIndex.map((di) => di.name).join('.')}`) ?? {};
+        const { uiSchema } = getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
         es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
+        es.defaultTitle = uiSchema?.title;
       });
       const { data } = await apiClient.request({
         url: `/${name}:exportXlsx`,

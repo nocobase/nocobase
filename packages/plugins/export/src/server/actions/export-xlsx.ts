@@ -29,7 +29,7 @@ export async function exportXlsx(ctx: Context, next: Next) {
     appends,
     except,
   });
-  const collectionFields = columns.map((col) => collection.fields.get(col.dataIndex[0].name));
+  const collectionFields = columns.map((col) => collection.fields.get(col.dataIndex[0]));
   const { rows, ranges } = await render({ columns, fields: collectionFields, data }, ctx);
   ctx.body = xlsx.build([
     {
