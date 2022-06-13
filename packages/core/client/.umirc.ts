@@ -1,3 +1,4 @@
+import { resolveNocobasePackagesAlias } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'dumi';
 
 export default defineConfig({
@@ -17,4 +18,7 @@ export default defineConfig({
       path: 'https://github.com/nocobase/nocobase',
     },
   ],
+  chainWebpack(config) {
+    resolveNocobasePackagesAlias(config);
+  },
 });
