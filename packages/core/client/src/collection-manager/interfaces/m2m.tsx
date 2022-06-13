@@ -119,13 +119,13 @@ export const m2m: IField = {
                 through: {
                   type: 'string',
                   title: '{{t("Through collection")}}',
+                  description: '{{ t("Generated automatically if left blank") }}',
                   'x-decorator': 'FormItem',
                   'x-disabled': '{{ !createOnly }}',
                   'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-component': 'Select',
                   'x-component-props': {
                     allowClear: true,
-                    placeholder: '留空时，自动生成中间表'
                   },
                 },
               },

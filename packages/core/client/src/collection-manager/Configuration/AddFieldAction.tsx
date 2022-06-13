@@ -123,6 +123,7 @@ const useCreateCollectionField = () => {
       if (['o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(form?.values?.interface) && title) {
         form.setValuesIn('reverseField.uiSchema.title', title);
       }
+      
       await run();
       await refreshCM();
     },
@@ -155,7 +156,7 @@ export const AddFieldAction = () => {
               return (
                 option.children.length > 0 && (
                   <Menu.ItemGroup key={option.label} title={compile(option.label)}>
-                    {option.children.map((child) => {
+                    {option.children.filter((child) => !['subTable'].includes(child.name)).map((child) => {
                       return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
                     })}
                   </Menu.ItemGroup>

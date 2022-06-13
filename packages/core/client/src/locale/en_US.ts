@@ -457,7 +457,7 @@ export default {
   "By field": "By field",
   "By custom date": "By custom date",
   "Advance": "Advance",
-  "Advance type": "Advance type",
+  "Advance type": "Advanced",
   "End": "End",
   "Trigger context": "Trigger context",
   "Node result": "Node result",

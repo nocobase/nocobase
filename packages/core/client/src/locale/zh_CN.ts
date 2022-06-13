@@ -175,6 +175,7 @@ export default {
   "One to many description": "用于创建一对多关系，比如一个国家会有多个城市。作为字段存在时，它是一个子表格用于显示目标数据表的数据。创建后，会在目标数据表里自动生成一个 Many to one 字段。",
   "Many to one description": "用于创建多对一关系，比如一个城市只能属于一个国家，一个国家可以有多个城市。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。创建后，会在目标数据表里自动生成一个 One to many 字段。",
   "Many to many description": "用于创建多对多关系，比如一个学生会有多个老师，一个老师也会有多个学生。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。",
+  "Generated automatically if left blank": "留空时，自动生成中间表",
   "Add filter": "添加筛选条件",
   "Add filter group": "添加筛选分组",
   "is": "等于",
