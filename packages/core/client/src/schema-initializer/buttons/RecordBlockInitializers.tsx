@@ -6,7 +6,7 @@ import { gridRowColWrap } from '../utils';
 const useRelationFields = () => {
   const { fields } = useCollection();
   const relationFields = fields
-    .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'o2o', 'm2o'].includes(field.interface))
+    .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
     .map((field) => {
       if (['hasOne', 'belongsTo'].includes(field.type)) {
         return {

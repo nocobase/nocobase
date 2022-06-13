@@ -27,7 +27,7 @@ registerGroupLabel('choices', '{{t("Choices")}}');
 registerGroupLabel('media', '{{t("Media")}}');
 registerGroupLabel('datetime', '{{t("Date & Time")}}');
 registerGroupLabel('relation', '{{t("Relation")}}');
-registerGroupLabel('advance', '{{t("Advance type")}}');
+registerGroupLabel('advanced', '{{t("Advanced type")}}');
 registerGroupLabel('systemInfo', '{{t("System info")}}');
 registerGroupLabel('others', '{{t("Others")}}');
 
@@ -35,6 +35,7 @@ export const options = Object.keys(groupLabels).map((groupName) => {
   return {
     label: groupLabels[groupName],
     children: Object.keys(fields[groupName] || {})
+      .filter((type) => !['o2o', 'subTable'].includes(type))
       .map((type) => {
         const field = fields[groupName][type];
         return {

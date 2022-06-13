@@ -494,8 +494,8 @@ export default {
   'By field': '数据表字段',
   'By custom date': '自定义时间',
 
-  'Advance': '高级模式',
-  'Advance type': '高级类型',
+  'Advanced': '高级模式',
+  'Advanced type': '高级类型',
 
   'End': '结束',
 
@@ -592,4 +592,6 @@ export default {
   "Select": "选择",
   "Select Field": "选择字段",
   "Field value changes": "变更记录",
+  "One to one (has one)": "一对一（has one）",
+  "One to one (belongs to)": "一对一（belongs to）"
 }

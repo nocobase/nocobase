@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import { relationshipType } from './properties';
 import { IField } from './types';
 
 export const o2m: IField = {
@@ -111,20 +112,7 @@ export const o2m: IField = {
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },
-    type: {
-      type: 'string',
-      title: '{{t("Relationship type")}}',
-      required: true,
-      'x-disabled': true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      enum: [
-        { label: "{{t('One to one')}}", value: 'hasOne' },
-        { label: "{{t('One to many')}}", value: 'hasMany' },
-        { label: "{{t('Many to one')}}", value: 'belongsTo' },
-        { label: "{{t('Many to many')}}", value: 'belongsToMany' },
-      ],
-    },
+    type: relationshipType,
     grid: {
       type: 'void',
       'x-component': 'Grid',
