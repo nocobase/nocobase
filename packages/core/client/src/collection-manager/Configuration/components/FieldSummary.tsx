@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { Tag } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../../schema-component';
 import { useCollectionManager } from '../../hooks';
 
@@ -9,6 +10,7 @@ export const FieldSummary = observer((props: any) => {
   const { schemaKey } = props;
   const { getInterface } = useCollectionManager();
   const compile = useCompile();
+  const { t } = useTranslation();
   const schema = getInterface(schemaKey);
 
   if (!schema) return null;
@@ -21,7 +23,7 @@ export const FieldSummary = observer((props: any) => {
         padding: 16px;
       `}
     >
-      <div className={css``}>字段类型：<Tag>{compile(schema.title)}</Tag></div>
+      <div className={css``}>{t('Field interface')}: <Tag>{compile(schema.title)}</Tag></div>
       {schema.description ? (
         <div
           className={css`
