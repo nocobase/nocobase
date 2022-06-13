@@ -3,7 +3,7 @@ import { onFieldValueChange } from '@formily/core';
 import { useForm, useFormEffects } from '@formily/react';
 import { css } from '@emotion/css';
 
-import { SchemaComponent } from '@nocobase/client';
+import { SchemaComponent } from '../../../';
 
 import { collection } from '../../schemas/collection';
 import { OnField } from './OnField';
