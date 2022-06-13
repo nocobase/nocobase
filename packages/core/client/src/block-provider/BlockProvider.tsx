@@ -152,9 +152,10 @@ export const useFilterByTk = () => {
       return recordIndex;
     }
   }
+  
   if (assoc) { 
     const association = getCollectionField(assoc);
-    return record?.[association.name]?.[association.targetKey || 'id'];
+    return record?.[association.targetKey || 'id'];
   }
   return record?.[collection.filterTargetKey || 'id'];
 };
