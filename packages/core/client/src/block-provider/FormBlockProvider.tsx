@@ -36,14 +36,6 @@ const InternalFormBlockProvider = (props) => {
   );
 };
 
-const useAssociationNames = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
-  const names = getCollectionFields(collection)
-    ?.filter((field) => field.target)
-    .map((field) => field.name);
-  return names;
-};
-
 export const FormBlockProvider = (props) => {
   return (
     <BlockProvider {...props}>
