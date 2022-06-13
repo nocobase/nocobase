@@ -2,8 +2,8 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { Tag } from 'antd';
 import React from 'react';
-import { useCollectionManager } from '../../../collection-manager/hooks';
-import { useCompile } from '../../hooks';
+import { useCompile } from '../../../schema-component';
+import { useCollectionManager } from '../../hooks';
 
 export const FieldSummary = observer((props: any) => {
   const { schemaKey } = props;

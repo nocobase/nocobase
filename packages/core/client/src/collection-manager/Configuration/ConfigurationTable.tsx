@@ -8,6 +8,7 @@ import { SchemaComponent, useActionContext, useCompile } from '../../schema-comp
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
+import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
 
@@ -185,6 +186,7 @@ export const ConfigurationTable = () => {
         components={{
           AddSubFieldAction,
           EditSubFieldAction,
+          FieldSummary,
         }}
         scope={{
           useDestroySubField,
