@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select } from 'antd';
 
-import { useCompile, useCollectionDataSource, useCollectionManager } from '@nocobase/client';
+import { useCompile, useCollectionDataSource, useCollectionManager } from '../../../';
 
 import { ScheduleConfig } from './ScheduleConfig';
 import { useFlowContext } from '../../WorkflowCanvas';
