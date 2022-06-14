@@ -73,7 +73,7 @@ export const Cascader = connect(
         fieldNames={fieldNames}
         displayRender={displayRender}
         onChange={(value, selectedOptions) => {
-          if (labelInValue) {
+          if (value && labelInValue) {
             onChange(selectedOptions.map((option) => omit(option, [fieldNames.children])));
           } else {
             onChange(value);

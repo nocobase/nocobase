@@ -39,6 +39,7 @@ export const useShared = () => {
                     type: 'array',
                     'x-decorator': 'FormItem',
                     'x-component': 'Cascader',
+                    required: true,
                     enum: fields,
                     'x-component-props': {
                       fieldNames: {
@@ -46,7 +47,7 @@ export const useShared = () => {
                         value: 'name',
                         children: 'children',
                       },
-                      labelInValue: true,
+                      // labelInValue: true,
                       changeOnSelect: false,
                     },
                   },
@@ -55,7 +56,7 @@ export const useShared = () => {
                     'x-decorator': 'FormItem',
                     'x-component': 'Input',
                     'x-component-props': {
-                      placeholder: '{{ t("Exported table header name") }}',
+                      placeholder: '{{ t("Custom column title") }}',
                     },
                   },
                   remove: {
@@ -70,7 +71,7 @@ export const useShared = () => {
           properties: {
             add: {
               type: 'void',
-              title: '{{ t("Add exported field") }}',
+              title: '{{ t("Add exportable field") }}',
               'x-component': 'ArrayItems.Addition',
               'x-component-props': {
                 className: css`

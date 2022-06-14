@@ -1,5 +1,6 @@
 export * from './ExportActionInitializer';
 export * from './ExportDesigner';
-export * from './ExportProvider';
-export * from './SchemaInitializerPluginProvider';
+export * from './ExportInitializerProvider';
+export * from './ExportPluginProvider';
 export * from './useExportAction';
+

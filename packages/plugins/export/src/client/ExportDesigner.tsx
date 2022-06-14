@@ -86,7 +86,7 @@ export const ExportDesigner = () => {
         }}
       />
       <SchemaSettings.ActionModalItem
-        title={t('Export fields')}
+        title={t('Exportable fields')}
         schema={schema}
         initialValues={{ exportSettings: fieldSchema?.['x-action-settings']?.exportSettings }}
         components={{ ArrayItems }}
