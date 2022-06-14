@@ -62,10 +62,6 @@ export class ModelHook {
       const modelName = this.findModelName(args);
 
       if (modelName) {
-        const m = this.database.sequelize.models[modelName];
-        if (m && !(m.constructor as any).database) {
-          return;
-        }
         // emit model event
         await this.database.emitAsync(`${modelName}.${type}`, ...args);
       }

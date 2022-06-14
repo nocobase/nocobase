@@ -1,5 +1,5 @@
-import { Database } from '../../database';
 import { mockDatabase } from '..';
+import { Database } from '../../database';
 import { FormulaField } from '../../fields';
 
 describe('formula field', () => {
@@ -13,10 +13,13 @@ describe('formula field', () => {
     await db.close();
   });
 
-  it('add formula field with old table, already has data.', async() => {
+  it('add formula field with old table, already has data.', async () => {
     const Test = db.collection({
       name: 'tests',
-      fields: [{ type: 'float', name: 'price' }, { type: 'float', name: 'count' }],
+      fields: [
+        { type: 'float', name: 'price' },
+        { type: 'float', name: 'count' },
+      ],
     });
 
     await db.sync();
@@ -42,7 +45,11 @@ describe('formula field', () => {
     const expression = 'price*count';
     const Test = db.collection({
       name: 'tests',
-      fields: [{ type: 'float', name: 'price' }, { type: 'float', name: 'count' }, {name: 'sum', type: 'formula', expression}],
+      fields: [
+        { type: 'float', name: 'price' },
+        { type: 'float', name: 'count' },
+        { name: 'sum', type: 'formula', expression },
+      ],
     });
 
     await db.sync();
@@ -58,5 +65,5 @@ describe('formula field', () => {
     test.set('count', '6');
     await test.save();
     expect(test.get('sum')).toEqual(sumField.caculate(expression, test.toJSON()));
-  })
+  });
 });
