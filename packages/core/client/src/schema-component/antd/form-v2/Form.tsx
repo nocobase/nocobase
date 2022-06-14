@@ -80,7 +80,7 @@ const WithoutForm = (props) => {
       createForm({
         effects() {
           onFormInputChange((form) => {
-            setFormValueChanged(true);
+            setFormValueChanged?.(true);
           });
         },
       }),
