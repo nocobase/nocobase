@@ -2,7 +2,7 @@ export interface AvailableActionOptions {
   /**
    * @deprecated
    */
-  type: 'new-data' | 'old-data';
+  type?: 'new-data' | 'old-data';
   displayName?: string;
   aliases?: string[] | string;
   resource?: string;
