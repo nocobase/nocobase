@@ -6,6 +6,7 @@ import {
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
 
 export const useExportAction = () => {
   const { service } = useBlockRequestContext();
@@ -14,13 +15,19 @@ export const useExportAction = () => {
   const compile = useCompile();
   const { getCollectionJoinField } = useCollectionManager();
   const { name, title, getField } = useCollection();
-
+  const { t } = useTranslation();
   return {
     async onClick() {
       const { exportSettings } = actionSchema?.['x-action-settings'] ?? {};
       exportSettings.forEach((es) => {
         const { uiSchema } = getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
         es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
+        if (!es.enum && uiSchema.type === 'boolean') {
+          es.enum = [
+            { value: true, label: t('Yes') },
+            { value: false, label: t('No') },
+          ];
+        }
         es.defaultTitle = uiSchema?.title;
       });
       const { data } = await apiClient.request({

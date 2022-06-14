@@ -20,11 +20,19 @@ export async function percent(field, row, ctx) {
   return value && `${value}%`;
 }
 
-export async function boolean(field, row, ctx) {
+export async function boolean(field, row, ctx, column?: any) {
   const value = row.get(field.name);
-  // FIXME: i18n
-  return value ? '是' : '否';
+  let { enum: enumData } = column ?? {};
+  if (enumData?.length > 0) {
+    const option = enumData.find((item) => item.value === value);
+    return option?.label;
+  } else {
+    // FIXME: i18n
+    return value ? '是' : value === null || value === undefined ? '' : '否';
+  }
 }
+
+export const checkbox = boolean;
 
 export async function select(field, row, ctx, column?: any) {
   const value = row.get(field.name);
@@ -55,6 +63,8 @@ export async function multipleSelect(field, row, ctx, column?: any) {
 }
 
 export const radio = select;
+
+export const radioGroup = select;
 
 export const checkboxes = multipleSelect;
 
