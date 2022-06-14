@@ -8,20 +8,19 @@
 - `plugin` 工作流
 - `core` 自定义操作
 - `doc` 开发文档
-- `plugin` 公式字段
+- `plugin` 审计日志
+- `plugin` 导出
+- `plugin` 数据可视化（低代码）
 
 ## 正在开发
 
-- `plugin` 更新记录
-- `plugin` 导出
 - `core` 插件管理器
-- `plugin` 数据可视化（低代码）
+- `plugin` 引用字段
 
 ## 准备开发
 
-- `plugin` 引用和复制关系表的数据（字段）
 - `ui` 移动端响应
-- `plugin` 聚合计算
+- `plugin` 聚合计算字段
 - `core` 字段默认值、只读
 - `plugin` 表单验证
 

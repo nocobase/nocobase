@@ -7,23 +7,22 @@
 - `plugin` Workflow
 - `core` Custom actions
 - `doc` Development Doc
-- `plugin` Formula (collection field)
-- `core` Datatable relationship
+- `core` Collection relationship
+- `plugin` Audit logs
+- `plugin` Export
+- `plugin` Data visualization(low code)
 
 ## Developing
 
-- `plugin` Revision history
-- `plugin` Export
 - `core` Plugin manager
-- `plugin` Data visualization(low code)
+- `plugin` Lookup field
 
 ## Planning
 
-- `core` Fileds default value/read-only
-- `plugin` Form validator
-- `plugin` Reference and copy data from related tables (collection field)
+- `core` field options (default value, read-only, etc...)
 - `ui` Mobile responsive
-- `plugin` Aggregate calculation
+- `plugin` Rollup field
+- `plugin` Form validator
 
 ## Future
 
