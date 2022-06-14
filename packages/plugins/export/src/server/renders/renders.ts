@@ -58,6 +58,8 @@ export const radio = select;
 
 export const checkboxes = multipleSelect;
 
+export const checkboxGroup = multipleSelect;
+
 export async function subTable(field, row, ctx) {
   // TODO: need title field to be defined
   return (row.get(field.name) || []).map((item) => item[field.sourceKey]);
