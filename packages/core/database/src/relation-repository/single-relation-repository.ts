@@ -59,7 +59,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
   }
 
   async findOne(options?: SingleRelationFindOption): Promise<Model<any>> {
-    return this.find(options);
+    return this.find({ ...options, filterByTk: null } as any);
   }
 
   @transaction()
@@ -84,6 +84,10 @@ export abstract class SingleRelationRepository extends RelationRepository {
     const target = await this.find({
       transaction,
     });
+
+    if (!target) {
+      throw new Error('The record does not exist');
+    }
 
     await updateModelByValues(target, options?.values, {
       ...lodash.omit(options, 'values'),
