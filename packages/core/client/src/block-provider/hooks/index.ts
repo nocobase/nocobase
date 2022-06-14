@@ -61,7 +61,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
     if (fieldNames.includes(key)) {
       const collectionField = getField(key);
       if (filterByTk) {
-        if (collectionField.interface === 'subTable') {
+        if (['subTable', 'o2m'].includes(collectionField.interface)) {
           values[key] = form.values[key];
           continue;
         }
@@ -70,7 +70,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
         }
       }
       const items = form.values[key];
-      if (collectionField.interface === 'linkTo') {
+      if (['linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) {
         const targetKey = collectionField.targetKey || 'id';
         if (resource instanceof TableFieldResource) {
           if (Array.isArray(items)) {
@@ -121,35 +121,39 @@ export const useCreateActionProps = () => {
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
-      await resource.create({
-        values: {
-          ...values,
-          ...overwriteValues,
-          ...assignedValues,
-        },
-      });
-      actionField.data.loading = false;
-      __parent?.service?.refresh?.();
-      setVisible?.(false);
-      if (!onSuccess?.successMessage) {
-        return;
-      }
-      if (onSuccess?.manualClose) {
-        Modal.success({
-          title: compile(onSuccess?.successMessage),
-          onOk: async () => {
-            await form.reset();
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
-              } else {
-                history.push(onSuccess.redirectTo);
-              }
-            }
+      try {
+        await resource.create({
+          values: {
+            ...values,
+            ...overwriteValues,
+            ...assignedValues,
           },
         });
-      } else {
-        message.success(compile(onSuccess?.successMessage));
+        actionField.data.loading = false;
+        __parent?.service?.refresh?.();
+        setVisible?.(false);
+        if (!onSuccess?.successMessage) {
+          return;
+        }
+        if (onSuccess?.manualClose) {
+          Modal.success({
+            title: compile(onSuccess?.successMessage),
+            onOk: async () => {
+              await form.reset();
+              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+                if (isURL(onSuccess.redirectTo)) {
+                  window.location.href = onSuccess.redirectTo;
+                } else {
+                  history.push(onSuccess.redirectTo);
+                }
+              }
+            },
+          });
+        } else {
+          message.success(compile(onSuccess?.successMessage));
+        }
+      } catch (error) {
+        actionField.data.loading = false;
       }
     },
   };
@@ -281,39 +285,43 @@ export const useUpdateActionProps = () => {
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
-      await resource.update({
-        filterByTk,
-        values: {
-          ...values,
-          ...overwriteValues,
-          ...assignedValues,
-        },
-      });
-      actionField.data.loading = false;
-      __parent?.service?.refresh?.();
-      if (!(resource instanceof TableFieldResource)) {
-        __parent?.__parent?.service?.refresh?.();
-      }
-      setVisible?.(false);
-      if (!onSuccess?.successMessage) {
-        return;
-      }
-      if (onSuccess?.manualClose) {
-        Modal.success({
-          title: compile(onSuccess?.successMessage),
-          onOk: async () => {
-            await form.reset();
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
-              } else {
-                history.push(onSuccess.redirectTo);
-              }
-            }
+      try {
+        await resource.update({
+          filterByTk,
+          values: {
+            ...values,
+            ...overwriteValues,
+            ...assignedValues,
           },
         });
-      } else {
-        message.success(compile(onSuccess?.successMessage));
+        actionField.data.loading = false;
+        __parent?.service?.refresh?.();
+        if (!(resource instanceof TableFieldResource)) {
+          __parent?.__parent?.service?.refresh?.();
+        }
+        setVisible?.(false);
+        if (!onSuccess?.successMessage) {
+          return;
+        }
+        if (onSuccess?.manualClose) {
+          Modal.success({
+            title: compile(onSuccess?.successMessage),
+            onOk: async () => {
+              await form.reset();
+              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+                if (isURL(onSuccess.redirectTo)) {
+                  window.location.href = onSuccess.redirectTo;
+                } else {
+                  history.push(onSuccess.redirectTo);
+                }
+              }
+            },
+          });
+        } else {
+          message.success(compile(onSuccess?.successMessage));
+        }
+      } catch (error) {
+        actionField.data.loading = false;
       }
     },
   };

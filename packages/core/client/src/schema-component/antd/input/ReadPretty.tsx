@@ -38,16 +38,17 @@ ReadPretty.TextArea = (props) => {
   const { autop = true, ellipsis, text } = props;
   const html = (
     <div
+      style={{lineHeight: 1.612}}
       dangerouslySetInnerHTML={{
         __html: HTMLEncode(value).split('\n').join('<br/>'),
       }}
     />
   );
-  console.log('value', value);
+
   const content = ellipsis ?
     (<EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
-      {text}
-    </EllipsisWithTooltip>) : value || html;
+      {text || value}
+    </EllipsisWithTooltip>) : (autop ? html : value);
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}

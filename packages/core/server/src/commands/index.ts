@@ -6,6 +6,7 @@ export function registerCli(app: Application) {
   require('./db-clean').default(app);
   require('./db-sync').default(app);
   require('./install').default(app);
+  require('./migrator').default(app);
   require('./start').default(app);
   require('./upgrade').default(app);
 

@@ -172,9 +172,10 @@ export default {
   "Foreign key 1": "外键1",
   "Foreign key 2": "外键2",
   "One to one description": "用于创建一对一关系，比如一个用户会有一套个人资料。",
-  "One to many description": "用于创建一对多关系，比如一个国家会有多个城市。作为字段存在时，它是一个子表格用于显示目标数据表的数据。创建后，会在目标数据表里自动生成一个 Many to one 字段。",
-  "Many to one description": "用于创建多对一关系，比如一个城市只能属于一个国家，一个国家可以有多个城市。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。创建后，会在目标数据表里自动生成一个 One to many 字段。",
+  "One to many description": "用于创建一对多关系，比如一个国家会有多个城市。作为字段存在时，它是一个子表格用于显示目标数据表的数据。创建后，会在目标数据表里自动生成一个多对一字段。",
+  "Many to one description": "用于创建多对一关系，比如一个城市只能属于一个国家，一个国家可以有多个城市。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。创建后，会在目标数据表里自动生成一个多对一字段。",
   "Many to many description": "用于创建多对多关系，比如一个学生会有多个老师，一个老师也会有多个学生。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。",
+  "Generated automatically if left blank": "留空时，自动生成中间表",
   "Add filter": "添加筛选条件",
   "Add filter group": "添加筛选分组",
   "is": "等于",
@@ -493,8 +494,8 @@ export default {
   'By field': '数据表字段',
   'By custom date': '自定义时间',
 
-  'Advance': '高级模式',
-  'Advance type': '高级类型',
+  'Advanced': '高级模式',
+  'Advanced type': '高级类型',
 
   'End': '结束',
 
@@ -593,4 +594,6 @@ export default {
   "Select": "选择",
   "Select Field": "选择字段",
   "Field value changes": "变更记录",
+  "One to one (has one)": "一对一（has one）",
+  "One to one (belongs to)": "一对一（belongs to）"
 }

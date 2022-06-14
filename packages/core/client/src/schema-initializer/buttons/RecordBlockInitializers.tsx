@@ -5,9 +5,71 @@ import { gridRowColWrap } from '../utils';
 
 const useRelationFields = () => {
   const { fields } = useCollection();
-  return fields
-    .filter((field) => ['linkTo', 'subTable'].includes(field.interface))
+  const relationFields = fields
+    .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
     .map((field) => {
+      if (['hasOne', 'belongsTo'].includes(field.type)) {
+        return {
+          key: field.name,
+          type: 'subMenu',
+          title: field?.uiSchema?.title || field.name,
+          children: [
+            {
+              key: `${field.name}_details`,
+              type: 'item',
+              title: '{{t("Details")}}',
+              field,
+              component: 'RecordReadPrettyAssociationFormBlockInitializer',
+            },
+            // {
+            //   key: `${field.name}_form`,
+            //   type: 'item',
+            //   title: '{{t("Form")}}',
+            //   field,
+            //   component: 'RecordAssociationFormBlockInitializer',
+            // },
+          ],
+        }
+      }
+
+      if (['hasMany', 'belongsToMany'].includes(field.type)) {
+        return {
+          key: field.name,
+          type: 'subMenu',
+          title: field?.uiSchema?.title || field.name,
+          children: [
+            {
+              key: `${field.name}_table`,
+              type: 'item',
+              title: '{{t("Table")}}',
+              field,
+              component: 'RecordAssociationBlockInitializer',
+            },
+            {
+              key: `${field.name}_details`,
+              type: 'item',
+              title: '{{t("Details")}}',
+              field,
+              component: 'RecordAssociationDetailsBlockInitializer',
+            },
+            {
+              key: `${field.name}_form`,
+              type: 'item',
+              title: '{{t("Form")}}',
+              field,
+              component: 'RecordAssociationFormBlockInitializer',
+            },
+            {
+              key: `${field.name}_calendar`,
+              type: 'item',
+              title: '{{t("Calendar")}}',
+              field,
+              component: 'RecordAssociationCalendarBlockInitializer',
+            },
+          ],
+        }
+      }
+
       return {
         key: field.name,
         type: 'item',
@@ -16,6 +78,7 @@ const useRelationFields = () => {
         component: 'RecordAssociationBlockInitializer',
       };
     }) as any;
+    return relationFields;
 };
 
 export const RecordBlockInitializers = (props: any) => {

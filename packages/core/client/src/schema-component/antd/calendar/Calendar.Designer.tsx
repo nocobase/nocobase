@@ -33,6 +33,7 @@ export const CalendarDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const options = useOptions();
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
+  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.SelectItem
@@ -129,7 +130,7 @@ export const CalendarDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Calendar'} collectionName={name} />
+      <SchemaSettings.Template componentName={'Calendar'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

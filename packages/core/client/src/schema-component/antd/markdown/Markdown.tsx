@@ -6,6 +6,8 @@ import { ReadPretty as InputReadPretty } from '../input';
 import { MarkdownVoid } from './Markdown.Void';
 import { convertToText, markdown } from './util';
 
+import './style.less';
+
 export const Markdown: any = connect(
   AntdInput.TextArea,
   mapProps((props: any, field) => {

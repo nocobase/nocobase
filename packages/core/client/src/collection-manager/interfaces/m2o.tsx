@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { recordPickerSelector, recordPickerViewer } from './properties';
+import { recordPickerSelector, recordPickerViewer, relationshipType } from './properties';
 import { IField } from './types';
 
 export const m2o: IField = {
@@ -73,20 +73,7 @@ export const m2o: IField = {
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },
-    type: {
-      type: 'string',
-      title: '{{t("Relationship type")}}',
-      required: true,
-      'x-disabled': true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      enum: [
-        { label: "{{t('One to one')}}", value: 'hasOne' },
-        { label: "{{t('One to many')}}", value: 'hasMany' },
-        { label: "{{t('Many to one')}}", value: 'belongsTo' },
-        { label: "{{t('Many to many')}}", value: 'belongsToMany' },
-      ],
-    },
+    type: relationshipType,
     grid: {
       type: 'void',
       'x-component': 'Grid',

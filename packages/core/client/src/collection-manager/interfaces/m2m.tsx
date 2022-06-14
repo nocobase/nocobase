@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
-import { defaultProps, recordPickerSelector, recordPickerViewer } from './properties';
+import { defaultProps, recordPickerSelector, recordPickerViewer, relationshipType } from './properties';
 import { IField } from './types';
 
 export const m2m: IField = {
@@ -77,20 +77,7 @@ export const m2m: IField = {
   },
   properties: {
     ...defaultProps,
-    type: {
-      type: 'string',
-      title: '{{t("Relationship type")}}',
-      required: true,
-      'x-disabled': true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      enum: [
-        { label: "{{t('One to one')}}", value: 'hasOne' },
-        { label: "{{t('One to many')}}", value: 'hasMany' },
-        { label: "{{t('Many to one')}}", value: 'belongsTo' },
-        { label: "{{t('Many to many')}}", value: 'belongsToMany' },
-      ],
-    },
+    type: relationshipType,
     grid: {
       type: 'void',
       'x-component': 'Grid',
@@ -119,13 +106,13 @@ export const m2m: IField = {
                 through: {
                   type: 'string',
                   title: '{{t("Through collection")}}',
+                  description: '{{ t("Generated automatically if left blank") }}',
                   'x-decorator': 'FormItem',
                   'x-disabled': '{{ !createOnly }}',
                   'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-component': 'Select',
                   'x-component-props': {
                     allowClear: true,
-                    placeholder: '留空时，自动生成中间表'
                   },
                 },
               },
