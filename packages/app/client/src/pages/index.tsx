@@ -36,6 +36,7 @@ import {
   WorkflowShortcut
 } from '@nocobase/client';
 import { AuditLogsProvider } from '@nocobase/plugin-audit-logs/client';
+import { ExportPluginProvider } from '@nocobase/plugin-export/client';
 import { notification } from 'antd';
 import 'antd/dist/antd.css';
 import React from 'react';
@@ -105,6 +106,7 @@ const providers = [
       },
     },
   ],
+  ExportPluginProvider,
   AuditLogsProvider,
   BlockSchemaComponentProvider,
   AntdSchemaComponentProvider,

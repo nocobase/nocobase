@@ -4,6 +4,17 @@ import { CollectionManagerContext } from '../context';
 
 export const useCollectionManager = () => {
   const { refreshCM, service, interfaces, collections } = useContext(CollectionManagerContext);
+  const getCollectionField = (name: string) => {
+    const [collectionName, fieldName] = name.split('.');
+    if (!fieldName) {
+      return;
+    }
+    const collection = collections?.find((collection) => collection.name === collectionName);
+    if (!collection) {
+      return;
+    }
+    return collection?.fields?.find((field) => field.name === fieldName);
+  };
   return {
     service,
     interfaces,
@@ -22,16 +33,19 @@ export const useCollectionManager = () => {
       const collection = collections?.find((collection) => collection.name === name);
       return collection?.fields || [];
     },
-    getCollectionField(name: string) {
-      const [collectionName, fieldName] = name.split('.');
-      if (!fieldName) {
+    getCollectionField,
+    getCollectionJoinField(name: string) {
+      const [collectionName, ...fieldNames] = name.split('.');
+      if (!fieldNames?.length) {
         return;
       }
-      const collection = collections?.find((collection) => collection.name === collectionName);
-      if (!collection) {
-        return;
-      }
-      return collection?.fields?.find((field) => field.name === fieldName);
+      let cName = collectionName;
+      return fieldNames.reduce((result, curFieldName) => {
+        const collectionField = getCollectionField(`${cName}.${curFieldName}`);
+        cName = collectionField.target;
+
+        return collectionField;
+      }, null);
     },
     getInterface(name: string) {
       return interfaces[name] ? clone(interfaces[name]) : null;
