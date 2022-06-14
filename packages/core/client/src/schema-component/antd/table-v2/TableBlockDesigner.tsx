@@ -20,6 +20,7 @@ export const TableBlockDesigner = () => {
   const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
+  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -200,7 +201,7 @@ export const TableBlockDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Table'} collectionName={name} />
+      <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

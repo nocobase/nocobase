@@ -39,6 +39,7 @@ const useResource = (props: UseResourceProps) => {
   const api = useAPIClient();
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
+
   const field = useField<Field>();
   if (block === 'TableField') {
     const options = {
@@ -60,6 +61,7 @@ const useResource = (props: UseResourceProps) => {
   if (sourceId) {
     return api.resource(resource, sourceId);
   }
+  
   return api.resource(resource, record[association?.sourceKey || 'id']);
 };
 
@@ -150,7 +152,8 @@ export const useFilterByTk = () => {
       return recordIndex;
     }
   }
-  if (assoc) {
+  
+  if (assoc) { 
     const association = getCollectionField(assoc);
     return record?.[association.targetKey || 'id'];
   }

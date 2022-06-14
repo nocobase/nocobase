@@ -117,7 +117,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 };
 
 SchemaSettings.Template = (props) => {
-  const { componentName, collectionName } = props;
+  const { componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
@@ -178,6 +178,7 @@ SchemaSettings.Template = (props) => {
         sdn.loadAPIClientEvents();
         const { key } = await saveAsTemplate({
           collectionName,
+          resourceName,
           componentName,
           name: values.name,
           uid: fieldSchema['x-uid'],
@@ -232,7 +233,8 @@ const findBlockTemplateSchema = (fieldSchema) => {
 };
 
 SchemaSettings.FormItemTemplate = (props) => {
-  const { insertAdjacentPosition = 'afterBegin', componentName, collectionName } = props;
+  const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
+  console.log('SchemaSettings.Template', props);
   const { t } = useTranslation();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
@@ -312,6 +314,7 @@ SchemaSettings.FormItemTemplate = (props) => {
         sdn.loadAPIClientEvents();
         const { key } = await saveAsTemplate({
           collectionName,
+          resourceName,
           componentName,
           name: values.name,
           uid: gridSchema['x-uid'],

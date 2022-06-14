@@ -41,6 +41,9 @@ const schema = {
       'x-component': 'Input.TextArea',
       'x-component-props': {
         ellipsis: true,
+        style: {
+          width: '100px'
+        }
       },
     },
     read3: {

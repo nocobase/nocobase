@@ -456,8 +456,8 @@ export default {
   "By month": "By month",
   "By field": "By field",
   "By custom date": "By custom date",
-  "Advance": "Advance",
-  "Advance type": "Advance type",
+  "Advanced": "Advanced",
+  "Advanced type": "Advanced",
   "End": "End",
   "Trigger context": "Trigger context",
   "Node result": "Node result",
@@ -538,4 +538,6 @@ export default {
   "User": "User",
   "Field": "Field",
   "Field value changes": "Field value changes",
+  "One to one (has one)": "One to one (has one)",
+  "One to one (belongs to)": "One to one (belongs to)",
 }

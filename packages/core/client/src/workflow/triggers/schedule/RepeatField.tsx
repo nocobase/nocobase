@@ -1,10 +1,10 @@
-import React from "react";
 import { css } from "@emotion/css";
 import { InputNumber, Select } from "antd";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { Cron } from 'react-js-cron';
-
 import CronZhCN from './locale/Cron.zh-CN';
+
 
 const languages = {
   'zh-CN': CronZhCN,
@@ -18,7 +18,7 @@ const RepeatOptions = [
   { value: 86400_000, text: 'By day', unitText: 'Days' },
   { value: 604800_000, text: 'By week', unitText: 'Weeks' },
   // { value: 18144_000_000, text: 'By 30 days' },
-  { value: 'cron', text: 'Advance' }
+  { value: 'cron', text: 'Advanced' }
 ];
 
 function getNumberOption(v) {

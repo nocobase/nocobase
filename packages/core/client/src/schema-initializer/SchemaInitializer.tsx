@@ -52,7 +52,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
         return (
           Component && (
             <SchemaInitializerItemContext.Provider
-              key={`item-${indexA}`}
+              key={`${item.key || 'item'}-${indexA}`}
               value={{
                 index: indexA,
                 item,
@@ -164,7 +164,6 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
           );
         }
         if (item.type === 'subMenu') {
-          console.log('item.key', item.key);
           return (
             <Menu.SubMenu
               // @ts-ignore
@@ -192,8 +191,8 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
     return (
       <Menu.SubMenu
         // @ts-ignore
-        eventKey={eventKey ? `${eventKey}-${index}` : index}
-        key={eventKey ? `${eventKey}-${index}` : index}
+        eventKey={eventKey ? `${eventKey}-${index}` : info.key}
+        key={info.key}
         title={compile(children)}
         icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
       >
@@ -203,12 +202,13 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
   }
   return (
     <Menu.Item
-      eventKey={eventKey ? `${eventKey}-${index}` : index}
+      // {...others}
+      key={info.key}
+      eventKey={eventKey ? `${eventKey}-${index}` : info.key}
       icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
       onClick={(opts) => {
         onClick({ ...opts, item: info });
       }}
-      {...others}
     >
       {compile(children)}
     </Menu.Item>

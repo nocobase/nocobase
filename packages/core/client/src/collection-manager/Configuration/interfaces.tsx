@@ -17,7 +17,7 @@ export function registerGroupLabel(key: string, label: string) {
   groupLabels[key] = label;
 }
 
-Object.keys(types).filter((type) => !['subTable'].includes(type)).forEach((type) => {
+Object.keys(types).forEach((type) => {
   const schema = types[type];
   registerField(schema.group || 'others', type, { order: 0, ...schema });
 });
@@ -27,7 +27,7 @@ registerGroupLabel('choices', '{{t("Choices")}}');
 registerGroupLabel('media', '{{t("Media")}}');
 registerGroupLabel('datetime', '{{t("Date & Time")}}');
 registerGroupLabel('relation', '{{t("Relation")}}');
-registerGroupLabel('advance', '{{t("Advance type")}}');
+registerGroupLabel('advanced', '{{t("Advanced type")}}');
 registerGroupLabel('systemInfo', '{{t("System info")}}');
 registerGroupLabel('others', '{{t("Others")}}');
 

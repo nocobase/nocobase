@@ -9,6 +9,7 @@ import {
   beforeCreateForReverseField,
   beforeInitOptions
 } from './hooks';
+import AlertSubTableMigration from './migrations/20220613103214-alert-sub-table';
 import { CollectionModel, FieldModel } from './models';
 
 export class CollectionManagerPlugin extends Plugin {
@@ -16,6 +17,11 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.registerModels({
       CollectionModel,
       FieldModel,
+    });
+
+    this.db.addMigration({
+      name: 'collection-manager/20220613103214-alert-sub-table',
+      migration: AlertSubTableMigration,
     });
 
     this.app.db.registerRepositories({
@@ -244,7 +250,7 @@ export class CollectionManagerPlugin extends Plugin {
           const collection: Collection = ctx.db.getCollection(collectionName);
           if (collection) {
             for (const [, field] of collection.fields) {
-              if (field.options.interface === 'subTable') {
+              if (['subTable', 'o2m'].includes(field.options.interface)) {
                 updateAssociationValues.push(field.name);
               }
             }
@@ -255,7 +261,7 @@ export class CollectionManagerPlugin extends Plugin {
             const collection: Collection = ctx.db.getCollection(association?.target);
             if (collection) {
               for (const [, field] of collection.fields) {
-                if (field.options.interface === 'subTable') {
+                if (['subTable', 'o2m'].includes(field.options.interface)) {
                   updateAssociationValues.push(field.name);
                 }
               }

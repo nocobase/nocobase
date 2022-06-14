@@ -663,6 +663,7 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
     <SchemaInitializer.Item
       icon={<FormOutlined />}
       {...others}
+      key={'123'}
       onClick={async ({ item }) => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
@@ -699,34 +700,256 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
   );
 };
 
-export const RecordAssociationBlockInitializer = (props) => {
+export const RecordAssociationFormBlockInitializer = (props) => {
+  const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const field = item.field;
+  const collection = field.target;
+  const resource = `${field.collectionName}.${field.name}`;
+  return (
+    <SchemaInitializer.Item
+      icon={<FormOutlined />}
+      {...others}
+      onClick={async ({ item }) => {
+        
+        const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
+        const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type) ? 'UpdateFormActionInitializers' : 'CreateFormActionInitializers';
+
+        if (item.template) {
+          const s = await getTemplateSchemaByMode(item);
+          if (item.template.componentName === 'FormItem') {
+            const blockSchema = createFormBlockSchema({
+              collection,
+              resource,
+              association: resource,
+              action,
+              useSourceId: '{{ useSourceIdFromParentRecord }}',
+              useParams: '{{ useParamsFromRecord }}',
+              actionInitializers,
+              template: s,
+            });
+            if (item.mode === 'reference') {
+              blockSchema['x-template-key'] = item.template.key;
+            }
+            insert(blockSchema);
+          } else {
+            insert(s);
+          }
+        } else {
+          insert(
+            createFormBlockSchema({
+              collection,
+              resource,
+              association: resource,
+              action,
+              useSourceId: '{{ useSourceIdFromParentRecord }}',
+              useParams: '{{ useParamsFromRecord }}',
+              actionInitializers,
+            }),
+          );
+        }
+      }}
+      items={useRecordCollectionDataSourceItems('FormItem', item, collection, resource)}
+    />
+  );
+};
+
+export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
+  const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+
+  const field = item.field;
+  const collection = field.target;
+  const resource = `${field.collectionName}.${field.name}`;
+  return (
+    <SchemaInitializer.Item
+      icon={<FormOutlined />}
+      {...others}
+      onClick={async ({ item }) => {
+        if (item.template) {
+          const s = await getTemplateSchemaByMode(item);
+          if (item.template.componentName === 'ReadPrettyFormItem') {
+            const blockSchema = createReadPrettyFormBlockSchema({
+              collection,
+              resource,
+              association: resource,
+              action: 'get',
+              useSourceId: '{{ useSourceIdFromParentRecord }}',
+              useParams: '{{ useParamsFromRecord }}',
+              template: s,
+            });
+            if (item.mode === 'reference') {
+              blockSchema['x-template-key'] = item.template.key;
+            }
+            insert(blockSchema);
+          } else {
+            insert(s);
+          }
+        } else {
+          insert(
+            createReadPrettyFormBlockSchema({
+              collection,
+              resource,
+              association: resource,
+              action: 'get',
+              useSourceId: '{{ useSourceIdFromParentRecord }}',
+              useParams: '{{ useParamsFromRecord }}',
+            }),
+          );
+        }
+      }}
+      items={useRecordCollectionDataSourceItems('ReadPrettyFormItem', item, collection, resource)}
+    />
+  );
+};
+
+export const RecordAssociationDetailsBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { getCollection } = useCollectionManager();
+  const field = item.field;
+  const collection = getCollection(field.target);
+  const resource = `${field.collectionName}.${field.name}`;
+  return (
+    <SchemaInitializer.Item
+      icon={<FormOutlined />}
+      {...others}
+      onClick={async ({ item }) => {
+        if (item.template) {
+          const s = await getTemplateSchemaByMode(item);
+          insert(s);
+        } else {
+          insert(
+            createDetailsBlockSchema({
+              collection: field.target,
+              resource,
+              association: resource,
+              rowKey: collection.filterTargetKey || 'id',
+            }),
+          );
+        }
+      }}
+      items={useRecordCollectionDataSourceItems('Details', item, field.target, resource)}
+    />
+  );
+}
+
+export const RecordAssociationCalendarBlockInitializer = (props) => {
+  const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const { t } = useTranslation();
+  const options = useContext(SchemaOptionsContext);
+  const { getCollection } = useCollectionManager();
+  const field = item.field;
+  const collection = getCollection(field.target);
+  const resource = `${field.collectionName}.${field.name}`;
+
   return (
     <SchemaInitializer.Item
       icon={<TableOutlined />}
       {...others}
       onClick={async ({ item }) => {
-        console.log('RecordAssociationBlockInitializer', item);
-        const field = item.field;
-        const collection = getCollection(field.target);
+        if (item.template) {
+          const s = await getTemplateSchemaByMode(item);
+          insert(s);
+        } else {
+        const stringFields = collection?.fields
+          ?.filter((field) => field.type === 'string')
+          ?.map((field) => {
+            return {
+              label: field?.uiSchema?.title,
+              value: field.name,
+            };
+          });
+        const dateFields = collection?.fields
+          ?.filter((field) => field.type === 'date')
+          ?.map((field) => {
+            return {
+              label: field?.uiSchema?.title,
+              value: field.name,
+            };
+          });
+        const values = await FormDialog(t('Create calendar block'), () => {
+          return (
+            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent
+                  schema={{
+                    properties: {
+                      title: {
+                        title: t('Title field'),
+                        enum: stringFields,
+                        required: true,
+                        'x-component': 'Select',
+                        'x-decorator': 'FormItem',
+                      },
+                      start: {
+                        title: t('Start date field'),
+                        enum: dateFields,
+                        required: true,
+                        default: 'createdAt',
+                        'x-component': 'Select',
+                        'x-decorator': 'FormItem',
+                      },
+                      end: {
+                        title: t('End date field'),
+                        enum: dateFields,
+                        'x-component': 'Select',
+                        'x-decorator': 'FormItem',
+                      },
+                    },
+                  }}
+                />
+              </FormLayout>
+            </SchemaComponentOptions>
+          );
+        }).open({
+          initialValues: {},
+        });
         insert(
-          createTableBlockSchema({
-            rowKey: collection.filterTargetKey,
+          createCalendarBlockSchema({
             collection: field.target,
-            resource: `${field.collectionName}.${field.name}`,
-            association: `${field.collectionName}.${field.name}`,
+            resource,
+            association: resource,
+            fieldNames: {
+              ...values,
+            },
           }),
         );
-        // if (item.template) {
-        //   const s = await getTemplateSchemaByMode(item);
-        //   insert(s);
-        // } else {
-        //   insert(createTableBlockSchema({ collection: item.name }));
-        // }
+        }
       }}
-      // items={useRecordCollectionDataSourceItems('Table')}
+      items={useRecordCollectionDataSourceItems('Calendar', item, field.target, resource)}
+    />
+  );
+}
+
+export const RecordAssociationBlockInitializer = (props) => {
+  const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const { getCollection } = useCollectionManager();
+  const field = item.field;
+  const collection = getCollection(field.target);
+  const resource = `${field.collectionName}.${field.name}`;
+  return (
+    <SchemaInitializer.Item
+      icon={<TableOutlined />}
+      {...others}
+      onClick={async ({ item }) => {
+        if (item.template) {
+          const s = await getTemplateSchemaByMode(item);
+          insert(s);
+        } else {
+          insert(
+            createTableBlockSchema({
+              rowKey: collection.filterTargetKey,
+              collection: field.target,
+              resource,
+              association: resource,
+            }),
+          );
+        }
+      }}
+      items={useRecordCollectionDataSourceItems('Table', item, field.target, resource)}
     />
   );
 };

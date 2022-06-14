@@ -52,7 +52,7 @@ export default {
       },
     },
     {
-      interface: 'linkTo',
+      interface: 'm2m',
       type: 'belongsToMany',
       name: 'roles',
       target: 'roles',

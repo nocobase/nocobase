@@ -29,6 +29,21 @@ export const type: ISchema = {
   ],
 };
 
+export const relationshipType: ISchema ={
+  type: 'string',
+  title: '{{t("Relationship type")}}',
+  required: true,
+  'x-disabled': true,
+  'x-decorator': 'FormItem',
+  'x-component': 'Select',
+  enum: [
+    { label: "{{t('HasOne')}}", value: 'hasOne' },
+    { label: "{{t('HasMany')}}", value: 'hasMany' },
+    { label: "{{t('BelongsTo')}}", value: 'belongsTo' },
+    { label: "{{t('BelongsToMany')}}", value: 'belongsToMany' },
+  ],
+};
+
 export const dateTimeProps: { [key: string]: ISchema } = {
   'uiSchema.x-component-props.dateFormat': {
     type: 'string',

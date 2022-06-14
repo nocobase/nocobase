@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, Menu, Typography } from 'antd';
+import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,8 +50,8 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
             type: 'void',
             'x-component': 'FieldSummary',
             'x-component-props': {
-              schemaKey: schema.name
-            }
+              schemaKey: schema.name,
+            },
           },
           // @ts-ignore
           ...properties,
@@ -120,9 +120,10 @@ const useCreateCollectionField = () => {
 
       recursiveChildren(form?.values?.children);
 
-      if (['o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(form?.values?.interface) && title) {
+      if (['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(form?.values?.interface) && title) {
         form.setValuesIn('reverseField.uiSchema.title', title);
       }
+
       await run();
       await refreshCM();
     },
@@ -155,9 +156,11 @@ export const AddFieldAction = () => {
               return (
                 option.children.length > 0 && (
                   <Menu.ItemGroup key={option.label} title={compile(option.label)}>
-                    {option.children.map((child) => {
-                      return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
-                    })}
+                    {option.children
+                      .filter((child) => !['o2o', 'subTable'].includes(child.name))
+                      .map((child) => {
+                        return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
+                      })}
                   </Menu.ItemGroup>
                 )
               );
@@ -169,7 +172,11 @@ export const AddFieldAction = () => {
           {t('Add field')}
         </Button>
       </Dropdown>
-      <SchemaComponent schema={schema} components={{ ...components, ArrayTable }} scope={{ createOnly: true, useCreateCollectionField }} />
+      <SchemaComponent
+        schema={schema}
+        components={{ ...components, ArrayTable }}
+        scope={{ createOnly: true, useCreateCollectionField }}
+      />
     </ActionContext.Provider>
   );
 };
