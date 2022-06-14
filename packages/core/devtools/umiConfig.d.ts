@@ -1,18 +1,20 @@
 export declare function getUmiConfig(): {
   define: {
-      'process.env.API_BASE_URL': string;
+    'process.env.API_BASE_URL': string;
   };
   proxy: {
-      [x: string]: {
+    [x: string]:
+      | {
           target: string;
           changeOrigin: boolean;
-      } | {
+        }
+      | {
           target: string;
           changeOrigin: boolean;
           pathRewrite: {
-              [x: string]: string;
+            [x: string]: string;
           };
-      };
+        };
   };
 };
 

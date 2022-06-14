@@ -15,7 +15,6 @@ export interface SchemaInitializerProviderProps {
 
 export const useSchemaInitializer = (name: string) => {
   const initializers = useContext(SchemaInitializerContext);
-
   const render = (component?: any, props?: any) => {
     return component && React.createElement(component, props);
   };
@@ -45,6 +44,8 @@ export const useSchemaInitializer = (name: string) => {
     render: (props?: any) => render(initializer, props),
   };
 };
+
+export const SchemaInitializerPluginContext = createContext(null);
 
 export const SchemaInitializerProvider: React.FC<SchemaInitializerProviderProps> = (props) => {
   const { initializers, components, children } = props;

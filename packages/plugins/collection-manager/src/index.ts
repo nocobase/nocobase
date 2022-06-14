@@ -1,3 +1,3 @@
-export { default } from './plugin';
 export * from './repositories';
+export { default } from './server';
 

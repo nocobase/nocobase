@@ -1,5 +1,5 @@
 import { mockServer } from '@nocobase/test';
-import CollectionManagerPlugin from '../plugin';
+import CollectionManagerPlugin from '../server';
 
 describe('collections repository', () => {
   it('case 1', async () => {
