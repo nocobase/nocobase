@@ -28,7 +28,7 @@ export class FieldModel extends MagicAttributeModel {
       const uiSchema = await UISchema.findByPk(options.uiSchemaUid, {
         transaction: loadOptions.transaction,
       });
-      return collection.setField(name, { ...options, uiSchema });
+      return collection.setField(name, { ...options, uiSchema: uiSchema.get() });
     } else {
       return collection.setField(name, options);
     }

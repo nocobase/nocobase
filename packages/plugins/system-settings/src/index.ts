@@ -1,1 +1,1 @@
-export { default } from './plugin';
+export { default } from './server';

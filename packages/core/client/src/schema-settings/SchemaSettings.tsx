@@ -479,10 +479,12 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const { dn } = useSchemaSettings();
   const compile = useCompile();
   const api = useAPIClient();
+
   const form = useMemo(
     () =>
       createForm({
         initialValues: cloneDeep(initialValues),
+        values: cloneDeep(initialValues),
       }),
     [],
   );
@@ -511,7 +513,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
 
   return (
     <>
-      <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler}>
+      <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler} onKeyDown={(e) => e.stopPropagation()}>
         {props.children || props.title}
       </SchemaSettings.Item>
       {createPortal(
