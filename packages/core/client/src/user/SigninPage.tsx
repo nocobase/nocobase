@@ -7,7 +7,7 @@ import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettin
 const schema: ISchema = {
   type: 'object',
   name: uid(),
-  'x-component': 'Form',
+  'x-component': 'FormV2',
   properties: {
     email: {
       type: 'string',
