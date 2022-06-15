@@ -3,18 +3,16 @@ import { connect, mapReadPretty, useFieldSchema, useFormEffects } from '@formily
 import { InputNumber } from 'antd';
 import _ from 'lodash';
 import * as math from 'mathjs';
-import React, { useState } from 'react';
+import React from 'react';
 import { useCollection } from '../../../collection-manager/hooks';
 import { ReadPretty } from '../input-number/ReadPretty';
 
 const AntdCompute = (props) => {
-  const { value, onChange, step } = props;
-  // const { expression } = useCollectionField();
+  const { onChange, ...others } = props;
   const { getField } = useCollection();
   const fieldSchema = useFieldSchema();
   const options = getField(fieldSchema.name);
   const { expression } = options;
-  const [computeValue, setComputeValue] = useState(value);
 
   useFormEffects(() => {
     onFormValuesChange((form) => {
@@ -24,17 +22,14 @@ const AntdCompute = (props) => {
         result = math.evaluate(expression, scope);
         result = math.round(result, 9);
       } catch {}
-      if (result) {
-        setComputeValue(result);
-        if (onChange) {
-          onChange(result);
-        }
+      if (onChange) {
+        onChange(result);
       }
     })
   })
   
   return (
-    <InputNumber readOnly value={computeValue} stringMode={true} step={step} />
+    <InputNumber {...others} readOnly stringMode={true} />
   );
 }
 
