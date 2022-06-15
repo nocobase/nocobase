@@ -24,7 +24,11 @@
     "koa": "^2.13.4",
     "koa-bodyparser": "^4.3.0",
     "koa-static": "^5.0.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "semver": "^7.3.7"
+  },
+  "devDependencies": {
+    "@types/semver": "^7.3.9"
   },
   "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
 }

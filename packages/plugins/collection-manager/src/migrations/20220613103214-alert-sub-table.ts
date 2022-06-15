@@ -1,9 +1,11 @@
-import { Migration } from '@nocobase/database';
+import { Migration } from '@nocobase/server';
 
 export default class AlertSubTableMigration extends Migration {
-  versionRange = '<=0.7.0-alpha.83';
-
   async up() {
+    const result = await this.app.version.satisfies('<=0.7.0-alpha.83');
+    if (!result) {
+      return;
+    }
     const repository = this.context.db.getRepository('fields');
     const fields = await repository.find();
     for (const field of fields) {

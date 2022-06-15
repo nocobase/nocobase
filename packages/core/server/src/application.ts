@@ -8,10 +8,11 @@ import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa from 'koa';
 import { isBoolean } from 'lodash';
+import semver from 'semver';
 import { createACL } from './acl';
 import { AppManager } from './app-manager';
 import { registerCli } from './commands';
-import { createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
+import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 
@@ -79,6 +80,42 @@ interface StartOptions {
   listen?: ListenOptions;
 }
 
+export class ApplicationVersion {
+  protected app: Application;
+
+  constructor(app: Application) {
+    this.app = app;
+    if (!app.db.hasCollection('applicationVersion')) {
+      app.db.collection({
+        name: 'applicationVersion',
+        timestamps: false,
+        fields: [{ name: 'value', type: 'string' }],
+      });
+    }
+  }
+
+  async update() {
+    const collection = this.app.db.getCollection('applicationVersion');
+    await collection.sync();
+    await collection.model.destroy({
+      truncate: true,
+    });
+    await collection.model.create({
+      value: this.app.getVersion(),
+    });
+  }
+
+  async satisfies(range: string) {
+    if (await this.app.db.doesCollectionExistInDb('applicationVersion')) {
+      const collection = this.app.db.getCollection('applicationVersion');
+      const model = await collection.model.findOne();
+      const version = model.get('value') as any;
+      return semver.satisfies(version, range);
+    }
+    return true;
+  }
+}
+
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   public readonly db: Database;
 
@@ -94,6 +131,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public readonly appManager: AppManager;
 
+  public readonly version: ApplicationVersion;
+
   protected plugins = new Map<string, Plugin>();
 
   public listenServer: Server;
@@ -102,7 +141,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     super();
 
     this.acl = createACL();
-    this.db = createDatabase(options);
+    this.db = this.createDatabase(options);
     this.resourcer = createResourcer(options);
     this.cli = new Command('nocobase').usage('[command] [options]');
     this.i18n = createI18n(options);
@@ -122,6 +161,21 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.loadPluginConfig(options.plugins || []);
 
     registerCli(this);
+
+    this.version = new ApplicationVersion(this);
+  }
+
+  private createDatabase(options: ApplicationOptions) {
+    if (options.database instanceof Database) {
+      return options.database;
+    } else {
+      return new Database({
+        ...options.database,
+        migrator: {
+          context: { app: this },
+        },
+      });
+    }
   }
 
   getVersion() {
@@ -267,7 +321,21 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.db.sync(options?.sync);
     await this.pm.install(options);
+    await this.version.update();
+
     await this.emitAsync('afterInstall', this, options);
+  }
+
+  async upgrade(options: any = {}) {
+    const force = false;
+    await this.db.migrator.up();
+    await this.db.sync({
+      force,
+      alter: {
+        drop: force,
+      },
+    });
+    await this.version.update();
   }
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;

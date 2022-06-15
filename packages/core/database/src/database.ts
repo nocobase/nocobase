@@ -135,7 +135,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
     };
 
     this.migrations = new Migrations(context);
-
     this.migrator = new Umzug({
       logger: migratorOptions.logger || console,
       migrations: this.migrations.callback(),
@@ -302,6 +301,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (drop) {
       await this.sequelize.getQueryInterface().dropAllTables(others);
     }
+  }
+
+  async doesCollectionExistInDb(name) {
+    const tables = await this.sequelize.getQueryInterface().showAllTables();
+    return tables.find(table => table === `${this.getTablePrefix()}${name}`);
   }
 
   public isSqliteMemory() {

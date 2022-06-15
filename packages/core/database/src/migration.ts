@@ -10,7 +10,7 @@ export interface MigrationContext {
 export class Migration {
   public name: string;
 
-  public context: { db: Database };
+  public context: { db: Database; [key: string]: any };
 
   constructor(context: MigrationContext) {
     this.context = context;
@@ -68,7 +68,7 @@ export class Migrations {
   }
 
   callback() {
-    return (ctx) => {
+    return async (ctx) => {
       return this.items;
     };
   }
