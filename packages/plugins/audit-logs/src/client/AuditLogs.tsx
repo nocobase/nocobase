@@ -476,6 +476,7 @@ AuditLogs.Decorator = observer((props: any) => {
       appends: ['collection', 'user'],
       ...props.params,
       filter,
+      sort: '-createdAt',
     },
     rowKey: 'id',
     showIndex: true,
