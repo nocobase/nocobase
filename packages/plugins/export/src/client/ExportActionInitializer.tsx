@@ -1,7 +1,6 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { SchemaInitializer, useCollection, useCompile, useDesignable } from '@nocobase/client';
-import { cloneDeep } from 'lodash';
 import React from 'react';
 import { useFields } from './useFields';
 
@@ -34,24 +33,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
 };
 
 const initExportSettings = (fields) => {
-  const exportSettings = [];
-  const generateDataIndex = (di, preFields, fNodes: any[]) => {
-    let child = cloneDeep(preFields);
-    fNodes.reduce((buf, cur) => {
-      if (cur.children) {
-        const childDI = [];
-        preFields.dataIndex.push(cur.name);
-        generateDataIndex(childDI, cloneDeep(preFields), cur.children);
-        preFields.dataIndex.pop();
-        di.push(...childDI);
-      } else {
-        child.dataIndex.push(cur.name);
-        di.push(child);
-        child = cloneDeep(preFields);
-      }
-    }, []);
-  };
-  generateDataIndex(exportSettings, { dataIndex: [] }, fields);
+  const exportSettings = fields?.filter((f) => !f.children).map((f) => ({ dataIndex: [f.name] }));
   return exportSettings;
 };
 
