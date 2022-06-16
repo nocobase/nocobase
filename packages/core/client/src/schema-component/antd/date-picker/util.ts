@@ -53,12 +53,16 @@ export const mapDateFormat = function () {
     return {
       ...props,
       format: format,
+<<<<<<< HEAD
       value: str2moment(props.value, props),
       onChange: (value: moment.Moment | moment.Moment[]) => {
         if (onChange) {
           onChange(moment2str(value, props));
         }
       },
+=======
+      value: props.value && moment(props.value).isValid() ? moment(props.value) : undefined,
+>>>>>>> a595fae5 (fix(client): consolidate usage of date/time as UTC in transfering (#509))
     };
   };
 };
