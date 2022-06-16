@@ -13,6 +13,10 @@ group:
 
 <code src="./demos/demo1.tsx" />
 
+### DatePicker (with timezone)
+
+<code src="./demos/demo3.tsx" />
+
 ### RangePicker
 
 <code src="./demos/demo2.tsx" />
