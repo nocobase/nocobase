@@ -19,6 +19,7 @@ export class ClientPlugin extends Plugin {
 
   async load() {
     this.app.acl.allow('app', 'getLang');
+    this.app.acl.allow('app', 'getInfo');
     this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
     this.app.resource({
       name: 'app',
@@ -33,7 +34,7 @@ export class ClientPlugin extends Plugin {
             lang = currentUser?.appLang;
           }
           ctx.body = {
-            version: this.app.getVersion(),
+            version: await ctx.app.version.get(),
             lang,
           };
           await next();

@@ -1,6 +1,6 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
-import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
+import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { Command, CommandOptions } from 'commander';
@@ -82,6 +82,7 @@ interface StartOptions {
 
 export class ApplicationVersion {
   protected app: Application;
+  protected collection: Collection;
 
   constructor(app: Application) {
     this.app = app;
@@ -92,23 +93,30 @@ export class ApplicationVersion {
         fields: [{ name: 'value', type: 'string' }],
       });
     }
+    this.collection = this.app.db.getCollection('applicationVersion');
+  }
+
+  async get() {
+    if (await this.app.db.doesCollectionExistInDb('applicationVersion')) {
+      const model = await this.collection.model.findOne();
+      return model.get('value') as any;
+    }
+    return null;
   }
 
   async update() {
-    const collection = this.app.db.getCollection('applicationVersion');
-    await collection.sync();
-    await collection.model.destroy({
+    await this.collection.sync();
+    await this.collection.model.destroy({
       truncate: true,
     });
-    await collection.model.create({
+    await this.collection.model.create({
       value: this.app.getVersion(),
     });
   }
 
   async satisfies(range: string) {
     if (await this.app.db.doesCollectionExistInDb('applicationVersion')) {
-      const collection = this.app.db.getCollection('applicationVersion');
-      const model = await collection.model.findOne();
+      const model = await this.collection.model.findOne();
       const version = model.get('value') as any;
       return semver.satisfies(version, range);
     }
