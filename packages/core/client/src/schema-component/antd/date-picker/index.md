@@ -9,11 +9,11 @@ group:
 
 ## Examples
 
-### DatePicker
+### Basic
 
 <code src="./demos/demo1.tsx" />
 
-### DatePicker (with timezone)
+### DatePicker (GMT)
 
 <code src="./demos/demo3.tsx" />
 

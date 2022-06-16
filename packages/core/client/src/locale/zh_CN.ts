@@ -595,5 +595,6 @@ export default {
   "Select Field": "选择字段",
   "Field value changes": "变更记录",
   "One to one (has one)": "一对一（has one）",
-  "One to one (belongs to)": "一对一（belongs to）"
+  "One to one (belongs to)": "一对一（belongs to）",
+  "Use the same time zone (GMT) for all users": "所有用户使用同一时区 (格林尼治标准时间)",
 }

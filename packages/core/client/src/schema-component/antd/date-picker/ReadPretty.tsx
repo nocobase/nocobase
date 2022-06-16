@@ -1,4 +1,4 @@
-import { formatMomentValue, usePrefixCls } from '@formily/antd/lib/__builtins__';
+import { usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { isArr } from '@formily/shared';
 import type {
   DatePickerProps as AntdDatePickerProps,
@@ -7,7 +7,7 @@ import type {
 import cls from 'classnames';
 import moment from 'moment';
 import React from 'react';
-import { getDefaultFormat } from './util';
+import { getDefaultFormat, str2moment } from './util';
 
 type Composed = {
   DatePicker: React.FC<AntdDatePickerProps>;
@@ -22,8 +22,9 @@ ReadPretty.DatePicker = (props: any) => {
   }
   const prefixCls = usePrefixCls('description-date-picker', props);
   const getLabels = () => {
-    const d = moment(props.value);
-    const labels = formatMomentValue(d.isValid() ? d : null, getDefaultFormat(props), props.placeholder);
+    const format = getDefaultFormat(props) as string;
+    const m = str2moment(props.value, props);
+    const labels = moment.isMoment(m) ? m.format(format) : '';
     return isArr(labels) ? labels.join('~') : labels;
   };
   return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>;
@@ -31,8 +32,13 @@ ReadPretty.DatePicker = (props: any) => {
 
 ReadPretty.DateRangePicker = (props: any) => {
   const prefixCls = usePrefixCls('description-text', props);
+  const format = getDefaultFormat(props);
   const getLabels = () => {
-    const labels = formatMomentValue(props.value, props.format, props.placeholder);
+    const m = str2moment(props.value, props);
+    if (!m) {
+      return '';
+    }
+    const labels = m.map(m => m.format(format));
     return isArr(labels) ? labels.join('~') : labels;
   };
   return (

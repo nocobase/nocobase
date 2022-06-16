@@ -17,6 +17,7 @@ const schema = {
         dateFormat: 'YYYY/MM/DD',
         showTime: true,
       },
+      // default: '2022-11-22',
       'x-reactions': {
         target: '*(read1,read2)',
         fulfill: {
