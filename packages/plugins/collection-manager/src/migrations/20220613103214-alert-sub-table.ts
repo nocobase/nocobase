@@ -6,8 +6,8 @@ export default class AlertSubTableMigration extends Migration {
     if (!result) {
       return;
     }
-    const repository = this.context.db.getRepository('fields');
-    const fields = await repository.find();
+    const Field = this.context.db.getRepository('fields');
+    const fields = await Field.find();
     for (const field of fields) {
       if (field.get('interface') === 'subTable') {
         field.set('interface', 'o2m');

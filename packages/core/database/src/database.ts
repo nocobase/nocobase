@@ -1,8 +1,9 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
+import glob from 'glob';
 import lodash from 'lodash';
-import { isAbsolute, resolve } from 'path';
+import { basename, isAbsolute, resolve } from 'path';
 import {
   ModelCtor,
   Op,
@@ -24,6 +25,7 @@ import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
+
 
 export interface MergeOptions extends merge.Options {}
 
@@ -53,6 +55,13 @@ interface RegisterOperatorsContext {
 export interface CleanOptions extends QueryInterfaceDropAllTablesOptions {
   drop?: boolean;
 }
+
+export type AddMigrationsOptions = {
+  context?: any;
+  namespace?: string;
+  extensions?: string[];
+  directory: string;
+};
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
 
@@ -140,7 +149,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       migrations: this.migrations.callback(),
       context,
       storage: new SequelizeStorage({
-        modelName: `${this.options.tablePrefix||''}migrations`,
+        modelName: `${this.options.tablePrefix || ''}migrations`,
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),
@@ -149,6 +158,33 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   addMigration(item) {
     return this.migrations.add(item);
+  }
+
+  addMigrations(options: AddMigrationsOptions) {
+    const { namespace, context, extensions = ['js', 'ts'], directory } = options;
+    const patten = `${directory}/*.{${extensions.join(',')}}`;
+    const files = glob.sync(patten, {
+      ignore: ['**/*.d.ts'],
+    });
+    for (const file of files) {
+      let filename = basename(file);
+      filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
+      this.migrations.add({
+        name: namespace ? `${namespace}/${filename}` : filename,
+        migration: this.requireModule(file),
+        context,
+      });
+    }
+  }
+
+  private requireModule(module: any) {
+    if (typeof module === 'string') {
+      module = require(module);
+    }
+    if (typeof module !== 'object') {
+      return module;
+    }
+    return module.__esModule ? module.default : module;
   }
 
   /**
@@ -305,7 +341,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async doesCollectionExistInDb(name) {
     const tables = await this.sequelize.getQueryInterface().showAllTables();
-    return tables.find(table => table === `${this.getTablePrefix()}${name}`);
+    return tables.find((table) => table === `${this.getTablePrefix()}${name}`);
   }
 
   public isSqliteMemory() {

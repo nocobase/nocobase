@@ -40,6 +40,7 @@ export class Migration {
 export interface MigrationItem {
   name: string;
   migration?: typeof Migration;
+  context?: any;
   up?: any;
   down?: any;
 }

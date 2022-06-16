@@ -9,7 +9,6 @@ import {
   beforeCreateForReverseField,
   beforeInitOptions
 } from './hooks';
-import AlertSubTableMigration from './migrations/20220613103214-alert-sub-table';
 import { CollectionModel, FieldModel } from './models';
 
 export class CollectionManagerPlugin extends Plugin {
@@ -19,9 +18,9 @@ export class CollectionManagerPlugin extends Plugin {
       FieldModel,
     });
 
-    this.db.addMigration({
-      name: 'collection-manager/20220613103214-alert-sub-table',
-      migration: AlertSubTableMigration,
+    this.db.addMigrations({
+      namespace: 'collection-manager',
+      directory: path.resolve(__dirname, './migrations'),
     });
 
     this.app.db.registerRepositories({
