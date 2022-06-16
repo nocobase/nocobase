@@ -32,12 +32,6 @@ export const mapDateFormat = function () {
       ...props,
       format: format,
       value: props.value && moment(props.value).isValid() ? moment(props.value) : undefined,
-      // value: momentable(props.value, format === 'YYYY-wo' ? 'YYYY-w' : format),
-      onChange: (value: moment.Moment | moment.Moment[]) => {
-        if (onChange) {
-          onChange(formatMomentValue(value, format));
-        }
-      },
     };
   };
 };
