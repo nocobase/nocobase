@@ -1,7 +1,7 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
-import { ModelCtor, ModelOptions, SyncOptions } from 'sequelize';
+import { ModelCtor, ModelOptions, QueryInterfaceDropTableOptions, SyncOptions, Transactionable } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
@@ -51,6 +51,10 @@ export class Collection<
 
   get name() {
     return this.options.name;
+  }
+
+  get db() {
+    return this.context.database;
   }
 
   constructor(options: CollectionOptions, context?: CollectionContext) {
@@ -190,6 +194,22 @@ export class Collection<
     this.context.database.removeCollection(this.name);
   }
 
+  async removeFromDb(options?: QueryInterfaceDropTableOptions) {
+    if (
+      await this.existsInDb({
+        transaction: options?.transaction,
+      })
+    ) {
+      const queryInterface = this.db.sequelize.getQueryInterface();
+      await queryInterface.dropTable(this.model.tableName, options);
+    }
+    this.remove();
+  }
+
+  async existsInDb(options?: Transactionable) {
+    return this.db.collectionExistsInDb(this.name, options);
+  }
+
   removeField(name) {
     if (!this.fields.has(name)) {
       return;
@@ -199,7 +219,7 @@ export class Collection<
     if (bool) {
       this.emit('field.afterRemove', field);
     }
-    return bool;
+    return field as Field;
   }
 
   /**
