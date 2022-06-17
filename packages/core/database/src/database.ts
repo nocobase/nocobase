@@ -348,8 +348,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.getDialect() === 'sqlite' && lodash.get(this.options, 'storage') == ':memory:';
   }
 
-  async auth(options: QueryOptions & { repeat?: number } = {}) {
-    const { repeat = 10, ...others } = options;
+  async auth(options: QueryOptions & { retry?: number } = {}) {
+    const { retry = 10, ...others } = options;
     const delay = (ms) => new Promise((yea) => setTimeout(yea, ms));
     let count = 1;
     const authenticate = async () => {
@@ -358,7 +358,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         console.log('Connection has been established successfully.');
         return true;
       } catch (error) {
-        if (count >= repeat) {
+        if (count >= retry) {
           throw error;
         }
         console.log('reconnecting...', count);
@@ -367,7 +367,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
         return await authenticate();
       }
     };
-
     return await authenticate();
   }
 
