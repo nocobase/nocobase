@@ -2,6 +2,10 @@
 
 ![](https://www.nocobase.com/images/demo/11.png)  
 
+**注意:** 📌
+
+NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生产环境。
+
 ## NocoBase 是什么
 
 NocoBase 是一个极易扩展的开源无代码开发平台。
