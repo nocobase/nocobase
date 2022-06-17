@@ -3,7 +3,6 @@ import { ArrayField, Field, ObjectField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { APIClient } from '../api-client';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
@@ -18,17 +17,13 @@ const InternalFormFieldProvider = (props) => {
   }
   
   const field = useField();
-  const fieldSchema = useFieldSchema();
-  console.log('InternalFormFieldProvider', field, fieldSchema);
 
   const form = useMemo(
     () =>
       createForm({
         effects() {
           onFormValuesChange((form) => {
-            console.log('onFormValuesChange', form.values, formBlockCtx.form.values, props, fieldName);
             formBlockCtx.form.setValuesIn(fieldName, form.values);
-            console.log('onFormValuesChange1', form.values, formBlockCtx.form.values, props);
           });
         },
         readPretty,
@@ -40,7 +35,6 @@ const InternalFormFieldProvider = (props) => {
   if (service.loading) {
     return <Spin />;
   }
-  console.log('InternalFormFieldProvider', field, props);
 
   return (
     <FormFieldContext.Provider
@@ -75,17 +69,9 @@ export const useFormFieldContext = () => {
 };
 
 export const useFormFieldProps = () => {
-  // const field = useField<ObjectField>();
   const ctx = useFormFieldContext();
-
-  let values = ctx.service?.data?.data;
-  // const association = fieldSchema['x-component-props']?.['target'];
-  // if (association) {
-  //   values = values[association];
-  // }
-  console.log('useFormFieldProps', values, ctx);
   useEffect(() => {
-    ctx.form.setInitialValues(values);
+    ctx.form.setInitialValues(ctx.service?.data?.data);
   }, []);
   return {
     form: ctx.form,
