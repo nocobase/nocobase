@@ -12,6 +12,7 @@ import {
   QueryOptions,
   Sequelize,
   SyncOptions,
+  Transactionable,
   Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
@@ -338,8 +339,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  async collectionExistsInDb(name) {
-    const tables = await this.sequelize.getQueryInterface().showAllTables();
+  async collectionExistsInDb(name, options?: Transactionable) {
+    const tables = await this.sequelize.getQueryInterface().showAllTables({
+      transaction: options?.transaction,
+    });
     return !!tables.find((table) => table === `${this.getTablePrefix()}${name}`);
   }
 

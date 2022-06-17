@@ -53,6 +53,9 @@ export class CollectionModel extends MagicAttributeModel {
   async remove(options?: any) {
     const name = this.get('name');
     const collection = this.db.getCollection(name);
+    if (!collection) {
+      return;
+    }
     return collection.removeFromDb({
       transaction: options.transaction,
     });

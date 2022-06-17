@@ -4,7 +4,8 @@ import {
   ModelAttributeColumnOptions,
   ModelIndexesOptions,
   QueryInterfaceOptions,
-  SyncOptions
+  SyncOptions,
+  Transactionable
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
@@ -96,25 +97,33 @@ export abstract class Field {
       // console.log('field is virtual attribute');
       return;
     }
-    const queryInterface = this.database.sequelize.getQueryInterface();
-    await queryInterface.removeColumn(this.collection.model.tableName, this.name, options);
+    if (
+      await this.existsInDb({
+        transaction: options?.transaction,
+      })
+    ) {
+      const queryInterface = this.database.sequelize.getQueryInterface();
+      await queryInterface.removeColumn(this.collection.model.tableName, this.name, options);
+    }
     this.remove();
   }
 
-  async existsInDb() {
+  async existsInDb(options?: Transactionable) {
+    const opts = {
+      transaction: options?.transaction,
+    };
+    let sql;
     if (this.database.sequelize.getDialect() === 'sqlite') {
-      const [rows] = await this.database.sequelize.query(
-        `SELECT * from pragma_table_info('${this.collection.model.tableName}') WHERE name = '${this.name}'`,
-      );
-      return rows.length > 0;
+      sql = `SELECT * from pragma_table_info('${this.collection.model.tableName}') WHERE name = '${this.name}'`;
     } else {
-      const [rows] = await this.database.sequelize.query(`
+      sql = `
         select column_name
         from INFORMATION_SCHEMA.COLUMNS
         where TABLE_NAME='${this.collection.model.tableName}' AND column_name='${this.name}'
-      `);
-      return rows.length > 0;
+      `;
     }
+    const [rows] = await this.database.sequelize.query(sql, opts);
+    return rows.length > 0;
   }
 
   merge(obj: any) {

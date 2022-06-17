@@ -57,6 +57,9 @@ export class FieldModel extends MagicAttributeModel {
     }
     const collection = this.db.getCollection(collectionName);
     const field = collection.getField(this.get('name'));
+    if (!field) {
+      return;
+    }
     return field.removeFromDb({
       transaction: options.transaction,
     });
