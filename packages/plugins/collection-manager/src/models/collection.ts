@@ -50,19 +50,29 @@ export class CollectionModel extends MagicAttributeModel {
     }
   }
 
-  /**
-   * TODO: drop table from the database
-   * 
-   * @param options 
-   * @returns 
-   */
   async remove(options?: any) {
+    const { transaction } = options || {};
     const name = this.get('name');
-    // delete from memory
-    const result = this.db.removeCollection(name);
-    // TODO: drop table from the database
-    // this.db.sequelize.getQueryInterface().dropTable(this.get('name'));
-    return result;
+    const collection = this.db.getCollection(name);
+    if (!collection) {
+      return;
+    }
+    const fields = await this.db.getRepository('fields').find({
+      filter: {
+        'type.$in': ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'],
+      },
+      transaction,
+    });
+    for (const field of fields) {
+      if (field.get('target') && field.get('target') === name) {
+        await field.destroy({ transaction });
+      } else if (field.get('through') && field.get('through') === name) {
+        await field.destroy({ transaction });
+      }
+    }
+    await collection.removeFromDb({
+      transaction,
+    });
   }
 
   async migrate(options?: SyncOptions & Transactionable) {
