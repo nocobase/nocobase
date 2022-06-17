@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../SchemaInitializer';
-import { itemsMerge, useTableColumnInitializerFields } from '../utils';
+import { itemsMerge, useAssociatedTableColumnInitializerFields, useTableColumnInitializerFields } from '../utils';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
@@ -12,6 +12,7 @@ export const TableColumnInitializers = (props: any) => {
       insertPosition={'beforeEnd'}
       icon={'SettingOutlined'}
       wrap={(s) => {
+        console.log('TableColumnInitializers', s);
         if (s['x-action-column']) {
           return s;
         }
@@ -33,6 +34,14 @@ export const TableColumnInitializers = (props: any) => {
             type: 'itemGroup',
             title: t('Display fields'),
             children: useTableColumnInitializerFields(),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            type: 'itemGroup',
+            title: t('References fields of associated table'),
+            children: useAssociatedTableColumnInitializerFields(),
           },
           {
             type: 'divider',

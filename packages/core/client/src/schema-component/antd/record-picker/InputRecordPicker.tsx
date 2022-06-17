@@ -1,6 +1,6 @@
 import { RecursionField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTableSelectorProps as useTsp } from '../../../block-provider/TableSelectorProvider';
 import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
@@ -60,15 +60,28 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   const fieldSchema = useFieldSchema();
   const collectionField = useAssociation(props);
   const compile = useCompile();
-  const options = (Array.isArray(value) ? value : value ? [value] : []).map(option => {
-    const label = option[fieldNames.label];
-    return {
-      ...option,
-      [fieldNames.label]: compile(label),
-    };
-  });
-  const [selectedRows, setSelectedRows] = useState(options);
-  const values = options?.map((option) => option[fieldNames.value]);
+  
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [options, setOptions] = useState([]);
+
+  useEffect(() => {
+    if (value) {
+      const opts = (Array.isArray(value) ? value : value ? [value] : []).map(option => {
+        const label = option[fieldNames.label];
+        return {
+          ...option,
+          [fieldNames.label]: compile(label),
+        };
+      });
+      setOptions(opts);
+      setSelectedRows(opts);
+    }
+  }, [value])
+
+  const getValues = () => {
+    return selectedRows?.map((option) => option[fieldNames.value]);
+  }
+
   return (
     <div>
       <Select
@@ -93,7 +106,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
           }
         }}
         options={options}
-        value={multiple ? values : values?.[0]}
+        value={multiple ? getValues() : getValues()?.[0]}
         open={false}
       />
       <RecordPickerContext.Provider value={{ multiple, onChange, selectedRows, setSelectedRows }}>

@@ -9,6 +9,24 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
+import { uid } from '@formily/shared';
+
+
+const gridRowColWrap = (schema: ISchema) => {
+  return {
+    type: 'void',
+    'x-component': 'Grid.Row',
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-component': 'Grid.Col',
+        properties: {
+          [schema.name || uid()]: schema,
+        },
+      },
+    },
+  };
+};
 
 export const FormItem: any = (props) => {
   const field = useField();
@@ -33,17 +51,20 @@ export const FormItem: any = (props) => {
   );
 };
 
-FormItem.Designer = () => {
-  const { getCollectionFields } = useCollectionManager();
+FormItem.Designer = (props) => {
+  const { getCollectionFields, getCollection, getInterface } = useCollectionManager();
   const { getField } = useCollection();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { dn, refresh } = useDesignable();
+  const { dn, refresh, insertAdjacent, insertBeforeBegin } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']);
+  const interfaceConfig = getInterface(collectionField?.interface);
   const originalTitle = collectionField?.uiSchema?.title;
+  const targetCollection = getCollection(collectionField?.target);
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
+  const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -172,7 +193,40 @@ FormItem.Designer = () => {
           }}
         />
       )}
-      {collectionField?.target && (
+      {!isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'm2o', 'o2m'].includes(collectionField?.interface) && (
+        <SchemaSettings.SelectItem
+          title={t('Toggles the subfield mode')}
+          options={
+            collectionField?.interface === 'o2m'
+            ? [{ label: t('Selector mode'), value: 'RecordPicker' }, { label: t('Subtable mode'), value: 'TableField' }]
+            : [{ label: t('Selector mode'), value: 'RecordPicker' }, { label: t('Subform mode'), value: 'FormField' }]
+          }
+          value={fieldSchema['x-component']}
+          onChange={(v) => {
+            const schema: ISchema = {
+              name: collectionField.name,
+              title: compile(collectionField.uiSchema?.title),
+              "x-decorator": "FormItem",
+              "x-designer": "FormItem.Designer",
+              "x-component": v,
+            }
+
+            interfaceConfig?.schemaInitialize?.(schema, { field: collectionField, readPretty: field.readPretty })
+
+            insertAdjacent('beforeBegin', gridRowColWrap(schema), {
+              onSuccess: () => {
+                dn.remove(null, {
+                  removeParentsIfNoChildren: true,
+                  breakRemoveOn: {
+                    'x-component': 'Grid',
+                  },
+                });
+              }
+            });
+          }}
+        />
+      )}
+      {collectionField?.target && fieldSchema['x-component'] === 'RecordPicker' && (
         <SchemaSettings.SelectItem
           title={t('Title field')}
           options={options}

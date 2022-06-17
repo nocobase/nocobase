@@ -44,15 +44,63 @@ export const m2o: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
-    if (readPretty) {
-      schema['properties'] = {
-        viewer: cloneDeep(recordPickerViewer),
-      };
+  schemaInitialize(schema: ISchema, { field, readPretty }) {
+    if (schema['x-component'] === 'FormField') {
+      const association = `${field.collectionName}.${field.name}`;
+      schema.type = 'void';
+      schema.properties = {
+        block: {
+          type: 'void',
+          'x-decorator': 'FormFieldProvider',
+          'x-decorator-props': {
+            collection: field.target,
+            association: association,
+            resource: association,
+            action: 'get',
+            fieldName: field.name,
+            readPretty
+          },
+          'x-component': 'CardItem',
+          'x-component-props': {
+            bordered: true,
+          },
+          properties: {
+            [field.name]: {
+              type: 'object',
+              'x-component': 'FormV2',
+              'x-component-props': {
+                useProps: '{{ useFormFieldProps }}',
+              },
+              properties: {
+                __form_grid: {
+                  type: 'void',
+                  'x-component': 'Grid',
+                  'x-initializer': 'FormItemInitializers',
+                  properties: {},
+                },
+              }
+            },
+          },
+        },
+      }
     } else {
-      schema['properties'] = {
-        selector: cloneDeep(recordPickerSelector),
-      };
+      schema['x-component'] = 'RecordPicker';
+      schema['x-component-props'] = {
+        multiple: false,
+        fieldNames: {
+          label: 'id',
+          value: 'id',
+        },
+      }
+      if (readPretty) {
+        schema['properties'] = {
+          viewer: cloneDeep(recordPickerViewer),
+        };
+      } else {
+        schema.properties = {
+          selector: cloneDeep(recordPickerSelector),
+        }
+      }
     }
   },
   properties: {

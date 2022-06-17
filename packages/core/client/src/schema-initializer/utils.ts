@@ -100,6 +100,56 @@ export const useTableColumnInitializerFields = () => {
     });
 };
 
+export const useAssociatedTableColumnInitializerFields = () => {
+  const { name, fields } = useCollection();
+  const { getInterface, getCollectionFields } = useCollectionManager();
+
+  const groups = fields
+    ?.filter((field) => {
+      return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
+    })
+    ?.map((field) => {
+      const subFields = getCollectionFields(field.target);
+      const items = subFields
+        ?.filter((subField) => subField?.interface && !['o2o', 'oho', 'obo', 'o2m', 'm2o', 'subTable', 'linkTo'].includes(subField?.interface))
+        ?.map((subField) => {
+          const interfaceConfig = getInterface(subField.interface);
+          const schema = {
+            // type: 'string',
+            name: `${field.name}.${subField.name}`,
+            title: subField?.uiSchema?.title || subField.name,
+            'x-component': 'CollectionField',
+            'x-read-pretty': true,
+            'x-collection-field': `${name}.${field.name}.${subField.name}`,
+            'x-component-props': {
+              field: subField,
+            },
+          };
+          
+          return {
+            type: 'item',
+            title: subField?.uiSchema?.title || subField.name,
+            component: 'TableCollectionFieldInitializer',
+            find: findTableColumn,
+            remove: removeTableColumn,
+            schemaInitialize: (s) => {
+              interfaceConfig?.schemaInitialize?.(s, { subField, readPretty: true, block: 'Table' });
+            },
+            field: subField,
+            schema,
+          } as SchemaInitializerItemOptions;
+        });
+
+      return {
+        type: 'subMenu',
+        title: field.uiSchema?.title,
+        children: items, 
+      } as SchemaInitializerItemOptions;
+    });
+
+  return groups;
+}
+
 export const useFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
   const { getInterface } = useCollectionManager();
@@ -113,7 +163,7 @@ export const useFormItemInitializerFields = (options?: any) => {
       const schema = {
         type: 'string',
         name: field.name,
-        // title: field?.uiSchema?.title || field.name,
+        title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
@@ -132,6 +182,56 @@ export const useFormItemInitializerFields = (options?: any) => {
       } as SchemaInitializerItemOptions;
     });
 };
+
+export const useAssociatedFormItemInitializerFields = (options?: any) => {
+  const { name, fields } = useCollection();
+  const { getInterface, getCollectionFields } = useCollectionManager();
+  const form = useForm();
+  const { readPretty = form.readPretty, block = 'Form' } = options || {};
+
+  const groups = fields
+    ?.filter((field) => {
+      return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
+    })
+    ?.map((field) => {
+      const subFields = getCollectionFields(field.target);
+      const items = subFields
+        ?.filter((subField) => subField?.interface && !['o2o', 'oho', 'obo', 'o2m', 'm2o', 'subTable', 'linkTo'].includes(subField?.interface))
+        ?.map((subField) => {
+          const interfaceConfig = getInterface(subField.interface);
+          const schema = {
+            type: 'string',
+            name: `${field.name}.${subField.name}`,
+            title: subField?.uiSchema?.title || subField.name,
+            'x-designer': 'FormItem.Designer',
+            'x-component': 'CollectionField',
+            'x-component-props': {
+              field: subField,
+            },
+            'x-decorator': 'FormItem',
+            'x-collection-field': `${name}.${field.name}.${subField.name}`,
+          };
+          // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
+          return {
+            type: 'item',
+            title: subField?.uiSchema?.title || subField.name,
+            component: 'CollectionFieldInitializer',
+            remove: removeGridFormItem,
+            schemaInitialize: (s) => {
+              interfaceConfig?.schemaInitialize?.(s, { subField, block, readPretty });
+            },
+            schema,
+          } as SchemaInitializerItemOptions;
+        });
+
+      return {
+        type: 'subMenu',
+        title: field.uiSchema?.title,
+        children: items, 
+      } as SchemaInitializerItemOptions;
+    });
+  return groups;
+}
 
 export const useCustomFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
@@ -416,7 +516,6 @@ export const createFormBlockSchema = (options) => {
     template,
     ...others
   } = options;
-  console.log('createFormBlockSchema', options);
   const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
