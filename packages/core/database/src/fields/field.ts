@@ -97,6 +97,36 @@ export abstract class Field {
       // console.log('field is virtual attribute');
       return;
     }
+    if (this.collection.model.primaryKeyAttributes.includes(this.name)) {
+      // 主键不能删除
+      return;
+    }
+    if (this.collection.model.options.timestamps !== false) {
+      // timestamps 相关字段不删除
+      if (['createdAt', 'updatedAt', 'deletedAt'].includes(this.name)) {
+        return;
+      }
+    }
+    // 排序字段通过 sortable 控制
+    const sortable = this.collection.options.sortable;
+    if (sortable) {
+      let sortField: string;
+      if (sortable === true) {
+        sortField = 'sort';
+      } else if (typeof sortable === 'string') {
+        sortField = sortable;
+      } else if (sortable.name) {
+        sortField = sortable.name || 'sort';
+      }
+      if (this.name === sortField) {
+        return;
+      }
+    }
+    if (this.options.field && this.name !== this.options.field) {
+      // field 指向的是真实的字段名，如果与 name 不一样，说明字段只是引用
+      this.remove();
+      return;
+    }
     if (
       await this.existsInDb({
         transaction: options?.transaction,
