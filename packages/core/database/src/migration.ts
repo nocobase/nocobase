@@ -10,7 +10,7 @@ export interface MigrationContext {
 export class Migration {
   public name: string;
 
-  public context: { db: Database };
+  public context: { db: Database; [key: string]: any };
 
   constructor(context: MigrationContext) {
     this.context = context;
@@ -40,6 +40,7 @@ export class Migration {
 export interface MigrationItem {
   name: string;
   migration?: typeof Migration;
+  context?: any;
   up?: any;
   down?: any;
 }
@@ -59,7 +60,7 @@ export class Migrations {
   add(item: MigrationItem) {
     const Migration = item.migration;
     if (Migration) {
-      const migration = new Migration(this.context);
+      const migration = new Migration({ ...this.context, ...item.context });
       migration.name = item.name;
       this.items.push(migration);
     } else {
@@ -68,7 +69,7 @@ export class Migrations {
   }
 
   callback() {
-    return (ctx) => {
+    return async (ctx) => {
       return this.items;
     };
   }

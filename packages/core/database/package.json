@@ -21,6 +21,9 @@
     "umzug": "^3.1.1",
     "mathjs": "^10.6.1"
   },
+  "devDependencies": {
+    "@types/glob": "^7.2.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",

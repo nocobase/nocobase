@@ -267,7 +267,7 @@ $ yarn nocobase db:auth -h
 Usage: nocobase db:auth [options]
 
 Options:
-  -r, --repeat [repeat]  重连次数
+  -r, --retry [retry]   重试次数
   -h, --help
 ```
 
