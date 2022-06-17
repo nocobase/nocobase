@@ -51,13 +51,27 @@ export class CollectionModel extends MagicAttributeModel {
   }
 
   async remove(options?: any) {
+    const { transaction } = options || {};
     const name = this.get('name');
     const collection = this.db.getCollection(name);
     if (!collection) {
       return;
     }
-    return collection.removeFromDb({
-      transaction: options.transaction,
+    const fields = await this.db.getRepository('fields').find({
+      filter: {
+        'type.$in': ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'],
+      },
+      transaction,
+    });
+    for (const field of fields) {
+      if (field.get('target') && field.get('target') === name) {
+        await field.destroy({ transaction });
+      } else if (field.get('through') && field.get('through') === name) {
+        await field.destroy({ transaction });
+      }
+    }
+    await collection.removeFromDb({
+      transaction,
     });
   }
 

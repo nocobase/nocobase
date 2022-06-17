@@ -230,6 +230,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     const result = this.collections.delete(name);
 
+    this.sequelize.modelManager.removeModel(collection.model);
+
     if (result) {
       this.emit('afterRemoveCollection', collection);
     }
