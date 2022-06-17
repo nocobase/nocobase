@@ -2,6 +2,10 @@
 
 ![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
 
+**Note:** 📌
+
+NocoBase is in early stage of development and is subject to frequent changes, please use caution in production environments.
+
 ## What is NocoBase
 
 NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in minutes.
