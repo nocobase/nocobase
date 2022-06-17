@@ -1,4 +1,5 @@
 import { Database, Migration, mockDatabase } from '@nocobase/database';
+import { resolve } from 'path';
 
 const names = (migrations: Array<{ name: string }>) => migrations.map(m => m.name);
 
@@ -16,6 +17,23 @@ describe('migrator', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  test('addMigrations', async () => {
+    db.addMigrations({
+      directory: resolve(__dirname, './fixtures/migrations'),
+    });
+    await db.migrator.up();
+    expect(names(await db.migrator.executed())).toEqual(['m1', 'm2']);
+  });
+
+  test('addMigrations', async () => {
+    db.addMigrations({
+      namespace: 'test',
+      directory: resolve(__dirname, './fixtures/migrations'),
+    });
+    await db.migrator.up();
+    expect(names(await db.migrator.executed())).toEqual(['test/m1', 'test/m2']);
   });
 
   test('up and down', async () => {

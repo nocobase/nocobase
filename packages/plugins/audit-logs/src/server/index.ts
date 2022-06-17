@@ -13,6 +13,13 @@ export default class PluginActionLogs extends Plugin {
     await this.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
+    this.db.addMigrations({
+      namespace: 'audit-logs',
+      directory: path.resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
+    });
   }
 
   getName(): string {

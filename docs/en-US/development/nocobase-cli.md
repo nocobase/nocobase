@@ -267,7 +267,7 @@ $ yarn nocobase db:auth -h
 Usage: nocobase db:auth [options]
 
 Options:
-  -r, --repeat [repeat]  Number of reconnections
+  -r, --retry [retry]   retry times
   -h, --help
 ```
 

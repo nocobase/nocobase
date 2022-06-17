@@ -3,10 +3,25 @@ import React, { createContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useAPIClient, useCurrentUserContext } from '..';
+import { useRequest } from '../api-client';
 import { ChangePassword } from './ChangePassword';
 import { EditProfile } from './EditProfile';
 import { LanguageSettings } from './LanguageSettings';
 import { SwitchRole } from './SwitchRole';
+
+const ApplicationVersion = () => {
+  const { data, loading } = useRequest({
+    url: 'app:getInfo',
+  });
+  if (loading) {
+    return null;
+  }
+  return (
+    <Menu.Item key="version" disabled>
+      Version {data?.data?.version}
+    </Menu.Item>
+  );
+};
 
 export const DropdownVisibleContext = createContext(null);
 
@@ -26,7 +41,7 @@ export const CurrentUser = () => {
           }}
           overlay={
             <Menu>
-              <Menu.Item key="version" disabled>Version {process.env.VERSION}</Menu.Item>
+              <ApplicationVersion />
               <Menu.Divider />
               <EditProfile />
               <ChangePassword />

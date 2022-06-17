@@ -7,21 +7,20 @@ export default (app: Application) => {
     .option('-f, --force')
     .option('-c, --clean')
     .option('-s, --silent')
-    .option('-r, --repeat [repeat]')
+    .option('-r, --retry [retry]')
     .action(async (...cliArgs) => {
       let installed = false;
       const [opts] = cliArgs;
 
       try {
-        await app.db.auth({ repeat: opts.repeat || 1 });
+        await app.db.auth({ retry: opts.retry || 1 });
       } catch (error) {
         console.log(chalk.red('Unable to connect to the database. Please check the database environment variables in the .env file.'));
         return;
       }
-  
+
       if (!opts?.clean && !opts?.force) {
-        const tables = await app.db.sequelize.getQueryInterface().showAllTables();
-        if (tables.includes('collections')) {
+        if (app.db.doesCollectionExistInDb('applicationVersion')) {
           installed = true;
           if (!opts.silent) {
             console.log('NocoBase is already installed. To reinstall, please execute:');
