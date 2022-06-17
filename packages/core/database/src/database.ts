@@ -26,7 +26,6 @@ import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
 
-
 export interface MergeOptions extends merge.Options {}
 
 export interface PendingOptions {
@@ -234,7 +233,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       this.emit('afterRemoveCollection', collection);
     }
 
-    return result;
+    return collection;
   }
 
   getModel<M extends Model>(name: string) {
@@ -339,9 +338,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  async doesCollectionExistInDb(name) {
+  async collectionExistsInDb(name) {
     const tables = await this.sequelize.getQueryInterface().showAllTables();
-    return tables.find((table) => table === `${this.getTablePrefix()}${name}`);
+    return !!tables.find((table) => table === `${this.getTablePrefix()}${name}`);
   }
 
   public isSqliteMemory() {

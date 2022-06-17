@@ -1,5 +1,11 @@
 import _ from 'lodash';
-import { DataType, ModelAttributeColumnOptions, ModelIndexesOptions, SyncOptions } from 'sequelize';
+import {
+  DataType,
+  ModelAttributeColumnOptions,
+  ModelIndexesOptions,
+  QueryInterfaceOptions,
+  SyncOptions
+} from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
 
@@ -77,6 +83,38 @@ export abstract class Field {
 
   remove() {
     return this.collection.removeField(this.name);
+  }
+
+  async removeFromDb(options?: QueryInterfaceOptions) {
+    if (!this.collection.model.rawAttributes[this.name]) {
+      this.remove();
+      // console.log('field is not attribute');
+      return;
+    }
+    if ((this.collection.model as any)._virtualAttributes.has(this.name)) {
+      this.remove();
+      // console.log('field is virtual attribute');
+      return;
+    }
+    const queryInterface = this.database.sequelize.getQueryInterface();
+    await queryInterface.removeColumn(this.collection.model.tableName, this.name, options);
+    this.remove();
+  }
+
+  async existsInDb() {
+    if (this.database.sequelize.getDialect() === 'sqlite') {
+      const [rows] = await this.database.sequelize.query(
+        `SELECT * from pragma_table_info('${this.collection.model.tableName}') WHERE name = '${this.name}'`,
+      );
+      return rows.length > 0;
+    } else {
+      const [rows] = await this.database.sequelize.query(`
+        select column_name
+        from INFORMATION_SCHEMA.COLUMNS
+        where TABLE_NAME='${this.collection.model.tableName}' AND column_name='${this.name}'
+      `);
+      return rows.length > 0;
+    }
   }
 
   merge(obj: any) {

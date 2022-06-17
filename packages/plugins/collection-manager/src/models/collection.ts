@@ -50,19 +50,12 @@ export class CollectionModel extends MagicAttributeModel {
     }
   }
 
-  /**
-   * TODO: drop table from the database
-   * 
-   * @param options 
-   * @returns 
-   */
   async remove(options?: any) {
     const name = this.get('name');
-    // delete from memory
-    const result = this.db.removeCollection(name);
-    // TODO: drop table from the database
-    // this.db.sequelize.getQueryInterface().dropTable(this.get('name'));
-    return result;
+    const collection = this.db.getCollection(name);
+    return collection.removeFromDb({
+      transaction: options.transaction,
+    });
   }
 
   async migrate(options?: SyncOptions & Transactionable) {
