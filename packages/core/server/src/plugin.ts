@@ -1,8 +1,8 @@
 import { Database } from '@nocobase/database';
-import { Application } from './application';
 import finder from 'find-package-json';
-
+import { Application } from './application';
 import { InstallOptions } from './plugin-manager';
+
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -63,3 +63,5 @@ export abstract class Plugin<O = any> implements PluginInterface {
     return packageObj['name'];
   }
 }
+
+export default Plugin;

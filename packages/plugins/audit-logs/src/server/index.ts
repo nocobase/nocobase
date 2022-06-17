@@ -16,6 +16,9 @@ export default class PluginActionLogs extends Plugin {
     this.db.addMigrations({
       namespace: 'audit-logs',
       directory: path.resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
     });
   }
 

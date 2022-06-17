@@ -21,6 +21,9 @@ export class CollectionManagerPlugin extends Plugin {
     this.db.addMigrations({
       namespace: 'collection-manager',
       directory: path.resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
     });
 
     this.app.db.registerRepositories({

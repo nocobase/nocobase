@@ -60,7 +60,7 @@ export class Migrations {
   add(item: MigrationItem) {
     const Migration = item.migration;
     if (Migration) {
-      const migration = new Migration(this.context);
+      const migration = new Migration({ ...this.context, ...item.context });
       migration.name = item.name;
       this.items.push(migration);
     } else {
