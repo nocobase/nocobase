@@ -2,6 +2,19 @@
 
 ## To be released
 
+- fix(plugin-export): allow to configure in acl
+- fix: sign in/sign up with enter key
+- fix(client): percent precision
+- feat: association field block (#493)
+- feat: plugin export (#479)
+- fix: create or delete collection error (#501)
+- feat: update collections & fields (#500)
+- fix: rollback when field creation fails (#498)
+- fix(client): set `dropdownMatchSelectWidth` to false globally (#497)
+- fix(client): no-key warning in user menu items (#496)
+- Feat(plugin workflow): cron field for schedule trigger configuration (#495)
+- feat: audit logs (#494)
+- fix(client): language settings
 - feat(client): improve locale
 - refactor(plugin-workflow): add revision column to execution (#491)
 - fix(plugin-multi-app-manager): fix pg cannot create database block tests
@@ -29,12 +42,14 @@
 
 ### New Features
 
-- Fields: formula、relationships(o2o, o2m, m2o, m2m)
-- Blocks: charts(g2plot)
+- Fields: Formula、Relationships(o2o, o2m, m2o, m2m)
+- Blocks: Charts(g2plot)
+- Plugins: Audit logs, Export
 
 ### Break Changes
 
 - The value of the percentage field, such as 20%, the new version is 0.2, the old version is 20
+- Deleted the sub-table field and used the one-to-many field instead
 
 ## 2022/06/01 ~ v0.7.0-alpha.83
 
