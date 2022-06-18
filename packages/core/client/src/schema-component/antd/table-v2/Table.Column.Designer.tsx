@@ -43,7 +43,7 @@ export const TableColumnDesigner = (props) => {
               title: {
                 // title: t('Column title'),
                 default: columnSchema?.title,
-                description: `${t('Original title: ')}${collectionField?.uiSchema?.title || fieldSchema.title}`,
+                description: `${t('Original title: ')}${collectionField?.uiSchema?.title || fieldSchema?.title}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {},
