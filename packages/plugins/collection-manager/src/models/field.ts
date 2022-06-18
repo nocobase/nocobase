@@ -50,23 +50,18 @@ export class FieldModel extends MagicAttributeModel {
     }
   }
 
-  /**
-   * TODO: drop column from the database
-   * 
-   * @param options 
-   * @returns 
-   */
   async remove(options?: any) {
     const collectionName = this.get('collectionName');
-    const fieldName = this.get('name');
     if (!this.db.hasCollection(collectionName)) {
       return;
     }
     const collection = this.db.getCollection(collectionName);
-    // delete from memory
-    const result = collection.removeField(this.get('name'));
-    // TODO: drop column from the database
-    // this.db.sequelize.getQueryInterface().removeColumn(collectionName, fieldName);
-    return result;
+    const field = collection.getField(this.get('name'));
+    if (!field) {
+      return;
+    }
+    return field.removeFromDb({
+      transaction: options.transaction,
+    });
   }
 }

@@ -13,6 +13,33 @@ describe('collection', () => {
     await db.close();
   });
 
+  test('removeFromDb', async () => {
+    await db.clean({ drop: true });
+    const collection = db.collection({
+      name: 'test',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+    await db.sync();
+
+    const field = collection.getField('name');
+    const r1 = await field.existsInDb();
+    expect(r1).toBe(true);
+    await field.removeFromDb();
+    const r2 = await field.existsInDb();
+    expect(r2).toBe(false);
+
+    const r3 = await collection.existsInDb();
+    expect(r3).toBe(true);
+    await collection.removeFromDb();
+    const r4 = await collection.existsInDb();
+    expect(r4).toBe(false);
+  });
+
   test('collection disable authGenId', async () => {
     const Test = db.collection({
       name: 'test',

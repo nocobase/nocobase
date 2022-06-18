@@ -25,7 +25,7 @@ describe('collections repository', () => {
       context: {},
       values: {
         name: 'posts',
-        fields: [{ type: 'hasMany', name: 'comments', options: { target: 'comments' } }],
+        fields: [{ type: 'hasMany', name: 'comments', target: 'comments' }],
       },
     });
 
