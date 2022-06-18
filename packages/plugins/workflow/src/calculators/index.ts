@@ -1,8 +1,8 @@
 import { get as getWithPath } from 'lodash';
 import { Registry } from "@nocobase/utils";
 
-import ExecutionModel from '../models/Execution';
 import JobModel from '../models/Job';
+import Processor from '../Processor';
 
 export const calculators = new Registry<Function>();
 
@@ -64,12 +64,12 @@ function get(object, path?: string | Array<string>) {
 //  this method could only be used in executing nodes.
 //  because type of 'job' need loaded jobs in runtime execution.
 //  or the execution should be prepared first.
-export function calculate(operand: Operand, lastJob: JobModel, execution: ExecutionModel) {
+export function calculate(operand: Operand, lastJob: JobModel, processor: Processor) {
   switch (operand.type) {
     // @Deprecated
     // from execution context
     case '$context':
-      return get(execution.context, operand.options.path);
+      return get(processor.execution.context, operand.options.path);
 
     // @Deprecated
     // from last job (or input job)
@@ -80,7 +80,7 @@ export function calculate(operand: Operand, lastJob: JobModel, execution: Execut
     // from job in execution
     case '$jobsMapByNodeId':
       // assume jobs have been fetched from execution before
-      const job = execution.jobsMapByNodeId[operand.options.nodeId];
+      const job = processor.jobsMapByNodeId[operand.options.nodeId];
       return job && get(job, operand.options.path);
 
     case '$calculation':
@@ -88,7 +88,7 @@ export function calculate(operand: Operand, lastJob: JobModel, execution: Execut
       if (!fn) {
         throw new Error(`no calculator function registered for "${operand.options.calculator}"`);
       }
-      return fn(...operand.options.operands.map(item => calculate(item, lastJob, execution)));
+      return fn(...operand.options.operands.map(item => calculate(item, lastJob, processor)));
 
     // constant
     default:

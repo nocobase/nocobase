@@ -5,7 +5,7 @@ import { EXECUTION_STATUS } from '../../constants';
 
 
 
-describe.skip('workflow > triggers > schedule', () => {
+describe('workflow > triggers > schedule', () => {
   let app: Application;
   let db: Database;
   let PostRepo;

@@ -5,15 +5,17 @@ import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
 
 
-describe('execution', () => {
+describe('workflow > Processor', () => {
   let app: Application;
   let db: Database;
   let PostRepo;
   let WorkflowModel;
   let workflow;
+  let plugin;
 
   beforeEach(async () => {
     app = await getApp();
+    plugin = app.pm.get('@nocobase/plugin-workflow');
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -52,7 +54,7 @@ describe('execution', () => {
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
-      expect(execution.start()).rejects.toThrow();
+      // expect(execution.start()).rejects.toThrow();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(1);
@@ -147,7 +149,8 @@ describe('execution', () => {
       expect(pending.result).toEqual(null);
 
       pending.set('result', 123);
-      await execution.resume(pending);
+      const processor = plugin.createProcessor(execution);
+      await processor.resume(pending);
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -179,7 +182,8 @@ describe('execution', () => {
       expect(pending.result).toEqual(null);
 
       pending.set('result', 123);
-      await execution.resume(pending);
+      const processor = plugin.createProcessor(execution);
+      await processor.resume(pending);
       expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
 
       const jobs = await execution.getJobs();
@@ -252,7 +256,8 @@ describe('execution', () => {
 
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
       pending.set('result', 123);
-      await execution.resume(pending);
+      const processor = plugin.createProcessor(execution);
+      await processor.resume(pending);
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(3);
@@ -287,7 +292,8 @@ describe('execution', () => {
 
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
       pending.set('result', 123);
-      await execution.resume(pending);
+      const processor = plugin.createProcessor(execution);
+      await processor.resume(pending);
       expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
 
       const jobs = await execution.getJobs();
@@ -396,7 +402,8 @@ describe('execution', () => {
 
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
       pending.set('result', 123);
-      await execution.resume(pending);
+      const processor = plugin.createProcessor(execution);
+      await processor.resume(pending);
 
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -450,7 +457,8 @@ describe('execution', () => {
 
       const pending = pendingJobs.find(item => item.nodeId === n3.id );
       pending.set('result', 123);
-      await execution.resume(pending);
+      const processor = plugin.createProcessor(execution);
+      await processor.resume(pending);
 
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -502,7 +510,8 @@ describe('execution', () => {
 
       const pending = pendingJobs.find(item => item.nodeId === n2.id );
       pending.set('result', 123);
-      await execution.resume(pending);
+      const processor = plugin.createProcessor(execution);
+      await processor.resume(pending);
 
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });

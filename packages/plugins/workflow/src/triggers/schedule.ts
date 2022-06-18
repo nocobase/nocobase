@@ -1,6 +1,6 @@
 import parser from 'cron-parser';
 import { literal, Op } from 'sequelize';
-import { Trigger } from '.';
+import Plugin, { Trigger } from '..';
 
 export type ScheduleOnField = string | {
   field: string;
@@ -67,7 +67,7 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
         return;
       }
     }
-    return workflow.trigger({ date });
+    return this.plugin.trigger(workflow, { date });
   }
 });
 
@@ -160,7 +160,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
         this.setCache(workflow);
       };
       this.events.set(name, listener);
-      this.db.on(`${collection}.afterSave`, listener);
+      this.plugin.app.db.on(`${collection}.afterSave`, listener);
     }
   },
 
@@ -171,7 +171,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     if (this.events.has(name)) {
       const listener = this.events.get(name);
       this.events.delete(name);
-      this.db.off(`${collection}.afterSave`, listener);
+      this.plugin.app.db.off(`${collection}.afterSave`, listener);
     }
   },
 
@@ -189,7 +189,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     const conditions: any[] = [starts, ends].filter(item => Boolean(Object.keys(item).length));
     // when repeat is number, means repeat after startsOn
     // (now - startsOn) % repeat <= cacheCycle
-    const tsFn = DialectTimestampFnMap[this.db.options.dialect];
+    const tsFn = DialectTimestampFnMap[this.plugin.app.db.options.dialect];
     if (repeat
       && typeof repeat === 'number'
       && repeat > this.cacheCycle
@@ -199,7 +199,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
       conditions.push(literal(`mod(${uts} - ${tsFn(startsOn.field)} * 1000, ${repeat}) < ${this.cacheCycle}`));
     }
 
-    const { model } = this.db.getCollection(collection);
+    const { model } = this.plugin.app.db.getCollection(collection);
     const count = await model.count({
       where: { [Op.and]: conditions }
     });
@@ -239,7 +239,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
         }
       });
 
-      const tsFn = DialectTimestampFnMap[this.db.options.dialect];
+      const tsFn = DialectTimestampFnMap[this.plugin.app.db.options.dialect];
       if (typeof repeat === 'number' && tsFn) {
         const uts = timestamp;
         conditions.push(literal(`mod(${uts} - floor(${tsFn(startsOn.field)}) * 1000, ${repeat}) = 0`));
@@ -266,7 +266,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
       }
     }
 
-    const { model } = this.db.getCollection(collection);
+    const { model } = this.plugin.app.db.getCollection(collection);
     const instances = await model.findAll({
       where: {
         [Op.and]: conditions
@@ -278,7 +278,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     }
 
     instances.forEach(item => {
-      workflow.trigger({
+      this.plugin.trigger(workflow, {
         date,
         data: item.get()
       });
@@ -317,10 +317,13 @@ function nextInCycle(this: ScheduleTrigger, workflow, now: Date): boolean {
 
   return false;
 }
-export default class ScheduleTrigger implements Trigger {
+export default class ScheduleTrigger extends Trigger {
   static CacheRules = [
     // ({ enabled }) => enabled,
-    ({ config, allExecuted }) => config.limit ? allExecuted < config.limit : true,
+    ({ config, allExecuted }, now) => {
+      console.log('should cache?', config, allExecuted, now);
+      return config.limit ? allExecuted < config.limit : true;
+    },
     ({ config }) => ['repeat', 'startsOn'].some(key => config[key]),
     nextInCycle,
     function(workflow, now) {
@@ -331,7 +334,10 @@ export default class ScheduleTrigger implements Trigger {
   ];
 
   static TriggerRules = [
-    ({ config, allExecuted }) => config.limit ? allExecuted < config.limit : true,
+    ({ config, allExecuted }, now) => {
+      console.log('should trigger?', config, allExecuted, now);
+      return config.limit ? allExecuted < config.limit : true
+    },
     ({ config }) => ['repeat', 'startsOn'].some(key => config[key]),
     function (workflow, now) {
       const { repeat } = workflow.config;
@@ -353,8 +359,6 @@ export default class ScheduleTrigger implements Trigger {
     }
   ];
 
-  public readonly db;
-
   events = new Map();
 
   private timer: NodeJS.Timeout = null;
@@ -366,10 +370,10 @@ export default class ScheduleTrigger implements Trigger {
   // caching workflows in range, default to 1min
   cacheCycle: number = 60_000;
 
-  constructor({ app }) {
-    this.db = app.db;
+  constructor(plugin: Plugin) {
+    super(plugin);
 
-    app.on('beforeStop', () => {
+    plugin.app.on('beforeStop', () => {
       if (this.timer) {
         clearInterval(this.timer);
       }
@@ -413,7 +417,7 @@ export default class ScheduleTrigger implements Trigger {
 
   async onTick(now) {
     // NOTE: trigger workflows in sequence when sqlite due to only one transaction
-    const isSqlite = this.db.options.dialect === 'sqlite';
+    const isSqlite = this.plugin.app.db.options.dialect === 'sqlite';
 
     return Array.from(this.cache.values()).reduce((prev, workflow) => {
       if (!this.shouldTrigger(workflow, now)) {
@@ -428,14 +432,14 @@ export default class ScheduleTrigger implements Trigger {
   }
 
   async reload() {
-    const WorkflowModel = this.db.getCollection('workflows').model;
+    const WorkflowModel = this.plugin.app.db.getCollection('workflows').model;
     const workflows = await WorkflowModel.findAll({
       where: { enabled: true, type: 'schedule' },
       include: [
         {
           association: 'executions',
           attributes: ['id', 'createdAt'],
-          seperate: true,
+          separate: true,
           limit: 1,
           order: [['createdAt', 'DESC']],
         }
