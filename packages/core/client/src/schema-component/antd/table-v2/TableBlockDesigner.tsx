@@ -17,7 +17,7 @@ export const TableBlockDesigner = () => {
   const sortFields = useSortFields(name);
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
-  const { dn } = useDesignable();
+  const { dn, refresh } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
@@ -36,6 +36,7 @@ export const TableBlockDesigner = () => {
   const { dragSort } = field.decoratorProps;
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
+      <SchemaSettings.BlockTitleItem />
       <SchemaSettings.SwitchItem
         title={t('Enable drag and drop sorting')}
         checked={field.decoratorProps.dragSort}

@@ -31,6 +31,7 @@ export const G2PlotDesigner = () => {
   const compile = useCompile();
   return (
     <GeneralSchemaDesigner>
+      <SchemaSettings.BlockTitleItem />
       <SchemaSettings.ModalItem
         title={t('Edit chart')}
         schema={

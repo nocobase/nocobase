@@ -24,6 +24,7 @@ export const FormDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       {/* <SchemaSettings.Template componentName={'FormItem'} collectionName={name} /> */}
+      <SchemaSettings.BlockTitleItem />
       <SchemaSettings.FormItemTemplate componentName={'FormItem'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
@@ -44,6 +45,7 @@ export const ReadPrettyFormDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       {/* <SchemaSettings.Template componentName={'ReadPrettyForm'} collectionName={name} /> */}
+      <SchemaSettings.BlockTitleItem />
       <SchemaSettings.FormItemTemplate
         insertAdjacentPosition={'beforeEnd'}
         componentName={'ReadPrettyFormItem'}
@@ -87,6 +89,7 @@ export const DetailsDesigner = () => {
   });
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
+      <SchemaSettings.BlockTitleItem />
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={
