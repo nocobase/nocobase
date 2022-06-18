@@ -36,6 +36,7 @@ export const CalendarDesigner = () => {
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
+      <SchemaSettings.BlockTitleItem />
       <SchemaSettings.SelectItem
         title={t('Title field')}
         value={fieldNames.title}
