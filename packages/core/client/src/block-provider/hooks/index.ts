@@ -1,4 +1,5 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
+import { compile as SchemaCompile } from '@nocobase/utils';
 import { message, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -215,6 +216,10 @@ export const useCustomizeRequestActionProps = () => {
   const form = useForm();
   const { fields, getField } = useCollection();
   const { field, resource } = useBlockRequestContext();
+  const currentRecord = useRecord();
+  const {
+    data: { data: currentUser },
+  } = useCurrentUserContext();
   return {
     async onClick() {
       const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
@@ -234,11 +239,19 @@ export const useCustomizeRequestActionProps = () => {
         const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
         Object.assign(data, values);
       }
+
+      const requestBody = SchemaCompile(
+        {
+          url: requestSettings['url'],
+          method: requestSettings['method'],
+          headers,
+          params,
+          data,
+        },
+        { currentRecord, currentUser },
+      );
       await apiClient.request({
-        ...requestSettings,
-        headers,
-        params,
-        data,
+        ...requestBody,
       });
 
       if (!onSuccess?.successMessage) {
