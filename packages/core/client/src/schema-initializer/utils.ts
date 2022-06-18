@@ -82,7 +82,9 @@ export const useTableColumnInitializerFields = () => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
         'x-read-pretty': true,
-        'x-component-props': {},
+        'x-component-props': {
+          field,
+        },
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
@@ -133,7 +135,7 @@ export const useAssociatedTableColumnInitializerFields = () => {
             find: findTableColumn,
             remove: removeTableColumn,
             schemaInitialize: (s) => {
-              interfaceConfig?.schemaInitialize?.(s, { subField, readPretty: true, block: 'Table' });
+              interfaceConfig?.schemaInitialize?.(s, { field: subField, readPretty: true, block: 'Table' });
             },
             field: subField,
             schema,
@@ -160,14 +162,18 @@ export const useFormItemInitializerFields = (options?: any) => {
     ?.filter((field) => field?.interface)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
+
       const schema = {
         type: 'string',
         name: field.name,
         title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
-        'x-component': 'CollectionField',
+        'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
+        'x-component-props': {
+          field,
+        },
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       return {
@@ -218,7 +224,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             component: 'CollectionFieldInitializer',
             remove: removeGridFormItem,
             schemaInitialize: (s) => {
-              interfaceConfig?.schemaInitialize?.(s, { subField, block, readPretty });
+              interfaceConfig?.schemaInitialize?.(s, { field: subField, block, readPretty });
             },
             schema,
           } as SchemaInitializerItemOptions;

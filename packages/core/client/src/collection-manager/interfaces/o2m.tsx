@@ -16,14 +16,14 @@ export const o2m: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'TableField',
+      'x-component': 'RecordPicker',
       'x-component-props': {
         // mode: 'tags',
-        // multiple: true,
-        // fieldNames: {
-        //   label: 'id',
-        //   value: 'id',
-        // },
+        multiple: true,
+        fieldNames: {
+          label: 'id',
+          value: 'id',
+        },
       },
     },
     reverseField: {
@@ -44,30 +44,10 @@ export const o2m: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, readPretty }) {
-    if (schema['x-component'] === 'RecordPicker') {
-      schema['type'] = 'hasMany';
-      schema['x-component'] = 'RecordPicker';
-      schema['x-component-props'] = {
-        multiple: true,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
-      }
-      if (readPretty) {
-        schema['properties'] = {
-          viewer: cloneDeep(recordPickerViewer),
-        };
-      } else {
-        schema['properties'] = {
-          selector: cloneDeep(recordPickerSelector),
-        };
-      }
-    } else {
+  schemaInitialize(schema: ISchema, { field, block, readPretty }) {
+    if (block === 'Form' && schema['x-component'] === 'TableField') {
       const association = `${field.collectionName}.${field.name}`;
       schema['type'] = 'void';
-      schema['x-component'] = 'TableField';
       schema['properties'] = {
         block: {
           type: 'void',
@@ -104,6 +84,16 @@ export const o2m: IField = {
           },
         },
       };
+    } else {
+      if (readPretty) {
+        schema['properties'] = {
+          viewer: cloneDeep(recordPickerViewer),
+        };
+      } else {
+        schema['properties'] = {
+          selector: cloneDeep(recordPickerSelector),
+        };
+      }
     }
   },
   properties: {

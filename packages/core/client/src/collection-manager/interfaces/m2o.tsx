@@ -44,8 +44,8 @@ export const m2o: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, readPretty, action }) {
-    if (schema['x-component'] === 'FormField') {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+    if (block === 'Form' && schema['x-component'] === 'FormField') {
       const association = `${field.collectionName}.${field.name}`;
       schema.type = 'void';
       schema.properties = {
@@ -84,14 +84,6 @@ export const m2o: IField = {
         },
       }
     } else {
-      schema['x-component'] = 'RecordPicker';
-      schema['x-component-props'] = {
-        multiple: false,
-        fieldNames: {
-          label: 'id',
-          value: 'id',
-        },
-      }
       if (readPretty) {
         schema['properties'] = {
           viewer: cloneDeep(recordPickerViewer),

@@ -199,8 +199,8 @@ FormItem.Designer = (props) => {
           title={t('Toggles the subfield mode')}
           options={
             collectionField?.interface === 'o2m'
-            ? [{ label: t('Selector mode'), value: 'RecordPicker' }, { label: t('Subtable mode'), value: 'TableField' }]
-            : [{ label: t('Selector mode'), value: 'RecordPicker' }, { label: t('Subform mode'), value: 'FormField' }]
+            ? [{ label: t('Selector mode'), value: 'CollectionField' }, { label: t('Subtable mode'), value: 'TableField' }]
+            : [{ label: t('Selector mode'), value: 'CollectionField' }, { label: t('Subform mode'), value: 'FormField' }]
           }
           value={fieldSchema['x-component']}
           onChange={(v) => {
@@ -212,7 +212,7 @@ FormItem.Designer = (props) => {
               "x-component": v,
             }
 
-            interfaceConfig?.schemaInitialize?.(schema, { field: collectionField, readPretty: field.readPretty, action: tk ? 'get' : null })
+            interfaceConfig?.schemaInitialize?.(schema, { field: collectionField, block: 'Form', readPretty: field.readPretty, action: tk ? 'get' : null })
 
             insertAdjacent('beforeBegin', gridRowColWrap(schema), {
               onSuccess: () => {
