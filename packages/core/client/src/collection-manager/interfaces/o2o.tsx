@@ -45,7 +45,7 @@ export const o2o: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, readPretty }) {
+  schemaInitialize(schema: ISchema, { field, readPretty, action }) {
     if (schema['x-component'] === 'FormField') {
       const association = `${field.collectionName}.${field.name}`;
       schema.type = 'void';
@@ -57,7 +57,7 @@ export const o2o: IField = {
             collection: field.target,
             association: association,
             resource: association,
-            action: 'get',
+            action: action,
             fieldName: field.name,
             readPretty,
           },
@@ -261,7 +261,7 @@ export const oho: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, readPretty }) {
+  schemaInitialize(schema: ISchema, { field, readPretty, action }) {
     if (schema['x-component'] === 'FormField') {
       const association = `${field.collectionName}.${field.name}`;
       schema.type = 'void';
@@ -273,7 +273,7 @@ export const oho: IField = {
             collection: field.target,
             association: association,
             resource: association,
-            action: 'get',
+            action,
             fieldName: field.name,
             readPretty
           },
@@ -476,7 +476,7 @@ export const obo: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, readPretty }) {
+  schemaInitialize(schema: ISchema, { field, readPretty, action }) {
     if (schema['x-component'] === 'FormField') {
       const association = `${field.collectionName}.${field.name}`;
       schema.type = 'void';
@@ -488,8 +488,8 @@ export const obo: IField = {
             collection: field.target,
             association: association,
             resource: association,
-            action: 'get',
             fieldName: field.name,
+            action,
             readPretty
           },
           'x-component': 'CardItem',

@@ -44,7 +44,7 @@ export const m2o: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, readPretty }) {
+  schemaInitialize(schema: ISchema, { field, readPretty, action }) {
     if (schema['x-component'] === 'FormField') {
       const association = `${field.collectionName}.${field.name}`;
       schema.type = 'void';
@@ -56,7 +56,7 @@ export const m2o: IField = {
             collection: field.target,
             association: association,
             resource: association,
-            action: 'get',
+            action,
             fieldName: field.name,
             readPretty
           },

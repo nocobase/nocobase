@@ -10,6 +10,7 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
 import { uid } from '@formily/shared';
+import { useFilterByTk } from '../../../block-provider';
 
 
 const gridRowColWrap = (schema: ISchema) => {
@@ -54,6 +55,7 @@ export const FormItem: any = (props) => {
 FormItem.Designer = (props) => {
   const { getCollectionFields, getCollection, getInterface } = useCollectionManager();
   const { getField } = useCollection();
+  const tk = useFilterByTk();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -62,7 +64,6 @@ FormItem.Designer = (props) => {
   const collectionField = getField(fieldSchema['name']);
   const interfaceConfig = getInterface(collectionField?.interface);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetCollection = getCollection(collectionField?.target);
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
   const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const initialValue = {
@@ -211,7 +212,7 @@ FormItem.Designer = (props) => {
               "x-component": v,
             }
 
-            interfaceConfig?.schemaInitialize?.(schema, { field: collectionField, readPretty: field.readPretty })
+            interfaceConfig?.schemaInitialize?.(schema, { field: collectionField, readPretty: field.readPretty, action: tk ? 'get' : null })
 
             insertAdjacent('beforeBegin', gridRowColWrap(schema), {
               onSuccess: () => {
