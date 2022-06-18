@@ -97,7 +97,7 @@ export class ApplicationVersion {
   }
 
   async get() {
-    if (await this.app.db.doesCollectionExistInDb('applicationVersion')) {
+    if (await this.app.db.collectionExistsInDb('applicationVersion')) {
       const model = await this.collection.model.findOne();
       return model.get('value') as any;
     }
@@ -115,7 +115,7 @@ export class ApplicationVersion {
   }
 
   async satisfies(range: string) {
-    if (await this.app.db.doesCollectionExistInDb('applicationVersion')) {
+    if (await this.app.db.collectionExistsInDb('applicationVersion')) {
       const model = await this.collection.model.findOne();
       const version = model.get('value') as any;
       return semver.satisfies(version, range);

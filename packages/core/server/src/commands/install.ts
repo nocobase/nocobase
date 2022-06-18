@@ -20,7 +20,7 @@ export default (app: Application) => {
       }
 
       if (!opts?.clean && !opts?.force) {
-        if (app.db.doesCollectionExistInDb('applicationVersion')) {
+        if (app.db.collectionExistsInDb('applicationVersion')) {
           installed = true;
           if (!opts.silent) {
             console.log('NocoBase is already installed. To reinstall, please execute:');

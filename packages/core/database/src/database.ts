@@ -12,6 +12,7 @@ import {
   QueryOptions,
   Sequelize,
   SyncOptions,
+  Transactionable,
   Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
@@ -25,7 +26,6 @@ import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
-
 
 export interface MergeOptions extends merge.Options {}
 
@@ -230,11 +230,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     const result = this.collections.delete(name);
 
+    this.sequelize.modelManager.removeModel(collection.model);
+
     if (result) {
       this.emit('afterRemoveCollection', collection);
     }
 
-    return result;
+    return collection;
   }
 
   getModel<M extends Model>(name: string) {
@@ -339,9 +341,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  async doesCollectionExistInDb(name) {
-    const tables = await this.sequelize.getQueryInterface().showAllTables();
-    return tables.find((table) => table === `${this.getTablePrefix()}${name}`);
+  async collectionExistsInDb(name, options?: Transactionable) {
+    const tables = await this.sequelize.getQueryInterface().showAllTables({
+      transaction: options?.transaction,
+    });
+    return !!tables.find((table) => table === `${this.getTablePrefix()}${name}`);
   }
 
   public isSqliteMemory() {

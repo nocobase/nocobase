@@ -1,8 +1,7 @@
-import { mockServer } from '@nocobase/test';
 import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
-
-import CollectionManagerPlugin from '..';
+import { mockServer } from '@nocobase/test';
 import lodash from 'lodash';
+import CollectionManagerPlugin from '../';
 
 export async function createApp(options = {}) {
   const app = mockServer();

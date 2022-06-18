@@ -1,5 +1,12 @@
 import _ from 'lodash';
-import { DataType, ModelAttributeColumnOptions, ModelIndexesOptions, SyncOptions } from 'sequelize';
+import {
+  DataType,
+  ModelAttributeColumnOptions,
+  ModelIndexesOptions,
+  QueryInterfaceOptions,
+  SyncOptions,
+  Transactionable
+} from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
 
@@ -77,6 +84,76 @@ export abstract class Field {
 
   remove() {
     return this.collection.removeField(this.name);
+  }
+
+  async removeFromDb(options?: QueryInterfaceOptions) {
+    if (!this.collection.model.rawAttributes[this.name]) {
+      this.remove();
+      // console.log('field is not attribute');
+      return;
+    }
+    if ((this.collection.model as any)._virtualAttributes.has(this.name)) {
+      this.remove();
+      // console.log('field is virtual attribute');
+      return;
+    }
+    if (this.collection.model.primaryKeyAttributes.includes(this.name)) {
+      // 主键不能删除
+      return;
+    }
+    if (this.collection.model.options.timestamps !== false) {
+      // timestamps 相关字段不删除
+      if (['createdAt', 'updatedAt', 'deletedAt'].includes(this.name)) {
+        return;
+      }
+    }
+    // 排序字段通过 sortable 控制
+    const sortable = this.collection.options.sortable;
+    if (sortable) {
+      let sortField: string;
+      if (sortable === true) {
+        sortField = 'sort';
+      } else if (typeof sortable === 'string') {
+        sortField = sortable;
+      } else if (sortable.name) {
+        sortField = sortable.name || 'sort';
+      }
+      if (this.name === sortField) {
+        return;
+      }
+    }
+    if (this.options.field && this.name !== this.options.field) {
+      // field 指向的是真实的字段名，如果与 name 不一样，说明字段只是引用
+      this.remove();
+      return;
+    }
+    if (
+      await this.existsInDb({
+        transaction: options?.transaction,
+      })
+    ) {
+      const queryInterface = this.database.sequelize.getQueryInterface();
+      await queryInterface.removeColumn(this.collection.model.tableName, this.name, options);
+    }
+    this.remove();
+  }
+
+  async existsInDb(options?: Transactionable) {
+    const opts = {
+      transaction: options?.transaction,
+    };
+    let sql;
+    if (this.database.sequelize.getDialect() === 'sqlite') {
+      sql = `SELECT * from pragma_table_info('${this.collection.model.tableName}') WHERE name = '${this.name}'`;
+    } else {
+      sql = `
+        select column_name
+        from INFORMATION_SCHEMA.COLUMNS
+        where TABLE_NAME='${this.collection.model.tableName}' AND column_name='${this.name}'
+      `;
+    }
+    const [rows] = await this.database.sequelize.query(sql, opts);
+    return rows.length > 0;
   }
 
   merge(obj: any) {
