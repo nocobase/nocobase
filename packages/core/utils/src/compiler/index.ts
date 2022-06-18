@@ -161,7 +161,8 @@ export const shallowCompile = <Source = any, Scope = any>(source: Source, scope?
     if (!matched) {
       return source;
     }
-    const newSource = source.replace(ExpRE, Registry.compile(matched[1], scope));
+    const value = Registry.compile(matched[1], scope);
+    const newSource = source.replace(ExpRE, value);
     return shallowCompile(newSource, scope);
   }
   return source;

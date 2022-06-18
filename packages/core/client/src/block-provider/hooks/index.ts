@@ -1,5 +1,5 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { compile as SchemaCompile } from '@nocobase/utils';
+import * as SchemaCompile from '@nocobase/utils';
 import { message, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -239,8 +239,8 @@ export const useCustomizeRequestActionProps = () => {
         const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
         Object.assign(data, values);
       }
-
-      const requestBody = SchemaCompile(
+      SchemaCompile.silent(true);
+      const requestBody = SchemaCompile.compile(
         {
           url: requestSettings['url'],
           method: requestSettings['method'],
