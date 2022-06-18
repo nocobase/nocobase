@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import { createForm, GeneralField } from '@formily/core';
-import { ISchema, Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Alert, Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
 import classNames from 'classnames';
@@ -21,6 +21,7 @@ import {
   useAPIClient,
   useCollection,
   useCompile,
+  useDesignable,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -234,7 +235,6 @@ const findBlockTemplateSchema = (fieldSchema) => {
 
 SchemaSettings.FormItemTemplate = (props) => {
   const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
-  console.log('SchemaSettings.Template', props);
   const { t } = useTranslation();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
@@ -284,7 +284,6 @@ SchemaSettings.FormItemTemplate = (props) => {
       onClick={async () => {
         setVisible(false);
         const gridSchema = findGridSchema(fieldSchema);
-        console.log('gridSchema', gridSchema);
         const values = await FormDialog(t('Save as template'), () => {
           return (
             <FormLayout layout={'vertical'}>
@@ -586,3 +585,45 @@ SchemaSettings.ModalItem = (props) => {
     </SchemaSettings.Item>
   );
 };
+
+SchemaSettings.BlockTitleItem = () => {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Edit block title')}
+      schema={
+        {
+          type: 'object',
+          title: t('Edit block title'),
+          properties: {
+            title: {
+              title: t('Block title'),
+              type: 'string',
+              default: fieldSchema?.['x-component-props']?.['title'],
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={({ title }) => {
+        const componentProps = fieldSchema['x-component-props'] || {};
+        componentProps.title = title;
+        fieldSchema['x-component-props'] = componentProps;
+        field.componentProps.title = title;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': fieldSchema['x-component-props'],
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  )
+  
+}

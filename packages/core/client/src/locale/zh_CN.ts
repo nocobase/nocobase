@@ -181,6 +181,8 @@ export default {
   "Selector mode": "选择器模式",
   "Subtable mode": "子表格模式",
   "Subform mode": "子表单模式",
+  "Edit block title": "编辑区块标题",
+  "Block title": "区块标题",
   "Add filter": "添加筛选条件",
   "Add filter group": "添加筛选分组",
   "is": "等于",

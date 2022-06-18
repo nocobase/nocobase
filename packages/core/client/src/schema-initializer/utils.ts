@@ -1,7 +1,7 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemOptions } from '../';
+import { SchemaInitializerItemOptions, useTableBlockContext } from '../';
 import { useCollection, useCollectionManager } from '../collection-manager';
 import { useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
