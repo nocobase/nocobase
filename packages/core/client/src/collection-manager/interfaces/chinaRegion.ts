@@ -78,10 +78,10 @@ export const chinaRegion: IField = {
     children: [
       {
         name: 'name',
-        title: '{{t("Filename")}}',
+        title: '{{t("Province/city/area name")}}',
         operators: operators.string,
         schema: {
-          title: '{{t("Filename")}}',
+          title: '{{t("Province/city/area name")}}',
           type: 'string',
           'x-component': 'Input',
         },
