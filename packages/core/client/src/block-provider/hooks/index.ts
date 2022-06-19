@@ -1,6 +1,7 @@
+import { Schema as SchemaCompiler } from '@formily/json-schema';
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import * as SchemaCompile from '@nocobase/utils';
 import { message, Modal } from 'antd';
+import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useAPIClient } from '../../api-client';
@@ -20,6 +21,13 @@ export const usePickActionProps = () => {
     },
   };
 };
+
+function renderTemplate(str: string, data: any) {
+  const re = /\{\{\s*((\w+\.?)+)\s*\}\}/g;
+  return str.replace(re, function (_, key) {
+    return get(data, key) || '';
+  });
+}
 
 function isURL(string) {
   let url;
@@ -239,17 +247,14 @@ export const useCustomizeRequestActionProps = () => {
         const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
         Object.assign(data, values);
       }
-      SchemaCompile.silent(true);
-      const requestBody = SchemaCompile.compile(
-        {
-          url: requestSettings['url'],
-          method: requestSettings['method'],
-          headers,
-          params,
-          data,
-        },
-        { currentRecord, currentUser },
-      );
+      const requestBody = {
+        url: renderTemplate(requestSettings['url'], { currentRecord, currentUser }),
+        method: requestSettings['method'],
+        headers: SchemaCompiler.compile(headers, { currentRecord, currentUser }),
+        params: SchemaCompiler.compile(params, { currentRecord, currentUser }),
+        data: SchemaCompiler.compile(data, { currentRecord, currentUser }),
+      };
+
       await apiClient.request({
         ...requestBody,
       });
