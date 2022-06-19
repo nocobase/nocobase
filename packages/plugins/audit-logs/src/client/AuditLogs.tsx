@@ -457,13 +457,13 @@ AuditLogs.Decorator = observer((props: any) => {
       filter = {
         $and: [filter, {
           collectionName: parent.name,
-          recordId: filterByTk,
+          recordId: `${filterByTk}`,
         }],
       };
     } else {
       filter = {
         collectionName: parent.name,
-        recordId: filterByTk,
+        recordId: `${filterByTk}`,
       };
     }
   }
