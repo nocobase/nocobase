@@ -98,7 +98,7 @@ export const KanbanCardDesigner = (props: any) => {
               },
               {
                 type: 'itemGroup',
-                title: t('References fields of associated table'),
+                title: t('Display association fields'),
                 children: useAssociatedFormItemInitializerFields({readPretty: true}),
               },
             ]}

@@ -79,7 +79,7 @@ export default {
   "Add new": "Add new",
   "Add record": "Add record",
   "Custom field display name": "Custom field display name",
-  "Display fields": "Display fields",
+  "Display fields": "Display collection fields",
   "Edit record": "Edit record",
   "Delete menu item": "Delete menu item",
   "Add page": "Add page",

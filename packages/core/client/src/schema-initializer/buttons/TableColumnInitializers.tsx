@@ -40,7 +40,7 @@ export const TableColumnInitializers = (props: any) => {
           },
           {
             type: 'itemGroup',
-            title: t('References fields of associated table'),
+            title: t('Display association fields'),
             children: useAssociatedTableColumnInitializerFields(),
           },
           {
