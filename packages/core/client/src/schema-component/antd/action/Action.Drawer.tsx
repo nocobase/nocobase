@@ -39,6 +39,12 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
               others.className,
               css`
                 &.nb-action-popup {
+                  .ant-drawer-header {
+                    display: none;
+                  }
+                  .ant-drawer-body {
+                    padding-top: 14px;
+                  }
                   .ant-drawer-content {
                     background: #f0f2f5;
                   }
