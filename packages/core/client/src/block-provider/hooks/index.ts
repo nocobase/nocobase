@@ -225,9 +225,8 @@ export const useCustomizeRequestActionProps = () => {
   const { fields, getField } = useCollection();
   const { field, resource } = useBlockRequestContext();
   const currentRecord = useRecord();
-  const {
-    data: { data: currentUser },
-  } = useCurrentUserContext();
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
   return {
     async onClick() {
       const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
