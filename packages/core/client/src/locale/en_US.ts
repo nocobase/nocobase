@@ -541,4 +541,5 @@ export default {
   "One to one (has one)": "One to one (has one)",
   "One to one (belongs to)": "One to one (belongs to)",
   "Use the same time zone (GMT) for all users": "Use the same time zone (GMT) for all users",
+  "Province/city/area name": "Province/city/area name",
 }

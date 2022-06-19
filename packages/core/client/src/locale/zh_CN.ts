@@ -604,4 +604,5 @@ export default {
   "One to one (has one)": "一对一（has one）",
   "One to one (belongs to)": "一对一（belongs to）",
   "Use the same time zone (GMT) for all users": "所有用户使用同一时区 (格林尼治标准时间)",
+  "Province/city/area name": "省市区名称",
 }
