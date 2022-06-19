@@ -1,7 +1,6 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
-import { EXECUTION_STATUS } from '../../constants';
 
 
 
@@ -10,16 +9,19 @@ describe('workflow > triggers > schedule', () => {
   let db: Database;
   let PostRepo;
   let WorkflowModel;
+  let WorkflowRepo;
 
   beforeEach(async () => {
     app = await getApp();
 
     db = app.db;
-    WorkflowModel = db.getCollection('workflows').model;
+    const workflow = db.getCollection('workflows');
+    WorkflowModel = workflow.model;
+    WorkflowRepo = workflow.repository;
     PostRepo = db.getCollection('posts').repository;
   });
 
-  afterEach(() => app.stop());
+  afterEach(() => app.destroy());
 
   describe('constant mode', () => {
     it('no repeat configurated', async () => {
@@ -127,22 +129,33 @@ describe('workflow > triggers > schedule', () => {
       now.setSeconds(now.getSeconds() + 2);
       now.setMilliseconds(0);
 
-      const w1 = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          repeat: `${now.getSeconds()} * * * * *`,
-        }
+      let w1, w2;
+      await db.sequelize.transaction(async (transaction) => {
+        w1 = await WorkflowRepo.create({
+          values: {
+            enabled: true,
+            type: 'schedule',
+            config: {
+              mode: 0,
+              repeat: `${now.getSeconds()} * * * * *`,
+            }
+          },
+          transaction
+        });
       });
 
-      const w2 = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          repeat: `${now.getSeconds()} * * * * *`,
-        }
+      await db.sequelize.transaction(async (transaction) => {
+        w2 = await WorkflowRepo.create({
+          values: {
+            enabled: true,
+            type: 'schedule',
+            config: {
+              mode: 0,
+              repeat: `${now.getSeconds()} * * * * *`,
+            }
+          },
+          transaction
+        });
       });
 
       await sleep(3000);

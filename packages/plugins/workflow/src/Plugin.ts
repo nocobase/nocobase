@@ -15,7 +15,7 @@ import { EXECUTION_STATUS } from './constants';
 
 
 async function setCurrent(instance: WorkflowModel, options) {
-  const others: { enabled?: boolean, current?: boolean } = {};
+  const updates: { enabled?: boolean, current?: boolean } = {};
 
   if (!instance.changed('enabled')) {
     return;
@@ -23,21 +23,24 @@ async function setCurrent(instance: WorkflowModel, options) {
 
   if (instance.enabled) {
     instance.set('current', true);
-    others.enabled = false;
+    updates.enabled = false;
   }
 
   if (instance.current) {
-    others.current = false;
-    await (<typeof WorkflowModel>instance.constructor).update(others, {
+    // NOTE: set to `null` but not `false` will not violate the unique index
+    updates.current = null;
+    const previous = await (<typeof WorkflowModel>instance.constructor).findOne({
       where: {
         key: instance.key,
-        id: {
-          [Op.ne]: instance.id
-        }
-      },
-      individualHooks: true,
-      transaction: options.transaction
+        current: true
+      }
     });
+
+    if (previous) {
+      await previous.update(updates, {
+        transaction: options.transaction
+      });
+    }
   }
 }
 

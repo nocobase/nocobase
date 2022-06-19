@@ -1,19 +1,9 @@
-import * as fs from 'fs';
-import lodash from 'lodash';
 import path from 'path';
+import { readdir } from 'fs/promises';
+import { isPlainObject } from 'lodash';
+import { requireModule } from '@nocobase/utils';
 
 export type ImportFileExtension = 'js' | 'ts' | 'json';
-
-async function requireModule(module: any) {
-  if (typeof module === 'string') {
-    module = require(module);
-  }
-
-  if (typeof module !== 'object') {
-    return module;
-  }
-  return module.__esModule ? module.default : module;
-}
 
 export class ImporterReader {
   directory: string;
@@ -30,11 +20,10 @@ export class ImporterReader {
   }
 
   async read() {
-    const modules = (
-      await fs.promises.readdir(this.directory, {
-        encoding: 'utf-8',
-      })
-    )
+    const files = await readdir(this.directory, {
+      encoding: 'utf-8',
+    });
+    const modules = files
       .filter((fileName) => {
         if (fileName.endsWith('.d.ts')) {
           return false;
@@ -42,8 +31,11 @@ export class ImporterReader {
         const ext = path.parse(fileName).ext.replace('.', '');
         return this.extensions.has(ext);
       })
-      .map(async (fileName) => await requireModule(path.join(this.directory, fileName)));
+      .map((fileName) => {
+        const mod = requireModule(path.join(this.directory, fileName));
+        return typeof mod === 'function' ? mod() : mod;
+      });
 
-    return (await Promise.all(modules)).filter((module) => lodash.isPlainObject(module));
+    return (await Promise.all(modules)).filter((module) => isPlainObject(module));
   }
 }

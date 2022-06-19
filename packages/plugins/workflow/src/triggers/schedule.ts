@@ -1,5 +1,5 @@
 import parser from 'cron-parser';
-import { literal, Op } from 'sequelize';
+import { literal, Op, where, fn } from 'sequelize';
 import Plugin, { Trigger } from '..';
 
 export type ScheduleOnField = string | {
@@ -113,13 +113,13 @@ function getHookId(workflow, type) {
 
 const DialectTimestampFnMap: { [key: string]: Function } = {
   postgres(col) {
-    return `extract(epoch from "${col}")`;
+    return `CAST(FLOOR(extract(epoch from "${col}")) AS INTEGER)`;
   },
   mysql(col) {
-    return `UNIX_TIMESTAMP(${col})`;
+    return `CAST(FLOOR(UNIX_TIMESTAMP(\`${col}\`)) AS SIGNED INTEGER)`;
   },
   sqlite(col) {
-    return `unixepoch(${col})`;
+    return `CAST(FLOOR(unixepoch(${col})) AS INTEGER)`;
   }
 };
 DialectTimestampFnMap.mariadb = DialectTimestampFnMap.mysql;
@@ -189,17 +189,22 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     const conditions: any[] = [starts, ends].filter(item => Boolean(Object.keys(item).length));
     // when repeat is number, means repeat after startsOn
     // (now - startsOn) % repeat <= cacheCycle
-    const tsFn = DialectTimestampFnMap[this.plugin.app.db.options.dialect];
+    const { db } = this.plugin.app;
+    const tsFn = DialectTimestampFnMap[db.options.dialect];
     if (repeat
       && typeof repeat === 'number'
       && repeat > this.cacheCycle
       && tsFn
     ) {
       const uts = now.getTime();
-      conditions.push(literal(`mod(${uts} - ${tsFn(startsOn.field)} * 1000, ${repeat}) < ${this.cacheCycle}`));
+      conditions.push(where(
+        fn('MOD', literal(`${Math.round(uts / 1000)} - ${tsFn(startsOn.field)}`), Math.round(repeat / 1000)),
+        { [Op.lt]: Math.round(this.cacheCycle / 1000) }
+      ));
+      // conditions.push(literal(`mod(${uts} - ${tsFn(startsOn.field)} * 1000, ${repeat}) < ${this.cacheCycle}`));
     }
 
-    const { model } = this.plugin.app.db.getCollection(collection);
+    const { model } = db.getCollection(collection);
     const count = await model.count({
       where: { [Op.and]: conditions }
     });
@@ -241,8 +246,11 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
 
       const tsFn = DialectTimestampFnMap[this.plugin.app.db.options.dialect];
       if (typeof repeat === 'number' && tsFn) {
-        const uts = timestamp;
-        conditions.push(literal(`mod(${uts} - floor(${tsFn(startsOn.field)}) * 1000, ${repeat}) = 0`));
+        conditions.push(where(
+          fn('MOD', literal(`${Math.round(timestamp / 1000)} - ${tsFn(startsOn.field)}`), Math.round(repeat / 1000)),
+          { [Op.eq]: 0 }
+        ));
+        // conditions.push(literal(`MOD(CAST(${timestamp} AS BIGINT) - CAST((FLOOR(${tsFn(startsOn.field)}) AS BIGINT) * 1000), ${repeat}) = 0`));
       }
 
       switch (typeof endsOn) {
@@ -320,10 +328,7 @@ function nextInCycle(this: ScheduleTrigger, workflow, now: Date): boolean {
 export default class ScheduleTrigger extends Trigger {
   static CacheRules = [
     // ({ enabled }) => enabled,
-    ({ config, allExecuted }, now) => {
-      console.log('should cache?', config, allExecuted, now);
-      return config.limit ? allExecuted < config.limit : true;
-    },
+    ({ config, allExecuted }) => config.limit ? allExecuted < config.limit : true,
     ({ config }) => ['repeat', 'startsOn'].some(key => config[key]),
     nextInCycle,
     function(workflow, now) {
@@ -334,10 +339,7 @@ export default class ScheduleTrigger extends Trigger {
   ];
 
   static TriggerRules = [
-    ({ config, allExecuted }, now) => {
-      console.log('should trigger?', config, allExecuted, now);
-      return config.limit ? allExecuted < config.limit : true
-    },
+    ({ config, allExecuted }) => config.limit ? allExecuted < config.limit : true,
     ({ config }) => ['repeat', 'startsOn'].some(key => config[key]),
     function (workflow, now) {
       const { repeat } = workflow.config;
