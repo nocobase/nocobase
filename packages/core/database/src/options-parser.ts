@@ -1,4 +1,4 @@
-import { FindAttributeOptions, ModelCtor, Op } from 'sequelize';
+import { FindAttributeOptions, ModelCtor, Op, Sequelize } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import FilterParser from './filter-parser';
@@ -70,28 +70,30 @@ export class OptionsParser {
     if (typeof sort === 'string') {
       sort = sort.split(',');
     }
-    const orderParams = sort.map((sortKey: string) => {
+    const orderParams = [];
+    for (const sortKey of sort) {
       let direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
       let sortField: Array<any> = sortKey.replace('-', '').split('.');
       if (this.database.inDialect('postgres', 'sqlite')) {
         direction = `${direction} NULLS LAST`;
-      } else if (this.database.inDialect('mysql')) {
-        sortField[0] = `-${sortField[0]}`;
       }
       // handle sort by association
       if (sortField.length > 1) {
         let associationModel = this.model;
-
         for (let i = 0; i < sortField.length - 1; i++) {
           const associationKey = sortField[i];
           sortField[i] = associationModel.associations[associationKey].target;
           associationModel = sortField[i];
         }
       }
-
       sortField.push(direction);
-      return sortField;
-    });
+      if (this.database.inDialect('mysql')) {
+        orderParams.push([Sequelize.fn('ISNULL', Sequelize.col(`${this.model.tableName}.${sortField[0]}`))]);
+      }
+      orderParams.push(sortField);
+    }
+
+    console.log(orderParams);
 
     if (orderParams.length > 0) {
       return {
