@@ -1,7 +1,7 @@
-import { Registry } from '@nocobase/utils';
-
-import ExecutionModel from '../models/Execution';
 import FlowNodeModel from '../models/FlowNode';
+
+import Plugin from '..';
+import Processor from '../Processor';
 
 import prompt from './prompt';
 import calculation from './calculation';
@@ -12,11 +12,11 @@ import create from './create';
 import update from './update';
 import destroy from './destroy';
 
-export interface Job {
+export type Job = {
   status: number;
   result?: unknown;
   [key: string]: unknown;
-}
+} | null;
 
 export type InstructionResult = Job | Promise<Job>;
 
@@ -30,26 +30,33 @@ export interface Instruction {
     input: any,
     // what should context to be?
     // - could be the workflow execution object (containing context data)
-    execution: ExecutionModel
+    processor: Processor
   ): InstructionResult;
 
   // for start node in main flow (or branch) to resume when manual sub branch triggered
   resume?(
     this: FlowNodeModel,
     input: any,
-    execution: ExecutionModel
+    processor: Processor
   ): InstructionResult
 }
 
-export const instructions = new Registry<Instruction>();
+export default function<T extends Instruction>(
+  plugin,
+  more: { [key: string]: T | { new(p: Plugin): T } } = {}
+) {
+  const { instructions } = plugin;
 
-instructions.register('prompt', prompt);
-instructions.register('calculation', calculation);
-instructions.register('condition', condition);
-instructions.register('parallel', parallel);
-instructions.register('query', query);
-instructions.register('create', create);
-instructions.register('update', update);
-instructions.register('destroy', destroy);
+  instructions.register('prompt', prompt);
+  instructions.register('calculation', calculation);
+  instructions.register('condition', condition);
+  instructions.register('parallel', parallel);
+  instructions.register('query', query);
+  instructions.register('create', create);
+  instructions.register('update', update);
+  instructions.register('destroy', destroy);
 
-export default instructions;
+  for (const [name, instruction] of Object.entries(more)) {
+    instructions.register(name, typeof instruction === 'function' ? new instruction(plugin) : instruction);
+  }
+}
