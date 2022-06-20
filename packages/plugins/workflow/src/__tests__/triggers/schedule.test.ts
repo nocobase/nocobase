@@ -4,7 +4,7 @@ import { getApp, sleep } from '..';
 
 
 
-describe('workflow > triggers > schedule', () => {
+describe.skip('workflow > triggers > schedule', () => {
   let app: Application;
   let db: Database;
   let PostRepo;
