@@ -1,9 +1,9 @@
-import { JOB_STATUS } from "../constants";
-import ExecutionModel from "../models/Execution";
 import FlowNodeModel from "../models/FlowNode";
+import Processor from "../Processor";
+import { JOB_STATUS } from "../constants";
 
 export default {
-  async run(this: FlowNodeModel, input, execution: ExecutionModel) {
+  async run(this: FlowNodeModel, input, processor: Processor) {
     const {
       collection,
       multiple = false,
@@ -11,10 +11,10 @@ export default {
     } = this.config;
 
     const repo = (<typeof FlowNodeModel>this.constructor).database.getRepository(collection);
-    const options = execution.getParsedValue(params);
+    const options = processor.getParsedValue(params);
     const result = await repo.update({
       ...options,
-      transaction: execution.tx
+      transaction: processor.transaction
     });
 
     return {

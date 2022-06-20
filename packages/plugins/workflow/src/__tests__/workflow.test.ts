@@ -79,7 +79,7 @@ describe('workflow > workflow', () => {
       });
 
       expect(w1next.enabled).toBe(false);
-      expect(w1next.current).toBe(false);
+      expect(w1next.current).toBe(null);
       expect(w2next.enabled).toBe(true);
       expect(w2next.current).toBe(true);
 
