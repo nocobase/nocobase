@@ -65,7 +65,26 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      {['linkTo', 'm2m', 'm2o', 'obo', 'oho'].includes(collectionField?.interface) && (
+      <SchemaSettings.SwitchItem
+        title={t('Sortable')}
+        checked={field.componentProps.sorter}
+        onChange={(v) => {
+          const schema: ISchema = {
+            ['x-uid']: columnSchema['x-uid'],
+          };
+          columnSchema['x-component-props'] = {
+            ...columnSchema['x-component-props'],
+            sorter: v
+          }
+          schema['x-component-props'] = columnSchema['x-component-props'];
+          field.componentProps.sorter = v;
+          dn.emit('patch', {
+            schema
+          });
+          dn.refresh();
+        }}
+      />
+      {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Title field')}
           options={options}

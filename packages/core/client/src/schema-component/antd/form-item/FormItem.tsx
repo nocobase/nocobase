@@ -56,6 +56,13 @@ FormItem.Designer = () => {
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+  let readOnlyMode = 'editable';
+  if (fieldSchema['x-read-pretty'] === true) {
+    readOnlyMode = 'read-pretty';
+  }
+  if (fieldSchema['x-component-props']?.['readOnly'] === true) {
+    readOnlyMode = 'readonly';
+  }
   return (
     <GeneralSchemaDesigner>
       {collectionField && (
@@ -171,6 +178,64 @@ FormItem.Designer = () => {
             refresh();
           }}
         />
+      )}
+      {!field.readPretty && (
+        <SchemaSettings.SelectItem
+        title={t('Pattern')}
+        options={
+          [{ label: t('Editable'), value: 'editable' }, { label: t('Readonly'), value: 'readonly' }, { label: t('Easy-reading'), value: 'read-pretty' }]
+        }
+        value={readOnlyMode}
+        onChange={(v) => {
+          const schema = {
+            ['x-uid']: fieldSchema['x-uid'],
+          };
+
+          switch(v) {
+            case 'readonly': {
+              fieldSchema['x-read-pretty'] = false;  
+              schema['x-read-pretty'] = false;
+              fieldSchema['x-component-props'] = {
+                ...fieldSchema['x-component-props'],
+                readOnly: true,
+              }
+              schema['x-component-props'] = fieldSchema['x-component-props'];
+              field.readPretty = false;
+              field.componentProps.readOnly = true;
+              break;
+            }
+            case 'read-pretty': {
+              fieldSchema['x-read-pretty'] = true;
+              schema['x-read-pretty'] = true;
+              fieldSchema['x-component-props'] = {
+                ...fieldSchema['x-component-props'],
+                readOnly: false,
+              }
+              schema['x-component-props'] = fieldSchema['x-component-props'];
+              field.readPretty = true;
+              field.componentProps.readOnly = false;
+              break;
+            }
+            default: {
+              fieldSchema['x-read-pretty'] = false;
+              schema['x-read-pretty'] = false;
+              fieldSchema['x-component-props'] = {
+                ...fieldSchema['x-component-props'],
+                readOnly: false,
+              }
+              schema['x-component-props'] = fieldSchema['x-component-props'];
+              field.readPretty = false;
+              field.componentProps.readOnly = false;
+              break;
+            }
+          }
+          dn.emit('patch', {
+            schema
+          });
+
+          dn.refresh();
+        }}
+      />
       )}
       {collectionField?.target && (
         <SchemaSettings.SelectItem

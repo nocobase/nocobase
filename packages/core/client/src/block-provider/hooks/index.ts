@@ -311,11 +311,11 @@ export const useUpdateActionProps = () => {
             ...assignedValues,
           },
         });
-        actionField.data.loading = false;
-        __parent?.service?.refresh?.();
-        if (!(resource instanceof TableFieldResource)) {
+        actionField.data.loading = false;        
+        if (!(resource instanceof TableFieldResource)) {  
           __parent?.__parent?.service?.refresh?.();
         }
+        __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
           return;
