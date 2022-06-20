@@ -177,6 +177,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  inDialect(...dialect: string[]) {
+    return dialect.includes(this.sequelize.getDialect());
+  }
+
   private requireModule(module: any) {
     if (typeof module === 'string') {
       module = require(module);

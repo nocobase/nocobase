@@ -71,9 +71,13 @@ export class OptionsParser {
       sort = sort.split(',');
     }
     const orderParams = sort.map((sortKey: string) => {
-      const direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
-      const sortField: Array<any> = sortKey.replace('-', '').split('.');
-
+      let direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
+      let sortField: Array<any> = sortKey.replace('-', '').split('.');
+      if (this.database.inDialect('postgres', 'sqlite')) {
+        direction = `${direction} NULLS LAST`;
+      } else if (this.database.inDialect('mysql')) {
+        sortField[0] = `-${sortField[0]}`;
+      }
       // handle sort by association
       if (sortField.length > 1) {
         let associationModel = this.model;
