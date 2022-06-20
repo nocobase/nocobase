@@ -88,12 +88,10 @@ export class OptionsParser {
       }
       sortField.push(direction);
       if (this.database.inDialect('mysql')) {
-        orderParams.push([Sequelize.fn('ISNULL', Sequelize.col(`${this.model.tableName}.${sortField[0]}`))]);
+        orderParams.push([Sequelize.fn('ISNULL', Sequelize.col(`${this.model.name}.${sortField[0]}`))]);
       }
       orderParams.push(sortField);
     }
-
-    console.log(orderParams);
 
     if (orderParams.length > 0) {
       return {
