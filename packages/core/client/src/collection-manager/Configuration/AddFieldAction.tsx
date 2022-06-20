@@ -90,35 +90,35 @@ const useCreateCollectionField = () => {
   return {
     async run() {
       await form.submit();
-      const options = form?.values?.uiSchema?.enum?.slice() || [];
-      if (options?.length) {
-        form.setValuesIn(
-          'uiSchema.enum',
-          options.map((option) => {
-            return {
-              value: uid(),
-              ...option,
-            };
-          }),
-        );
-      }
-      function recursiveChildren(children = [], prefix = 'children') {
-        children.forEach((item, index) => {
-          const itemOptions = item.uiSchema?.enum?.slice() || [];
-          form.setValuesIn(
-            `${prefix}[${index}].uiSchema.enum`,
-            itemOptions.map((option) => {
-              return {
-                value: uid(),
-                ...option,
-              };
-            }),
-          );
-          recursiveChildren(item.children, `${prefix}[${index}].children`);
-        });
-      }
+      // const options = form?.values?.uiSchema?.enum?.slice() || [];
+      // if (options?.length) {
+      //   form.setValuesIn(
+      //     'uiSchema.enum',
+      //     options.map((option) => {
+      //       return {
+      //         value: uid(),
+      //         ...option,
+      //       };
+      //     }),
+      //   );
+      // }
+      // function recursiveChildren(children = [], prefix = 'children') {
+      //   children.forEach((item, index) => {
+      //     const itemOptions = item.uiSchema?.enum?.slice() || [];
+      //     form.setValuesIn(
+      //       `${prefix}[${index}].uiSchema.enum`,
+      //       itemOptions.map((option) => {
+      //         return {
+      //           value: uid(),
+      //           ...option,
+      //         };
+      //       }),
+      //     );
+      //     recursiveChildren(item.children, `${prefix}[${index}].children`);
+      //   });
+      // }
 
-      recursiveChildren(form?.values?.children);
+      // recursiveChildren(form?.values?.children);
 
       if (['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(form?.values?.interface) && title) {
         form.setValuesIn('reverseField.uiSchema.title', title);

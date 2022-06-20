@@ -255,7 +255,7 @@ export default {
 
   "Options": "选项",
   "Option value": "选项值",
-  "Option label": "选项",
+  "Option label": "选项标签",
   "Color": "颜色",
   "Add option": "添加选项",
   "Related collection": "关系表",
