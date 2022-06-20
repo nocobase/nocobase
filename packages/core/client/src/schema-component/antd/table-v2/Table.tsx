@@ -1,7 +1,7 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React from 'react';
@@ -14,11 +14,16 @@ const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
 };
 
+const isCollectionFieldComponent = (schema: ISchema) => {
+  return schema['x-component'] === 'CollectionField';
+}
+
 const useTableColumns = () => {
   const start = Date.now();
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
+  // console.log('useTableColumns', exists);
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s)) {
@@ -26,10 +31,18 @@ const useTableColumns = () => {
       }
     }, [])
     .map((s: Schema) => {
+      const collectionFields = s
+        .reduceProperties((buf, s) => {
+          if (isCollectionFieldComponent(s)) {
+            return buf.concat([s]);
+          }
+        }, []);
+      const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
       return {
         title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
-        dataIndex: s.name,
+        dataIndex,
         key: s.name,
+        sorter: s['x-component-props']?.['sorter'],
         // width: 300,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
