@@ -85,6 +85,18 @@ export const o2m: IField = {
         },
       };
     } else {
+      schema['x-component'] = 'CollectionField';
+      if (schema['x-component-props']?.['field']?.['uiSchema']?.['x-component'] === 'TableField') {
+        schema['x-component-props']['field']['uiSchema']['x-component'] = 'RecordPicker';
+        schema['x-component-props']['field']['uiSchema']['x-component-props'] = {
+          multiple: false,
+          fieldNames: {
+            label: 'id',
+            value: 'id',
+          },
+        }
+      }
+      
       if (readPretty) {
         schema['properties'] = {
           viewer: cloneDeep(recordPickerViewer),

@@ -10,7 +10,7 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
 import { uid } from '@formily/shared';
-import { useFilterByTk } from '../../../block-provider';
+import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 
 
 const gridRowColWrap = (schema: ISchema) => {
@@ -60,6 +60,7 @@ FormItem.Designer = (props) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn, refresh, insertAdjacent, insertBeforeBegin } = useDesignable();
+  const formCtx = useFormBlockContext();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -78,7 +79,6 @@ FormItem.Designer = (props) => {
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
-  console.log('f', fieldSchema, collectionField);
   return (
     <GeneralSchemaDesigner>
       {collectionField && (
@@ -195,7 +195,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {!isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
+      {formCtx.form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Toggles the subfield mode')}
           options={
@@ -211,6 +211,9 @@ FormItem.Designer = (props) => {
               "x-decorator": "FormItem",
               "x-designer": "FormItem.Designer",
               "x-component": v,
+              "x-component-props": {
+                field: collectionField
+              }
             }
 
             interfaceConfig?.schemaInitialize?.(schema, { field: collectionField, block: 'Form', readPretty: field.readPretty, action: tk ? 'get' : null })
@@ -241,12 +244,14 @@ FormItem.Designer = (props) => {
               ...field.componentProps.fieldNames,
               label,
             };
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-            field.componentProps.fieldNames = fieldNames;
-            schema['x-component-props'] = {
-              fieldNames,
-            };
+
+            if (fieldSchema['x-component-props']?.['field']?.['uiSchema']?.['x-component-props']) {
+              fieldSchema['x-component-props']['field']['uiSchema']['x-component-props']['fieldNames'] = fieldNames;
+            } else {
+              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+              fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            }
+            schema['x-component-props'] = fieldSchema['x-component-props'];
             dn.emit('patch', {
               schema,
             });

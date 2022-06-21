@@ -12,8 +12,8 @@ const InternalFormFieldProvider = (props) => {
   const { action, readPretty, fieldName } = props;
   const formBlockCtx = useFormBlockContext();
   
-  if (!formBlockCtx.updateAssociationValues.includes(fieldName)) {
-    formBlockCtx.updateAssociationValues.push(fieldName);
+  if (!formBlockCtx?.updateAssociationValues?.includes(fieldName)) {
+    formBlockCtx?.updateAssociationValues?.push(fieldName);
   }
   
   const field = useField();
@@ -23,7 +23,7 @@ const InternalFormFieldProvider = (props) => {
       createForm({
         effects() {
           onFormValuesChange((form) => {
-            formBlockCtx.form.setValuesIn(fieldName, form.values);
+            formBlockCtx?.form?.setValuesIn(fieldName, form.values);
           });
         },
         readPretty,
@@ -71,7 +71,7 @@ export const useFormFieldContext = () => {
 export const useFormFieldProps = () => {
   const ctx = useFormFieldContext();
   useEffect(() => {
-    ctx.form.setInitialValues(ctx.service?.data?.data);
+    ctx?.form?.setInitialValues(ctx.service?.data?.data);
   }, []);
   return {
     form: ctx.form,

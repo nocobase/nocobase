@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import { Space } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { RecordProvider } from '../../../record-provider';
@@ -20,6 +20,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const collectionField = getField(fieldSchema.name);
   const [record, setRecord] = useState({});
   const compile = useCompile();
+  
   return collectionField ? (
     <div>
       <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
