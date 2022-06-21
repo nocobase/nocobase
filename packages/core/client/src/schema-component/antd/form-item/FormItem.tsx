@@ -65,7 +65,6 @@ FormItem.Designer = () => {
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
   }
-  console.log('f', fieldSchema, form);
   return (
     <GeneralSchemaDesigner>
       {collectionField && (

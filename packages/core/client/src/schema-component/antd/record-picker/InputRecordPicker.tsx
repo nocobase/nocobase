@@ -69,7 +69,6 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   });
   const [selectedRows, setSelectedRows] = useState(options);
   const values = options?.map((option) => option[fieldNames.value]);
-  console.log('InputRecordPicker', fieldNames, fieldSchema, collectionField, props);
   return (
     <div>
       <Select

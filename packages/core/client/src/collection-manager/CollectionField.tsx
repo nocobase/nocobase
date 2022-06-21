@@ -48,7 +48,6 @@ const InternalField: React.FC = (props) => {
     if (fieldSchema['x-read-pretty'] === true) {
       field.readPretty = true;  
     }
-    console.log('InternalField', field.title, field, fieldSchema);
     setRequired();
     // @ts-ignore
     field.dataSource = uiSchema.enum;
