@@ -33,12 +33,31 @@ describe('workflow > workflow', () => {
           collection: 'posts'
         }
       });
+      expect(workflow.current).toBe(true);
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const executions1 = await workflow.getExecutions();
+      expect(executions1.length).toBe(1);
+
+      const w = await WorkflowModel.findOne({
+        where: {
+          current: true
+        }
+      });
+      expect(w).not.toBeNull();
+      expect(w.current).toBe(true);
 
       await workflow.update({ enabled: false });
-      const post = await PostRepo.create({ values: { title: 't1' } });
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
 
-      const executions = await workflow.getExecutions();
-      expect(executions.length).toBe(0);
+      const executions2 = await workflow.getExecutions();
+      expect(executions2.length).toBe(1);
+
+      const workflows = await WorkflowModel.findAll({
+        where: {
+          current: true
+        }
+      });
+      expect(workflows.length).toBe(1);
     });
   });
 
