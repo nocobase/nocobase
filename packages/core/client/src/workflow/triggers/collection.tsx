@@ -49,7 +49,8 @@ export default {
           { value: 2, label: '{{t("After record updated")}}' },
           { value: 3, label: '{{t("After record added or updated")}}' },
           { value: 4, label: '{{t("After record deleted")}}' }
-        ]
+        ],
+        placeholder: '{{t("Trigger on")}}'
       },
       required: true
     },
@@ -62,6 +63,7 @@ export default {
       'x-component': 'FieldsSelect',
       'x-component-props': {
         mode: 'multiple',
+        placeholder: '{{t("Select Field")}}'
       }
     },
     'config.condition': {
