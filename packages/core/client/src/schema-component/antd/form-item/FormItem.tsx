@@ -78,6 +78,7 @@ FormItem.Designer = (props) => {
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+  console.log('f', fieldSchema, collectionField);
   return (
     <GeneralSchemaDesigner>
       {collectionField && (
@@ -227,7 +228,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {collectionField?.target && fieldSchema['x-component'] === 'RecordPicker' && (
+      {collectionField?.target && fieldSchema['x-component'] === 'CollectionField' && (
         <SchemaSettings.SelectItem
           title={t('Title field')}
           options={options}
