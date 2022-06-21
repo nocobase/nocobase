@@ -5,6 +5,7 @@ import { Spin } from 'antd';
 import cls from 'classnames';
 import React, { forwardRef, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../../api-client';
 import { G2PlotDesigner } from './G2PlotDesigner';
 
 export type ReactG2PlotProps<O> = {
@@ -60,28 +61,43 @@ export const G2Plot: any = observer((props: any) => {
   const { plot, config } = props;
   const field = useField<Field>();
   const { t } = useTranslation();
+  const api = useAPIClient();
   useEffect(() => {
     field.data = field.data || {};
-    if (typeof config?.data?.then === 'function') {
-      field.data.loaded = false;
-      config?.data?.then((data) => {
-        field.componentProps.config.data = data;
-        field.data.loaded = true;
-      });
+    field.data.loading = true;
+    const fn = config?.data;
+    if (typeof fn === 'function') {
+      const result = fn.bind({ api })();
+      if (result?.then) {
+        result.then(data => {
+          if (Array.isArray(data)) {
+            field.componentProps.config.data = data;
+          }
+          field.data.loading = false;
+        });
+      } else {
+        field.data.loading = false;
+      }
     } else {
-      field.data.loaded = true;
+      field.data.loading = false;
     }
-  }, []);
+  }, [])
   if (!plot || !config) {
     return <div style={{ opacity: 0.3 }}>{t('In configuration')}...</div>;
   }
-  if (!field?.data?.loaded) {
+  if (field?.data?.loading !== false) {
     return <Spin />;
   }
   return (
     <div>
       {field.title && <h2>{field.title}</h2>}
-      <G2PlotRenderer plot={plots[plot]} config={config} />
+      <G2PlotRenderer
+        plot={plots[plot]}
+        config={{
+          ...config,
+          data: Array.isArray(config?.data) ? config.data : [],
+        }}
+      />
     </div>
   );
 });

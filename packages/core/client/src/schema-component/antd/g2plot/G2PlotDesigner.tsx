@@ -1,6 +1,7 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../../api-client';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 
@@ -29,9 +30,9 @@ export const G2PlotDesigner = () => {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const compile = useCompile();
+  const api = useAPIClient();
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.BlockTitleItem />
       <SchemaSettings.ModalItem
         title={t('Edit chart')}
         schema={
@@ -68,15 +69,30 @@ export const G2PlotDesigner = () => {
             },
           } as ISchema
         }
-        onSubmit={({ plot, title, config }) => {
+        // {{ fetchData(api, { url: 'chartData:get' }) }}
+        onSubmit={async ({ plot, title, config }) => {
           field.title = compile(title);
           field.componentProps.plot = plot;
-          field.componentProps.config = compile(JSON.parse(config));
+          const conf = compile(JSON.parse(config));
+          const fn = conf?.data;
+          if (typeof fn === 'function') {
+            const result = fn.bind({ api })();
+            if (result?.then) {
+              result.then(data => {
+                if (Array.isArray(data)) {
+                  field.componentProps.config.data = data;
+                }
+              });
+            }
+          } else {
+            field.componentProps.config = conf;
+          }
           fieldSchema.title = title;
           fieldSchema['x-component-props']['plot'] = plot;
           fieldSchema['x-component-props']['config'] = JSON.parse(config);
           dn.emit('patch', {
             schema: {
+              title,
               'x-uid': fieldSchema['x-uid'],
               'x-component-props': fieldSchema['x-component-props'],
             },

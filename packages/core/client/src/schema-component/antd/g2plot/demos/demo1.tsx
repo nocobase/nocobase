@@ -47,9 +47,11 @@ mock.onGet('/test').reply(200, {
   ],
 });
 
-const fetchData = async (api: APIClient, options) => {
-  const response = await api.request(options);
-  return response?.data?.data;
+const requestChartData = (options) => {
+  return async function (this: { api: APIClient }) {
+    const response = await this.api.request(options);
+    return response?.data?.data;
+  };
 };
 
 const schema = {
@@ -61,7 +63,7 @@ const schema = {
   'x-component-props': {
     plot: 'Line',
     config: {
-      data: '{{ fetchData(api, { url: "/test" }) }}',
+      data: '{{ requestChartData({ url: "/test" }) }}',
       padding: 'auto',
       xField: 'Date',
       yField: 'scales',
@@ -77,7 +79,7 @@ export default () => {
   return (
     <APIClientProvider apiClient={api}>
       <SchemaComponentProvider>
-        <SchemaComponent schema={schema} components={{ G2Plot }} scope={{ api, fetchData }} />
+        <SchemaComponent schema={schema} components={{ G2Plot }} scope={{ requestChartData }} />
       </SchemaComponentProvider>
     </APIClientProvider>
   );
