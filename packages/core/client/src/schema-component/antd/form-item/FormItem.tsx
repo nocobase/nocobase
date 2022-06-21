@@ -194,7 +194,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {!isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'm2o', 'o2m'].includes(collectionField?.interface) && (
+      {!isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Toggles the subfield mode')}
           options={
