@@ -49,7 +49,7 @@ type Calculation = SingleCalculation | GroupCalculation;
 //     ]
 //   }
 // }
-function logicCalculate(calculation, input, execution) {
+function logicCalculate(calculation, input, processor) {
   if (!calculation) {
     return true;
   }
@@ -58,9 +58,9 @@ function logicCalculate(calculation, input, execution) {
   let result;
   if (group) {
     const method = group.type === 'and' ? 'every' : 'some';
-    result = group.calculations[method](item => logicCalculate(item, input, execution));
+    result = group.calculations[method](item => logicCalculate(item, input, processor));
   } else {
-    const args = calculation.operands.map(operand => calculate(operand, input, execution));
+    const args = calculation.operands.map(operand => calculate(operand, input, processor));
     const fn = calculators.get(calculation.calculator);
     if (!fn) {
       throw new Error(`no calculator function registered for "${calculation.calculator}"`);
@@ -73,11 +73,11 @@ function logicCalculate(calculation, input, execution) {
 
 
 export default {
-  async run(this, prevJob, execution) {
-    // TODO(optimize): loading of jobs could be reduced and turned into incrementally in execution
-    // const jobs = await execution.getJobs();
+  async run(this, prevJob, processor) {
+    // TODO(optimize): loading of jobs could be reduced and turned into incrementally in processor
+    // const jobs = await processor.getJobs();
     const { calculation, rejectOnFalse } = this.config || {};
-    const result = logicCalculate(calculation, prevJob, execution);
+    const result = logicCalculate(calculation, prevJob, processor);
 
     if (!result && rejectOnFalse) {
       return {
@@ -94,25 +94,25 @@ export default {
       upstreamId: prevJob && prevJob.id || null
     };
 
-    const branchNode = execution.nodes
+    const branchNode = processor.nodes
       .find(item => item.upstream === this && Boolean(item.branchIndex) === result);
 
     if (!branchNode) {
       return job;
     }
 
-    const savedJob = await execution.saveJob(job);
+    const savedJob = await processor.saveJob(job);
 
-    return execution.run(branchNode, savedJob);
+    return processor.run(branchNode, savedJob);
   },
 
-  async resume(this, branchJob, execution) {
+  async resume(this, branchJob, processor) {
     if (branchJob.status === JOB_STATUS.RESOLVED) {
       // return to continue this.downstream
       return branchJob;
     }
 
     // pass control to upper scope by ending current scope
-    return execution.end(this, branchJob);
+    return processor.end(this, branchJob);
   }
 };

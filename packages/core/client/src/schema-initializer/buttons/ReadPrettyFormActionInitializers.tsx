@@ -124,6 +124,7 @@ export const ReadPrettyFormActionInitializers = {
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               requestSettings: {},
+              skipValidator: false,
               onSuccess: {
                 manualClose: false,
                 redirecting: false,

@@ -1,5 +1,5 @@
 import { Model } from "@nocobase/database";
-import { Trigger } from ".";
+import Plugin, { Trigger } from "..";
 import WorkflowModel from "../models/Workflow";
 
 export interface CollectionChangeTriggerConfig {
@@ -27,8 +27,8 @@ function getHookId(workflow, type) {
 }
 
 // async function, should return promise
-async function handler(this: WorkflowModel, data: Model, options) {
-  const { collection, condition, changed } = this.config;
+async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: Model, options) {
+  const { collection, condition, changed } = workflow.config;
   // NOTE: if no configured fields changed, do not trigger
   if (changed && changed.length && changed.every(name => !data.changed(name))) {
     // TODO: temp comment out
@@ -38,7 +38,7 @@ async function handler(this: WorkflowModel, data: Model, options) {
   if (condition && condition.$and?.length) {
     // TODO: change to map filter format to calculation format
     // const calculation = toCalculation(condition);
-    const { repository, model } = (<typeof WorkflowModel>this.constructor).database.getCollection(collection);
+    const { repository, model } = (<typeof Model>data.constructor).database.getCollection(collection);
     const { transaction } = options;
     const count = await repository.count({
       filter: {
@@ -55,21 +55,18 @@ async function handler(this: WorkflowModel, data: Model, options) {
     }
   }
 
-  return this.trigger({ data: data.get() }, options);
+  return this.plugin.trigger(workflow, { data: data.get() }, {
+    transaction: options.transaction
+  });
 }
 
-export default class CollectionTrigger implements Trigger {
-  db;
-
+export default class CollectionTrigger extends Trigger {
   events = new Map();
 
-  constructor({ app }) {
-    this.db = app.db;
-  }
-
   on(workflow: WorkflowModel) {
+    const { db } = this.plugin.app;
     const { collection, mode } = workflow.config;
-    const Collection = this.db.getCollection(collection);
+    const Collection = db.getCollection(collection);
     if (!Collection) {
       return;
     }
@@ -79,14 +76,14 @@ export default class CollectionTrigger implements Trigger {
       const name = getHookId(workflow, event);
       if (mode & key) {
         if (!this.events.has(name)) {
-          const listener = handler.bind(workflow);
+          const listener = handler.bind(this, workflow);
           this.events.set(name, listener);
-          this.db.on(event, listener);
+          db.on(event, listener);
         }
       } else {
         const listener = this.events.get(name);
         if (listener) {
-          this.db.off(event, listener);
+          db.off(event, listener);
           this.events.delete(name);
         }
       }
@@ -94,8 +91,9 @@ export default class CollectionTrigger implements Trigger {
   }
 
   off(workflow: WorkflowModel) {
+    const { db } = this.plugin.app;
     const { collection, mode } = workflow.config;
-    const Collection = this.db.getCollection(collection);
+    const Collection = db.getCollection(collection);
     if (!Collection) {
       return;
     }
@@ -105,7 +103,7 @@ export default class CollectionTrigger implements Trigger {
       if (mode & key) {
         const listener = this.events.get(name);
         if (listener) {
-          this.db.off(event, listener);
+          db.off(event, listener);
           this.events.delete(name);
         }
       }

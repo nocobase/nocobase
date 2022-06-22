@@ -1,5 +1,6 @@
+import { Field } from '@formily/core';
 import { ISchema } from '@formily/react';
-
+import { uid } from '@formily/shared';
 export * as operators from './operators';
 
 export const type: ISchema = {
@@ -29,7 +30,7 @@ export const type: ISchema = {
   ],
 };
 
-export const relationshipType: ISchema ={
+export const relationshipType: ISchema = {
   type: 'string',
   title: '{{t("Relationship type")}}',
   required: true,
@@ -127,12 +128,18 @@ export const dataSource: ISchema = {
         type: 'void',
         'x-component': 'ArrayTable.Column',
         'x-component-props': { title: '{{t("Option value")}}' },
-        'x-hidden': true,
+        // 'x-hidden': true,
         properties: {
           value: {
             type: 'string',
+            required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
+            'x-reactions': (field: Field) => {
+              if (!field.initialValue) {
+                field.initialValue = uid();
+              }
+            },
           },
         },
       },
@@ -143,6 +150,7 @@ export const dataSource: ISchema = {
         properties: {
           label: {
             type: 'string',
+            required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
           },

@@ -1,8 +1,7 @@
 import path from 'path';
 import { MockServer, mockServer } from '@nocobase/test';
 
-import plugin from '../server';
-import instructions from '../instructions';
+import Plugin from '..';
 import { JOB_STATUS } from '../constants';
 import calculators from '../calculators';
 
@@ -15,40 +14,35 @@ export function sleep(ms: number) {
 export async function getApp(options = {}): Promise<MockServer> {
   const app = mockServer(options);
 
-  app.plugin(plugin);
-
-  // for test only
-  if (!instructions.get('echo')) {
-    instructions.register('echo', {
-      run(this, { result }, execution) {
-        return {
-          status: JOB_STATUS.RESOLVED,
-          result
-        };
-      }
-    });
-  }
-
-  if (!instructions.get('error')) {
-    instructions.register('error', {
-      run(this, input, execution) {
-        throw new Error('definite error');
-      }
-    });
-  }
-
-  if (!instructions.get('prompt->error')) {
-    instructions.register('prompt->error', {
-      run(this, input, execution) {
-        return {
-          status: JOB_STATUS.PENDING
-        };
+  app.plugin(Plugin, {
+    instructions: {
+      echo: {
+        run({ result }, execution) {
+          return {
+            status: JOB_STATUS.RESOLVED,
+            result
+          };
+        }
       },
-      resume(this, input, execution) {
-        throw new Error('input failed');
+
+      error: {
+        run(input, execution) {
+          throw new Error('definite error');
+        }
+      },
+
+      'prompt->error': {
+        run(this, input, execution) {
+          return {
+            status: JOB_STATUS.PENDING
+          };
+        },
+        resume(this, input, execution) {
+          throw new Error('input failed');
+        }
       }
-    });
-  }
+    }
+  });
 
   if (!calculators.get('no1')) {
     calculators.register('no1', () => 1);

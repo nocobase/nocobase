@@ -1,6 +1,8 @@
+import { Schema as SchemaCompiler } from '@formily/json-schema';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useFormBlockContext } from '@nocobase/client';
 import { message, Modal } from 'antd';
+import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useAPIClient } from '../../api-client';
@@ -20,6 +22,13 @@ export const usePickActionProps = () => {
     },
   };
 };
+
+function renderTemplate(str: string, data: any) {
+  const re = /\{\{\s*((\w+\.?)+)\s*\}\}/g;
+  return str.replace(re, function (_, key) {
+    return get(data, key) || '';
+  });
+}
 
 function isURL(string) {
   let url;
@@ -215,14 +224,21 @@ export const useCustomizeRequestActionProps = () => {
   const compile = useCompile();
   const form = useForm();
   const { fields, getField } = useCollection();
-  const { field, resource } = useBlockRequestContext();
+  const { field, resource, __parent, service } = useBlockRequestContext();
+  const currentRecord = useRecord();
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
+  const actionField = useField();
+  const { visible, setVisible } = useActionContext();
+
   return {
     async onClick() {
       const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      const xAction = actionSchema?.['x-action'];
       if (!requestSettings['url']) {
         return;
       }
-      if (skipValidator === false) {
+      if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();
       }
 
@@ -230,36 +246,53 @@ export const useCustomizeRequestActionProps = () => {
       const params = requestSettings['params'] ? JSON.parse(requestSettings['params']) : {};
       const data = requestSettings['data'] ? JSON.parse(requestSettings['data']) : {};
       const methods = ['POST', 'PUT', 'PATCH'];
-      if (actionSchema['x-action'] === 'customize:form:request' && methods.includes(requestSettings['method'])) {
+      if (xAction === 'customize:form:request' && methods.includes(requestSettings['method'])) {
         const fieldNames = fields.map((field) => field.name);
         const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
         Object.assign(data, values);
       }
-      await apiClient.request({
-        ...requestSettings,
-        headers,
-        params,
-        data,
-      });
-
-      if (!onSuccess?.successMessage) {
-        return;
-      }
-      if (onSuccess?.manualClose) {
-        Modal.success({
-          title: compile(onSuccess?.successMessage),
-          onOk: async () => {
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
-              } else {
-                history.push(onSuccess.redirectTo);
-              }
-            }
-          },
+      const requestBody = {
+        url: renderTemplate(requestSettings['url'], { currentRecord, currentUser }),
+        method: requestSettings['method'],
+        headers: SchemaCompiler.compile(headers, { currentRecord, currentUser }),
+        params: SchemaCompiler.compile(params, { currentRecord, currentUser }),
+        data: SchemaCompiler.compile(data, { currentRecord, currentUser }),
+      };
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
+      try {
+        await apiClient.request({
+          ...requestBody,
         });
-      } else {
-        message.success(compile(onSuccess?.successMessage));
+        actionField.data.loading = false;
+        if (!(resource instanceof TableFieldResource)) {
+          __parent?.service?.refresh?.();
+        }
+        service?.refresh?.();
+        if (xAction === 'customize:form:request') {
+          setVisible?.(false);
+        }
+        if (!onSuccess?.successMessage) {
+          return;
+        }
+        if (onSuccess?.manualClose) {
+          Modal.success({
+            title: compile(onSuccess?.successMessage),
+            onOk: async () => {
+              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+                if (isURL(onSuccess.redirectTo)) {
+                  window.location.href = onSuccess.redirectTo;
+                } else {
+                  history.push(onSuccess.redirectTo);
+                }
+              }
+            },
+          });
+        } else {
+          message.success(compile(onSuccess?.successMessage));
+        }
+      } finally {
+        actionField.data.loading = false;
       }
     },
   };
@@ -299,10 +332,10 @@ export const useUpdateActionProps = () => {
           updateAssociationValues
         });
         actionField.data.loading = false;
-        __parent?.service?.refresh?.();
         if (!(resource instanceof TableFieldResource)) {
           __parent?.__parent?.service?.refresh?.();
         }
+        __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
           return;

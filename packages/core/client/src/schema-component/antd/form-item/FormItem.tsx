@@ -2,16 +2,15 @@ import { css } from '@emotion/css';
 import { FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
+import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
-import { uid } from '@formily/shared';
-import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
-
 
 const gridRowColWrap = (schema: ISchema) => {
   return {
@@ -34,9 +33,11 @@ export const FormItem: any = (props) => {
   return (
     <BlockItem className={'nb-form-item'}>
       <Item
-       className={`${css`& .ant-space{
-        flex-wrap:wrap;
-      }`}`}
+        className={`${css`
+          & .ant-space {
+            flex-wrap: wrap;
+          }
+        `}`}
         {...props}
         extra={
           field.description ? (
@@ -56,6 +57,7 @@ FormItem.Designer = (props) => {
   const { getCollectionFields, getCollection, getInterface } = useCollectionManager();
   const { getField } = useCollection();
   const tk = useFilterByTk();
+  const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -79,10 +81,18 @@ FormItem.Designer = (props) => {
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+  let readOnlyMode = 'editable';
+  if (fieldSchema['x-disabled'] === true) {
+    readOnlyMode = 'readonly';
+  }
+  if (fieldSchema['x-read-pretty'] === true) {
+    readOnlyMode = 'read-pretty';
+  }
   return (
     <GeneralSchemaDesigner>
       {collectionField && (
         <SchemaSettings.ModalItem
+          key="edit-field-title"
           title={t('Edit field title')}
           schema={
             {
@@ -117,6 +127,7 @@ FormItem.Designer = (props) => {
       )}
       {!field.readPretty && (
         <SchemaSettings.ModalItem
+          key="edit-description"
           title={t('Edit description')}
           schema={
             {
@@ -148,6 +159,7 @@ FormItem.Designer = (props) => {
       )}
       {field.readPretty && (
         <SchemaSettings.ModalItem
+          key="edit-tooltip"
           title={t('Edit tooltip')}
           schema={
             {
@@ -179,6 +191,7 @@ FormItem.Designer = (props) => {
       )}
       {!field.readPretty && (
         <SchemaSettings.SwitchItem
+          key="required"
           title={t('Required')}
           checked={field.required}
           onChange={(required) => {
@@ -200,23 +213,34 @@ FormItem.Designer = (props) => {
           title={t('Toggles the subfield mode')}
           options={
             collectionField?.interface === 'o2m'
-            ? [{ label: t('Selector mode'), value: 'CollectionField' }, { label: t('Subtable mode'), value: 'TableField' }]
-            : [{ label: t('Selector mode'), value: 'CollectionField' }, { label: t('Subform mode'), value: 'FormField' }]
+              ? [
+                  { label: t('Selector mode'), value: 'CollectionField' },
+                  { label: t('Subtable mode'), value: 'TableField' },
+                ]
+              : [
+                  { label: t('Selector mode'), value: 'CollectionField' },
+                  { label: t('Subform mode'), value: 'FormField' },
+                ]
           }
           value={fieldSchema['x-component']}
           onChange={(v) => {
             const schema: ISchema = {
               name: collectionField.name,
               title: compile(collectionField.uiSchema?.title),
-              "x-decorator": "FormItem",
-              "x-designer": "FormItem.Designer",
-              "x-component": v,
-              "x-component-props": {
-                field: collectionField
-              }
-            }
+              'x-decorator': 'FormItem',
+              'x-designer': 'FormItem.Designer',
+              'x-component': v,
+              'x-component-props': {
+                field: collectionField,
+              },
+            };
 
-            interfaceConfig?.schemaInitialize?.(schema, { field: collectionField, block: 'Form', readPretty: field.readPretty, action: tk ? 'get' : null })
+            interfaceConfig?.schemaInitialize?.(schema, {
+              field: collectionField,
+              block: 'Form',
+              readPretty: field.readPretty,
+              action: tk ? 'get' : null,
+            });
 
             insertAdjacent('beforeBegin', gridRowColWrap(schema), {
               onSuccess: () => {
@@ -226,13 +250,67 @@ FormItem.Designer = (props) => {
                     'x-component': 'Grid',
                   },
                 });
-              }
+              },
             });
           }}
         />
       )}
-      {collectionField?.target && fieldSchema['x-component'] === 'CollectionField' && (
+      {!form.readPretty && collectionField.interface !== 'o2m' && (
         <SchemaSettings.SelectItem
+          key="pattern"
+          title={t('Pattern')}
+          options={[
+            { label: t('Editable'), value: 'editable' },
+            { label: t('Readonly'), value: 'readonly' },
+            { label: t('Easy-reading'), value: 'read-pretty' },
+          ]}
+          value={readOnlyMode}
+          onChange={(v) => {
+            console.log('v', v);
+            const schema: ISchema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+
+            switch (v) {
+              case 'readonly': {
+                fieldSchema['x-read-pretty'] = false;
+                fieldSchema['x-disabled'] = true;
+                schema['x-read-pretty'] = false;
+                schema['x-disabled'] = true;
+                field.readPretty = false;
+                field.disabled = true;
+                break;
+              }
+              case 'read-pretty': {
+                fieldSchema['x-read-pretty'] = true;
+                fieldSchema['x-disabled'] = false;
+                schema['x-read-pretty'] = true;
+                schema['x-disabled'] = false;
+                field.readPretty = true;
+                // field.disabled = true;
+                break;
+              }
+              default: {
+                fieldSchema['x-read-pretty'] = false;
+                fieldSchema['x-disabled'] = false;
+                schema['x-read-pretty'] = false;
+                schema['x-disabled'] = false;
+                field.readPretty = false;
+                field.disabled = false;
+                break;
+              }
+            }
+            dn.emit('patch', {
+              schema,
+            });
+
+            dn.refresh();
+          }}
+        />
+      )}
+      {collectionField?.target && (
+        <SchemaSettings.SelectItem
+          key="title-field"
           title={t('Title field')}
           options={options}
           value={field?.componentProps?.fieldNames?.label}
@@ -261,9 +339,10 @@ FormItem.Designer = (props) => {
       )}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
+        key="remove"
         removeParentsIfNoChildren
         confirm={{
-          title: t('Delete field')
+          title: t('Delete field'),
         }}
         breakRemoveOn={{
           'x-component': 'Grid',

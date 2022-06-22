@@ -520,6 +520,9 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
           onClick={(e) => {
             e.stopPropagation();
           }}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+          }}
         >
           <Modal
             width={'50%'}

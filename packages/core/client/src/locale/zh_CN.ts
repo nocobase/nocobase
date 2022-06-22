@@ -183,6 +183,11 @@ export default {
   "Subform mode": "子表单模式",
   "Edit block title": "编辑区块标题",
   "Block title": "区块标题",
+  "Pattern": "模式",
+  "Editable": "可编辑",
+  "Readonly": "只读（禁止编辑）",
+  "Easy-reading": "只读（阅读模式）",
+  "Sortable": "可排序",
   "Add filter": "添加筛选条件",
   "Add filter group": "添加筛选分组",
   "is": "等于",
@@ -255,7 +260,7 @@ export default {
 
   "Options": "选项",
   "Option value": "选项值",
-  "Option label": "选项",
+  "Option label": "选项标签",
   "Color": "颜色",
   "Add option": "添加选项",
   "Related collection": "关系表",
@@ -604,4 +609,5 @@ export default {
   "One to one (has one)": "一对一（has one）",
   "One to one (belongs to)": "一对一（belongs to）",
   "Use the same time zone (GMT) for all users": "所有用户使用同一时区 (格林尼治标准时间)",
+  "Province/city/area name": "省市区名称",
 }

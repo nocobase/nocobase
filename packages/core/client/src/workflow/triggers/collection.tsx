@@ -9,6 +9,7 @@ import { useFlowContext } from '../WorkflowCanvas';
 import { BaseTypeSet } from '../calculators';
 import { collection, filter } from '../schemas/collection';
 import { useTranslation } from 'react-i18next';
+import { css } from '@emotion/css';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
@@ -19,6 +20,9 @@ const FieldsSelect = observer((props) => {
   return (
     <Select
       {...props}
+      className={css`
+        min-width: 6em;
+      `}
     >
       {fields
         .filter(field => (
@@ -49,7 +53,8 @@ export default {
           { value: 2, label: '{{t("After record updated")}}' },
           { value: 3, label: '{{t("After record added or updated")}}' },
           { value: 4, label: '{{t("After record deleted")}}' }
-        ]
+        ],
+        placeholder: '{{t("Trigger on")}}'
       },
       required: true
     },
@@ -62,6 +67,7 @@ export default {
       'x-component': 'FieldsSelect',
       'x-component-props': {
         mode: 'multiple',
+        placeholder: '{{t("Select Field")}}'
       }
     },
     'config.condition': {

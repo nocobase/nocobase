@@ -81,7 +81,9 @@ export const useTableBlockContext = () => {
 
 export const useTableBlockProps = () => {
   const field = useField<ArrayField>();
+  const fieldSchema = useFieldSchema();
   const ctx = useTableBlockContext();
+  const globalSort = fieldSchema.parent?.['x-decorator-props']?.['params']?.['sort'];
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
@@ -116,8 +118,10 @@ export const useTableBlockProps = () => {
       });
       ctx.service.refresh();
     },
-    onChange({ current, pageSize }) {
-      ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize });
+    onChange({ current, pageSize }, filters, sorter) {
+      let sort = sorter.order ? (sorter.order ===  `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort || null;
+
+      ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
   };
 };

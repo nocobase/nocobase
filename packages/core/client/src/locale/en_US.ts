@@ -543,4 +543,5 @@ export default {
   "Use the same time zone (GMT) for all users": "Use the same time zone (GMT) for all users",
   "Block title": "Block title",
   "Edit block title": "Edit block title",
+  "Province/city/area name": "Province/city/area name",
 }

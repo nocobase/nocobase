@@ -307,8 +307,12 @@ export const useRecordCollectionDataSourceItems = (componentName, item = null, c
   const { t } = useTranslation();
   const collection = useCollection();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
-  const templates = getTemplatesByCollection(collectionName || collection.name, resourceName || collectionName || collection.name).filter((template) => {
+  const templates = getTemplatesByCollection(collectionName || collection.name)
+  .filter((template) => {
     return componentName && template.componentName === componentName;
+  })
+  .filter((template) => {
+    return ['FormItem', 'ReadPrettyFormItem'].includes(componentName) || (template.resourceName === resourceName);
   });
   if (!templates.length) {
     return [];
@@ -332,7 +336,7 @@ export const useRecordCollectionDataSourceItems = (componentName, item = null, c
       title: t('Duplicate template'),
       children: templates.map((template) => {
         const templateName =
-          template?.componentName === 'ReadPrettyFormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+          ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName) ? `${template?.name} ${t('(Fields only)')}` : template?.name;
         return {
           type: 'item',
           mode: 'copy',
@@ -350,7 +354,7 @@ export const useRecordCollectionDataSourceItems = (componentName, item = null, c
       title: t('Reference template'),
       children: templates.map((template) => {
         const templateName =
-          template?.componentName === 'ReadPrettyFormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+          ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName) ? `${template?.name} ${t('(Fields only)')}` : template?.name;
         return {
           type: 'item',
           mode: 'reference',
@@ -376,8 +380,8 @@ export const useCollectionDataSourceItems = (componentName) => {
       children: collections
         ?.filter((item) => !item.inherit)
         ?.map((item, index) => {
-          const templates = getTemplatesByCollection(item.name, item.name).filter((template) => {
-            return componentName && template.componentName === componentName;
+          const templates = getTemplatesByCollection(item.name).filter((template) => {
+            return componentName && template.componentName === componentName && (!template.resourceName || template.resourceName === item.name);
           });
           if (!templates.length) {
             return {

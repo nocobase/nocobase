@@ -2,7 +2,6 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'executions',
-  model: 'ExecutionModel',
   fields: [
     {
       type: 'belongsTo',

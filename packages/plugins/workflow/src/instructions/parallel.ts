@@ -1,7 +1,7 @@
-import { JOB_STATUS } from "../constants";
-import ExecutionModel from "../models/Execution";
 import FlowNodeModel from "../models/FlowNode";
 import JobModel from "../models/Job";
+import Processor from "../Processor";
+import { JOB_STATUS } from "../constants";
 
 export const PARALLEL_MODE = {
   ALL: 'all',
@@ -40,12 +40,12 @@ const StatusGetters = {
 };
 
 export default {
-  async run(this: FlowNodeModel, prevJob: JobModel, execution: ExecutionModel) {
-    const branches = execution.nodes
+  async run(this: FlowNodeModel, prevJob: JobModel, processor: Processor) {
+    const branches = processor.nodes
       .filter(item => item.upstream === this && item.branchIndex !== null)
       .sort((a, b) => a.branchIndex - b.branchIndex);
 
-    const job = await execution.saveJob({
+    const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: Array(branches.length).fill(null),
       nodeId: this.id,
@@ -56,14 +56,14 @@ export default {
     // use `reduce` but not `Promise.all` here to avoid racing manupulating db.
     // for users, this is almost equivalent to `Promise.all`,
     // because of the delay is not significant sensible.
-    // another better aspect of this is, it could handle sequenced branches in future.
-    await branches.reduce((promise: Promise<any>, branch) => promise.then(() => execution.run(branch, job)), Promise.resolve());
+    // another benifit of this is, it could handle sequenced branches in future.
+    await branches.reduce((promise: Promise<any>, branch) => promise.then(() => processor.run(branch, job)), Promise.resolve());
 
-    return execution.end(this, job);
+    return processor.end(this, job);
   },
 
-  async resume(this, branchJob, execution: ExecutionModel) {
-    const job = execution.findBranchParentJob(branchJob, this);
+  async resume(this, branchJob, processor: Processor) {
+    const job = processor.findBranchParentJob(branchJob, this);
 
     const { result, status } = job;
     // if parallel has been done (resolved / rejected), do not care newly executed branch jobs.
@@ -72,8 +72,8 @@ export default {
     }
 
     // find the index of the node which start the branch
-    const jobNode = execution.nodesMap.get(branchJob.nodeId);
-    const { branchIndex } = execution.findBranchStartNode(jobNode);
+    const jobNode = processor.nodesMap.get(branchJob.nodeId);
+    const { branchIndex } = processor.findBranchStartNode(jobNode);
     const { mode = PARALLEL_MODE.ALL } = this.config || {};
 
     const newResult = [...result.slice(0, branchIndex), branchJob.get(), ...result.slice(branchIndex + 1)];
@@ -83,8 +83,8 @@ export default {
     });
 
     if (job.status === JOB_STATUS.PENDING) {
-      await job.save({ transaction: execution.tx });
-      return execution.end(this, job);
+      await job.save({ transaction: processor.transaction });
+      return processor.end(this, job);
     }
 
     return job;

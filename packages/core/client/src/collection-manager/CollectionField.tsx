@@ -22,6 +22,7 @@ const InternalField: React.FC = (props) => {
     }
   };
   const ctx = useFormBlockContext();
+  
   useEffect(() => {
     if (ctx?.field) {
       ctx.field.added = ctx.field.added || new Set();
@@ -40,7 +41,12 @@ const InternalField: React.FC = (props) => {
     if (!field.validator && uiSchema['x-validator']) {
       field.validator = uiSchema['x-validator'];
     }
-    field.readPretty = uiSchema['x-read-pretty'];
+    if (fieldSchema['x-disabled'] === true) {
+      field.disabled = true;
+    }
+    if (fieldSchema['x-read-pretty'] === true) {
+      field.readPretty = true;  
+    }
     setRequired();
     // @ts-ignore
     field.dataSource = uiSchema.enum;
