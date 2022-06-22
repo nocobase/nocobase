@@ -14,35 +14,52 @@ import { EXECUTION_STATUS } from './constants';
 
 
 
-async function setCurrent(instance: WorkflowModel, options) {
-  const updates: { enabled?: boolean, current?: boolean } = {};
-
-  if (!instance.changed('enabled') || !instance.enabled) {
-    return;
-  }
-
-  instance.set('current', true);
-  updates.enabled = false;
-
-  // NOTE: set to `null` but not `false` will not violate the unique index
-  updates.current = null;
-  const previous = await (<typeof WorkflowModel>instance.constructor).findOne({
-    where: {
-      key: instance.key,
-      current: true
-    }
-  });
-
-  if (previous) {
-    await previous.update(updates, {
-      transaction: options.transaction
-    });
-  }
-}
-
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
+
+  onBeforeSave = async (instance: WorkflowModel, options) => {
+    const Model = <typeof WorkflowModel>instance.constructor;
+
+    if (instance.enabled) {
+      instance.set('current', true);
+    } else if (!instance.current) {
+      const count = await Model.count({
+        where: {
+          key: instance.key
+        },
+        transaction: options.transaction
+      });
+      if (!count) {
+        instance.set('current', true);
+      }
+    }
+
+    if (!instance.changed('enabled') || !instance.enabled) {
+      return;
+    }
+
+    const previous = await Model.findOne({
+      where: {
+        key: instance.key,
+        current: true,
+        id: {
+          [Op.ne]: instance.id
+        }
+      },
+      transaction: options.transaction
+    });
+
+    if (previous) {
+      // NOTE: set to `null` but not `false` will not violate the unique index
+      await previous.update({ enabled: false, current: null }, {
+        transaction: options.transaction,
+        hooks: false
+      });
+
+      this.toggle(previous, false);
+    }
+  };
 
   getName(): string {
     return this.getPackageName(__dirname);
@@ -59,7 +76,7 @@ export default class WorkflowPlugin extends Plugin {
     initTriggers(this, options.triggers);
     initInstructions(this, options.instructions);
 
-    db.on('workflows.beforeSave', setCurrent);
+    db.on('workflows.beforeSave', this.onBeforeSave);
     db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));
     db.on('workflows.afterDestroy', (model: WorkflowModel) => this.toggle(model, false));
 

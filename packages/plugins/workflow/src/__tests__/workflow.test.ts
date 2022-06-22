@@ -21,10 +21,60 @@ describe('workflow > workflow', () => {
     PostRepo = db.getCollection('posts').repository;
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
-  describe('toggle', () => {
-    it('toggle after update', async () => {
+  describe('create', () => {
+    it('create with enabled', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      expect(workflow.current).toBe(true);
+    });
+
+    it('create with disabled', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      expect(workflow.current).toBe(true);
+    });
+  });
+
+  describe('update', () => {
+    it('toggle on', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: false,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+      expect(workflow.current).toBe(true);
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const count = await workflow.countExecutions();
+      expect(count).toBe(0);
+
+      await workflow.update({ enabled: true });
+      expect(workflow.current).toBe(true);
+
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+    });
+
+    it('toggle off', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'collection',
@@ -35,34 +85,79 @@ describe('workflow > workflow', () => {
       });
       expect(workflow.current).toBe(true);
       const p1 = await PostRepo.create({ values: { title: 't1' } });
-      const executions1 = await workflow.getExecutions();
-      expect(executions1.length).toBe(1);
-
-      const w = await WorkflowModel.findOne({
-        where: {
-          current: true
-        }
-      });
-      expect(w).not.toBeNull();
-      expect(w.current).toBe(true);
+      const c1 = await workflow.countExecutions();
+      expect(c1).toBe(1);
 
       await workflow.update({ enabled: false });
+      expect(workflow.current).toBe(true);
+
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+      const c2 = await workflow.countExecutions();
+      expect(c2).toBe(1);
+    });
 
-      const executions2 = await workflow.getExecutions();
-      expect(executions2.length).toBe(1);
-
-      const workflows = await WorkflowModel.findAll({
-        where: {
-          current: true
+    it('toggle off then on', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
         }
       });
-      expect(workflows.length).toBe(1);
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const c1 = await workflow.countExecutions();
+      expect(c1).toBe(1);
+
+      await workflow.update({
+        enabled: false
+      });
+      expect(workflow.current).toBe(true);
+
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+      const c2 = await workflow.countExecutions();
+      expect(c2).toBe(1);
+
+      await workflow.update({
+        enabled: true
+      });
+      expect(workflow.current).toBe(true);
+
+      const p3 = await PostRepo.create({ values: { title: 't3' } });
+      const c3 = await workflow.countExecutions();
+      expect(c3).toBe(2);
+    });
+
+    it('update config', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const c1 = await workflow.countExecutions();
+      expect(c1).toBe(1);
+
+      await workflow.update({
+        config: {
+          mode: 1,
+          collection: 'tags'
+        }
+      });
+
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+      const c2 = await workflow.countExecutions();
+      expect(c2).toBe(1);
     });
   });
 
   describe('revisions', () => {
-    it('executed count', async () => {
+    it('create revision', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'collection',
@@ -81,6 +176,8 @@ describe('workflow > workflow', () => {
       const { data: w2 } = body;
       expect(w2.config).toMatchObject(w1.config);
       expect(w2.key).toBe(w1.key);
+      expect(w2.current).toBeFalsy();
+      expect(w2.enabled).toBe(false);
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
