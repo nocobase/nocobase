@@ -5,6 +5,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
+import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { BlockItem } from '../block-item';
@@ -36,6 +37,7 @@ export const FormItem: any = (props) => {
 FormItem.Designer = () => {
   const { getCollectionFields } = useCollectionManager();
   const { getField } = useCollection();
+  const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -57,16 +59,17 @@ FormItem.Designer = () => {
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
   let readOnlyMode = 'editable';
+  if (fieldSchema['x-disabled'] === true) {
+    readOnlyMode = 'readonly';
+  }
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
-  }
-  if (fieldSchema['x-component-props']?.['readOnly'] === true) {
-    readOnlyMode = 'readonly';
   }
   return (
     <GeneralSchemaDesigner>
       {collectionField && (
         <SchemaSettings.ModalItem
+          key="edit-field-title"
           title={t('Edit field title')}
           schema={
             {
@@ -101,6 +104,7 @@ FormItem.Designer = () => {
       )}
       {!field.readPretty && (
         <SchemaSettings.ModalItem
+          key="edit-description"
           title={t('Edit description')}
           schema={
             {
@@ -132,6 +136,7 @@ FormItem.Designer = () => {
       )}
       {field.readPretty && (
         <SchemaSettings.ModalItem
+          key="edit-tooltip"
           title={t('Edit tooltip')}
           schema={
             {
@@ -163,6 +168,7 @@ FormItem.Designer = () => {
       )}
       {!field.readPretty && (
         <SchemaSettings.SwitchItem
+          key="required"
           title={t('Required')}
           checked={field.required}
           onChange={(required) => {
@@ -179,53 +185,46 @@ FormItem.Designer = () => {
           }}
         />
       )}
-      {!field.readPretty && (
+      {!form.readPretty && collectionField.interface !== 'o2m' && (
         <SchemaSettings.SelectItem
+        key="pattern"
         title={t('Pattern')}
         options={
           [{ label: t('Editable'), value: 'editable' }, { label: t('Readonly'), value: 'readonly' }, { label: t('Easy-reading'), value: 'read-pretty' }]
         }
         value={readOnlyMode}
         onChange={(v) => {
-          const schema = {
+          console.log('v', v);
+          const schema: ISchema = {
             ['x-uid']: fieldSchema['x-uid'],
           };
 
           switch(v) {
             case 'readonly': {
               fieldSchema['x-read-pretty'] = false;  
+              fieldSchema['x-disabled'] = true;
               schema['x-read-pretty'] = false;
-              fieldSchema['x-component-props'] = {
-                ...fieldSchema['x-component-props'],
-                readOnly: true,
-              }
-              schema['x-component-props'] = fieldSchema['x-component-props'];
+              schema['x-disabled'] = true;
               field.readPretty = false;
-              field.componentProps.readOnly = true;
+              field.disabled = true;
               break;
             }
             case 'read-pretty': {
-              fieldSchema['x-read-pretty'] = true;
+              fieldSchema['x-read-pretty'] = true;  
+              fieldSchema['x-disabled'] = false;
               schema['x-read-pretty'] = true;
-              fieldSchema['x-component-props'] = {
-                ...fieldSchema['x-component-props'],
-                readOnly: false,
-              }
-              schema['x-component-props'] = fieldSchema['x-component-props'];
+              schema['x-disabled'] = false;
               field.readPretty = true;
-              field.componentProps.readOnly = false;
+              // field.disabled = true;
               break;
             }
             default: {
-              fieldSchema['x-read-pretty'] = false;
+              fieldSchema['x-read-pretty'] = false;  
+              fieldSchema['x-disabled'] = false;
               schema['x-read-pretty'] = false;
-              fieldSchema['x-component-props'] = {
-                ...fieldSchema['x-component-props'],
-                readOnly: false,
-              }
-              schema['x-component-props'] = fieldSchema['x-component-props'];
+              schema['x-disabled'] = false;
               field.readPretty = false;
-              field.componentProps.readOnly = false;
+              field.disabled = false;
               break;
             }
           }
@@ -239,6 +238,7 @@ FormItem.Designer = () => {
       )}
       {collectionField?.target && (
         <SchemaSettings.SelectItem
+          key="title-field"
           title={t('Title field')}
           options={options}
           value={field?.componentProps?.fieldNames?.label}
@@ -265,6 +265,7 @@ FormItem.Designer = () => {
       )}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
+        key="remove"
         removeParentsIfNoChildren
         confirm={{
           title: t('Delete field')
