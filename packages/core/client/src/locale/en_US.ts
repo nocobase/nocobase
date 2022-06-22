@@ -544,4 +544,7 @@ export default {
   "Block title": "Block title",
   "Edit block title": "Edit block title",
   "Province/city/area name": "Province/city/area name",
+  "Field component": "Field component",
+  "Subtable": "Subtable",
+  "Subform": "Subform",
 }

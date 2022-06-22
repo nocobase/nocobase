@@ -210,16 +210,16 @@ FormItem.Designer = (props) => {
       )}
       {formCtx.form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
-          title={t('Toggles the subfield mode')}
+          title={t('Field component')}
           options={
             collectionField?.interface === 'o2m'
               ? [
-                  { label: t('Selector mode'), value: 'CollectionField' },
-                  { label: t('Subtable mode'), value: 'TableField' },
+                  { label: t('Record picker'), value: 'CollectionField' },
+                  { label: t('Subtable'), value: 'TableField' },
                 ]
               : [
-                  { label: t('Selector mode'), value: 'CollectionField' },
-                  { label: t('Subform mode'), value: 'FormField' },
+                  { label: t('Record picker'), value: 'CollectionField' },
+                  { label: t('Subform'), value: 'FormField' },
                 ]
           }
           value={fieldSchema['x-component']}
