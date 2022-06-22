@@ -373,11 +373,28 @@ export const CreateActionInitializer = (props) => {
           className: 'nb-action-popup',
         },
         properties: {
-          grid: {
+          tabs: {
             type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': 'CreateFormBlockInitializers',
-            properties: {},
+            'x-component': 'Tabs',
+            'x-component-props': {},
+            'x-initializer': 'TabPaneInitializers',
+            properties: {
+              tab1: {
+                type: 'void',
+                title: '{{t("Add new")}}',
+                'x-component': 'Tabs.TabPane',
+                'x-designer': 'Tabs.Designer',
+                'x-component-props': {},
+                properties: {
+                  grid: {
+                    type: 'void',
+                    'x-component': 'Grid',
+                    'x-initializer': 'CreateFormBlockInitializers',
+                    properties: {},
+                  },
+                },
+              },
+            },
           },
         },
       },

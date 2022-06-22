@@ -42,7 +42,7 @@ const useAssociationNames = (collection) => {
       return schema;
     }
     return buf;
-  }, null) as Schema;
+  }, new Schema({}));
   return tableSchema.reduceProperties((buf, schema) => {
     if (schema['x-component'] === 'TableV2.Column') {
       const s = schema.reduceProperties((buf, s) => {
