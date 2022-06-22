@@ -189,7 +189,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {!field.readPretty && (
+      {!field.readPretty && fieldSchema['x-component'] !== 'FormField' && (
         <SchemaSettings.SwitchItem
           key="required"
           title={t('Required')}
