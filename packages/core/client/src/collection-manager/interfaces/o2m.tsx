@@ -89,7 +89,7 @@ export const o2m: IField = {
       if (schema['x-component-props']?.['field']?.['uiSchema']?.['x-component'] === 'TableField') {
         schema['x-component-props']['field']['uiSchema']['x-component'] = 'RecordPicker';
         schema['x-component-props']['field']['uiSchema']['x-component-props'] = {
-          multiple: false,
+          multiple: true,
           fieldNames: {
             label: 'id',
             value: 'id',
