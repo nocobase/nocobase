@@ -39,7 +39,6 @@ const useResource = (props: UseResourceProps) => {
   const api = useAPIClient();
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
-
   const field = useField<Field>();
   if (block === 'TableField') {
     const options = {
@@ -73,14 +72,20 @@ const useActionParams = (props) => {
 
 export const useResourceAction = (props, opts = {}) => {
   const { resource, action } = props;
-  const { fields } = useCollection();
+  const { filterTargetKey, fields } = useCollection();
   const appends = fields?.filter((field) => field.target).map((field) => field.name);
   const params = useActionParams(props);
   if (appends?.length) {
     params['appends'] = appends;
   }
   const result = useRequest(
-    (params) => (action ? resource[action](params).then((res) => res.data) : Promise.resolve({})),
+    // (params) => (action ? resource[action](params).then((res) => res.data) : Promise.resolve({})),
+    (params) => {
+      if (!params.sort) {
+        params.sort = [`-${filterTargetKey || 'id'}`];
+      }
+      return (action ? resource[action](params).then((res) => res.data) : Promise.resolve({}))
+    },
     {
       ...opts,
       defaultParams: [params],
