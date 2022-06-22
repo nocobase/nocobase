@@ -1,6 +1,6 @@
-import { ArrayField } from '@formily/core';
-import { Schema, useField, useFieldSchema } from '@formily/react';
-import React, { createContext, useContext, useEffect } from 'react';
+import { ArrayField, createForm } from '@formily/core';
+import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
@@ -63,6 +63,7 @@ const useAssociationNames = (collection) => {
 export const TableBlockProvider = (props) => {
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
+  const form = useMemo(() => createForm(), []);
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
@@ -70,9 +71,11 @@ export const TableBlockProvider = (props) => {
     params['appends'] = appends;
   }
   return (
-    <BlockProvider {...props} params={params}>
-      <InternalTableBlockProvider {...props} params={params} />
-    </BlockProvider>
+    <FormContext.Provider value={form}>
+      <BlockProvider {...props} params={params}>
+        <InternalTableBlockProvider {...props} params={params} />
+      </BlockProvider>
+    </FormContext.Provider>
   );
 };
 
@@ -120,7 +123,11 @@ export const useTableBlockProps = () => {
       ctx.service.refresh();
     },
     onChange({ current, pageSize }, filters, sorter) {
-      let sort = sorter.order ? (sorter.order ===  `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort || null;
+      let sort = sorter.order
+        ? sorter.order === `ascend`
+          ? [sorter.field]
+          : [`-${sorter.field}`]
+        : globalSort || null;
 
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
