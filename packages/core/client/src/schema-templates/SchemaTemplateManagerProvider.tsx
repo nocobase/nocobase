@@ -120,7 +120,7 @@ export const useSchemaTemplateManager = () => {
       return templates?.find((template) => template.key === key);
     },
     getTemplatesByCollection(collectionName: string, resourceName: string = null) {
-      const items = templates?.filter?.((template) => (!template.resourceName && template.collectionName === collectionName) || (template.resourceName && template.resourceName === resourceName));
+      const items = templates?.filter?.((template) => (template.collectionName === collectionName));
       return items || [];
     },
 
