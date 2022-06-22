@@ -9,6 +9,7 @@ import { useFlowContext } from '../WorkflowCanvas';
 import { BaseTypeSet } from '../calculators';
 import { collection, filter } from '../schemas/collection';
 import { useTranslation } from 'react-i18next';
+import { css } from '@emotion/css';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
@@ -19,6 +20,9 @@ const FieldsSelect = observer((props) => {
   return (
     <Select
       {...props}
+      className={css`
+        min-width: 6em;
+      `}
     >
       {fields
         .filter(field => (
