@@ -46,7 +46,8 @@ const useAssociationNames = (collection) => {
   return tableSchema.reduceProperties((buf, schema) => {
     if (schema['x-component'] === 'TableV2.Column') {
       const s = schema.reduceProperties((buf, s) => {
-        if (s['x-collection-field'] && names.includes(s.name)) {
+        const [name] = (s.name as string).split('.');
+        if (s['x-collection-field'] && names.includes(name)) {
           return s;
         }
         return buf;

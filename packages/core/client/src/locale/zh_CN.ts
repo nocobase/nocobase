@@ -176,7 +176,7 @@ export default {
   "Many to one description": "用于创建多对一关系，比如一个城市只能属于一个国家，一个国家可以有多个城市。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。创建后，会在目标数据表里自动生成一个多对一字段。",
   "Many to many description": "用于创建多对多关系，比如一个学生会有多个老师，一个老师也会有多个学生。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。",
   "Generated automatically if left blank": "留空时，自动生成中间表",
-  "Display association fields": "引用关联表的字段",
+  "Display association fields": "显示关联表的字段",
   "Toggles the subfield mode": "切换子字段模式",
   "Selector mode": "选择器模式",
   "Subtable mode": "子表格模式",
