@@ -76,14 +76,24 @@ export const useResourceAction = (props, opts = {}) => {
   const { fields } = useCollection();
   const appends = fields?.filter((field) => field.target).map((field) => field.name);
   const params = useActionParams(props);
-  if (appends?.length) {
+  if (!Object.keys(params).includes('appends') && appends?.length) {
     params['appends'] = appends;
   }
   const result = useRequest(
-    (params) => (action ? resource[action](params).then((res) => res.data) : Promise.resolve({})),
+    (opts) => {
+      if (!action) {
+        return  Promise.resolve({});
+      }
+      const actionParams = {...opts};
+      if (params.appends) {
+        actionParams.appends = params.appends;
+      }
+      return resource[action](actionParams).then((res) => res.data);
+    },
     {
       ...opts,
       defaultParams: [params],
+      refreshDeps: [JSON.stringify(params.appends)],
     },
   );
   return result;

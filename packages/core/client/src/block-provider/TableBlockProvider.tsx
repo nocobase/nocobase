@@ -35,7 +35,7 @@ const useAssociationNames = (collection) => {
   const names = getCollectionFields(collection)
     ?.filter((field) => field.target)
     .map((field) => field.name);
-  return names;
+  // return names;
   const fieldSchema = useFieldSchema();
   const tableSchema = fieldSchema.reduceProperties((buf, schema) => {
     if (schema['x-component'] === 'TableV2') {
@@ -65,7 +65,7 @@ export const TableBlockProvider = (props) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (appends?.length) {
+  if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
   return (
