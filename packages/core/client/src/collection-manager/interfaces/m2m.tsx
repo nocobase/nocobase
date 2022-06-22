@@ -45,7 +45,7 @@ export const m2m: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
+  schemaInitialize(schema: ISchema, { readPretty, block }) {
     if (readPretty) {
       schema['properties'] = {
         viewer: cloneDeep(recordPickerViewer),
@@ -54,6 +54,9 @@ export const m2m: IField = {
       schema['properties'] = {
         selector: cloneDeep(recordPickerSelector),
       };
+    }
+    if (block === 'Table') {
+      schema['x-component-props']['ellipsis'] = true;
     }
   },
   initialize: (values: any) => {
@@ -161,7 +164,7 @@ export const m2m: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
@@ -171,9 +174,7 @@ export const m2m: IField = {
             col23: {
               type: 'void',
               'x-component': 'Grid.Col',
-              properties: {
-
-              },
+              properties: {},
             },
           },
         },
@@ -196,7 +197,7 @@ export const m2m: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',

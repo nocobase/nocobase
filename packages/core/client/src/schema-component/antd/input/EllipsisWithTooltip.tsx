@@ -1,5 +1,5 @@
 import { Popover } from 'antd';
-import React, { CSSProperties, useState } from 'react';
+import React, { CSSProperties, forwardRef, useImperativeHandle, useState } from 'react';
 
 const ellipsisDefaultStyle: CSSProperties = {
   overflow: 'hidden',
@@ -9,9 +9,19 @@ const ellipsisDefaultStyle: CSSProperties = {
   wordBreak: 'break-all',
 };
 
-export const EllipsisWithTooltip = (props) => {
+interface IEllipsisWithTooltipProps {
+  ellipsis: boolean;
+  popoverContent: unknown;
+  children: any;
+}
+export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithTooltipProps>, ref: any) => {
   const [ellipsis, setEllipsis] = useState(false);
   const [visible, setVisible] = useState(false);
+  useImperativeHandle(ref, () => {
+    return {
+      setPopoverVisible: setVisible,
+    };
+  });
   if (!props.ellipsis) {
     return <>{props.children}</>;
   }
@@ -44,4 +54,4 @@ export const EllipsisWithTooltip = (props) => {
       </div>
     </Popover>
   );
-};
+});
