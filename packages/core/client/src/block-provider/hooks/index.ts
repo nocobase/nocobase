@@ -228,6 +228,7 @@ export const useCustomizeRequestActionProps = () => {
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const actionField = useField();
+  const { visible, setVisible } = useActionContext();
 
   return {
     async onClick() {
@@ -236,7 +237,7 @@ export const useCustomizeRequestActionProps = () => {
       if (!requestSettings['url']) {
         return;
       }
-      if (skipValidator === false && xAction === 'customize:form:request') {
+      if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();
       }
 
@@ -263,12 +264,13 @@ export const useCustomizeRequestActionProps = () => {
           ...requestBody,
         });
         actionField.data.loading = false;
-
-        service?.refresh?.();
         if (!(resource instanceof TableFieldResource)) {
           __parent?.service?.refresh?.();
         }
-
+        service?.refresh?.();
+        if (xAction === 'customize:form:request') {
+          setVisible?.(false);
+        }
         if (!onSuccess?.successMessage) {
           return;
         }
