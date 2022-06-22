@@ -7,6 +7,29 @@ import { itemsMerge, useAssociatedTableColumnInitializerFields, useTableColumnIn
 export const TableColumnInitializers = (props: any) => {
   const { items = [] } = props;
   const { t } = useTranslation();
+  const associatedFields = useAssociatedTableColumnInitializerFields();
+  const fieldItems: any[] = [{
+    type: 'itemGroup',
+    title: t('Display fields'),
+    children: useTableColumnInitializerFields(),
+  }];
+  if (associatedFields?.length > 0) {
+    fieldItems.push({
+      type: 'divider',
+    }, {
+      type: 'itemGroup',
+      title: t('Display association fields'),
+      children: useAssociatedTableColumnInitializerFields(),
+    })
+  }
+  fieldItems.push({
+    type: 'divider',
+  }, {
+    type: 'item',
+    title: t('Action column'),
+    component: 'TableActionColumnInitializer',
+  })
+  console.log('TableColumnInitializers', fieldItems);
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -29,29 +52,7 @@ export const TableColumnInitializers = (props: any) => {
         };
       }}
       items={itemsMerge(
-        [
-          {
-            type: 'itemGroup',
-            title: t('Display fields'),
-            children: useTableColumnInitializerFields(),
-          },
-          {
-            type: 'divider',
-          },
-          {
-            type: 'itemGroup',
-            title: t('Display association fields'),
-            children: useAssociatedTableColumnInitializerFields(),
-          },
-          {
-            type: 'divider',
-          },
-          {
-            type: 'item',
-            title: t('Action column'),
-            component: 'TableActionColumnInitializer',
-          },
-        ],
+        fieldItems,
         items,
       )}
     >
