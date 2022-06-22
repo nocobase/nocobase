@@ -255,7 +255,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {!form.readPretty && collectionField.interface !== 'o2m' && (
+      {!form?.readPretty && collectionField?.interface !== 'o2m' && (
         <SchemaSettings.SelectItem
           key="pattern"
           title={t('Pattern')}
