@@ -56,6 +56,7 @@ export const o2o: IField = {
       };
     }
     if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
     }
   },
@@ -227,6 +228,7 @@ export const oho: IField = {
       };
     }
     if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
     }
   },
@@ -397,6 +399,7 @@ export const obo: IField = {
       };
     }
     if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
     }
   },

@@ -55,6 +55,7 @@ export const m2o: IField = {
       };
     }
     if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
     }
   },

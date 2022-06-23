@@ -94,6 +94,7 @@ export const o2m: IField = {
     //   };
     // }
     if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
     }
   },

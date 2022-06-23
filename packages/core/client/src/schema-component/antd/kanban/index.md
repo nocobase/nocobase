@@ -5,7 +5,7 @@ group:
   path: /schema-components
 ---
 
-# KanbanV2
+# Kanban
 
 ## 示例
 
