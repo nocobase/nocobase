@@ -74,12 +74,12 @@ export const TableColumnDesigner = (props) => {
           };
           columnSchema['x-component-props'] = {
             ...columnSchema['x-component-props'],
-            sorter: v
-          }
+            sorter: v,
+          };
           schema['x-component-props'] = columnSchema['x-component-props'];
           field.componentProps.sorter = v;
           dn.emit('patch', {
-            schema
+            schema,
           });
           dn.refresh();
         }}
@@ -102,7 +102,7 @@ export const TableColumnDesigner = (props) => {
               schema: {
                 'x-uid': fieldSchema['x-uid'],
                 'x-component-props': {
-                  fieldNames,
+                  ...fieldSchema['x-component-props'],
                 },
               },
             });
@@ -117,7 +117,7 @@ export const TableColumnDesigner = (props) => {
           'x-component': 'Grid',
         }}
         confirm={{
-          title: t('Delete table column')
+          title: t('Delete table column'),
         }}
       />
     </GeneralSchemaDesigner>

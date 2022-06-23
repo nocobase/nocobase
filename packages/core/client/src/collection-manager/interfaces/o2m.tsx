@@ -43,7 +43,7 @@ export const o2m: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, readPretty }) {
+  schemaInitialize(schema: ISchema, { field, readPretty, block }) {
     const association = `${field.collectionName}.${field.name}`;
     schema['type'] = 'void';
     schema['x-component'] = 'TableField';
@@ -93,6 +93,10 @@ export const o2m: IField = {
     //     selector: cloneDeep(recordPickerSelector),
     //   };
     // }
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
   properties: {
     'uiSchema.title': {
@@ -178,7 +182,7 @@ export const o2m: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
@@ -194,8 +198,7 @@ export const o2m: IField = {
             col21: {
               type: 'void',
               'x-component': 'Grid.Col',
-              properties: {
-              },
+              properties: {},
             },
             col22: {
               type: 'void',
