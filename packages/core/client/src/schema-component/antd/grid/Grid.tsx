@@ -76,7 +76,7 @@ const RowDivider = (props) => {
         `,
       )}
       style={{
-        zIndex: active ? 1000 : 0,
+        zIndex: active ? 1000 : -1,
         // height: 24,
         // width: '100%',
         // position: 'absolute',
@@ -202,7 +202,7 @@ Grid.Row = observer((props) => {
             margin: 0 -24px;
             display: flex;
             position: relative;
-            z-index: 0;
+            /* z-index: 0; */
           `,
         )}
       >
@@ -237,7 +237,7 @@ Grid.Col = observer((props: any) => {
         'nb-grid-col',
         css`
           position: relative;
-          z-index: 0;
+          /* z-index: 0; */
         `,
       )}
     >
