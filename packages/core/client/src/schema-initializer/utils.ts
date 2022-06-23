@@ -1,7 +1,7 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemOptions, useTableBlockContext } from '../';
+import { SchemaInitializerItemOptions } from '../';
 import { useCollection, useCollectionManager } from '../collection-manager';
 import { useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
@@ -757,7 +757,7 @@ export const createKanbanBlockSchema = (options) => {
       },
       ...others,
     },
-    'x-designer': 'KanbanV2.Designer',
+    'x-designer': 'Kanban.Designer',
     'x-component': 'CardItem',
     properties: {
       actions: {
@@ -773,7 +773,7 @@ export const createKanbanBlockSchema = (options) => {
       },
       [uid()]: {
         type: 'array',
-        'x-component': 'KanbanV2',
+        'x-component': 'Kanban',
         'x-component-props': {
           useProps: '{{ useKanbanBlockProps }}',
         },
@@ -782,8 +782,8 @@ export const createKanbanBlockSchema = (options) => {
             type: 'void',
             'x-read-pretty': true,
             'x-decorator': 'BlockItem',
-            'x-component': 'KanbanV2.Card',
-            'x-designer': 'KanbanV2.Card.Designer',
+            'x-component': 'Kanban.Card',
+            'x-designer': 'Kanban.Card.Designer',
             properties: {
               grid: {
                 type: 'void',
@@ -796,7 +796,7 @@ export const createKanbanBlockSchema = (options) => {
             type: 'void',
             title: '{{ t("View") }}',
             'x-designer': 'Action.Designer',
-            'x-component': 'KanbanV2.CardViewer',
+            'x-component': 'Kanban.CardViewer',
             'x-component-props': {
               openMode: 'drawer',
             },

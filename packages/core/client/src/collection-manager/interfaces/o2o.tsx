@@ -45,7 +45,7 @@ export const o2o: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
+  schemaInitialize(schema: ISchema, { readPretty, block }) {
     if (readPretty) {
       schema['properties'] = {
         viewer: cloneDeep(recordPickerViewer),
@@ -54,6 +54,10 @@ export const o2o: IField = {
       schema['properties'] = {
         selector: cloneDeep(recordPickerSelector),
       };
+    }
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
     }
   },
   properties: {
@@ -139,7 +143,7 @@ export const o2o: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
@@ -213,7 +217,7 @@ export const oho: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
+  schemaInitialize(schema: ISchema, { readPretty, block }) {
     if (readPretty) {
       schema['properties'] = {
         viewer: cloneDeep(recordPickerViewer),
@@ -222,6 +226,10 @@ export const oho: IField = {
       schema['properties'] = {
         selector: cloneDeep(recordPickerSelector),
       };
+    }
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
     }
   },
   properties: {
@@ -307,7 +315,7 @@ export const oho: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
@@ -380,7 +388,7 @@ export const obo: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
+  schemaInitialize(schema: ISchema, { readPretty, block }) {
     if (readPretty) {
       schema['properties'] = {
         viewer: cloneDeep(recordPickerViewer),
@@ -389,6 +397,10 @@ export const obo: IField = {
       schema['properties'] = {
         selector: cloneDeep(recordPickerSelector),
       };
+    }
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
     }
   },
   properties: {
@@ -462,7 +474,7 @@ export const obo: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
