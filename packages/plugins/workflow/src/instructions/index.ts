@@ -1,3 +1,7 @@
+import path from 'path';
+
+import { requireModule } from '@nocobase/utils';
+
 import FlowNodeModel from '../models/FlowNode';
 
 import Plugin from '..';
@@ -24,7 +28,7 @@ export type InstructionResult = Job | Promise<Job>;
 // - base on input and context, do any calculations or system call (io), and produce a result or pending.
 export interface Instruction {
   run(
-    this: FlowNodeModel,
+    node: FlowNodeModel,
     // what should input to be?
     // - just use previously output result for convenience?
     input: any,
@@ -35,7 +39,7 @@ export interface Instruction {
 
   // for start node in main flow (or branch) to resume when manual sub branch triggered
   resume?(
-    this: FlowNodeModel,
+    node: FlowNodeModel,
     input: any,
     processor: Processor
   ): InstructionResult
@@ -55,6 +59,8 @@ export default function<T extends Instruction>(
   instructions.register('create', create);
   instructions.register('update', update);
   instructions.register('destroy', destroy);
+
+  instructions.register('delay', new (requireModule(path.join(__dirname, 'delay')))(plugin));
 
   for (const [name, instruction] of Object.entries(more)) {
     instructions.register(name, typeof instruction === 'function' ? new instruction(plugin) : instruction);

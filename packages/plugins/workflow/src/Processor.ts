@@ -148,7 +148,7 @@ export default class Processor {
     let job;
     try {
       // call instruction to get result and status
-      job = await instruction.call(node, prevJob, this);
+      job = await instruction(node, prevJob, this);
       if (!job) {
         return null;
       }
