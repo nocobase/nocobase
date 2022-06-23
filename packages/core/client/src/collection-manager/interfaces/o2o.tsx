@@ -55,7 +55,7 @@ export const o2o: IField = {
         selector: cloneDeep(recordPickerSelector),
       };
     }
-    if (block === 'Table') {
+    if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
@@ -226,7 +226,7 @@ export const oho: IField = {
         selector: cloneDeep(recordPickerSelector),
       };
     }
-    if (block === 'Table') {
+    if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
@@ -396,7 +396,7 @@ export const obo: IField = {
         selector: cloneDeep(recordPickerSelector),
       };
     }
-    if (block === 'Table') {
+    if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props']['ellipsis'] = true;
     }
   },

@@ -93,7 +93,7 @@ export const o2m: IField = {
     //     selector: cloneDeep(recordPickerSelector),
     //   };
     // }
-    if (block === 'Table') {
+    if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
