@@ -70,11 +70,11 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
     if (fieldNames.includes(key)) {
       const collectionField = getField(key);
       if (filterByTk) {
-        if (['subTable', 'o2m'].includes(collectionField.interface)) {
-          values[key] = form.values[key];
+        if (field.added && !field.added.has(key)) {
           continue;
         }
-        if (field.added && !field.added.has(key)) {
+        if (['subTable', 'o2m'].includes(collectionField.interface)) {
+          values[key] = form.values[key];
           continue;
         }
       }
