@@ -59,7 +59,8 @@ export default function () {
       },
       {
         type: 'boolean',
-        name: 'current'
+        name: 'current',
+        defaultValue: null
       },
       {
         type: 'hasMany',
