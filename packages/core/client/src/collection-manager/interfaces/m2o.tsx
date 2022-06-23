@@ -44,7 +44,7 @@ export const m2o: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
+  schemaInitialize(schema: ISchema, { readPretty, block }) {
     if (readPretty) {
       schema['properties'] = {
         viewer: cloneDeep(recordPickerViewer),
@@ -53,6 +53,9 @@ export const m2o: IField = {
       schema['properties'] = {
         selector: cloneDeep(recordPickerSelector),
       };
+    }
+    if (block === 'Table') {
+      schema['x-component-props']['ellipsis'] = true;
     }
   },
   properties: {
@@ -126,7 +129,7 @@ export const m2o: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
