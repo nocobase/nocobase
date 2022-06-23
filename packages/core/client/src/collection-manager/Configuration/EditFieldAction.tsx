@@ -37,7 +37,7 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
             );
           },
         },
-        title: `${record.__parent?.title} - ${compile('{{ t("Edit field") }}')}`,
+        title: `${compile(record.__parent?.title)} - ${compile('{{ t("Edit field") }}')}`,
         properties: {
           summary: {
             type: 'void',
