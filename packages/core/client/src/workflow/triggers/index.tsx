@@ -1,9 +1,9 @@
-import React from "react";
-import { ISchema, useForm } from "@formily/react";
 import { css, cx } from "@emotion/css";
-import { Registry } from "@nocobase/utils";
-import { useTranslation } from "react-i18next";
+import { ISchema, useForm } from "@formily/react";
+import { Registry } from "@nocobase/utils/client";
 import { message, Tag } from "antd";
+import React from "react";
+import { useTranslation } from "react-i18next";
 
 import { SchemaComponent, useActionContext, useAPIClient, useCompile, useResourceActionContext } from '../../';
 
