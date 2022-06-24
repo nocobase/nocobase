@@ -181,7 +181,7 @@ export class APIClient {
     if (!this.auth) {
       this.auth = new Auth(this);
     }
-    this.paramsSerializer();
+    this.interceptors();
   }
 
   private initStorage(storage?: any) {
@@ -194,7 +194,7 @@ export class APIClient {
     }
   }
 
-  paramsSerializer() {
+  interceptors() {
     this.axios.interceptors.request.use((config) => {
       config.paramsSerializer = (params) => {
         return qs.stringify(params, {

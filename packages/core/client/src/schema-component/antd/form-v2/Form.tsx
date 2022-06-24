@@ -1,7 +1,7 @@
 import { FormLayout } from '@formily/antd';
 import { createForm, Field, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { uid } from '@nocobase/utils';
+import { uid } from '@formily/shared';
 import { Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
