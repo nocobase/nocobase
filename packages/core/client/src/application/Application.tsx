@@ -6,7 +6,6 @@ import { ACLProvider, ACLShortcut } from '../acl';
 import { AntdConfigProvider } from '../antd-config-provider';
 import { APIClient, APIClientProvider } from '../api-client';
 import { BlockSchemaComponentProvider } from '../block-provider';
-import { ChinaRegionProvider } from '../china-region';
 import { CollectionManagerShortcut } from '../collection-manager';
 import { RemoteDocumentTitleProvider } from '../document-title';
 import { FileStorageShortcut } from '../file-manager';
@@ -94,7 +93,6 @@ export class Application {
     this.use(AntdSchemaComponentProvider);
     this.use(ACLProvider);
     this.use(RemoteDocumentTitleProvider);
-    this.use(ChinaRegionProvider);
     this.use(WorkflowRouteProvider);
     for (const plugin of options.plugins) {
       const [component, props] = Array.isArray(plugin) ? plugin : [plugin];
@@ -118,13 +116,16 @@ export class Application {
   }
 
   render() {
-    return compose(...this.providers)(() => {
-      const routes = useRoutes();
-      return (
-        <div>
-          <RouteSwitch routes={routes} />
-        </div>
-      );
-    });
+    return compose(...this.providers)(
+      this.mainComponent ||
+        (() => {
+          const routes = useRoutes();
+          return (
+            <div>
+              <RouteSwitch routes={routes} />
+            </div>
+          );
+        }),
+    );
   }
 }

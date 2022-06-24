@@ -2,7 +2,7 @@ import { Plugin } from '@nocobase/server';
 import { areas, cities, provinces } from 'china-division';
 import { resolve } from 'path';
 
-export class ChinaRegionPlugin extends Plugin {
+export class PluginChinaRegion extends Plugin {
   async install() {
     await this.importData();
   }
@@ -69,4 +69,4 @@ export class ChinaRegionPlugin extends Plugin {
   }
 }
 
-export default ChinaRegionPlugin;
+export default PluginChinaRegion;
