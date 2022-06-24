@@ -8,7 +8,7 @@ const app = new Application({
   },
 });
 
-app.use(ExportPluginProvider);
 app.use(AuditLogsProvider);
+app.use(ExportPluginProvider);
 
 export default app.compose();
