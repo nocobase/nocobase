@@ -36,6 +36,7 @@ import { compose } from './compose';
 export interface ApplicationOptions {
   apiClient?: any;
   i18n?: any;
+  plugins?: any[];
 }
 
 export type PluginCallback = () => Promise<any>;
@@ -95,6 +96,10 @@ export class Application {
     this.use(RemoteDocumentTitleProvider);
     this.use(ChinaRegionProvider);
     this.use(WorkflowRouteProvider);
+    for (const plugin of options.plugins) {
+      const [component, props] = Array.isArray(plugin) ? plugin : [plugin];
+      this.use(component, props);
+    }
   }
 
   use(component, props?: any) {
