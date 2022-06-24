@@ -38,11 +38,14 @@ export interface ApplicationOptions {
   i18n?: any;
 }
 
+export type PluginCallback = () => Promise<any>;
+
 export class Application {
   providers = [];
   mainComponent = null;
   apiClient: APIClient;
   i18n: i18next;
+  plugins: PluginCallback[] = [];
 
   constructor(options: ApplicationOptions) {
     this.apiClient = new APIClient({
@@ -102,17 +105,21 @@ export class Application {
     this.mainComponent = mainComponent;
   }
 
-  compose() {
-    return compose(...this.providers)(
-      this.mainComponent ||
-        (() => {
-          const routes = useRoutes();
-          return (
-            <div>
-              <RouteSwitch routes={routes} />
-            </div>
-          );
-        }),
-    );
+  /**
+   * TODO
+   */
+  plugin(plugin: PluginCallback) {
+    this.plugins.push(plugin);
+  }
+
+  render() {
+    return compose(...this.providers)(() => {
+      const routes = useRoutes();
+      return (
+        <div>
+          <RouteSwitch routes={routes} />
+        </div>
+      );
+    });
   }
 }

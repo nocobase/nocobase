@@ -1,6 +1,4 @@
 import { Application } from '@nocobase/client';
-import { AuditLogsProvider } from '@nocobase/plugin-audit-logs/client';
-import { ExportPluginProvider } from '@nocobase/plugin-export/client';
 
 const app = new Application({
   apiClient: {
@@ -8,7 +6,7 @@ const app = new Application({
   },
 });
 
-app.use(AuditLogsProvider);
-app.use(ExportPluginProvider);
+app.use(require('@nocobase/plugin-export/client').default);
+app.use(require('@nocobase/plugin-audit-logs/client').default);
 
-export default app.compose();
+export default app.render();
