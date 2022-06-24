@@ -43,13 +43,21 @@ const internalSchameInitialize = (schema: ISchema, { field, block, readPretty, a
       },
     }
   } else {
-    if (readPretty) {
+    schema.type = 'string';
+    if (block === 'Form') {
       schema['properties'] = {
         viewer: cloneDeep(recordPickerViewer),
+        selector: cloneDeep(recordPickerSelector),
       };
     } else {
-      schema.properties = {
-        selector: cloneDeep(recordPickerSelector),
+      if (readPretty) {
+        schema['properties'] = {
+          viewer: cloneDeep(recordPickerViewer),
+        };
+      } else {
+        schema['properties'] = {
+          selector: cloneDeep(recordPickerSelector),
+        }
       }
     }
   }

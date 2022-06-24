@@ -78,8 +78,11 @@ export const InputRecordPicker: React.FC<any> = (props) => {
     }
   }, [value])
 
-  const getValues = () => {
-    return selectedRows?.map((option) => option[fieldNames.value]);
+  useEffect(() => {})
+
+  const getValue = () => {
+    if (multiple == null) return null;
+    return multiple ? value?.map(v => v[fieldNames.value]) : value?.[fieldNames.value];
   }
 
   return (
@@ -106,7 +109,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
           }
         }}
         options={options}
-        value={multiple ? getValues() : getValues()?.[0]}
+        value={getValue()}
         open={false}
       />
       <RecordPickerContext.Provider value={{ multiple, onChange, selectedRows, setSelectedRows }}>
@@ -114,7 +117,13 @@ export const InputRecordPicker: React.FC<any> = (props) => {
           <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
             <FormProvider>
               <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
-                <RecursionField schema={fieldSchema} onlyRenderProperties />
+                <RecursionField
+                  schema={fieldSchema}
+                  onlyRenderProperties
+                  filterProperties={(s) => {
+                    return s['x-component'] === 'RecordPicker.Selector';
+                  }}
+                />
               </SchemaComponentOptions>
             </FormProvider>
           </ActionContext.Provider>

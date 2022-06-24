@@ -83,7 +83,6 @@ export const useTableColumnInitializerFields = () => {
         'x-component': 'CollectionField',
         'x-read-pretty': true,
         'x-component-props': {
-          field,
         },
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
@@ -113,18 +112,18 @@ export const useAssociatedTableColumnInitializerFields = () => {
     ?.map((field) => {
       const subFields = getCollectionFields(field.target);
       const items = subFields
-        ?.filter((subField) => subField?.interface && !['o2o', 'oho', 'obo', 'o2m', 'm2o', 'subTable', 'linkTo'].includes(subField?.interface))
+        // ?.filter((subField) => subField?.interface && !['o2o', 'oho', 'obo', 'o2m', 'm2o', 'subTable', 'linkTo'].includes(subField?.interface))
+        ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface))
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
           const schema = {
             // type: 'string',
             name: `${field.name}.${subField.name}`,
-            title: subField?.uiSchema?.title || subField.name,
+            // title: subField?.uiSchema?.title || subField.name,
             'x-component': 'CollectionField',
             'x-read-pretty': true,
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
             'x-component-props': {
-              field: subField,
             },
           };
           
@@ -166,13 +165,12 @@ export const useFormItemInitializerFields = (options?: any) => {
       const schema = {
         type: 'string',
         name: field.name,
-        title: field?.uiSchema?.title || field.name,
+        // title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
         'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {
-          field,
         },
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
@@ -208,11 +206,10 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
           const schema = {
             type: 'string',
             name: `${field.name}.${subField.name}`,
-            title: subField?.uiSchema?.title || subField.name,
+            // title: subField?.uiSchema?.title || subField.name,
             'x-designer': 'FormItem.Designer',
             'x-component': 'CollectionField',
             'x-component-props': {
-              field: subField,
             },
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
@@ -274,6 +271,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
 };
 
 const findSchema = (schema: Schema, key: string, action: string) => {
+  if (!Schema.isSchemaInstance(schema)) return null;
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {
       return s;

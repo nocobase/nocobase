@@ -62,6 +62,7 @@ export const o2m: IField = {
             },
             showIndex: true,
             dragSort: false,
+            fieldName: field.name,
           },
           properties: {
             actions: {
@@ -86,25 +87,23 @@ export const o2m: IField = {
       };
     } else {
       schema['x-component'] = 'CollectionField';
-      if (schema['x-component-props']?.['field']?.['uiSchema']?.['x-component'] === 'TableField') {
-        schema['x-component-props']['field']['uiSchema']['x-component'] = 'RecordPicker';
-        schema['x-component-props']['field']['uiSchema']['x-component-props'] = {
-          multiple: true,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
-        }
-      }
-      
-      if (readPretty) {
+      schema.type = 'object';
+
+      if (block === 'Form') {
         schema['properties'] = {
           viewer: cloneDeep(recordPickerViewer),
-        };
-      } else {
-        schema['properties'] = {
           selector: cloneDeep(recordPickerSelector),
         };
+      } else {
+        if (readPretty) {
+          schema['properties'] = {
+            viewer: cloneDeep(recordPickerViewer),
+          };
+        } else {
+          schema['properties'] = {
+            selector: cloneDeep(recordPickerSelector),
+          }
+        }
       }
     }
   },

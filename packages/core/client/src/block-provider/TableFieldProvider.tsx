@@ -3,13 +3,20 @@ import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { APIClient } from '../api-client';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { useFormBlockContext } from './FormBlockProvider';
 
 export const TableFieldContext = createContext<any>({});
 
 const InternalTableFieldProvider = (props) => {
-  const { params = {}, showIndex, dragSort } = props;
+  const { params = {}, showIndex, dragSort, fieldName } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+
+  const formBlockCtx = useFormBlockContext();
+  
+  if (!formBlockCtx?.updateAssociationValues?.includes(fieldName)) {
+    formBlockCtx?.updateAssociationValues?.push(fieldName);
+  }
   // if (service.loading) {
   //   return <Spin />;
   // }
