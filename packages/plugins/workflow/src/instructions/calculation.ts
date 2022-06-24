@@ -30,8 +30,8 @@ import { calculate } from "../calculators";
 // }
 
 export default {
-  async run(this: FlowNodeModel, prevJob, processor) {
-    const { calculation } = this.config || {};
+  async run(node: FlowNodeModel, prevJob, processor) {
+    const { calculation } = node.config || {};
 
     const result = calculation
       ? calculate({

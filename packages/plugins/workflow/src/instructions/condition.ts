@@ -73,10 +73,10 @@ function logicCalculate(calculation, input, processor) {
 
 
 export default {
-  async run(this, prevJob, processor) {
+  async run(node, prevJob, processor) {
     // TODO(optimize): loading of jobs could be reduced and turned into incrementally in processor
     // const jobs = await processor.getJobs();
-    const { calculation, rejectOnFalse } = this.config || {};
+    const { calculation, rejectOnFalse } = node.config || {};
     const result = logicCalculate(calculation, prevJob, processor);
 
     if (!result && rejectOnFalse) {
@@ -90,12 +90,12 @@ export default {
       status: JOB_STATUS.RESOLVED,
       result,
       // TODO(optimize): try unify the building of job
-      nodeId: this.id,
+      nodeId: node.id,
       upstreamId: prevJob && prevJob.id || null
     };
 
     const branchNode = processor.nodes
-      .find(item => item.upstream === this && Boolean(item.branchIndex) === result);
+      .find(item => item.upstream === node && Boolean(item.branchIndex) === result);
 
     if (!branchNode) {
       return job;
@@ -106,13 +106,13 @@ export default {
     return processor.run(branchNode, savedJob);
   },
 
-  async resume(this, branchJob, processor) {
+  async resume(node, branchJob, processor) {
     if (branchJob.status === JOB_STATUS.RESOLVED) {
-      // return to continue this.downstream
+      // return to continue node.downstream
       return branchJob;
     }
 
     // pass control to upper scope by ending current scope
-    return processor.end(this, branchJob);
+    return processor.end(node, branchJob);
   }
 };

@@ -3,14 +3,14 @@ import Processor from "../Processor";
 import { JOB_STATUS } from "../constants";
 
 export default {
-  async run(this: FlowNodeModel, input, processor: Processor) {
+  async run(node: FlowNodeModel, input, processor: Processor) {
     const {
       collection,
       multiple = false,
       params = {}
-    } = this.config;
+    } = node.config;
 
-    const repo = (<typeof FlowNodeModel>this.constructor).database.getRepository(collection);
+    const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
     const options = processor.getParsedValue(params);
     const result = await repo.update({
       ...options,

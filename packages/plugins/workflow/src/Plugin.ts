@@ -94,8 +94,17 @@ export default class WorkflowPlugin extends Plugin {
         this.toggle(workflow);
       });
     });
-    // [Life Cycle]: initialize all necessary seed data
-    // this.app.on('db.init', async () => {});
+
+    this.app.on('beforeStop', async () => {
+      const collection = db.getCollection('workflows');
+      const workflows = await collection.repository.find({
+        filter: { enabled: true },
+      });
+
+      workflows.forEach((workflow: WorkflowModel) => {
+        this.toggle(workflow, false);
+      });
+    });
   }
 
   toggle(workflow: WorkflowModel, enable?: boolean) {
