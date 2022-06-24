@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
-import { IField } from './types';
 import { cloneDeep } from 'lodash';
 import { recordPickerSelector, recordPickerViewer, relationshipType } from './properties';
+import { IField } from './types';
 
 export const o2m: IField = {
   name: 'o2m',
@@ -106,6 +106,19 @@ export const o2m: IField = {
         }
       }
     }
+    // if (readPretty) {
+    //   schema['properties'] = {
+    //     viewer: cloneDeep(recordPickerViewer),
+    //   };
+    // } else {
+    //   schema['properties'] = {
+    //     selector: cloneDeep(recordPickerSelector),
+    //   };
+    // }
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
   properties: {
     'uiSchema.title': {
@@ -191,7 +204,7 @@ export const o2m: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
@@ -207,8 +220,7 @@ export const o2m: IField = {
             col21: {
               type: 'void',
               'x-component': 'Grid.Col',
-              properties: {
-              },
+              properties: {},
             },
             col22: {
               type: 'void',

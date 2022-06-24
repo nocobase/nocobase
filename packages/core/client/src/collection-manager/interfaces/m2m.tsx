@@ -62,6 +62,10 @@ export const m2m: IField = {
         }
       }
     }
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
   initialize: (values: any) => {
     if (values.type === 'belongsToMany') {
@@ -168,7 +172,7 @@ export const m2m: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
@@ -178,9 +182,7 @@ export const m2m: IField = {
             col23: {
               type: 'void',
               'x-component': 'Grid.Col',
-              properties: {
-
-              },
+              properties: {},
             },
           },
         },
@@ -203,7 +205,7 @@ export const m2m: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',

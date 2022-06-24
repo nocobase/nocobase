@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -249,7 +249,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {!form?.readPretty && collectionField?.interface !== 'o2m' && (
+      {form && !form?.readPretty && collectionField?.interface !== 'o2m' && (
         <SchemaSettings.SelectItem
           key="pattern"
           title={t('Pattern')}

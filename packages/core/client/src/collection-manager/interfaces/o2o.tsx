@@ -107,6 +107,10 @@ export const o2o: IField = {
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
     internalSchameInitialize(schema, { field, block, readPretty, action });
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
   properties: {
     'uiSchema.title': {
@@ -191,7 +195,7 @@ export const o2o: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
@@ -267,6 +271,10 @@ export const oho: IField = {
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
     internalSchameInitialize(schema, { field, block, readPretty, action });
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
   properties: {
     'uiSchema.title': {
@@ -351,7 +359,7 @@ export const oho: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
@@ -426,6 +434,10 @@ export const obo: IField = {
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
     internalSchameInitialize(schema, { field, block, readPretty, action });
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
   properties: {
     'uiSchema.title': {
@@ -498,7 +510,7 @@ export const obo: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',

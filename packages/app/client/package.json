@@ -3,8 +3,7 @@
   "version": "0.7.0-alpha.83",
   "license": "MIT",
   "devDependencies": {
-    "@nocobase/client": "0.7.0-alpha.83",
-    "@nocobase/plugin-export": "0.7.0-alpha.83"
+    "@nocobase/client": "0.7.0-alpha.83"
   },
   "repository": {
     "type": "git",

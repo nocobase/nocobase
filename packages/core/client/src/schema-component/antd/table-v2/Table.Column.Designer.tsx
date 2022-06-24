@@ -91,7 +91,6 @@ export const TableColumnDesigner = (props) => {
           />
         )
       }
-      
       {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Title field')}
@@ -110,7 +109,7 @@ export const TableColumnDesigner = (props) => {
               schema: {
                 'x-uid': fieldSchema['x-uid'],
                 'x-component-props': {
-                  fieldNames,
+                  ...fieldSchema['x-component-props'],
                 },
               },
             });
@@ -125,7 +124,7 @@ export const TableColumnDesigner = (props) => {
           'x-component': 'Grid',
         }}
         confirm={{
-          title: t('Delete table column')
+          title: t('Delete table column'),
         }}
       />
     </GeneralSchemaDesigner>

@@ -59,8 +59,8 @@ export async function getApp(options = {}): Promise<MockServer> {
   } catch (error) {
     console.error(error);
   }
-  // TODO: need a better life cycle event than manually trigger
-  await app.emitAsync('beforeStart');
+
+  await app.start();
 
   return app;
 }

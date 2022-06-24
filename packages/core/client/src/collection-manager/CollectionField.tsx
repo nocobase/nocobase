@@ -22,7 +22,7 @@ const InternalField: React.FC = (props) => {
     }
   };
   const ctx = useFormBlockContext();
-  
+
   useEffect(() => {
     if (ctx?.field) {
       ctx.field.added = ctx.field.added || new Set();
@@ -45,7 +45,7 @@ const InternalField: React.FC = (props) => {
       field.disabled = true;
     }
     if (fieldSchema['x-read-pretty'] === true) {
-      field.readPretty = true;  
+      field.readPretty = true;
     }
     setRequired();
     // @ts-ignore

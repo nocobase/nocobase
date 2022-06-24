@@ -31,14 +31,14 @@ const schema: ISchema = {
       properties: {
         kanban: {
           type: 'array',
-          'x-component': 'KanbanV2',
+          'x-component': 'Kanban',
           'x-component-props': {
             useProps: '{{ useKanbanBlockProps }}',
           },
           properties: {
             card: {
               type: 'void',
-              'x-component': 'KanbanV2.Card',
+              'x-component': 'Kanban.Card',
               properties: {
                 f_g8j5jvalqh0: {
                   'x-decorator': 'FormItem',
