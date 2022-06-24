@@ -1,5 +1,6 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
+import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -32,10 +33,19 @@ const InternalTableBlockProvider = (props) => {
 
 const useAssociationNames = (collection) => {
   const { getCollectionFields } = useCollectionManager();
-  const names = getCollectionFields(collection)
-    ?.filter((field) => field.target)
-    .map((field) => field.name);
-  // return names;
+  const collectionFields = getCollectionFields(collection);
+  const associationFields = new Set();
+  for (const collectionField of collectionFields) {
+    if (collectionField.target) {
+      associationFields.add(collectionField.name);
+      const fields = getCollectionFields(collectionField.target);
+      for (const field of fields) {
+        if (field.target) {
+          associationFields.add(`${collectionField.name}.${field.name}`);
+        }
+      }
+    }
+  }
   const fieldSchema = useFieldSchema();
   const tableSchema = fieldSchema.reduceProperties((buf, schema) => {
     if (schema['x-component'] === 'TableV2') {
@@ -43,21 +53,29 @@ const useAssociationNames = (collection) => {
     }
     return buf;
   }, new Schema({}));
-  return tableSchema.reduceProperties((buf, schema) => {
-    if (schema['x-component'] === 'TableV2.Column') {
-      const s = schema.reduceProperties((buf, s) => {
-        const [name] = (s.name as string).split('.');
-        if (s['x-collection-field'] && names.includes(name)) {
-          return s;
+  return uniq(
+    tableSchema.reduceProperties((buf, schema) => {
+      if (schema['x-component'] === 'TableV2.Column') {
+        const s = schema.reduceProperties((buf, s) => {
+          const [name] = (s.name as string).split('.');
+          if (s['x-collection-field'] && associationFields.has(name)) {
+            return s;
+          }
+          return buf;
+        }, null);
+        if (s) {
+          // 关联字段和关联的关联字段
+          const [firstName] = s.name.split('.');
+          if (associationFields.has(s.name)) {
+            buf.push(s.name);
+          } else if (associationFields.has(firstName)) {
+            buf.push(firstName);
+          }
         }
-        return buf;
-      }, null);
-      if (s) {
-        buf.push(s.name);
       }
-    }
-    return buf;
-  }, []);
+      return buf;
+    }, []),
+  );
 };
 
 export const TableBlockProvider = (props) => {
