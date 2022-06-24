@@ -1,11 +1,11 @@
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
-import { Registry } from '@nocobase/utils';
+import { Registry } from '@nocobase/utils/client';
 import { Button, message, Modal, Tag } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaComponent, useActionContext, useAPIClient, useCollection, useCompile, useRecord, useRequest, useResourceActionContext } from '../..';
+import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '../..';
 import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { AddButton, useFlowContext } from '../WorkflowCanvas';
 
@@ -16,8 +16,6 @@ import destroy from './destroy';
 import parallel from './parallel';
 import query from './query';
 import update from './update';
-
-
 
 export interface Instruction {
   title: string;

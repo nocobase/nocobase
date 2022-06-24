@@ -10,6 +10,8 @@
     }
   ],
   "dependencies": {
+    "@nocobase/client": "0.7.0-alpha.83",
+    "@nocobase/server": "0.7.0-alpha.83",
     "china-division": "^2.4.0"
   },
   "devDependencies": {

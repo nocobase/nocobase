@@ -39,7 +39,6 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
-      await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--silent']);
       if (opts.dbSync) {
         await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
       }
