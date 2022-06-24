@@ -557,8 +557,8 @@ export default {
   'Duration': '时长',
   'End Status': '到时状态',
   'Select status': '选择状态',
-  'As success': '通过并继续',
-  'As failure': '失败并退出',
+  'Succeed and continue': '通过并继续',
+  'Fail and exit': '失败并退出',
 
   'Create record': '新增数据',
   'Update record': '更新数据',

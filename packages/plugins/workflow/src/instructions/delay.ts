@@ -2,6 +2,7 @@ import Plugin from '..';
 import { JOB_STATUS } from "../constants";
 import ExecutionModel from '../models/Execution';
 import JobModel from '../models/Job';
+import Processor from '../Processor';
 
 type ValueOf<T> = T[keyof T];
 
@@ -11,12 +12,14 @@ interface DelayConfig {
 }
 
 export default class {
+  timers: Map<number, NodeJS.Timeout> = new Map();
+
   constructor(protected plugin: Plugin) {
     plugin.app.on('beforeStart', () => this.load());
+    plugin.app.on('beforeStop', () => this.unload())
   }
 
   async load() {
-    // 1. load all executions which stopped by delay
     const { model } = this.plugin.db.getCollection('jobs');
     const jobs = await model.findAll({
       where: {
@@ -41,26 +44,32 @@ export default class {
     });
   }
 
+  unload() {
+    for (const timer of this.timers.values()) {
+      clearTimeout(timer);
+    }
+
+    this.timers = new Map();
+  }
+
   schedule(job, duration: number) {
     const now = new Date();
     const createdAt = Date.parse(job.createdAt);
     const delay = createdAt + duration - now.getTime();
     const trigger = this.trigger.bind(this, job);
-    if (delay > 0) {
-      setTimeout(trigger, duration);
-    } else {
-      // NOTE: trigger missed job
-      trigger();
-    }
+    this.timers.set(job.id, setTimeout(trigger, Math.max(0, delay)));
   }
 
   async trigger(job) {
     const { execution = await job.getExecution() as ExecutionModel } = job;
     const processor = this.plugin.createProcessor(execution);
     await processor.resume(job);
+    if (this.timers.get(job.id)) {
+      this.timers.delete(job.id);
+    }
   }
 
-  run = async (node, prevJob, processor) => {
+  run = async (node, prevJob, processor: Processor) => {
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: null,
@@ -75,7 +84,7 @@ export default class {
     return processor.end(node, job);
   };
 
-  resume = async (node, prevJob, processor) => {
+  resume = async (node, prevJob, processor: Processor) => {
     const { endStatus } = node.config as DelayConfig;
     prevJob.set('status', endStatus);
     return prevJob;

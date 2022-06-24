@@ -22,8 +22,8 @@ export default {
         placeholder: '{{t("Select status")}}',
       },
       enum: [
-        { label: '{{t("As success")}}', value: 1 },
-        { label: '{{t("As failure")}}', value: -1 },
+        { label: '{{t("Succeed and continue")}}', value: 1 },
+        { label: '{{t("Fail and exit")}}', value: -1 },
       ]
     }
   },
