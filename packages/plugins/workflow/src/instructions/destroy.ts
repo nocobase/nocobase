@@ -2,13 +2,13 @@ import { JOB_STATUS } from "../constants";
 import FlowNodeModel from "../models/FlowNode";
 
 export default {
-  async run(this: FlowNodeModel, input, processor) {
+  async run(node: FlowNodeModel, input, processor) {
     const {
       collection,
       params = {}
-    } = this.config;
+    } = node.config;
 
-    const repo = (<typeof FlowNodeModel>this.constructor).database.getRepository(collection);
+    const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
     const options = processor.getParsedValue(params);
     const result = await repo.destroy({
       ...options,

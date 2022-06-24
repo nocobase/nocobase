@@ -40,15 +40,15 @@ const StatusGetters = {
 };
 
 export default {
-  async run(this: FlowNodeModel, prevJob: JobModel, processor: Processor) {
+  async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
     const branches = processor.nodes
-      .filter(item => item.upstream === this && item.branchIndex !== null)
+      .filter(item => item.upstream === node && item.branchIndex !== null)
       .sort((a, b) => a.branchIndex - b.branchIndex);
 
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: Array(branches.length).fill(null),
-      nodeId: this.id,
+      nodeId: node.id,
       upstreamId: prevJob?.id ?? null
     });
 
@@ -59,11 +59,11 @@ export default {
     // another benifit of this is, it could handle sequenced branches in future.
     await branches.reduce((promise: Promise<any>, branch) => promise.then(() => processor.run(branch, job)), Promise.resolve());
 
-    return processor.end(this, job);
+    return processor.end(node, job);
   },
 
-  async resume(this, branchJob, processor: Processor) {
-    const job = processor.findBranchParentJob(branchJob, this);
+  async resume(node: FlowNodeModel, branchJob, processor: Processor) {
+    const job = processor.findBranchParentJob(branchJob, node);
 
     const { result, status } = job;
     // if parallel has been done (resolved / rejected), do not care newly executed branch jobs.
@@ -74,7 +74,7 @@ export default {
     // find the index of the node which start the branch
     const jobNode = processor.nodesMap.get(branchJob.nodeId);
     const { branchIndex } = processor.findBranchStartNode(jobNode);
-    const { mode = PARALLEL_MODE.ALL } = this.config || {};
+    const { mode = PARALLEL_MODE.ALL } = node.config || {};
 
     const newResult = [...result.slice(0, branchIndex), branchJob.get(), ...result.slice(branchIndex + 1)];
     job.set({
@@ -84,7 +84,7 @@ export default {
 
     if (job.status === JOB_STATUS.PENDING) {
       await job.save({ transaction: processor.transaction });
-      return processor.end(this, job);
+      return processor.end(node, job);
     }
 
     return job;
