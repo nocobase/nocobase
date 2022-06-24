@@ -233,13 +233,23 @@ export default class Processor {
   async saveJob(payload) {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
     const { model } = database.getCollection('jobs');
-    const [job] = (await model.upsert(
-      {
+    let job;
+    if (payload instanceof model) {
+      job = await payload.save({ transaction: this.transaction });
+    } else if (payload.id) {
+      [job] = await model.update(payload, {
+        where: { id: payload.id },
+        returning: true,
+        transaction: this.transaction
+      });
+    } else {
+      job = await model.create({
         ...payload,
         executionId: this.execution.id,
-      },
-      { transaction: this.transaction },
-    )) as unknown as [JobModel, boolean | null];
+      }, {
+        transaction: this.transaction
+      });
+    }
     this.jobsMap.set(job.id, job);
     this.jobsMapByNodeId[job.nodeId] = job.result;
 

@@ -12,26 +12,26 @@ describe('workflow > instructions > delay', () => {
   let WorkflowModel;
   let workflow;
 
-  describe('runtime', () => {
-    beforeEach(async () => {
-      app = await getApp();
+  beforeEach(async () => {
+    app = await getApp();
 
-      db = app.db;
-      WorkflowModel = db.getCollection('workflows').model;
-      PostRepo = db.getCollection('posts').repository;
+    db = app.db;
+    WorkflowModel = db.getCollection('workflows').model;
+    PostRepo = db.getCollection('posts').repository;
 
-      workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'collection',
-        config: {
-          mode: 1,
-          collection: 'posts'
-        }
-      });
+    workflow = await WorkflowModel.create({
+      enabled: true,
+      type: 'collection',
+      config: {
+        mode: 1,
+        collection: 'posts'
+      }
     });
+  });
 
-    afterEach(() => app.stop());
+  afterEach(() => app.stop());
 
+  describe('runtime', () => {
     it('delay to resolved', async () => {
       const n1 = await workflow.createNode({
         type: 'delay',
@@ -83,21 +83,6 @@ describe('workflow > instructions > delay', () => {
 
   describe('app lifecycle', () => {
     beforeEach(async () => {
-      app = await getApp();
-
-      db = app.db;
-      WorkflowModel = db.getCollection('workflows').model;
-      PostRepo = db.getCollection('posts').repository;
-
-      workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'collection',
-        config: {
-          mode: 1,
-          collection: 'posts'
-        }
-      });
-
       await workflow.createNode({
         type: 'delay',
         config: {
@@ -106,8 +91,6 @@ describe('workflow > instructions > delay', () => {
         }
       });
     });
-
-    afterEach(() => app.stop());
 
     it('restart app should trigger delayed job', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
