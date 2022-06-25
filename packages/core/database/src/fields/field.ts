@@ -145,6 +145,12 @@ export abstract class Field {
     let sql;
     if (this.database.sequelize.getDialect() === 'sqlite') {
       sql = `SELECT * from pragma_table_info('${this.collection.model.tableName}') WHERE name = '${this.name}'`;
+    } else if (this.database.inDialect('mysql')) {
+      sql = `
+        select column_name
+        from INFORMATION_SCHEMA.COLUMNS
+        where TABLE_SCHEMA='${this.database.options.database}' AND TABLE_NAME='${this.collection.model.tableName}' AND column_name='${this.name}'
+      `;
     } else {
       sql = `
         select column_name
