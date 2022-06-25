@@ -82,9 +82,9 @@ export const InputRecordPicker: React.FC<any> = (props) => {
 
   const getValue = () => {
     if (multiple == null) return null;
-    return multiple ? value?.map(v => v[fieldNames.value]) : value?.[fieldNames.value];
+    
+    return multiple ? (Array.isArray(value) ? value?.map(v => v[fieldNames.value]) : []) : value?.[fieldNames.value];
   }
-
   return (
     <div>
       <Select

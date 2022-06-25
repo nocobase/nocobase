@@ -56,7 +56,6 @@ FormItem.Designer = (props) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn, refresh, insertAdjacent, insertBeforeBegin } = useDesignable();
-  const formCtx = useFormBlockContext();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -202,7 +201,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {formCtx.form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
+      {form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
           options={
