@@ -73,5 +73,6 @@
   "devDependencies": {
     "@types/gulp-plumber": "^0.0.32",
     "umi-tools": "^0.4.0"
-  }
+  },
+  "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
 }

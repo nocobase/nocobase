@@ -16,13 +16,13 @@
     "@nocobase/plugin-client": "0.7.1-alpha.1",
     "@nocobase/plugin-collection-manager": "0.7.1-alpha.1",
     "@nocobase/plugin-error-handler": "0.7.1-alpha.1",
+    "@nocobase/plugin-export": "0.7.1-alpha.1",
     "@nocobase/plugin-file-manager": "0.7.1-alpha.1",
     "@nocobase/plugin-system-settings": "0.7.1-alpha.1",
     "@nocobase/plugin-ui-routes-storage": "0.7.1-alpha.1",
     "@nocobase/plugin-ui-schema-storage": "0.7.1-alpha.1",
     "@nocobase/plugin-users": "0.7.1-alpha.1",
     "@nocobase/plugin-workflow": "0.7.1-alpha.1",
-    "@nocobase/plugin-export": "0.7.1-alpha.1",
     "@nocobase/server": "0.7.1-alpha.1"
   },
   "repository": {
@@ -30,5 +30,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/presets/nocobase"
   },
-  "gitHead": "66d2a4e5fa6e21872a2eda60ae423752c21bf4f8"
+  "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
 }

@@ -21,5 +21,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/acl"
   },
-  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
+  "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
 }
