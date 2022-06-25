@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/client",
-  "version": "0.7.0-alpha.83",
+  "version": "0.7.1-alpha.3",
   "license": "Apache-2.0",
   "licenses": [
     {
@@ -19,8 +19,8 @@
     "@formily/antd": "2.0.20",
     "@formily/core": "2.0.20",
     "@formily/react": "2.0.20",
-    "@nocobase/sdk": "0.7.0-alpha.83",
-    "@nocobase/utils": "0.7.0-alpha.83",
+    "@nocobase/sdk": "0.7.1-alpha.3",
+    "@nocobase/utils": "0.7.1-alpha.3",
     "ahooks": "^3.0.5",
     "antd": "~4.19.5",
     "axios": "^0.26.1",
@@ -53,5 +53,5 @@
     "@types/marked": "^4.0.1",
     "axios-mock-adapter": "^1.20.0"
   },
-  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
+  "gitHead": "40d079ceb4dadfd6a021ab44a42ef7f52f241745"
 }
