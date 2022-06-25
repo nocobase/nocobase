@@ -12,6 +12,7 @@
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@nocobase/plugin-acl": "0.7.1-alpha.2",
+    "@nocobase/plugin-audit-logs": "0.7.1-alpha.2",
     "@nocobase/plugin-china-region": "0.7.1-alpha.2",
     "@nocobase/plugin-client": "0.7.1-alpha.2",
     "@nocobase/plugin-collection-manager": "0.7.1-alpha.2",
