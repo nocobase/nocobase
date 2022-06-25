@@ -77,11 +77,11 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
-    this.app.db.on('fields.afterDestroy', async (model, options) => {
+    this.app.db.on('fields.beforeDestroy', async (model, options) => {
       await model.remove(options);
     });
 
-    this.app.db.on('collections.afterDestroy', async (model, options) => {
+    this.app.db.on('collections.beforeDestroy', async (model, options) => {
       await model.remove(options);
     });
 
