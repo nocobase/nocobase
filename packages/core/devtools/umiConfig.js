@@ -49,7 +49,7 @@ function resolveNocobasePackagesAlias(config) {
   if (!existsSync(coreDir)) {
     return;
   }
-  const cores = fs.readdirSync();
+  const cores = fs.readdirSync(coreDir);
   for (const package of cores) {
     const packageSrc = resolve(process.cwd(), './packages/core/', package, 'src');
     if (existsSync(packageSrc)) {
