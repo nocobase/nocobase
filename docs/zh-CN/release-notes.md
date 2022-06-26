@@ -1,7 +1,45 @@
 # 更新日志
 
-## To be released
+## 2022/06/26 ~ v0.7.1-alpha.7
 
+- fix(cli): upgrade from docker
+- chore(create-nocobase-app): fix some bugs (#538)
+- feat: relationship fields are loaded on demand
+- fix: destroy collection fields (#536)
+- feat(plugin-workflow): add delay node type (#532)
+- refactor: client application (#533)
+- fix: missing transaction (#531)
+- fix: add ellipsis property to record picker (#527)
+- fix: remove pattern without form item (#528)
+- fix(client): update only fields in the form
+- fix(client): remove z-index
+- fix(plugin-workflow): set current when update (#526)
+- fix(client): non-empty judgment
+- fix: order nulls last (#519)
+- fix(client): close the pop-up after request
+- fix: action loading, refresh context, form submit and validate (#523)
+- fix: field pattern (#520)
+- fix(plugin-workflow): fix searchable select min-width (#524)
+- fix: template with fields only (#517)
+- fix(plugin-workflow): fix update workflow current property (#521)
+- feat: improve chart component
+- refactor(plugin-workflow): abstract to classes (#515)
+- feat: column sortable and form item pattern (#518)
+- feat(client): display option value
+- feat(client): hide drawer header
+- fix(audit-logs): operator does not exist: character varying = integer
+- fix(custom-request): support string/json templates (#514)
+- fix(cli): missing await
+- feat: add block title (#513)
+- fix: remove collections & fields from db (#511)
+- fix(cli): upgrade error in node v14
+- feat: improve migrations (#510)
+- fix(client): improve datepicker component, date with time zone, gmt support
+- fix: datepicker with timezone
+- fix(client): consolidate usage of date/time as UTC in transfering (#509)
+- fix: formula bug
+- fix: default exportable fields (#506)
+- fix(audit-logs): sort by createdAt
 - fix(plugin-export): allow to configure in acl
 - fix: sign in/sign up with enter key
 - fix(client): percent precision
@@ -40,16 +78,17 @@
 - fix(plugin-workflow): fix languages (#451) 
 - fix: afterSync hook not triggered (#450)
 
-### New Features
+### New features
 
 - Fields: Formula、Relationships(o2o, o2m, m2o, m2m)
 - Blocks: Charts(g2plot)
 - Plugins: Audit logs, Export
 
-### Break Changes
+### Breaking changes
 
 - The value of the percentage field, such as 20%, the new version is 0.2, the old version is 20
 - Deleted the sub-table field and used the one-to-many field instead
+- Previously created projects need to be recreated.
 
 ## 2022/06/01 ~ v0.7.0-alpha.83
 
@@ -74,7 +113,7 @@
 
 - feat(client,sdk): improve api client
 
-### Breaking Change
+### Breaking changes
 
 There are major changes to the `APIClient` API, see details [JavaScript SDK](./development/http-api/javascript-sdk.md)
 
