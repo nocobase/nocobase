@@ -15,12 +15,19 @@ export default (app: Application) => {
       try {
         await app.db.auth({ retry: opts.retry || 1 });
       } catch (error) {
-        console.log(chalk.red('Unable to connect to the database. Please check the database environment variables in the .env file.'));
+        console.log(
+          chalk.red(
+            'Unable to connect to the database. Please check the database environment variables in the .env file.',
+          ),
+        );
         return;
       }
 
       if (!opts?.clean && !opts?.force) {
-        if (await app.db.collectionExistsInDb('applicationVersion')) {
+        if (
+          (await app.db.collectionExistsInDb('applicationVersion')) ||
+          (await app.db.collectionExistsInDb('collections'))
+        ) {
           installed = true;
           if (!opts.silent) {
             console.log('NocoBase is already installed. To reinstall, please execute:');
