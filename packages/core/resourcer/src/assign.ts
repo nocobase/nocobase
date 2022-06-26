@@ -1,5 +1,5 @@
-import lodash from 'lodash';
 import deepmerge from 'deepmerge';
+import lodash from 'lodash';
 
 type MergeStrategyType = 'merge' | 'deepMerge' | 'overwrite' | 'andMerge' | 'orMerge' | 'intersect' | 'union';
 type MergeStrategyFunc = (x: any, y: any) => any;
@@ -84,7 +84,7 @@ mergeStrategies.set('union', (x, y) => {
   if (typeof y === 'string') {
     y = y.split(',');
   }
-  return lodash.uniq((x || []).concat(y || []));
+  return lodash.uniq((x || []).concat(y || [])).filter(Boolean);
 });
 
 mergeStrategies.set('intersect', (x, y) => {
