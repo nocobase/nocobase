@@ -26,3 +26,4 @@
 - `plugin` 全文搜索
 - `plugin` 分享页面
 - `plugin` 数据可视化（无代码）
+- `plugin` Open API
