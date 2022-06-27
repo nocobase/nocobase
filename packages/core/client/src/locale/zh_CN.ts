@@ -548,10 +548,13 @@ export default {
   'Conditions': '条件配置',
 
   'Parallel branch': '分支',
+  'Add branch': '增加分支',
   'All succeeded': '全部成功',
   'Any succeeded': '任意成功',
+  'Any succeeded or failed': '任意成功或失败',
   'Continue after all branches succeeded': '全部分支都成功后才能继续',
   'Continue after any branch succeeded': '任意分支成功后就继续',
+  'Continue after any branch succeeded, or exit after any branch failed': '任意分支成功继续，或失败后退出',
 
   'Delay': '延时',
   'Duration': '时长',

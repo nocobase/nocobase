@@ -1,5 +1,5 @@
 import Plugin from '..';
-import { JOB_STATUS } from "../constants";
+import { EXECUTION_STATUS, JOB_STATUS } from "../constants";
 import ExecutionModel from '../models/Execution';
 import JobModel from '../models/Job';
 import Processor from '../Processor';
@@ -27,10 +27,16 @@ export default class {
       },
       include: [
         {
-          association: 'execution'
+          association: 'execution',
+          attributes: [],
+          where: {
+            status: EXECUTION_STATUS.STARTED
+          },
+          required: true
         },
         {
           association: 'node',
+          attributes: ['config'],
           where: {
             type: 'delay'
           },
@@ -61,9 +67,11 @@ export default class {
   }
 
   async trigger(job) {
-    const { execution = await job.getExecution() as ExecutionModel } = job;
-    const processor = this.plugin.createProcessor(execution);
-    await processor.resume(job);
+    const execution = await job.getExecution() as ExecutionModel;
+    if (execution.status === EXECUTION_STATUS.STARTED) {
+      const processor = this.plugin.createProcessor(execution);
+      await processor.resume(job);
+    }
     if (this.timers.get(job.id)) {
       this.timers.delete(job.id);
     }

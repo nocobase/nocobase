@@ -11,6 +11,7 @@ export default {
       title: '{{t("Duration")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Duration',
+      default: 60000
     },
     'config.endStatus': {
       type: 'number',
