@@ -270,14 +270,6 @@ export function Operand({
       display: flex;
       gap: .5em;
       align-items: center;
-
-      .ant-select,
-      .ant-cascader-picker,
-      .ant-picker,
-      .ant-input-number,
-      .ant-input-affix-wrapper{
-        width: auto;
-      }
     `}>
       <Cascader
         allowClear={false}

@@ -4,6 +4,7 @@ import { MockServer, mockServer } from '@nocobase/test';
 import Plugin from '..';
 import { JOB_STATUS } from '../constants';
 import calculators from '../calculators';
+import { ApplicationOptions } from '@nocobase/server';
 
 export function sleep(ms: number) {
   return new Promise(resolve => {
@@ -11,13 +12,17 @@ export function sleep(ms: number) {
   });
 }
 
-export async function getApp(options = {}): Promise<MockServer> {
+interface MockAppOptions extends ApplicationOptions {
+  manual?: boolean;
+}
+
+export async function getApp({ manual, ...options }: MockAppOptions = {}): Promise<MockServer> {
   const app = mockServer(options);
 
   app.plugin(Plugin, {
     instructions: {
       echo: {
-        run({ result }, execution) {
+        run(node, { result }, execution) {
           return {
             status: JOB_STATUS.RESOLVED,
             result
@@ -26,18 +31,18 @@ export async function getApp(options = {}): Promise<MockServer> {
       },
 
       error: {
-        run(input, execution) {
+        run(node, input, execution) {
           throw new Error('definite error');
         }
       },
 
       'prompt->error': {
-        run(this, input, execution) {
+        run(node, input, execution) {
           return {
             status: JOB_STATUS.PENDING
           };
         },
-        resume(this, input, execution) {
+        resume(node, input, execution) {
           throw new Error('input failed');
         }
       }
@@ -60,7 +65,9 @@ export async function getApp(options = {}): Promise<MockServer> {
     console.error(error);
   }
 
-  await app.start();
+  if (!manual) {
+    await app.start();
+  }
 
   return app;
 }

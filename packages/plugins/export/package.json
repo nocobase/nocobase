@@ -1,18 +1,19 @@
 {
   "name": "@nocobase/plugin-export",
-  "version": "0.7.0-alpha.83",
+  "version": "0.7.1-alpha.7",
   "main": "lib/server/index.js",
   "dependencies": {
-    "node-xlsx": "^0.16.1",
-    "@nocobase/client": "0.7.0-alpha.83",
-    "@nocobase/server": "0.7.0-alpha.83"
+    "@nocobase/client": "0.7.1-alpha.7",
+    "@nocobase/server": "0.7.1-alpha.7",
+    "node-xlsx": "^0.16.1"
   },
   "devDependencies": {
     "@types/node-xlsx": "^0.15.1"
   },
   "peerDependencies": {
-    "@nocobase/server": "*",
     "@nocobase/client": "*",
+    "@nocobase/server": "*",
     "@nocobase/test": "*"
-  }
+  },
+  "gitHead": "40d079ceb4dadfd6a021ab44a42ef7f52f241745"
 }

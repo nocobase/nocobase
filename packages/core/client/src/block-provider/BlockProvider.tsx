@@ -52,7 +52,11 @@ const useResource = (props: UseResourceProps) => {
   }
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
-  if (!withoutTableFieldResource && __parent?.block === 'TableField' && __parent?.resource instanceof TableFieldResource) {
+  if (
+    !withoutTableFieldResource &&
+    __parent?.block === 'TableField' &&
+    __parent?.resource instanceof TableFieldResource
+  ) {
     return __parent.resource;
   }
   if (!association) {
@@ -61,7 +65,7 @@ const useResource = (props: UseResourceProps) => {
   if (sourceId) {
     return api.resource(resource, sourceId);
   }
-  
+
   return api.resource(resource, record[association?.sourceKey || 'id']);
 };
 
@@ -82,9 +86,9 @@ export const useResourceAction = (props, opts = {}) => {
   const result = useRequest(
     (opts) => {
       if (!action) {
-        return  Promise.resolve({});
+        return Promise.resolve({});
       }
-      const actionParams = {...opts};
+      const actionParams = { ...opts };
       if (params.appends) {
         actionParams.appends = params.appends;
       }
@@ -162,8 +166,8 @@ export const useFilterByTk = () => {
       return recordIndex;
     }
   }
-  
-  if (assoc) { 
+
+  if (assoc) {
     const association = getCollectionField(assoc);
     return record?.[association.targetKey || 'id'];
   }

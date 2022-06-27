@@ -31,7 +31,7 @@ const InternalTableBlockProvider = (props) => {
   );
 };
 
-const useAssociationNames = (collection) => {
+export const useAssociationNames = (collection) => {
   const { getCollectionFields } = useCollectionManager();
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();

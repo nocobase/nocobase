@@ -45,7 +45,11 @@ function getUmiConfig() {
 }
 
 function resolveNocobasePackagesAlias(config) {
-  const cores = fs.readdirSync(resolve(process.cwd(), './packages/core'));
+  const coreDir = resolve(process.cwd(), './packages/core');
+  if (!existsSync(coreDir)) {
+    return;
+  }
+  const cores = fs.readdirSync(coreDir);
   for (const package of cores) {
     const packageSrc = resolve(process.cwd(), './packages/core/', package, 'src');
     if (existsSync(packageSrc)) {

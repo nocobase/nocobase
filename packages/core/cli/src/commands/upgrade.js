@@ -12,9 +12,14 @@ module.exports = (cli) => {
   cli
     .command('upgrade')
     .allowUnknownOption()
-    .action(async () => {
+    .option('--raw')
+    .action(async (options) => {
       promptForTs();
       const version = await getVersion();
+      if (options.raw) {
+        await runAppCommand('upgrade');
+        return;
+      }
       if (hasCorePackages()) {
         await run('yarn', ['install']);
         await runAppCommand('upgrade');

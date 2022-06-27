@@ -557,6 +557,13 @@ export default {
   'Continue after all branches succeeded': '全部分支都成功后才能继续',
   'Continue after any branch succeeded': '任意分支成功后就继续',
 
+  'Delay': '延时',
+  'Duration': '时长',
+  'End Status': '到时状态',
+  'Select status': '选择状态',
+  'Succeed and continue': '通过并继续',
+  'Fail and exit': '失败并退出',
+
   'Create record': '新增数据',
   'Update record': '更新数据',
   'Query record': '查询数据',

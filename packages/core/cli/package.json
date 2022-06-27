@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "0.7.0-alpha.83",
+  "version": "0.7.1-alpha.7",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -23,12 +23,12 @@
     "serve": "^13.0.2"
   },
   "devDependencies": {
-    "@nocobase/devtools": "0.7.0-alpha.83"
+    "@nocobase/devtools": "0.7.1-alpha.7"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/core/cli"
   },
-  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
+  "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
 }

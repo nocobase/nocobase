@@ -11,11 +11,13 @@ import { AddButton, useFlowContext } from '../WorkflowCanvas';
 
 import calculation from './calculation';
 import condition from './condition';
-import create from './create';
-import destroy from './destroy';
 import parallel from './parallel';
+import delay from './delay';
+
 import query from './query';
+import create from './create';
 import update from './update';
+import destroy from './destroy';
 
 export interface Instruction {
   title: string;
@@ -33,13 +35,15 @@ export interface Instruction {
 
 export const instructions = new Registry<Instruction>();
 
+instructions.register('condition', condition);
+instructions.register('parallel', parallel);
+instructions.register('calculation', calculation);
+instructions.register('delay', delay);
+
 instructions.register('query', query);
 instructions.register('create', create);
 instructions.register('update', update);
 instructions.register('destroy', destroy);
-instructions.register('condition', condition);
-instructions.register('parallel', parallel);
-instructions.register('calculation', calculation);
 
 function useUpdateAction() {
   const { t } = useTranslation();
@@ -220,7 +224,11 @@ export function NodeDefaultView(props) {
                         'x-component-props': {
                           disabled: workflow.executed,
                           className: css`
-                            .ant-select{
+                            .ant-select,
+                            .ant-cascader-picker,
+                            .ant-picker,
+                            .ant-input-number,
+                            .ant-input-affix-wrapper{
                               width: auto;
                             }
                           `
