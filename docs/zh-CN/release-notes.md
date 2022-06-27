@@ -2,6 +2,20 @@
 
 ## 2022/06/26 ~ v0.7.1-alpha.7
 
+### New features
+
+- Fields: 公式、表关系(o2o, o2m, m2o, m2m)
+- Blocks: 图表(g2plot)
+- Plugins: 操作记录, 导出, 工作流(定时任务)
+
+### Breaking changes
+
+- 百分比字段存储原始数值。 比如，旧版本将 1% 存储为  1，新版本将 1%  存储为 0.01
+- 去掉子表格字段，并使用一对多字段代替
+- 如果之前是使用 yarn create 安装的 NocoBase 应用，需要重新 yarn create，再执行 yarn nocobase upgrade
+
+### Details
+
 - fix(cli): upgrade from docker
 - chore(create-nocobase-app): fix some bugs (#538)
 - feat: relationship fields are loaded on demand
@@ -77,18 +91,6 @@
 - fix: the details of the associated data in the subtable are not displayed
 - fix(plugin-workflow): fix languages (#451) 
 - fix: afterSync hook not triggered (#450)
-
-### New features
-
-- Fields: Formula、Relationships(o2o, o2m, m2o, m2m)
-- Blocks: Charts(g2plot)
-- Plugins: Audit logs, Export
-
-### Breaking changes
-
-- The value of the percentage field, such as 20%, the new version is 0.2, the old version is 20
-- Deleted the sub-table field and used the one-to-many field instead
-- Previously created projects need to be recreated.
 
 ## 2022/06/01 ~ v0.7.0-alpha.83
 
