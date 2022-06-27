@@ -1,4 +1,3 @@
-import { Collection } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import path from 'path';
@@ -101,41 +100,41 @@ export class CollectionManagerPlugin extends Plugin {
       await next();
     });
 
-    this.app.resourcer.use(async (ctx, next) => {
-      const { resourceName, actionName } = ctx.action;
-      if (actionName === 'update') {
-        const { updateAssociationValues = [] } = ctx.action.params;
-        const [collectionName, associationName] = resourceName.split('.');
-        if (!associationName) {
-          const collection: Collection = ctx.db.getCollection(collectionName);
-          if (collection) {
-            for (const [, field] of collection.fields) {
-              if (['subTable', 'o2m'].includes(field.options.interface)) {
-                updateAssociationValues.push(field.name);
-              }
-            }
-          }
-        } else {
-          const association = ctx.db.getCollection(collectionName)?.getField?.(associationName);
-          if (association?.target) {
-            const collection: Collection = ctx.db.getCollection(association?.target);
-            if (collection) {
-              for (const [, field] of collection.fields) {
-                if (['subTable', 'o2m'].includes(field.options.interface)) {
-                  updateAssociationValues.push(field.name);
-                }
-              }
-            }
-          }
-        }
-        if (updateAssociationValues.length) {
-          ctx.action.mergeParams({
-            updateAssociationValues,
-          });
-        }
-      }
-      await next();
-    });
+    // this.app.resourcer.use(async (ctx, next) => {
+    //   const { resourceName, actionName } = ctx.action;
+    //   if (actionName === 'update') {
+    //     const { updateAssociationValues = [] } = ctx.action.params;
+    //     const [collectionName, associationName] = resourceName.split('.');
+    //     if (!associationName) {
+    //       const collection: Collection = ctx.db.getCollection(collectionName);
+    //       if (collection) {
+    //         for (const [, field] of collection.fields) {
+    //           if (['subTable', 'o2m'].includes(field.options.interface)) {
+    //             updateAssociationValues.push(field.name);
+    //           }
+    //         }
+    //       }
+    //     } else {
+    //       const association = ctx.db.getCollection(collectionName)?.getField?.(associationName);
+    //       if (association?.target) {
+    //         const collection: Collection = ctx.db.getCollection(association?.target);
+    //         if (collection) {
+    //           for (const [, field] of collection.fields) {
+    //             if (['subTable', 'o2m'].includes(field.options.interface)) {
+    //               updateAssociationValues.push(field.name);
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //     if (updateAssociationValues.length) {
+    //       ctx.action.mergeParams({
+    //         updateAssociationValues,
+    //       });
+    //     }
+    //   }
+    //   await next();
+    // });
 
     this.app.acl.allow('collections', 'list', 'loggedIn');
     this.app.acl.allow('collections', ['create', 'update', 'destroy'], 'allowConfigure');
