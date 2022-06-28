@@ -226,7 +226,7 @@ export class APIClient {
         } else {
           config['method'] = 'post';
         }
-        return async (params?: ActionParams) => {
+        return async (params?: ActionParams, opts?: any) => {
           const { values, filter, ...others } = params || {};
           config['params'] = others;
           if (filter) {
@@ -239,7 +239,10 @@ export class APIClient {
           if (config.method !== 'get') {
             config['data'] = values || {};
           }
-          return await this.request(config);
+          return await this.request({
+            ...config,
+            ...opts,
+          });
         };
       },
     };
