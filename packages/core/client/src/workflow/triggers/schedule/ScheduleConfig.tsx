@@ -160,7 +160,7 @@ export const ScheduleConfig = () => {
       clearFormGraph('config.repeat');
       clearFormGraph('config.endsOn');
       clearFormGraph('config.limit');
-    })
+    });
   });
 
   return (
