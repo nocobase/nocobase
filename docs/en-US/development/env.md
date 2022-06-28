@@ -84,11 +84,11 @@ DB_HOST=localhost
 
 Database port (required when using MySQL or PostgreSQL)
 
-- MySQL default port 3356
+- MySQL default port 3306
 - PostgreSQL default port 5432
 
 ```bash
-DB_PORT=3356
+DB_PORT=3306
 ```
 
 ### DB_DATABASE
