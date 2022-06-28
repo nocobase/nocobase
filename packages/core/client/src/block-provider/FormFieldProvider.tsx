@@ -3,6 +3,7 @@ import { ArrayField, Field, ObjectField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
@@ -36,18 +37,24 @@ const InternalFormFieldProvider = (props) => {
     return <Spin />;
   }
 
+  console.log('InternalFormFieldProvider', fieldName);
+
   return (
-    <FormFieldContext.Provider
-      value={{
-        action,
-        form,
-        field,
-        service,
-        resource,
-      }}
-    >
-      {props.children}
-    </FormFieldContext.Provider>
+    <RecordProvider record={service?.data?.data}>
+      <FormFieldContext.Provider
+        value={{
+          action,
+          form,
+          field,
+          service,
+          resource,
+          fieldName,
+        }}
+      >
+        {props.children}
+      </FormFieldContext.Provider>
+    </RecordProvider>
+    
   );
 }
 

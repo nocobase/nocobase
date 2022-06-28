@@ -19,7 +19,7 @@ export const TableColumnInitializers = (props: any) => {
     }, {
       type: 'itemGroup',
       title: t('Display association fields'),
-      children: useAssociatedTableColumnInitializerFields(),
+      children: associatedFields,
     })
   }
   fieldItems.push({
@@ -29,13 +29,11 @@ export const TableColumnInitializers = (props: any) => {
     title: t('Action column'),
     component: 'TableActionColumnInitializer',
   })
-  console.log('TableColumnInitializers', fieldItems);
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
       icon={'SettingOutlined'}
       wrap={(s) => {
-        console.log('TableColumnInitializers', s);
         if (s['x-action-column']) {
           return s;
         }
