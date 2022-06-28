@@ -4,7 +4,7 @@ import { getApp } from '.';
 
 
 
-describe('workflow > workflow', () => {
+describe('workflow > Plugin', () => {
   let app: MockServer;
   let agent;
   let db: Database;

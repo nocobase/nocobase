@@ -22,7 +22,6 @@ describe('workflow > Processor', () => {
     PostRepo = db.getCollection('posts').repository;
 
     workflow = await WorkflowModel.create({
-      title: 'test workflow',
       enabled: true,
       type: 'collection',
       config: {
@@ -45,7 +44,6 @@ describe('workflow > Processor', () => {
 
     it('execute resolved workflow', async () => {
       await workflow.createNode({
-        title: 'echo',
         type: 'echo'
       });
 
@@ -62,7 +60,6 @@ describe('workflow > Processor', () => {
 
     it('workflow with single simple node', async () => {
       await workflow.createNode({
-        title: 'echo',
         type: 'echo'
       });
 
@@ -108,7 +105,6 @@ describe('workflow > Processor', () => {
 
     it('workflow with error node', async () => {
       await workflow.createNode({
-        title: 'error',
         type: 'error'
       });
 
@@ -128,12 +124,10 @@ describe('workflow > Processor', () => {
   describe('manual nodes', () => {
     it('manual node should suspend execution, and could be manually resume', async () => {
       const n1 = await workflow.createNode({
-        title: 'prompt',
         type: 'prompt',
       });
 
       const n2 = await workflow.createNode({
-        title: 'echo',
         type: 'echo',
         upstreamId: n1.id
       });
@@ -163,11 +157,9 @@ describe('workflow > Processor', () => {
 
     it('manual node should suspend execution, resuming with error should end execution', async () => {
       const n1 = await workflow.createNode({
-        title: 'prompt error',
         type: 'prompt->error',
       });
       const n2 = await workflow.createNode({
-        title: 'echo',
         type: 'echo',
         upstreamId: n1.id
       });
@@ -196,20 +188,17 @@ describe('workflow > Processor', () => {
   describe('branch: condition', () => {
     it('condition node link to different downstreams', async () => {
       const n1 = await workflow.createNode({
-        title: 'condition',
         type: 'condition',
         // no config means always true
       });
 
       const n2 = await workflow.createNode({
-        title: 'true to echo',
         type: 'echo',
         branchIndex: BRANCH_INDEX.ON_TRUE,
         upstreamId: n1.id
       });
 
       await workflow.createNode({
-        title: 'false to echo',
         type: 'echo',
         branchIndex: BRANCH_INDEX.ON_FALSE,
         upstreamId: n1.id
@@ -229,20 +218,17 @@ describe('workflow > Processor', () => {
 
     it('suspend downstream in condition branch, then go on', async () => {
       const n1 = await workflow.createNode({
-        title: 'condition',
         type: 'condition',
         // no config means always true
       });
 
       const n2 = await workflow.createNode({
-        title: 'manual',
         type: 'prompt',
         branchIndex: BRANCH_INDEX.ON_TRUE,
         upstreamId: n1.id
       });
 
       const n3 = await workflow.createNode({
-        title: 'echo input value',
         type: 'echo',
         upstreamId: n1.id
       });
@@ -265,20 +251,17 @@ describe('workflow > Processor', () => {
 
     it('resume error downstream in condition branch, should reject', async () => {
       const n1 = await workflow.createNode({
-        title: 'condition',
         type: 'condition',
         // no config means always true
       });
 
       const n2 = await workflow.createNode({
-        title: 'manual',
         type: 'prompt->error',
         branchIndex: BRANCH_INDEX.ON_TRUE,
         upstreamId: n1.id
       });
 
       const n3 = await workflow.createNode({
-        title: 'echo input value',
         type: 'echo',
         upstreamId: n1.id
       });
@@ -301,132 +284,19 @@ describe('workflow > Processor', () => {
     });
   });
 
-  describe('branch: parallel node', () => {
-    it('link to single branch', async () => {
-      const n1 = await workflow.createNode({
-        title: 'parallel',
-        type: 'parallel'
-      });
-
-      const n2 = await workflow.createNode({
-        title: 'echo1',
-        type: 'echo',
-        upstreamId: n1.id,
-        branchIndex: 0
-      });
-
-      const n3 = await workflow.createNode({
-        title: 'echo2',
-        type: 'echo',
-        upstreamId: n1.id
-      });
-
-      await n1.setDownstream(n3);
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
-      expect(jobs.length).toEqual(3);
-    });
-
-    it('link to multipe branches', async () => {
-      const n1 = await workflow.createNode({
-        title: 'parallel',
-        type: 'parallel'
-      });
-
-      const n2 = await workflow.createNode({
-        title: 'echo1',
-        type: 'echo',
-        upstreamId: n1.id,
-        branchIndex: 0
-      });
-
-      const n3 = await workflow.createNode({
-        title: 'echo2',
-        type: 'echo',
-        upstreamId: n1.id,
-        branchIndex: 1
-      });
-
-      const n4 = await workflow.createNode({
-        title: 'echo on end',
-        type: 'echo',
-        upstreamId: n1.id
-      });
-
-      await n1.setDownstream(n4);
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
-      expect(jobs.length).toEqual(4);
-    });
-
-    it('downstream has manual node', async () => {
-      const n1 = await workflow.createNode({
-        title: 'parallel',
-        type: 'parallel'
-      });
-
-      const n2 = await workflow.createNode({
-        title: 'prompt',
-        type: 'prompt',
-        upstreamId: n1.id,
-        branchIndex: 0
-      });
-
-      const n3 = await workflow.createNode({
-        title: 'echo',
-        type: 'echo',
-        upstreamId: n1.id,
-        branchIndex: 1
-      });
-
-      const n4 = await workflow.createNode({
-        title: 'echo on end',
-        type: 'echo',
-        upstreamId: n1.id
-      });
-
-      await n1.setDownstream(n4);
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
-
-      const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
-      pending.set('result', 123);
-      const processor = plugin.createProcessor(execution);
-      await processor.resume(pending);
-
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
-      expect(jobs.length).toEqual(4);
-    });
-  });
-
   describe('branch: mixed', () => {
     it('condition branches contains parallel', async () => {
       const n1 = await workflow.createNode({
-        title: 'condition',
         type: 'condition'
       });
 
       const n2 = await workflow.createNode({
-        title: 'parallel',
         type: 'parallel',
         branchIndex: BRANCH_INDEX.ON_TRUE,
         upstreamId: n1.id
       });
 
       const n3 = await workflow.createNode({
-        title: 'prompt',
         type: 'prompt',
         upstreamId: n2.id,
         branchIndex: 0
@@ -467,19 +337,16 @@ describe('workflow > Processor', () => {
 
     it('parallel branches contains condition', async () => {
       const n1 = await workflow.createNode({
-        title: 'parallel',
         type: 'parallel'
       });
 
       const n2 = await workflow.createNode({
-        title: 'prompt',
         type: 'prompt',
         upstreamId: n1.id,
         branchIndex: 0
       });
 
       const n3 = await workflow.createNode({
-        title: 'condition',
         type: 'condition',
         upstreamId: n1.id,
         branchIndex: 1
@@ -502,19 +369,20 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
 
-      const pendingJobs = await execution.getJobs();
+      const pendingJobs = await e1.getJobs();
       expect(pendingJobs.length).toBe(4);
 
       const pending = pendingJobs.find(item => item.nodeId === n2.id );
       pending.set('result', 123);
-      const processor = plugin.createProcessor(execution);
+      const processor = plugin.createProcessor(e1);
       await processor.resume(pending);
 
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const jobs = await e2.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(5);
     });
   });

@@ -201,11 +201,12 @@ export default class Processor {
   }
 
   // parent node should take over the control
-  public end(node, job) {
+  public async end(node, job) {
     const parentNode = this.findBranchParentNode(node);
     // no parent, means on main flow
     if (parentNode) {
-      return this.recall(parentNode, job);
+      await this.recall(parentNode, job);
+      return job;
     }
 
     // really done for all nodes
@@ -256,11 +257,23 @@ export default class Processor {
     return job;
   }
 
+  getBranches(node: FlowNodeModel): FlowNodeModel[] {
+    return this.nodes
+      .filter(item => item.upstream === node && item.branchIndex !== null)
+      .sort((a, b) => a.branchIndex - b.branchIndex);
+  }
+
   // find the first node in current branch
-  findBranchStartNode(node: FlowNodeModel): FlowNodeModel | null {
+  findBranchStartNode(node: FlowNodeModel, parent?: FlowNodeModel): FlowNodeModel | null {
     for (let n = node; n; n = n.upstream) {
-      if (n.branchIndex !== null) {
-        return n;
+      if (!parent) {
+        if (n.branchIndex !== null) {
+          return n;
+        }
+      } else {
+        if (n.upstream === parent) {
+          return n;
+        }
       }
     }
     return null;

@@ -9,41 +9,54 @@ export const PARALLEL_MODE = {
   RACE: 'race'
 } as const;
 
-const StatusGetters = {
-  [PARALLEL_MODE.ALL](result) {
-    if (result.some(j => j && j.status === JOB_STATUS.REJECTED)) {
+const Modes = {
+  [PARALLEL_MODE.ALL]: {
+    next(previous) {
+      return previous.status !== JOB_STATUS.REJECTED;
+    },
+    getStatus(result) {
+      if (result.some(status => status != null && status === JOB_STATUS.REJECTED)) {
+        return JOB_STATUS.REJECTED;
+      }
+      if (result.every(status => status != null && status === JOB_STATUS.RESOLVED)) {
+        return JOB_STATUS.RESOLVED;
+      }
+      return JOB_STATUS.PENDING;
+    }
+  },
+  [PARALLEL_MODE.ANY]: {
+    next(previous) {
+      return previous.status !== JOB_STATUS.RESOLVED;
+    },
+    getStatus(result) {
+      if (result.some(status => status != null && status === JOB_STATUS.RESOLVED)) {
+        return JOB_STATUS.RESOLVED;
+      }
+      if (result.some(status => status != null ? status === JOB_STATUS.PENDING : true)) {
+        return JOB_STATUS.PENDING;
+      }
       return JOB_STATUS.REJECTED;
     }
-    if (result.every(j => j && j.status === JOB_STATUS.RESOLVED)) {
-      return JOB_STATUS.RESOLVED;
+  },
+  [PARALLEL_MODE.RACE]: {
+    next(previous) {
+      return previous.status === JOB_STATUS.PENDING;
+    },
+    getStatus(result) {
+      if (result.some(status => status != null && status === JOB_STATUS.RESOLVED)) {
+        return JOB_STATUS.RESOLVED;
+      }
+      if (result.some(status => status != null && status === JOB_STATUS.REJECTED)) {
+        return JOB_STATUS.REJECTED;
+      }
+      return JOB_STATUS.PENDING;
     }
-    return JOB_STATUS.PENDING;
-  },
-  [PARALLEL_MODE.ANY](result) {
-    return result.some(j => j && j.status === JOB_STATUS.RESOLVED)
-      ? JOB_STATUS.RESOLVED
-      : (
-        result.some(j => j && j.status === JOB_STATUS.PENDING)
-          ? JOB_STATUS.PENDING
-          : JOB_STATUS.REJECTED
-      )
-  },
-  [PARALLEL_MODE.RACE](result) {
-    return result.some(j => j && j.status === JOB_STATUS.RESOLVED)
-      ? JOB_STATUS.RESOLVED
-      : (
-        result.some(j => j && j.status === JOB_STATUS.REJECTED)
-          ? JOB_STATUS.REJECTED
-          : JOB_STATUS.PENDING
-      )
   }
 };
 
 export default {
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
-    const branches = processor.nodes
-      .filter(item => item.upstream === node && item.branchIndex !== null)
-      .sort((a, b) => a.branchIndex - b.branchIndex);
+    const branches = processor.getBranches(node);
 
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
@@ -57,7 +70,14 @@ export default {
     // for users, this is almost equivalent to `Promise.all`,
     // because of the delay is not significant sensible.
     // another benifit of this is, it could handle sequenced branches in future.
-    await branches.reduce((promise: Promise<any>, branch) => promise.then(() => processor.run(branch, job)), Promise.resolve());
+    const { mode = PARALLEL_MODE.ALL } = node.config;
+    await branches.reduce((promise: Promise<any>, branch, i) =>
+      promise.then((previous) => {
+        if (i && !Modes[mode].next(previous)) {
+          return Promise.resolve(previous);
+        }
+        return processor.run(branch, job);
+      }), Promise.resolve());
 
     return processor.end(node, job);
   },
@@ -73,13 +93,15 @@ export default {
 
     // find the index of the node which start the branch
     const jobNode = processor.nodesMap.get(branchJob.nodeId);
-    const { branchIndex } = processor.findBranchStartNode(jobNode);
+    const branchStartNode = processor.findBranchStartNode(jobNode, node);
+    const branches = processor.getBranches(node);
+    const branchIndex = branches.indexOf(branchStartNode);
     const { mode = PARALLEL_MODE.ALL } = node.config || {};
 
-    const newResult = [...result.slice(0, branchIndex), branchJob.get(), ...result.slice(branchIndex + 1)];
+    const newResult = [...result.slice(0, branchIndex), branchJob.status, ...result.slice(branchIndex + 1)];
     job.set({
       result: newResult,
-      status: StatusGetters[mode](newResult)
+      status: Modes[mode].getStatus(newResult)
     });
 
     if (job.status === JOB_STATUS.PENDING) {

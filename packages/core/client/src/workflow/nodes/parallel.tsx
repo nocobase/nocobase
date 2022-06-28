@@ -46,7 +46,17 @@ export default {
             </Tooltip>
           )
         },
-        // { value: 'race', label: '任意退出' },
+        {
+          value: 'race',
+          label: (
+            <Tooltip
+              title={i18n.t('Continue after any branch succeeded, or exit after any branch failed')}
+              placement="bottom"
+            >
+              {i18n.t('Any succeeded or failed')} <QuestionCircleOutlined style={{ color: '#999' }} />
+            </Tooltip>
+          )
+        },
       ],
       default: 'all'
     }
