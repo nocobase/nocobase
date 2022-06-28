@@ -62,8 +62,8 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
   trigger(workflow, date) {
     const { startsOn, endsOn, repeat } = workflow.config;
     if (startsOn && typeof repeat === 'number') {
-      const startTime = Date.parse(startsOn);
-      if ((startTime - date.getTime()) % repeat) {
+      const startTime = Math.floor(Date.parse(startsOn) / 1000) * 1000;
+      if (Math.round(date.getTime() - startTime) % repeat) {
         return;
       }
     }
