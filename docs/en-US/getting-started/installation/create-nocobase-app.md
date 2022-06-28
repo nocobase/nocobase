@@ -32,7 +32,7 @@ yarn create nocobase-app my-nocobase-app -d sqlite
 # MySQL
 yarn create nocobase-app my-nocobase-app -d mysql \
    -e DB_HOST=localhost \
-   -e DB_PORT=3356 \
+   -e DB_PORT=3306 \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase
