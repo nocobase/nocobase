@@ -15,10 +15,10 @@ const Modes = {
       return previous.status !== JOB_STATUS.REJECTED;
     },
     getStatus(result) {
-      if (result.some(j => j && j.status === JOB_STATUS.REJECTED)) {
+      if (result.some(status => status != null && status === JOB_STATUS.REJECTED)) {
         return JOB_STATUS.REJECTED;
       }
-      if (result.every(j => j && j.status === JOB_STATUS.RESOLVED)) {
+      if (result.every(status => status != null && status === JOB_STATUS.RESOLVED)) {
         return JOB_STATUS.RESOLVED;
       }
       return JOB_STATUS.PENDING;
@@ -29,10 +29,10 @@ const Modes = {
       return previous.status !== JOB_STATUS.RESOLVED;
     },
     getStatus(result) {
-      if (result.some(j => j && j.status === JOB_STATUS.RESOLVED)) {
+      if (result.some(status => status != null && status === JOB_STATUS.RESOLVED)) {
         return JOB_STATUS.RESOLVED;
       }
-      if (result.some(j => j ? j.status === JOB_STATUS.PENDING : true)) {
+      if (result.some(status => status != null ? status === JOB_STATUS.PENDING : true)) {
         return JOB_STATUS.PENDING;
       }
       return JOB_STATUS.REJECTED;
@@ -43,10 +43,10 @@ const Modes = {
       return previous.status === JOB_STATUS.PENDING;
     },
     getStatus(result) {
-      if (result.some(j => j && j.status === JOB_STATUS.RESOLVED)) {
+      if (result.some(status => status != null && status === JOB_STATUS.RESOLVED)) {
         return JOB_STATUS.RESOLVED;
       }
-      if (result.some(j => j && j.status === JOB_STATUS.REJECTED)) {
+      if (result.some(status => status != null && status === JOB_STATUS.REJECTED)) {
         return JOB_STATUS.REJECTED;
       }
       return JOB_STATUS.PENDING;
@@ -93,12 +93,12 @@ export default {
 
     // find the index of the node which start the branch
     const jobNode = processor.nodesMap.get(branchJob.nodeId);
-    const branchStartNode = processor.findBranchStartNode(jobNode);
+    const branchStartNode = processor.findBranchStartNode(jobNode, node);
     const branches = processor.getBranches(node);
     const branchIndex = branches.indexOf(branchStartNode);
     const { mode = PARALLEL_MODE.ALL } = node.config || {};
 
-    const newResult = [...result.slice(0, branchIndex), branchJob.get(), ...result.slice(branchIndex + 1)];
+    const newResult = [...result.slice(0, branchIndex), branchJob.status, ...result.slice(branchIndex + 1)];
     job.set({
       result: newResult,
       status: Modes[mode].getStatus(newResult)

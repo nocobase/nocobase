@@ -264,10 +264,16 @@ export default class Processor {
   }
 
   // find the first node in current branch
-  findBranchStartNode(node: FlowNodeModel): FlowNodeModel | null {
+  findBranchStartNode(node: FlowNodeModel, parent?: FlowNodeModel): FlowNodeModel | null {
     for (let n = node; n; n = n.upstream) {
-      if (n.branchIndex !== null) {
-        return n;
+      if (!parent) {
+        if (n.branchIndex !== null) {
+          return n;
+        }
+      } else {
+        if (n.upstream === parent) {
+          return n;
+        }
       }
     }
     return null;

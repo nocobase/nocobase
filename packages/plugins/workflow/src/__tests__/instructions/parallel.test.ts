@@ -33,7 +33,7 @@ describe('workflow > instructions > parallel', () => {
 
   afterEach(() => app.stop());
 
-  describe('all', () => {
+  describe('single all', () => {
     it('all resolved', async () => {
       const n1 = await workflow.createNode({
         type: 'parallel'
@@ -106,7 +106,7 @@ describe('workflow > instructions > parallel', () => {
     });
   });
 
-  describe('any', () => {
+  describe('single any', () => {
     it('first resolved', async () => {
       const n1 = await workflow.createNode({
         type: 'parallel',
@@ -186,7 +186,7 @@ describe('workflow > instructions > parallel', () => {
     });
   });
 
-  describe('race', () => {
+  describe('single race', () => {
     it('first resolved', async () => {
       const n1 = await workflow.createNode({
         type: 'parallel',
@@ -371,6 +371,45 @@ describe('workflow > instructions > parallel', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(4);
+    });
+  });
+
+  describe('nested', () => {
+    it('nested 2 levels', async () => {
+      const n1 = await workflow.createNode({
+        type: 'parallel'
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'parallel',
+        upstreamId: n1.id,
+        branchIndex: 0
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 1
+      });
+
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n2.id,
+        branchIndex: 0
+      });
+
+      const n5 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id
+      });
+      await n1.setDownstream(n5);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.length).toBe(5);
     });
   });
 });
