@@ -4,7 +4,7 @@ import { getApp, sleep } from '..';
 
 
 
-describe.skip('workflow > triggers > schedule', () => {
+describe('workflow > triggers > schedule', () => {
   let app: Application;
   let db: Database;
   let PostRepo;
@@ -186,13 +186,16 @@ describe.skip('workflow > triggers > schedule', () => {
         }
       });
 
+      const now = new Date();
+      await sleep((2.5 - now.getSeconds() % 2) * 1000 - now.getMilliseconds());
+
       const post = await PostRepo.create({ values: { title: 't1' }});
 
       await sleep(1000);
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(0);
 
-      await sleep(1000);
+      await sleep(2000);
       const [execution] = await workflow.getExecutions();
       expect(execution).toBeDefined();
       expect(execution.context.data.id).toBe(post.id);
