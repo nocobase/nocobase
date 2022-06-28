@@ -1,6 +1,6 @@
 import React from 'react';
 import { Select } from 'antd';
-import { observer, useForm } from '@formily/react';
+import { observer, useForm, useFormEffects } from '@formily/react';
 
 import { useCollectionDataSource, useCollectionManager } from '../../collection-manager';
 import { useCompile } from '../../schema-component';
@@ -10,12 +10,19 @@ import { BaseTypeSet } from '../calculators';
 import { collection, filter } from '../schemas/collection';
 import { useTranslation } from 'react-i18next';
 import { css } from '@emotion/css';
+import { onFieldValueChange } from '@formily/core';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
-  const { values } = useForm();
+  const { values, clearFormGraph, setValuesIn } = useForm();
   const fields = getCollectionFields(values?.config?.collection);
+  useFormEffects(() => {
+    onFieldValueChange('config.collection', (field) => {
+      clearFormGraph('config.changed');
+      setValuesIn('config.condition', null);
+    });
+  });
 
   return (
     <Select
