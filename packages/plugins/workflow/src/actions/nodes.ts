@@ -79,6 +79,8 @@ export async function create(context: Context, next) {
     }
 
     instance.set('upstream', upstream);
+
+    return instance;
   });
 
   await next();
