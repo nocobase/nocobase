@@ -40,6 +40,10 @@ export abstract class RelationRepository {
     this.targetCollection = this.sourceCollection.context.database.modelCollection.get(this.targetModel);
   }
 
+  get collection() {
+    return this.db.getCollection(this.targetModel.name);
+  }
+
   targetKey() {
     return this.associationField.targetKey;
   }
