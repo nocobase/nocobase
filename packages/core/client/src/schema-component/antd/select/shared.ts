@@ -1,4 +1,4 @@
-import { toArr } from '@formily/shared';
+import { castArray } from 'lodash';
 
 export const defaultFieldNames = {
   label: 'label',
@@ -8,7 +8,9 @@ export const defaultFieldNames = {
 };
 
 export const getCurrentOptions = (values, dataSource, fieldNames) => {
-  values = toArr(values).map((val) => (typeof val === 'object' ? val[fieldNames.value] : val));
+  values = castArray(values)
+    .filter(item => item != null)
+    .map((val) => (typeof val === 'object' ? val[fieldNames.value] : val));
   const findOptions = (options: any[]) => {
     let current = [];
     for (const option of options) {
