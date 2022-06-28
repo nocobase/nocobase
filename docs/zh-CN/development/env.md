@@ -84,11 +84,11 @@ DB_HOST=localhost
 
 数据库端口（使用 mysql 或 postgres 数据库时需要配置）
 
-- MySQL 默认端口 3356
+- MySQL 默认端口 3306
 - PostgreSQL 默认端口 5432
 
 ```bash
-DB_PORT=3356
+DB_PORT=3306
 ```
 
 ### DB_DATABASE
