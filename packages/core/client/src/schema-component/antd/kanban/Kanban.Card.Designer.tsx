@@ -99,7 +99,7 @@ export const KanbanCardDesigner = (props: any) => {
               {
                 type: 'itemGroup',
                 title: t('Display association fields'),
-                children: useAssociatedFormItemInitializerFields({readPretty: true, block: 'KanbanV2'}),
+                children: useAssociatedFormItemInitializerFields({readPretty: true, block: 'Kanban'}),
               },
             ]}
             component={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}
