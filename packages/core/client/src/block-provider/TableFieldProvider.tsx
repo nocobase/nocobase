@@ -1,15 +1,26 @@
 import { ArrayField, Field } from '@formily/core';
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { APIClient } from '../api-client';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { useFormBlockContext } from './FormBlockProvider';
+import { useFormFieldContext } from './FormFieldProvider';
 
 export const TableFieldContext = createContext<any>({});
 
 const InternalTableFieldProvider = (props) => {
-  const { params = {}, showIndex, dragSort } = props;
+  const { params = {}, showIndex, dragSort, fieldName } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+
+  const formBlockCtx = useFormBlockContext();
+  const formFieldCtx = useFormFieldContext();
+
+  const fullFieldName = formFieldCtx && formFieldCtx.fieldName  ? `${formFieldCtx.fieldName}.${fieldName}` : fieldName;
+  
+  if (!formBlockCtx?.updateAssociationValues?.includes(fullFieldName)) {
+    formBlockCtx?.updateAssociationValues?.push(fullFieldName);
+  }
   // if (service.loading) {
   //   return <Spin />;
   // }

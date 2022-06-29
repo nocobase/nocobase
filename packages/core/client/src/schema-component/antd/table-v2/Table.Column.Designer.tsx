@@ -24,6 +24,7 @@ const useLabelFields = (collectionName?: any) => {
 
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
+  const { getInterface } = useCollectionManager();
   const field = useField();
   const { t } = useTranslation();
   const columnSchema = useFieldSchema();
@@ -31,6 +32,8 @@ export const TableColumnDesigner = (props) => {
   const fieldNames =
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
   const options = useLabelFields(collectionField?.target);
+  const intefaceCfg = getInterface(collectionField?.interface);
+  
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -43,7 +46,7 @@ export const TableColumnDesigner = (props) => {
               title: {
                 // title: t('Column title'),
                 default: columnSchema?.title,
-                description: `${t('Original title: ')}${collectionField?.uiSchema?.title}`,
+                description: `${t('Original title: ')}${collectionField?.uiSchema?.title || fieldSchema?.title}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {},
@@ -65,25 +68,29 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.SwitchItem
-        title={t('Sortable')}
-        checked={field.componentProps.sorter}
-        onChange={(v) => {
-          const schema: ISchema = {
-            ['x-uid']: columnSchema['x-uid'],
-          };
-          columnSchema['x-component-props'] = {
-            ...columnSchema['x-component-props'],
-            sorter: v,
-          };
-          schema['x-component-props'] = columnSchema['x-component-props'];
-          field.componentProps.sorter = v;
-          dn.emit('patch', {
-            schema,
-          });
-          dn.refresh();
-        }}
-      />
+      {
+        intefaceCfg && intefaceCfg.sortable === true && (
+          <SchemaSettings.SwitchItem
+            title={t('Sortable')}
+            checked={field.componentProps.sorter}
+            onChange={(v) => {
+              const schema: ISchema = {
+                ['x-uid']: columnSchema['x-uid'],
+              };
+              columnSchema['x-component-props'] = {
+                ...columnSchema['x-component-props'],
+                sorter: v
+              }
+              schema['x-component-props'] = columnSchema['x-component-props'];
+              field.componentProps.sorter = v;
+              dn.emit('patch', {
+                schema
+              });
+              dn.refresh();
+            }}
+          />
+        )
+      }
       {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Title field')}

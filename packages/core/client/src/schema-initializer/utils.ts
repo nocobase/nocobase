@@ -82,7 +82,8 @@ export const useTableColumnInitializerFields = () => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
         'x-read-pretty': true,
-        'x-component-props': {},
+        'x-component-props': {
+        },
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
@@ -100,6 +101,57 @@ export const useTableColumnInitializerFields = () => {
     });
 };
 
+export const useAssociatedTableColumnInitializerFields = () => {
+  const { name, fields } = useCollection();
+  const { getInterface, getCollectionFields } = useCollectionManager();
+
+  const groups = fields
+    ?.filter((field) => {
+      return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
+    })
+    ?.map((field) => {
+      const subFields = getCollectionFields(field.target);
+      const items = subFields
+        // ?.filter((subField) => subField?.interface && !['o2o', 'oho', 'obo', 'o2m', 'm2o', 'subTable', 'linkTo'].includes(subField?.interface))
+        ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface))
+        ?.map((subField) => {
+          const interfaceConfig = getInterface(subField.interface);
+          const schema = {
+            // type: 'string',
+            name: `${field.name}.${subField.name}`,
+            // title: subField?.uiSchema?.title || subField.name,
+            
+            'x-component': 'CollectionField',
+            'x-read-pretty': true,
+            'x-collection-field': `${name}.${field.name}.${subField.name}`,
+            'x-component-props': {
+            },
+          };
+          
+          return {
+            type: 'item',
+            title: subField?.uiSchema?.title || subField.name,
+            component: 'TableCollectionFieldInitializer',
+            find: findTableColumn,
+            remove: removeTableColumn,
+            schemaInitialize: (s) => {
+              interfaceConfig?.schemaInitialize?.(s, { field: subField, readPretty: true, block: 'Table' });
+            },
+            field: subField,
+            schema,
+          } as SchemaInitializerItemOptions;
+        });
+
+      return {
+        type: 'subMenu',
+        title: field.uiSchema?.title,
+        children: items, 
+      } as SchemaInitializerItemOptions;
+    });
+
+  return groups;
+}
+
 export const useFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
   const { getInterface } = useCollectionManager();
@@ -110,14 +162,17 @@ export const useFormItemInitializerFields = (options?: any) => {
     ?.filter((field) => field?.interface)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
+
       const schema = {
         type: 'string',
         name: field.name,
         // title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
-        'x-component': 'CollectionField',
+        'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
+        'x-component-props': {
+        },
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       return {
@@ -132,6 +187,55 @@ export const useFormItemInitializerFields = (options?: any) => {
       } as SchemaInitializerItemOptions;
     });
 };
+
+export const useAssociatedFormItemInitializerFields = (options?: any) => {
+  const { name, fields } = useCollection();
+  const { getInterface, getCollectionFields } = useCollectionManager();
+  const form = useForm();
+  const { readPretty = form.readPretty, block = 'Form' } = options || {};
+
+  const groups = fields
+    ?.filter((field) => {
+      return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
+    })
+    ?.map((field) => {
+      const subFields = getCollectionFields(field.target);
+      const items = subFields
+        ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface))
+        ?.map((subField) => {
+          const interfaceConfig = getInterface(subField.interface);
+          const schema = {
+            type: 'string',
+            name: `${field.name}.${subField.name}`,
+            // title: subField?.uiSchema?.title || subField.name,
+            'x-designer': 'FormItem.Designer',
+            'x-component': 'CollectionField',
+            'x-component-props': {
+            },
+            'x-decorator': 'FormItem',
+            'x-collection-field': `${name}.${field.name}.${subField.name}`,
+          };
+          // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
+          return {
+            type: 'item',
+            title: subField?.uiSchema?.title || subField.name,
+            component: 'CollectionFieldInitializer',
+            remove: removeGridFormItem,
+            schemaInitialize: (s) => {
+              interfaceConfig?.schemaInitialize?.(s, { field: subField, block, readPretty });
+            },
+            schema,
+          } as SchemaInitializerItemOptions;
+        });
+
+      return {
+        type: 'subMenu',
+        title: field.uiSchema?.title,
+        children: items, 
+      } as SchemaInitializerItemOptions;
+    });
+  return groups;
+}
 
 export const useCustomFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
@@ -168,6 +272,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
 };
 
 const findSchema = (schema: Schema, key: string, action: string) => {
+  if (!Schema.isSchemaInstance(schema)) return null;
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {
       return s;
@@ -420,7 +525,6 @@ export const createFormBlockSchema = (options) => {
     template,
     ...others
   } = options;
-  console.log('createFormBlockSchema', options);
   const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
