@@ -1,9 +1,9 @@
 import React from "react";
 import { observer, useForm } from "@formily/react";
 import { Select } from "antd";
-
-import { useCollectionManager, useCompile } from "../../../";
 import { useTranslation } from "react-i18next";
+
+import { useCollectionManager, useCompile } from "@nocobase/client";
 
 export const DateFieldsSelect: React.FC<any> = observer((props) => {
   const { t } = useTranslation();

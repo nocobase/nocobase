@@ -1,4 +1,5 @@
 import React, { useContext, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
 import { Dropdown, Menu, Button, Tag, Switch, message } from 'antd';
 import { PlusOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
@@ -10,11 +11,11 @@ import {
   useDocumentTitle,
   useResourceActionContext,
   useResourceContext
-} from '..';
+} from '@nocobase/client';
+
 import { Instruction, instructions, Node } from './nodes';
 import { addButtonClass, branchBlockClass, branchClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
 import { TriggerConfig } from './triggers';
-import { useHistory } from 'react-router-dom';
 
 
 

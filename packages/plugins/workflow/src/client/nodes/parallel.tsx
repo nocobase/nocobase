@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import { css, cx } from "@emotion/css";
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from "antd";
+import { useTranslation } from "react-i18next";
+
+import { i18n } from "@nocobase/client";
 
 import { NodeDefaultView } from ".";
 import { Branch, useFlowContext } from "../WorkflowCanvas";
 import { branchBlockClass, nodeSubtreeClass } from "../style";
-import { Button, Tooltip } from "antd";
-import { i18n } from "../../i18n";
-import { useTranslation } from "react-i18next";
-// import { SchemaComponent } from "../../schema-component";
+
+
 
 export default {
   title: '{{t("Parallel branch")}}',

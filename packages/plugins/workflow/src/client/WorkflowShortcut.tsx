@@ -3,9 +3,9 @@ import { PartitionOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useTranslation } from 'react-i18next';
-import { PluginManager } from '../plugin-manager';
 
-import { ActionContext, SchemaComponent } from '../schema-component';
+import { PluginManager, ActionContext, SchemaComponent } from '@nocobase/client';
+
 import { workflowSchema } from './schemas/workflows';
 import { WorkflowLink } from './WorkflowLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
