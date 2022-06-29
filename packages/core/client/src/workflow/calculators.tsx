@@ -309,10 +309,6 @@ export function Calculation({ calculator, operands = [], onChange }) {
         display: flex;
         gap: .5em;
         align-items: center;
-
-        .ant-select{
-          width: auto;
-        }
       `}>
         <Operand value={operands[0]} onChange={(v => onChange({ calculator, operands: [v, operands[1]] }))} />
         {operands[0]

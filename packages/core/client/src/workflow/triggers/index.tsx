@@ -97,6 +97,7 @@ export const TriggerConfig = () => {
                     className: css`
                       .ant-select{
                         width: auto;
+                        min-width: 6em;
                       }
                     `
                   },
