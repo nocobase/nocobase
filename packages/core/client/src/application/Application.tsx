@@ -29,7 +29,6 @@ import { SchemaInitializerProvider } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage, SchemaTemplateShortcut } from '../schema-templates';
 import { SystemSettingsProvider, SystemSettingsShortcut } from '../system-settings';
 import { SigninPage, SignupPage } from '../user';
-import { WorkflowPage, WorkflowRouteProvider, WorkflowShortcut } from '../workflow';
 import { compose } from './compose';
 
 export interface ApplicationOptions {
@@ -48,6 +47,7 @@ export class Application {
   plugins: PluginCallback[] = [];
 
   constructor(options: ApplicationOptions) {
+    const { WorkflowPage, WorkflowRouteProvider, WorkflowShortcut } = require('../workflow');
     this.apiClient = new APIClient({
       baseURL: process.env.API_BASE_URL,
       headers: {
