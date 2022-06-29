@@ -1,5 +1,6 @@
 import { Schema as SchemaCompiler } from '@formily/json-schema';
 import { useField, useFieldSchema, useForm } from '@formily/react';
+import { useFormBlockContext } from '@nocobase/client';
 import { message, Modal } from 'antd';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
@@ -73,7 +74,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
         if (field.added && !field.added.has(key)) {
           continue;
         }
-        if (['subTable', 'o2m'].includes(collectionField.interface)) {
+        if (['subTable', 'o2m', 'o2o', 'oho', 'obo', 'm2o'].includes(collectionField.interface)) {
           values[key] = form.values[key];
           continue;
         }
@@ -304,9 +305,11 @@ export const useUpdateActionProps = () => {
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const history = useHistory();
+  const record = useRecord();
   const { fields, getField } = useCollection();
   const compile = useCompile();
   const actionField = useField();
+  const { updateAssociationValues } = useFormBlockContext();
   return {
     async onClick() {
       const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
@@ -315,7 +318,7 @@ export const useUpdateActionProps = () => {
         await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
-      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      let values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
@@ -326,6 +329,7 @@ export const useUpdateActionProps = () => {
             ...overwriteValues,
             ...assignedValues,
           },
+          updateAssociationValues
         });
         actionField.data.loading = false;
         if (!(resource instanceof TableFieldResource)) {

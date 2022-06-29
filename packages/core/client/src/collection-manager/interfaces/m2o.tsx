@@ -44,15 +44,63 @@ export const m2o: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty, block }) {
-    if (readPretty) {
-      schema['properties'] = {
-        viewer: cloneDeep(recordPickerViewer),
-      };
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+    if (block === 'Form' && schema['x-component'] === 'FormField') {
+      const association = `${field.collectionName}.${field.name}`;
+      schema.type = 'void';
+      schema.properties = {
+        block: {
+          type: 'void',
+          'x-decorator': 'FormFieldProvider',
+          'x-decorator-props': {
+            collection: field.target,
+            association: association,
+            resource: association,
+            action,
+            fieldName: field.name,
+            readPretty
+          },
+          'x-component': 'CardItem',
+          'x-component-props': {
+            bordered: true,
+          },
+          properties: {
+            [field.name]: {
+              type: 'object',
+              'x-component': 'FormV2',
+              'x-component-props': {
+                useProps: '{{ useFormFieldProps }}',
+              },
+              properties: {
+                __form_grid: {
+                  type: 'void',
+                  'x-component': 'Grid',
+                  'x-initializer': 'FormItemInitializers',
+                  properties: {},
+                },
+              }
+            },
+          },
+        },
+      }
     } else {
-      schema['properties'] = {
-        selector: cloneDeep(recordPickerSelector),
-      };
+      schema.type = 'string';
+      if (block === 'Form') {
+        schema['properties'] = {
+          viewer: cloneDeep(recordPickerViewer),
+          selector: cloneDeep(recordPickerSelector),
+        };
+      } else {
+        if (readPretty) {
+          schema['properties'] = {
+            viewer: cloneDeep(recordPickerViewer),
+          };
+        } else {
+          schema['properties'] = {
+            selector: cloneDeep(recordPickerSelector),
+          }
+        }
+      }
     }
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};

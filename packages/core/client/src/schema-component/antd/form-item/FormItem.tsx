@@ -2,14 +2,25 @@ import { css } from '@emotion/css';
 import { FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
+
+const divWrap = (schema: ISchema) => {
+  return {
+    type: 'void',
+    'x-component': 'div',
+    properties: {
+      [schema.name || uid()]: schema,
+    },
+  };
+};
 
 export const FormItem: any = (props) => {
   const field = useField();
@@ -36,18 +47,21 @@ export const FormItem: any = (props) => {
   );
 };
 
-FormItem.Designer = () => {
-  const { getCollectionFields } = useCollectionManager();
+FormItem.Designer = (props) => {
+  const { getCollectionFields, getCollection, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
+  const tk = useFilterByTk();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { dn, refresh } = useDesignable();
+  const { dn, refresh, insertAdjacent, insertBeforeBegin } = useDesignable();
   const compile = useCompile();
-  const collectionField = getField(fieldSchema['name']);
+  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const interfaceConfig = getInterface(collectionField?.interface);
   const originalTitle = collectionField?.uiSchema?.title;
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
+  const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -168,7 +182,7 @@ FormItem.Designer = () => {
           }}
         />
       )}
-      {!field.readPretty && (
+      {!field.readPretty && fieldSchema['x-component'] !== 'FormField' && (
         <SchemaSettings.SwitchItem
           key="required"
           title={t('Required')}
@@ -187,6 +201,53 @@ FormItem.Designer = () => {
           }}
         />
       )}
+      {form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
+        <SchemaSettings.SelectItem
+          title={t('Field component')}
+          options={
+            collectionField?.interface === 'o2m'
+              ? [
+                  { label: t('Record picker'), value: 'CollectionField' },
+                  { label: t('Subtable'), value: 'TableField' },
+                ]
+              : [
+                  { label: t('Record picker'), value: 'CollectionField' },
+                  { label: t('Subform'), value: 'FormField' },
+                ]
+          }
+          value={fieldSchema['x-component']}
+          onChange={(v) => {
+            const schema: ISchema = {
+              name: collectionField.name,
+              type: 'void',
+              // title: compile(collectionField.uiSchema?.title),
+              'x-decorator': 'FormItem',
+              'x-designer': 'FormItem.Designer',
+              'x-component': v,
+              'x-component-props': {},
+              'x-collection-field': fieldSchema['x-collection-field'],
+            };
+
+            interfaceConfig?.schemaInitialize?.(schema, {
+              field: collectionField,
+              block: 'Form',
+              readPretty: field.readPretty,
+              action: tk ? 'get' : null,
+            });
+
+            insertAdjacent('beforeBegin', divWrap(schema), {
+              onSuccess: () => {
+                dn.remove(null, {
+                  removeParentsIfNoChildren: true,
+                  breakRemoveOn: {
+                    'x-component': 'Grid',
+                  },
+                })
+              }
+            });
+          }}
+        />
+      )}
       {form && !form?.readPretty && collectionField?.interface !== 'o2m' && (
         <SchemaSettings.SelectItem
           key="pattern"
@@ -198,7 +259,6 @@ FormItem.Designer = () => {
           ]}
           value={readOnlyMode}
           onChange={(v) => {
-            console.log('v', v);
             const schema: ISchema = {
               ['x-uid']: fieldSchema['x-uid'],
             };
@@ -219,7 +279,6 @@ FormItem.Designer = () => {
                 schema['x-read-pretty'] = true;
                 schema['x-disabled'] = false;
                 field.readPretty = true;
-                // field.disabled = true;
                 break;
               }
               default: {
@@ -232,15 +291,16 @@ FormItem.Designer = () => {
                 break;
               }
             }
+
             dn.emit('patch', {
               schema,
             });
 
-            dn.refresh();
+            dn.refresh();       
           }}
         />
       )}
-      {collectionField?.target && (
+      {collectionField?.target && fieldSchema['x-component'] === 'CollectionField' && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Title field')}
@@ -254,12 +314,15 @@ FormItem.Designer = () => {
               ...field.componentProps.fieldNames,
               label,
             };
+
+            // if (fieldSchema['x-component-props']?.['field']?.['uiSchema']?.['x-component-props']) {
+            //   fieldSchema['x-component-props']['field']['uiSchema']['x-component-props']['fieldNames'] = fieldNames;
+            // } else {
+              
+            // }
             fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
             fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-            field.componentProps.fieldNames = fieldNames;
-            schema['x-component-props'] = {
-              fieldNames,
-            };
+            schema['x-component-props'] = fieldSchema['x-component-props'];
             dn.emit('patch', {
               schema,
             });

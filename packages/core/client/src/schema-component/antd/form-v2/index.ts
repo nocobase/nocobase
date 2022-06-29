@@ -5,3 +5,4 @@ FormV2.Designer = FormDesigner;
 FormV2.ReadPrettyDesigner = ReadPrettyFormDesigner;
 
 export { FormV2, DetailsDesigner };
+export * from './FormField';
