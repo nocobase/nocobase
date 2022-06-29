@@ -48,7 +48,7 @@ export const FormItem: any = (props) => {
 };
 
 FormItem.Designer = (props) => {
-  const { getCollectionFields, getCollection, getInterface } = useCollectionManager();
+  const { getCollectionFields, getCollection, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const tk = useFilterByTk();
   const { form } = useFormBlockContext();
@@ -57,7 +57,7 @@ FormItem.Designer = (props) => {
   const { t } = useTranslation();
   const { dn, refresh, insertAdjacent, insertBeforeBegin } = useDesignable();
   const compile = useCompile();
-  const collectionField = getField(fieldSchema['name']);
+  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const interfaceConfig = getInterface(collectionField?.interface);
   const originalTitle = collectionField?.uiSchema?.title;
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
