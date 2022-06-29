@@ -230,6 +230,7 @@ export function NodeDefaultView(props) {
                             .ant-input-number,
                             .ant-input-affix-wrapper{
                               width: auto;
+                              min-width: 6em;
                             }
                           `
                         },
