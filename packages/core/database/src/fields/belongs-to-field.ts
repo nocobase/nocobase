@@ -28,6 +28,7 @@ export class BelongsToField extends RelationField {
     // define relation on sequelize model
     const association = collection.model.belongsTo(Target, {
       as: this.name,
+      constraints: false,
       ...omit(this.options, ['name', 'type', 'target']),
     });
 

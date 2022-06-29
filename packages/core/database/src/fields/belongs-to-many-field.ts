@@ -37,6 +37,7 @@ export class BelongsToManyField extends RelationField {
     }
 
     const association = collection.model.belongsToMany(Target, {
+      constraints: false,
       ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
       through: Through.model,
