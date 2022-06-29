@@ -35,6 +35,9 @@ export const useCollectionManager = () => {
     },
     getCollectionField,
     getCollectionJoinField(name: string) {
+      if (!name) {
+        return;
+      }
       const [collectionName, ...fieldNames] = name.split('.');
       if (!fieldNames?.length) {
         return;
