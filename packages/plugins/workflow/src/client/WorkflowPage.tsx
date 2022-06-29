@@ -1,7 +1,7 @@
 import { cx } from '@emotion/css';
 import React from 'react';
 import { useRouteMatch } from 'react-router-dom';
-import { SchemaComponent } from '..';
+import { SchemaComponent } from '@nocobase/client';
 import { workflowPageClass } from './style';
 import { WorkflowCanvas } from './WorkflowCanvas';
 

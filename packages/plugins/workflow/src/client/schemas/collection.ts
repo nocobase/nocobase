@@ -1,6 +1,6 @@
 import { css } from "@emotion/css";
 import { useForm } from "@formily/react";
-import { useCollectionFilterOptions } from "../../collection-manager/action-hooks";
+import { useCollectionFilterOptions } from "@nocobase/client";
 
 export const collection = {
   type: 'string',

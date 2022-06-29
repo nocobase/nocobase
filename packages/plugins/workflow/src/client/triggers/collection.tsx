@@ -2,8 +2,7 @@ import React from 'react';
 import { Select } from 'antd';
 import { observer, useForm, useFormEffects } from '@formily/react';
 
-import { useCollectionDataSource, useCollectionManager } from '../../collection-manager';
-import { useCompile } from '../../schema-component';
+import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { useFlowContext } from '../WorkflowCanvas';
 import { BaseTypeSet } from '../calculators';

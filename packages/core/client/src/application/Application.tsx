@@ -90,7 +90,7 @@ export class Application {
     this.use(AntdSchemaComponentProvider);
     this.use(ACLProvider);
     this.use(RemoteDocumentTitleProvider);
-    this.use(require('../workflow').WorkflowProvider);
+
     for (const plugin of options.plugins) {
       const [component, props] = Array.isArray(plugin) ? plugin : [plugin];
       this.use(component, props);

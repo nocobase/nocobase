@@ -1,5 +1,5 @@
 import React from "react";
-import { ResourceActionProvider, useRecord } from "..";
+import { ResourceActionProvider, useRecord } from "@nocobase/client";
 
 export const ExecutionResourceProvider = ({ request, ...others }) => {
   const workflow = useRecord();
