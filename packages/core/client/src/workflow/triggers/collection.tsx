@@ -47,7 +47,35 @@ export default {
   title: '{{t("Collection event")}}',
   type: 'collection',
   fieldset: {
-    'config.collection': collection,
+    'config.collection': {
+      ...collection,
+      ['x-reactions']: [
+        {
+          target: 'config.mode',
+          fulfill: {
+            state: {
+              visible: '{{!!$self.value}}',
+            },
+          }
+        },
+        {
+          target: 'config.changed',
+          fulfill: {
+            state: {
+              visible: '{{!!$self.value}}',
+            },
+          }
+        },
+        {
+          target: 'config.condition',
+          fulfill: {
+            state: {
+              visible: '{{!!$self.value}}',
+            },
+          }
+        }
+      ]
+    },
     'config.mode': {
       type: 'number',
       title: '{{t("Trigger on")}}',
@@ -63,7 +91,17 @@ export default {
         ],
         placeholder: '{{t("Trigger on")}}'
       },
-      required: true
+      required: true,
+      'x-reactions': [
+        {
+          target: 'config.changed',
+          fulfill: {
+            state: {
+              disabled: '{{!($self.value & 0b010)}}',
+            },
+          }
+        },
+      ]
     },
     'config.changed': {
       type: 'array',
