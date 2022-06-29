@@ -49,8 +49,8 @@ const InternalKanbanBlockProvider = (props) => {
   );
 };
 
-const recursiveProperties = (schema: Schema, component = 'CollectionField', associationFields, appends = []) => {
-  schema.mapProperties((s) => {
+const recursiveProperties = (schema: Schema, component = 'CollectionField', associationFields, appends: any = []) => {
+  schema.mapProperties((s: any) => {
     const name = s.name.toString();
     if (s['x-component'] === component && !appends.includes(name)) {
       // 关联字段和关联的关联字段
@@ -63,10 +63,10 @@ const recursiveProperties = (schema: Schema, component = 'CollectionField', asso
     } else {
       recursiveProperties(s, component, associationFields, appends);
     }
-  })
-}
+  });
+};
 
-export const useAssociationNames = (collection) => {
+const useAssociationNames = (collection) => {
   const { getCollectionFields } = useCollectionManager();
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
@@ -88,10 +88,9 @@ export const useAssociationNames = (collection) => {
     }
     return buf;
   }, new Schema({}));
-  const gridSchema = kanbanSchema?.properties?.card?.properties?.grid;
+  const gridSchema: any = kanbanSchema?.properties?.card?.properties?.grid;
   const appends = [];
   recursiveProperties(gridSchema, 'CollectionField', associationFields, appends);
-  console.log('useAssociationNames', appends);
   return uniq(appends);
 };
 
@@ -104,7 +103,7 @@ export const KanbanBlockProvider = (props) => {
   }
   return (
     <BlockProvider {...props} params={params}>
-      <InternalKanbanBlockProvider {...props} />
+      <InternalKanbanBlockProvider {...props} params={params} />
     </BlockProvider>
   );
 };
@@ -121,7 +120,7 @@ const useDisableCardDrag = () => {
   }
   const result = getActionParams(`${ctx?.props?.resource}:update`, { skipOwnCheck: true });
   return !result;
-}
+};
 
 export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
