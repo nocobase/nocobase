@@ -83,14 +83,17 @@ const useAssociationNames = (collection) => {
   }
   const fieldSchema = useFieldSchema();
   const kanbanSchema = fieldSchema.reduceProperties((buf, schema) => {
-    if (schema['x-component'] === 'KanbanV2') {
+    if (schema['x-component'].startsWith('Kanban')) {
       return schema;
     }
     return buf;
   }, new Schema({}));
   const gridSchema: any = kanbanSchema?.properties?.card?.properties?.grid;
   const appends = [];
-  recursiveProperties(gridSchema, 'CollectionField', associationFields, appends);
+  if (gridSchema) {
+    recursiveProperties(gridSchema, 'CollectionField', associationFields, appends);
+  }
+  
   return uniq(appends);
 };
 
