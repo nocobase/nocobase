@@ -4,12 +4,14 @@ import { Button, Select } from "antd";
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { Trans, useTranslation } from "react-i18next";
 
+import { i18n } from "@nocobase/client";
+
 import { NodeDefaultView } from ".";
 import { Branch, useFlowContext } from "../WorkflowCanvas";
 import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { Calculation } from "../calculators";
-import { i18n } from "../../i18n";
-// import { SchemaComponent } from "../../schema-component";
+
+
 
 function CalculationItem({ value, onChange, onRemove }) {
   if (!value) {

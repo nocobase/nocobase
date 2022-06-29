@@ -4,10 +4,11 @@ import { Button, Cascader, Dropdown, Input, InputNumber, Menu, Select, Form } fr
 import { css } from "@emotion/css";
 import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
+import { SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
+
 import { instructions, useNodeContext } from "./nodes";
 import { useFlowContext } from "./WorkflowCanvas";
 import { triggers } from "./triggers";
-import { SchemaComponent, useCollectionManager, useCompile } from "..";
 import { useTranslation } from "react-i18next";
 
 function NullRender() {

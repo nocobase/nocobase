@@ -1,4 +1,4 @@
-import { useCollectionDataSource } from '../..';
+import { useCollectionDataSource } from '@nocobase/client';
 
 import { VariableComponent } from '../calculators';
 import { collection, filter } from '../schemas/collection';

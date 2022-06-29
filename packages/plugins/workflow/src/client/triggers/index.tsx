@@ -5,7 +5,7 @@ import { message, Tag } from "antd";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { SchemaComponent, useActionContext, useAPIClient, useCompile, useResourceActionContext } from '../../';
+import { SchemaComponent, useActionContext, useAPIClient, useCompile, useResourceActionContext } from '@nocobase/client';
 
 import { nodeCardClass, nodeMetaClass } from "../style";
 import { useFlowContext } from "../WorkflowCanvas";

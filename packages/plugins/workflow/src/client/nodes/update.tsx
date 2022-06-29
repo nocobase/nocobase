@@ -1,6 +1,9 @@
-import { useCollectionDataSource } from '../..';
+import { useCollectionDataSource } from '@nocobase/client';
+
 import { CollectionFieldset, VariableComponent } from '../calculators';
 import { collection, filter, values } from '../schemas/collection';
+
+
 
 export default {
   title: '{{t("Update record")}}',

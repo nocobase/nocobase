@@ -1,32 +1,40 @@
-import { Select } from 'antd';
 import React from 'react';
+import { Select } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCollectionDataSource, useCollectionManager, useCompile } from '../..';
-import { BaseTypeSet, CollectionFieldset } from '../calculators';
-import { collection, values } from '../schemas/collection';
+
+import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+
 import { useFlowContext } from '../WorkflowCanvas';
+import { BaseTypeSet, VariableComponent } from '../calculators';
+import { collection, filter } from '../schemas/collection';
+
 
 
 export default {
-  title: '{{t("Create record")}}',
-  type: 'create',
+  title: '{{t("Query record")}}',
+  type: 'query',
   group: 'collection',
   fieldset: {
-    'config.collection': {
-      ...collection,
-      name: 'config.collection'
+    'config.collection': collection,
+    'config.multiple': {
+      type: 'boolean',
+      title: '{{t("Multiple records")}}',
+      name: 'config.multiple',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-component-props': {
+        disabled: true
+      }
     },
-    // multiple: {
-    //   type: 'boolean',
-    //   title: '多条数据',
-    //   name: 'multiple',
-    //   'x-decorator': 'FormItem',
-    //   'x-component': 'Checkbox',
-    //   'x-component-props': {
-    //     disabled: true
-    //   }
-    // },
-    'config.params.values': values
+    'config.params': {
+      type: 'object',
+      name: 'config.params',
+      title: '',
+      'x-decorator': 'FormItem',
+      properties: {
+        filter
+      }
+    }
   },
   view: {
 
@@ -35,7 +43,7 @@ export default {
     useCollectionDataSource
   },
   components: {
-    CollectionFieldset
+    VariableComponent
   },
   getter({ type, options, onChange }) {
     const { t } = useTranslation();
@@ -50,7 +58,7 @@ export default {
         onChange({ type, options: { ...options, path } });
       }}>
         {collection.fields
-          .filter(field => BaseTypeSet.has(field.uiSchema.type))
+          .filter(field => BaseTypeSet.has(field.uiSchema?.type))
           .map(field => (
           <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema.title)}</Select.Option>
         ))}

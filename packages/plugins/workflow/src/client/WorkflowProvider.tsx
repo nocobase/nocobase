@@ -1,6 +1,5 @@
 import React, { useContext } from 'react';
-import { PluginManagerContext } from '../plugin-manager';
-import { RouteSwitchContext } from '../route-switch';
+import { PluginManagerContext, RouteSwitchContext } from '@nocobase/client';
 import { WorkflowPage } from './WorkflowPage';
 import { WorkflowShortcut } from './WorkflowShortcut';
 
