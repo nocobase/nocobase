@@ -5,10 +5,10 @@ import {
   ForeignKeyOptions,
   HasManyOptions,
   HasManyOptions as SequelizeHasManyOptions,
-  Utils,
+  Utils
 } from 'sequelize';
 
-import { BaseRelationFieldOptions, MultipleRelationFieldOptions, RelationField } from './relation-field';
+import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 
 export interface HasManyFieldOptions extends HasManyOptions {
   /**
@@ -93,9 +93,10 @@ export class HasManyField extends RelationField {
     }
 
     const association = collection.model.hasMany(Target, {
+      constraints: false,
+      ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
       foreignKey: this.foreignKey,
-      ...omit(this.options, ['name', 'type', 'target']),
     });
 
     // inverse relation

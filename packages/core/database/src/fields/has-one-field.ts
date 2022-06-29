@@ -92,9 +92,10 @@ export class HasOneField extends RelationField {
       return false;
     }
     const association = collection.model.hasOne(Target, {
+      constraints: false,
+      ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
       foreignKey: this.foreignKey,
-      ...omit(this.options, ['name', 'type', 'target']),
     });
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);
