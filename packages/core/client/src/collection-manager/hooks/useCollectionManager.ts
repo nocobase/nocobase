@@ -43,12 +43,17 @@ export const useCollectionManager = () => {
         return;
       }
       let cName = collectionName;
-      return fieldNames.reduce((result, curFieldName) => {
-        const collectionField = getCollectionField(`${cName}.${curFieldName}`);
-        cName = collectionField.target;
-
-        return collectionField;
-      }, null);
+      let collectionField;
+      while (cName && fieldNames.length > 0) {
+        const fileName = fieldNames.shift();
+        collectionField = getCollectionField(`${cName}.${fileName}`);
+        if (collectionField?.target) {
+          cName = collectionField.target;
+        } else {
+          cName = null;
+        }
+      }
+      return collectionField;
     },
     getInterface(name: string) {
       return interfaces[name] ? clone(interfaces[name]) : null;
