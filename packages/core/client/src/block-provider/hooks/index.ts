@@ -1,6 +1,6 @@
 import { Schema as SchemaCompiler } from '@formily/json-schema';
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { useFormBlockContext } from '@nocobase/client';
+import { useFormBlockContext } from '../..';
 import { message, Modal } from 'antd';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
