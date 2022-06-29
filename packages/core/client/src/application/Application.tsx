@@ -47,7 +47,6 @@ export class Application {
   plugins: PluginCallback[] = [];
 
   constructor(options: ApplicationOptions) {
-    const { WorkflowPage, WorkflowRouteProvider, WorkflowShortcut } = require('../workflow');
     this.apiClient = new APIClient({
       baseURL: process.env.API_BASE_URL,
       headers: {
@@ -66,7 +65,6 @@ export class Application {
         RouteSchemaComponent,
         SigninPage,
         SignupPage,
-        WorkflowPage,
         BlockTemplatePage,
         BlockTemplateDetails,
       },
@@ -77,7 +75,6 @@ export class Application {
         ACLShortcut,
         DesignableSwitch,
         CollectionManagerShortcut,
-        WorkflowShortcut,
         SystemSettingsShortcut,
         SchemaTemplateShortcut,
         FileStorageShortcut,
@@ -93,7 +90,7 @@ export class Application {
     this.use(AntdSchemaComponentProvider);
     this.use(ACLProvider);
     this.use(RemoteDocumentTitleProvider);
-    this.use(WorkflowRouteProvider);
+    this.use(require('../workflow').WorkflowProvider);
     for (const plugin of options.plugins) {
       const [component, props] = Array.isArray(plugin) ? plugin : [plugin];
       this.use(component, props);
