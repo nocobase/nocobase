@@ -21,7 +21,7 @@
     - 总价
     - 备注
     - 地址
-    - *顾客*（该订单所属的顾客，与`Customers`建立关联，是 **多对一** 关系。每个订单属于一个顾客，一个顾客数据可能有个订单）
+    - *顾客*（该订单所属的顾客，与`Customers`建立关联，是 **多对一** 关系。每个订单属于一个顾客，一个顾客可能有个订单）
     - *订单明细*（该订单中的商品及数量，与`Order List`建立关联，是 **一对多** 关系。每个订单包含多条订单明细，每条订单明细只属于一个订单）
 - Order List
     - *商品*（该明细所包含的商品，与`Products`建立关联，是 **多对一** 关系。每条订单明细包含一个商品，每个商品可能属于多个订单明细）
@@ -51,7 +51,7 @@
 
 创建关系字段后，我们可以在被关联的 Collection 里看到自动生成的反向关联字段。比如在`Customers`中看到自动生成的 Orders 字段，这样我们在`Customers`的区块里可以调用`Orders`的数据。
 
-![1.auto.relation.jpg](./5-minutes-to-get-started/1.relation.jpg)
+![1.auto.relation.jpg](./5-minutes-to-get-started/1.auto.relation.jpgg)
 
 将数据表和字段创建完成后，我们开始制作界面。
 
