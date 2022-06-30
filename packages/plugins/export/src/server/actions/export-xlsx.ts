@@ -2,6 +2,7 @@ import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
 import xlsx from 'node-xlsx';
 import render from '../renders';
+import { columns2Appends } from '../utils';
 
 export async function exportXlsx(ctx: Context, next: Next) {
   let { title, columns, filter, fields, except } = ctx.action.params;
@@ -9,16 +10,7 @@ export async function exportXlsx(ctx: Context, next: Next) {
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
   }
-  const appends = [];
-  for (const column of columns) {
-    if (column.dataIndex.length > 1) {
-      const appendColumns = [];
-      for (let i = 0, iLen = column.dataIndex.length - 1; i < iLen; i++) {
-        appendColumns.push(column.dataIndex[i]);
-      }
-      appends.push(appendColumns.join('.'));
-    }
-  }
+  const appends = columns2Appends(columns);
   columns = columns?.filter((col) => col?.dataIndex?.length > 0);
   const repository = ctx.db.getRepository<any>(resourceName, resourceOf) as Repository;
   const collection = repository.collection;
