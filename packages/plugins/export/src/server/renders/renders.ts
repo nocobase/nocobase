@@ -2,9 +2,30 @@ import moment from 'moment';
 
 export async function _(field, row, ctx, column?: any) {
   if (column?.dataIndex.length > 1) {
-    return column.dataIndex.reduce((result, col) => {
-      return result?.[col];
+    const result = column.dataIndex.reduce((result, col) => {
+      if (Array.isArray(result)) {
+        const subResults = [];
+        for (const r of result) {
+          subResults.push(r?.[col]);
+        }
+        return subResults;
+      } else {
+        if (Array.isArray(result?.[col])) {
+          const subResults = [];
+          for (const r of result?.[col]) {
+            subResults.push(r);
+          }
+          return subResults;
+        } else {
+          return result?.[col];
+        }
+      }
     }, row);
+    if (Array.isArray(result)) {
+      return result.join(',');
+    } else {
+      return result;
+    }
   } else {
     return row.get(field.name);
   }
