@@ -51,7 +51,7 @@
 
 创建关系字段后，我们可以在被关联的 Collection 里看到自动生成的反向关联字段。比如在`Customers`中看到自动生成的 Orders 字段，这样我们在`Customers`的区块里可以调用`Orders`的数据。
 
-![1.auto.relation.jpg](./5-minutes-to-get-started/1.auto.relation.jpgg)
+![1.auto.relation.jpg](./5-minutes-to-get-started/1.auto.relation.jpg)
 
 将数据表和字段创建完成后，我们开始制作界面。
 
