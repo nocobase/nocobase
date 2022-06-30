@@ -1,10 +1,10 @@
 import { Schema as SchemaCompiler } from '@formily/json-schema';
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { useFormBlockContext } from '../..';
 import { message, Modal } from 'antd';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
+import { useFormBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
@@ -50,7 +50,7 @@ const filterValue = (value) => {
     return value;
   }
   if (Array.isArray(value)) {
-    return value.map((v) => filterValue(value));
+    return value.map((v) => filterValue(v));
   }
   const obj = {};
   for (const key in value) {
