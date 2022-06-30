@@ -63,8 +63,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           dataIndex: 'state.currentUser.id',
           createOnly: true,
           visible: true,
-          onDelete: 'SET NULL',
-          onUpdate: 'CASCADE',
+          index: true,
         });
         collection.setField('createdBy', {
           type: 'belongsTo',
@@ -79,8 +78,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           dataType: 'integer',
           dataIndex: 'state.currentUser.id',
           visible: true,
-          onDelete: 'SET NULL',
-          onUpdate: 'CASCADE',
+          index: true,
         });
         collection.setField('updatedBy', {
           type: 'belongsTo',

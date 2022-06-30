@@ -46,7 +46,7 @@ export class BelongsToField extends RelationField {
       // @ts-ignore
       this.options.sourceKey = association.sourceKey;
     }
-
+    this.collection.addIndex([this.options.foreignKey]);
     return true;
   }
 
@@ -68,6 +68,7 @@ export class BelongsToField extends RelationField {
     delete collection.model.associations[this.name];
     // @ts-ignore
     collection.model.refreshAttributes();
+    // this.collection.removeIndex([this.options.foreignKey]);
   }
 }
 
