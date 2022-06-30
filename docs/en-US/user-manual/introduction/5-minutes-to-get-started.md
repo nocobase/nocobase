@@ -52,7 +52,7 @@ In this case, for the relationship fields, we have to select the correct type so
 
 After creating a relationship field, we can see the automatically generated reverse association field in the Collection being associated. For example, we can see the automatically generated Orders field in `Customers`, so we can call the data of `Orders` in the block of `Customers`.
 
-![1.auto.relation.jpg](./5-minutes-to-get-started/1.auto.relation.jpgg)
+![1.auto.relation.jpg](./5-minutes-to-get-started/1.auto.relation.jpg)
 
 Once the data collections and fields are created, we start making the interface.
 
