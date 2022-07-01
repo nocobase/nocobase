@@ -120,6 +120,7 @@ export default {
   "Phone": "Phone",
   "Email": "Email",
   "Number": "Number",
+  "Integer": "Integer",
   "Percent": "Percent",
   "Password": "Password",
   "Formula": "Formula",
