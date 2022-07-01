@@ -171,11 +171,17 @@ export abstract class Field {
     model.rawAttributes[this.name] = this.toSequelize();
     // @ts-ignore
     model.refreshAttributes();
+    if (this.options.index) {
+      this.context.collection.addIndex([this.name]);
+    }
   }
 
   unbind() {
     const { model } = this.context.collection;
     model.removeAttribute(this.name);
+    if (this.options.index) {
+      this.context.collection.removeIndex([this.name]);
+    }
   }
 
   toSequelize(): any {

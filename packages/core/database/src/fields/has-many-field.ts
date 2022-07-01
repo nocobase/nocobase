@@ -7,7 +7,7 @@ import {
   HasManyOptions as SequelizeHasManyOptions,
   Utils
 } from 'sequelize';
-
+import { Collection } from '../collection';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 
 export interface HasManyFieldOptions extends HasManyOptions {
@@ -98,7 +98,6 @@ export class HasManyField extends RelationField {
       as: this.name,
       foreignKey: this.foreignKey,
     });
-
     // inverse relation
     // this.TargetModel.belongsTo(collection.model);
 
@@ -112,6 +111,15 @@ export class HasManyField extends RelationField {
       // @ts-ignore
       this.options.sourceKey = association.sourceKey;
     }
+    let tcoll: Collection;
+    if (this.target === collection.name) {
+      tcoll = collection;
+    } else {
+      tcoll = database.getCollection(this.target);
+    }
+    if (tcoll) {
+      tcoll.addIndex([this.options.foreignKey]);
+    }
     return true;
   }
 
@@ -120,7 +128,7 @@ export class HasManyField extends RelationField {
     // 如果关系字段还没建立就删除了，也同步删除待建立关联的关系字段
     database.removePendingField(this);
     // 如果关系表内没有显式的创建外键字段，删除关系时，外键也删除掉
-    const tcoll = database.collections.get(this.target);
+    const tcoll = database.getCollection(this.target);
     const foreignKey = this.options.foreignKey;
     const field = tcoll.findField((field) => {
       if (field.name === foreignKey) {
