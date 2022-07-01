@@ -58,6 +58,8 @@ export class BelongsToManyField extends RelationField {
     if (!this.options.through) {
       this.options.through = this.through;
     }
+    Through.addIndex([this.options.foreignKey]);
+    Through.addIndex([this.options.otherKey]);
     return true;
   }
 

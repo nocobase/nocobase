@@ -7,6 +7,7 @@ import {
   HasOneOptions as SequelizeHasOneOptions,
   Utils
 } from 'sequelize';
+import { Collection } from '../collection';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
 
 export interface HasOneFieldOptions extends HasOneOptions {
@@ -105,6 +106,15 @@ export class HasOneField extends RelationField {
     if (!this.options.sourceKey) {
       // @ts-ignore
       this.options.sourceKey = association.sourceKey;
+    }
+    let tcoll: Collection;
+    if (this.target === collection.name) {
+      tcoll = collection;
+    } else {
+      tcoll = database.getCollection(this.target);
+    }
+    if (tcoll) {
+      tcoll.addIndex([this.options.foreignKey]);
     }
     return true;
   }
