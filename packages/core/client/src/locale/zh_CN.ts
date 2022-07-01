@@ -123,6 +123,7 @@ export default {
   "Phone": "手机号码",
   "Email": "电子邮箱",
   "Number": "数字",
+  "Integer": "整数",
   "Percent": "百分比",
   "Password": "密码",
   "Formula": "公式",
