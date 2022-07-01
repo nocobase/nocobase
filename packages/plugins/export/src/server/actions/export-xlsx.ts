@@ -2,13 +2,15 @@ import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
 import xlsx from 'node-xlsx';
 import render from '../renders';
+import { columns2Appends } from '../utils';
 
 export async function exportXlsx(ctx: Context, next: Next) {
-  let { title, columns, filter, fields, except, appends } = ctx.action.params;
+  let { title, columns, filter, fields, except } = ctx.action.params;
   const { resourceName, resourceOf } = ctx.action;
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
   }
+  const appends = columns2Appends(columns);
   columns = columns?.filter((col) => col?.dataIndex?.length > 0);
   const repository = ctx.db.getRepository<any>(resourceName, resourceOf) as Repository;
   const collection = repository.collection;
