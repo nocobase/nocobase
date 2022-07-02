@@ -11,6 +11,7 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
+import * as _ from 'lodash';
 
 const divWrap = (schema: ISchema) => {
   return {
@@ -59,6 +60,7 @@ FormItem.Designer = (props) => {
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const interfaceConfig = getInterface(collectionField?.interface);
+  const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema, collectionField?.uiSchema);
   const originalTitle = collectionField?.uiSchema?.title;
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
   const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
@@ -194,6 +196,37 @@ FormItem.Designer = (props) => {
             field.required = required;
             fieldSchema['required'] = required;
             schema['required'] = required;
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      )}
+      {validateSchema && (
+        <SchemaSettings.ModalItem
+          title={t('Set validation rules')}
+          schema={{
+            type: 'object',
+            title: t('Set validation rules'),
+            properties: {
+              rules: validateSchema
+            }
+          } as ISchema}
+          onSubmit={(v) => {
+            const rules = _.pickBy(v.rules, _.identity);
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            if (['number'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
+              rules['numberStringMode'] = true;
+            }
+            if (['percent'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
+              rules['percentStringMode'] = true;
+            }
+            field.validator = { ...rules };
+            fieldSchema['x-validator'] = field.validator;
+            schema['x-validator'] = field.validator;
             dn.emit('patch', {
               schema,
             });

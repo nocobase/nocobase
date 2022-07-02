@@ -235,6 +235,16 @@ export default {
   "Default is the ID field": "默认为 ID 字段",
   "Set default sorting rules": "设置排序规则",
 
+  "Set validation rules": "设置验证规则",
+  "Max length": "最大长度",
+  "Min length": "最小长度",
+  "Maximum": "最大值",
+  "Minimum": "最小值",
+  "Max length must greater than min length": "最大长度必须大于最小长度",
+  "Min length must less than max length": "最小长度必须小于最大长度",
+  "Maximum must greater than minimum": "最大值必须大于最小值",
+  "Minimum must less than maximum": "最小值必须小于最大值",
+
   "is before": "早于",
   "is after": "晚于",
   "is on or after": "不早于",

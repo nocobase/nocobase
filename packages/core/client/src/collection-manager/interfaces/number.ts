@@ -1,5 +1,39 @@
+import { registerValidateRules } from '@formily/core';
+import { ISchema } from '@formily/react';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
+import { i18n } from '../../i18n';
+
+registerValidateRules({
+  numberStringMode(value, rule) {
+    const { maxValue, minValue } = rule;
+    const valueNum = parseFloat(value);
+
+    if (maxValue) {
+      const maxNum = parseFloat(maxValue);
+
+      if (valueNum > maxNum) {
+        return {
+          type: 'error',
+          message: `数值不能大于${maxValue}`,
+        }
+      }
+    }
+
+    if (minValue) {
+      const minNum = parseFloat(minValue);
+
+      if (valueNum < minNum) {
+        return {
+          type: 'error',
+          message: `数值不能小于${minValue}`,
+        }
+      }
+    }
+    
+    return true;
+  }
+})
 
 export const number: IField = {
   name: 'number',
@@ -42,4 +76,43 @@ export const number: IField = {
   filterable: {
     operators: operators.number,
   },
+  validateSchema(fieldSchema, uiSchema) {
+    return {
+      type: 'object',
+      default: fieldSchema?.['x-validator'],
+      properties: {
+        maxValue: {
+          type: uiSchema?.type || 'number',
+          title: '{{ t("Maximum") }}',
+          'x-decorator': 'FormItem',
+          'x-component': 'InputNumber',
+          'x-component-props': {
+            ...uiSchema?.['x-component-props']
+          },
+          'x-reactions': `{{(field) => {
+            const targetValue = field.query('rules.minValue').value();
+            field.selfErrors =
+              !!targetValue && !!field.value && parseFloat(targetValue) >= parseFloat(field.value) ? '${i18n.t('Maximum must greater than minimum')}' : ''
+          }}}`,
+        },
+        minValue: {
+          type: uiSchema?.type || 'number',
+          title: '{{ t("Minimum") }}',
+          'x-decorator': 'FormItem',
+          'x-component': 'InputNumber',
+          'x-component-props': {
+            ...uiSchema?.['x-component-props']
+          },
+          'x-reactions': {
+            dependencies: ['rules.maxValue'],
+            fulfill: {
+              state: {
+                selfErrors: `{{!!$deps[0] && !!$self.value && parseFloat($deps[0]) <= parseFloat($self.value) ? '${i18n.t('Minimum must less than maximum')}' : ''}}`,
+              },
+            },
+          },
+        },
+      }
+    } as ISchema;
+  }
 };
