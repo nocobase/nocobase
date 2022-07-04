@@ -30,7 +30,6 @@ export default defineCollection({
       name: 'uiSchema',
       target: 'uiSchemas',
       foreignKey: 'uid',
-      onDelete: 'CASCADE',
     },
     {
       type: 'belongsTo',
