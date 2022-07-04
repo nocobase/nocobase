@@ -76,7 +76,7 @@ yarn dev
 Production
 
 ```bash
-yarn start
+yarn start # Does not support running on win platform
 ```
 
 Note: For production, if the code has been modified, you need to execute `yarn build` and restart NocoBase.
