@@ -88,7 +88,7 @@ class DatabaseVersion {
         get: (v) => {
           const keys = v.split(' ');
           keys.shift();
-          return keys.shift();
+          return semver.minVersion(keys.shift()).version;
         },
       },
     };
