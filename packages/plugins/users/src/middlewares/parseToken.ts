@@ -5,7 +5,6 @@ export function parseToken(options?: { plugin: UsersPlugin }) {
   return async function parseToken(ctx: Context, next: Next) {
     const user = await findUserByToken(ctx, options.plugin);
     if (user) {
-      console.log('appends', user.toJSON());
       ctx.state.currentUser = user;
       setCurrentRole(ctx);
     }
