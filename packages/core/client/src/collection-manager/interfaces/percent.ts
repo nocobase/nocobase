@@ -93,7 +93,7 @@ export const percent: IField = {
           'x-reactions': `{{(field) => {
             const targetValue = field.query('rules.minValue').value();
             field.selfErrors =
-              !!targetValue && !!field.value && parseFloat(targetValue) >= parseFloat(field.value) ? '${i18n.t('Maximum must greater than minimum')}' : ''
+              !!targetValue && !!field.value && parseFloat(targetValue) > parseFloat(field.value) ? '${i18n.t('Maximum must greater than minimum')}' : ''
           }}}`,
         },
         minValue: {
@@ -108,7 +108,7 @@ export const percent: IField = {
             dependencies: ['rules.maxValue'],
             fulfill: {
               state: {
-                selfErrors: `{{!!$deps[0] && !!$self.value && parseFloat($deps[0]) <= parseFloat($self.value) ? '${i18n.t('Minimum must less than maximum')}' : ''}}`,
+                selfErrors: `{{!!$deps[0] && !!$self.value && parseFloat($deps[0]) < parseFloat($self.value) ? '${i18n.t('Minimum must less than maximum')}' : ''}}`,
               },
             },
           },

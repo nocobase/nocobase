@@ -77,6 +77,7 @@ export const number: IField = {
     operators: operators.number,
   },
   validateSchema(fieldSchema, uiSchema) {
+    console.log('uiSchema', uiSchema);
     return {
       type: 'object',
       default: fieldSchema?.['x-validator'],
@@ -92,7 +93,7 @@ export const number: IField = {
           'x-reactions': `{{(field) => {
             const targetValue = field.query('rules.minValue').value();
             field.selfErrors =
-              !!targetValue && !!field.value && parseFloat(targetValue) >= parseFloat(field.value) ? '${i18n.t('Maximum must greater than minimum')}' : ''
+              !!targetValue && !!field.value && parseFloat(targetValue) > parseFloat(field.value) ? '${i18n.t('Maximum must greater than minimum')}' : ''
           }}}`,
         },
         minValue: {
@@ -107,7 +108,7 @@ export const number: IField = {
             dependencies: ['rules.maxValue'],
             fulfill: {
               state: {
-                selfErrors: `{{!!$deps[0] && !!$self.value && parseFloat($deps[0]) <= parseFloat($self.value) ? '${i18n.t('Minimum must less than maximum')}' : ''}}`,
+                selfErrors: `{{!!$deps[0] && !!$self.value && parseFloat($deps[0]) < parseFloat($self.value) ? '${i18n.t('Minimum must less than maximum')}' : ''}}`,
               },
             },
           },

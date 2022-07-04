@@ -38,7 +38,7 @@ export const password: IField = {
           'x-reactions': `{{(field) => {
             const targetValue = field.query('rules.min').value();
             field.selfErrors =
-              !!targetValue && !!field.value && targetValue >= field.value ? '${i18n.t('Max length must greater than min length')}' : ''
+              !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t('Max length must greater than min length')}' : ''
           }}}`,
         },
         min: {
@@ -54,7 +54,7 @@ export const password: IField = {
             dependencies: ['rules.max'],
             fulfill: {
               state: {
-                selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] <= $self.value ? '${i18n.t('Min length must less than max length')}' : ''}}`,
+                selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t('Min length must less than max length')}' : ''}}`,
               },
             },
           },
