@@ -177,6 +177,7 @@ export default {
   "Add filter group": "Add filter group",
   "is": "is",
   "is not": "is not",
+  "is variable": "is variable",
   "contains": "contains",
   "does not contain": "does not contain",
   "starts with": "starts with",
