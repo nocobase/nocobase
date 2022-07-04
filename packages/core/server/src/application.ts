@@ -321,6 +321,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options: InstallOptions = {}) {
+    await this.emitAsync('beforeInstall', this, options);
+
     const r = await this.db.version.satisfies({
       mysql: '8.x',
       sqlite: '3.x',
@@ -331,8 +333,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       console.log('The database only supports MySQL 8.x, SQLite 3.x and PostgreSQL 10+');
       return;
     }
-
-    await this.emitAsync('beforeInstall', this, options);
 
     if (options?.clean) {
       await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
