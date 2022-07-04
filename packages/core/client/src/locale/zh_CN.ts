@@ -197,6 +197,7 @@ export default {
   "Add filter group": "添加筛选分组",
   "is": "等于",
   "is not": "不等于",
+  "is variable": "为动态变量",
   "contains": "包含",
   "does not contain": "不包含",
   "starts with": "开头是",
