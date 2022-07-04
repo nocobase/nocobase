@@ -49,6 +49,7 @@ export default {
     'config.collection': {
       ...collection,
       ['x-reactions']: [
+        ...collection['x-reactions'],
         {
           target: 'config.mode',
           fulfill: {
