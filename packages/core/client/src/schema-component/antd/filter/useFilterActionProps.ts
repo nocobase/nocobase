@@ -24,6 +24,8 @@ export const useFilterOptions = (collectionName: string) => {
     const { nested, children, operators } = fieldInterface.filterable;
     const option = {
       name: field.name,
+      type: field.type,
+      target: field.target,
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
       operators:
