@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { createForm, onFieldValueChange } from '@formily/core';
 import { connect, FieldContext, FormContext } from '@formily/react';
 import { merge } from '@formily/shared';
@@ -14,6 +15,9 @@ const VariableCascader = connect((props) => {
   const { value, onChange } = props;
   return (
     <Cascader
+      className={css`
+        width: 160px;
+      `}
       value={value ? value.split('.') : []}
       fieldNames={{
         label: 'title',
