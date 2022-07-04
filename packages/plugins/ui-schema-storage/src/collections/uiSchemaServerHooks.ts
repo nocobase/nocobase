@@ -6,7 +6,7 @@ export default {
   // autoGenId: false,
   timestamps: false,
   fields: [
-    { type: 'belongsTo', name: 'uiSchema', target: 'uiSchemas', foreignKey: 'uid', onDelete: 'CASCADE' },
+    { type: 'belongsTo', name: 'uiSchema', target: 'uiSchemas', foreignKey: 'uid' },
     { type: 'string', name: 'type' },
     {
       type: 'string',
