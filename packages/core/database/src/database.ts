@@ -4,6 +4,7 @@ import { EventEmitter } from 'events';
 import glob from 'glob';
 import lodash from 'lodash';
 import { basename, isAbsolute, resolve } from 'path';
+import semver from 'semver';
 import {
   ModelCtor,
   Op,
@@ -65,6 +66,46 @@ export type AddMigrationsOptions = {
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
 
+class DatabaseVersion {
+  db: Database;
+
+  constructor(db: Database) {
+    this.db = db;
+  }
+
+  async satisfies(versions) {
+    const dialects = {
+      sqlite: {
+        sql: 'select sqlite_version() as version',
+        get: (v) => v,
+      },
+      mysql: {
+        sql: 'select version() as version',
+        get: (v) => v,
+      },
+      postgres: {
+        sql: 'select version() as version',
+        get: (v) => {
+          const keys = v.split(' ');
+          keys.shift();
+          return semver.minVersion(keys.shift()).version;
+        },
+      },
+    };
+    for (const dialect of Object.keys(dialects)) {
+      if (this.db.inDialect(dialect)) {
+        if (!versions?.[dialect]) {
+          return false;
+        }
+        const [result] = (await this.db.sequelize.query(dialects[dialect].sql)) as any;
+        console.log(`db version: ${dialects[dialect].get(result?.[0]?.version)}`);
+        return semver.satisfies(dialects[dialect].get(result?.[0]?.version), versions[dialect]);
+      }
+    }
+    return false;
+  }
+}
+
 export class Database extends EventEmitter implements AsyncEmitter {
   sequelize: Sequelize;
   migrator: Umzug;
@@ -79,11 +120,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
   modelCollection = new Map<ModelCtor<any>, Collection>();
 
   modelHook: ModelHook;
+  version: DatabaseVersion;
 
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
 
   constructor(options: DatabaseOptions) {
     super();
+
+    this.version = new DatabaseVersion(this);
 
     const opts = {
       sync: {
