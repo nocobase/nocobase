@@ -4,8 +4,9 @@
 
 ### New features
 
-- Integer collection field
-- Support for displaying fields of relational tables in blocks
+- Fields: Integer field
+- Blocks: Display fields of relational collections in blocks
+- Plugins: Filter conditions support variables
 
 ### Breaking changes
 
