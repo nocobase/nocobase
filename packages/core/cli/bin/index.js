@@ -17,10 +17,6 @@ const env = {
   LOCAL_STORAGE_DEST: 'storage/uploads',
 };
 
-if ('v18' === process.version.split('.').shift()) {
-  process.env.NODE_OPTIONS = '--openssl-legacy-provider';
-}
-
 if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') {
   if (existsSync(resolve(process.cwd(), '.env.test'))) {
     process.env.APP_ENV_PATH = '.env.test';
