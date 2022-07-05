@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContext,
+  CollectionManagerContext,
   createDesignable,
   Designable,
   FormProvider,
@@ -21,7 +22,7 @@ import {
   useAPIClient,
   useCollection,
   useCompile,
-  useDesignable,
+  useDesignable
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -559,6 +560,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
 SchemaSettings.ModalItem = (props) => {
   const { hidden, title, components, scope, effects, schema, onSubmit, initialValues, ...others } = props;
   const options = useContext(SchemaOptionsContext);
+  const cm = useContext(CollectionManagerContext);
   if (hidden) {
     return null;
   }
@@ -568,11 +570,13 @@ SchemaSettings.ModalItem = (props) => {
       onClick={() => {
         FormDialog(schema.title || title, () => {
           return (
-            <SchemaComponentOptions scope={options.scope} components={options.components}>
-              <FormLayout layout={'vertical'}>
-                <SchemaComponent components={components} scope={scope} schema={schema} />
-              </FormLayout>
-            </SchemaComponentOptions>
+            <CollectionManagerContext.Provider value={cm}>
+              <SchemaComponentOptions scope={options.scope} components={options.components}>
+                <FormLayout layout={'vertical'}>
+                  <SchemaComponent components={components} scope={scope} schema={schema} />
+                </FormLayout>
+              </SchemaComponentOptions>
+            </CollectionManagerContext.Provider>
           );
         })
           .open({
@@ -627,6 +631,5 @@ SchemaSettings.BlockTitleItem = () => {
         dn.refresh();
       }}
     />
-  )
-  
-}
+  );
+};

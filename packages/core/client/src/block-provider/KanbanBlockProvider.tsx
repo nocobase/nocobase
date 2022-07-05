@@ -1,9 +1,10 @@
 import { ArrayField } from '@formily/core';
-import { useField } from '@formily/react';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
+import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useACLRoleContext } from '../acl';
-import { useCollection } from '../collection-manager';
+import { useCollection, useCollectionManager } from '../collection-manager';
 import { toColumns } from '../schema-component/antd/kanban/Kanban';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
@@ -48,10 +49,64 @@ const InternalKanbanBlockProvider = (props) => {
   );
 };
 
+const recursiveProperties = (schema: Schema, component = 'CollectionField', associationFields, appends: any = []) => {
+  schema.mapProperties((s: any) => {
+    const name = s.name.toString();
+    if (s['x-component'] === component && !appends.includes(name)) {
+      // 关联字段和关联的关联字段
+      const [firstName] = name.split('.');
+      if (associationFields.has(name)) {
+        appends.push(name);
+      } else if (associationFields.has(firstName) && !appends.includes(firstName)) {
+        appends.push(firstName);
+      }
+    } else {
+      recursiveProperties(s, component, associationFields, appends);
+    }
+  });
+};
+
+const useAssociationNames = (collection) => {
+  const { getCollectionFields } = useCollectionManager();
+  const collectionFields = getCollectionFields(collection);
+  const associationFields = new Set();
+  for (const collectionField of collectionFields) {
+    if (collectionField.target) {
+      associationFields.add(collectionField.name);
+      const fields = getCollectionFields(collectionField.target);
+      for (const field of fields) {
+        if (field.target) {
+          associationFields.add(`${collectionField.name}.${field.name}`);
+        }
+      }
+    }
+  }
+  const fieldSchema = useFieldSchema();
+  const kanbanSchema = fieldSchema.reduceProperties((buf, schema) => {
+    if (schema['x-component'].startsWith('Kanban')) {
+      return schema;
+    }
+    return buf;
+  }, new Schema({}));
+  const gridSchema: any = kanbanSchema?.properties?.card?.properties?.grid;
+  const appends = [];
+  if (gridSchema) {
+    recursiveProperties(gridSchema, 'CollectionField', associationFields, appends);
+  }
+  
+  return uniq(appends);
+};
+
 export const KanbanBlockProvider = (props) => {
+  const params = { ...props.params };
+  const appends = useAssociationNames(props.collection);
+  console.log('KanbanBlockProvider', appends);
+  if (!Object.keys(params).includes('appends')) {
+    params['appends'] = appends;
+  }
   return (
-    <BlockProvider {...props}>
-      <InternalKanbanBlockProvider {...props} />
+    <BlockProvider {...props} params={params}>
+      <InternalKanbanBlockProvider {...props} params={params} />
     </BlockProvider>
   );
 };
@@ -68,7 +123,7 @@ const useDisableCardDrag = () => {
   }
   const result = getActionParams(`${ctx?.props?.resource}:update`, { skipOwnCheck: true });
   return !result;
-}
+};
 
 export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();

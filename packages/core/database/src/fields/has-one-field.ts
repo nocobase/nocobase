@@ -7,6 +7,7 @@ import {
   HasOneOptions as SequelizeHasOneOptions,
   Utils
 } from 'sequelize';
+import { Collection } from '../collection';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
 
 export interface HasOneFieldOptions extends HasOneOptions {
@@ -92,9 +93,10 @@ export class HasOneField extends RelationField {
       return false;
     }
     const association = collection.model.hasOne(Target, {
+      constraints: false,
+      ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
       foreignKey: this.foreignKey,
-      ...omit(this.options, ['name', 'type', 'target']),
     });
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);
@@ -104,6 +106,15 @@ export class HasOneField extends RelationField {
     if (!this.options.sourceKey) {
       // @ts-ignore
       this.options.sourceKey = association.sourceKey;
+    }
+    let tcoll: Collection;
+    if (this.target === collection.name) {
+      tcoll = collection;
+    } else {
+      tcoll = database.getCollection(this.target);
+    }
+    if (tcoll) {
+      tcoll.addIndex([this.options.foreignKey]);
     }
     return true;
   }

@@ -37,6 +37,7 @@ export class BelongsToManyField extends RelationField {
     }
 
     const association = collection.model.belongsToMany(Target, {
+      constraints: false,
       ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
       through: Through.model,
@@ -57,6 +58,8 @@ export class BelongsToManyField extends RelationField {
     if (!this.options.through) {
       this.options.through = this.through;
     }
+    Through.addIndex([this.options.foreignKey]);
+    Through.addIndex([this.options.otherKey]);
     return true;
   }
 

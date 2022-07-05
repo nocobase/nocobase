@@ -11,26 +11,23 @@ In this order management system, we need to have the information of `Customers`,
     - Birthday
     - Gender
     - Phone
-    - Orders (All orders purchased, data from `Orders`, each customer data contains multiple order data)
 - Products
     - Product name
     - Description
     - Images
     - Price
-    - Order Items (In which orders the product was purchased, data from `Order Items`, each product data belongs to multiple Order Items data)
 - Orders
     - Serial number
     - Total
     - Note
     - Address
-    - Customer (Customers who own the order, data from `Customers`, each order data belongs to a customer data)
-    - Order Items (The products in the order, data from `Order Items`, each order data contains multiple Order Items data)
-- Order Items
-    - Order (The order to which the item belongs, data from `Orders`, each order item data belongs to an order data)
-    - Product (The products contained in this item, data from `Products`, each order item data contains a product data)
+    - *Customer* (The customer to which the order belongs to, which is a many-to-one relationship. Each order belongs to one customer, and one customer may have multiple orders)
+    - *Order List* (The items and quantities in this order are associated with `Order List`, which is a **one to many** relationship. Each order contains multiple order items, and each order items belongs to only one order)
+- Order List
+    - Product (The product contained in this item whith is associated with `Products`, which is a **many-to-one** relationship. Each order item contains one product, and each product may belong to multiple order item)
     - Quantity
 
-Where the fields with underscores are relational fields, associated to other data tables.
+Where the fields in italics are relational fields, associated to other data tables.
 
 Next, click the "Collections & Fields" button to enter the Configuration screen and create the first Collection `Customers`. 
 
@@ -44,15 +41,18 @@ In the same way, add Birthday, Gender, and Phone for `Customers`, which are the 
 
 ![1.fields.jpg](./5-minutes-to-get-started/1.fields.jpg)
 
-In the same way, create Collections `Products`, `Orders`, `Order Items` and their fields.
+In the same way, create Collections `Products`, `Orders`, `Order List` and their fields.
 
 ![1.collections.jpg](./5-minutes-to-get-started/1.collections.jpg)
 
  
-
-In this case, for the relationship fields, we have to select the Link to type, thus creating an association between the data collections. In this example, we associate `Products` with `Orders` and use `Order Items` as an junction collection.
+In this case, for the relationship fields, we have to select the correct type so that we can create the association between the data collections. Let's take `Orders` as an example, create the Customer field and select the **Many to One** relationship to associate to `Customers`.
 
 ![1.relation.jpg](./5-minutes-to-get-started/1.relation.jpg)
+
+After creating a relationship field, we can see the automatically generated reverse association field in the Collection being associated. For example, we can see the automatically generated Orders field in `Customers`, so we can call the data of `Orders` in the block of `Customers`.
+
+![1.auto.relation.jpg](./5-minutes-to-get-started/1.auto.relation.jpg)
 
 Once the data collections and fields are created, we start making the interface.
 

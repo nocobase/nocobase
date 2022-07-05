@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-acl",
-  "version": "0.7.0-alpha.83",
+  "version": "0.7.2-alpha.1",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -12,14 +12,14 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/acl": "0.7.0-alpha.83",
-    "@nocobase/database": "0.7.0-alpha.83",
-    "@nocobase/server": "0.7.0-alpha.83"
+    "@nocobase/acl": "0.7.2-alpha.1",
+    "@nocobase/database": "0.7.2-alpha.1",
+    "@nocobase/server": "0.7.2-alpha.1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/acl"
   },
-  "gitHead": "a00b45a2686695c5f4824d074ac5e1aff210793a"
+  "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
 }

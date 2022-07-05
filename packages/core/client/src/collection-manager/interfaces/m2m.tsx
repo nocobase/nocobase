@@ -45,15 +45,26 @@ export const m2m: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
-    if (readPretty) {
+  schemaInitialize(schema: ISchema, { readPretty, block }) {
+    if (block === 'Form') {
       schema['properties'] = {
         viewer: cloneDeep(recordPickerViewer),
-      };
-    } else {
-      schema['properties'] = {
         selector: cloneDeep(recordPickerSelector),
       };
+    } else {
+      if (readPretty) {
+        schema['properties'] = {
+          viewer: cloneDeep(recordPickerViewer),
+        };
+      } else {
+        schema['properties'] = {
+          selector: cloneDeep(recordPickerSelector),
+        }
+      }
+    }
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
     }
   },
   initialize: (values: any) => {
@@ -161,7 +172,7 @@ export const m2m: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
@@ -171,9 +182,7 @@ export const m2m: IField = {
             col23: {
               type: 'void',
               'x-component': 'Grid.Col',
-              properties: {
-
-              },
+              properties: {},
             },
           },
         },
@@ -196,7 +205,7 @@ export const m2m: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',

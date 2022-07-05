@@ -1,6 +1,6 @@
-import React from 'react';
 import { render } from '@testing-library/react';
-import { compose } from '../';
+import React from 'react';
+import { compose } from '../compose';
 
 describe('compose', () => {
   it('case 1', () => {

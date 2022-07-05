@@ -39,7 +39,7 @@ yarn create nocobase-app my-nocobase-app -d sqlite
 # MySQL
 yarn create nocobase-app my-nocobase-app -d mysql \
    -e DB_HOST=localhost \
-   -e DB_PORT=3356 \
+   -e DB_PORT=3306 \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase
@@ -83,7 +83,7 @@ yarn dev
 生产环境
 
 ```bash
-yarn start
+yarn start # 暂不支持在 win 平台下运行
 ```
 
 注：生产环境，如果代码有修改，需要执行 `yarn build`，再重新启动 NocoBase。

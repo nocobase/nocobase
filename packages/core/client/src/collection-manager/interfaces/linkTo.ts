@@ -45,15 +45,22 @@ export const linkTo: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
-    if (readPretty) {
+  schemaInitialize(schema: ISchema, { readPretty, block }) {
+    if (block === 'Form') {
       schema['properties'] = {
         viewer: cloneDeep(recordPickerViewer),
-      };
-    } else {
-      schema['properties'] = {
         selector: cloneDeep(recordPickerSelector),
       };
+    } else {
+      if (readPretty) {
+        schema['properties'] = {
+          viewer: cloneDeep(recordPickerViewer),
+        };
+      } else {
+        schema['properties'] = {
+          selector: cloneDeep(recordPickerSelector),
+        }
+      }
     }
   },
   initialize: (values: any) => {

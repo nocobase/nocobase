@@ -19,6 +19,12 @@ module.exports = (cli) => {
       if (opts.port) {
         process.env.APP_PORT = opts.port;
       }
+      if (process.platform === 'win32') {
+        console.log(
+          chalk.yellow(`It is not supported on win platform, please use \`${chalk.green('yarn dev')}\` instead`),
+        );
+        return;
+      }
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         promptForTs();
         run('ts-node', [
@@ -39,7 +45,6 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
-      await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--silent']);
       if (opts.dbSync) {
         await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
       }

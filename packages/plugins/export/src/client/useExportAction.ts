@@ -4,12 +4,12 @@ import {
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
-  useCompile,
+  useCompile
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 export const useExportAction = () => {
-  const { service } = useBlockRequestContext();
+  const { service, resource } = useBlockRequestContext();
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
@@ -30,18 +30,18 @@ export const useExportAction = () => {
         }
         es.defaultTitle = uiSchema?.title;
       });
-      const { data } = await apiClient.request({
-        url: `/${name}:exportXlsx`,
-        method: 'get',
-        responseType: 'blob',
-        params: {
+      const { data } = await resource.exportXlsx(
+        {
           title: compile(title),
           columns: JSON.stringify(compile(exportSettings)),
           appends: service.params[0]?.appends?.join(),
           filter: JSON.stringify(service.params[0]?.filter),
         },
-      });
-
+        {
+          method: 'get',
+          responseType: 'blob',
+        },
+      );
       let blob = new Blob([data], { type: 'application/x-xls' });
       const a = document.createElement('a');
       const blobUrl = window.URL.createObjectURL(blob);

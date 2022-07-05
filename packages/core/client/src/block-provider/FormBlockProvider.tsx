@@ -1,5 +1,5 @@
 import { createForm } from '@formily/core';
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -29,6 +29,7 @@ const InternalFormBlockProvider = (props) => {
         field,
         service,
         resource,
+        updateAssociationValues: [],
       }}
     >
       {props.children}

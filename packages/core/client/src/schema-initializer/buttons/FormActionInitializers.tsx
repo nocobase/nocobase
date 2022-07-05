@@ -112,6 +112,7 @@ export const FormActionInitializers = {
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               requestSettings: {},
+              skipValidator: false,
               onSuccess: {
                 manualClose: false,
                 redirecting: false,
@@ -241,6 +242,7 @@ export const CreateFormActionInitializers = {
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               requestSettings: {},
+              skipValidator: false,
               onSuccess: {
                 manualClose: false,
                 redirecting: false,
@@ -370,6 +372,7 @@ export const UpdateFormActionInitializers = {
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               requestSettings: {},
+              skipValidator: false,
               onSuccess: {
                 manualClose: false,
                 redirecting: false,

@@ -10,6 +10,7 @@ export default (app: Application) => {
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
       console.log('upgrading...');
+      await app.start();
       await app.upgrade();
       await app.stop({
         cliArgs,

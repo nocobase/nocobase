@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
-import { relationshipType } from './properties';
+import { cloneDeep } from 'lodash';
+import { recordPickerSelector, recordPickerViewer, relationshipType } from './properties';
 import { IField } from './types';
 
 export const o2m: IField = {
@@ -15,14 +16,14 @@ export const o2m: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'TableField',
+      'x-component': 'RecordPicker',
       'x-component-props': {
         // mode: 'tags',
-        // multiple: true,
-        // fieldNames: {
-        //   label: 'id',
-        //   value: 'id',
-        // },
+        multiple: true,
+        fieldNames: {
+          label: 'id',
+          value: 'id',
+        },
       },
     },
     reverseField: {
@@ -43,47 +44,68 @@ export const o2m: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, readPretty }) {
-    const association = `${field.collectionName}.${field.name}`;
-    schema['type'] = 'void';
-    schema['x-component'] = 'TableField';
-    schema['properties'] = {
-      block: {
-        type: 'void',
-        'x-decorator': 'TableFieldProvider',
-        'x-decorator-props': {
-          collection: field.target,
-          association: association,
-          resource: association,
-          action: 'list',
-          params: {
-            paginate: false,
+  schemaInitialize(schema: ISchema, { field, block, readPretty }) {
+    if (block === 'Form' && schema['x-component'] === 'TableField') {
+      const association = `${field.collectionName}.${field.name}`;
+      schema['type'] = 'void';
+      schema['properties'] = {
+        block: {
+          type: 'void',
+          'x-decorator': 'TableFieldProvider',
+          'x-decorator-props': {
+            collection: field.target,
+            association: association,
+            resource: association,
+            action: 'list',
+            params: {
+              paginate: false,
+            },
+            showIndex: true,
+            dragSort: false,
+            fieldName: field.name,
           },
-          showIndex: true,
-          dragSort: false,
-        },
-        properties: {
-          actions: {
-            type: 'void',
-            'x-initializer': 'SubTableActionInitializers',
-            'x-component': 'TableField.ActionBar',
-            'x-component-props': {},
-          },
-          [field.name]: {
-            type: 'array',
-            'x-initializer': 'TableColumnInitializers',
-            'x-component': 'TableV2',
-            'x-component-props': {
-              rowSelection: {
-                type: 'checkbox',
+          properties: {
+            actions: {
+              type: 'void',
+              'x-initializer': 'SubTableActionInitializers',
+              'x-component': 'TableField.ActionBar',
+              'x-component-props': {},
+            },
+            [field.name]: {
+              type: 'array',
+              'x-initializer': 'TableColumnInitializers',
+              'x-component': 'TableV2',
+              'x-component-props': {
+                rowSelection: {
+                  type: 'checkbox',
+                },
+                useProps: '{{ useTableFieldProps }}',
               },
-              useProps: '{{ useTableFieldProps }}',
             },
           },
         },
-      },
-    };
+      };
+    } else {
+      schema['x-component'] = 'CollectionField';
+      schema.type = 'object';
 
+      if (block === 'Form') {
+        schema['properties'] = {
+          viewer: cloneDeep(recordPickerViewer),
+          selector: cloneDeep(recordPickerSelector),
+        };
+      } else {
+        if (readPretty) {
+          schema['properties'] = {
+            viewer: cloneDeep(recordPickerViewer),
+          };
+        } else {
+          schema['properties'] = {
+            selector: cloneDeep(recordPickerSelector),
+          }
+        }
+      }
+    }
     // if (readPretty) {
     //   schema['properties'] = {
     //     viewer: cloneDeep(recordPickerViewer),
@@ -93,6 +115,10 @@ export const o2m: IField = {
     //     selector: cloneDeep(recordPickerSelector),
     //   };
     // }
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
   properties: {
     'uiSchema.title': {
@@ -178,7 +204,7 @@ export const o2m: IField = {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-disabled': '{{ !createOnly }}',
@@ -194,8 +220,7 @@ export const o2m: IField = {
             col21: {
               type: 'void',
               'x-component': 'Grid.Col',
-              properties: {
-              },
+              properties: {},
             },
             col22: {
               type: 'void',

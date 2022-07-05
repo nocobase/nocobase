@@ -31,7 +31,7 @@ export default defineCollection({
       type: 'belongsTo',
       name: 'uiSchema',
       target: 'uiSchemas',
-      foreignKey: 'uiSchemaUid'
+      foreignKey: 'uiSchemaUid',
     },
     {
       type: 'json',

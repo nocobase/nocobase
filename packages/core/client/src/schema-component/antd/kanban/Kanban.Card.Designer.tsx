@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { createDesignable, useDesignable } from '../../../schema-component';
 import { SchemaInitializer } from '../../../schema-initializer';
-import { useFormItemInitializerFields } from '../../../schema-initializer/utils';
+import { useAssociatedFormItemInitializerFields, useFormItemInitializerFields } from '../../../schema-initializer/utils';
 
 const titleCss = css`
   pointer-events: none;
@@ -58,7 +58,7 @@ export const KanbanCardDesigner = (props: any) => {
   const { refresh } = useDesignable();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const fields = useFormItemInitializerFields({ readPretty: true, block: 'KanbanV2' });
+  const fields = useFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
   if (!designable) {
     return null;
   }
@@ -93,6 +93,14 @@ export const KanbanCardDesigner = (props: any) => {
                 title: t('Display fields'),
                 children: fields,
               },
+              {
+                type: 'divider',
+              },
+              {
+                type: 'itemGroup',
+                title: t('Display association fields'),
+                children: useAssociatedFormItemInitializerFields({readPretty: true, block: 'Kanban'}),
+              },
             ]}
             component={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}
           />
@@ -101,3 +109,4 @@ export const KanbanCardDesigner = (props: any) => {
     </div>
   );
 };
+

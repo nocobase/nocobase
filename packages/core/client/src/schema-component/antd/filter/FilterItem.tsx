@@ -1,4 +1,5 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { Cascader, Select, Space } from 'antd';
 import React, { useContext } from 'react';
@@ -17,6 +18,9 @@ export const FilterItem = observer((props: any) => {
     <div style={{ marginBottom: 8 }}>
       <Space>
         <Cascader
+          className={css`
+            width: 160px;
+          `}
           fieldNames={{
             label: 'title',
             value: 'name',

@@ -45,12 +45,18 @@ async function findUserByToken(ctx: Context, plugin: UsersPlugin) {
 
   try {
     const { userId } = await plugin.jwtService.decode(token);
-
+    const collection = ctx.db.getCollection('users');
+    const appends = ['roles'];
+    for (const [, field] of collection.fields) {
+      if (field.type === 'belongsTo') {
+        appends.push(field.name);
+      }
+    }
     return await ctx.db.getRepository('users').findOne({
+      appends,
       filter: {
         id: userId,
       },
-      appends: ['roles'],
     });
   } catch (error) {
     return null;

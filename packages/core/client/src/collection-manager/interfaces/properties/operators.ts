@@ -71,6 +71,14 @@ export const id = [
   { label: '{{t("is")}}', value: '$eq', selected: true },
   { label: '{{t("is not")}}', value: '$ne' },
   {
+    label: '{{t("is variable")}}',
+    value: '$isVar',
+    schema: {
+      'x-component': 'VariableCascader',
+      'x-component-props': {},
+    },
+  },
+  {
     label: '{{t("is current logged-in user")}}',
     value: '$isCurrentUser',
     noValue: true,

@@ -4,6 +4,7 @@ import { message, Modal } from 'antd';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
+import { useFormBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
@@ -49,7 +50,7 @@ const filterValue = (value) => {
     return value;
   }
   if (Array.isArray(value)) {
-    return value.map((v) => filterValue(value));
+    return value.map((v) => filterValue(v));
   }
   const obj = {};
   for (const key in value) {
@@ -70,11 +71,11 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
     if (fieldNames.includes(key)) {
       const collectionField = getField(key);
       if (filterByTk) {
-        if (['subTable', 'o2m'].includes(collectionField.interface)) {
-          values[key] = form.values[key];
+        if (field.added && !field.added.has(key)) {
           continue;
         }
-        if (field.added && !field.added.has(key)) {
+        if (['subTable', 'o2m', 'o2o', 'oho', 'obo', 'm2o'].includes(collectionField.interface)) {
+          values[key] = form.values[key];
           continue;
         }
       }
@@ -223,17 +224,21 @@ export const useCustomizeRequestActionProps = () => {
   const compile = useCompile();
   const form = useForm();
   const { fields, getField } = useCollection();
-  const { field, resource } = useBlockRequestContext();
+  const { field, resource, __parent, service } = useBlockRequestContext();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
+  const actionField = useField();
+  const { visible, setVisible } = useActionContext();
+
   return {
     async onClick() {
       const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      const xAction = actionSchema?.['x-action'];
       if (!requestSettings['url']) {
         return;
       }
-      if (skipValidator === false) {
+      if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();
       }
 
@@ -241,7 +246,7 @@ export const useCustomizeRequestActionProps = () => {
       const params = requestSettings['params'] ? JSON.parse(requestSettings['params']) : {};
       const data = requestSettings['data'] ? JSON.parse(requestSettings['data']) : {};
       const methods = ['POST', 'PUT', 'PATCH'];
-      if (actionSchema['x-action'] === 'customize:form:request' && methods.includes(requestSettings['method'])) {
+      if (xAction === 'customize:form:request' && methods.includes(requestSettings['method'])) {
         const fieldNames = fields.map((field) => field.name);
         const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
         Object.assign(data, values);
@@ -253,29 +258,41 @@ export const useCustomizeRequestActionProps = () => {
         params: SchemaCompiler.compile(params, { currentRecord, currentUser }),
         data: SchemaCompiler.compile(data, { currentRecord, currentUser }),
       };
-
-      await apiClient.request({
-        ...requestBody,
-      });
-
-      if (!onSuccess?.successMessage) {
-        return;
-      }
-      if (onSuccess?.manualClose) {
-        Modal.success({
-          title: compile(onSuccess?.successMessage),
-          onOk: async () => {
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
-              } else {
-                history.push(onSuccess.redirectTo);
-              }
-            }
-          },
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
+      try {
+        await apiClient.request({
+          ...requestBody,
         });
-      } else {
-        message.success(compile(onSuccess?.successMessage));
+        actionField.data.loading = false;
+        if (!(resource instanceof TableFieldResource)) {
+          __parent?.service?.refresh?.();
+        }
+        service?.refresh?.();
+        if (xAction === 'customize:form:request') {
+          setVisible?.(false);
+        }
+        if (!onSuccess?.successMessage) {
+          return;
+        }
+        if (onSuccess?.manualClose) {
+          Modal.success({
+            title: compile(onSuccess?.successMessage),
+            onOk: async () => {
+              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+                if (isURL(onSuccess.redirectTo)) {
+                  window.location.href = onSuccess.redirectTo;
+                } else {
+                  history.push(onSuccess.redirectTo);
+                }
+              }
+            },
+          });
+        } else {
+          message.success(compile(onSuccess?.successMessage));
+        }
+      } finally {
+        actionField.data.loading = false;
       }
     },
   };
@@ -288,9 +305,11 @@ export const useUpdateActionProps = () => {
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const history = useHistory();
+  const record = useRecord();
   const { fields, getField } = useCollection();
   const compile = useCompile();
   const actionField = useField();
+  const { updateAssociationValues } = useFormBlockContext();
   return {
     async onClick() {
       const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
@@ -299,7 +318,7 @@ export const useUpdateActionProps = () => {
         await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
-      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      let values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
@@ -310,9 +329,10 @@ export const useUpdateActionProps = () => {
             ...overwriteValues,
             ...assignedValues,
           },
+          updateAssociationValues
         });
-        actionField.data.loading = false;        
-        if (!(resource instanceof TableFieldResource)) {  
+        actionField.data.loading = false;
+        if (!(resource instanceof TableFieldResource)) {
           __parent?.__parent?.service?.refresh?.();
         }
         __parent?.service?.refresh?.();

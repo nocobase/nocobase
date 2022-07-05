@@ -11,26 +11,23 @@
     - 生日
     - 性别
     - 电话
-    - 订单（购买过的所有订单，数据来自`Orders`，每条顾客数据包含多条订单数据）
 - Products
-    - 商品名称
+    - 名称
     - 描述
     - 图片
     - 价格
-    - 订单明细（在哪些订单中购买了该商品，数据来自`Order Items`，每条商品数据属于多条订单明细数据）
 - Orders
     - 订单编号
     - 总价
     - 备注
     - 地址
-    - 顾客（该订单所属的顾客，数据来自`Customers`，每条订单数据属于一条顾客数据）
-    - 订单明细（该订单中的商品，数据来自`Order Items`，每条订单数据包含多条订单明细数据）
-- Order Items
-    - 订单（该明细所属的订单，数据来自`Orders`，每条订单明细数据属于一条订单数据）
-    - 商品（该明细所包含的商品，数据来自`Products`，每条订单明细数据包含一条商品数据）
+    - *顾客*（该订单所属的顾客，与`Customers`建立关联，是 **多对一** 关系。每个订单属于一个顾客，一个顾客可能有个订单）
+    - *订单明细*（该订单中的商品及数量，与`Order List`建立关联，是 **一对多** 关系。每个订单包含多条订单明细，每条订单明细只属于一个订单）
+- Order List
+    - *商品*（该明细所包含的商品，与`Products`建立关联，是 **多对一** 关系。每条订单明细包含一个商品，每个商品可能属于多个订单明细）
     - 数量
 
-其中，有下划线的字段是关系字段，关联到其他数据表。
+其中，斜体的字段是关系字段，关联到其他数据表。
 
 接下来，点击“数据表配置”按钮，进入数据表配置界面，创建第一个 Collection `Customers`。
 
@@ -44,15 +41,17 @@
 
 ![1.fields.jpg](./5-minutes-to-get-started/1.fields.jpg)
 
-用同样的方法，创建 Collection `Products`、`Orders`、`Order Items` 以及它们的字段。
+用同样的方法，创建 Collection `Products`、`Orders`、`Order List` 以及它们的字段。
 
 ![1.collections.jpg](./5-minutes-to-get-started/1.collections.jpg)
 
- 
-
-其中，对于关系字段，我们要选择 Link to 类型，从而建立数据表之间的关联。在这个例子中，我们将 `Products` 与 `Orders` 关联，并使用 `Order Items` 作为中间表。
+ 其中，对于关系字段，我们要选择正确的类型，从而建立数据表之间的关联。我们以`Orders`为例，创建 Customer 字段，选择 **多对一** 关系，关联到`Customers`。
 
 ![1.relation.jpg](./5-minutes-to-get-started/1.relation.jpg)
+
+创建关系字段后，我们可以在被关联的 Collection 里看到自动生成的反向关联字段。比如在`Customers`中看到自动生成的 Orders 字段，这样我们在`Customers`的区块里可以调用`Orders`的数据。
+
+![1.auto.relation.jpg](./5-minutes-to-get-started/1.auto.relation.jpg)
 
 将数据表和字段创建完成后，我们开始制作界面。
 

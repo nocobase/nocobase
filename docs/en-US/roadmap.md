@@ -5,28 +5,23 @@
 - `core` Roles & Permissions
 - `core` Upgrades & Migrations
 - `plugin` Workflow
-- `core` Custom actions
 - `doc` Development Doc
-- `core` Collection relationship
-- `plugin` Audit logs
-- `plugin` Export
 - `plugin` Data visualization(low code)
 
 ## Developing
 
 - `core` Plugin manager
-- `plugin` Lookup field
+- `ui` Mobile responsive
+- `plugin` Rollup field
+- `core` field options (default value, etc...)
+- `plugin` Form validator
 
 ## Planning
 
-- `core` field options (default value, read-only, etc...)
-- `ui` Mobile responsive
-- `plugin` Rollup field
-- `plugin` Form validator
+- `plugin` Database connection
 
 ## Future
 
-- `plugin` Database connection
 - `plugin` Approval
 - `plugin` Full-text search
 - `plugin` Sharing pages

@@ -6,9 +6,11 @@ export * from './createdAt';
 export * from './createdBy';
 export * from './datetime';
 export * from './email';
+export * from './formula';
 export * from './icon';
 export * from './id';
 export * from './input';
+export * from './integer';
 export * from './linkTo';
 export * from './m2m';
 export * from './m2o';
@@ -28,5 +30,4 @@ export * from './textarea';
 export * from './time';
 export * from './updatedAt';
 export * from './updatedBy';
-export * from './formula';
 

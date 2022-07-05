@@ -1,6 +1,6 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
-import { updateAssociation, updateAssociations } from '../update-associations';
+import { updateAssociations } from '../update-associations';
 import { mockDatabase } from './';
 
 describe('update associations', () => {
@@ -356,13 +356,14 @@ describe('update associations', () => {
   });
 
   describe('belongsToMany', () => {
-    let db;
-    let Post;
-    let Tag;
-    let PostTag;
+    let db: Database;
+    let Post: Collection;
+    let Tag: Collection;
+    let PostTag: Collection;
 
     beforeEach(async () => {
       db = mockDatabase();
+      await db.clean({ drop: true });
       PostTag = db.collection({
         name: 'posts_tags',
         fields: [{ type: 'string', name: 'tagged_at' }],
@@ -389,7 +390,7 @@ describe('update associations', () => {
     afterEach(async () => {
       await db.close();
     });
-    test('set through value', async () => {
+    test.only('set through value', async () => {
       const p1 = await Post.repository.create({
         values: {
           title: 'hello',
@@ -404,9 +405,12 @@ describe('update associations', () => {
           ],
         },
       });
-
-      const t1 = (await p1.getTags())[0];
-      expect(t1.posts_tags.tagged_at).toEqual('123');
+      const count = await PostTag.repository.count({
+        filter: {
+          tagged_at: '123',
+        },
+      });
+      expect(count).toEqual(1);
     });
   });
 });

@@ -1,6 +1,5 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { isValid } from '@formily/shared';
-import { uid } from '@nocobase/utils';
+import { isValid, uid } from '@formily/shared';
 import { Menu } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
