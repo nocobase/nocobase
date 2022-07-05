@@ -4,8 +4,9 @@
 
 ### New features
 
-- 新增整数字段
-- 支持在区块里显示关系表的字段
+- Fields: 整数字段
+- Blocks: 支持在区块里显示关系表的字段
+- Plugins: 筛选条件支持变量
 
 ### Breaking changes
 
