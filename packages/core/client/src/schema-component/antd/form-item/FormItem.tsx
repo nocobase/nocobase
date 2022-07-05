@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { FormItem as Item } from '@formily/antd';
+import { ArrayCards, ArrayCollapse, ArrayItems, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -206,6 +206,7 @@ FormItem.Designer = (props) => {
       {validateSchema && (
         <SchemaSettings.ModalItem
           title={t('Set validation rules')}
+          components={{ ArrayCollapse }}
           schema={{
             type: 'object',
             title: t('Set validation rules'),
@@ -214,19 +215,22 @@ FormItem.Designer = (props) => {
             }
           } as ISchema}
           onSubmit={(v) => {
-            const rules = _.pickBy(v.rules, _.identity);
+            const rules = [];
+            for (const rule of v.rules) {
+              rules.push(_.pickBy(rule, _.identity))
+            }
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
             };
-            if (['number'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
-              rules['numberStringMode'] = true;
-            }
-            if (['percent'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
-              rules['percentStringMode'] = true;
-            }
-            field.validator = { ...rules };
-            fieldSchema['x-validator'] = field.validator;
-            schema['x-validator'] = field.validator;
+            // if (['number'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
+            //   rules['numberStringMode'] = true;
+            // }
+            // if (['percent'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
+            //   rules['percentStringMode'] = true;
+            // }
+            field.validator = rules;
+            fieldSchema['x-validator'] = rules;
+            schema['x-validator'] = rules;
             dn.emit('patch', {
               schema,
             });
