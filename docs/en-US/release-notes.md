@@ -1,6 +1,6 @@
 # Release Notes
 
-## 2022/07/05 ~ v0.7.1-alpha.1
+## 2022/07/05 ~ v0.7.2-alpha.1
 
 ### New features
 
