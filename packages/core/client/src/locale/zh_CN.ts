@@ -244,6 +244,12 @@ export default {
   "Min length must less than max length": "最小长度必须小于最大长度",
   "Maximum must greater than minimum": "最大值必须大于最小值",
   "Minimum must less than maximum": "最小值必须小于最大值",
+  "Validation rule": "验证规则",
+  "Add validation rule": "新增验证规则",
+  "Format": "格式",
+  "Regular expression": "正则表达式",
+  "Error message": "错误消息",
+  "Length": "长度",
 
   "is before": "早于",
   "is after": "晚于",

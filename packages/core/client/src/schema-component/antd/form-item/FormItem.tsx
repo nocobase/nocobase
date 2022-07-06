@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { ArrayCards, ArrayCollapse, ArrayItems, FormItem as Item } from '@formily/antd';
+import { ArrayCollapse, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -222,6 +222,7 @@ FormItem.Designer = (props) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
             };
+            // return;
             // if (['number'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
             //   rules['numberStringMode'] = true;
             // }

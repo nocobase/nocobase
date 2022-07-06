@@ -31,7 +31,6 @@ export const input: IField = {
     }
   },
   validateSchema(fieldSchema) {
-    console.log('validateSchema', fieldSchema?.['x-validator']);
     const formItemStyle = {
       labelCol: 8,
       wrapperCol: 16,
@@ -42,7 +41,6 @@ export const input: IField = {
       'x-component': 'ArrayCollapse',
       'x-decorator': 'FormItem',
       'x-component-props': {
-        // title: '{{ t("Validation rule") }}',
         accordion: true,
       },
       maxItems: 3,
@@ -104,6 +102,9 @@ export const input: IField = {
               ...formItemStyle
             },
             'x-component': 'Select',
+            'x-component-props': {
+              allowClear: true,
+            },
             enum: [{
               label: '{{ t("url") }}',
               value: 'url',
@@ -147,7 +148,7 @@ export const input: IField = {
           },
           pattern: {
             type: 'string',
-            title: '{{ t("Pattern") }}',
+            title: '{{ t("Regular expression") }}',
             'x-decorator': 'FormItem',
             'x-decorator-props': {
               ...formItemStyle
@@ -202,43 +203,6 @@ export const input: IField = {
           }
         },
       }
-      // type: 'object',
-      // default: fieldSchema?.['x-validator'],
-      // properties: {
-      //   max: {
-      //     type: 'number',
-      //     title: '{{ t("Max length") }}',
-      //     minimum: 0,
-      //     'x-decorator': 'FormItem',
-      //     'x-component': 'InputNumber',
-      //     'x-component-props': {
-      //       precision: 0
-      //     },
-      //     'x-reactions': `{{(field) => {
-      //       const targetValue = field.query('rules.min').value();
-      //       field.selfErrors =
-      //         !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t('Max length must greater than min length')}' : ''
-      //     }}}`,
-      //   },
-      //   min: {
-      //     type: 'number',
-      //     title: '{{ t("Min length") }}',
-      //     minimum: 0,
-      //     'x-decorator': 'FormItem',
-      //     'x-component': 'InputNumber',
-      //     'x-component-props': {
-      //       precision: 0
-      //     },
-      //     'x-reactions': {
-      //       dependencies: ['rules.max'],
-      //       fulfill: {
-      //         state: {
-      //           selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t('Min length must less than max length')}' : ''}}`,
-      //         },
-      //       },
-      //     },
-      //   },
-      // }
     } as ISchema;
   }
 };
