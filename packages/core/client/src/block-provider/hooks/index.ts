@@ -1,6 +1,7 @@
 import { Schema as SchemaCompiler } from '@formily/json-schema';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { message, Modal } from 'antd';
+import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -8,6 +9,7 @@ import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
+import { AssignedFieldValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
@@ -62,6 +64,31 @@ const filterValue = (value) => {
     }
   }
   return obj;
+};
+
+const convertAssignedFieldValues = (originalValues: any, currentUser, currentRecord) => {
+  const values = cloneDeep(originalValues);
+  const assignedValues = {};
+  for (const key in values) {
+    const value = values[key];
+    if (value.type === AssignedFieldValueType.ConstantValue) {
+      assignedValues[key] = value.value;
+    } else if (value.type === AssignedFieldValueType.DynamicValue) {
+      if (value.value?.[0] === '{{currentUser}}') {
+        assignedValues[key] = currentUser;
+      } else if (value.value?.[0] === '{{currentTime}}') {
+        assignedValues[key] = new Date();
+      } else {
+        let val = value.value.shift();
+        assignedValues[key] = currentRecord;
+        while (val) {
+          assignedValues[key] = assignedValues[key]?.[val];
+          val = value.value.shift();
+        }
+      }
+    }
+  }
+  return assignedValues;
 };
 
 function getFormValues(filterByTk, field, form, fieldNames, getField, resource) {
@@ -119,11 +146,19 @@ export const useCreateActionProps = () => {
   const { fields, getField } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
+  const currentRecord = useRecord();
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
-
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
       if (!skipValidator) {
         await form.submit();
       }
@@ -173,14 +208,20 @@ export const useCustomizeUpdateActionProps = () => {
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const currentRecord = useRecord();
-  const ctx = useCurrentUserContext();
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
   const history = useHistory();
   const compile = useCompile();
   const form = useForm();
 
   return {
     async onClick() {
-      const { assignedValues, onSuccess, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
       if (skipValidator === false) {
         await form.submit();
       }
@@ -307,10 +348,18 @@ export const useUpdateActionProps = () => {
   const { fields, getField } = useCollection();
   const compile = useCompile();
   const actionField = useField();
+  const currentRecord = useRecord();
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
   return {
     async onClick() {
-      const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
-
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
       if (!skipValidator) {
         await form.submit();
       }

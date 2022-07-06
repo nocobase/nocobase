@@ -14,18 +14,12 @@ export const useFields = (collectionName: string) => {
       return;
     }
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.filterable) {
-      return;
-    }
-    const { nested, children, operators } = fieldInterface.filterable;
+
+    const { nested, children } = fieldInterface.filterable ?? {};
     const option = {
       name: field.name,
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
-      operators:
-        operators?.filter?.((operator) => {
-          return !operator?.visible || operator.visible(field);
-        }) || [],
     };
     if (field.target && depth > 2) {
       return;
