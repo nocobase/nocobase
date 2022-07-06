@@ -5,11 +5,10 @@ import { observer, useForm, useFormEffects } from '@formily/react';
 import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { useFlowContext } from '../WorkflowCanvas';
-import { BaseTypeSet } from '../calculators';
 import { collection, filter } from '../schemas/collection';
-import { useTranslation } from 'react-i18next';
 import { css } from '@emotion/css';
 import { onFieldValueChange } from '@formily/core';
+import CollectionFieldSelect from '../components/CollectionFieldSelect';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
@@ -41,6 +40,8 @@ const FieldsSelect = observer((props) => {
     </Select>
   );
 });
+
+
 
 export default {
   title: '{{t("Collection event")}}',
@@ -127,27 +128,19 @@ export default {
   components: {
     FieldsSelect
   },
-  getter({ type, options, onChange }) {
-    const { t } = useTranslation();
-    const compile = useCompile();
-    const { collections = [] } = useCollectionManager();
+  getter(props) {
+    const { type, options, onChange } = props;
     const { workflow } = useFlowContext();
-    const collection = collections.find(item => item.name === workflow.config.collection) ?? { fields: [] };
+    const value = options?.path?.replace(/^data\./, '');
 
     return (
-      <Select
-        placeholder={t('Fields')}
-        value={options?.path?.replace(/^data\./, '')}
-        onChange={(path) => {
-          onChange({ type, options: { ...options, path: `data.${path}` } });
+      <CollectionFieldSelect
+        collection={workflow.config.collection}
+        value={value}
+        onChange={(value) => {
+          onChange({ type, options: { ...options, path: `data.${value.join('.')}` } });
         }}
-      >
-        {collection.fields
-          .filter(field => BaseTypeSet.has(field?.uiSchema?.type))
-          .map(field => (
-          <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema.title)}</Select.Option>
-        ))}
-      </Select>
+      />
     );
   }
 };
