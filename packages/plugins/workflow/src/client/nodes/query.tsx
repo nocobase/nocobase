@@ -54,8 +54,8 @@ export default {
       <CollectionFieldSelect
         collection={config.collection}
         value={value}
-        onChange={(value) => {
-          onChange({ type, options: { ...options, path: value?.join('.') } });
+        onChange={(path) => {
+          onChange({ type, options: { ...options, path } });
         }}
       />
     );
