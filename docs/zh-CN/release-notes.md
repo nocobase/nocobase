@@ -1,5 +1,16 @@
 # 更新日志
 
+## 2022/07/07 ~ v0.7.2-alpha.2
+
+- fix(g2plot): import all plots
+- fix: field permissions cannot be saved (#605)
+- fix(plugin-workflow): fix revision bug (#603)
+- fix(plugin-workflow): fix select value (#600)
+- fix(plugin-workflow): fix CollectionFieldSelect component (#598)
+- feat(plugin-workflow): add association select in calculation (#584)
+- feat: function for chart data request
+- fix(cli): remove process.env.NODE_OPTIONS
+
 ## 2022/07/05 ~ v0.7.2-alpha.1
 
 ### New features
