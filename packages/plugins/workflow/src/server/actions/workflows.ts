@@ -18,6 +18,15 @@ function migrateConfig(config, oldToNew) {
   function migrate(value) {
     switch (typeOf(value)) {
       case 'object':
+        if (value.type === '$jobsMapByNodeId') {
+          return {
+            ...value,
+            options: {
+              ...value.options,
+              nodeId: oldToNew.get(value.options?.nodeId)?.id
+            }
+          };
+        }
         return Object.keys(value).reduce((result, key) => ({ ...result, [key]: migrate(value[key]) }), {});
       case 'array':
         return value.map(item => migrate(item));
