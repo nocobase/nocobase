@@ -156,7 +156,7 @@ describe('workflow > Plugin', () => {
     });
   });
 
-  describe('revisions', () => {
+  describe('revision', () => {
     it('create revision', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
@@ -166,7 +166,6 @@ describe('workflow > Plugin', () => {
           collection: 'posts'
         }
       });
-      expect(w1.current).toBe(true);
 
       const { body, status } = await agent.resource(`workflows`).revision({
         filterByTk: w1.id
@@ -206,6 +205,85 @@ describe('workflow > Plugin', () => {
       expect(e1.key).toBe(e2.key);
       expect(e1.workflowId).toBe(w1.id);
       expect(e2.workflowId).toBe(w2.id);
+    });
+
+    it('revision with nodes', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      const n1 = await w1.createNode({
+        type: 'echo'
+      });
+      const n2 = await w1.createNode({
+        type: 'calculation',
+        config: {
+          calculation: {
+            calculator: 'add',
+            operands: [
+              {
+                type: '$jobsMapByNodeId',
+                options: {
+                  nodeId: n1.id,
+                  path: 'data.read'
+                }
+              },
+              {
+                value: `{{$jobsMapByNodeId.${n1.id}.data.read}}`
+              }
+            ]
+          }
+        },
+        upstreamId: n1.id
+      });
+      await n1.setDownstream(n2);
+
+      const { body } = await agent.resource(`workflows`).revision({
+        filterByTk: w1.id
+      });
+      const w2 = await WorkflowModel.findByPk(body.data.id, {
+        include: [
+          'nodes'
+        ]
+      });
+
+      const n1_2 = w2.nodes.find(n => !n.upstreamId);
+      const n2_2 = w2.nodes.find(n => !n.downstreamId);
+
+      expect(n1_2.type).toBe('echo');
+      expect(n2_2.type).toBe('calculation');
+      expect(n2_2.config).toMatchObject({
+        calculation: {
+          calculator: 'add',
+          operands: [
+            {
+              type: '$jobsMapByNodeId',
+              options: {
+                nodeId: n1_2.id,
+                path: 'data.read'
+              }
+            },
+            {
+              value: `{{$jobsMapByNodeId.${n1_2.id}.data.read}}`
+            }
+          ]
+        }
+      });
+
+      await w2.update({ enabled: true });
+
+      await PostRepo.create({
+        values: { title: 't1', read: 1 }
+      });
+
+      const [execution] = await w2.getExecutions();
+      const [echo, calculation] = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(calculation.result).toBe(2);
     });
   });
 });
