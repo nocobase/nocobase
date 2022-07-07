@@ -349,7 +349,17 @@ Menu.Item = observer((props) => {
   const field = useField();
   const Designer = useContext(MenuItemDesignerContext);
   return (
-    <AntdMenu.Item {...others} key={schema.name} eventKey={schema.name} schema={schema}>
+    <AntdMenu.Item
+      {...others}
+      className={css`
+        :active {
+          background: inherit;
+        }
+      `}
+      key={schema.name}
+      eventKey={schema.name}
+      schema={schema}
+    >
       <SortableItem className={designerCss}>
         <Icon type={icon} />
         <span
@@ -377,6 +387,11 @@ Menu.URL = observer((props) => {
   return (
     <AntdMenu.Item
       {...others}
+      className={css`
+        :active {
+          background: inherit;
+        }
+      `}
       key={schema.name}
       eventKey={schema.name}
       schema={schema}
@@ -415,6 +430,11 @@ Menu.SubMenu = observer((props) => {
   return (
     <AntdMenu.SubMenu
       {...others}
+      className={css`
+        :active {
+          background: inherit;
+        }
+      `}
       key={schema.name}
       eventKey={schema.name}
       title={
