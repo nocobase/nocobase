@@ -45,6 +45,7 @@ export const scopesSchema: ISchema = {
           label: 'name',
           value: 'id',
         },
+        multiple: false,
         association: {
           target: 'rolesResourcesScopes',
         },
