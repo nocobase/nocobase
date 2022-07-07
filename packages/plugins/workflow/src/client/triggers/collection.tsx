@@ -138,7 +138,7 @@ export default {
         collection={workflow.config.collection}
         value={value}
         onChange={(value) => {
-          onChange({ type, options: { ...options, path: `data.${value.join('.')}` } });
+          onChange({ type, options: { ...options, path: `data.${value}` } });
         }}
       />
     );
