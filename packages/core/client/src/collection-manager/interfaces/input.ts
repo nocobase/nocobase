@@ -30,179 +30,125 @@ export const input: IField = {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
-  validateSchema(fieldSchema) {
-    const formItemStyle = {
-      labelCol: 8,
-      wrapperCol: 16,
-    }
+  validateSchema(fieldSchema, formItemStyle) {
     return {
-      type: 'array',
-      default: fieldSchema?.['x-validator'],
-      'x-component': 'ArrayCollapse',
-      'x-decorator': 'FormItem',
-      'x-component-props': {
-        accordion: true,
-      },
-      maxItems: 3,
-      items: {
-        type: 'object',
-        'x-component': 'ArrayCollapse.CollapsePanel',
-        'x-component-props': {
-          header: '{{ t("Validation rule") }}',
+      max: {
+        type: 'number',
+        title: '{{ t("Max length") }}',
+        minimum: 0,
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {
+          ...formItemStyle
         },
-        properties: {
-          index: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.Index',
-          },
-          max: {
-            type: 'number',
-            title: '{{ t("Max length") }}',
-            minimum: 0,
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'InputNumber',
-            'x-component-props': {
-              precision: 0
-            },
-          },
-          min: {
-            type: 'number',
-            title: '{{ t("Min length") }}',
-            minimum: 0,
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'InputNumber',
-            'x-component-props': {
-              precision: 0
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          precision: 0
+        },
+        'x-reactions': `{{(field) => {
+          const targetValue = field.query('.min').value();
+          field.selfErrors =
+            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t('Max length must greater than min length')}' : ''
+        }}}`,
+      },
+      min: {
+        type: 'number',
+        title: '{{ t("Min length") }}',
+        minimum: 0,
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {
+          ...formItemStyle
+        },
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          precision: 0
+        },
+        'x-reactions': {
+          dependencies: ['.max'],
+          fulfill: {
+            state: {
+              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t('Min length must less than max length')}' : ''}}`,
             },
           },
-          len: {
-            type: 'number',
-            title: '{{ t("Length") }}',
-            minimum: 0,
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'InputNumber',
-            'x-component-props': {
-              precision: 0
-            },
-          },
-          format: {
-            type: 'string',
-            title: '{{ t("Format") }}',
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'Select',
-            'x-component-props': {
-              allowClear: true,
-            },
-            enum: [{
-              label: '{{ t("url") }}',
-              value: 'url',
-            }, {
-              label: '{{ t("email") }}',
-              value: 'email',
-            }, {
-              label: '{{ t("ipv6") }}',
-              value: 'ipv6',
-            }, {
-              label: '{{ t("ipv4") }}',
-              value: 'ipv4',
-            }, {
-              label: '{{ t("number") }}',
-              value: 'number',
-            }, {
-              label: '{{ t("integer") }}',
-              value: 'integer',
-            }, {
-              label: '{{ t("idcard") }}',
-              value: 'idcard',
-            }, {
-              label: '{{ t("qq") }}',
-              value: 'qq',
-            }, {
-              label: '{{ t("phone") }}',
-              value: 'phone',
-            }, {
-              label: '{{ t("money") }}',
-              value: 'money',
-            }, {
-              label: '{{ t("zh") }}',
-              value: 'zh',
-            }, {
-              label: '{{ t("date") }}',
-              value: 'date',
-            }, {
-              label: '{{ t("zip") }}',
-              value: 'zip',
-            }]
-          },
-          pattern: {
-            type: 'string',
-            title: '{{ t("Regular expression") }}',
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'Input',
-            'x-component-props': {
-              prefix: '/',
-              suffix: '/',
-            }
-          },
-          message: {
-            type: 'string',
-            title: '{{ t("Error message") }}',
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'Input.TextArea',
-            'x-component-props': {
-              autoSize: {
-                minRows: 2,
-                maxRows: 2
-              }
-            }
-          },
-          remove: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.Remove',
-          },
-          moveUp: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.MoveUp',
-          },
-          moveDown: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.MoveDown',
-          },
+        },
+      },
+      len: {
+        type: 'number',
+        title: '{{ t("Length") }}',
+        minimum: 0,
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {
+          ...formItemStyle
+        },
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          precision: 0
+        },
+      },
+      format: {
+        type: 'string',
+        title: '{{ t("Format") }}',
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {
+          ...formItemStyle
+        },
+        'x-component': 'Select',
+        'x-component-props': {
+          allowClear: true,
+        },
+        enum: [{
+          label: '{{ t("url") }}',
+          value: 'url',
+        }, {
+          label: '{{ t("email") }}',
+          value: 'email',
+        }, {
+          label: '{{ t("ipv6") }}',
+          value: 'ipv6',
+        }, {
+          label: '{{ t("ipv4") }}',
+          value: 'ipv4',
+        }, {
+          label: '{{ t("number") }}',
+          value: 'number',
+        }, {
+          label: '{{ t("integer") }}',
+          value: 'integer',
+        }, {
+          label: '{{ t("idcard") }}',
+          value: 'idcard',
+        }, {
+          label: '{{ t("qq") }}',
+          value: 'qq',
+        }, {
+          label: '{{ t("phone") }}',
+          value: 'phone',
+        }, {
+          label: '{{ t("money") }}',
+          value: 'money',
+        }, {
+          label: '{{ t("zh") }}',
+          value: 'zh',
+        }, {
+          label: '{{ t("date") }}',
+          value: 'date',
+        }, {
+          label: '{{ t("zip") }}',
+          value: 'zip',
+        }]
+      },
+      pattern: {
+        type: 'string',
+        title: '{{ t("Regular expression") }}',
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {
+          ...formItemStyle
+        },
+        'x-component': 'Input',
+        'x-component-props': {
+          prefix: '/',
+          suffix: '/',
         }
       },
-      properties: {
-        add: {
-          type: 'void',
-          title: '{{ t("Add validation rule") }}',
-          'x-component': 'ArrayCollapse.Addition',
-          'x-reactions': {
-            dependencies: ['rules'],
-            fulfill: {
-              state: {
-                disabled: '{{$deps[0].length >= 3}}'
-              }
-            }
-          }
-        },
-      }
-    } as ISchema;
+    };
   }
 };

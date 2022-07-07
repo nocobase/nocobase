@@ -60,7 +60,14 @@ FormItem.Designer = (props) => {
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const interfaceConfig = getInterface(collectionField?.interface);
-  const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema, collectionField?.uiSchema);
+  const validateFormItemStyle = {
+    labelStyle: {
+      marginTop: '6px',
+    },
+    labelCol: 8,
+    wrapperCol: 16,
+  }
+  const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema, validateFormItemStyle);
   const originalTitle = collectionField?.uiSchema?.title;
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
   const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
@@ -83,6 +90,7 @@ FormItem.Designer = (props) => {
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
   }
+  
   return (
     <GeneralSchemaDesigner>
       {collectionField && (
@@ -211,7 +219,72 @@ FormItem.Designer = (props) => {
             type: 'object',
             title: t('Set validation rules'),
             properties: {
-              rules: validateSchema
+              rules: {
+                type: 'array',
+                default: fieldSchema?.['x-validator'],
+                'x-component': 'ArrayCollapse',
+                'x-decorator': 'FormItem',
+                'x-component-props': {
+                  accordion: true,
+                },
+                maxItems: 3,
+                items: {
+                  type: 'object',
+                  'x-component': 'ArrayCollapse.CollapsePanel',
+                  'x-component-props': {
+                    header: '{{ t("Validation rule") }}',
+                  },
+                  properties: {
+                    index: {
+                      type: 'void',
+                      'x-component': 'ArrayCollapse.Index',
+                    },
+                    ...validateSchema,
+                    message: {
+                      type: 'string',
+                      title: '{{ t("Error message") }}',
+                      'x-decorator': 'FormItem',
+                      'x-decorator-props': {
+                        ...validateFormItemStyle
+                      },
+                      'x-component': 'Input.TextArea',
+                      'x-component-props': {
+                        autoSize: {
+                          minRows: 2,
+                          maxRows: 2
+                        }
+                      }
+                    },
+                    remove: {
+                      type: 'void',
+                      'x-component': 'ArrayCollapse.Remove',
+                    },
+                    moveUp: {
+                      type: 'void',
+                      'x-component': 'ArrayCollapse.MoveUp',
+                    },
+                    moveDown: {
+                      type: 'void',
+                      'x-component': 'ArrayCollapse.MoveDown',
+                    },
+                  }
+                },
+                properties: {
+                  add: {
+                    type: 'void',
+                    title: '{{ t("Add validation rule") }}',
+                    'x-component': 'ArrayCollapse.Addition',
+                    'x-reactions': {
+                      dependencies: ['rules'],
+                      fulfill: {
+                        state: {
+                          disabled: '{{$deps[0].length >= 3}}'
+                        }
+                      }
+                    }
+                  },
+                }
+              }
             }
           } as ISchema}
           onSubmit={(v) => {

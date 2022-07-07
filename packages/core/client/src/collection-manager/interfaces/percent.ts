@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
 import { i18n } from '../../i18n';
-import { registerValidateRules } from '@formily/core';
+import { registerValidateFormats, registerValidateRules } from '@formily/core';
 
 registerValidateRules({
   percentStringMode(value, rule) {
@@ -34,6 +34,10 @@ registerValidateRules({
     return true;
   }
 })
+
+registerValidateFormats({
+  percentInteger: /^(\d+)(.\d{0,2})?$/,
+});
 
 export const percent: IField = {
   name: 'percent',
@@ -77,147 +81,74 @@ export const percent: IField = {
   filterable: {
     operators: operators.number,
   },
-  validateSchema(fieldSchema) {
-    const formItemStyle = {
-      labelCol: 8,
-      wrapperCol: 16,
-    }
+  validateSchema(fieldSchema, formItemStyle) {
     return {
-      type: 'array',
-      default: fieldSchema?.['x-validator'],
-      'x-component': 'ArrayCollapse',
-      'x-decorator': 'FormItem',
-      'x-component-props': {
-        accordion: true,
-      },
-      maxItems: 3,
-      items: {
-        type: 'object',
-        'x-component': 'ArrayCollapse.CollapsePanel',
-        'x-component-props': {
-          header: '{{ t("Validation rule") }}',
+      maximum: {
+        type: 'number',
+        title: '{{ t("Maximum") }}',
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {
+          ...formItemStyle
         },
-        properties: {
-          index: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.Index',
-          },
-          maximum: {
-            type: 'number',
-            title: '{{ t("Maximum") }}',
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'Percent',
-            'x-component-props': {
-              addonAfter: '%',
-            },
-            'x-reactions': `{{(field) => {
-              const targetValue = field.query('.minValue').value();
-              field.selfErrors =
-                !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t('Maximum must greater than minimum')}' : ''
-            }}}`,
-          },
-          minimum: {
-            type: 'number',
-            title: '{{ t("Minimum") }}',
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'Percent',
-            'x-component-props': {
-              addonAfter: '%',
-            },
-            'x-reactions': {
-              dependencies: ['.maxValue'],
-              fulfill: {
-                state: {
-                  selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t('Minimum must less than maximum')}' : ''}}`,
-                },
-              },
+        'x-component': 'Percent',
+        'x-component-props': {
+          addonAfter: '%',
+        },
+        'x-reactions': `{{(field) => {
+          const targetValue = field.query('.minimum').value();
+          field.selfErrors =
+            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t('Maximum must greater than minimum')}' : ''
+        }}}`,
+      },
+      minimum: {
+        type: 'number',
+        title: '{{ t("Minimum") }}',
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {
+          ...formItemStyle
+        },
+        'x-component': 'Percent',
+        'x-component-props': {
+          addonAfter: '%',
+        },
+        'x-reactions': {
+          dependencies: ['.maximum'],
+          fulfill: {
+            state: {
+              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t('Minimum must less than maximum')}' : ''}}`,
             },
           },
-          format: {
-            type: 'string',
-            title: '{{ t("Format") }}',
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'Select',
-            'x-component-props': {
-              allowClear: true,
-            },
-            enum: [{
-              label: '{{ t("Integer") }}',
-              value: 'integer',
-            }, {
-              label: '{{ t("Odd") }}',
-              value: 'odd',
-            }, {
-              label: '{{ t("Even") }}',
-              value: 'even',
-            }]
-          },
-          pattern: {
-            type: 'string',
-            title: '{{ t("Regular expression") }}',
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'Input',
-            'x-component-props': {
-              prefix: '/',
-              suffix: '/',
-            }
-          },
-          message: {
-            type: 'string',
-            title: '{{ t("Error message") }}',
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              ...formItemStyle
-            },
-            'x-component': 'Input.TextArea',
-            'x-component-props': {
-              autoSize: {
-                minRows: 2,
-                maxRows: 2
-              }
-            }
-          },
-          remove: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.Remove',
-          },
-          moveUp: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.MoveUp',
-          },
-          moveDown: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.MoveDown',
-          },
+        },
+      },
+      format: {
+        type: 'string',
+        title: '{{ t("Format") }}',
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {
+          ...formItemStyle
+        },
+        'x-component': 'Select',
+        'x-component-props': {
+          allowClear: true,
+        },
+        enum: [{
+          label: '{{ t("Integer") }}',
+          value: 'percentInteger',
+        }]
+      },
+      pattern: {
+        type: 'string',
+        title: '{{ t("Regular expression") }}',
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {
+          ...formItemStyle
+        },
+        'x-component': 'Input',
+        'x-component-props': {
+          prefix: '/',
+          suffix: '/',
         }
       },
-      properties: {
-        add: {
-          type: 'void',
-          title: '{{ t("Add validation rule") }}',
-          'x-component': 'ArrayCollapse.Addition',
-          'x-reactions': {
-            dependencies: ['rules'],
-            fulfill: {
-              state: {
-                disabled: '{{$deps[0].length >= 3}}'
-              }
-            }
-          }
-        },
-      }
-    } as ISchema;
+    };
   }
 };
