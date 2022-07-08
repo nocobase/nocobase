@@ -75,16 +75,17 @@ const convertAssignedFieldValues = (originalValues: any, currentUser, currentRec
     if (value.type === AssignedFieldValueType.ConstantValue) {
       assignedValues[key] = value.value;
     } else if (value.type === AssignedFieldValueType.DynamicValue) {
-      if (value.value?.[0] === '{{currentUser}}') {
-        assignedValues[key] = currentUser;
-      } else if (value.value?.[0] === '{{currentTime}}') {
+      if (value.value?.['currentUser']) {
+        assignedValues[key] = currentUser.id;
+      } else if (value.value?.['currentTime']) {
         assignedValues[key] = new Date();
-      } else {
-        let val = value.value.shift();
+      } else if (value.value?.['currentRecord']) {
+        debugger;
+        let val = value.value?.['currentRecord'].shift();
         assignedValues[key] = currentRecord;
         while (val) {
           assignedValues[key] = assignedValues[key]?.[val];
-          val = value.value.shift();
+          val = value.value?.['currentRecord'].shift();
         }
       }
     }
@@ -160,6 +161,7 @@ export const useCreateActionProps = () => {
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
+      debugger;
       if (!skipValidator) {
         await form.submit();
       }
@@ -223,6 +225,8 @@ export const useCustomizeUpdateActionProps = () => {
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
+      debugger;
+
       if (skipValidator === false) {
         await form.submit();
       }
@@ -346,7 +350,6 @@ export const useUpdateActionProps = () => {
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const history = useHistory();
-  const record = useRecord();
   const { fields, getField } = useCollection();
   const compile = useCompile();
   const actionField = useField();
@@ -363,6 +366,8 @@ export const useUpdateActionProps = () => {
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
+      debugger;
+
       if (!skipValidator) {
         await form.submit();
       }
