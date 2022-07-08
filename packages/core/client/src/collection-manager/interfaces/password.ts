@@ -21,16 +21,13 @@ export const password: IField = {
   properties: {
     ...defaultProps,
   },
-  validateSchema(fieldSchema, formItemStyle) {
+  validateSchema(fieldSchema) {
     return {
       max: {
         type: 'number',
         title: '{{ t("Max length") }}',
         minimum: 0,
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0
@@ -46,9 +43,6 @@ export const password: IField = {
         title: '{{ t("Min length") }}',
         minimum: 0,
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0

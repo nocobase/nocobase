@@ -30,16 +30,13 @@ export const input: IField = {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
-  validateSchema(fieldSchema, formItemStyle) {
+  validateSchema(fieldSchema) {
     return {
       max: {
         type: 'number',
         title: '{{ t("Max length") }}',
         minimum: 0,
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0
@@ -55,9 +52,6 @@ export const input: IField = {
         title: '{{ t("Min length") }}',
         minimum: 0,
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0
@@ -76,9 +70,6 @@ export const input: IField = {
         title: '{{ t("Length") }}',
         minimum: 0,
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0
@@ -88,9 +79,6 @@ export const input: IField = {
         type: 'string',
         title: '{{ t("Format") }}',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'Select',
         'x-component-props': {
           allowClear: true,
@@ -140,9 +128,6 @@ export const input: IField = {
         type: 'string',
         title: '{{ t("Regular expression") }}',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'Input',
         'x-component-props': {
           prefix: '/',

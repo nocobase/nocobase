@@ -34,9 +34,6 @@ export const richText: IField = {
         title: '{{ t("Max length") }}',
         minimum: 0,
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0
@@ -52,9 +49,6 @@ export const richText: IField = {
         title: '{{ t("Min length") }}',
         minimum: 0,
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0

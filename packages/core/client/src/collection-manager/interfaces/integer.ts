@@ -36,15 +36,12 @@ export const integer: IField = {
   filterable: {
     operators: operators.number,
   },
-  validateSchema(fieldSchema, formItemStyle) {
+  validateSchema(fieldSchema) {
     return {
       maximum: {
         type: 'number',
         title: '{{ t("Maximum") }}',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0
@@ -59,9 +56,6 @@ export const integer: IField = {
         type: 'number',
         title: '{{ t("Minimum") }}',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0
@@ -78,16 +72,12 @@ export const integer: IField = {
       format: {
         type: 'string',
         title: '{{ t("Format") }}',
-        default: 'integer',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'Select',
+        'x-component-props': {
+          allowClear: true,
+        },
         enum: [{
-          label: '{{ t("Integer") }}',
-          value: 'integer',
-        }, {
           label: '{{ t("Odd") }}',
           value: 'odd',
         }, {
@@ -99,9 +89,6 @@ export const integer: IField = {
         type: 'string',
         title: '{{ t("Regular expression") }}',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'Input',
         'x-component-props': {
           prefix: '/',

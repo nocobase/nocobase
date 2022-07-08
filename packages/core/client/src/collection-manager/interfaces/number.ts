@@ -76,15 +76,12 @@ export const number: IField = {
   filterable: {
     operators: operators.number,
   },
-  validateSchema(fieldSchema, formItemStyle) {
+  validateSchema(fieldSchema) {
     return {
       maximum: {
         type: 'number',
         title: '{{ t("Maximum") }}',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-reactions': `{{(field) => {
           const targetValue = field.query('.minimum').value();
@@ -96,9 +93,6 @@ export const number: IField = {
         type: 'number',
         title: '{{ t("Minimum") }}',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-reactions': {
           dependencies: ['.maximum'],
@@ -113,9 +107,6 @@ export const number: IField = {
         type: 'string',
         title: '{{ t("Format") }}',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'Select',
         'x-component-props': {
           allowClear: true,
@@ -135,9 +126,6 @@ export const number: IField = {
         type: 'string',
         title: '{{ t("Regular expression") }}',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'Input',
         'x-component-props': {
           prefix: '/',

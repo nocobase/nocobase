@@ -26,16 +26,13 @@ export const markdown: IField = {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
-  validateSchema(fieldSchema, formItemStyle) {
+  validateSchema(fieldSchema) {
     return {
       max: {
         type: 'number',
         title: '{{ t("Max length") }}',
         minimum: 0,
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0
@@ -51,9 +48,6 @@ export const markdown: IField = {
         title: '{{ t("Min length") }}',
         minimum: 0,
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          ...formItemStyle
-        },
         'x-component': 'InputNumber',
         'x-component-props': {
           precision: 0

@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { ArrayCollapse, FormItem as Item } from '@formily/antd';
+import { ArrayCollapse, FormItem as Item, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -60,14 +60,7 @@ FormItem.Designer = (props) => {
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const interfaceConfig = getInterface(collectionField?.interface);
-  const validateFormItemStyle = {
-    labelStyle: {
-      marginTop: '6px',
-    },
-    labelCol: 8,
-    wrapperCol: 16,
-  }
-  const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema, validateFormItemStyle);
+  const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
   const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
@@ -214,7 +207,7 @@ FormItem.Designer = (props) => {
       {validateSchema && (
         <SchemaSettings.ModalItem
           title={t('Set validation rules')}
-          components={{ ArrayCollapse }}
+          components={{ ArrayCollapse, FormLayout }}
           schema={{
             type: 'object',
             title: t('Set validation rules'),
@@ -234,25 +227,35 @@ FormItem.Designer = (props) => {
                   'x-component-props': {
                     header: '{{ t("Validation rule") }}',
                   },
-                  properties: {
+                  properties: {                    
                     index: {
                       type: 'void',
                       'x-component': 'ArrayCollapse.Index',
                     },
-                    ...validateSchema,
-                    message: {
-                      type: 'string',
-                      title: '{{ t("Error message") }}',
-                      'x-decorator': 'FormItem',
-                      'x-decorator-props': {
-                        ...validateFormItemStyle
-                      },
-                      'x-component': 'Input.TextArea',
+                    layout: {
+                      type: 'void',
+                      'x-component': 'FormLayout',
                       'x-component-props': {
-                        autoSize: {
-                          minRows: 2,
-                          maxRows: 2
-                        }
+                        labelStyle: {
+                          marginTop: '6px',
+                        },
+                        labelCol: 8,
+                        wrapperCol: 16,
+                      },
+                      properties: {
+                        ...validateSchema,
+                        message: {
+                          type: 'string',
+                          title: '{{ t("Error message") }}',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input.TextArea',
+                          'x-component-props': {
+                            autoSize: {
+                              minRows: 2,
+                              maxRows: 2
+                            }
+                          }
+                        },    
                       }
                     },
                     remove: {
@@ -302,9 +305,10 @@ FormItem.Designer = (props) => {
             // if (['percent'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
             //   rules['percentStringMode'] = true;
             // }
-            field.validator = rules;
-            fieldSchema['x-validator'] = rules;
-            schema['x-validator'] = rules;
+            const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules)
+            field.validator = concatValidator;
+            fieldSchema['x-validator'] = concatValidator;
+            schema['x-validator'] = concatValidator;
             dn.emit('patch', {
               schema,
             });
