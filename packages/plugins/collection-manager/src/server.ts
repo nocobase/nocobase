@@ -88,6 +88,24 @@ export class CollectionManagerPlugin extends Plugin {
       await this.app.db.getRepository<CollectionRepository>('collections').load();
     });
 
+    this.app.on('beforeUpgrade', async () => {
+      await this.app.db.getRepository<CollectionRepository>('collections').load();
+    });
+
+    this.app.on('cli.beforeMigrator', async () => {
+      const exists = await this.app.db.collectionExistsInDb('collections');
+      if (exists) {
+        await this.app.db.getRepository<CollectionRepository>('collections').load();
+      }
+    });
+
+    this.app.on('cli.beforeDbSync', async () => {
+      const exists = await this.app.db.collectionExistsInDb('collections');
+      if (exists) {
+        await this.app.db.getRepository<CollectionRepository>('collections').load();
+      }
+    });
+
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
       if (resourceName === 'collections.fields' && actionName === 'update') {
