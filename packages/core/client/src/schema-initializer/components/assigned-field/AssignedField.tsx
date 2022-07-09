@@ -140,7 +140,6 @@ export const AssignedField = (props: any) => {
     setRecordValue(val);
     field.value = { type, value: { currentRecord: val } };
   };
-  debugger;
   return (
     <Space>
       <Select defaultValue={type} value={type} style={{ width: 120 }} onChange={typeChangeHandler}>

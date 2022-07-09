@@ -80,7 +80,6 @@ const convertAssignedFieldValues = (originalValues: any, currentUser, currentRec
       } else if (value.value?.['currentTime']) {
         assignedValues[key] = new Date();
       } else if (value.value?.['currentRecord']) {
-        debugger;
         let val = value.value?.['currentRecord'].shift();
         assignedValues[key] = currentRecord;
         while (val) {
@@ -161,7 +160,6 @@ export const useCreateActionProps = () => {
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
-      debugger;
       if (!skipValidator) {
         await form.submit();
       }
@@ -225,7 +223,6 @@ export const useCustomizeUpdateActionProps = () => {
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
-      debugger;
 
       if (skipValidator === false) {
         await form.submit();
@@ -366,7 +363,6 @@ export const useUpdateActionProps = () => {
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
-      debugger;
 
       if (!skipValidator) {
         await form.submit();

@@ -161,7 +161,6 @@ export const ActionDesigner = (props) => {
             modalTip={tips[actionType]}
             uid={fieldSchema?.['x-action-settings']?.schemaUid}
             onSubmit={(assignedValues) => {
-              debugger;
               fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
               dn.emit('patch', {
                 schema: {
