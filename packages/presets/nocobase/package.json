@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/preset-nocobase",
-  "version": "0.7.2-alpha.5",
+  "version": "0.7.2-alpha.6",
   "license": "Apache-2.0",
   "licenses": [
     {
@@ -11,20 +11,20 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/plugin-acl": "0.7.2-alpha.5",
-    "@nocobase/plugin-audit-logs": "0.7.2-alpha.5",
-    "@nocobase/plugin-china-region": "0.7.2-alpha.5",
-    "@nocobase/plugin-client": "0.7.2-alpha.5",
-    "@nocobase/plugin-collection-manager": "0.7.2-alpha.5",
-    "@nocobase/plugin-error-handler": "0.7.2-alpha.5",
-    "@nocobase/plugin-export": "0.7.2-alpha.5",
-    "@nocobase/plugin-file-manager": "0.7.2-alpha.5",
-    "@nocobase/plugin-system-settings": "0.7.2-alpha.5",
-    "@nocobase/plugin-ui-routes-storage": "0.7.2-alpha.5",
-    "@nocobase/plugin-ui-schema-storage": "0.7.2-alpha.5",
-    "@nocobase/plugin-users": "0.7.2-alpha.5",
-    "@nocobase/plugin-workflow": "0.7.2-alpha.5",
-    "@nocobase/server": "0.7.2-alpha.5"
+    "@nocobase/plugin-acl": "0.7.2-alpha.6",
+    "@nocobase/plugin-audit-logs": "0.7.2-alpha.6",
+    "@nocobase/plugin-china-region": "0.7.2-alpha.6",
+    "@nocobase/plugin-client": "0.7.2-alpha.6",
+    "@nocobase/plugin-collection-manager": "0.7.2-alpha.6",
+    "@nocobase/plugin-error-handler": "0.7.2-alpha.6",
+    "@nocobase/plugin-export": "0.7.2-alpha.6",
+    "@nocobase/plugin-file-manager": "0.7.2-alpha.6",
+    "@nocobase/plugin-system-settings": "0.7.2-alpha.6",
+    "@nocobase/plugin-ui-routes-storage": "0.7.2-alpha.6",
+    "@nocobase/plugin-ui-schema-storage": "0.7.2-alpha.6",
+    "@nocobase/plugin-users": "0.7.2-alpha.6",
+    "@nocobase/plugin-workflow": "0.7.2-alpha.6",
+    "@nocobase/server": "0.7.2-alpha.6"
   },
   "repository": {
     "type": "git",
