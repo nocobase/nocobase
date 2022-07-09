@@ -7,6 +7,12 @@ export default (app: Application) => {
       const [opts] = cliArgs;
       console.log('db sync...');
       const force = false;
+      await app.db.sync({
+        force,
+        alter: {
+          drop: force,
+        },
+      });
       await app.start();
       await app.db.sync({
         force,
