@@ -26,14 +26,12 @@ export default defineCollection({
       target: 'uiRoutes',
       sourceKey: 'key',
       foreignKey: 'parentKey',
-      constraints: true,
     },
     {
       type: 'belongsTo',
       name: 'uiSchema',
       target: 'uiSchemas',
       foreignKey: 'uiSchemaUid',
-      constraints: true,
     },
     {
       type: 'json',

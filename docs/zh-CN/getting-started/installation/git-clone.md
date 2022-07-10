@@ -58,7 +58,7 @@ yarn dev
 # 编译
 yarn build
 # 启动
-yarn start
+yarn start # 暂不支持在 win 平台下运行
 ```
 
 ## 7. 登录 NocoBase

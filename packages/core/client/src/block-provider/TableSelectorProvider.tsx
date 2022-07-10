@@ -63,22 +63,31 @@ export const TableSelectorProvider = (props) => {
   if (appends?.length) {
     params['appends'] = appends;
   }
+  console.log('record', record);
   if (collectionField) {
     if (['oho', 'o2m'].includes(collectionField.interface)) {
-      params['filter'] = {
-        $or: [{
+      if (record?.[collectionField.sourceKey]) {
+        params['filter'] = {
+          $or: [{
+            [collectionField.foreignKey]: {
+              $is: null,
+            }
+          }, {
+            [collectionField.foreignKey]: {
+              $eq: record?.[collectionField.sourceKey],
+            }
+          }]
+        }
+      } else {
+        params['filter'] = {
           [collectionField.foreignKey]: {
             $is: null,
           }
-        }, {
-          [collectionField.foreignKey]: {
-            $eq: record?.[collectionField.sourceKey],
-          }
-        }]
+        }
       }
     }
-    if (['obo'].includes(collectionField.interface)) {
-    }
+    // if (['obo'].includes(collectionField.interface)) {
+    // }
   }
   return (
     <BlockProvider {...props} params={params}>

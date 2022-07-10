@@ -1,12 +1,11 @@
 import React from 'react';
-import { Select } from 'antd';
-import { useTranslation } from 'react-i18next';
 
 import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { useFlowContext } from '../WorkflowCanvas';
-import { BaseTypeSet, VariableComponent } from '../calculators';
+import { VariableComponent } from '../calculators';
 import { collection, filter } from '../schemas/collection';
+import CollectionFieldSelect from '../components/CollectionFieldSelect';
 
 
 
@@ -45,24 +44,20 @@ export default {
   components: {
     VariableComponent
   },
-  getter({ type, options, onChange }) {
-    const { t } = useTranslation();
-    const compile = useCompile();
-    const { collections = [] } = useCollectionManager();
+  getter(props) {
+    const { type, options, onChange } = props;
     const { nodes } = useFlowContext();
     const { config } = nodes.find(n => n.id == options.nodeId);
-    const collection = collections.find(item => item.name === config.collection) ?? { fields: [] };
+    const value = options?.path;
 
     return (
-      <Select value={options.path} placeholder={t('Fields')} onChange={path => {
-        onChange({ type, options: { ...options, path } });
-      }}>
-        {collection.fields
-          .filter(field => BaseTypeSet.has(field.uiSchema?.type))
-          .map(field => (
-          <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema.title)}</Select.Option>
-        ))}
-      </Select>
+      <CollectionFieldSelect
+        collection={config.collection}
+        value={value}
+        onChange={(path) => {
+          onChange({ type, options: { ...options, path } });
+        }}
+      />
     );
   }
 };

@@ -44,7 +44,6 @@ export default {
       targetKey: 'name',
       foreignKey: 'collectionName',
       sortBy: 'sort',
-      constraints: true,
     },
   ],
 } as CollectionOptions;

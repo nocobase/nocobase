@@ -13,10 +13,10 @@ module.exports = (cli) => {
     .command('upgrade')
     .allowUnknownOption()
     .option('--raw')
+    .option('-S|--skip-code-update')
     .action(async (options) => {
       promptForTs();
-      const version = await getVersion();
-      if (options.raw) {
+      if (options.skipCodeUpdate) {
         await runAppCommand('upgrade');
         return;
       }
@@ -28,6 +28,7 @@ module.exports = (cli) => {
       if (!hasTsNode()) {
         return;
       }
+      const version = await getVersion();
       await run('yarn', ['add', '@nocobase/cli', '@nocobase/devtools', '-W']);
       const clientPackage = resolve(process.cwd(), `packages/${APP_PACKAGE_ROOT}/client/package.json`);
       const serverPackage = resolve(process.cwd(), `packages/${APP_PACKAGE_ROOT}/server/package.json`);
