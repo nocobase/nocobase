@@ -1,4 +1,40 @@
-import { Area, Bar, Column, Line, Pie } from '@antv/g2plot';
+import {
+  Area,
+  Bar,
+  BidirectionalBar,
+  Box,
+  Bullet,
+  Chord,
+  CirclePacking,
+  Column,
+  DualAxes,
+  Facet,
+  Funnel,
+  Gauge,
+  Heatmap,
+  Histogram,
+  Line,
+  Liquid,
+  Mix,
+  Pie,
+  Progress,
+  Radar,
+  RadialBar,
+  RingProgress,
+  Rose,
+  Sankey,
+  Scatter,
+  Stock,
+  Sunburst,
+  TinyArea,
+  TinyColumn,
+  TinyLine,
+  Treemap,
+  Venn,
+  Violin,
+  Waterfall,
+  WordCloud
+} from '@antv/g2plot';
 import { Field } from '@formily/core';
 import { observer, useField } from '@formily/react';
 import { Spin } from 'antd';
@@ -14,7 +50,43 @@ export type ReactG2PlotProps<O> = {
   readonly config: O;
 };
 
-const plots = { Area, Column, Line, Pie, Bar };
+const plots = {
+  Line,
+  Area,
+  Column,
+  Bar,
+  Pie,
+  Rose,
+  WordCloud,
+  Scatter,
+  Radar,
+  DualAxes,
+  TinyLine,
+  TinyColumn,
+  TinyArea,
+  Histogram,
+  Progress,
+  RingProgress,
+  Heatmap,
+  Box,
+  Violin,
+  Venn,
+  Stock,
+  Funnel,
+  Liquid,
+  Bullet,
+  Sunburst,
+  Gauge,
+  Waterfall,
+  RadialBar,
+  BidirectionalBar,
+  Treemap,
+  Sankey,
+  Chord,
+  CirclePacking,
+  Mix,
+  Facet,
+};
 
 export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotProps<O>, ref: any) {
   const { className, plot, config } = props;
@@ -69,7 +141,7 @@ export const G2Plot: any = observer((props: any) => {
     if (typeof fn === 'function') {
       const result = fn.bind({ api })();
       if (result?.then) {
-        result.then(data => {
+        result.then((data) => {
           if (Array.isArray(data)) {
             field.componentProps.config.data = data;
           }
@@ -81,7 +153,7 @@ export const G2Plot: any = observer((props: any) => {
     } else {
       field.data.loading = false;
     }
-  }, [])
+  }, []);
   if (!plot || !config) {
     return <div style={{ opacity: 0.3 }}>{t('In configuration')}...</div>;
   }

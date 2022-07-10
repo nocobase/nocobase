@@ -116,8 +116,11 @@ export class ApplicationVersion {
 
   async satisfies(range: string) {
     if (await this.app.db.collectionExistsInDb('applicationVersion')) {
-      const model = await this.collection.model.findOne();
-      const version = model.get('value') as any;
+      const model: any = await this.collection.model.findOne();
+      const version = model?.value as any;
+      if (!version) {
+        return true;
+      }
       return semver.satisfies(version, range);
     }
     return true;
@@ -346,6 +349,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async upgrade(options: any = {}) {
+    await this.emitAsync('beforeUpgrade', this, options);
     const force = false;
     await this.db.migrator.up();
     await this.db.sync({
@@ -355,6 +359,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       },
     });
     await this.version.update();
+    await this.emitAsync('afterUpgrade', this, options);
   }
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;

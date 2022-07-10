@@ -13,6 +13,7 @@ module.exports = (cli) => {
   cli
     .command('start')
     .option('-p, --port [port]')
+    .option('-d, --daemon')
     .option('--db-sync')
     .allowUnknownOption()
     .action(async (opts) => {
@@ -48,6 +49,15 @@ module.exports = (cli) => {
       if (opts.dbSync) {
         await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
       }
-      run('pm2-runtime', ['start', `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, '--', ...process.argv.slice(2)]);
+      if (opts.daemon) {
+        run('pm2', ['start', `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, '--', ...process.argv.slice(2)]);
+      } else {
+        run('pm2-runtime', [
+          'start',
+          `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`,
+          '--',
+          ...process.argv.slice(2),
+        ]);
+      }
     });
 };
