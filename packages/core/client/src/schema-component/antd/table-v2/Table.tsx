@@ -23,7 +23,6 @@ const useTableColumns = () => {
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
-  // console.log('useTableColumns', exists);
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s)) {
@@ -38,7 +37,7 @@ const useTableColumns = () => {
           }
         }, []);
       const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
-      console.log('useTableColumns', s.name, s, field.value);
+
       return {
         title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
         dataIndex,
@@ -48,7 +47,6 @@ const useTableColumns = () => {
         render: (v, record) => {
           const index = field.value?.indexOf(record);
           // console.log((Date.now() - start) / 1000);
-          console.log('useTableColumns.index', index, record);
           return (
             <RecordIndexProvider index={index}>
               <RecordProvider record={record}>
