@@ -1,10 +1,33 @@
+import { Schema, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, useCollection } from '../..';
+import { SchemaInitializer, useCollection, useCollectionManager } from '../..';
 import { gridRowColWrap } from '../utils';
 
+const recursiveParent = (schema: Schema) => {
+  if (!schema) return null;
+
+  if (schema['x-decorator']?.endsWith('BlockProvider')) {
+    return schema['x-decorator-props']?.['collection'];
+  } else {
+    return recursiveParent(schema.parent);
+  }
+}
+
 const useRelationFields = () => {
-  const { fields } = useCollection();
+  const fieldSchema = useFieldSchema();
+  const { getCollectionFields } = useCollectionManager();
+  let fields = [];
+  
+  if (fieldSchema['x-initializer']) {
+    fields = useCollection().fields;
+  } else {
+    const collection = recursiveParent(fieldSchema.parent);
+    if (collection) {
+      fields = getCollectionFields(collection);
+    }
+  }
+
   const relationFields = fields
     .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
     .map((field) => {
