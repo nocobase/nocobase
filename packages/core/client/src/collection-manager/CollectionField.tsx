@@ -5,6 +5,7 @@ import React, { useEffect } from 'react';
 import { useCompile, useComponent, useFormBlockContext } from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
+import { concat } from 'lodash';
 
 // TODO: 初步适配
 const InternalField: React.FC = (props) => {
@@ -38,8 +39,9 @@ const InternalField: React.FC = (props) => {
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);
-    if (!field.validator && uiSchema['x-validator']) {
-      field.validator = uiSchema['x-validator'];
+    if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
+      const concatSchema = concat([], uiSchema['x-validator'] || [], fieldSchema['x-validator'] || [])
+      field.validator = concatSchema;
     }
     if (fieldSchema['x-disabled'] === true) {
       field.disabled = true;
