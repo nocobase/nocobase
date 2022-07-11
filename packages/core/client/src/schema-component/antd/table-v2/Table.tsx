@@ -37,6 +37,7 @@ const useTableColumns = () => {
           }
         }, []);
       const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
+
       return {
         title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
         dataIndex,

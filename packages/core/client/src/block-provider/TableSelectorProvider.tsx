@@ -47,7 +47,7 @@ const recursiveParent = (schema: Schema, component) => {
 export const TableSelectorProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const ctx = useFormBlockContext()
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const record = useRecord();
 
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
@@ -63,7 +63,6 @@ export const TableSelectorProvider = (props) => {
   if (appends?.length) {
     params['appends'] = appends;
   }
-  console.log('record', record);
   if (collectionField) {
     if (['oho', 'o2m'].includes(collectionField.interface)) {
       if (record?.[collectionField.sourceKey]) {
@@ -86,8 +85,31 @@ export const TableSelectorProvider = (props) => {
         }
       }
     }
-    // if (['obo'].includes(collectionField.interface)) {
-    // }
+    if (['obo'].includes(collectionField.interface)) {
+      const fields = getCollectionFields(collectionField.target);
+      const targetField = fields.find(f => f.foreignKey && f.foreignKey === collectionField.foreignKey);
+      if (targetField) {
+        if (record?.[collectionField.foreignKey]) {
+          params['filter'] = {
+            $or: [{
+              [`${targetField.name}.${targetField.foreignKey}`]: {
+                $is: null,
+              }
+            }, {
+              [`${targetField.name}.${targetField.foreignKey}`]: {
+                $eq: record?.[collectionField.foreignKey],
+              }
+            }]
+          }
+        } else {
+          params['filter'] = {
+            [`${targetField.name}.${targetField.foreignKey}`]: {
+              $is: null,
+            }
+          }
+        }
+      }
+    }
   }
   return (
     <BlockProvider {...props} params={params}>
