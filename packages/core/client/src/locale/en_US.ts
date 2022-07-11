@@ -549,4 +549,5 @@ export default {
   "Field component": "Field component",
   "Subtable": "Subtable",
   "Subform": "Subform",
+  "Regular expression": "Pattern",
 }
