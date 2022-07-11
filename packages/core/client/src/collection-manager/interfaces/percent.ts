@@ -2,42 +2,50 @@ import { ISchema } from '@formily/react';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
 import { i18n } from '../../i18n';
-import { registerValidateFormats, registerValidateRules } from '@formily/core';
+import { registerValidateFormats, registerValidateRules, registerValidateLocale } from '@formily/core';
 
 registerValidateRules({
-  percentStringMode(value, rule) {
+  percentMode(value, rule) {
     const { maxValue, minValue } = rule;
-    const valueNum = parseFloat(value);
 
     if (maxValue) {
-      const maxNum = parseFloat(maxValue) / 100;
-
-      if (valueNum > maxNum) {
+      if (value > maxValue) {
         return {
           type: 'error',
-          message: `数值不能大于${maxValue}`,
+          message: `${i18n.t('The field value cannot be greater than ')}${maxValue * 100}%`,
         }
       }
     }
 
     if (minValue) {
-      const minNum = parseFloat(minValue) / 100;
-
-      if (valueNum < minNum) {
+      if (value < minValue) {
         return {
           type: 'error',
-          message: `数值不能小于${minValue}`,
+          message: `${i18n.t('The field value cannot be less than ')}${minValue * 100}%`,
         }
       }
     }
     
     return true;
+  },
+
+  percentFormats(value, rule) {
+    const { percentFormat } = rule;
+
+    if (value && percentFormat === 'Integer' && /^-?[1-9]\d*$/.test((value * 100).toString()) === false) {
+      return {
+        type: 'error',
+        message: `${i18n.t('The field value is not an integer number')}`,
+      }
+    }
+
+    return true;
   }
 })
 
-registerValidateFormats({
-  percentInteger: /^(\d+)(.\d{0,2})?$/,
-});
+// registerValidateFormats({
+//   percentInteger: /^(\d+)(.\d{0,2})?$/,
+// });
 
 export const percent: IField = {
   name: 'percent',
@@ -83,7 +91,7 @@ export const percent: IField = {
   },
   validateSchema(fieldSchema) {
     return {
-      maximum: {
+      maxValue: {
         type: 'number',
         title: '{{ t("Maximum") }}',
         'x-decorator': 'FormItem',
@@ -97,7 +105,7 @@ export const percent: IField = {
             !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t('Maximum must greater than minimum')}' : ''
         }}}`,
       },
-      minimum: {
+      minValue: {
         type: 'number',
         title: '{{ t("Minimum") }}',
         'x-decorator': 'FormItem',
@@ -114,7 +122,7 @@ export const percent: IField = {
           },
         },
       },
-      format: {
+      percentFormat: {
         type: 'string',
         title: '{{ t("Format") }}',
         'x-decorator': 'FormItem',
@@ -124,7 +132,7 @@ export const percent: IField = {
         },
         enum: [{
           label: '{{ t("Integer") }}',
-          value: 'percentInteger',
+          value: 'Integer',
         }]
       },
       pattern: {

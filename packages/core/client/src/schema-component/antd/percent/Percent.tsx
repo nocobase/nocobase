@@ -12,10 +12,10 @@ export const Percent = connect(
       <InputNumber 
         {...props}
         addonAfter="%" 
-        value={math.round(value * 100, 9)}
+        value={value ? math.round(value * 100, 9) : null}
         onChange={(v: any) => {
           if (onChange) {
-            onChange(math.round(v / 100, 9));
+            onChange(v ? math.round(v / 100, 9) : null);
           }
         }}
       />

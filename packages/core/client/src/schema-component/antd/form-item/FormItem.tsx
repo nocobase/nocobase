@@ -302,13 +302,21 @@ FormItem.Designer = (props) => {
             // if (['number'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
             //   rules['numberStringMode'] = true;
             // }
-            // if (['percent'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
-            //   rules['percentStringMode'] = true;
-            // }
+            if (['percent'].includes(collectionField?.interface)) {
+              for (const rule of rules) {
+                if (!!rule.maxValue || !!rule.minValue) {
+                  rule['percentMode'] = true;
+                }
+                
+                if (rule.percentFormat) {
+                  rule['percentFormats'] = true;
+                }
+              }
+            }
             const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules)
             field.validator = concatValidator;
-            fieldSchema['x-validator'] = concatValidator;
-            schema['x-validator'] = concatValidator;
+            fieldSchema['x-validator'] = rules;
+            schema['x-validator'] = rules;
             dn.emit('patch', {
               schema,
             });

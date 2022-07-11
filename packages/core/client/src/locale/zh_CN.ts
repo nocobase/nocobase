@@ -251,6 +251,9 @@ export default {
   "Regular expression": "正则表达式",
   "Error message": "错误消息",
   "Length": "长度",
+  "The field value cannot be greater than ": "数值不能大于",
+  "The field value cannot be less than ": "数值不能小于",
+  "The field value is not an integer number": "数字不是整数",
 
   "is before": "早于",
   "is after": "晚于",

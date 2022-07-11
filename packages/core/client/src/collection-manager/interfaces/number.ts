@@ -4,37 +4,6 @@ import { defaultProps, operators } from './properties';
 import { IField } from './types';
 import { i18n } from '../../i18n';
 
-registerValidateRules({
-  numberStringMode(value, rule) {
-    const { maxValue, minValue } = rule;
-    const valueNum = parseFloat(value);
-
-    if (maxValue) {
-      const maxNum = parseFloat(maxValue);
-
-      if (valueNum > maxNum) {
-        return {
-          type: 'error',
-          message: `数值不能大于${maxValue}`,
-        }
-      }
-    }
-
-    if (minValue) {
-      const minNum = parseFloat(minValue);
-
-      if (valueNum < minNum) {
-        return {
-          type: 'error',
-          message: `数值不能小于${minValue}`,
-        }
-      }
-    }
-    
-    return true;
-  }
-})
-
 export const number: IField = {
   name: 'number',
   type: 'object',
