@@ -1,5 +1,6 @@
 import { Collection, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import parse from 'json-templates';
 import { resolve } from 'path';
 import { namespace } from './';
 import * as actions from './actions/users';
@@ -35,6 +36,12 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           [Op.eq]: ctx?.app?.ctx?.state?.currentUser?.id || -1,
         };
       },
+      $isVar(val, ctx) {
+        const obj = parse({ val: `{{${val}}}` })(JSON.parse(JSON.stringify(ctx?.app?.ctx?.state)));
+        return {
+          [Op.eq]: obj.val,
+        };
+      },
     });
     this.db.registerModels({ UserModel });
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {
@@ -63,8 +70,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           dataIndex: 'state.currentUser.id',
           createOnly: true,
           visible: true,
-          onDelete: 'SET NULL',
-          onUpdate: 'CASCADE',
+          index: true,
         });
         collection.setField('createdBy', {
           type: 'belongsTo',
@@ -79,8 +85,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           dataType: 'integer',
           dataIndex: 'state.currentUser.id',
           visible: true,
-          onDelete: 'SET NULL',
-          onUpdate: 'CASCADE',
+          index: true,
         });
         collection.setField('updatedBy', {
           type: 'belongsTo',

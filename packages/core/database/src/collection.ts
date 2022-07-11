@@ -1,7 +1,14 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
-import { ModelCtor, ModelOptions, QueryInterfaceDropTableOptions, SyncOptions, Transactionable } from 'sequelize';
+import {
+  ModelCtor,
+  ModelOptions,
+  QueryInterfaceDropTableOptions,
+  SyncOptions,
+  Transactionable,
+  Utils
+} from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
@@ -276,6 +283,67 @@ export class Collection<
     }
 
     this.setField(options.name || name, options);
+  }
+
+  addIndex(index: any) {
+    if (!index) {
+      return;
+    }
+    let indexes: any = this.model.options.indexes || [];
+    let indexName = [];
+    let indexItem;
+    if (typeof index === 'string') {
+      indexItem = {
+        fields: [index],
+      };
+      indexName = [index];
+    } else if (Array.isArray(index)) {
+      indexItem = {
+        fields: index,
+      };
+      indexName = index;
+    } else if (index?.fields) {
+      indexItem = index;
+      indexName = index.fields;
+    }
+    if (lodash.isEqual(this.model.primaryKeyAttributes, indexName)) {
+      return;
+    }
+    const name: string = this.model.primaryKeyAttributes.join(',');
+    if (name.startsWith(`${indexName.join(',')},`)) {
+      return;
+    }
+    for (const item of indexes) {
+      if (lodash.isEqual(item.fields, indexName)) {
+        return;
+      }
+      const name: string = item.fields.join(',');
+      if (name.startsWith(`${indexName.join(',')},`)) {
+        return;
+      }
+    }
+    if (!indexItem) {
+      return;
+    }
+    indexes.push(indexItem);
+    this.model.options.indexes = indexes;
+    const tableName = this.model.getTableName();
+    // @ts-ignore
+    this.model._indexes = this.model.options.indexes
+      // @ts-ignore
+      .map((index) => Utils.nameIndex(this.model._conformIndex(index), tableName));
+  }
+
+  removeIndex(fields: any) {
+    if (!fields) {
+      return;
+    }
+    // @ts-ignore
+    const indexes: any[] = this.model._indexes;
+    // @ts-ignore
+    this.model._indexes = indexes.filter((item) => {
+      return !lodash.isEqual(item.fields, fields);
+    });
   }
 
   async sync(syncOptions?: SyncOptions) {

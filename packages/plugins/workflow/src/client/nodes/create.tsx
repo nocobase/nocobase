@@ -5,6 +5,7 @@ import { useCollectionDataSource, useCollectionManager, useCompile } from '@noco
 import { BaseTypeSet, CollectionFieldset } from '../calculators';
 import { collection, values } from '../schemas/collection';
 import { useFlowContext } from '../WorkflowCanvas';
+import CollectionFieldSelect from '../components/CollectionFieldSelect';
 
 
 
@@ -38,24 +39,20 @@ export default {
   components: {
     CollectionFieldset
   },
-  getter({ type, options, onChange }) {
-    const { t } = useTranslation();
-    const compile = useCompile();
-    const { collections = [] } = useCollectionManager();
+  getter(props) {
+    const { type, options, onChange } = props;
     const { nodes } = useFlowContext();
     const { config } = nodes.find(n => n.id == options.nodeId);
-    const collection = collections.find(item => item.name === config.collection) ?? { fields: [] };
+    const value = options?.path;
 
     return (
-      <Select value={options.path} placeholder={t('Fields')} onChange={path => {
-        onChange({ type, options: { ...options, path } });
-      }}>
-        {collection.fields
-          .filter(field => BaseTypeSet.has(field.uiSchema.type))
-          .map(field => (
-          <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema.title)}</Select.Option>
-        ))}
-      </Select>
+      <CollectionFieldSelect
+        collection={config.collection}
+        value={value}
+        onChange={(path) => {
+          onChange({ type, options: { ...options, path } });
+        }}
+      />
     );
   }
 };

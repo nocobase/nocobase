@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "0.7.1-alpha.7",
+  "version": "0.7.2-alpha.7",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -11,7 +11,7 @@
   ],
   "dependencies": {
     "@koa/multer": "^3.0.0",
-    "@nocobase/server": "0.7.1-alpha.7",
+    "@nocobase/server": "0.7.2-alpha.7",
     "aws-sdk": "^2.2.32",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",
@@ -21,7 +21,7 @@
     "multer-s3": "^2.10.0"
   },
   "devDependencies": {
-    "@nocobase/test": "0.7.1-alpha.7",
+    "@nocobase/test": "0.7.2-alpha.7",
     "@types/koa-multer": "^1.0.1",
     "@types/multer": "^1.4.5"
   },

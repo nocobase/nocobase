@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-error-handler",
-  "version": "0.7.1-alpha.7",
+  "version": "0.7.2-alpha.7",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -13,7 +13,7 @@
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@formily/json-schema": "^2.0.15",
-    "@nocobase/server": "0.7.1-alpha.7"
+    "@nocobase/server": "0.7.2-alpha.7"
   },
   "repository": {
     "type": "git",

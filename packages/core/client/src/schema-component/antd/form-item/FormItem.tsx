@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { FormItem as Item } from '@formily/antd';
+import { ArrayCollapse, FormItem as Item, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -11,6 +11,7 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
+import * as _ from 'lodash';
 
 const divWrap = (schema: ISchema) => {
   return {
@@ -59,6 +60,7 @@ FormItem.Designer = (props) => {
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const interfaceConfig = getInterface(collectionField?.interface);
+  const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
   const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
@@ -81,6 +83,7 @@ FormItem.Designer = (props) => {
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
   }
+  
   return (
     <GeneralSchemaDesigner>
       {collectionField && (
@@ -194,6 +197,126 @@ FormItem.Designer = (props) => {
             field.required = required;
             fieldSchema['required'] = required;
             schema['required'] = required;
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      )}
+      {validateSchema && (
+        <SchemaSettings.ModalItem
+          title={t('Set validation rules')}
+          components={{ ArrayCollapse, FormLayout }}
+          schema={{
+            type: 'object',
+            title: t('Set validation rules'),
+            properties: {
+              rules: {
+                type: 'array',
+                default: fieldSchema?.['x-validator'],
+                'x-component': 'ArrayCollapse',
+                'x-decorator': 'FormItem',
+                'x-component-props': {
+                  accordion: true,
+                },
+                maxItems: 3,
+                items: {
+                  type: 'object',
+                  'x-component': 'ArrayCollapse.CollapsePanel',
+                  'x-component-props': {
+                    header: '{{ t("Validation rule") }}',
+                  },
+                  properties: {                    
+                    index: {
+                      type: 'void',
+                      'x-component': 'ArrayCollapse.Index',
+                    },
+                    layout: {
+                      type: 'void',
+                      'x-component': 'FormLayout',
+                      'x-component-props': {
+                        labelStyle: {
+                          marginTop: '6px',
+                        },
+                        labelCol: 8,
+                        wrapperCol: 16,
+                      },
+                      properties: {
+                        ...validateSchema,
+                        message: {
+                          type: 'string',
+                          title: '{{ t("Error message") }}',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input.TextArea',
+                          'x-component-props': {
+                            autoSize: {
+                              minRows: 2,
+                              maxRows: 2
+                            }
+                          }
+                        },    
+                      }
+                    },
+                    remove: {
+                      type: 'void',
+                      'x-component': 'ArrayCollapse.Remove',
+                    },
+                    moveUp: {
+                      type: 'void',
+                      'x-component': 'ArrayCollapse.MoveUp',
+                    },
+                    moveDown: {
+                      type: 'void',
+                      'x-component': 'ArrayCollapse.MoveDown',
+                    },
+                  }
+                },
+                properties: {
+                  add: {
+                    type: 'void',
+                    title: '{{ t("Add validation rule") }}',
+                    'x-component': 'ArrayCollapse.Addition',
+                    'x-reactions': {
+                      dependencies: ['rules'],
+                      fulfill: {
+                        state: {
+                          disabled: '{{$deps[0].length >= 3}}'
+                        }
+                      }
+                    }
+                  },
+                }
+              }
+            }
+          } as ISchema}
+          onSubmit={(v) => {
+            const rules = [];
+            for (const rule of v.rules) {
+              rules.push(_.pickBy(rule, _.identity))
+            }
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            // return;
+            // if (['number'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
+            //   rules['numberStringMode'] = true;
+            // }
+            if (['percent'].includes(collectionField?.interface)) {
+              for (const rule of rules) {
+                if (!!rule.maxValue || !!rule.minValue) {
+                  rule['percentMode'] = true;
+                }
+                
+                if (rule.percentFormat) {
+                  rule['percentFormats'] = true;
+                }
+              }
+            }
+            const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules)
+            field.validator = concatValidator;
+            fieldSchema['x-validator'] = rules;
+            schema['x-validator'] = rules;
             dn.emit('patch', {
               schema,
             });

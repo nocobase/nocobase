@@ -1,5 +1,59 @@
 # 更新日志
 
+## 2022/07/07 ~ v0.7.2-alpha.2
+
+- fix(g2plot): import all plots
+- fix: field permissions cannot be saved (#605)
+- fix(plugin-workflow): fix revision bug (#603)
+- fix(plugin-workflow): fix select value (#600)
+- fix(plugin-workflow): fix CollectionFieldSelect component (#598)
+- feat(plugin-workflow): add association select in calculation (#584)
+- feat: function for chart data request
+- fix(cli): remove process.env.NODE_OPTIONS
+
+## 2022/07/05 ~ v0.7.2-alpha.1
+
+### New features
+
+- Fields: 整数字段
+- Blocks: 支持在区块里显示关系表的字段
+- Plugins: 筛选条件支持变量
+
+### Breaking changes
+
+- 新版本关系默认不建立外键约束，旧版本升级后会删除掉所有已创建的外键约束
+- 之前使用 yarn create 安装的 NocoBase 应用，需要重新 yarn create，再执行 `yarn nocobase upgrade --raw`
+
+### Details
+
+- fix: drop all foreign keys (#576)
+- fix(plugin-workflow): fix collection trigger config (#575)
+- fix: improve filter item styling
+- fix(collection-manager): missing collection manager context
+- feat: filter with variable (#574)
+- feat(cli): check database version before installation (#572)
+- fix(client): comment out useless code
+- fix(cli): app start before sync and upgrade
+- feat(client): integer field
+- fix(database): index invalid (#564)
+- fix: export association table data (#561)
+- fix(client): maximum call stack size exceeded (#554)
+- refactor(plugin-workflow): move client files into plugin (#556)
+- fix(database): constraints default to false (#550)
+- fix(client): cannot read properties of undefined (reading 'split')
+- fix(workflow): merge workflow providers
+- fix(workflow): load workflow after application initialization
+- fix(plugin-workflow): fix select width (#552)
+- feat: compatible with old kanban (#553)
+- fix(client): consider explicitly re-exporting to resolve the ambiguity
+- feat: display association fields (#512)
+- Fix(plugin workflow) (#549)
+- fix: update mysql port (#548)
+- fix: export of relation blocks (#546)
+- fix(plugin-workflow): clear options when change collection (#547)
+- feat(plugin-workflow): add race mode (#542)
+- fix(client): change toArr to _.castArray in select component (#543)
+
 ## 2022/06/26 ~ v0.7.1-alpha.7
 
 ### New features

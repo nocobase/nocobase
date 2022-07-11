@@ -322,6 +322,11 @@ export class PluginACL extends Plugin {
           });
         }
       }
+      if (actionName === 'update' && resourceName === 'roles.resources') {
+        ctx.action.mergeParams({
+          updateAssociationValues: ['actions'],
+        });
+      }
       await next();
     });
 

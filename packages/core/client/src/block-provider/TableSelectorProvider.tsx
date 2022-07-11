@@ -47,7 +47,7 @@ const recursiveParent = (schema: Schema, component) => {
 export const TableSelectorProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const ctx = useFormBlockContext()
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const record = useRecord();
 
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
@@ -65,19 +65,50 @@ export const TableSelectorProvider = (props) => {
   }
   if (collectionField) {
     if (['oho', 'o2m'].includes(collectionField.interface)) {
-      params['filter'] = {
-        $or: [{
+      if (record?.[collectionField.sourceKey]) {
+        params['filter'] = {
+          $or: [{
+            [collectionField.foreignKey]: {
+              $is: null,
+            }
+          }, {
+            [collectionField.foreignKey]: {
+              $eq: record?.[collectionField.sourceKey],
+            }
+          }]
+        }
+      } else {
+        params['filter'] = {
           [collectionField.foreignKey]: {
             $is: null,
           }
-        }, {
-          [collectionField.foreignKey]: {
-            $eq: record?.[collectionField.sourceKey],
-          }
-        }]
+        }
       }
     }
     if (['obo'].includes(collectionField.interface)) {
+      const fields = getCollectionFields(collectionField.target);
+      const targetField = fields.find(f => f.foreignKey && f.foreignKey === collectionField.foreignKey);
+      if (targetField) {
+        if (record?.[collectionField.foreignKey]) {
+          params['filter'] = {
+            $or: [{
+              [`${targetField.name}.${targetField.foreignKey}`]: {
+                $is: null,
+              }
+            }, {
+              [`${targetField.name}.${targetField.foreignKey}`]: {
+                $eq: record?.[collectionField.foreignKey],
+              }
+            }]
+          }
+        } else {
+          params['filter'] = {
+            [`${targetField.name}.${targetField.foreignKey}`]: {
+              $is: null,
+            }
+          }
+        }
+      }
     }
   }
   return (

@@ -120,6 +120,7 @@ export default {
   "Phone": "Phone",
   "Email": "Email",
   "Number": "Number",
+  "Integer": "Integer",
   "Percent": "Percent",
   "Password": "Password",
   "Formula": "Formula",
@@ -176,6 +177,7 @@ export default {
   "Add filter group": "Add filter group",
   "is": "is",
   "is not": "is not",
+  "is variable": "is variable",
   "contains": "contains",
   "does not contain": "does not contain",
   "starts with": "starts with",
@@ -547,4 +549,5 @@ export default {
   "Field component": "Field component",
   "Subtable": "Subtable",
   "Subform": "Subform",
+  "Regular expression": "Pattern",
 }
