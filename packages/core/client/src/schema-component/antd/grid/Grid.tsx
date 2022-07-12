@@ -11,6 +11,9 @@ const GridRowContext = createContext(null);
 const GridColContext = createContext(null);
 const GridContext = createContext<any>({});
 
+const breakRemoveOnGrid = (s: Schema) => s['x-component'] === 'Grid';
+const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';
+
 const ColDivider = (props) => {
   const { isOver, setNodeRef } = useDroppable({
     id: props.id,
@@ -154,7 +157,7 @@ export const useGridContext = () => {
 
 export const useGridRowContext = () => {
   return useContext(GridRowContext);
-}
+};
 
 export const Grid: any = observer((props: any) => {
   const field = useField();
@@ -168,7 +171,12 @@ export const Grid: any = observer((props: any) => {
         <DndWrapper dndContext={props.dndContext}>
           <RowDivider
             id={`${addr}_0`}
-            data={{ wrapSchema: wrapRowSchema, insertAdjacent: 'afterBegin', schema: fieldSchema }}
+            data={{
+              breakRemoveOn: breakRemoveOnGrid,
+              wrapSchema: wrapRowSchema,
+              insertAdjacent: 'afterBegin',
+              schema: fieldSchema,
+            }}
           />
           {rows.map((schema, index) => {
             return (
@@ -176,7 +184,12 @@ export const Grid: any = observer((props: any) => {
                 <RecursionField name={schema.name} schema={schema} />
                 <RowDivider
                   id={`${addr}_${index + 1}`}
-                  data={{ wrapSchema: wrapRowSchema, insertAdjacent: 'afterEnd', schema }}
+                  data={{
+                    breakRemoveOn: breakRemoveOnGrid,
+                    wrapSchema: wrapRowSchema,
+                    insertAdjacent: 'afterEnd',
+                    schema,
+                  }}
                 />
               </React.Fragment>
             );
@@ -208,7 +221,12 @@ Grid.Row = observer((props) => {
       >
         <ColDivider
           id={`${addr}_0`}
-          data={{ wrapSchema: wrapColSchema, insertAdjacent: 'afterBegin', schema: fieldSchema }}
+          data={{
+            breakRemoveOn: breakRemoveOnRow,
+            wrapSchema: wrapColSchema,
+            insertAdjacent: 'afterBegin',
+            schema: fieldSchema,
+          }}
         />
         {cols.map((schema, index) => {
           return (
@@ -216,7 +234,12 @@ Grid.Row = observer((props) => {
               <RecursionField name={schema.name} schema={schema} />
               <ColDivider
                 id={`${addr}_${index + 1}`}
-                data={{ wrapSchema: wrapColSchema, insertAdjacent: 'afterEnd', schema }}
+                data={{
+                  breakRemoveOn: breakRemoveOnRow,
+                  wrapSchema: wrapColSchema,
+                  insertAdjacent: 'afterEnd',
+                  schema,
+                }}
               />
             </React.Fragment>
           );
