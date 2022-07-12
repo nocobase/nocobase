@@ -12,6 +12,10 @@ import {
 } from '../../../collection-manager';
 import { useCompile, useComponent } from '../../../schema-component';
 
+const DYNAMIC_RECORD_REG = /\{\{\s*currentRecord\.(.*)\s*\}\}/;
+const DYNAMIC_USER_REG = /\{\{\s*currentUser\.(.*)\s*\}\}/;
+const DYNAMIC_TIME_REG = /\{\{\s*currentTime\s*\}\}/;
+
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
 
@@ -85,10 +89,20 @@ export const AssignedField = (props: any) => {
   const compile = useCompile();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const [type, setType] = useState<string>(field.value?.type ?? AssignedFieldValueType.ConstantValue);
-  const [fieldType, setFieldType] = useState<string>(Object.keys(field.value?.value ?? {})?.[0]);
-  const [recordValue, setRecordValue] = useState<any>(field.value?.value?.currentRecord ?? []);
-  const [value, setValue] = useState(field.value?.value ?? '');
+  const isDynamicValue =
+    DYNAMIC_RECORD_REG.test(field.value) || DYNAMIC_USER_REG.test(field.value) || DYNAMIC_TIME_REG.test(field.value);
+  const initType = isDynamicValue ? AssignedFieldValueType.DynamicValue : AssignedFieldValueType.ConstantValue;
+  const [type, setType] = useState<string>(initType);
+  const initFieldType = {
+    [`${DYNAMIC_TIME_REG.test(field.value)}`]: 'currentTime',
+    [`${DYNAMIC_USER_REG.test(field.value)}`]: 'currentUser',
+    [`${DYNAMIC_RECORD_REG.test(field.value)}`]: 'currentRecord',
+  };
+  const [fieldType, setFieldType] = useState<string>(initFieldType['true']);
+  const initRecordValue = DYNAMIC_RECORD_REG.exec(field.value)?.[1]?.split('.') ?? [];
+  const [recordValue, setRecordValue] = useState<any>(initRecordValue);
+  const initValue = isDynamicValue ? '' : field.value;
+  const [value, setValue] = useState(initValue);
   const [options, setOptions] = useState<any[]>([]);
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
@@ -118,27 +132,33 @@ export const AssignedField = (props: any) => {
     setOptions(compile(opt));
   }, []);
 
+  useEffect(() => {
+    if (type === AssignedFieldValueType.ConstantValue) {
+      field.value = value;
+    } else {
+      if (fieldType === 'currentTime') {
+        field.value = '{{currentTime}}';
+      } else if (fieldType === 'currentUser') {
+        field.value = '{{currentUser.id}}';
+      } else if (fieldType === 'currentRecord') {
+        recordValue?.length > 0 && (field.value = `{{currentRecord.${recordValue.join('.')}}}`);
+      }
+    }
+  }, [type, value, fieldType, recordValue]);
+
   const typeChangeHandler = (val) => {
     setType(val);
-    field.value = { type: val, value };
   };
 
   const valueChangeHandler = (val) => {
     setValue(val?.target?.value ?? val);
-    field.value = { type, value: val?.target?.value ?? val };
   };
 
   const fieldTypeChangeHandler = (val) => {
     setFieldType(val);
-    if (val === 'currentTime') {
-      field.value = { type, value: { currentTime: '{{currentTime}}' } };
-    } else if (val === 'currentUser') {
-      field.value = { type, value: { currentUser: '{{currentUser.id}}' } };
-    }
   };
   const recordChangeHandler = (val) => {
     setRecordValue(val);
-    field.value = { type, value: { currentRecord: val } };
   };
   return (
     <Space>

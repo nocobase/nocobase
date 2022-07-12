@@ -1,7 +1,7 @@
 import { Schema as SchemaCompiler } from '@formily/json-schema';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { message, Modal } from 'antd';
-import { cloneDeep } from 'lodash';
+import parse from 'json-templates';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -10,7 +10,6 @@ import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
-import { AssignedFieldValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
@@ -65,31 +64,6 @@ const filterValue = (value) => {
     }
   }
   return obj;
-};
-
-const convertAssignedFieldValues = (originalValues: any, currentUser, currentRecord) => {
-  const values = cloneDeep(originalValues);
-  const assignedValues = {};
-  for (const key in values) {
-    const value = values[key];
-    if (value.type === AssignedFieldValueType.ConstantValue) {
-      assignedValues[key] = value.value;
-    } else if (value.type === AssignedFieldValueType.DynamicValue) {
-      if (value.value?.['currentUser']) {
-        assignedValues[key] = currentUser.id;
-      } else if (value.value?.['currentTime']) {
-        assignedValues[key] = new Date();
-      } else if (value.value?.['currentRecord']) {
-        let val = value.value?.['currentRecord'].shift();
-        assignedValues[key] = currentRecord;
-        while (val) {
-          assignedValues[key] = assignedValues[key]?.[val];
-          val = value.value?.['currentRecord'].shift();
-        }
-      }
-    }
-  }
-  return assignedValues;
 };
 
 function getFormValues(filterByTk, field, form, fieldNames, getField, resource) {
@@ -159,7 +133,7 @@ export const useCreateActionProps = () => {
         overwriteValues,
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
+      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
         await form.submit();
       }
@@ -222,8 +196,7 @@ export const useCustomizeUpdateActionProps = () => {
         onSuccess,
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
-
+      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (skipValidator === false) {
         await form.submit();
       }
@@ -362,8 +335,7 @@ export const useUpdateActionProps = () => {
         overwriteValues,
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const assignedValues = convertAssignedFieldValues(originalAssignedValues, currentUser, currentRecord);
-
+      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
         await form.submit();
       }
