@@ -1,4 +1,3 @@
-import { Schema as SchemaCompiler } from '@formily/json-schema';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { message, Modal } from 'antd';
 import parse from 'json-templates';
@@ -269,9 +268,9 @@ export const useCustomizeRequestActionProps = () => {
       const requestBody = {
         url: renderTemplate(requestSettings['url'], { currentRecord, currentUser }),
         method: requestSettings['method'],
-        headers: SchemaCompiler.compile(headers, { currentRecord, currentUser }),
-        params: SchemaCompiler.compile(params, { currentRecord, currentUser }),
-        data: SchemaCompiler.compile(data, { currentRecord, currentUser }),
+        headers: parse(headers)({ currentRecord, currentUser }),
+        params: parse(params)({ currentRecord, currentUser }),
+        data: parse(data)({ currentRecord, currentUser }),
       };
       actionField.data = field.data || {};
       actionField.data.loading = true;
