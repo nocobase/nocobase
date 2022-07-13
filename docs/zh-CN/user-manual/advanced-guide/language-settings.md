@@ -12,7 +12,7 @@ yarn nocobase install --lang=en-US
 yarn nocobase install --lang=zh-CN
 ```
 
-如果在安装时，忘记了设置语言，可以在 System settings 里修改 Enabled languages。
+安装之后，可以在 System settings 里修改 Enabled languages。
 
 ![](../../images/language-settings-1.jpg)
 
