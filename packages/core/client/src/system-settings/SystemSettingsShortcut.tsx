@@ -4,7 +4,7 @@ import { uid } from '@formily/shared';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSystemSettings } from '.';
-import { PluginManager, useAPIClient, useRequest } from '..';
+import { i18n, PluginManager, useAPIClient, useRequest } from '..';
 import locale from '../locale';
 import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
 
@@ -48,11 +48,18 @@ const useSaveSystemSettingsValues = () => {
           ...form.values,
         },
       });
-      await api.request({
+      const result = await api.request({
         url: 'systemSettings:update/1',
         method: 'post',
         data: form.values,
       });
+      if (result.status === 200) {
+        const settings = result.data.data[0];
+        const { appLang } = settings;
+        api.auth.setLocale(appLang);
+        i18n.changeLanguage(appLang);
+        window.location.reload();
+      }
     },
   };
 };
