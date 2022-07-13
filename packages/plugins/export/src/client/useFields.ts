@@ -4,39 +4,22 @@ import { useCollectionManager } from '@nocobase/client';
 export const useFields = (collectionName: string) => {
   const fieldSchema = useFieldSchema();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
-    if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
-      return;
-    }
     if (!field.interface) {
       return;
     }
-    const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.filterable) {
-      return;
-    }
-    const { nested, children, operators } = fieldInterface.filterable;
     const option = {
       name: field.name,
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
-      operators:
-        operators?.filter?.((operator) => {
-          return !operator?.visible || operator.visible(field);
-        }) || [],
     };
-    if (field.target && depth > 2) {
-      return;
-    }
-    if (depth > 2) {
+    if (!field.target || depth >= 3) {
       return option;
     }
-    if (children?.length) {
-      option['children'] = children;
-    }
-    if (nested) {
+
+    if (field.target) {
       const targetFields = getCollectionFields(field.target);
       const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];

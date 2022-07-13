@@ -4,8 +4,9 @@ import {
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
+import { cloneDeep } from 'lodash';
 import { useTranslation } from 'react-i18next';
 
 export const useExportAction = () => {
@@ -18,9 +19,10 @@ export const useExportAction = () => {
   const { t } = useTranslation();
   return {
     async onClick() {
-      const { exportSettings } = actionSchema?.['x-action-settings'] ?? {};
+      const { exportSettings } = cloneDeep(actionSchema?.['x-action-settings'] ?? {});
       exportSettings.forEach((es) => {
-        const { uiSchema } = getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
+        const { uiSchema, interface: fieldInterface } =
+          getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
         es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
         if (!es.enum && uiSchema.type === 'boolean') {
           es.enum = [
@@ -29,6 +31,9 @@ export const useExportAction = () => {
           ];
         }
         es.defaultTitle = uiSchema?.title;
+        if (fieldInterface === 'chinaRegion') {
+          es.dataIndex.push('name');
+        }
       });
       const { data } = await resource.exportXlsx(
         {
