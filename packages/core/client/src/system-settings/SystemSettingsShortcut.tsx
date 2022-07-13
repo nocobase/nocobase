@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSystemSettings } from '.';
-import { PluginManager, useAPIClient, useRequest } from '..';
+import { i18n, PluginManager, useAPIClient, useRequest } from '..';
 import locale from '../locale';
 import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
 
@@ -97,15 +97,25 @@ const schema: ISchema = {
         },
         enabledLanguages: {
           type: 'array',
-          title: '{{t("Preferred languages")}}',
+          title: '{{t("Enabled languages")}}',
           'x-component': 'Select',
           'x-component-props': {
             mode: 'multiple',
           },
           'x-decorator': 'FormItem',
           enum: langs,
-          description:
-            'When multiple languages ​​are selected, the user can set the user language in the personal center',
+          'x-reactions': (field) => {
+            field.dataSource = langs.map((item) => {
+              let label = item.label;
+              if (field.value?.[0] === item.value) {
+                label += `(${i18n.t('Default')})`;
+              }
+              return {
+                label,
+                value: item.value,
+              };
+            });
+          },
         },
         allowSignUp: {
           type: 'boolean',
