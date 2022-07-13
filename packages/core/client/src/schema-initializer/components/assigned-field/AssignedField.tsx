@@ -101,12 +101,15 @@ export const AssignedField = (props: any) => {
   const [fieldType, setFieldType] = useState<string>(initFieldType['true']);
   const initRecordValue = DYNAMIC_RECORD_REG.exec(field.value)?.[1]?.split('.') ?? [];
   const [recordValue, setRecordValue] = useState<any>(initRecordValue);
+  const initUserValue = DYNAMIC_USER_REG.exec(field.value)?.[1]?.split('.') ?? [];
+  const [userValue, setUserValue] = useState<any>(initUserValue);
   const initValue = isDynamicValue ? '' : field.value;
   const [value, setValue] = useState(initValue);
   const [options, setOptions] = useState<any[]>([]);
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
   const fields = useCollectionFilterOptions(collectionField?.collectionName);
+  const userFields = useCollectionFilterOptions('users');
   const dateTimeFields = ['createdAt', 'datetime', 'time', 'updatedAt'];
   useEffect(() => {
     let opt = null;
@@ -139,12 +142,20 @@ export const AssignedField = (props: any) => {
       if (fieldType === 'currentTime') {
         field.value = '{{currentTime}}';
       } else if (fieldType === 'currentUser') {
-        field.value = '{{currentUser.id}}';
+        userValue?.length > 0 && (field.value = `{{currentUser.${userValue.join('.')}}}`);
       } else if (fieldType === 'currentRecord') {
         recordValue?.length > 0 && (field.value = `{{currentRecord.${recordValue.join('.')}}}`);
       }
     }
-  }, [type, value, fieldType, recordValue]);
+  }, [type, value, fieldType, userValue, recordValue]);
+
+  useEffect(() => {
+    if (type === AssignedFieldValueType.ConstantValue) {
+      setFieldType(null);
+      setUserValue([]);
+      setRecordValue([]);
+    }
+  }, [type]);
 
   const typeChangeHandler = (val) => {
     setType(val);
@@ -159,6 +170,9 @@ export const AssignedField = (props: any) => {
   };
   const recordChangeHandler = (val) => {
     setRecordValue(val);
+  };
+  const userChangeHandler = (val) => {
+    setUserValue(val);
   };
   return (
     <Space>
@@ -193,6 +207,21 @@ export const AssignedField = (props: any) => {
           options={compile(fields)}
           onChange={recordChangeHandler}
           defaultValue={recordValue}
+        />
+      )}
+      {fieldType === 'currentUser' && (
+        <Cascader
+          fieldNames={{
+            label: 'title',
+            value: 'name',
+            children: 'children',
+          }}
+          style={{
+            width: 150,
+          }}
+          options={compile(userFields)}
+          onChange={userChangeHandler}
+          defaultValue={userValue}
         />
       )}
     </Space>
