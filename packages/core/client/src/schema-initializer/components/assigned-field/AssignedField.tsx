@@ -110,12 +110,9 @@ export const AssignedField = (props: any) => {
   const collectionField = getField(fieldSchema.name);
   const fields = useCollectionFilterOptions(collectionField?.collectionName);
   const userFields = useCollectionFilterOptions('users');
+  const dateTimeFields = ['createdAt', 'datetime', 'time', 'updatedAt'];
   useEffect(() => {
-    let opt = [
-      {
-        name: 'currentTime',
-        title: t('Current time'),
-      },
+    const opt = [
       {
         name: 'currentRecord',
         title: t('Current record'),
@@ -125,6 +122,13 @@ export const AssignedField = (props: any) => {
         title: t('Current user'),
       },
     ];
+    if (dateTimeFields.includes(collectionField.interface)) {
+      opt.unshift({
+        name: 'currentTime',
+        title: t('Current time'),
+      });
+    } else {
+    }
     setOptions(compile(opt));
   }, []);
 
