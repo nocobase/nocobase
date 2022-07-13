@@ -1,6 +1,6 @@
-import { Schema as SchemaCompiler } from '@formily/json-schema';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { message, Modal } from 'antd';
+import parse from 'json-templates';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -120,11 +120,19 @@ export const useCreateActionProps = () => {
   const { fields, getField } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
+  const currentRecord = useRecord();
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
-
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
         await form.submit();
       }
@@ -174,14 +182,20 @@ export const useCustomizeUpdateActionProps = () => {
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const currentRecord = useRecord();
-  const ctx = useCurrentUserContext();
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
   const history = useHistory();
   const compile = useCompile();
   const form = useForm();
 
   return {
     async onClick() {
-      const { assignedValues, onSuccess, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (skipValidator === false) {
         await form.submit();
       }
@@ -254,9 +268,9 @@ export const useCustomizeRequestActionProps = () => {
       const requestBody = {
         url: renderTemplate(requestSettings['url'], { currentRecord, currentUser }),
         method: requestSettings['method'],
-        headers: SchemaCompiler.compile(headers, { currentRecord, currentUser }),
-        params: SchemaCompiler.compile(params, { currentRecord, currentUser }),
-        data: SchemaCompiler.compile(data, { currentRecord, currentUser }),
+        headers: parse(headers)({ currentRecord, currentUser }),
+        params: parse(params)({ currentRecord, currentUser }),
+        data: parse(data)({ currentRecord, currentUser }),
       };
       actionField.data = field.data || {};
       actionField.data.loading = true;
@@ -305,15 +319,22 @@ export const useUpdateActionProps = () => {
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const history = useHistory();
-  const record = useRecord();
   const { fields, getField } = useCollection();
   const compile = useCompile();
   const actionField = useField();
   const { updateAssociationValues } = useFormBlockContext();
+  const currentRecord = useRecord();
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
   return {
     async onClick() {
-      const { assignedValues, onSuccess, overwriteValues, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
-
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
         await form.submit();
       }
@@ -329,7 +350,7 @@ export const useUpdateActionProps = () => {
             ...overwriteValues,
             ...assignedValues,
           },
-          updateAssociationValues
+          updateAssociationValues,
         });
         actionField.data.loading = false;
         if (!(resource instanceof TableFieldResource)) {

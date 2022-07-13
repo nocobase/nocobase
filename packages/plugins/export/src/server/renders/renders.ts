@@ -110,7 +110,7 @@ export async function attachment(field, row, ctx) {
   return (row.get(field.name) || []).map((item) => item[field.url]).join(' ');
 }
 
-export async function chinaRegion(field, row, ctx) {
+export async function chinaRegion(field, row, ctx, column?: any) {
   const value = row.get(field.name);
   const values = (Array.isArray(value) ? value : [value]).sort((a, b) =>
     a.level !== b.level ? a.level - b.level : a.sort - b.sort,
