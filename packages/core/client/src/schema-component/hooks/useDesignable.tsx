@@ -460,22 +460,6 @@ export class Designable {
     }
     const opts = { onSuccess: options?.onSuccess };
     const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
-    if (Schema.isSchemaInstance(schema)) {
-      if (this.parentsIn(schema)) {
-        this.emit('error', {
-          code: 'parent_is_not_allowed',
-          schema,
-        });
-        return;
-      }
-      schema.parent.removeProperty(schema.name);
-      if (removeParentsIfNoChildren) {
-        opts['removed'] = this.recursiveRemoveIfNoChildren(schema.parent, { breakRemoveOn });
-      }
-      schema.parent = null;
-    } else if (schema) {
-      schema = cloneDeep(schema);
-    }
 
     let order = 0;
     let newOrder = 0;
@@ -495,6 +479,23 @@ export class Designable {
         this.current.parent.removeProperty(key);
       }
     });
+
+    if (Schema.isSchemaInstance(schema)) {
+      if (this.parentsIn(schema)) {
+        this.emit('error', {
+          code: 'parent_is_not_allowed',
+          schema,
+        });
+        return;
+      }
+      schema.parent.removeProperty(schema.name);
+      if (removeParentsIfNoChildren) {
+        opts['removed'] = this.recursiveRemoveIfNoChildren(schema.parent, { breakRemoveOn });
+      }
+      schema.parent = null;
+    } else if (schema) {
+      schema = cloneDeep(schema);
+    }
 
     this.prepareProperty(schema);
     const wrapped = wrap(schema);
