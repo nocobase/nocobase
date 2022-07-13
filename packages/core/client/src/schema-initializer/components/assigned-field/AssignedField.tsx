@@ -173,15 +173,15 @@ export const AssignedField = (props: any) => {
   };
   return (
     <Space>
-      <Select defaultValue={type} value={type} style={{ width: 120 }} onChange={typeChangeHandler}>
+      <Select defaultValue={type} value={type} style={{ width: 150 }} onChange={typeChangeHandler}>
         <Select.Option value={AssignedFieldValueType.ConstantValue}>{t('Constant value')}</Select.Option>
         <Select.Option value={AssignedFieldValueType.DynamicValue}>{t('Dynamic value')}</Select.Option>
       </Select>
 
       {type === AssignedFieldValueType.ConstantValue ? (
-        <CollectionField {...props} value={value} onChange={valueChangeHandler} />
+        <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />
       ) : (
-        <Select defaultValue={fieldType} value={fieldType} style={{ width: 120 }} onChange={fieldTypeChangeHandler}>
+        <Select defaultValue={fieldType} value={fieldType} style={{ minWidth: 150 }} onChange={fieldTypeChangeHandler}>
           {options?.map((opt) => {
             return (
               <Select.Option key={opt.name} value={opt.name}>
@@ -199,7 +199,7 @@ export const AssignedField = (props: any) => {
             children: 'children',
           }}
           style={{
-            width: 150,
+            minWidth: 150,
           }}
           options={compile(fields)}
           onChange={recordChangeHandler}
@@ -214,7 +214,7 @@ export const AssignedField = (props: any) => {
             children: 'children',
           }}
           style={{
-            width: 150,
+            minWidth: 150,
           }}
           options={compile(userFields)}
           onChange={userChangeHandler}
