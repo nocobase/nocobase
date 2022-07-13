@@ -1,4 +1,5 @@
-import { RecursionField, useFieldSchema } from '@formily/react';
+import { ArrayField } from '@formily/core';
+import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTableSelectorProps as useTsp } from '../../../block-provider/TableSelectorProvider';
@@ -7,23 +8,36 @@ import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
 import { useFieldNames } from './useFieldNames';
+import { differenceBy, unionBy } from 'lodash';
 
 const RecordPickerContext = createContext(null);
 
 const useTableSelectorProps = () => {
-  const { multiple, value, setSelectedRows, selectedRows } = useContext(RecordPickerContext);
+  const field = useField<ArrayField>();
+  const { multiple, value, setSelectedRows, selectedRows: rcSelectRows } = useContext(RecordPickerContext);
   const { onRowSelectionChange, rowKey, ...others } = useTsp();
+  console.log('useTableSelectorProps', field.value, value);
   return {
     ...others,
     rowKey,
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
-      defaultSelectedRowKeys: selectedRows?.map((item) => item[rowKey||'id']),
-      selectedRowKeys: selectedRows?.map((item) => item[rowKey||'id']),
+      // defaultSelectedRowKeys: selectedRows?.map((item) => item[rowKey||'id']),
+      selectedRowKeys: rcSelectRows?.map((item) => item[rowKey||'id']),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
-      onRowSelectionChange?.(selectedRowKeys, selectedRows);
-      setSelectedRows?.(selectedRows);
+      if (multiple) {
+        const scopeRows = field.value || [];
+        const allSelectedRows = rcSelectRows || [];
+        const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey||'id');
+        const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey||'id');
+        const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey||'id'])
+        setSelectedRows?.(unionSelectedRows);
+        onRowSelectionChange?.(unionSelectedRowKeys, unionSelectedRows);
+      } else {
+        setSelectedRows?.(selectedRows);
+        onRowSelectionChange?.(selectedRowKeys, selectedRows);
+      }
     },
   };
 };
@@ -77,8 +91,6 @@ export const InputRecordPicker: React.FC<any> = (props) => {
       setSelectedRows(opts);
     }
   }, [value])
-
-  useEffect(() => {})
 
   const getValue = () => {
     if (multiple == null) return null;
