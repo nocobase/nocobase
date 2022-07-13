@@ -12,6 +12,7 @@ export class SystemSettingsPlugin extends Plugin {
       values: {
         title: 'NocoBase',
         appLang: this.getInitAppLang(options),
+        enabledLanguages: [this.getInitAppLang(options)],
         logo: {
           title: 'nocobase-logo',
           filename: '682e5ad037dd02a0fe4800a3e91c283b.png',

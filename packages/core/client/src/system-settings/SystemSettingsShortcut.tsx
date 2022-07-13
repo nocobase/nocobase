@@ -1,10 +1,11 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSystemSettings } from '.';
-import { i18n, PluginManager, useAPIClient, useRequest } from '..';
+import { PluginManager, useAPIClient, useRequest } from '..';
 import locale from '../locale';
 import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
 
@@ -41,24 +42,24 @@ const useSaveSystemSettingsValues = () => {
   return {
     async run() {
       await form.submit();
-      setVisible(false);
+      const values = cloneDeep(form.values);
       mutate({
         data: {
           ...data?.data,
-          ...form.values,
+          ...values,
         },
       });
-      const result = await api.request({
+      await api.request({
         url: 'systemSettings:update/1',
         method: 'post',
-        data: form.values,
+        data: values,
       });
-      if (result.status === 200) {
-        const settings = result.data.data[0];
-        const { appLang } = settings;
-        api.auth.setLocale(appLang);
-        i18n.changeLanguage(appLang);
+      const lang = values.enabledLanguages?.[0] || 'en-US';
+      if (values.enabledLanguages.length < 2 && api.auth.getLocale() !== lang) {
+        api.auth.setLocale('');
         window.location.reload();
+      } else {
+        setVisible(false);
       }
     },
   };
@@ -96,20 +97,15 @@ const schema: ISchema = {
         },
         enabledLanguages: {
           type: 'array',
-          title: '{{t("Enabled languages")}}',
+          title: '{{t("Preferred languages")}}',
           'x-component': 'Select',
           'x-component-props': {
             mode: 'multiple',
           },
           'x-decorator': 'FormItem',
           enum: langs,
-        },
-        appLang: {
-          type: 'string',
-          title: '{{t("Default language")}}',
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: langs,
+          description:
+            'When multiple languages ​​are selected, the user can set the user language in the personal center',
         },
         allowSignUp: {
           type: 'boolean',
