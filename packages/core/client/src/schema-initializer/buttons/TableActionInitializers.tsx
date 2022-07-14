@@ -44,8 +44,8 @@ export const TableActionInitializers = {
         },
         {
           type: 'item',
-          title: "{{t('Reload')}}",
-          component: 'ReloadActionInitializer',
+          title: "{{t('Refresh')}}",
+          component: 'RefreshActionInitializer',
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',

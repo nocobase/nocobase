@@ -538,15 +538,15 @@ export const BulkDestroyActionInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
-export const ReloadActionInitializer = (props) => {
+export const RefreshActionInitializer = (props) => {
   const schema = {
-    title: '{{ t("Reload") }}',
-    'x-action': 'reload',
+    title: '{{ t("Refresh") }}',
+    'x-action': 'refresh',
     'x-component': 'Action',
     'x-designer': 'Action.Designer',
     'x-component-props': {
-      icon: 'ReloadOutlined',
-      useProps: '{{ useReloadActionProps }}',
+      icon: 'RefreshOutlined',
+      useProps: '{{ useRefreshActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;

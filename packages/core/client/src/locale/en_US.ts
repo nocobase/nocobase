@@ -98,7 +98,7 @@ export default {
   "Update": "Update",
   "View": "View",
   "View record": "View record",
-  "Reload": "Reload",
+  "Refresh": "Refresh",
   "Data changes": "Data changes",
   "Field name": "Field name",
   "Before change": "Before change",

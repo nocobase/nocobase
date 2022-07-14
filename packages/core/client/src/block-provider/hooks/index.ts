@@ -415,7 +415,7 @@ export const useBulkDestroyActionProps = () => {
   };
 };
 
-export const useReloadActionProps = () => {
+export const useRefreshActionProps = () => {
   const { service } = useBlockRequestContext();
   return {
     async onClick() {
