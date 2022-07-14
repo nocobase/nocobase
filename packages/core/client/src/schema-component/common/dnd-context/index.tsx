@@ -24,15 +24,10 @@ const useDragEnd = (props?: any) => {
       return;
     }
 
-    const allowComponents = ['Grid.Col', 'Grid.Row', 'Grid']
-    let currentSchema = activeSchema
-    do {
-      if (currentSchema === overSchema) {
-        props?.onDragEnd?.(event);
-        return;
-      }
-      currentSchema = currentSchema.parent
-    } while(currentSchema && allowComponents.includes(currentSchema['x-component']))
+    if (activeSchema === overSchema) {
+      props?.onDragEnd?.(event);
+      return;
+    }
 
     const dn = createDesignable({
       t,
@@ -50,7 +45,6 @@ const useDragEnd = (props?: any) => {
     }
 
     if (insertAdjacent) {
-      console.log('Drag End', insertAdjacent, activeSchema, overSchema)
       dn.insertAdjacent(insertAdjacent, activeSchema, {
         wrap: wrapSchema,
         breakRemoveOn,
