@@ -42,6 +42,18 @@ export const TableActionInitializers = {
             },
           },
         },
+        {
+          type: 'item',
+          title: "{{t('Refresh')}}",
+          component: 'RefreshActionInitializer',
+          schema: {
+            'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
+          },
+        },
       ],
     },
   ],
