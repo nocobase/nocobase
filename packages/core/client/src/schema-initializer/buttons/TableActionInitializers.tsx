@@ -42,6 +42,18 @@ export const TableActionInitializers = {
             },
           },
         },
+        {
+          type: 'item',
+          title: "{{t('Reload')}}",
+          component: 'ReloadActionInitializer',
+          schema: {
+            'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
+          },
+        },
       ],
     },
   ],

@@ -538,6 +538,20 @@ export const BulkDestroyActionInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
+export const ReloadActionInitializer = (props) => {
+  const schema = {
+    title: '{{ t("Reload") }}',
+    'x-action': 'reload',
+    'x-component': 'Action',
+    'x-designer': 'Action.Designer',
+    'x-component-props': {
+      icon: 'ReloadOutlined',
+      useProps: '{{ useReloadActionProps }}',
+    },
+  };
+  return <ActionInitializer {...props} schema={schema} />;
+};
+
 export const SubmitActionInitializer = (props) => {
   const schema = {
     title: '{{ t("Submit") }}',
@@ -728,7 +742,7 @@ export const RecordAssociationFormBlockInitializer = (props) => {
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {
-        
+
         const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
         const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type) ? 'UpdateFormActionInitializers' : 'CreateFormActionInitializers';
 

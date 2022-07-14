@@ -99,6 +99,7 @@ export default {
   "Update": "更新",
   "View": "查看",
   "View record": "查看数据",
+  "Reload": "刷新",
 
   "Data changes": "数据变更",
   "Field name": "字段标识",
