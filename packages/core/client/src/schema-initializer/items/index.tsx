@@ -545,7 +545,7 @@ export const RefreshActionInitializer = (props) => {
     'x-component': 'Action',
     'x-designer': 'Action.Designer',
     'x-component-props': {
-      icon: 'RefreshOutlined',
+      icon: 'ReloadOutlined',
       useProps: '{{ useRefreshActionProps }}',
     },
   };
