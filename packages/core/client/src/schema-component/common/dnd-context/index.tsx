@@ -50,6 +50,7 @@ const useDragEnd = (props?: any) => {
     }
 
     if (insertAdjacent) {
+      console.log('Drag End', insertAdjacent, activeSchema, overSchema)
       dn.insertAdjacent(insertAdjacent, activeSchema, {
         wrap: wrapSchema,
         breakRemoveOn,
