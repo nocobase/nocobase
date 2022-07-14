@@ -31,7 +31,7 @@ const useTableColumns = () => {
         key: s.name,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          console.log((Date.now() - start) / 1000);
+          // console.log((Date.now() - start) / 1000);
           return (
             <RecordIndexProvider index={index}>
               <RecordProvider record={record}>
