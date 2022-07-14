@@ -324,7 +324,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
+      {form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m', 'm2o'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
           options={
