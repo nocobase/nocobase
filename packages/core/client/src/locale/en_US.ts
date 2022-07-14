@@ -550,4 +550,5 @@ export default {
   "Subtable": "Subtable",
   "Subform": "Subform",
   "Regular expression": "Pattern",
+  "Enabled languages": "Enabled languages",
 }
