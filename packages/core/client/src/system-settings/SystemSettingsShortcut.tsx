@@ -1,10 +1,11 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSystemSettings } from '.';
-import { PluginManager, useAPIClient, useRequest } from '..';
+import { i18n, PluginManager, useAPIClient, useRequest } from '..';
 import locale from '../locale';
 import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
 
@@ -41,18 +42,25 @@ const useSaveSystemSettingsValues = () => {
   return {
     async run() {
       await form.submit();
-      setVisible(false);
+      const values = cloneDeep(form.values);
       mutate({
         data: {
           ...data?.data,
-          ...form.values,
+          ...values,
         },
       });
       await api.request({
         url: 'systemSettings:update/1',
         method: 'post',
-        data: form.values,
+        data: values,
       });
+      const lang = values.enabledLanguages?.[0] || 'en-US';
+      if (values.enabledLanguages.length < 2 && api.auth.getLocale() !== lang) {
+        api.auth.setLocale('');
+        window.location.reload();
+      } else {
+        setVisible(false);
+      }
     },
   };
 };
@@ -96,13 +104,18 @@ const schema: ISchema = {
           },
           'x-decorator': 'FormItem',
           enum: langs,
-        },
-        appLang: {
-          type: 'string',
-          title: '{{t("Default language")}}',
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: langs,
+          'x-reactions': (field) => {
+            field.dataSource = langs.map((item) => {
+              let label = item.label;
+              if (field.value?.[0] === item.value) {
+                label += `(${i18n.t('Default')})`;
+              }
+              return {
+                label,
+                value: item.value,
+              };
+            });
+          },
         },
         allowSignUp: {
           type: 'boolean',

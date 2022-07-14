@@ -29,7 +29,7 @@ export class ClientPlugin extends Plugin {
           const systemSetting = await SystemSetting.findOne();
           const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
           const currentUser = ctx.state.currentUser;
-          let lang = systemSetting?.appLang || process.env.APP_LANG || 'en-US';
+          let lang = enabledLanguages?.[0] || process.env.APP_LANG || 'en-US';
           if (enabledLanguages.includes(currentUser?.appLang)) {
             lang = currentUser?.appLang;
           }
@@ -44,7 +44,7 @@ export class ClientPlugin extends Plugin {
           const systemSetting = await SystemSetting.findOne();
           const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
           const currentUser = ctx.state.currentUser;
-          let lang = systemSetting?.appLang || process.env.APP_LANG || 'en-US';
+          let lang = enabledLanguages?.[0] || process.env.APP_LANG || 'en-US';
           if (enabledLanguages.includes(currentUser?.appLang)) {
             lang = currentUser?.appLang;
           }
