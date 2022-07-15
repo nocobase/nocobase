@@ -25,15 +25,19 @@ const ColDivider = (props) => {
   };
 
   const dndContext = useDndContext()
-  const activeSchema = dndContext.active?.data.current?.schema?.parent
+  const activeSchema: Schema | undefined = dndContext.active?.data.current?.schema?.parent
+  const blocksLength: number = activeSchema ? Object.keys(activeSchema.properties).length : 0;
+
 
   let visible = true
-  if (props.first) {
-    visible = activeSchema !== props.cols[0]
-  } else {
-    const currentSchema = props.cols[props.index]
-    const downSchema = props.cols[props.index + 1]
-    visible = activeSchema !== currentSchema && downSchema !== activeSchema
+  if (blocksLength === 1) {
+    if (props.first) {
+      visible = activeSchema !== props.cols[0]
+    } else {
+      const currentSchema = props.cols[props.index]
+      const downSchema = props.cols[props.index + 1]
+      visible = activeSchema !== currentSchema && downSchema !== activeSchema
+    }
   }
 
   return (
