@@ -204,7 +204,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {validateSchema && (
+      {form && !form?.readPretty && validateSchema && (
         <SchemaSettings.ModalItem
           title={t('Set validation rules')}
           components={{ ArrayCollapse, FormLayout }}
