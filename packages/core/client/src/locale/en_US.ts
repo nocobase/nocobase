@@ -552,4 +552,5 @@ export default {
   "Subform": "Subform",
   "Regular expression": "Pattern",
   "Enabled languages": "Enabled languages",
+  "View all plugins": "View all plugins",
 }
