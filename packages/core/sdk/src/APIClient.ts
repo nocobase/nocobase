@@ -187,7 +187,7 @@ export class APIClient {
   private initStorage(storage?: any) {
     if (storage) {
       this.storage = new storage(this);
-    } else if (localStorage) {
+    } else if (typeof localStorage !== 'undefined') {
       this.storage = localStorage;
     } else {
       this.storage = new MemoryStorage();
