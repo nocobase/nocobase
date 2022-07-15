@@ -1,8 +1,9 @@
-import { MoreOutlined, SettingOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { ConfigProvider, Menu, MenuItemProps, Spin, Tooltip } from 'antd';
 import cls from 'classnames';
 import { get } from 'lodash';
 import React, { createContext, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
 import { PluginManagerContext } from './context';
 
@@ -52,6 +53,7 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
   const { components } = useContext(PluginManagerContext);
   const { items = [] } = props;
   const [pinned, unpinned] = splitItems(items);
+  const { t } = useTranslation();
   return (
     <div style={{ display: 'inline-block' }}>
       <Menu style={{ width: '100%' }} selectable={false} mode={'horizontal'} theme={'dark'}>
@@ -66,7 +68,7 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
           );
         })}
         {unpinned.length > 0 && (
-          <Menu.SubMenu popupClassName={'pm-sub-menu'} key={'more'} title={<MoreOutlined />}>
+          <Menu.SubMenu popupClassName={'pm-sub-menu'} key={'more'} title={<EllipsisOutlined />}>
             {unpinned.map((item, index) => {
               const Action = get(components, item.component);
               return (
@@ -78,8 +80,8 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
               );
             })}
             {unpinned.length > 0 && <Menu.Divider key={'divider'}></Menu.Divider>}
-            <Menu.Item key={'plugins'} disabled icon={<SettingOutlined />}>
-              管理插件
+            <Menu.Item key={'plugins'} disabled icon={<AppstoreOutlined />}>
+              {t('View all plugins')}
             </Menu.Item>
           </Menu.SubMenu>
         )}

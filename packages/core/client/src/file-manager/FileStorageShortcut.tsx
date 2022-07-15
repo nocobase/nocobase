@@ -1,4 +1,4 @@
-import { SettingOutlined } from '@ant-design/icons';
+import { FileOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,7 +31,7 @@ export const FileStorageShortcut = () => {
         onClick={() => {
           setVisible(true);
         }}
-        icon={<SettingOutlined />}
+        icon={<FileOutlined />}
         title={t('File storages')}
       />
       <SchemaComponent components={{ StorageOptions }} schema={schema} />
