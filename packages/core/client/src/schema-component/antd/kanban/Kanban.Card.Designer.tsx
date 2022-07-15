@@ -59,6 +59,23 @@ export const KanbanCardDesigner = (props: any) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const fields = useFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
+  const associationFields = useAssociatedFormItemInitializerFields({readPretty: true, block: 'Kanban'});
+  
+  const items: any = [{
+    type: 'itemGroup',
+    title: t('Display fields'),
+    children: fields,
+  }];
+  if (associationFields.length > 0) {
+    items.push({
+      type: 'divider',
+    }, {
+      type: 'itemGroup',
+      title: t('Display association fields'),
+      children: associationFields,
+    })
+  }
+  
   if (!designable) {
     return null;
   }
@@ -87,21 +104,7 @@ export const KanbanCardDesigner = (props: any) => {
               dn.loadAPIClientEvents();
               dn.insertBeforeEnd(schema);
             }}
-            items={[
-              {
-                type: 'itemGroup',
-                title: t('Display fields'),
-                children: fields,
-              },
-              {
-                type: 'divider',
-              },
-              {
-                type: 'itemGroup',
-                title: t('Display association fields'),
-                children: useAssociatedFormItemInitializerFields({readPretty: true, block: 'Kanban'}),
-              },
-            ]}
+            items={items}
             component={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}
           />
         </Space>

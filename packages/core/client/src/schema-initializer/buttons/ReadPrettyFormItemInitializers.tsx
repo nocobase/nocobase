@@ -1,22 +1,32 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../SchemaInitializer';
-import { gridRowColWrap, useFormItemInitializerFields } from '../utils';
+import { gridRowColWrap, useAssociatedFormItemInitializerFields, useFormItemInitializerFields } from '../utils';
+import { union } from 'lodash';
 
 export const ReadPrettyFormItemInitializers = (props: any) => {
   const { t } = useTranslation();
   const { insertPosition, component } = props;
+  const associationFields = useAssociatedFormItemInitializerFields({readPretty: true, block: 'Form'});
+  
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
       icon={'SettingOutlined'}
-      items={[
+      items={union([
         {
           type: 'itemGroup',
           title: t('Display fields'),
           children: useFormItemInitializerFields(),
-        },
-        {
+        }],
+        associationFields.length > 0 ? [{
+          type: 'divider',
+        }, {
+          type: 'itemGroup',
+          title: t('Display association fields'),
+          children: associationFields,
+        }] : [],
+        [{
           type: 'divider',
         },
         {
@@ -34,7 +44,7 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
             },
           },
         },
-      ]}
+      ])}
       insertPosition={insertPosition}
       component={component}
       title={component ? null : t('Configure fields')}

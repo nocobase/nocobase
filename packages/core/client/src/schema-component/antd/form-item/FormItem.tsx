@@ -204,7 +204,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {validateSchema && (
+      {form && !form?.readPretty && validateSchema && (
         <SchemaSettings.ModalItem
           title={t('Set validation rules')}
           components={{ ArrayCollapse, FormLayout }}
@@ -371,7 +371,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {form && !form?.readPretty && collectionField?.interface !== 'o2m' && (
+      {form && !form?.readPretty && collectionField?.interface !== 'o2m' && fieldSchema?.['x-component-props']?.['pattern-disable'] != true && (
         <SchemaSettings.SelectItem
           key="pattern"
           title={t('Pattern')}

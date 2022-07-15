@@ -193,10 +193,11 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const { getInterface, getCollectionFields } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
+  const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o']
 
   const groups = fields
     ?.filter((field) => {
-      return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
+      return interfaces.includes(field.interface);
     })
     ?.map((field) => {
       const subFields = getCollectionFields(field.target);
@@ -210,7 +211,9 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             // title: subField?.uiSchema?.title || subField.name,
             'x-designer': 'FormItem.Designer',
             'x-component': 'CollectionField',
+            'x-read-pretty': readPretty,
             'x-component-props': {
+              'pattern-disable': block === 'Form' && readPretty,
             },
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
