@@ -1,4 +1,4 @@
-import { useDndMonitor, useDroppable } from '@dnd-kit/core';
+import { useDndContext, useDndMonitor, useDroppable } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -24,9 +24,25 @@ const ColDivider = (props) => {
     backgroundColor: isOver ? 'rgba(241, 139, 98, .1)' : undefined,
   };
 
+  const dndContext = useDndContext()
+  const activeSchema: Schema | undefined = dndContext.active?.data.current?.schema?.parent
+  const blocksLength: number = activeSchema ? Object.keys(activeSchema.properties).length : 0;
+
+
+  let visible = true
+  if (blocksLength === 1) {
+    if (props.first) {
+      visible = activeSchema !== props.cols[0]
+    } else {
+      const currentSchema = props.cols[props.index]
+      const downSchema = props.cols[props.index + 1]
+      visible = activeSchema !== currentSchema && downSchema !== activeSchema
+    }
+  }
+
   return (
     <div
-      ref={setNodeRef}
+      ref={visible ? setNodeRef : null}
       className={cls(
         'nb-col-divider',
         css`
@@ -52,6 +68,26 @@ const RowDivider = (props) => {
 
   const [active, setActive] = useState(false);
 
+  const dndContext = useDndContext()
+  const currentSchema = props.rows[props.index]
+  const activeSchema = dndContext.active?.data.current?.schema?.parent.parent
+
+  const colsLength: number = activeSchema?.mapProperties((schema) => {
+    return schema['x-component'] === 'Grid.Col'
+  }).filter(Boolean).length
+
+  let visible = true
+
+  // col > 1 时不需要隐藏
+  if (colsLength === 1) {
+    if (props.first) {
+      visible = activeSchema !== props.rows[0]
+    } else {
+      const downSchema = props.rows[props.index + 1]
+      visible = activeSchema !== currentSchema && downSchema !== activeSchema
+    }
+  }
+
   useDndMonitor({
     onDragStart(event) {
       setActive(true);
@@ -68,7 +104,7 @@ const RowDivider = (props) => {
 
   return (
     <span
-      ref={setNodeRef}
+      ref={visible ? setNodeRef : null}
       className={cls(
         'nb-row-divider',
         css`
@@ -165,11 +201,14 @@ export const Grid: any = observer((props: any) => {
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   const addr = field.address.toString();
   const rows = useRowProperties();
+
   return (
     <GridContext.Provider value={{ fieldSchema, renderSchemaInitializer: render }}>
       <div className={'nb-grid'} style={{ position: 'relative' }}>
         <DndWrapper dndContext={props.dndContext}>
           <RowDivider
+            rows={rows}
+            first
             id={`${addr}_0`}
             data={{
               breakRemoveOn: breakRemoveOnGrid,
@@ -183,6 +222,8 @@ export const Grid: any = observer((props: any) => {
               <React.Fragment key={schema.name}>
                 <RecursionField name={schema.name} schema={schema} />
                 <RowDivider
+                  rows={rows}
+                  index={index}
                   id={`${addr}_${index + 1}`}
                   data={{
                     breakRemoveOn: breakRemoveOnGrid,
@@ -206,6 +247,7 @@ Grid.Row = observer((props) => {
   const fieldSchema = useFieldSchema();
   const addr = field.address.toString();
   const cols = useColProperties();
+
   return (
     <GridRowContext.Provider value={{ cols }}>
       <div
@@ -220,6 +262,8 @@ Grid.Row = observer((props) => {
         )}
       >
         <ColDivider
+          cols={cols}
+          first
           id={`${addr}_0`}
           data={{
             breakRemoveOn: breakRemoveOnRow,
@@ -233,6 +277,8 @@ Grid.Row = observer((props) => {
             <React.Fragment key={schema.name}>
               <RecursionField name={schema.name} schema={schema} />
               <ColDivider
+                cols={cols}
+                index={index}
                 id={`${addr}_${index + 1}`}
                 data={{
                   breakRemoveOn: breakRemoveOnRow,
