@@ -1,11 +1,11 @@
 import { FormOutlined, TableOutlined } from '@ant-design/icons';
 import { FormDialog, FormLayout } from '@formily/antd';
-import { ISchema, SchemaOptionsContext } from '@formily/react';
+import { ISchema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
-import { useBlockAssociationContext } from '../../block-provider';
+import { useBlockAssociationContext, useBlockRequestContext } from '../../block-provider';
 import { useCollection, useCollectionManager } from '../../collection-manager';
 import { SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
@@ -643,6 +643,7 @@ export const RecordFormBlockInitializer = (props) => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const collection = useCollection();
   const association = useBlockAssociationContext();
+  console.log('RecordFormBlockInitializer', collection, association);
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}
@@ -687,9 +688,13 @@ export const RecordFormBlockInitializer = (props) => {
 
 export const RecordReadPrettyFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const collection = useCollection();
   const association = useBlockAssociationContext();
+  const { block } = useBlockRequestContext();
+  const actionInitializers = block !== 'TableField' ? 'ReadPrettyFormActionInitializers' : null;
+
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}
@@ -700,6 +705,7 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'ReadPrettyFormItem') {
             const blockSchema = createReadPrettyFormBlockSchema({
+              actionInitializers,
               association,
               collection: collection.name,
               action: 'get',
@@ -717,6 +723,7 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
         } else {
           insert(
             createReadPrettyFormBlockSchema({
+              actionInitializers,
               association,
               collection: collection.name,
               action: 'get',
@@ -792,6 +799,9 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
   const field = item.field;
   const collection = field.target;
   const resource = `${field.collectionName}.${field.name}`;
+  const { block } = useBlockRequestContext();
+  const actionInitializers = block !== 'TableField' ? 'ReadPrettyFormActionInitializers' : null;
+
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}
@@ -801,6 +811,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'ReadPrettyFormItem') {
             const blockSchema = createReadPrettyFormBlockSchema({
+              actionInitializers,
               collection,
               resource,
               association: resource,
@@ -819,6 +830,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
         } else {
           insert(
             createReadPrettyFormBlockSchema({
+              actionInitializers,
               collection,
               resource,
               association: resource,
