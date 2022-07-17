@@ -22,7 +22,7 @@ const useTableSelectorProps = () => {
     rowKey,
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
-      // defaultSelectedRowKeys: selectedRows?.map((item) => item[rowKey||'id']),
+      // defaultSelectedRowKeys: rcSelectRows?.map((item) => item[rowKey||'id']),
       selectedRowKeys: rcSelectRows?.map((item) => item[rowKey||'id']),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
@@ -94,8 +94,9 @@ export const InputRecordPicker: React.FC<any> = (props) => {
 
   const getValue = () => {
     if (multiple == null) return null;
+    console.log('getValue', multiple, value, Array.isArray(value));
     
-    return multiple ? (Array.isArray(value) ? value?.map(v => v[fieldNames.value]) : []) : value?.[fieldNames.value];
+    return Array.isArray(value) ? value?.map(v => v[fieldNames.value]) : value?.[fieldNames.value];
   }
   return (
     <div>
