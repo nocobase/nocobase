@@ -16,7 +16,7 @@ const useTableSelectorProps = () => {
   const field = useField<ArrayField>();
   const { multiple, value, setSelectedRows, selectedRows: rcSelectRows } = useContext(RecordPickerContext);
   const { onRowSelectionChange, rowKey, ...others } = useTsp();
-  console.log('useTableSelectorProps', field.value, value);
+  // console.log('useTableSelectorProps', field.value, value);
   return {
     ...others,
     rowKey,
@@ -94,7 +94,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
 
   const getValue = () => {
     if (multiple == null) return null;
-    console.log('getValue', multiple, value, Array.isArray(value));
+    // console.log('getValue', multiple, value, Array.isArray(value));
     
     return Array.isArray(value) ? value?.map(v => v[fieldNames.value]) : value?.[fieldNames.value];
   }
