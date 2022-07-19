@@ -121,9 +121,7 @@ export class MockServer extends Application {
             return proxy;
           };
         }
-        return (...args: any[]) => {
-          return agent[method](...args);
-        };
+        return agent[method];
       },
     });
     return proxy as any;

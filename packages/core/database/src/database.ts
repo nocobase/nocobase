@@ -98,7 +98,6 @@ class DatabaseVersion {
           return false;
         }
         const [result] = (await this.db.sequelize.query(dialects[dialect].sql)) as any;
-        console.log(`db version: ${dialects[dialect].get(result?.[0]?.version)}`);
         return semver.satisfies(dialects[dialect].get(result?.[0]?.version), versions[dialect]);
       }
     }
