@@ -1,11 +1,11 @@
-export function requireModule(module: any) {
-  if (typeof module === 'string') {
-    module = require(module);
+export function requireModule(m: any) {
+  if (typeof m === 'string') {
+    m = require(m);
   }
-  if (typeof module !== 'object') {
-    return module;
+  if (typeof m !== 'object') {
+    return m;
   }
-  return module.__esModule ? module.default : module;
+  return m.__esModule ? m.default : m;
 }
 
 export default requireModule;
