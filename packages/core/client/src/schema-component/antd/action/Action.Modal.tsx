@@ -9,6 +9,7 @@ import { ComposedActionDrawer } from './types';
 
 export const ActionModal: ComposedActionDrawer = observer((props) => {
   const { footerNodeName = 'Action.Modal.Footer', ...others } = props;
+  console.log('ActionModal', props);
   const { visible, setVisible } = useActionContext();
   const schema = useFieldSchema();
   const field = useField();
@@ -28,7 +29,7 @@ export const ActionModal: ComposedActionDrawer = observer((props) => {
         >
           <Modal
             width={'80%'}
-            title={field.title}
+            // title={field.title}
             {...others}
             destroyOnClose
             visible={visible}
