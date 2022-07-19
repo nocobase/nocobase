@@ -17,7 +17,7 @@ const InternalFormBlockProvider = (props) => {
     [],
   );
   const { resource, service } = useBlockRequestContext();
-  const formRef = useRef();
+  const formBlockRef = useRef();
   if (service.loading) {
     return <Spin />;
   }
@@ -30,10 +30,10 @@ const InternalFormBlockProvider = (props) => {
         service,
         resource,
         updateAssociationValues: [],
-        formRef,
+        formBlockRef,
       }}
     >
-      <div ref={formRef}>{props.children}</div>
+      <div ref={formBlockRef}>{props.children}</div>
     </FormBlockContext.Provider>
   );
 };

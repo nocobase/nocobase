@@ -400,10 +400,10 @@ export const useDestroyActionProps = () => {
 };
 
 export const useDetailPrintActionProps = () => {
-  const { formRef } = useFormBlockContext();
+  const { formBlockRef } = useFormBlockContext();
 
   const printHandler = useReactToPrint({
-    content: () => formRef.current,
+    content: () => formBlockRef.current,
     pageStyle: `@media print {
       * {
         margin: 0;
