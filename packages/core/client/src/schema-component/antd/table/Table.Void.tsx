@@ -25,6 +25,12 @@ const usePaginationProps = (props: TableProps<any> & { request?: any }, service)
   if (props?.request?.params?.pageSize) {
     pagination.defaultPageSize = props?.request?.params?.pageSize;
   }
+  if (!pagination.total && service?.data?.meta) {
+    const { count, page, pageSize } = service.data.meta;
+    pagination.total = count;
+    pagination.current = page;
+    pagination.pageSize = pageSize;
+  }
   return {
     showSizeChanger: true,
     ...pagination,
