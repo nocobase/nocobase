@@ -17934,7 +17934,7 @@ prop-types-exact@^1.2.0:
     object.assign "^4.1.0"
     reflect.ownkeys "^0.2.0"
 
-prop-types@^15.5.10, prop-types@^15.5.8, prop-types@^15.7.1:
+prop-types@^15.5.10, prop-types@^15.5.8, prop-types@^15.7.1, prop-types@^15.8.1:
   version "15.8.1"
   resolved "https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz#67d87bf1a694f48435cf332c24af10214a3140b5"
   integrity sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==
@@ -18936,6 +18936,13 @@ react-test-renderer@^16.0.0-0, react-test-renderer@^16.13.1:
     prop-types "^15.6.2"
     react-is "^16.8.6"
     scheduler "^0.19.1"
+
+react-to-print@^2.14.7:
+  version "2.14.7"
+  resolved "https://registry.npmmirror.com/react-to-print/-/react-to-print-2.14.7.tgz#d288de0e573e6e63e203a48d4bad7a1759d18688"
+  integrity sha512-lWVVAs9Co25uyE0toxcWeFsmaZObwUozXrJD9WMpDPclpBgk+WIzxlt3Q3omL/BCBG/cpf0XNvhayUWa+99YGw==
+  dependencies:
+    prop-types "^15.8.1"
 
 react@16.x, react@^16.8.6:
   version "16.14.0"

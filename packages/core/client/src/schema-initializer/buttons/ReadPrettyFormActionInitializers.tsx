@@ -31,6 +31,15 @@ export const ReadPrettyFormActionInitializers = {
             'x-decorator': 'ACLActionProvider',
           },
         },
+        {
+          type: 'item',
+          title: '{{t("Print")}}',
+          component: 'PrintActionInitializer',
+          schema: {
+            'x-component': 'Action',
+            'x-decorator': 'ACLActionProvider',
+          },
+        },
       ],
     },
 

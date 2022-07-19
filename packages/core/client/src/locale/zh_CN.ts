@@ -649,4 +649,5 @@ export default {
   "Province/city/area name": "省市区名称",
   "Enabled languages": "启用的语言",
   "View all plugins": "查看所有插件",
+  "Print": "打印",
 }
