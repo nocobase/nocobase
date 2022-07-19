@@ -528,7 +528,7 @@ export const PrintActionInitializer = (props) => {
     'x-designer': 'Action.Designer',
     'x-component-props': {
       icon: 'PrinterOutlined',
-      useProps: '{{ usePrintActionProps }}',
+      useProps: '{{ useDetailPrintActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;

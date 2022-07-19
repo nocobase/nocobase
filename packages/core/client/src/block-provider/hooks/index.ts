@@ -399,15 +399,19 @@ export const useDestroyActionProps = () => {
   };
 };
 
-export const usePrintActionProps = () => {
-  const { printContent } = useFormBlockContext();
+export const useDetailPrintActionProps = () => {
+  const { formRef } = useFormBlockContext();
 
   const printHandler = useReactToPrint({
-    content: () => printContent,
+    content: () => formRef.current,
     pageStyle: `@media print {
       * {
         margin: 0;
       }
+      div.ant-formily-layout>div:first-child {
+        overflow: hidden; height: 0;
+      }
+
     }`,
   });
   return {
