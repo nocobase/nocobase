@@ -8,18 +8,17 @@ import { useCollectionFilterOptions } from '../../../collection-manager/action-h
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 
-const useOptions = () => {
+const useOptions = (isFilt?: boolean) => {
   const compile = useCompile();
   const { fields } = useCollection();
-  const options = fields
-  ?.filter((field) => field.type === 'string')
-  ?.map((field) => {
+  const options = isFilt ? fields?.filter((field) => field.type === 'string') : fields
+  const filteredOptions = options?.map((field) => {
     return {
       value: field.name,
       label: compile(field?.uiSchema?.title),
     };
   });
-  return options;
+  return filteredOptions;
 }
 
 export const CalendarDesigner = () => {
@@ -34,6 +33,7 @@ export const CalendarDesigner = () => {
   const template = useSchemaTemplate();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const options = useOptions();
+  const filteredOptions = useOptions(true);
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   return (
@@ -42,7 +42,7 @@ export const CalendarDesigner = () => {
       <SchemaSettings.SelectItem
         title={t('Title field')}
         value={fieldNames.title}
-        options={options}
+        options={filteredOptions}
         onChange={(title) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['title'] = title;
