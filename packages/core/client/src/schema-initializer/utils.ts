@@ -292,8 +292,22 @@ const removeSchema = (schema, cb) => {
   return cb(schema);
 };
 
+const recursiveParent = (schema: Schema) => {
+  if (!schema.parent) return null;
+  
+  if (schema.parent['x-initializer']) return schema.parent;
+  
+  return recursiveParent(schema.parent);
+}
+
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
-  const fieldSchema = useFieldSchema();
+  let fieldSchema = useFieldSchema();
+  if (!fieldSchema?.['x-initializer']) {
+    const recursiveInitializerSchema = recursiveParent(fieldSchema);
+    if (recursiveInitializerSchema) {
+      fieldSchema = recursiveInitializerSchema;
+    }
+  }
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
   return {
