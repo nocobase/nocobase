@@ -1,6 +1,6 @@
 import { FormOutlined, TableOutlined } from '@ant-design/icons';
 import { FormDialog, FormLayout } from '@formily/antd';
-import { ISchema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import { ISchema, SchemaOptionsContext } from '@formily/react';
 import { merge } from '@formily/shared';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,7 @@ import {
   createTableSelectorSchema,
   useCollectionDataSourceItems,
   useCurrentSchema,
-  useRecordCollectionDataSourceItems
+  useRecordCollectionDataSourceItems,
 } from '../utils';
 
 // Block
@@ -520,6 +520,20 @@ export const DestroyActionInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
+export const PrintActionInitializer = (props) => {
+  const schema = {
+    title: '{{ t("Print") }}',
+    'x-action': 'print',
+    'x-component': 'Action',
+    'x-designer': 'Action.Designer',
+    'x-component-props': {
+      icon: 'PrinterOutlined',
+      useProps: '{{ useDetailPrintActionProps }}',
+    },
+  };
+  return <ActionInitializer {...props} schema={schema} />;
+};
+
 export const BulkDestroyActionInitializer = (props) => {
   const schema = {
     title: '{{ t("Delete") }}',
@@ -688,7 +702,7 @@ export const RecordFormBlockInitializer = (props) => {
 
 export const RecordReadPrettyFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
-  
+
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const collection = useCollection();
   const association = useBlockAssociationContext();
@@ -749,9 +763,10 @@ export const RecordAssociationFormBlockInitializer = (props) => {
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {
-
         const action = ['hasOne', 'belongsTo'].includes(field.type) ? 'get' : null;
-        const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type) ? 'UpdateFormActionInitializers' : 'CreateFormActionInitializers';
+        const actionInitializers = ['hasOne', 'belongsTo'].includes(field.type)
+          ? 'UpdateFormActionInitializers'
+          : 'CreateFormActionInitializers';
 
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
@@ -875,7 +890,7 @@ export const RecordAssociationDetailsBlockInitializer = (props) => {
       items={useRecordCollectionDataSourceItems('Details', item, field.target, resource)}
     />
   );
-}
+};
 
 export const RecordAssociationCalendarBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
@@ -896,75 +911,75 @@ export const RecordAssociationCalendarBlockInitializer = (props) => {
           const s = await getTemplateSchemaByMode(item);
           insert(s);
         } else {
-        const stringFields = collection?.fields
-          ?.filter((field) => field.type === 'string')
-          ?.map((field) => {
-            return {
-              label: field?.uiSchema?.title,
-              value: field.name,
-            };
+          const stringFields = collection?.fields
+            ?.filter((field) => field.type === 'string')
+            ?.map((field) => {
+              return {
+                label: field?.uiSchema?.title,
+                value: field.name,
+              };
+            });
+          const dateFields = collection?.fields
+            ?.filter((field) => field.type === 'date')
+            ?.map((field) => {
+              return {
+                label: field?.uiSchema?.title,
+                value: field.name,
+              };
+            });
+          const values = await FormDialog(t('Create calendar block'), () => {
+            return (
+              <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                <FormLayout layout={'vertical'}>
+                  <SchemaComponent
+                    schema={{
+                      properties: {
+                        title: {
+                          title: t('Title field'),
+                          enum: stringFields,
+                          required: true,
+                          'x-component': 'Select',
+                          'x-decorator': 'FormItem',
+                        },
+                        start: {
+                          title: t('Start date field'),
+                          enum: dateFields,
+                          required: true,
+                          default: 'createdAt',
+                          'x-component': 'Select',
+                          'x-decorator': 'FormItem',
+                        },
+                        end: {
+                          title: t('End date field'),
+                          enum: dateFields,
+                          'x-component': 'Select',
+                          'x-decorator': 'FormItem',
+                        },
+                      },
+                    }}
+                  />
+                </FormLayout>
+              </SchemaComponentOptions>
+            );
+          }).open({
+            initialValues: {},
           });
-        const dateFields = collection?.fields
-          ?.filter((field) => field.type === 'date')
-          ?.map((field) => {
-            return {
-              label: field?.uiSchema?.title,
-              value: field.name,
-            };
-          });
-        const values = await FormDialog(t('Create calendar block'), () => {
-          return (
-            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-              <FormLayout layout={'vertical'}>
-                <SchemaComponent
-                  schema={{
-                    properties: {
-                      title: {
-                        title: t('Title field'),
-                        enum: stringFields,
-                        required: true,
-                        'x-component': 'Select',
-                        'x-decorator': 'FormItem',
-                      },
-                      start: {
-                        title: t('Start date field'),
-                        enum: dateFields,
-                        required: true,
-                        default: 'createdAt',
-                        'x-component': 'Select',
-                        'x-decorator': 'FormItem',
-                      },
-                      end: {
-                        title: t('End date field'),
-                        enum: dateFields,
-                        'x-component': 'Select',
-                        'x-decorator': 'FormItem',
-                      },
-                    },
-                  }}
-                />
-              </FormLayout>
-            </SchemaComponentOptions>
+          insert(
+            createCalendarBlockSchema({
+              collection: field.target,
+              resource,
+              association: resource,
+              fieldNames: {
+                ...values,
+              },
+            }),
           );
-        }).open({
-          initialValues: {},
-        });
-        insert(
-          createCalendarBlockSchema({
-            collection: field.target,
-            resource,
-            association: resource,
-            fieldNames: {
-              ...values,
-            },
-          }),
-        );
         }
       }}
       items={useRecordCollectionDataSourceItems('Calendar', item, field.target, resource)}
     />
   );
-}
+};
 
 export const RecordAssociationBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;

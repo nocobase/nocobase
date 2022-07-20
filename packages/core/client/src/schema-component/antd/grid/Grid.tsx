@@ -3,8 +3,8 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
-import React, { createContext, useContext, useState } from 'react';
-import { useSchemaInitializer } from '../../../';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useFormBlockContext, useSchemaInitializer } from '../../../';
 import { DndContext } from '../../common/dnd-context';
 
 const GridRowContext = createContext(null);
@@ -24,19 +24,18 @@ const ColDivider = (props) => {
     backgroundColor: isOver ? 'rgba(241, 139, 98, .1)' : undefined,
   };
 
-  const dndContext = useDndContext()
-  const activeSchema: Schema | undefined = dndContext.active?.data.current?.schema?.parent
+  const dndContext = useDndContext();
+  const activeSchema: Schema | undefined = dndContext.active?.data.current?.schema?.parent;
   const blocksLength: number = activeSchema ? Object.keys(activeSchema.properties).length : 0;
 
-
-  let visible = true
+  let visible = true;
   if (blocksLength === 1) {
     if (props.first) {
-      visible = activeSchema !== props.cols[0]
+      visible = activeSchema !== props.cols[0];
     } else {
-      const currentSchema = props.cols[props.index]
-      const downSchema = props.cols[props.index + 1]
-      visible = activeSchema !== currentSchema && downSchema !== activeSchema
+      const currentSchema = props.cols[props.index];
+      const downSchema = props.cols[props.index + 1];
+      visible = activeSchema !== currentSchema && downSchema !== activeSchema;
     }
   }
 
@@ -68,23 +67,25 @@ const RowDivider = (props) => {
 
   const [active, setActive] = useState(false);
 
-  const dndContext = useDndContext()
-  const currentSchema = props.rows[props.index]
-  const activeSchema = dndContext.active?.data.current?.schema?.parent.parent
+  const dndContext = useDndContext();
+  const currentSchema = props.rows[props.index];
+  const activeSchema = dndContext.active?.data.current?.schema?.parent.parent;
 
-  const colsLength: number = activeSchema?.mapProperties((schema) => {
-    return schema['x-component'] === 'Grid.Col'
-  }).filter(Boolean).length
+  const colsLength: number = activeSchema
+    ?.mapProperties((schema) => {
+      return schema['x-component'] === 'Grid.Col';
+    })
+    .filter(Boolean).length;
 
-  let visible = true
+  let visible = true;
 
   // col > 1 时不需要隐藏
   if (colsLength === 1) {
     if (props.first) {
-      visible = activeSchema !== props.rows[0]
+      visible = activeSchema !== props.rows[0];
     } else {
-      const downSchema = props.rows[props.index + 1]
-      visible = activeSchema !== currentSchema && downSchema !== activeSchema
+      const downSchema = props.rows[props.index + 1];
+      visible = activeSchema !== currentSchema && downSchema !== activeSchema;
     }
   }
 
@@ -196,15 +197,20 @@ export const useGridRowContext = () => {
 };
 
 export const Grid: any = observer((props: any) => {
+  const gridRef = useRef(null);
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   const addr = field.address.toString();
   const rows = useRowProperties();
+  const { setPrintContent } = useFormBlockContext();
 
+  useEffect(() => {
+    gridRef.current && setPrintContent?.(gridRef.current);
+  }, [gridRef.current]);
   return (
-    <GridContext.Provider value={{ fieldSchema, renderSchemaInitializer: render }}>
-      <div className={'nb-grid'} style={{ position: 'relative' }}>
+    <GridContext.Provider value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render }}>
+      <div className={'nb-grid'} style={{ position: 'relative' }} ref={gridRef}>
         <DndWrapper dndContext={props.dndContext}>
           <RowDivider
             rows={rows}
