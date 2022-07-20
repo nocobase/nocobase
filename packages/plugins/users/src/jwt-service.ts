@@ -9,7 +9,7 @@ export class JwtService {
   constructor(protected options: JwtOptions) {}
 
   private expiresIn() {
-    return this.options.expiresIn || '7d';
+    return this.options.expiresIn || process.env.JWT_EXPIRES_IN || '7d';
   }
 
   private secret() {
