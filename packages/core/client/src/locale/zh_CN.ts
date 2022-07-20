@@ -433,6 +433,7 @@ export default {
   'Create calendar block': '创建日历区块',
   'Create kanban block': '创建看板区块',
   'Group field': '分组字段',
+  'Selected types of fields in this collection can be grouped': '数据表中的选择类型的字段可以作为分组',
 
   'Tab name': '标签名称',
   'Current record blocks': '当前数据区块',

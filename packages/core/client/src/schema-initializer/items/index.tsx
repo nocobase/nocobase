@@ -271,6 +271,7 @@ export const KanbanBlockInitializer = (props) => {
                         title: t('Group field'),
                         enum: fields,
                         required: true,
+                        description: '{{t("Selected types of fields in this collection can be grouped")}}',
                         'x-component': 'Select',
                         'x-component-props': {
                           objectValue: true,
