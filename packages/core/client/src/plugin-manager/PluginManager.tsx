@@ -1,4 +1,5 @@
 import { AppstoreOutlined, EllipsisOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { ConfigProvider, Menu, MenuItemProps, Spin, Tooltip } from 'antd';
 import cls from 'classnames';
 import { get } from 'lodash';
@@ -92,12 +93,29 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
 
 PluginManager.Toolbar.Item = (props) => {
   const item = useContext(ToolbarItemContext);
-  const { selected, icon, title, ...others } = props;
+  const { selected, icon, title, subtitle, ...others } = props;
   const prefix = usePrefixCls();
   const className = cls({ [`${prefix}-menu-item-selected`]: selected });
   if (item.pin) {
+
+    const subtitleComponent = subtitle && (
+      <div
+        className={css`
+          font-size: 12px;
+          color: #999;
+        `}
+      >{subtitle}</div>
+    )
+
+    const titleComponent = (
+      <div>
+        <div>{title}</div>
+        {subtitleComponent}
+      </div>
+    )
+
     return (
-      <Tooltip title={title}>
+      <Tooltip title={titleComponent}>
         <Menu.Item {...others} className={className} eventKey={item.component}>
           {icon}
         </Menu.Item>

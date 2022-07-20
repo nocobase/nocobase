@@ -16,6 +16,7 @@ export const DesignableSwitch = () => {
       selected={designable}
       icon={<HighlightOutlined />}
       title={t('UI Editor')}
+      subtitle={'⌘+Shift+E'}
       style={style}
       onClick={() => {
         setDesignable(!designable);
