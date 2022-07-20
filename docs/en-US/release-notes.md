@@ -1,5 +1,40 @@
 # Release Notes
 
+## 2022/07/20 ~ v0.7.3-alpha.1
+
+### New features
+
+- Form validation
+- Actions: Print, Refresh
+
+### Details
+
+- fix(client): hide modal header
+- feat: customizable jwt expiration date
+- feat: print action (#652)
+- feat: restore action-hooks (#655)
+- feat: collections & fields pagination issue (#653)
+- fix(core): change proxied agent methods to native (#654)
+- feat: remove table field details actions (#638)
+- fix: link to default value (#641)
+- fix(client): build error
+- fix: localStorage is not defined
+- feat: support for displaying relational table fields in details or form blocks (#635)
+- fix: record picker cannot select from different pages (#623)
+- feat(client): plugin toolbar icons and translations
+- fix: dragging an element to the left, right, or bottom would cause the element to disappear (#620)
+- feat: table action add reload button (#630)
+- feat: improve language settings (#627)
+- feat: field assignment for custom actions supports string variables (#597)
+- fix(client): blocks are deleted when they are dragged below the current block
+- fix: skip recursive remove on grid component (#621)
+- feat: fix time and collection pagination (#618)
+- feat: recordblockinitializers fields pick (#558)
+- fix: incorrectly :active background (#607)
+- fix: obo table selector (#613)
+- feat: form validator (#569)
+- fix: table selector (#612)
+
 ## 2022/07/07 ~ v0.7.2-alpha.2
 
 - fix(g2plot): import all plots

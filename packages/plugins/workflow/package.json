@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow",
-  "version": "0.7.2-alpha.7",
+  "version": "0.7.3-alpha.1",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -10,17 +10,17 @@
     }
   ],
   "dependencies": {
-    "@nocobase/actions": "0.7.2-alpha.7",
-    "@nocobase/client": "0.7.2-alpha.7",
-    "@nocobase/database": "0.7.2-alpha.7",
-    "@nocobase/server": "0.7.2-alpha.7",
-    "@nocobase/utils": "0.7.2-alpha.7",
+    "@nocobase/actions": "0.7.3-alpha.1",
+    "@nocobase/client": "0.7.3-alpha.1",
+    "@nocobase/database": "0.7.3-alpha.1",
+    "@nocobase/server": "0.7.3-alpha.1",
+    "@nocobase/utils": "0.7.3-alpha.1",
     "cron-parser": "4.4.0",
     "json-templates": "^4.2.0",
     "react-js-cron": "^1.4.0"
   },
   "devDependencies": {
-    "@nocobase/test": "0.7.2-alpha.7"
+    "@nocobase/test": "0.7.3-alpha.1"
   },
   "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
 }
