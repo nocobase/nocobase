@@ -4,6 +4,7 @@ import parse from 'json-templates';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
+import { useReactToPrint } from 'react-to-print';
 import { useFormBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
@@ -398,6 +399,28 @@ export const useDestroyActionProps = () => {
   };
 };
 
+export const useDetailPrintActionProps = () => {
+  const { formBlockRef } = useFormBlockContext();
+
+  const printHandler = useReactToPrint({
+    content: () => formBlockRef.current,
+    pageStyle: `@media print {
+      * {
+        margin: 0;
+      }
+      div.ant-formily-layout>div:first-child {
+        overflow: hidden; height: 0;
+      }
+
+    }`,
+  });
+  return {
+    async onClick() {
+      printHandler();
+    },
+  };
+};
+
 export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
@@ -422,7 +445,7 @@ export const useRefreshActionProps = () => {
       service?.refresh?.();
     },
   };
-}
+};
 
 export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();

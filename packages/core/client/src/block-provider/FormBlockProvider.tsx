@@ -1,9 +1,8 @@
 import { createForm } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField } from '@formily/react';
 import { Spin } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { useCollectionManager } from '../collection-manager';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -18,6 +17,7 @@ const InternalFormBlockProvider = (props) => {
     [],
   );
   const { resource, service } = useBlockRequestContext();
+  const formBlockRef = useRef();
   if (service.loading) {
     return <Spin />;
   }
@@ -30,9 +30,10 @@ const InternalFormBlockProvider = (props) => {
         service,
         resource,
         updateAssociationValues: [],
+        formBlockRef,
       }}
     >
-      {props.children}
+      <div ref={formBlockRef}>{props.children}</div>
     </FormBlockContext.Provider>
   );
 };

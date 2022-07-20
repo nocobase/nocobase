@@ -11,6 +11,6 @@ interface Options {
 
 export const useProps = (props: any, options?: Options) => {
   const { useProps, ...props1 } = props;
-  let props2 = useProps?.() || {};
+  let props2 = typeof useProps === 'function' ? useProps() : {};
   return merge(props1 || {}, props2, options);
 };
