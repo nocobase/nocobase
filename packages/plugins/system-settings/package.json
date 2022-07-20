@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-system-settings",
-  "version": "0.7.2-alpha.7",
+  "version": "0.7.3-alpha.1",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -10,7 +10,7 @@
     }
   ],
   "devDependencies": {
-    "@nocobase/test": "0.7.2-alpha.7"
+    "@nocobase/test": "0.7.3-alpha.1"
   },
   "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
 }

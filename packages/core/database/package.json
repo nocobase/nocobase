@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/database",
-  "version": "0.7.2-alpha.7",
+  "version": "0.7.3-alpha.1",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -12,7 +12,7 @@
     }
   ],
   "dependencies": {
-    "@nocobase/utils": "0.7.2-alpha.7",
+    "@nocobase/utils": "0.7.3-alpha.1",
     "async-mutex": "^0.3.2",
     "deepmerge": "^4.2.2",
     "flat": "^5.0.2",

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notifications",
-  "version": "0.7.2-alpha.7",
+  "version": "0.7.3-alpha.1",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -13,7 +13,7 @@
     "nodemailer": "^6.6.1"
   },
   "devDependencies": {
-    "@nocobase/test": "0.7.2-alpha.7",
+    "@nocobase/test": "0.7.3-alpha.1",
     "@types/nodemailer": "6.4.4",
     "nodemailer-mock": "^1.5.11"
   },
