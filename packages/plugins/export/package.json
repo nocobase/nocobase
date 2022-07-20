@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/plugin-export",
-  "version": "0.7.2-alpha.7",
+  "version": "0.7.3-alpha.1",
   "main": "lib/server/index.js",
   "dependencies": {
-    "@nocobase/client": "0.7.2-alpha.7",
-    "@nocobase/server": "0.7.2-alpha.7",
+    "@nocobase/client": "0.7.3-alpha.1",
+    "@nocobase/server": "0.7.3-alpha.1",
     "node-xlsx": "^0.16.1"
   },
   "devDependencies": {
