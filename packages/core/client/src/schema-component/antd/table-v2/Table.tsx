@@ -4,11 +4,11 @@ import { ArrayField } from '@formily/core';
 import { ISchema, observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React from 'react';
-import ReactDragListView from 'react-drag-listview';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
+import { SortableContext, useSortable } from '@dnd-kit/sortable';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -67,64 +67,28 @@ const useTableColumns = () => {
   });
 };
 
-export const components = {
-  header: {
-    wrapper: (props) => {
-      return (
-        <DndContext>
-          <thead {...props} />
-        </DndContext>
-      );
-    },
-    cell: (props) => {
-      return (
-        <th
-          {...props}
-          className={cls(
-            props.className,
-            css`
-              max-width: 300px;
-              white-space: nowrap;
-              &:hover .general-schema-designer {
-                display: block;
-              }
-            `,
-          )}
-        />
-      );
-    },
-  },
-  body: {
-    wrapper: (props) => {
-      return (
-        <DndContext>
-          <tbody {...props} />
-        </DndContext>
-      );
-    },
-    row: (props) => {
-      return <tr {...props} />;
-    },
-    cell: (props) => (
-      <td
-        {...props}
-        className={classNames(
-          props.className,
-          css`
-            max-width: 300px;
-            white-space: nowrap;
-            .nb-read-pretty-input-number {
-              text-align: right;
-            }
-          `,
-        )}
-      />
-    ),
-  },
-};
 
-const SortHandle = () => {
-  return <MenuOutlined className={'drag-handle'} style={{ cursor: 'grab' }} />;
+const activeClass = css`
+  & > td {
+    border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;
+  }
+`
+
+const SortableRow = (props) => {
+  const id = props['data-row-key']
+  const { setNodeRef, isOver, active } = useSortable({
+    id
+  })
+
+  return <tr ref={active?.id !== id ? setNodeRef : null} {...props} className={classNames({ [activeClass]: isOver })} />
+}
+
+
+const SortHandle = (props) => {
+  const { listeners } = useSortable({
+    id: props.id
+  })
+  return <MenuOutlined {...listeners} style={{ cursor: 'grab' }} />;
 };
 
 const TableIndex = (props) => {
@@ -164,33 +128,114 @@ export const Table: any = observer((props: any) => {
     onRowSelectionChange,
     onChange: onTableChange,
     rowSelection,
+    rowKey,
     ...others
   } = { ...others1, ...others2 } as any;
   const paginationProps = usePaginationProps(pagination1, pagination2);
+
+  const components = useMemo(() => {
+    return {
+      header: {
+        wrapper: (props) => {
+          return (
+            <DndContext>
+              <thead {...props} />
+            </DndContext>
+          );
+        },
+        cell: (props) => {
+          return (
+            <th
+              {...props}
+              className={cls(
+                props.className,
+                css`
+                  max-width: 300px;
+                  white-space: nowrap;
+                  &:hover .general-schema-designer {
+                    display: block;
+                  }
+                `,
+              )}
+            />
+          );
+        },
+      },
+      body: {
+        wrapper: (props) => {
+          return (
+            <DndContext onDragEnd={(e) => {
+              if (!e.active || !e.over) {
+                console.warn('move cancel')
+                return
+              }
+
+              const fromIndex = e.active?.data.current?.sortable?.index
+              const toIndex = e.over?.data.current?.sortable?.index
+              const from = field.value[fromIndex];
+              const to = field.value[toIndex];
+              field.move(fromIndex, toIndex);
+              onRowDragEnd({ fromIndex, toIndex, from, to });
+            }}>
+              <tbody {...props} />
+            </DndContext>
+          );
+        },
+        row: (props) => {
+          return <SortableRow {...props}></SortableRow>
+        },
+        cell: (props) => (
+          <td
+            {...props}
+            className={classNames(
+              props.className,
+              css`
+                max-width: 300px;
+                white-space: nowrap;
+                .nb-read-pretty-input-number {
+                  text-align: right;
+                }
+              `,
+            )}
+          />
+        ),
+      },
+    };
+  }, [field, onRowDragEnd])
+
+  const defaultRowKey = (record: any) => {
+    return field.value?.indexOf?.(record);
+  };
+
+  const getRowKey = (record: any) => {
+    const key = typeof rowKey === 'string' ? rowKey : (rowKey ?? defaultRowKey)(record)
+    return record?.[key]
+  }
+
   const restProps = {
     rowSelection: rowSelection
       ? {
-          type: 'checkbox',
-          selectedRowKeys: field?.data?.selectedRowKeys || [],
-          onChange(selectedRowKeys: any[], selectedRows: any[]) {
-            field.data = field.data || {};
-            field.data.selectedRowKeys = selectedRowKeys;
-            onRowSelectionChange?.(selectedRowKeys, selectedRows);
-          },
-          renderCell: (checked, record, index, originNode) => {
-            if (!dragSort && !showIndex) {
-              return originNode;
-            }
-            const current = props?.pagination?.current;
-            const pageSize = props?.pagination?.pageSize || 20;
-            if (current) {
-              index = index + (current - 1) * pageSize;
-            }
-            return (
-              <div
-                className={classNames(
-                  checked ? 'checked' : null,
-                  css`
+        type: 'checkbox',
+        selectedRowKeys: field?.data?.selectedRowKeys || [],
+        onChange(selectedRowKeys: any[], selectedRows: any[]) {
+          field.data = field.data || {};
+          field.data.selectedRowKeys = selectedRowKeys;
+          onRowSelectionChange?.(selectedRowKeys, selectedRows);
+        },
+        renderCell: (checked, record, index, originNode) => {
+          if (!dragSort && !showIndex) {
+            return originNode;
+          }
+          const current = props?.pagination?.current;
+          const pageSize = props?.pagination?.pageSize || 20;
+          if (current) {
+            index = index + (current - 1) * pageSize;
+          }
+          return (
+            <div
+              className={classNames(
+                checked ? 'checked' : null,
+                css`
                     position: relative;
                     display: flex;
                     align-items: center;
@@ -213,27 +258,27 @@ export const Table: any = observer((props: any) => {
                       }
                     }
                   `,
-                )}
-              >
-                <div
-                  className={classNames(
-                    checked ? 'checked' : null,
-                    css`
+              )}
+            >
+              <div
+                className={classNames(
+                  checked ? 'checked' : null,
+                  css`
                       position: relative;
                       display: flex;
                       align-items: center;
                       justify-content: space-evenly;
                     `,
-                  )}
-                >
-                  {dragSort && <SortHandle />}
-                  {showIndex && <TableIndex index={index} />}
-                </div>
-                <div
-                  className={classNames(
-                    'nb-origin-node',
-                    checked ? 'checked' : null,
-                    css`
+                )}
+              >
+                {dragSort && <SortHandle id={getRowKey(record)} />}
+                {showIndex && <TableIndex index={index} />}
+              </div>
+              <div
+                className={classNames(
+                  'nb-origin-node',
+                  checked ? 'checked' : null,
+                  css`
                       position: absolute;
                       right: 50%;
                       transform: translateX(50%);
@@ -241,20 +286,18 @@ export const Table: any = observer((props: any) => {
                         display: none;
                       }
                     `,
-                  )}
-                >
-                  {originNode}
-                </div>
+                )}
+              >
+                {originNode}
               </div>
-            );
-          },
-          ...rowSelection,
-        }
+            </div>
+          );
+        },
+        ...rowSelection,
+      }
       : undefined,
   };
-  const defaultRowKey = (record: any) => {
-    return field.value?.indexOf?.(record);
-  };
+
   return (
     <div
       className={css`
@@ -264,20 +307,9 @@ export const Table: any = observer((props: any) => {
         }
       `}
     >
-      <ReactDragListView
-        handleSelector={'.drag-handle'}
-        onDragEnd={async (fromIndex, toIndex) => {
-          const from = field.value[fromIndex];
-          const to = field.value[toIndex];
-          field.move(fromIndex, toIndex);
-          onRowDragEnd({ fromIndex, toIndex, from, to });
-        }}
-        lineClassName={css`
-          border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;
-        `}
-      >
+      <SortableContext items={field.value.map(getRowKey)}>
         <AntdTable
-          rowKey={defaultRowKey}
+          rowKey={rowKey ?? defaultRowKey}
           {...others}
           {...restProps}
           pagination={paginationProps}
@@ -290,7 +322,7 @@ export const Table: any = observer((props: any) => {
           columns={columns}
           dataSource={field?.value?.slice?.()}
         />
-      </ReactDragListView>
+      </SortableContext>
     </div>
   );
 });
