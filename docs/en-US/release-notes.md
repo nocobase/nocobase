@@ -4,6 +4,7 @@
 
 ### New features
 
+- Form validation
 - Actions: Print, Refresh
 
 ### Details
