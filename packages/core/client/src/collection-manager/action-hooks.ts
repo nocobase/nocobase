@@ -285,8 +285,8 @@ export const useCreateActionAndRefreshCM = () => {
   const { refreshCM } = useCollectionManager();
   return {
     async run() {
-      await refreshCM();
       await run();      
+      await refreshCM();
     },
   };
 };
@@ -296,8 +296,8 @@ export const useUpdateActionAndRefreshCM = () => {
   const { refreshCM } = useCollectionManager();
   return {
     async run() {
-      await refreshCM();
       await run();
+      await refreshCM();
     },
   };
 };
@@ -307,8 +307,8 @@ export const useDestroyActionAndRefreshCM = () => {
   const { refreshCM } = useCollectionManager();
   return {
     async run() {
-      await refreshCM();
       await run();
+      await refreshCM();
     },
   };
 };
@@ -317,9 +317,9 @@ export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
   const { refreshCM } = useCollectionManager();
   return {
-    async run() {
-      await refreshCM();
+    async run() {      
       await run();
+      await refreshCM();
     },
   };
 };
