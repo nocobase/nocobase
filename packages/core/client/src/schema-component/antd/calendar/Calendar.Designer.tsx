@@ -11,7 +11,9 @@ import { useSchemaTemplate } from '../../../schema-templates';
 const useOptions = () => {
   const compile = useCompile();
   const { fields } = useCollection();
-  const options = fields?.map((field) => {
+  const options = fields
+  ?.filter((field) => field.type === 'string')
+  ?.map((field) => {
     return {
       value: field.name,
       label: compile(field?.uiSchema?.title),
