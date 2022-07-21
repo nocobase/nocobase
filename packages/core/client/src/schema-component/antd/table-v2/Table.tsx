@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { useMemoizedFn } from 'ahooks';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -118,19 +119,19 @@ const usePaginationProps = (pagination1, pagination2) => {
 
 export const Table: any = observer((props: any) => {
   const field = useField<ArrayField>();
-  const columns = useTableColumns();
-  const { pagination: pagination1, useProps, onChange, ...others1 } = props;
-  const { pagination: pagination2, ...others2 } = useProps?.() || {};
-  const {
+      const columns = useTableColumns();
+      const { pagination: pagination1, useProps, onChange, ...others1 } = props;
+      const { pagination: pagination2, ...others2 } = useProps?.() || {};
+      const {
     dragSort = false,
     showIndex = true,
-    onRowDragEnd,
     onRowSelectionChange,
     onChange: onTableChange,
     rowSelection,
     rowKey,
     ...others
   } = { ...others1, ...others2 } as any;
+  const onRowDragEnd = useMemoizedFn(others.onRowDragEnd)
   const paginationProps = usePaginationProps(pagination1, pagination2);
 
   const components = useMemo(() => {
