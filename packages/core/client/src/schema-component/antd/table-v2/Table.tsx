@@ -69,7 +69,12 @@ const useTableColumns = () => {
 };
 
 
-const activeClass = css`
+const topActiveClass = css`
+  & > td {
+    border-top: 2px solid rgba(241, 139, 98, 0.6) !important;
+  }
+`
+const bottomActiveClass = css`
   & > td {
     border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;
   }
@@ -77,11 +82,13 @@ const activeClass = css`
 
 const SortableRow = (props) => {
   const id = props['data-row-key']
-  const { setNodeRef, isOver, active } = useSortable({
+  const { setNodeRef, isOver, active, over } = useSortable({
     id
   })
 
-  return <tr ref={active?.id !== id ? setNodeRef : null} {...props} className={classNames({ [activeClass]: isOver })} />
+  const className = (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable.index ?? -1) ?  topActiveClass : bottomActiveClass
+
+  return <tr ref={active?.id !== id ? setNodeRef : null} {...props} className={classNames({ [className]: isOver })} />
 }
 
 
