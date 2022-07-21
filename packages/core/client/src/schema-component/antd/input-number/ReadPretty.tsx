@@ -10,11 +10,13 @@ export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) 
   if (!isValid(props.value)) {
     return <div></div>;
   }
-  const precision = Math.max(getNumberPrecision(String(value)), getNumberPrecision(step));
+  // const precision = Math.max(getNumberPrecision(String(value)), getNumberPrecision(step));
+  const precision = getNumberPrecision(step);
   return (
     <div className={'nb-read-pretty-input-number'}>
       {addonBefore}
-      {toFixed(String(value), '.', precision)}
+      {/* {toFixed(String(value), '.', precision)} */}
+      {parseFloat(value).toFixed(precision)}
       {addonAfter}
     </div>
   );
