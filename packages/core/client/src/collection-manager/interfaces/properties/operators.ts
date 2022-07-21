@@ -52,8 +52,8 @@ export const datetime = [
   { label: "{{ t('is after') }}", value: '$dateAfter' },
   { label: "{{ t('is on or after') }}", value: '$dateNotBefore' },
   { label: "{{ t('is on or before') }}", value: '$dateNotAfter' },
-  { label: "{{ t('is empty') }}", value: '$null', noValue: true },
-  { label: "{{ t('is not empty') }}", value: '$notNull', noValue: true },
+  { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
+  { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
 ];
 
 export const number = [
@@ -125,8 +125,8 @@ export const enumType = [
 export const time = [
   { label: '{{t("is")}}', value: '$eq', selected: true },
   { label: '{{t("is not")}}', value: '$neq' },
-  { label: '{{t("is empty")}}', value: '$null', noValue: true },
-  { label: '{{t("is not empty")}}', value: '$notNull', noValue: true },
+  { label: '{{t("is empty")}}', value: '$empty', noValue: true },
+  { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
 export const boolean = [
