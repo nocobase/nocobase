@@ -209,7 +209,7 @@ export const Table: any = observer((props: any) => {
         ),
       },
     };
-  }, [field, onRowDragEnd])
+  }, [field, onRowDragEnd, dragSort])
 
   const defaultRowKey = (record: any) => {
     return field.value?.indexOf?.(record);
