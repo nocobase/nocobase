@@ -19,6 +19,12 @@ const availableActions: {
   //   type: 'old-data',
   //   allowConfigureFields: true,
   // },
+  exportXlsx: {
+    displayName: '{{t("Export")}}',
+    type: 'old-data',
+    aliases: ['export'],
+    allowConfigureFields: true,
+  },
   view: {
     displayName: '{{t("View")}}',
     type: 'old-data',
