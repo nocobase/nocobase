@@ -83,7 +83,7 @@ const bottomActiveClass = css`
 const SortableRow = (props) => {
   const id = props['data-row-key']
   const { setNodeRef, isOver, active, over } = useSortable({
-    id
+    id: id?.toString()
   })
 
   const className = (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable.index ?? -1) ?  topActiveClass : bottomActiveClass
@@ -217,7 +217,7 @@ export const Table: any = observer((props: any) => {
 
   const getRowKey = (record: any) => {
     const key = typeof rowKey === 'string' ? rowKey : (rowKey ?? defaultRowKey)(record)
-    return record?.[key]
+    return record[key]?.toString()
   }
 
   const restProps = {
