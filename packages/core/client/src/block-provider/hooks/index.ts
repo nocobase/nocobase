@@ -387,7 +387,7 @@ export const useUpdateActionProps = () => {
 
 export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
-  const { resource, service, __parent } = useBlockRequestContext();
+  const { resource, service, block, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   return {
     async onClick() {
@@ -395,8 +395,10 @@ export const useDestroyActionProps = () => {
         filterByTk,
       });
       service?.refresh?.();
-      __parent?.service?.refresh?.();
-      setVisible?.(false);
+      if (block !== 'TableField') {
+        __parent?.service?.refresh?.();
+        setVisible?.(false);
+      }
     },
   };
 };
