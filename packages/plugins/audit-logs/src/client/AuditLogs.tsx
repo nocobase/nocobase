@@ -177,6 +177,9 @@ export const AuditLogs: any = () => {
                           openMode: 'drawer',
                         },
                         'x-decorator': 'ACLActionProvider',
+                        'x-acl-action-props': {
+                          skipScopeCheck: true,
+                        },
                         properties: {
                           drawer: {
                             type: 'void',
