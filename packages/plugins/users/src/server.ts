@@ -7,7 +7,6 @@ import * as actions from './actions/users';
 import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
 import * as middlewares from './middlewares';
-import { UserModel } from './models/UserModel';
 
 export interface UserPluginConfig {
   jwt: JwtOptions;
@@ -16,9 +15,12 @@ export interface UserPluginConfig {
 export default class UsersPlugin extends Plugin<UserPluginConfig> {
   public jwtService: JwtService;
 
+  public tokenMiddleware;
+
   constructor(app, options) {
     super(app, options);
     this.jwtService = new JwtService(options?.jwt || {});
+    this.tokenMiddleware = middlewares.parseToken({ plugin: this });
   }
 
   async beforeLoad() {
@@ -42,23 +44,6 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           [Op.eq]: obj.val,
         };
       },
-    });
-    this.db.registerModels({ UserModel });
-    this.db.on('users.afterCreateWithAssociations', async (model, options) => {
-      const { transaction } = options;
-      const repository = this.app.db.getRepository('roles');
-      if (!repository) {
-        return;
-      }
-      const defaultRole = await repository.findOne({
-        filter: {
-          default: true,
-        },
-        transaction,
-      });
-      if (defaultRole && (await model.countRoles({ transaction })) == 0) {
-        await model.addRoles(defaultRole, { transaction });
-      }
     });
 
     this.db.on('afterDefineCollection', (collection: Collection) => {
@@ -100,10 +85,10 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    this.app.resourcer.use(middlewares.parseToken({ plugin: this }));
+    this.app.resourcer.use(this.tokenMiddleware.compose());
 
     const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
-    const loggedInActions = ['signout', 'updateProfile', 'changePassword', 'setDefaultRole'];
+    const loggedInActions = ['signout', 'updateProfile', 'changePassword'];
 
     publicActions.forEach((action) => this.app.acl.allow('users', action));
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
@@ -132,16 +117,13 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
   async install(options) {
     const { rootNickname, rootPassword, rootEmail } = this.getInstallingData(options);
     const User = this.db.getCollection('users');
-    const user = await User.repository.create<UserModel>({
+    const user = await User.repository.create({
       values: {
         email: rootEmail,
         password: rootPassword,
-        nickname: rootNickname,
-        roles: ['root', 'admin', 'member'],
+        nickname: rootNickname
       },
     });
-
-    await user.setDefaultRole('root');
 
     const repo = this.db.getRepository<any>('collections');
     if (repo) {

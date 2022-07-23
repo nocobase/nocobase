@@ -14,6 +14,7 @@
   "dependencies": {
     "@nocobase/acl": "0.7.3-alpha.1",
     "@nocobase/database": "0.7.3-alpha.1",
+    "@nocobase/plugin-users": "0.7.3-alpha.1",
     "@nocobase/server": "0.7.3-alpha.1"
   },
   "repository": {

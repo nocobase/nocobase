@@ -1,13 +1,16 @@
 import { ACL } from '@nocobase/acl';
 import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
-import { changeMockRole, prepareApp } from './prepare';
+import UsersPlugin from '@nocobase/plugin-users';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import { prepareApp } from './prepare';
 
 describe('acl', () => {
   let app: MockServer;
   let db: Database;
   let acl: ACL;
+  let admin;
+  let adminAgent;
 
   let uiSchemaRepository: UiSchemaRepository;
 
@@ -20,38 +23,41 @@ describe('acl', () => {
     db = app.db;
     acl = app.acl;
 
+    const UserRepo = db.getCollection('users').repository;
+    admin = await UserRepo.create({
+      values: {
+        roles: ['admin']
+      }
+    });
+
+    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    adminAgent = app.agent().auth(userPlugin.jwtService.sign({
+      userId: admin.get('id'),
+    }), { type: 'bearer' });
+
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
   it('should works with universal actions', async () => {
     await db.getRepository('roles').create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
-      },
-    });
-
-    const role = await db.getRepository('roles').findOne({
-      filter: {
-        name: 'admin',
+        name: 'new'
       },
     });
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'posts',
         action: 'create',
       }),
     ).toBeNull();
 
     // grant universal action
-    await app
-      .agent()
+    await adminAgent
       .resource('roles')
       .update({
-        resourceIndex: 'admin',
+        resourceIndex: 'new',
         values: {
           strategy: {
             actions: ['create'],
@@ -61,30 +67,26 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'posts',
         action: 'create',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'posts',
       action: 'create',
     });
   });
 
   it('should deny when resource action has no resource', async () => {
-    const role = await db.getRepository('roles').create({
+    await db.getRepository('roles').create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
+        name: 'new',
         strategy: {
           actions: ['update:own', 'destroy:own', 'create', 'view'],
         },
       },
     });
-
-    changeMockRole('admin');
 
     // create c1 collection
     await db.getRepository('collections').create({
@@ -102,9 +104,8 @@ describe('acl', () => {
       },
     });
 
-    await app
-      .agent()
-      .resource('roles.resources', 'admin')
+    await adminAgent
+      .resource('roles.resources', 'new')
       .create({
         values: {
           name: 'c1',
@@ -115,7 +116,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'c1',
         action: 'list',
       }),
@@ -125,16 +126,12 @@ describe('acl', () => {
   it('should works with resources actions', async () => {
     const role = await db.getRepository('roles').create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
+        name: 'new',
         strategy: {
           actions: ['list'],
         },
       },
     });
-
-    changeMockRole('admin');
 
     // create c1 collection
     await db.getRepository('collections').create({
@@ -153,8 +150,7 @@ describe('acl', () => {
     });
 
     // create c1 published scope
-    await app
-      .agent()
+    const { body: { data: publishedScope } } = await adminAgent
       .resource('rolesResourcesScopes')
       .create({
         values: {
@@ -166,12 +162,11 @@ describe('acl', () => {
         },
       });
 
-    const publishedScope = await db.getRepository('rolesResourcesScopes').findOne();
+    // await db.getRepository('rolesResourcesScopes').findOne();
 
     // set admin resources
-    await app
-      .agent()
-      .resource('roles.resources', 'admin')
+    await adminAgent
+      .resource('roles.resources', 'new')
       .create({
         values: {
           name: 'c1',
@@ -179,7 +174,7 @@ describe('acl', () => {
           actions: [
             {
               name: 'create',
-              scope: publishedScope.get('id'),
+              scope: publishedScope.id,
             },
             {
               name: 'view',
@@ -191,12 +186,12 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'c1',
         action: 'create',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'c1',
       action: 'create',
       params: {
@@ -206,12 +201,12 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'c1',
         action: 'view',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'c1',
       action: 'view',
       params: {
@@ -220,8 +215,7 @@ describe('acl', () => {
     });
 
     // revoke action
-    const response = await app
-      .agent()
+    const response = await adminAgent
       .resource('roles.resources', role.get('name'))
       .list({
         appends: ['actions'],
@@ -232,8 +226,7 @@ describe('acl', () => {
     const actions = response.body.data[0].actions;
     const collectionName = response.body.data[0].name;
 
-    await app
-      .agent()
+    await adminAgent
       .resource('roles.resources', role.get('name'))
       .update({
         filterByTk: collectionName,
@@ -251,7 +244,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'c1',
         action: 'create',
       }),
@@ -259,11 +252,9 @@ describe('acl', () => {
   });
 
   it('should revoke resource when collection destroy', async () => {
-    const role = await db.getRepository('roles').create({
+    await db.getRepository('roles').create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
+        name: 'new'
       },
     });
 
@@ -281,11 +272,10 @@ describe('acl', () => {
       },
     });
 
-    await app
-      .agent()
+    await adminAgent
       .resource('roles.resources')
       .create({
-        associatedIndex: role.get('name') as string,
+        associatedIndex: 'new',
         values: {
           name: 'posts',
           usingActionsConfig: true,
@@ -300,7 +290,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'posts',
         action: 'view',
       }),
@@ -314,7 +304,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'posts',
         action: 'view',
       }),
@@ -324,15 +314,7 @@ describe('acl', () => {
   it('should revoke actions when not using actions config', async () => {
     await db.getRepository('roles').create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
-      },
-    });
-
-    const role = await db.getRepository('roles').findOne({
-      filter: {
-        name: 'admin',
+        name: 'new'
       },
     });
 
@@ -343,11 +325,10 @@ describe('acl', () => {
       },
     });
 
-    await app
-      .agent()
+    await adminAgent
       .resource('roles.resources')
       .create({
-        associatedIndex: role.get('name') as string,
+        associatedIndex: 'new',
         values: {
           name: 'posts',
           usingActionsConfig: true,
@@ -361,25 +342,24 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'posts',
         action: 'create',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'posts',
       action: 'create',
     });
 
-    await app
-      .agent()
-      .resource('roles.resources', role.get('name'))
+    await adminAgent
+      .resource('roles.resources', 'new')
       .update({
         filterByTk: (
           await db.getRepository('rolesResources').findOne({
             filter: {
               name: 'posts',
-              roleName: 'admin',
+              roleName: 'new',
             },
           })
         ).get('name') as string,
@@ -390,21 +370,20 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'posts',
         action: 'create',
       }),
     ).toBeNull();
 
-    await app
-      .agent()
-      .resource('roles.resources', role.get('name'))
+    await adminAgent
+      .resource('roles.resources', 'new')
       .update({
         filterByTk: (
           await db.getRepository('rolesResources').findOne({
             filter: {
               name: 'posts',
-              roleName: 'admin',
+              roleName: 'new',
             },
           })
         ).get('name') as string,
@@ -415,23 +394,21 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'posts',
         action: 'create',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'posts',
       action: 'create',
     });
   });
 
   it('should add fields when field created', async () => {
-    const role = await db.getRepository('roles').create({
+    await db.getRepository('roles').create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
+        name: 'new'
       },
     });
 
@@ -449,11 +426,10 @@ describe('acl', () => {
       },
     });
 
-    await app
-      .agent()
+    await adminAgent
       .resource('roles.resources')
       .create({
-        associatedIndex: role.get('name') as string,
+        associatedIndex: 'new',
         values: {
           name: 'posts',
           usingActionsConfig: true,
@@ -467,7 +443,7 @@ describe('acl', () => {
       });
 
     const allowFields = acl.can({
-      role: 'admin',
+      role: 'new',
       resource: 'posts',
       action: 'view',
     })['params']['fields'];
@@ -483,7 +459,7 @@ describe('acl', () => {
     });
 
     const newAllowFields = acl.can({
-      role: 'admin',
+      role: 'new',
       resource: 'posts',
       action: 'view',
     })['params']['fields'];
@@ -494,18 +470,14 @@ describe('acl', () => {
   it('should get role menus', async () => {
     const role = await db.getRepository('roles').create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
+        name: 'new',
         strategy: {
           actions: ['view'],
         },
       },
     });
 
-    changeMockRole('admin');
-
-    const menuResponse = await app.agent().resource('roles.menuUiSchemas', 'admin').list();
+    const menuResponse = await adminAgent.resource('roles.menuUiSchemas', 'new').list();
 
     expect(menuResponse.statusCode).toEqual(200);
   });
@@ -513,16 +485,23 @@ describe('acl', () => {
   it('should toggle role menus', async () => {
     const role = await db.getRepository('roles').create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
+        name: 'new',
         strategy: {
           actions: ['*'],
         },
       },
     });
+    const UserRepo = db.getCollection('users').repository;
+    const user = await UserRepo.create({
+      values: {
+        roles: ['new']
+      }
+    });
 
-    changeMockRole('admin');
+    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    const userAgent = app.agent().auth(userPlugin.jwtService.sign({
+      userId: user.get('id'),
+    }), { type: 'bearer' });
 
     const schema = {
       'x-uid': 'test',
@@ -530,9 +509,9 @@ describe('acl', () => {
 
     await uiSchemaRepository.insert(schema);
 
-    const response = await app
-      .agent()
-      .resource('roles.menuUiSchemas', 'admin')
+    const response = await userAgent
+      // @ts-ignore
+      .resource('roles.menuUiSchemas', 'new')
       .toggle({
         values: { tk: 'test' },
       });
@@ -543,9 +522,7 @@ describe('acl', () => {
   it('should sync data to acl before app start', async () => {
     const role = await db.getRepository('roles').create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
+        name: 'new',
         resources: [
           {
             name: 'posts',
@@ -562,20 +539,20 @@ describe('acl', () => {
       hooks: false,
     });
 
-    expect(acl.getRole('admin')).toBeUndefined();
+    expect(acl.getRole('new')).toBeUndefined();
 
     await app.start();
 
-    expect(acl.getRole('admin')).toBeDefined();
+    expect(acl.getRole('new')).toBeDefined();
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'posts',
         action: 'view',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'posts',
       action: 'view',
     });

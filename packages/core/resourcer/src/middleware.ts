@@ -1,6 +1,7 @@
 import { ActionName } from './action';
 import { requireModule } from './utils';
 import { HandlerType } from './resourcer';
+import compose from 'koa-compose';
 
 export type MiddlewareType = string | string[] | HandlerType | HandlerType[] | MiddlewareOptions | MiddlewareOptions[];
 
@@ -73,3 +74,19 @@ export class Middleware {
 }
 
 export default Middleware;
+
+export class MiddlewareManager {
+  protected middlewares: HandlerType[] = [];
+
+  compose() {
+    return (ctx, next) => compose(this.middlewares)(ctx, next);
+  }
+
+  use(middleware: HandlerType) {
+    this.middlewares.push(middleware);
+  }
+
+  unuse(middleware: HandlerType) {
+    this.middlewares.splice(this.middlewares.indexOf(middleware), 1);
+  }
+}

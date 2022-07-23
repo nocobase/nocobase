@@ -1,32 +1,39 @@
 import { ACL } from '@nocobase/acl';
 import { Database, Model } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
-import { changeMockUser, prepareApp } from './prepare';
+import UsersPlugin from '@nocobase/plugin-users';
+import { prepareApp } from './prepare';
 
 describe('middleware', () => {
   let app: MockServer;
   let role: Model;
   let db: Database;
   let acl: ACL;
+  let admin;
+  let adminAgent;
 
   beforeEach(async () => {
     app = await prepareApp();
     db = app.db;
     acl = app.acl;
 
-    await db.getRepository('roles').create({
-      values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
-      },
-    });
-
     role = await db.getRepository('roles').findOne({
       filter: {
         name: 'admin',
       },
     });
+
+    const UserRepo = db.getCollection('users').repository;
+    admin = await UserRepo.create({
+      values: {
+        roles: ['admin']
+      }
+    });
+
+    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    adminAgent = app.agent().auth(userPlugin.jwtService.sign({
+      userId: admin.get('id'),
+    }), { type: 'bearer' });
 
     await db.getRepository('collections').create({
       values: {
@@ -82,7 +89,7 @@ describe('middleware', () => {
       },
     });
 
-    const response = await app.agent().resource('posts').create({
+    const response = await adminAgent.resource('posts').create({
       values: {},
     });
 
@@ -90,8 +97,7 @@ describe('middleware', () => {
   });
 
   it('should limit fields on view actions', async () => {
-    await app
-      .agent()
+    await adminAgent
       .resource('roles.resources', role.get('name'))
       .create({
         values: {
@@ -110,8 +116,7 @@ describe('middleware', () => {
         },
       });
 
-    await app
-      .agent()
+    await adminAgent
       .resource('posts')
       .create({
         values: {
@@ -124,10 +129,10 @@ describe('middleware', () => {
     expect(post.get('title')).toEqual('post-title');
     expect(post.get('description')).toEqual('post-description');
 
-    const response = await app.agent().resource('posts').list({});
+    const response = await adminAgent.resource('posts').list({});
     expect(response.statusCode).toEqual(200);
 
-    const data = response.body.data[0];
+    const [data] = response.body.data;
 
     expect(data['id']).not.toBeUndefined();
     expect(data['title']).toEqual('post-title');
@@ -135,12 +140,7 @@ describe('middleware', () => {
   });
 
   it('should parse template value on action params', async () => {
-    changeMockUser({
-      id: 2,
-    });
-
-    const res = await app
-      .agent()
+    const res = await adminAgent
       .resource('rolesResourcesScopes')
       .create({
         values: {
@@ -151,8 +151,7 @@ describe('middleware', () => {
         },
       });
 
-    await app
-      .agent()
+    await adminAgent
       .resource('roles.resources', role.get('name'))
       .create({
         values: {
@@ -172,8 +171,7 @@ describe('middleware', () => {
         },
       });
 
-    await app
-      .agent()
+    await adminAgent
       .resource('posts')
       .create({
         values: {
@@ -183,8 +181,7 @@ describe('middleware', () => {
         },
       });
 
-    await app
-      .agent()
+    await adminAgent
       .resource('posts')
       .create({
         values: {
@@ -194,14 +191,13 @@ describe('middleware', () => {
         },
       });
 
-    const response = await app.agent().resource('posts').list();
+    const response = await adminAgent.resource('posts').list();
     const data = response.body.data;
     expect(data.length).toEqual(1);
   });
 
   it('should change fields params to whitelist in create action', async () => {
-    await app
-      .agent()
+    await adminAgent
       .resource('roles.resources', role.get('name'))
       .create({
         values: {
@@ -216,8 +212,7 @@ describe('middleware', () => {
         },
       });
 
-    await app
-      .agent()
+    await adminAgent
       .resource('posts')
       .create({
         values: {

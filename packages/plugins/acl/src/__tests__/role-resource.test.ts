@@ -1,4 +1,5 @@
 import { Database, Model } from '@nocobase/database';
+import UsersPlugin from '@nocobase/plugin-users';
 import { CollectionRepository } from '@nocobase/plugin-collection-manager';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
@@ -7,6 +8,8 @@ describe('role resource api', () => {
   let app: MockServer;
   let db: Database;
   let role: Model;
+  let admin;
+  let adminAgent;
 
   afterEach(async () => {
     await app.destroy();
@@ -16,19 +19,23 @@ describe('role resource api', () => {
     app = await prepareApp();
     db = app.db;
 
-    await db.getRepository('roles').create({
-      values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
-      },
-    });
-
     role = await db.getRepository('roles').findOne({
       filter: {
         name: 'admin',
       },
     });
+
+    const UserRepo = db.getCollection('users').repository;
+    admin = await UserRepo.create({
+      values: {
+        roles: ['admin']
+      }
+    });
+
+    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    adminAgent = app.agent().auth(userPlugin.jwtService.sign({
+      userId: admin.get('id'),
+    }), { type: 'bearer' });
   });
 
   it('should grant resource by createRepository', async () => {
@@ -91,8 +98,7 @@ describe('role resource api', () => {
     });
 
     // get collections list
-    let response = await app
-      .agent()
+    let response = await adminAgent
       .resource('roles.collections', 'admin')
       .list({
         filter: {
@@ -119,8 +125,7 @@ describe('role resource api', () => {
     ]);
 
     // set resource actions
-    response = await app
-      .agent()
+    response = await adminAgent
       .resource('roles.resources', 'admin')
       .create({
         values: {
@@ -137,8 +142,7 @@ describe('role resource api', () => {
     expect(response.statusCode).toEqual(200);
 
     // get collections list
-    response = await app
-      .agent()
+    response = await adminAgent
       .resource('roles.collections')
       .list({
         associatedIndex: role.get('name') as string,
@@ -149,8 +153,7 @@ describe('role resource api', () => {
 
     expect(response.body.data[0]['usingConfig']).toEqual('resourceAction');
 
-    response = await app
-      .agent()
+    response = await adminAgent
       .resource('roles.resources')
       .list({
         associatedIndex: role.get('name') as string,
@@ -164,8 +167,7 @@ describe('role resource api', () => {
     expect(resourceAction['name']).toEqual('create');
 
     // update resource actions
-    response = await app
-      .agent()
+    response = await adminAgent
       .resource('roles.resources')
       .update({
         associatedIndex: role.get('name') as string,
