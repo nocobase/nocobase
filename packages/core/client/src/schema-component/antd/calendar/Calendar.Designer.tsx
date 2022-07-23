@@ -66,9 +66,7 @@ export const CalendarDesigner = () => {
         onChange={(start) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['start'] = start;
-          field.decoratorProps.params = fieldNames;
-          fieldSchema['x-decorator-props']['params'] = fieldNames;
-          // Select切换option后value未按照预期切换，固增加以下代码
+          field.decoratorProps.fieldNames = fieldNames;
           fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
           service.refresh();
           dn.emit('patch', {
@@ -87,9 +85,7 @@ export const CalendarDesigner = () => {
         onChange={(end) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['end'] = end;
-          field.decoratorProps.params = fieldNames;
-          fieldSchema['x-decorator-props']['params'] = fieldNames;
-          // Select切换option后value未按照预期切换，固增加以下代码
+          field.decoratorProps.fieldNames = fieldNames;
           fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
           service.refresh();
           dn.emit('patch', {
