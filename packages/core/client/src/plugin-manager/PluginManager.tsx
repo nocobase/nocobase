@@ -20,7 +20,7 @@ export const usePrefixCls = (
 
 type PluginManagerType = {
   Toolbar?: React.FC<ToolbarProps> & {
-    Item?: React.FC<MenuItemProps & { selected?: boolean }>;
+    Item?: React.FC<MenuItemProps & { selected?: boolean, subtitle?: string }>;
   };
 };
 
