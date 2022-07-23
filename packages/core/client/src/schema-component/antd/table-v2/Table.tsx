@@ -4,7 +4,7 @@ import { ArrayField } from '@formily/core';
 import { ISchema, observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
@@ -309,6 +309,15 @@ export const Table: any = observer((props: any) => {
       : undefined,
   };
 
+  const SortableWrapper = useCallback<React.FC>(({ children }) => {
+    return dragSort ? React.createElement(SortableContext, {
+      items: field.value.map(getRowKey),
+      children: children,
+    }) : React.createElement(React.Fragment, {
+      children
+    })
+  }, [field, dragSort])
+
   return (
     <div
       className={css`
@@ -318,7 +327,7 @@ export const Table: any = observer((props: any) => {
         }
       `}
     >
-      <SortableContext items={field.value.map(getRowKey)}>
+      <SortableWrapper>
         <AntdTable
           rowKey={rowKey ?? defaultRowKey}
           {...others}
@@ -333,7 +342,7 @@ export const Table: any = observer((props: any) => {
           columns={columns}
           dataSource={field?.value?.slice?.()}
         />
-      </SortableContext>
+      </SortableWrapper>
     </div>
   );
 });
