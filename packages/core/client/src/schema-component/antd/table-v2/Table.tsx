@@ -138,7 +138,7 @@ export const Table: any = observer((props: any) => {
     rowKey,
     ...others
   } = { ...others1, ...others2 } as any;
-  const onRowDragEnd = useMemoizedFn(others.onRowDragEnd)
+  const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}))
   const paginationProps = usePaginationProps(pagination1, pagination2);
 
   const components = useMemo(() => {
