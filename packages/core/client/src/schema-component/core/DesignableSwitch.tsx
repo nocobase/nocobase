@@ -14,14 +14,14 @@ export const DesignableSwitch = () => {
   }
 
   // 快捷键切换编辑状态
-  useHotkeys('ctrl+shift+E', () => setDesignable(!designable), [designable])
+  useHotkeys('Ctrl+E+D', () => setDesignable(!designable), [designable])
 
   return (
     <PluginManager.Toolbar.Item
       selected={designable}
       icon={<HighlightOutlined />}
       title={t('UI Editor')}
-      subtitle={'ctrl+shift+E'}
+      subtitle={'Ctrl+E+D'}
       style={style}
       onClick={() => {
         setDesignable(!designable);
