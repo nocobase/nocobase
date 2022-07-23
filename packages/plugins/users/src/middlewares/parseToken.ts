@@ -2,7 +2,7 @@ import { Context, Next } from '@nocobase/actions';
 import { MiddlewareManager } from '@nocobase/resourcer';
 import UsersPlugin from '../server';
 
-export function token(options?: { plugin: UsersPlugin }) {
+export function parseToken(options?: { plugin: UsersPlugin }) {
   const middleware = new MiddlewareManager();
   middleware.use(async function (ctx: Context, next: Next) {
     const user = await findUserByToken(ctx, options.plugin);
