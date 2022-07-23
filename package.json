@@ -43,7 +43,5 @@
     "pretty-format": "^24.0.0",
     "pretty-quick": "^3.1.0"
   },
-  "dependencies": {
-    "react-hotkeys-hook": "^3.4.7"
-  }
+  "dependencies": {}
 }
