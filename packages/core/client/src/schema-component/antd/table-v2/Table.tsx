@@ -216,8 +216,11 @@ export const Table: any = observer((props: any) => {
   };
 
   const getRowKey = (record: any) => {
-    const key = typeof rowKey === 'string' ? rowKey : (rowKey ?? defaultRowKey)(record)
-    return record[key]?.toString()
+    if (typeof rowKey === 'string') {
+      return record[rowKey]?.toString();
+    } else {
+      return (rowKey ?? defaultRowKey)(record)?.toString()
+    }
   }
 
   const restProps = {
