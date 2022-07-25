@@ -10,6 +10,7 @@ describe('configuration', () => {
   let adminAgent;
   let user;
   let userAgent;
+  let guestAgent;
 
   afterEach(async () => {
     await app.destroy();
@@ -52,11 +53,18 @@ describe('configuration', () => {
     userAgent = app.agent().auth(userPlugin.jwtService.sign({
       userId: user.get('id'),
     }), { type: 'bearer' });
+
+    guestAgent = app.agent();
   });
 
   it('should list collections', async () => {
     expect((await userAgent.resource('collections').create()).statusCode).toEqual(403);
     expect((await userAgent.resource('collections').list()).statusCode).toEqual(200);
+  });
+
+  it('should not create/list collections', async () => {
+    expect((await guestAgent.resource('collections').create()).statusCode).toEqual(403);
+    expect((await guestAgent.resource('collections').list()).statusCode).toEqual(403);
   });
 
   it('should allow when role has allowConfigure with true value', async () => {
