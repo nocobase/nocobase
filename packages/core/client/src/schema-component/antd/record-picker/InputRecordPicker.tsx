@@ -1,6 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
+import { differenceBy, unionBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTableSelectorProps as useTsp } from '../../../block-provider/TableSelectorProvider';
 import { CollectionProvider, useCollection } from '../../../collection-manager';
@@ -8,7 +9,6 @@ import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
 import { useFieldNames } from './useFieldNames';
-import { differenceBy, unionBy } from 'lodash';
 
 const RecordPickerContext = createContext(null);
 

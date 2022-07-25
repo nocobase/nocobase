@@ -98,7 +98,8 @@ export const TableColumnDesigner = (props) => {
           value={fieldNames?.['label']}
           onChange={(label) => {
             const fieldNames = {
-              ...fieldSchema['x-component-props']['fieldNames'],
+              ...collectionField?.uiSchema?.['x-component-props']['fieldNames'],
+              ...fieldSchema?.['x-component-props']?.['fieldNames'],
               label,
             };
             fieldSchema['x-component-props']['fieldNames'] = fieldNames;
