@@ -83,6 +83,8 @@ FormItem.Designer = (props) => {
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
   }
+
+  console.log('FormItem.Designer', collectionField?.uiSchema);
   
   return (
     <GeneralSchemaDesigner>
@@ -323,6 +325,38 @@ FormItem.Designer = (props) => {
             refresh();
           }}
         />
+      )}
+      {form && !form?.readPretty && collectionField?.uiSchema?.type && (
+        <SchemaSettings.ModalItem
+        title={t('Set default value')}
+        components={{ ArrayCollapse, FormLayout }}
+        schema={{
+          type: 'object',
+          title: t('Set default value'),
+          properties: {
+            default: {
+              ...collectionField.uiSchema,
+              name: 'default',
+              title: t('Default value'),
+              'x-decorator': 'FormItem',
+            }
+          }
+        } as ISchema}
+        onSubmit={(v) => {
+          const schema: ISchema = {
+            ['x-uid']: fieldSchema['x-uid'],
+          };
+          if (field.value == null) {
+            field.value = v.default;
+          }
+          fieldSchema.default = v.default;
+          schema.default = v.default;
+          dn.emit('patch', {
+            schema,
+          });
+          refresh();
+        }}
+      />
       )}
       {form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
