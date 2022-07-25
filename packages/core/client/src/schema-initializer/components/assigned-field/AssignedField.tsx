@@ -1,5 +1,6 @@
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
+import { merge } from '@formily/shared';
 import { Cascader, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +19,6 @@ const DYNAMIC_TIME_REG = /\{\{\s*currentTime\s*\}\}/;
 
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
-
   const fieldSchema = useFieldSchema();
   const { name, interface: interfaceType, uiSchema } = useCollectionField();
   const component = useComponent(uiSchema?.['x-component']);
@@ -59,9 +59,10 @@ const InternalField: React.FC = (props) => {
     }
     setRequired();
     // @ts-ignore
-    // field.dataSource = uiSchema.enum;
-    // const originalProps = compile(uiSchema['x-component-props']) || {};
-    // const componentProps = merge(originalProps, field.componentProps || {});
+    field.dataSource = uiSchema.enum;
+    const originalProps = compile(uiSchema['x-component-props']) || {};
+    const componentProps = merge(originalProps, field.componentProps || {});
+    field.componentProps = componentProps;
     // field.component = [component, componentProps];
   }, [JSON.stringify(uiSchema)]);
   if (!uiSchema) {
