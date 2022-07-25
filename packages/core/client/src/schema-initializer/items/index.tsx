@@ -20,7 +20,7 @@ import {
   createTableSelectorSchema,
   useCollectionDataSourceItems,
   useCurrentSchema,
-  useRecordCollectionDataSourceItems,
+  useRecordCollectionDataSourceItems
 } from '../utils';
 
 // Block
@@ -268,9 +268,10 @@ export const KanbanBlockInitializer = (props) => {
                   schema={{
                     properties: {
                       groupField: {
-                        title: t('Group field'),
+                        title: t('Grouping field'),
                         enum: fields,
                         required: true,
+                        description: '{{t("Single select and radio fields can be used as the grouping field")}}',
                         'x-component': 'Select',
                         'x-component-props': {
                           objectValue: true,
