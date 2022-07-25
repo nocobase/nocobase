@@ -2,7 +2,6 @@ import Database, { BelongsToManyRepository } from '@nocobase/database';
 import PluginACL from '@nocobase/plugin-acl';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer, mockServer } from '@nocobase/test';
-import { userPluginConfig } from './utils';
 
 describe('role', () => {
   let api: MockServer;
@@ -13,7 +12,7 @@ describe('role', () => {
   beforeEach(async () => {
     api = mockServer();
     await api.cleanDb();
-    api.plugin(UsersPlugin, userPluginConfig);
+    api.plugin(UsersPlugin);
     api.plugin(PluginACL);
     await api.loadAndInstall();
 
@@ -113,7 +112,7 @@ describe('role', () => {
       .set({
         Authorization: `Bearer ${userToken}`,
       });
- 
+
     expect(response.statusCode).toEqual(200);
 
     const userRoles = await userRolesRepo.find();

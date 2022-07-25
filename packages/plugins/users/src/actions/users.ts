@@ -150,15 +150,3 @@ export async function changePassword(ctx: Context, next: Next) {
   ctx.body = ctx.state.currentUser.toJSON();
   await next();
 }
-
-export async function setDefaultRole(ctx: Context, next: Next) {
-  const {
-    values: { roleName },
-  } = ctx.action.params;
-
-  await ctx.state.currentUser.setDefaultRole(roleName);
-
-  ctx.body = 'ok';
-
-  await next();
-}

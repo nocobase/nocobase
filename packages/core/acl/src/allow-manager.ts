@@ -19,7 +19,9 @@ export class AllowManager {
       }
 
       const roleInstance = await ctx.db.getRepository('roles').findOne({
-        name: roleName,
+        filter: {
+          name: roleName
+        },
       });
 
       return roleInstance?.get('allowConfigure');

@@ -1,15 +1,16 @@
-import { MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
-import { ACL } from '@nocobase/acl';
-import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
-import { changeMockRole, prepareApp } from './prepare';
+import UsersPlugin from '@nocobase/plugin-users';
+import { MockServer } from '@nocobase/test';
+import { prepareApp } from './prepare';
 
 describe('configuration', () => {
   let app: MockServer;
   let db: Database;
-  let acl: ACL;
-
-  let uiSchemaRepository: UiSchemaRepository;
+  let admin;
+  let adminAgent;
+  let user;
+  let userAgent;
+  let guestAgent;
 
   afterEach(async () => {
     await app.destroy();
@@ -18,28 +19,56 @@ describe('configuration', () => {
   beforeEach(async () => {
     app = await prepareApp();
     db = app.db;
-    acl = app.acl;
 
-    uiSchemaRepository = db.getRepository('uiSchemas');
-  });
-
-  it('should list collections', async () => {
-    expect((await app.agent().resource('collections').create()).statusCode).toEqual(403);
-    expect((await app.agent().resource('collections').list()).statusCode).toEqual(200);
-  });
-
-  it('should allow when role has allowConfigure with true value', async () => {
     await db.getRepository('roles').create({
       values: {
-        name: 'admin1',
-        title: 'admin allowConfigure',
+        name: 'test1',
         allowConfigure: true,
       },
     });
 
-    changeMockRole('admin1');
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test2',
+      },
+    });
 
-    expect((await app.agent().resource('collections').create()).statusCode).toEqual(200);
-    expect((await app.agent().resource('collections').list()).statusCode).toEqual(200);
+    const UserRepo = db.getCollection('users').repository;
+    admin = await UserRepo.create({
+      values: {
+        roles: ['test1']
+      }
+    });
+    user = await UserRepo.create({
+      values: {
+        roles: ['test2']
+      }
+    });
+
+    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    adminAgent = app.agent().auth(userPlugin.jwtService.sign({
+      userId: admin.get('id'),
+    }), { type: 'bearer' });
+
+    userAgent = app.agent().auth(userPlugin.jwtService.sign({
+      userId: user.get('id'),
+    }), { type: 'bearer' });
+
+    guestAgent = app.agent();
+  });
+
+  it('should list collections', async () => {
+    expect((await userAgent.resource('collections').create()).statusCode).toEqual(403);
+    expect((await userAgent.resource('collections').list()).statusCode).toEqual(200);
+  });
+
+  it('should not create/list collections', async () => {
+    expect((await guestAgent.resource('collections').create()).statusCode).toEqual(403);
+    expect((await guestAgent.resource('collections').list()).statusCode).toEqual(403);
+  });
+
+  it('should allow when role has allowConfigure with true value', async () => {
+    expect((await adminAgent.resource('collections').create()).statusCode).toEqual(200);
+    expect((await adminAgent.resource('collections').list()).statusCode).toEqual(200);
   });
 });

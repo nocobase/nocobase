@@ -1,10 +1,14 @@
 import { prepareApp } from './prepare';
 import { MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
+import UsersPlugin from '@nocobase/plugin-users';
 
 describe('scope api', () => {
   let app: MockServer;
   let db: Database;
+
+  let admin;
+  let adminAgent;
 
   afterEach(async () => {
     await app.destroy();
@@ -13,18 +17,22 @@ describe('scope api', () => {
   beforeEach(async () => {
     app = await prepareApp();
     db = app.db;
-    await db.getRepository('roles').create({
+
+    const UserRepo = db.getCollection('users').repository;
+    admin = await UserRepo.create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
-        allowConfigure: true,
-      },
+        roles: ['admin']
+      }
     });
+
+    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    adminAgent = app.agent().auth(userPlugin.jwtService.sign({
+      userId: admin.get('id'),
+    }), { type: 'bearer' });
   });
 
   it('should create scope of resource', async () => {
-    const response = await app
-      .agent()
+    const response = await adminAgent
       .resource('rolesResourcesScopes')
       .create({
         values: {

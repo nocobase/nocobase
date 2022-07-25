@@ -1,6 +1,6 @@
 import { MockServer } from '@nocobase/test';
-import { CollectionRepository } from '@nocobase/plugin-collection-manager';
 import { Database, Model } from '@nocobase/database';
+import UsersPlugin from '@nocobase/plugin-users';
 
 import { prepareApp } from './prepare';
 
@@ -19,32 +19,37 @@ describe('role api', () => {
 
   describe('grant', () => {
     let role: Model;
+    let admin: Model;
+    let adminAgent;
 
     beforeEach(async () => {
-      await db.getRepository('roles').create({
-        values: {
-          name: 'admin',
-          title: 'Admin User',
-          allowConfigure: true,
-        },
-      });
-
       role = await db.getRepository('roles').findOne({
         filter: {
           name: 'admin',
         },
       });
+
+      const UserRepo = db.getCollection('users').repository;
+      admin = await UserRepo.create({
+        values: {
+          roles: ['admin']
+        }
+      });
+
+      const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+      adminAgent = app.agent().auth(userPlugin.jwtService.sign({
+        userId: admin.get('id'),
+      }), { type: 'bearer' });
     });
 
     it('should list actions', async () => {
-      const response = await app.agent().resource('availableActions').list();
+      const response = await adminAgent.resource('availableActions').list();
       expect(response.statusCode).toEqual(200);
     });
 
     it('should grant universal role actions', async () => {
       // grant role actions
-      const response = await app
-        .agent()
+      const response = await adminAgent
         .resource('roles')
         .update({
           values: {
