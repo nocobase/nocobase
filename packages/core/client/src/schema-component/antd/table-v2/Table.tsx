@@ -81,14 +81,14 @@ const bottomActiveClass = css`
 `
 
 const SortableRow = (props) => {
-  const id = props['data-row-key']
+  const id = props['data-row-key']?.toString()
   const { setNodeRef, isOver, active, over } = useSortable({
-    id: id?.toString()
+    id
   })
 
   const className = (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable.index ?? -1) ?  topActiveClass : bottomActiveClass
 
-  return <tr ref={active?.id !== id ? setNodeRef : null} {...props} className={classNames({ [className]: isOver })} />
+  return <tr ref={active?.id !== id ? setNodeRef : null} {...props} className={classNames({ [className]: active && isOver })} />
 }
 
 
