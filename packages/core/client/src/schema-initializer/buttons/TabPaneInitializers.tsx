@@ -13,13 +13,15 @@ export const TabPaneInitializers = () => {
     return {
       async run() {
         await form.submit();
-        const { title } = form.values;
+        const { title, icon } = form.values;
         insertBeforeEnd({
           type: 'void',
           title,
           'x-component': 'Tabs.TabPane',
           'x-designer': 'Tabs.Designer',
-          'x-component-props': {},
+          'x-component-props': {
+            icon,
+          },
           properties: {
             grid: {
               type: 'void',
@@ -65,6 +67,11 @@ export const TabPaneInitializers = () => {
                     title: '{{t("Tab name")}}',
                     required: true,
                     'x-component': 'Input',
+                    'x-decorator': 'FormItem',
+                  },
+                  icon: {
+                    title: '{{t("Icon")}}',
+                    'x-component': 'IconPicker',
                     'x-decorator': 'FormItem',
                   },
                   footer: {
