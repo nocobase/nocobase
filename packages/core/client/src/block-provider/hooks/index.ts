@@ -388,13 +388,18 @@ export const useUpdateActionProps = () => {
 
 export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
-  const { resource, service } = useBlockRequestContext();
+  const { resource, service, block, __parent } = useBlockRequestContext();
+  const { setVisible } = useActionContext();
   return {
     async onClick() {
       await resource.destroy({
         filterByTk,
       });
       service?.refresh?.();
+      if (block !== 'TableField') {
+        __parent?.service?.refresh?.();
+        setVisible?.(false);
+      }
     },
   };
 };
