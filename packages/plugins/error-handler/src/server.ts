@@ -27,7 +27,7 @@ export class PluginErrorHandler extends Plugin {
       const model = instance.constructor;
       const collection = this.db.modelCollection.get(model);
       const field = collection.getField(path);
-      const fieldOptions = Schema.compile(field.options, { t: tFunc });
+      const fieldOptions = Schema.compile(field?.options, { t: tFunc });
       const title = lodash.get(fieldOptions, 'uiSchema.title', path);
       return title;
     };
