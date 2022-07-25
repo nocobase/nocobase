@@ -1,4 +1,5 @@
 import { BelongsToManyRepository, Database } from '@nocobase/database';
+import PluginUsers from '@nocobase/plugin-users';
 import PluginACL from '@nocobase/plugin-acl';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
 import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
@@ -24,6 +25,7 @@ describe('server hooks', () => {
 
     app.plugin(UiSchemaStoragePlugin);
     app.plugin(PluginCollectionManager);
+    app.plugin(PluginUsers);
     app.plugin(PluginACL);
 
     await app.loadAndInstall();
