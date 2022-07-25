@@ -54,7 +54,7 @@ export default {
   "Select data source": "Select data source",
   "Calendar": "Calendar",
   "Kanban": "Kanban",
-  "Select group field": "Select group field",
+  "Select grouping field": "Select grouping field",
   "Media": "Media",
   "Markdown": "Markdown",
   "Wysiwyg": "Wysiwyg",
@@ -373,7 +373,7 @@ export default {
   "Reference template": "Reference template",
   "Create calendar block": "Create calendar block",
   "Create kanban block": "Create kanban block",
-  "Group field": "Group field",
+  "Grouping field": "Grouping field",
   "Tab name": "Tab name",
   "Current record blocks": "Current record blocks",
   "Popup message": "Popup message",
@@ -554,4 +554,5 @@ export default {
   "Enabled languages": "Enabled languages",
   "View all plugins": "View all plugins",
   "Print": "Print",
+  'Single select and radio fields can be used as the grouping field': 'Single select and radio fields can be used as the grouping field',
 }
