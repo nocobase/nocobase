@@ -43,7 +43,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
                 ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
               }}
             >
-              {compile(record?.[fieldNames?.label || 'label'])}
+              {compile(record?.[fieldNames?.label || 'label']) || record?.[fieldNames?.value || 'value'] || record?.id}
             </a>
           </span>
           {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>, </span> : null}

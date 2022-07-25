@@ -3,6 +3,7 @@ import { ArrayCollapse, FormItem as Item, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
@@ -11,7 +12,6 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
-import * as _ from 'lodash';
 
 const divWrap = (schema: ISchema) => {
   return {
@@ -83,7 +83,7 @@ FormItem.Designer = (props) => {
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
   }
-  
+
   return (
     <GeneralSchemaDesigner>
       {collectionField && (
@@ -208,92 +208,94 @@ FormItem.Designer = (props) => {
         <SchemaSettings.ModalItem
           title={t('Set validation rules')}
           components={{ ArrayCollapse, FormLayout }}
-          schema={{
-            type: 'object',
-            title: t('Set validation rules'),
-            properties: {
-              rules: {
-                type: 'array',
-                default: fieldSchema?.['x-validator'],
-                'x-component': 'ArrayCollapse',
-                'x-decorator': 'FormItem',
-                'x-component-props': {
-                  accordion: true,
-                },
-                maxItems: 3,
-                items: {
-                  type: 'object',
-                  'x-component': 'ArrayCollapse.CollapsePanel',
+          schema={
+            {
+              type: 'object',
+              title: t('Set validation rules'),
+              properties: {
+                rules: {
+                  type: 'array',
+                  default: fieldSchema?.['x-validator'],
+                  'x-component': 'ArrayCollapse',
+                  'x-decorator': 'FormItem',
                   'x-component-props': {
-                    header: '{{ t("Validation rule") }}',
+                    accordion: true,
                   },
-                  properties: {                    
-                    index: {
-                      type: 'void',
-                      'x-component': 'ArrayCollapse.Index',
+                  maxItems: 3,
+                  items: {
+                    type: 'object',
+                    'x-component': 'ArrayCollapse.CollapsePanel',
+                    'x-component-props': {
+                      header: '{{ t("Validation rule") }}',
                     },
-                    layout: {
-                      type: 'void',
-                      'x-component': 'FormLayout',
-                      'x-component-props': {
-                        labelStyle: {
-                          marginTop: '6px',
-                        },
-                        labelCol: 8,
-                        wrapperCol: 16,
+                    properties: {
+                      index: {
+                        type: 'void',
+                        'x-component': 'ArrayCollapse.Index',
                       },
-                      properties: {
-                        ...validateSchema,
-                        message: {
-                          type: 'string',
-                          title: '{{ t("Error message") }}',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Input.TextArea',
-                          'x-component-props': {
-                            autoSize: {
-                              minRows: 2,
-                              maxRows: 2
-                            }
-                          }
-                        },    
-                      }
+                      layout: {
+                        type: 'void',
+                        'x-component': 'FormLayout',
+                        'x-component-props': {
+                          labelStyle: {
+                            marginTop: '6px',
+                          },
+                          labelCol: 8,
+                          wrapperCol: 16,
+                        },
+                        properties: {
+                          ...validateSchema,
+                          message: {
+                            type: 'string',
+                            title: '{{ t("Error message") }}',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'Input.TextArea',
+                            'x-component-props': {
+                              autoSize: {
+                                minRows: 2,
+                                maxRows: 2,
+                              },
+                            },
+                          },
+                        },
+                      },
+                      remove: {
+                        type: 'void',
+                        'x-component': 'ArrayCollapse.Remove',
+                      },
+                      moveUp: {
+                        type: 'void',
+                        'x-component': 'ArrayCollapse.MoveUp',
+                      },
+                      moveDown: {
+                        type: 'void',
+                        'x-component': 'ArrayCollapse.MoveDown',
+                      },
                     },
-                    remove: {
-                      type: 'void',
-                      'x-component': 'ArrayCollapse.Remove',
-                    },
-                    moveUp: {
-                      type: 'void',
-                      'x-component': 'ArrayCollapse.MoveUp',
-                    },
-                    moveDown: {
-                      type: 'void',
-                      'x-component': 'ArrayCollapse.MoveDown',
-                    },
-                  }
-                },
-                properties: {
-                  add: {
-                    type: 'void',
-                    title: '{{ t("Add validation rule") }}',
-                    'x-component': 'ArrayCollapse.Addition',
-                    'x-reactions': {
-                      dependencies: ['rules'],
-                      fulfill: {
-                        state: {
-                          disabled: '{{$deps[0].length >= 3}}'
-                        }
-                      }
-                    }
                   },
-                }
-              }
-            }
-          } as ISchema}
+                  properties: {
+                    add: {
+                      type: 'void',
+                      title: '{{ t("Add validation rule") }}',
+                      'x-component': 'ArrayCollapse.Addition',
+                      'x-reactions': {
+                        dependencies: ['rules'],
+                        fulfill: {
+                          state: {
+                            disabled: '{{$deps[0].length >= 3}}',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            } as ISchema
+          }
           onSubmit={(v) => {
             const rules = [];
             for (const rule of v.rules) {
-              rules.push(_.pickBy(rule, _.identity))
+              rules.push(_.pickBy(rule, _.identity));
             }
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
@@ -307,13 +309,13 @@ FormItem.Designer = (props) => {
                 if (!!rule.maxValue || !!rule.minValue) {
                   rule['percentMode'] = true;
                 }
-                
+
                 if (rule.percentFormat) {
                   rule['percentFormats'] = true;
                 }
               }
             }
-            const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules)
+            const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules);
             field.validator = concatValidator;
             fieldSchema['x-validator'] = rules;
             schema['x-validator'] = rules;
@@ -365,64 +367,67 @@ FormItem.Designer = (props) => {
                   breakRemoveOn: {
                     'x-component': 'Grid',
                   },
-                })
-              }
+                });
+              },
             });
           }}
         />
       )}
-      {form && !form?.readPretty && collectionField?.interface !== 'o2m' && fieldSchema?.['x-component-props']?.['pattern-disable'] != true && (
-        <SchemaSettings.SelectItem
-          key="pattern"
-          title={t('Pattern')}
-          options={[
-            { label: t('Editable'), value: 'editable' },
-            { label: t('Readonly'), value: 'readonly' },
-            { label: t('Easy-reading'), value: 'read-pretty' },
-          ]}
-          value={readOnlyMode}
-          onChange={(v) => {
-            const schema: ISchema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
+      {form &&
+        !form?.readPretty &&
+        collectionField?.interface !== 'o2m' &&
+        fieldSchema?.['x-component-props']?.['pattern-disable'] != true && (
+          <SchemaSettings.SelectItem
+            key="pattern"
+            title={t('Pattern')}
+            options={[
+              { label: t('Editable'), value: 'editable' },
+              { label: t('Readonly'), value: 'readonly' },
+              { label: t('Easy-reading'), value: 'read-pretty' },
+            ]}
+            value={readOnlyMode}
+            onChange={(v) => {
+              const schema: ISchema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
 
-            switch (v) {
-              case 'readonly': {
-                fieldSchema['x-read-pretty'] = false;
-                fieldSchema['x-disabled'] = true;
-                schema['x-read-pretty'] = false;
-                schema['x-disabled'] = true;
-                field.readPretty = false;
-                field.disabled = true;
-                break;
+              switch (v) {
+                case 'readonly': {
+                  fieldSchema['x-read-pretty'] = false;
+                  fieldSchema['x-disabled'] = true;
+                  schema['x-read-pretty'] = false;
+                  schema['x-disabled'] = true;
+                  field.readPretty = false;
+                  field.disabled = true;
+                  break;
+                }
+                case 'read-pretty': {
+                  fieldSchema['x-read-pretty'] = true;
+                  fieldSchema['x-disabled'] = false;
+                  schema['x-read-pretty'] = true;
+                  schema['x-disabled'] = false;
+                  field.readPretty = true;
+                  break;
+                }
+                default: {
+                  fieldSchema['x-read-pretty'] = false;
+                  fieldSchema['x-disabled'] = false;
+                  schema['x-read-pretty'] = false;
+                  schema['x-disabled'] = false;
+                  field.readPretty = false;
+                  field.disabled = false;
+                  break;
+                }
               }
-              case 'read-pretty': {
-                fieldSchema['x-read-pretty'] = true;
-                fieldSchema['x-disabled'] = false;
-                schema['x-read-pretty'] = true;
-                schema['x-disabled'] = false;
-                field.readPretty = true;
-                break;
-              }
-              default: {
-                fieldSchema['x-read-pretty'] = false;
-                fieldSchema['x-disabled'] = false;
-                schema['x-read-pretty'] = false;
-                schema['x-disabled'] = false;
-                field.readPretty = false;
-                field.disabled = false;
-                break;
-              }
-            }
 
-            dn.emit('patch', {
-              schema,
-            });
+              dn.emit('patch', {
+                schema,
+              });
 
-            dn.refresh();       
-          }}
-        />
-      )}
+              dn.refresh();
+            }}
+          />
+        )}
       {collectionField?.target && fieldSchema['x-component'] === 'CollectionField' && (
         <SchemaSettings.SelectItem
           key="title-field"
@@ -434,15 +439,10 @@ FormItem.Designer = (props) => {
               ['x-uid']: fieldSchema['x-uid'],
             };
             const fieldNames = {
+              ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
               ...field.componentProps.fieldNames,
               label,
             };
-
-            // if (fieldSchema['x-component-props']?.['field']?.['uiSchema']?.['x-component-props']) {
-            //   fieldSchema['x-component-props']['field']['uiSchema']['x-component-props']['fieldNames'] = fieldNames;
-            // } else {
-              
-            // }
             fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
             fieldSchema['x-component-props']['fieldNames'] = fieldNames;
             schema['x-component-props'] = fieldSchema['x-component-props'];
