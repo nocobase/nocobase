@@ -1,6 +1,6 @@
-import { MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
+import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 
 describe('configuration', () => {
@@ -19,14 +19,29 @@ describe('configuration', () => {
     app = await prepareApp();
     db = app.db;
 
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test1',
+        allowConfigure: true,
+      },
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test2',
+      },
+    });
+
     const UserRepo = db.getCollection('users').repository;
     admin = await UserRepo.create({
       values: {
-        roles: ['admin']
+        roles: ['test1']
       }
     });
     user = await UserRepo.create({
-      values: {}
+      values: {
+        roles: ['test2']
+      }
     });
 
     const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
@@ -39,7 +54,7 @@ describe('configuration', () => {
     }), { type: 'bearer' });
   });
 
-  it.skip('should list collections', async () => {
+  it('should list collections', async () => {
     expect((await userAgent.resource('collections').create()).statusCode).toEqual(403);
     expect((await userAgent.resource('collections').list()).statusCode).toEqual(200);
   });
