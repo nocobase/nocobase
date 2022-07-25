@@ -20,26 +20,37 @@ export const TabsDesigner = () => {
             properties: {
               title: {
                 title: t('Tab name'),
+                required: true,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
+                'x-component-props': {},
+              },
+              icon: {
+                title: t('Icon'),
+                'x-decorator': 'FormItem',
+                'x-component': 'IconPicker',
                 'x-component-props': {},
               },
             },
           } as ISchema
         }
-        initialValues={{ title: field.title }}
-        onSubmit={({ title }) => {
-          if (title) {
-            fieldSchema.title = title;
-            field.title = title;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                title,
-              },
-            });
-            dn.refresh();
-          }
+        initialValues={{ title: field.title, icon: field.componentProps.icon }}
+        onSubmit={({ title, icon }) => {
+          const props = fieldSchema['x-component-props'] || {};
+          fieldSchema.title = title;
+          field.title = title;
+          props.icon = icon;
+          field.componentProps.icon = icon;
+          fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+          fieldSchema['x-component-props'].icon = icon;
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              title,
+              ['x-component-props']: props,
+            },
+          });
+          dn.refresh();
         }}
       />
       <SchemaSettings.Divider />
