@@ -1,13 +1,14 @@
 import { usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { isArr } from '@formily/shared';
+import { str2moment } from '@nocobase/utils';
 import type {
   DatePickerProps as AntdDatePickerProps,
-  RangePickerProps as AntdRangePickerProps
+  RangePickerProps as AntdRangePickerProps,
 } from 'antd/lib/date-picker';
 import cls from 'classnames';
 import moment from 'moment';
 import React from 'react';
-import { getDefaultFormat, str2moment } from './util';
+import { getDefaultFormat } from './util';
 
 type Composed = {
   DatePicker: React.FC<AntdDatePickerProps>;
@@ -38,7 +39,7 @@ ReadPretty.DateRangePicker = (props: any) => {
     if (!m) {
       return '';
     }
-    const labels = m.map(m => m.format(format));
+    const labels = m.map((m) => m.format(format));
     return isArr(labels) ? labels.join('~') : labels;
   };
   return (

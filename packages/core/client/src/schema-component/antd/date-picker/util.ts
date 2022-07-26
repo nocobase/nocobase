@@ -1,17 +1,6 @@
+import { str2moment, toGmt, toLocal } from '@nocobase/utils';
 import type { DatePickerProps } from 'antd/lib/date-picker';
 import moment from 'moment';
-
-const toGmt = (value: moment.Moment | moment.Moment[]) => {
-  if (!value) {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return value.map((val) => `${val.format('YYYY-MM-DD')}T${val.format('HH:mm:ss.SSS')}Z`);
-  }
-  if (moment.isMoment(value)) {
-    return `${value.format('YYYY-MM-DD')}T${value.format('HH:mm:ss.SSS')}Z`;
-  }
-};
 
 const toStringByPicker = (value, picker) => {
   if (picker === 'year') {
@@ -39,45 +28,6 @@ const toGmtByPicker = (value: moment.Moment | moment.Moment[], picker?: any) => 
   if (moment.isMoment(value)) {
     return toStringByPicker(value, picker);
   }
-};
-
-const toLocal = (value: moment.Moment | moment.Moment[]) => {
-  if (!value) {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return value.map((val) => val.toISOString());
-  }
-  if (moment.isMoment(value)) {
-    return value.toISOString();
-  }
-};
-
-export interface Str2momentOptions {
-  gmt?: boolean;
-  picker?: 'year' | 'month' | 'week' | 'quarter';
-}
-
-const toMoment = (val: any, options?: Str2momentOptions) => {
-  if (moment.isMoment(val)) {
-    return val;
-  }
-  const { gmt, picker } = options;
-  if (gmt || picker) {
-    val = val.replace('T', ' ').replace('Z', '');
-    return moment(val);
-  }
-  return moment(val);
-};
-
-export const str2moment = (value?: string | string[], options: Str2momentOptions = {}): any => {
-  return Array.isArray(value)
-    ? value.map((val) => {
-        return toMoment(val, options);
-      })
-    : value
-    ? toMoment(value, options)
-    : value;
 };
 
 export interface Moment2strOptions {
