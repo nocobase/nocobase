@@ -9,8 +9,8 @@ export class ExportPlugin extends Plugin {
   beforeLoad() {}
 
   async load() {
-    this.app.resourcer.registerActionHandler('exportXlsx', exportXlsx);
-    this.app.acl.setAvailableAction('exportXlsx', {
+    this.app.resourcer.registerActionHandler('export', exportXlsx);
+    this.app.acl.setAvailableAction('export', {
       displayName: '{{t("Export")}}',
       allowConfigureFields: true,
     });

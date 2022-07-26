@@ -176,7 +176,6 @@ export const AuditLogs: any = () => {
                         'x-component-props': {
                           openMode: 'drawer',
                         },
-                        'x-decorator': 'ACLActionProvider',
                         properties: {
                           drawer: {
                             type: 'void',
