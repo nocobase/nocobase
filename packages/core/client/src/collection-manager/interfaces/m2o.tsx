@@ -181,6 +181,7 @@ export const m2o: IField = {
                     "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
+                  'x-validator': 'uid',
                   'x-disabled': '{{ !createOnly }}',
                 },
               },
