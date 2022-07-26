@@ -84,7 +84,7 @@ FormItem.Designer = (props) => {
     readOnlyMode = 'read-pretty';
   }
 
-  console.log('FormItem.Designer', collectionField?.uiSchema);
+  console.log('FormItem.Designer', collectionField?.uiSchema, fieldSchema);
   
   return (
     <GeneralSchemaDesigner>
@@ -339,6 +339,7 @@ FormItem.Designer = (props) => {
               name: 'default',
               title: t('Default value'),
               'x-decorator': 'FormItem',
+              default: fieldSchema.default || collectionField.uiSchema.default,
             }
           }
         } as ISchema}
@@ -346,7 +347,7 @@ FormItem.Designer = (props) => {
           const schema: ISchema = {
             ['x-uid']: fieldSchema['x-uid'],
           };
-          if (field.value == null) {
+          if (field.value !== v.default) {
             field.value = v.default;
           }
           fieldSchema.default = v.default;
