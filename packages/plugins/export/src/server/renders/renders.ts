@@ -33,7 +33,11 @@ export async function _(field, row, ctx, column?: any) {
 
 export async function datetime(field, row, ctx) {
   const value = row.get(field.name);
-  return moment(value).format(field.showTime ? `${field.dateFormat} ${field.timeFormat}` : field.dateFormat);
+  if (!value) {
+    return '';
+  }
+  const { showTime, dateFormat, timeFormat } = field.options?.uiSchema?.['x-component-props'] ?? {};
+  return moment(value).format(showTime ? `${dateFormat} ${timeFormat}` : dateFormat);
 }
 
 export async function percent(field, row, ctx) {
