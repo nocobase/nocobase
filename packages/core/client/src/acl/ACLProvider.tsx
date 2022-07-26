@@ -78,9 +78,6 @@ export const useACLRoleContext = () => {
         }
         return params;
       }
-      if (skipOwnCheck) {
-        return {};
-      }
       const strategyActions = data?.strategy?.actions || [];
       const strategyAction = strategyActions?.find((action) => {
         const [value] = action.split(':');
@@ -88,6 +85,9 @@ export const useACLRoleContext = () => {
       });
       if (!strategyAction) {
         return;
+      }
+      if (skipOwnCheck) {
+        return {};
       }
       const [, actionScope] = strategyAction.split(':');
       if (actionScope === 'own') {
