@@ -1,3 +1,4 @@
+import { toFixedByStep } from '@nocobase/utils';
 import moment from 'moment';
 
 export async function _(field, row, ctx, column?: any) {
@@ -38,8 +39,8 @@ export async function datetime(field, row, ctx) {
 
 export async function percent(field, row, ctx) {
   const value = row.get(field.name);
-  const step = field.options?.uiSchema?.['x-component-props']?.['step']?.split('.')[1]?.length ?? 0;
-  return value && `${(value * 100).toFixed(step)}%`;
+  const step = field.options?.uiSchema?.['x-component-props']?.['step'] ?? 0;
+  return value && `${toFixedByStep(value * 100, step)}%`;
 }
 
 export async function boolean(field, row, ctx, column?: any) {
