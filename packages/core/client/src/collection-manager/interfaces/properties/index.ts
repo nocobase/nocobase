@@ -218,6 +218,7 @@ export const defaultProps = {
     'x-disabled': '{{ !createOnly }}',
     'x-decorator': 'FormItem',
     'x-component': 'Input',
+    'x-validator': 'uid',
     description:
       "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
   },

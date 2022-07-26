@@ -1,8 +1,5 @@
 import { ISchema, Schema } from '@formily/react';
-import { useTranslation } from 'react-i18next';
 import { i18n } from '../../../i18n';
-import { useRecord } from '../../../record-provider';
-import { useCompile } from '../../../schema-component';
 import { CollectionOptions } from '../../types';
 import { collectionFieldSchema } from './collectionFields';
 
@@ -121,6 +118,7 @@ export const collectionSchema: ISchema = {
                     name: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
+                      'x-validator': 'uid',
                     },
                     footer: {
                       type: 'void',
