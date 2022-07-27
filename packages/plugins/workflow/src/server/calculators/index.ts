@@ -1,4 +1,4 @@
-import { get as getWithPath } from 'lodash';
+import { toNumber, get as getWithPath } from 'lodash';
 import { Registry } from "@nocobase/utils";
 
 import JobModel from '../models/Job';
@@ -141,23 +141,23 @@ calculators.register('<=', lte);
 
 
 function add(...args) {
-  return args.reduce((sum, a) => sum + a, 0);
+  return args.reduce((sum, a) => sum + toNumber(a), 0);
 }
 
 function minus(a, b) {
-  return a - b;
+  return toNumber(a) - toNumber(b);
 }
 
 function multiple(...args) {
-  return args.reduce((result, a) => result * a, 1);
+  return args.reduce((result, a) => result * toNumber(a), 1);
 }
 
 function divide(a, b) {
-  return a / b;
+  return toNumber(a) / toNumber(b);
 }
 
 function mod(a, b) {
-  return a % b;
+  return toNumber(a) % toNumber(b);
 }
 
 calculators.register('add', add);

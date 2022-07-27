@@ -7,15 +7,6 @@ import FlowNodeModel from '../models/FlowNode';
 import Plugin from '..';
 import Processor from '../Processor';
 
-import prompt from './prompt';
-import calculation from './calculation';
-import condition from './condition';
-import parallel from './parallel';
-import query from './query';
-import create from './create';
-import update from './update';
-import destroy from './destroy';
-
 export type Job = {
   status: number;
   result?: unknown;
@@ -51,18 +42,23 @@ export default function<T extends Instruction>(
 ) {
   const { instructions } = plugin;
 
-  instructions.register('prompt', prompt);
-  instructions.register('calculation', calculation);
-  instructions.register('condition', condition);
-  instructions.register('parallel', parallel);
-  instructions.register('query', query);
-  instructions.register('create', create);
-  instructions.register('update', update);
-  instructions.register('destroy', destroy);
+  const natives = [
+    'calculation',
+    'condition',
+    'parallel',
+    'delay',
+    'prompt',
+    'query',
+    'create',
+    'update',
+    'destroy'
+  ].reduce((result, key) => Object.assign(result, { [key]: key }), {});
 
-  instructions.register('delay', new (requireModule(path.join(__dirname, 'delay')))(plugin));
+  for (const [name, value] of Object.entries({ ...more, ...natives })) {
+    const instruction = typeof value === 'string'
+      ? requireModule(path.isAbsolute(value) ? value : path.join(__dirname, value))
+      : value;
 
-  for (const [name, instruction] of Object.entries(more)) {
     instructions.register(name, typeof instruction === 'function' ? new instruction(plugin) : instruction);
   }
 }

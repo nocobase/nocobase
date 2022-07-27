@@ -3,6 +3,7 @@ import { EXECUTION_STATUS, JOB_STATUS } from "../constants";
 import ExecutionModel from '../models/Execution';
 import JobModel from '../models/Job';
 import Processor from '../Processor';
+import { Instruction } from '.';
 
 type ValueOf<T> = T[keyof T];
 
@@ -11,12 +12,12 @@ interface DelayConfig {
   duration: number;
 }
 
-export default class {
+export default class implements Instruction {
   timers: Map<number, NodeJS.Timeout> = new Map();
 
   constructor(protected plugin: Plugin) {
     plugin.app.on('beforeStart', () => this.load());
-    plugin.app.on('beforeStop', () => this.unload())
+    plugin.app.on('beforeStop', () => this.unload());
   }
 
   async load() {
