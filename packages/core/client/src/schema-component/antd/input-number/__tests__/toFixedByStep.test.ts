@@ -1,4 +1,4 @@
-import { toFixedByStep } from '../ReadPretty';
+import { toFixedByStep } from '@nocobase/utils';
 
 describe('toFixedByStep', () => {
   it('less than precision', () => {
