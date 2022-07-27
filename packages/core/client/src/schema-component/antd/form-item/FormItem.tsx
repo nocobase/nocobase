@@ -339,7 +339,7 @@ FormItem.Designer = (props) => {
               name: 'default',
               title: t('Default value'),
               'x-decorator': 'FormItem',
-              default: fieldSchema.default || collectionField.uiSchema.default,
+              default: fieldSchema.default || collectionField.defaultValue,
             }
           }
         } as ISchema}

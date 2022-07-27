@@ -23,9 +23,9 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
   const properties = cloneDeep(schema.properties) as any;
 
   if (!['systemInfo', 'relation', 'advanced'].includes(schema.group)) {
-    properties['uiSchema.default'] = cloneDeep(schema.default.uiSchema);
-    properties['uiSchema.default']['title'] = compile('{{ t("Default value") }}');
-    properties['uiSchema.default']['x-decorator'] = 'FormItem';  
+    properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
+    properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
+    properties['defaultValue']['x-decorator'] = 'FormItem';
   }
   
   const initialValue = {
