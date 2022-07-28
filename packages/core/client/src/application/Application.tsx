@@ -17,13 +17,13 @@ import {
   RemoteRouteSwitchProvider,
   RouteSchemaComponent,
   RouteSwitch,
-  useRoutes,
+  useRoutes
 } from '../route-switch';
 import {
   AntdSchemaComponentProvider,
   DesignableSwitch,
   MenuItemInitializers,
-  SchemaComponentProvider,
+  SchemaComponentProvider
 } from '../schema-component';
 import { SchemaInitializerProvider } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage, SchemaTemplateShortcut } from '../schema-templates';
@@ -37,6 +37,12 @@ export interface ApplicationOptions {
   plugins?: any[];
 }
 
+export const getCurrentTimezone = () => {
+  const timezoneOffset = new Date().getTimezoneOffset() / -60;
+  const timezone = String(timezoneOffset).padStart(2, '0') + ':00';
+  return (timezoneOffset > 0 ? '+' : '-') + timezone;
+};
+
 export type PluginCallback = () => Promise<any>;
 
 export class Application {
@@ -47,14 +53,11 @@ export class Application {
   plugins: PluginCallback[] = [];
 
   constructor(options: ApplicationOptions) {
-    const timezoneOffset = new Date().getTimezoneOffset() / -60;
-    let timezone = String(timezoneOffset).padStart(2, '0') + ':00';
-    timezone = (timezoneOffset > 0 ? '+' : '-') + timezone;
     this.apiClient = new APIClient({
       baseURL: process.env.API_BASE_URL,
       headers: {
         'X-Hostname': window?.location?.hostname,
-        'X-Timezone': '+06:00',
+        'X-Timezone': getCurrentTimezone(),
       },
       ...options.apiClient,
     });
