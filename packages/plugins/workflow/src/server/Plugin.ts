@@ -8,6 +8,8 @@ import initActions from './actions';
 import initTriggers, { Trigger } from './triggers';
 import initInstructions, { Instruction } from './instructions';
 import Processor from './Processor';
+import calculators from './calculators';
+import extensions from './extensions';
 import WorkflowModel from './models/Workflow';
 import ExecutionModel from './models/Execution';
 import { EXECUTION_STATUS } from './constants';
@@ -17,6 +19,8 @@ import { EXECUTION_STATUS } from './constants';
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
+  calculators = calculators;
+  extensions = extensions;
 
   onBeforeSave = async (instance: WorkflowModel, options) => {
     const Model = <typeof WorkflowModel>instance.constructor;
@@ -80,6 +84,8 @@ export default class WorkflowPlugin extends Plugin {
     db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));
     db.on('workflows.afterDestroy', (model: WorkflowModel) => this.toggle(model, false));
 
+    this.app.on('afterLoadAll', async () => this.extensions.reduce((promise, extend) => promise.then(() => extend(this)), Promise.resolve()));
+
     // [Life Cycle]:
     //   * load all workflows in db
     //   * add all hooks for enabled workflows
@@ -122,10 +128,10 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  async trigger(workflow, context: Object, options: Transactionable = {}) {
+  async trigger(workflow: WorkflowModel, context: Object, options: Transactionable = {}): Promise<ExecutionModel | null> {
     // `null` means not to trigger
     if (context === null) {
-      return;
+      return null;
     }
 
     let transaction = null;
@@ -145,7 +151,7 @@ export default class WorkflowPlugin extends Plugin {
 
       if (existed) {
         console.warn(`workflow ${workflow.id} has already been triggered in same execution (${transaction.id}), and newly triggering will be skipped.`);
-        return;
+        return null;
       }
     }
 

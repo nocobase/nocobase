@@ -33,7 +33,7 @@ function migrateConfig(config, oldToNew) {
       case 'string':
         return value
           .replace(
-            /(\{\{\$jobsMapByNodeId\.)(\d+)/,
+            /(\{\{\$jobsMapByNodeId\.)([\w-]+)/,
             (_, prefix, id) => `${prefix}${oldToNew.get(Number.parseInt(id, 10)).id}`
           );
       default:

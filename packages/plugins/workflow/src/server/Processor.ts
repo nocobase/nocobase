@@ -23,7 +23,7 @@ export default class Processor {
     [JOB_STATUS.PENDING]: EXECUTION_STATUS.STARTED,
     [JOB_STATUS.RESOLVED]: EXECUTION_STATUS.RESOLVED,
     [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
-    [JOB_STATUS.CANCELLED]: EXECUTION_STATUS.CANCELLED,
+    [JOB_STATUS.CANCELED]: EXECUTION_STATUS.CANCELED,
   };
 
   transaction: Transaction;
@@ -168,8 +168,6 @@ export default class Processor {
     }
 
     let savedJob;
-    // TODO(optimize): many checking of resuming or new could be improved
-    // could be implemented separately in exec() / resume()
     if (job instanceof Model) {
       savedJob = (await job.save({ transaction: this.transaction })) as unknown as JobModel;
     } else {

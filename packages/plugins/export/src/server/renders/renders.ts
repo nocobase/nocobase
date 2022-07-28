@@ -45,7 +45,8 @@ export async function datetime(field, row, ctx) {
 
 export async function percent(field, row, ctx) {
   const value = row.get(field.name);
-  return value && `${value}%`;
+  const step = field.options?.uiSchema?.['x-component-props']?.['step'] ?? 0;
+  return value && `${toFixedByStep(value * 100, step)}%`;
 }
 
 export async function boolean(field, row, ctx, column?: any) {
