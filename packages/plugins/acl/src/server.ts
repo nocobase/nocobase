@@ -7,7 +7,6 @@ import { availableActionResource } from './actions/available-actions';
 import { checkAction } from './actions/role-check';
 import { roleCollectionsResource } from './actions/role-collections';
 import { setDefaultRole } from './actions/user-setDefaultRole';
-import { appendRolesToUser } from './middlewares/appendRolesToUser';
 import { setCurrentRole } from './middlewares/setCurrentRole';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
@@ -323,7 +322,6 @@ export class PluginACL extends Plugin {
 
     const usersPlugin = this.app.pm.get('@nocobase/plugin-users') as UsersPlugin;
     usersPlugin.tokenMiddleware.use(setCurrentRole);
-    usersPlugin.tokenMiddleware.unshift(appendRolesToUser);
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
 
