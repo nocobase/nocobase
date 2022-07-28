@@ -12,7 +12,7 @@ RUN cd /app \
   && rm -rf nocobase.tar.gz \
   && find ./my-nocobase-app/node_modules/china-division/dist -name '*.csv' -delete \
   && find ./my-nocobase-app/node_modules/china-division/dist -name '*.sqlite' -delete \
-  && tar -zcvf ./nocobase.tar.gz -C /app/my-nocobase-app .
+  && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
 FROM node:16-stretch-slim
 
