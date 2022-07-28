@@ -1,8 +1,4 @@
 export async function setCurrentRole(ctx, next) {
-  if (!ctx.state.currentUser) {
-    return next();
-  }
-
   let currentRole = ctx.get('X-Role');
 
   if (currentRole === 'anonymous') {
@@ -10,20 +6,21 @@ export async function setCurrentRole(ctx, next) {
     return next();
   }
 
-  const RolesUsers = ctx.db.getCollection('rolesUsers').model;
-  const userRoles = await RolesUsers.findAll({
-    where: {
-      userId: ctx.state.currentUser.id
-    }
-  });
+  if (!ctx.state.currentUser) {
+    return next();
+  }
 
-  if (userRoles.length == 1) {
-    currentRole = userRoles[0].roleName;
-  } else if (userRoles.length > 1) {
-    const role = userRoles.find((item) => item.roleName === currentRole);
+  const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id);
+  const roles = await repository.find();
+  ctx.state.currentUser.setDataValue('roles', roles);
+
+  if (roles.length == 1) {
+    currentRole = roles[0].name;
+  } else if (roles.length > 1) {
+    const role = roles.find((item) => item.name === currentRole);
     if (!role) {
-      const defaultRole = userRoles.find((item) => item.default);
-      currentRole = (defaultRole || userRoles[0])?.roleName;
+      const defaultRole = roles.find((item) => item?.rolesUsers?.default);
+      currentRole = (defaultRole || roles[0])?.name;
     }
   }
 

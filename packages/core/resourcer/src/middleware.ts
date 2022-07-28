@@ -82,10 +82,6 @@ export class MiddlewareManager {
     return (ctx, next) => compose(this.middlewares)(ctx, next);
   }
 
-  unshift(middleware: HandlerType) {
-    this.middlewares.unshift(middleware);
-  }
-
   use(middleware: HandlerType) {
     this.middlewares.push(middleware);
   }
