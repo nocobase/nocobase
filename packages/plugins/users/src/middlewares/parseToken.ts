@@ -19,18 +19,17 @@ async function findUserByToken(ctx: Context, plugin: UsersPlugin) {
   if (!token) {
     return null;
   }
-
   try {
     const { userId } = await plugin.jwtService.decode(token);
     const collection = ctx.db.getCollection('users');
-    const appends = [];
+    ctx.state.currentUserAppends = ctx.state.currentUserAppends || [];
     for (const [, field] of collection.fields) {
       if (field.type === 'belongsTo') {
-        appends.push(field.name);
+        ctx.state.currentUserAppends.push(field.name);
       }
     }
     return await ctx.db.getRepository('users').findOne({
-      appends,
+      appends: ctx.state.currentUserAppends,
       filter: {
         id: userId,
       },
