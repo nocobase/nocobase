@@ -26,8 +26,6 @@ const InternalField: React.FC = (props) => {
   };
   const ctx = useFormBlockContext();
 
-  console.log('InternalField', fieldSchema, collectionField, ctx);
-
   useEffect(() => {
     if (ctx?.field) {
       ctx.field.added = ctx.field.added || new Set();

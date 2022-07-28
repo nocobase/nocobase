@@ -18,6 +18,7 @@ export const select: IField = {
       enum: [],
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
     'uiSchema.enum': dataSource,

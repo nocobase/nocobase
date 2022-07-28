@@ -20,7 +20,7 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
   const properties = cloneDeep(schema.properties) as any;
   properties.name['x-disabled'] = true;
 
-  if (!['systemInfo', 'relation', 'advanced'].includes(schema.group)) {
+  if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';

@@ -20,6 +20,7 @@ export const datetime: IField = {
       },
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
     ...dateTimeProps,
