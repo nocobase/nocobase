@@ -1,5 +1,5 @@
 import { isValid } from '@formily/shared';
-import { toFixedByStep } from '@nocobase/utils';
+import { toFixedByStep } from '@nocobase/utils/client';
 import type { InputProps } from 'antd/lib/input';
 import type { InputNumberProps } from 'antd/lib/input-number';
 import React from 'react';
