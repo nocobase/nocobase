@@ -36,11 +36,15 @@ export async function datetime(field, row, ctx) {
   if (!value) {
     return '';
   }
-  const timezone = ctx.request.req.headers['x-timezone'];
+  const timezone = ctx.get('X-Timezone');
   const props = field.options?.uiSchema?.['x-component-props'] ?? {};
   const format = getDefaultFormat(props);
   const m = str2moment(value, props);
-  return m ? m.utcOffset(timezone).format(format) : '';
+  if (!m) '';
+  if (props.gmt || !props.showTime) {
+    return m.format(format);
+  }
+  return m.utcOffset(timezone).format(format);
 }
 
 export async function percent(field, row, ctx) {
