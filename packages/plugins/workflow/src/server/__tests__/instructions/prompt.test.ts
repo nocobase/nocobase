@@ -6,7 +6,7 @@ import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 
 
-describe('workflow > instructions > prompt', () => {
+describe.skip('workflow > instructions > prompt', () => {
   describe('base', () => {
     let app: MockServer;
     let agent;
