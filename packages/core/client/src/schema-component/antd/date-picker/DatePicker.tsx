@@ -1,10 +1,10 @@
-import React from 'react';
+import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { DatePicker as AntdDatePicker } from 'antd';
 import type {
   DatePickerProps as AntdDatePickerProps,
-  RangePickerProps as AntdRangePickerProps,
+  RangePickerProps as AntdRangePickerProps
 } from 'antd/lib/date-picker';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
+import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { mapDateFormat } from './util';
 
