@@ -1,6 +1,6 @@
 import { usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { isArr } from '@formily/shared';
-import { str2moment } from '@nocobase/utils/client';
+import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import type {
   DatePickerProps as AntdDatePickerProps,
   RangePickerProps as AntdRangePickerProps
@@ -8,7 +8,6 @@ import type {
 import cls from 'classnames';
 import moment from 'moment';
 import React from 'react';
-import { getDefaultFormat } from './util';
 
 type Composed = {
   DatePicker: React.FC<AntdDatePickerProps>;

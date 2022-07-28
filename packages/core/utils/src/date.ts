@@ -4,6 +4,29 @@ export interface Str2momentOptions {
   gmt?: boolean;
   picker?: 'year' | 'month' | 'week' | 'quarter';
 }
+
+export const getDefaultFormat = (props: any) => {
+  if (props.format) {
+    return props.format;
+  }
+  if (props.dateFormat) {
+    if (props['showTime']) {
+      return `${props.dateFormat} ${props.timeFormat || 'HH:mm:ss'}`;
+    }
+    return props.dateFormat;
+  }
+  if (props['picker'] === 'month') {
+    return 'YYYY-MM';
+  } else if (props['picker'] === 'quarter') {
+    return 'YYYY-\\QQ';
+  } else if (props['picker'] === 'year') {
+    return 'YYYY';
+  } else if (props['picker'] === 'week') {
+    return 'YYYY-wo';
+  }
+  return props['showTime'] ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
+};
+
 export const toGmt = (value: moment.Moment | moment.Moment[]) => {
   if (!value) {
     return value;
@@ -28,8 +51,14 @@ export const toLocal = (value: moment.Moment | moment.Moment[]) => {
   }
 };
 const toMoment = (val: any, options?: Str2momentOptions) => {
+  if (!val) {
+    return;
+  }
   if (moment.isMoment(val)) {
     return val;
+  }
+  if (val instanceof Date) {
+    val = val.toISOString();
   }
   const { gmt, picker } = options;
   if (gmt || picker) {

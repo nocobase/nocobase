@@ -1,4 +1,4 @@
-import moment from 'moment';
+import { getDefaultFormat, str2moment } from '@nocobase/utils';
 
 export async function _(field, row, ctx, column?: any) {
   if (column?.dataIndex.length > 1) {
@@ -37,10 +37,10 @@ export async function datetime(field, row, ctx) {
     return '';
   }
   const timezone = ctx.request.req.headers['x-timezone'];
-  const { showTime, dateFormat, timeFormat } = field.options?.uiSchema?.['x-component-props'] ?? {};
-  return moment(value)
-    .utcOffset(timezone)
-    .format(showTime ? `${dateFormat} ${timeFormat}` : dateFormat);
+  const props = field.options?.uiSchema?.['x-component-props'] ?? {};
+  const format = getDefaultFormat(props);
+  const m = str2moment(value, props);
+  return m ? m.utcOffset(timezone).format(format) : '';
 }
 
 export async function percent(field, row, ctx) {
