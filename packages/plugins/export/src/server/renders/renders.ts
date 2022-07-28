@@ -1,4 +1,4 @@
-import { getDefaultFormat, str2moment } from '@nocobase/utils';
+import { getDefaultFormat, str2moment, toFixedByStep } from '@nocobase/utils';
 
 export async function _(field, row, ctx, column?: any) {
   if (column?.dataIndex.length > 1) {
