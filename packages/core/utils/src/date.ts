@@ -56,7 +56,7 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
   if (!val) {
     return;
   }
-  const offset = options.utcOffset || new Date().getTimezoneOffset();
+  const offset = options.utcOffset || -1 * new Date().getTimezoneOffset();
   if (moment.isMoment(val)) {
     return val.utcOffset(offset);
   }
