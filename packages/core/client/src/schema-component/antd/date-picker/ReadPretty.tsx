@@ -1,9 +1,9 @@
 import { usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { isArr } from '@formily/shared';
-import { str2moment } from '@nocobase/utils';
+import { str2moment } from '@nocobase/utils/client';
 import type {
   DatePickerProps as AntdDatePickerProps,
-  RangePickerProps as AntdRangePickerProps,
+  RangePickerProps as AntdRangePickerProps
 } from 'antd/lib/date-picker';
 import cls from 'classnames';
 import moment from 'moment';

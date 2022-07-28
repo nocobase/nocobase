@@ -14,5 +14,9 @@
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1"
   },
+  "peerDependencies": {
+    "moment": "2.x",
+    "rc-input-number": "7.x"
+  },
   "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
 }
