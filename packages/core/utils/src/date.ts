@@ -3,6 +3,7 @@ import moment from 'moment';
 export interface Str2momentOptions {
   gmt?: boolean;
   picker?: 'year' | 'month' | 'week' | 'quarter';
+  utcOffset?: any;
 }
 
 export const getDefaultFormat = (props: any) => {
@@ -50,22 +51,20 @@ export const toLocal = (value: moment.Moment | moment.Moment[]) => {
     return value.toISOString();
   }
 };
+
 const toMoment = (val: any, options?: Str2momentOptions) => {
   if (!val) {
     return;
   }
+  const offset = options.utcOffset || new Date().getTimezoneOffset();
   if (moment.isMoment(val)) {
-    return val;
-  }
-  if (val instanceof Date) {
-    val = val.toISOString();
+    return val.utcOffset(offset);
   }
   const { gmt, picker } = options;
   if (gmt || picker) {
-    val = val.replace('T', ' ').replace('Z', '');
-    return moment(val);
+    return moment(val).utcOffset(0);
   }
-  return moment(val);
+  return moment(val).utcOffset(offset);
 };
 
 export const str2moment = (value?: string | string[], options: Str2momentOptions = {}): any => {
