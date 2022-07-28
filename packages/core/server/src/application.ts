@@ -327,13 +327,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('beforeInstall', this, options);
 
     const r = await this.db.version.satisfies({
-      mysql: '8.x',
+      mysql: '>=8.0.17',
       sqlite: '3.x',
       postgres: '>=10',
     });
 
     if (!r) {
-      console.log('The database only supports MySQL 8.x, SQLite 3.x and PostgreSQL 10+');
+      console.log('The database only supports MySQL 8.0.17 and above, SQLite 3.x and PostgreSQL 10+');
       return;
     }
 
