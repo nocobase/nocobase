@@ -1,6 +1,4 @@
-import { extend } from '@nocobase/database';
-
-export default extend({
+export default {
   name: 'jobs',
   fields: [
     {
@@ -15,4 +13,4 @@ export default extend({
       foreignKey: 'jobId'
     }
   ]
-});
+};

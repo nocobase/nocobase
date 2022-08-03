@@ -75,7 +75,7 @@ export interface CommonFindOptions extends Transactionable {
   context?: any;
 }
 
-interface FindOneOptions extends FindOptions, CommonFindOptions {}
+interface FindOneOptions extends FindOptions {}
 
 export interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: Filter;

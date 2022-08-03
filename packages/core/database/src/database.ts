@@ -460,6 +460,18 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return super.on(event, listener);
   }
 
+  extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {
+    const collectionName = collectionOptions.name;
+    const existCollection = this.getCollection(collectionName);
+    if (existCollection) {
+      existCollection.updateOptions(collectionOptions, mergeOptions);
+    } else {
+      const existDelayExtends = this.delayCollectionExtend.get(collectionName) || [];
+
+      this.delayCollectionExtend.set(collectionName, [...existDelayExtends, { collectionOptions, mergeOptions }]);
+    }
+  }
+
   async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>> {
     const reader = new ImporterReader(options.directory, options.extensions);
     const modules = await reader.read();
@@ -467,15 +479,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     for (const module of modules) {
       if (module.extend) {
-        const collectionName = module.collectionOptions.name;
-        const existCollection = this.getCollection(collectionName);
-        if (existCollection) {
-          existCollection.updateOptions(module.collectionOptions, module.mergeOptions);
-        } else {
-          const existDelayExtends = this.delayCollectionExtend.get(collectionName) || [];
-
-          this.delayCollectionExtend.set(collectionName, [...existDelayExtends, module]);
-        }
+        this.extendCollection(module.collectionOptions, module.mergeOptions);
       } else {
         const collection = this.collection(module);
         result.set(collection.name, collection);
@@ -498,14 +502,6 @@ export function extend(collectionOptions: CollectionOptions, mergeOptions?: Merg
 
 export const defineCollection = (collectionOptions: CollectionOptions) => {
   return collectionOptions;
-};
-
-export const extendCollection = (collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) => {
-  return {
-    collectionOptions,
-    mergeOptions,
-    extend: true,
-  };
 };
 
 applyMixins(Database, [AsyncEmitter]);
