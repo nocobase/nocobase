@@ -37,6 +37,12 @@ export interface ApplicationOptions {
   plugins?: any[];
 }
 
+export const getCurrentTimezone = () => {
+  const timezoneOffset = new Date().getTimezoneOffset() / -60;
+  const timezone = String(timezoneOffset).padStart(2, '0') + ':00';
+  return (timezoneOffset > 0 ? '+' : '-') + timezone;
+};
+
 export type PluginCallback = () => Promise<any>;
 
 export class Application {
@@ -51,6 +57,7 @@ export class Application {
       baseURL: process.env.API_BASE_URL,
       headers: {
         'X-Hostname': window?.location?.hostname,
+        'X-Timezone': getCurrentTimezone(),
       },
       ...options.apiClient,
     });

@@ -1,6 +1,6 @@
-import React from 'react';
 import { connect, mapReadPretty } from '@formily/react';
 import { InputNumber as AntdNumber } from 'antd';
+import React from 'react';
 import { ReadPretty } from './ReadPretty';
 
 export const InputNumber = connect((props) => {

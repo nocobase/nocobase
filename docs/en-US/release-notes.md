@@ -1,5 +1,36 @@
 # Release Notes
 
+## 2022/07/28 ~ v0.7.4-alpha.1
+
+### Details
+
+- fix: append roles to current user (#695)
+- fix(client): required for the sub-table field
+- fix: date format (#686)
+- test(plugin-workflow): skip prompt tests (#692)
+- fix: accuracy of percent (#685)
+- fix: the database only supports MySQL 8.0.17 and above, SQLite 3.x and PostgreSQL 10+
+- fix(plugin-workflow): adjust await sleep time for test cases (#691)
+- feat(plugin-workflow): add assignees config for prompt instruction (#690)
+- fix: role export button display (#616) (#666)
+- fix: uid validate (#681)
+- feat(client): tab icon
+- fix(plugin-error-handler): no error message
+- fix(client): fieldNames of RecordPicker
+- fix: hide password
+- refactor: replace react-drag-listview with @dnd-kit/sortable (#660)
+- refactor(plugin-users): improve extendibility of middlewares (#677)
+- feat: o2m delete not refresh (#646)
+- feat: kanban add description (#659)
+- fix: field loss enum (#667)
+- feat: add ui editor hot key Ctrl+Shift+U (#675)
+- fix: calendar change field error (#626) (#671)
+- chore: fix eslint not work (#670)
+- feat: number precision (#661)
+- feat: nginx config (#664)
+- feat: form item designer form switch issue (#656)
+- fix: wrong operator
+
 ## 2022/07/20 ~ v0.7.3-alpha.1
 
 ### New features

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/utils",
-  "version": "0.7.3-alpha.1",
+  "version": "0.7.4-alpha.1",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
@@ -13,6 +13,10 @@
   "dependencies": {
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1"
+  },
+  "peerDependencies": {
+    "moment": "2.x",
+    "rc-input-number": "7.x"
   },
   "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
 }

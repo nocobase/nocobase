@@ -11,6 +11,7 @@ export const TableFieldContext = createContext<any>({});
 const InternalTableFieldProvider = (props) => {
   const { params = {}, showIndex, dragSort, fieldName } = props;
   const field = useField();
+  const fieldSchema = useFieldSchema();
   const { resource, service } = useBlockRequestContext();
 
   const formBlockCtx = useFormBlockContext();
@@ -28,6 +29,7 @@ const InternalTableFieldProvider = (props) => {
     <TableFieldContext.Provider
       value={{
         field,
+        fieldSchema,
         service,
         resource,
         params,
@@ -151,6 +153,7 @@ export const useTableFieldProps = () => {
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort,
     pagination: false,
+    required: ctx?.fieldSchema?.parent?.required,
     rowKey: (record: any) => {
       return field.value?.indexOf?.(record);
     },

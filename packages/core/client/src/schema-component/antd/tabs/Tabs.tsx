@@ -3,6 +3,7 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks/useDesigner';
@@ -77,12 +78,12 @@ const designerCss = css`
   }
 `;
 
-Tabs.TabPane = observer((props: TabPaneProps) => {
+Tabs.TabPane = observer((props: TabPaneProps & { icon?: any }) => {
   const Designer = useDesigner();
   const field = useField();
   return (
     <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
-      {props.tab || field.title}
+      {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
       <Designer />
     </SortableItem>
   );

@@ -1,6 +1,8 @@
 import { MockServer } from '@nocobase/test';
-import { changeMockRole, changeMockUser, prepareApp } from './prepare';
 import { Database } from '@nocobase/database';
+import UsersPlugin from '@nocobase/plugin-users';
+
+import { prepareApp } from './prepare';
 
 describe('role check action', () => {
   let app: MockServer;
@@ -21,14 +23,18 @@ describe('role check action', () => {
         name: 'test',
       },
     });
-
-    changeMockUser({
-      id: 2,
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test']
+      }
     });
+    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    const agent = app.agent().auth(userPlugin.jwtService.sign({
+      userId: user.get('id'),
+    }), { type: 'bearer' });
 
-    changeMockRole('test');
-
-    const response = await app.agent().get('/roles:check');
+    // @ts-ignore
+    const response = await agent.resource('roles').check();
 
     expect(response.statusCode).toEqual(200);
   });

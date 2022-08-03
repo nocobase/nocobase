@@ -1,11 +1,9 @@
 import { ACL } from '@nocobase/acl';
 import { Database } from '@nocobase/database';
-import PluginACL from '@nocobase/plugin-acl';
-import PluginCollectionManager from '@nocobase/plugin-collection-manager';
-import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
 import PluginUser from '@nocobase/plugin-users';
-import { mockServer, MockServer } from '@nocobase/test';
-import supertest from 'supertest';
+import { MockServer } from '@nocobase/test';
+
+import { prepareApp } from './prepare';
 
 describe('own test', () => {
   let app: MockServer;
@@ -21,28 +19,15 @@ describe('own test', () => {
 
   let role;
   let agent;
+  let adminAgent;
+  let userAgent;
 
   afterEach(async () => {
     await app.destroy();
   });
 
   beforeEach(async () => {
-    app = mockServer({
-      registerActions: true,
-    });
-
-    await app.cleanDb();
-
-    app.plugin(PluginUiSchema);
-    app.plugin(PluginCollectionManager);
-    app.plugin(PluginUser, {
-      jwt: {
-        secret: process.env.APP_KEY || 'test-key',
-      },
-    });
-
-    app.plugin(PluginACL);
-    await app.loadAndInstall();
+    app = await prepareApp();
     db = app.db;
 
     const PostCollection = db.collection({
@@ -68,9 +53,9 @@ describe('own test', () => {
       fields: [{ type: 'string', name: 'name' }],
     });
 
-    await app.db.sync();
+    await db.sync();
 
-    agent = supertest.agent(app.callback());
+    agent = app.agent();
 
     acl = app.acl;
 
@@ -86,6 +71,8 @@ describe('own test', () => {
 
     adminToken = pluginUser.jwtService.sign({ userId: admin.get('id') });
 
+    adminAgent = app.agent().auth(adminToken, { type: 'bearer' });
+
     user = await db.getRepository('users').create({
       values: {
         nickname: 'test',
@@ -94,10 +81,12 @@ describe('own test', () => {
     });
 
     userToken = pluginUser.jwtService.sign({ userId: user.get('id') });
+
+    userAgent = app.agent().auth(userToken, { type: 'bearer' });
   });
 
   it('should list without createBy', async () => {
-    let response = await agent
+    await adminAgent
       .patch('/roles/admin')
       .send({
         strategy: {
@@ -106,33 +95,38 @@ describe('own test', () => {
       })
       .set({ Authorization: 'Bearer ' + adminToken });
 
-    response = await agent.get('/tests:list').set({ Authorization: 'Bearer ' + userToken });
+    const response = await userAgent.get('/tests:list');
     expect(response.statusCode).toEqual(200);
   });
 
   it('should delete with createdBy', async () => {
-    let response = await agent
-      .patch('/roles/admin')
-      .send({
-        strategy: {
-          actions: ['view:own', 'create', 'destroy:own'],
-        },
-      })
-      .set({ Authorization: 'Bearer ' + adminToken });
+    await adminAgent
+      .resource('roles')
+      .update({
+        filterByTk: 'admin',
+        values: {
+          strategy: {
+            actions: ['view:own', 'create', 'destroy:own'],
+          },
+        }
+      });
 
-    response = await agent
-      .get('/posts:create')
-      .send({
-        title: 't1',
-      })
-      .set({ Authorization: 'Bearer ' + userToken });
+    let response = await userAgent
+      .resource('posts')
+      .create({
+        values: {
+          title: 't1',
+        }
+      });
 
     expect(response.statusCode).toEqual(200);
 
     const data = response.body;
     const id = data.data['id'];
 
-    response = await agent.delete(`/posts/${id}`).set({ Authorization: 'Bearer ' + userToken });
+    response = await userAgent.resource('posts').destroy({
+      filterByTk: id
+    });
     expect(response.statusCode).toEqual(200);
     expect(await db.getRepository('posts').count()).toEqual(0);
   });

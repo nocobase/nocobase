@@ -1,7 +1,6 @@
-import { ISchema } from '@formily/react';
+import { i18n } from '../../i18n';
 import { defaultProps } from './properties';
 import { IField } from './types';
-import { i18n } from '../../i18n';
 
 export const password: IField = {
   name: 'password',
@@ -11,6 +10,7 @@ export const password: IField = {
   title: '{{t("Password")}}',
   default: {
     type: 'password',
+    hidden: true,
     // name,
     uiSchema: {
       type: 'string',

@@ -1,5 +1,6 @@
+import { str2moment } from '@nocobase/utils';
 import moment from 'moment';
-import { moment2str, str2moment } from '../util';
+import { moment2str } from '../util';
 
 describe('str2moment', () => {
   describe('string value', () => {
@@ -7,12 +8,12 @@ describe('str2moment', () => {
       const m = str2moment('2022-06-21T00:00:00.000Z', { gmt: true });
       expect(m.format('YYYY-MM-DD HH:mm:ss')).toBe('2022-06-21 00:00:00');
     });
-  
+
     test('local date', async () => {
       const m = str2moment('2022-06-21T00:00:00.000Z');
       expect(m.toISOString()).toBe('2022-06-21T00:00:00.000Z');
     });
-  
+
     test('value is null', async () => {
       const m = str2moment(null);
       expect(m).toBeNull();
@@ -31,7 +32,7 @@ describe('str2moment', () => {
         expect(m.format('YYYY-MM-DD HH:mm:ss')).toBe('2022-06-21 00:00:00');
       }
     });
-  
+
     test('local date', async () => {
       const arr = str2moment(['2022-06-21T00:00:00.000Z', '2022-06-21T00:00:00.000Z']);
       for (const m of arr) {

@@ -1,10 +1,13 @@
 import { Context } from '@nocobase/actions';
 import { Collection } from '@nocobase/database';
+import UsersPlugin from '@nocobase/plugin-users';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { checkAction } from './actions/role-check';
 import { roleCollectionsResource } from './actions/role-collections';
+import { setDefaultRole } from './actions/user-setDefaultRole';
+import { setCurrentRole } from './middlewares/setCurrentRole';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
@@ -133,6 +136,22 @@ export class PluginACL extends Plugin {
     this.app.resourcer.define(roleCollectionsResource);
 
     this.app.resourcer.registerActionHandler('roles:check', checkAction);
+
+    this.app.resourcer.registerActionHandler(`users:setDefaultRole`, setDefaultRole);
+
+    this.db.on('users.afterCreateWithAssociations', async (model, options) => {
+      const { transaction } = options;
+      const repository = this.app.db.getRepository('roles');
+      const defaultRole = await repository.findOne({
+        filter: {
+          default: true,
+        },
+        transaction,
+      });
+      if (defaultRole && (await model.countRoles({ transaction })) == 0) {
+        await model.addRoles(defaultRole, { transaction });
+      }
+    });
 
     this.app.db.on('roles.afterSaveWithAssociations', async (model, options) => {
       const { transaction } = options;
@@ -271,7 +290,7 @@ export class PluginACL extends Plugin {
             title: '{{t("Admin")}}',
             allowConfigure: true,
             allowNewMenu: true,
-            strategy: { actions: ['create', 'export', 'view', 'update', 'destroy'] },
+            strategy: { actions: ['create', 'view', 'update', 'destroy'] },
           },
           {
             name: 'member',
@@ -300,6 +319,11 @@ export class PluginACL extends Plugin {
         ],
       });
     });
+
+    const usersPlugin = this.app.pm.get('@nocobase/plugin-users') as UsersPlugin;
+    usersPlugin.tokenMiddleware.use(setCurrentRole);
+
+    this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
 
     this.app.acl.allow('roles', 'check', 'loggedIn');
     this.app.acl.allow('roles', ['create', 'update', 'destroy'], 'allowConfigure');
@@ -392,6 +416,24 @@ export class PluginACL extends Plugin {
     if (repo) {
       await repo.db2cm('roles');
     }
+
+    const User = this.db.getCollection('users');
+    await User.repository.update({
+      values: {
+        roles: ['root', 'admin', 'member']
+      }
+    });
+
+    const RolesUsers = this.db.getCollection('rolesUsers');
+    await RolesUsers.repository.update({
+      filter: {
+        userId: 1,
+        roleName: 'root'
+      },
+      values: {
+        default: true
+      }
+    });
   }
 
   async load() {

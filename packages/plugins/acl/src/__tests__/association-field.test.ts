@@ -1,5 +1,6 @@
 import { ACL } from '@nocobase/acl';
-import { Database, HasManyRepository, Model } from '@nocobase/database';
+import { Database, HasManyRepository } from '@nocobase/database';
+import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 
@@ -8,7 +9,10 @@ describe('association field acl', () => {
   let db: Database;
   let acl: ACL;
 
-  let role: Model;
+  let user;
+  let userAgent;
+  let admin;
+  let adminAgent;
 
   afterEach(async () => {
     await app.destroy();
@@ -19,20 +23,44 @@ describe('association field acl', () => {
     db = app.db;
     acl = app.acl;
 
-    role = await db.getRepository('roles').create({
+    await db.getRepository('roles').create({
       values: {
-        name: 'admin',
-        title: 'Admin User',
+        name: 'new',
         allowConfigure: true,
       },
     });
 
-    await db.getRepository('collections').create({
+    await db.getRepository('roles').create({
       values: {
-        name: 'users',
+        name: 'testAdmin',
+        allowConfigure: true,
       },
-      context: {},
     });
+    const UserRepo = db.getCollection('users').repository;
+    user = await UserRepo.create({
+      values: {
+        roles: ['new'],
+      },
+    });
+    admin = await UserRepo.create({
+      values: {
+        roles: ['testAdmin'],
+      },
+    });
+
+    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    userAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: user.get('id'),
+      }),
+      { type: 'bearer' },
+    );
+    adminAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: admin.get('id'),
+      }),
+      { type: 'bearer' },
+    );
 
     await db.getRepository('collections').create({
       values: {
@@ -75,56 +103,48 @@ describe('association field acl', () => {
       context: {},
     });
 
-    await app
-      .agent()
-      .resource('roles.resources')
-      .create({
-        associatedIndex: 'admin',
-        values: {
-          name: 'users',
-          usingActionsConfig: true,
-          actions: [
-            {
-              name: 'create',
-              fields: ['orders'],
-            },
-            {
-              name: 'view',
-              fields: ['orders'],
-            },
-          ],
-        },
-      });
+    await adminAgent.resource('roles.resources', 'new').create({
+      values: {
+        name: 'users',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+            fields: ['orders'],
+          },
+          {
+            name: 'view',
+            fields: ['orders'],
+          },
+        ],
+      },
+    });
   });
 
   it('should revoke target action on association action revoke', async () => {
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'orders',
         action: 'list',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'orders',
       action: 'list',
     });
 
-    await app
-      .agent()
-      .resource('roles.resources')
-      .update({
-        associatedIndex: 'admin',
-        values: {
-          name: 'users',
-          usingActionsConfig: true,
-          actions: [],
-        },
-      });
+    await adminAgent.resource('roles.resources', 'new').update({
+      values: {
+        name: 'users',
+        usingActionsConfig: true,
+        actions: [],
+      },
+    });
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'orders',
         action: 'list',
       }),
@@ -134,12 +154,12 @@ describe('association field acl', () => {
   it('should revoke association action on action revoke', async () => {
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'users.orders',
         action: 'add',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'users.orders',
       action: 'add',
     });
@@ -152,27 +172,23 @@ describe('association field acl', () => {
 
     const actionId = viewAction.get('id') as number;
 
-    const response = await app
-      .agent()
-      .resource('roles.resources')
-      .update({
-        associatedIndex: 'admin',
-        values: {
-          name: 'users',
-          usingActionsConfig: true,
-          actions: [
-            {
-              id: actionId,
-            },
-          ],
-        },
-      });
+    const response = await adminAgent.resource('roles.resources', 'new').update({
+      values: {
+        name: 'users',
+        usingActionsConfig: true,
+        actions: [
+          {
+            id: actionId,
+          },
+        ],
+      },
+    });
 
     expect(response.statusCode).toEqual(200);
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'users.orders',
         action: 'add',
       }),
@@ -180,30 +196,26 @@ describe('association field acl', () => {
   });
 
   it('should revoke association action on field deleted', async () => {
-    await app
-      .agent()
-      .resource('roles.resources')
-      .update({
-        associatedIndex: 'admin',
-        values: {
-          name: 'users',
-          usingActionsConfig: true,
-          actions: [
-            {
-              name: 'create',
-              fields: ['name', 'age'],
-            },
-          ],
-        },
-      });
+    await adminAgent.resource('roles.resources', 'new').update({
+      values: {
+        name: 'users',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+            fields: ['name', 'age'],
+          },
+        ],
+      },
+    });
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'users',
         action: 'create',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'users',
       action: 'create',
       params: {
@@ -236,12 +248,12 @@ describe('association field acl', () => {
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'users',
         action: 'create',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'users',
       action: 'create',
       params: {
@@ -251,45 +263,44 @@ describe('association field acl', () => {
   });
 
   it('should allow association fields access', async () => {
-    const createResponse = await app
-      .agent()
-      .resource('users')
-      .create({
-        values: {
-          orders: [
-            {
-              content: 'apple',
-            },
-          ],
-        },
-      });
+    const createResponse = await userAgent.resource('users').create({
+      values: {
+        orders: [
+          {
+            content: 'apple',
+          },
+        ],
+      },
+    });
 
     expect(createResponse.statusCode).toEqual(200);
 
-    const user = await db.getRepository('users').findOne();
+    const user = await db.getRepository('users').findOne({
+      filterByTk: createResponse.body.data.id,
+    });
     // @ts-ignore
     expect(await user.countOrders()).toEqual(1);
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'users.orders',
         action: 'list',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'users.orders',
       action: 'list',
     });
 
     expect(
       acl.can({
-        role: 'admin',
+        role: 'new',
         resource: 'orders',
         action: 'list',
       }),
     ).toMatchObject({
-      role: 'admin',
+      role: 'new',
       resource: 'orders',
       action: 'list',
     });

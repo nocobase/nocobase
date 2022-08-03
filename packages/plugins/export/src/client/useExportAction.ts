@@ -35,7 +35,7 @@ export const useExportAction = () => {
           es.dataIndex.push('name');
         }
       });
-      const { data } = await resource.exportXlsx(
+      const { data } = await resource.export(
         {
           title: compile(title),
           columns: JSON.stringify(compile(exportSettings)),
