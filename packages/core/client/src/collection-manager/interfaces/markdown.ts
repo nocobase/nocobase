@@ -17,6 +17,7 @@ export const markdown: IField = {
       'x-component': 'Markdown',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
   },

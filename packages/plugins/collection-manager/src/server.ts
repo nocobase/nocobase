@@ -70,6 +70,12 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
+    this.app.db.on('fields.afterUpdateWithAssociations', async (model, { context, transaction }) => {
+      if (context) {
+        await model.load({ transaction });
+      }
+    });
+
     this.app.db.on('fields.afterCreateWithAssociations', async (model, { context, transaction }) => {
       if (context) {
         await model.load({ transaction });

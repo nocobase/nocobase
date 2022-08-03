@@ -24,6 +24,7 @@ export const number: IField = {
       },
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
     'uiSchema.x-component-props.step': {
