@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
-import { createForm, GeneralField } from '@formily/core';
+import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Alert, Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
@@ -378,6 +378,8 @@ SchemaSettings.Remove = (props: any) => {
   const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
   const ctx = useBlockTemplateContext();
   return (
     <SchemaSettings.Item
@@ -391,6 +393,10 @@ SchemaSettings.Remove = (props: any) => {
               removeParentsIfNoChildren,
               breakRemoveOn,
             };
+            if (field && field.required) {
+              field.required = false;
+              fieldSchema['required'] = false;
+            }
             if (template && ctx?.dn) {
               ctx?.dn.remove(null, options);
             } else {
