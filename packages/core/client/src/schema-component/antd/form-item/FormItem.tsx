@@ -326,6 +326,39 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
+      {form && !form?.readPretty && collectionField?.uiSchema?.type && (
+        <SchemaSettings.ModalItem
+        title={t('Set default value')}
+        components={{ ArrayCollapse, FormLayout }}
+        schema={{
+          type: 'object',
+          title: t('Set default value'),
+          properties: {
+            default: {
+              ...collectionField.uiSchema,
+              name: 'default',
+              title: t('Default value'),
+              'x-decorator': 'FormItem',
+              default: fieldSchema.default || collectionField.defaultValue,
+            }
+          }
+        } as ISchema}
+        onSubmit={(v) => {
+          const schema: ISchema = {
+            ['x-uid']: fieldSchema['x-uid'],
+          };
+          if (field.value !== v.default) {
+            field.value = v.default;
+          }
+          fieldSchema.default = v.default;
+          schema.default = v.default;
+          dn.emit('patch', {
+            schema,
+          });
+          refresh();
+        }}
+      />
+      )}
       {form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Field component')}

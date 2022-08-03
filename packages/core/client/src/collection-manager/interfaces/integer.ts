@@ -30,6 +30,7 @@ export const integer: IField = {
       'x-validator': 'integer',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
   },

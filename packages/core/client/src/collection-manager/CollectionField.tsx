@@ -11,7 +11,9 @@ import { useCollectionField } from './hooks';
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { name, interface: interfaceType, uiSchema } = useCollectionField();
+  const { name, interface: interfaceType, uiSchema, defaultValue } = useCollectionField();
+  const collectionField = useCollectionField();
+  
   const component = useComponent(uiSchema?.['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
@@ -38,7 +40,10 @@ const InternalField: React.FC = (props) => {
     setFieldProps('content', uiSchema['x-content']);
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
-    setFieldProps('initialValue', uiSchema.default);
+    if (ctx?.form) {
+      setFieldProps('initialValue', fieldSchema.default || defaultValue);
+    }
+    
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
       const concatSchema = concat([], uiSchema['x-validator'] || [], fieldSchema['x-validator'] || []);
       field.validator = concatSchema;

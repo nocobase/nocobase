@@ -18,6 +18,7 @@ export const richText: IField = {
       'x-component': 'RichText',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
   },

@@ -255,6 +255,8 @@ export default {
   "The field value cannot be greater than ": "数值不能大于",
   "The field value cannot be less than ": "数值不能小于",
   "The field value is not an integer number": "数字不是整数",
+  "Set default value": "设置默认值",
+  "Default value": "默认值",
 
   "is before": "早于",
   "is after": "晚于",

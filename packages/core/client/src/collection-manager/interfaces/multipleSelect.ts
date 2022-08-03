@@ -21,6 +21,7 @@ export const multipleSelect: IField = {
       enum: [],
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
     'uiSchema.enum': dataSource,
