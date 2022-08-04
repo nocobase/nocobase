@@ -1,7 +1,7 @@
-import { mockServer, MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
-import { PluginMultiAppManager } from '../server';
+import { mockServer, MockServer } from '@nocobase/test';
 import { ApplicationModel } from '..';
+import { PluginMultiAppManager } from '../server';
 
 describe('multiple apps create', () => {
   let app: MockServer;
@@ -69,7 +69,7 @@ describe('multiple apps create', () => {
     });
   });
 
-  it('should lazy load applications', async () => {
+  it.only('should lazy load applications', async () => {
     await db.getRepository('applications').create({
       values: {
         name: 'miniApp',
