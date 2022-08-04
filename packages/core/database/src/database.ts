@@ -197,6 +197,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
         sequelize: this.sequelize,
       }),
     });
+
+    this.sequelize.beforeDefine((model, opts) => {
+      if (this.options.tablePrefix) {
+        opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
+      }
+    });
   }
 
   addMigration(item) {
