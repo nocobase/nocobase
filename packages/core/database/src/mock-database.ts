@@ -10,9 +10,6 @@ export class MockDatabase extends Database {
       dialect: 'sqlite',
       ...options,
     });
-    this.sequelize.beforeDefine((model, opts) => {
-      opts.tableName = `${this.getTablePrefix()}${opts.tableName || opts.modelName || opts.name.plural}`;
-    });
   }
 }
 

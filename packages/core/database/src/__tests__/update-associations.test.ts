@@ -390,7 +390,7 @@ describe('update associations', () => {
     afterEach(async () => {
       await db.close();
     });
-    test.only('set through value', async () => {
+    test('set through value', async () => {
       const p1 = await Post.repository.create({
         values: {
           title: 'hello',
