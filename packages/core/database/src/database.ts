@@ -492,13 +492,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
 
-export function extend(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {
+export function extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {
   return {
     collectionOptions,
     mergeOptions,
     extend: true,
   };
 }
+
+export const extend = extendCollection;
 
 export const defineCollection = (collectionOptions: CollectionOptions) => {
   return collectionOptions;
