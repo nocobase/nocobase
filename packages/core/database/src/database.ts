@@ -151,7 +151,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     this.sequelize = new Sequelize(opts);
-    this.options = opts;
+    this.options = lodash.cloneDeep(opts);
     this.collections = new Map();
     this.modelHook = new ModelHook(this);
 
