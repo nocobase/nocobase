@@ -1,6 +1,4 @@
-import { extend } from '@nocobase/database';
-
-export default extend({
+export default {
   name: 'users',
   fields: [
     {
@@ -14,4 +12,4 @@ export default extend({
       target: 'users_jobs'
     }
   ]
-});
+};
