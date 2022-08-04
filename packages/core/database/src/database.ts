@@ -135,7 +135,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         },
         force: false,
       },
-      ...options,
+      ...lodash.clone(options),
     };
 
     if (options.storage && options.storage !== ':memory:') {
@@ -196,6 +196,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),
+    });
+
+    this.sequelize.beforeDefine((model, opts) => {
+      if (this.options.tablePrefix) {
+        opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
+      }
     });
   }
 
