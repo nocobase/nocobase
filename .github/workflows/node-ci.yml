@@ -6,7 +6,7 @@ jobs:
   test:
     strategy:
       matrix:
-        node_version: ['14', '16']
+        node_version: ['14']
 
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
@@ -42,7 +42,7 @@ jobs:
       - run: yarn install
       # - run: yarn build
       - name: Test with postgres
-        run: yarn test packages/plugins/multi-app-manager/src/__tests__/multiple-apps.test.ts
+        run: yarn test
         env:
           DB_DIALECT: postgres
           DB_HOST: postgres
@@ -50,17 +50,17 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
-      # - name: Test with Sqlite
-      #   run: yarn test
-      #   env:
-      #     DB_DIALECT: sqlite
-      #     DB_STORAGE: /tmp/db.sqlite
-      # - name: Test with MySQL
-      #   run: yarn test
-      #   env:
-      #     DB_DIALECT: mysql
-      #     DB_HOST: mysql
-      #     DB_PORT: 3306
-      #     DB_USER: root
-      #     DB_PASSWORD: password
-      #     DB_DATABASE: nocobase
+      - name: Test with Sqlite
+        run: yarn test
+        env:
+          DB_DIALECT: sqlite
+          DB_STORAGE: /tmp/db.sqlite
+      - name: Test with MySQL
+        run: yarn test
+        env:
+          DB_DIALECT: mysql
+          DB_HOST: mysql
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: password
+          DB_DATABASE: nocobase
