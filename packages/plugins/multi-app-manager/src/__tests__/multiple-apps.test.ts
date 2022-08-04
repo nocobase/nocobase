@@ -69,7 +69,7 @@ describe('multiple apps create', () => {
     });
   });
 
-  it.only('should lazy load applications', async () => {
+  it('should lazy load applications', async () => {
     await db.getRepository('applications').create({
       values: {
         name: 'miniApp',
