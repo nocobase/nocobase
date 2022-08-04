@@ -135,7 +135,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         },
         force: false,
       },
-      ...options,
+      ...lodash.clone(options),
     };
 
     if (options.storage && options.storage !== ':memory:') {
@@ -151,7 +151,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     this.sequelize = new Sequelize(opts);
-    this.options = lodash.cloneDeep(opts);
+    this.options = opts;
     this.collections = new Map();
     this.modelHook = new ModelHook(this);
 
@@ -199,8 +199,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     this.sequelize.beforeDefine((model, opts) => {
-      opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
-      console.log('opts.tableName', opts.tableName);
+      if (this.options.tablePrefix) {
+        opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
+      }
     });
   }
 
