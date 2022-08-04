@@ -200,6 +200,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.sequelize.beforeDefine((model, opts) => {
       opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
+      console.log('opts.tableName', opts.tableName);
     });
   }
 
