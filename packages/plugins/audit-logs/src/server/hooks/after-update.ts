@@ -2,6 +2,12 @@ import Application from '@nocobase/server';
 import { Model } from '@nocobase/database';
 import { LOG_TYPE_UPDATE } from '../constants';
 
+import { cloneDeep, isEqual } from 'lodash';
+
+function isStringOrNumber(value: any) {
+  return typeof value === 'string' || typeof value === 'number';
+}
+
 export function afterUpdate(app: Application) {
   return async (model, options) => {
     const db = app.db;
@@ -26,15 +32,17 @@ export function afterUpdate(app: Application) {
       });
       if (field && !field.options.hidden && model.get(key) != model.previous(key)) {
 
-        if (field.options.uiSchema.title.indexOf('[attribute]') == -1) {
-          field.options.uiSchema.title = field.options.uiSchema.title + ' [attribute]';//display tilte r = relationship,a =attribute.
-        }
+        //clonedeep options to another object.
+        //set title with desc.display tilte r = relationship,a =attribute.
+        const to = cloneDeep(field.options);
+        to.uiSchema.title = to.uiSchema.title + ' [attribute]';
 
         changes.push({
-          field: field.options,
+          field: to,
           after: model.get(key),
           before: model.previous(key),
         });
+
       }
     });
 
@@ -50,52 +58,86 @@ export function afterUpdate(app: Application) {
         }
       });
 
-      
-      //handle the associations.
-      if (fd) {
-        console.log(v);
-        console.log(typeof options.values[v]);
-        let fvalue: string = '';
+      //not a association, continue.
+      if (!fd) {
+        continue;
+      }
 
-        // 2.read the before values.using the model.get[object] method ,read from database.
-        const datas = await model['get' + v[0].toUpperCase() + v.substring(1)]();
-        // const datas = await model.get(v);
-        let bvalue: string = '';
+      let fvalue: Array<string> = [];
+      let bvalue: Array<string> = [];
+      //the flag for the bevalue=fvalue. equal=true.
+      let equalFlag = true;
 
-        //judge whether the object is a list or a object.
-        if (options.values[v] instanceof Array) {//nn
+      // 2.read the before values.using the model.get[object] method ,read from database.
+      //get the association getter get the association'value.
+      const association = model.constructor.associations[v];
+      const getAccessor = association.accessors.get;
+      const datas = transaction ? await model[getAccessor]({ transaction }) : await model[getAccessor]();
 
-          // 3.read the after values.which is submit from the front pages.
-          fvalue = ''.concat(options.values[v]);
-
-          for (let t of datas) {
-            bvalue += ',' + t.dataValues.id;
-          }
-          bvalue = bvalue.substring(1);
-
-        } else {//11 or 1n
-
-          fvalue += options.values[v].id
-          bvalue += datas.dataValues.id;
-
+      //create the values array.
+      if (datas instanceof Array) {
+        for (let t of datas) {
+          bvalue.push(t.dataValues.id);
         }
+      } else {
+        bvalue.push(datas.dataValues.id);
+      }
 
-        // 4.judge whether the before != after.
-        // 5.push the != datas into the changes array.then into the database.
-        if (!fd.options.hidden && bvalue.trim().toLowerCase() != fvalue.trim().toLowerCase()) {
-          fd.options.uiSchema['x-component'] = 'Input';
+      //update case is the most complex situation.it may not have the ids.
+      if (options.values[v] instanceof Array) {//nn,1n
+        // 3.read the after values.which is submit from the front pages,api,elswhere.
+        for (const t of options.values[v]) {
 
-          if (fd.options.uiSchema.title.indexOf('[relation]') == -1) {
-            fd.options.uiSchema.title = fd.options.uiSchema.title + ' [relation]';//display tilte r = relationship,a =attribute.
+          //is string or number treat as id value.
+          if (isStringOrNumber(t)) {
+            fvalue.push(t);
+            continue;
           }
 
-          changes.push({
-            field: fd.options,
-            after: fvalue,
-            before: bvalue,
-          });
+          //if a object.
+          if (t instanceof Object) {
+            //have id, diffrent will log.
+            if (t.id) {
+              fvalue.push(t.id);
+            }
+            //no id,will log.
+            if (!t.id && equalFlag) {
+              equalFlag = false;
+              break;
+            }
+          }
         }
 
+        if (equalFlag && !isEqual(bvalue, fvalue)) {
+          equalFlag = false;
+        }
+
+      } else {//11
+
+        //if id,compare,diff log .no id,log.
+        if (options.values[v].id) {
+          equalFlag = bvalue.includes(options.values[v].id);
+        } else {
+          equalFlag = false;
+        }
+
+      }
+
+      // 4.judge whether the before != after.
+      // 5.push the != datas into the changes array.then into the database.
+      if (!fd.options.hidden && !equalFlag) {
+
+        //clonedeep options to another object.
+        //set title with desc.display tilte r = relationship,a =attribute.
+        const to = cloneDeep(fd.options);
+        to.uiSchema['x-component'] = 'Input';
+        to.uiSchema.title = to.uiSchema.title + ' [relation]';
+
+        changes.push({
+          field: to,
+          after: JSON.stringify(options.values[v]),
+          before: JSON.stringify(bvalue),
+        });
       }
 
     }
@@ -121,6 +163,7 @@ export function afterUpdate(app: Application) {
       //   await transaction.commit();
       // }
     } catch (error) {
+      console.log(error);
       // if (!options.transaction) {
       //   await transaction.rollback();
       // }

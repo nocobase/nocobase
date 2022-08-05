@@ -1,6 +1,8 @@
 import Application from '@nocobase/server';
 import { LOG_TYPE_CREATE } from '../constants';
 
+import { cloneDeep } from 'lodash';
+
 export function afterCreate(app: Application) {
   return async (model, options) => {
     const db = app.db;
@@ -20,6 +22,7 @@ export function afterCreate(app: Application) {
             return field.name === key || field.options.field === key;
           });
           if (field && !field.options.hidden) {
+
             changes.push({
               field: field.options,
               after: model.get(key),
@@ -40,42 +43,30 @@ export function afterCreate(app: Application) {
           }
         });
 
+        //not associations ,next.
+        if (!fd) {
+          continue;
+        }
 
-        //handle the associations.
-        if (fd) {
-          console.log(v);
-          console.log(typeof options.values[v]);
-          let fvalue: string = '';
+        //fvale =aftervalue,bvalue=beforevalue.
+        let fvalue: any ;
+        let bvalue: string = '';
 
-          let bvalue: string = '';
+        //in create case: no matter it's a array or a object or a id.
+        //just log it out.
+        fvalue = options.values[v];
+        if (!fd.options.hidden) {
+          //clonedeep options to another object.
+          //set title with desc.display tilte r = relationship,a =attribute.
+          const to = cloneDeep(fd.options);
+          to.uiSchema['x-component'] = 'Input';
+          to.uiSchema.title = to.uiSchema.title + ' [relation]';
 
-          //judge whether the object is a list or a object.
-          if (options.values[v] instanceof Array) {//nn
-
-            // 3.read the after values.which is submit from the front pages.
-            fvalue = ''.concat(options.values[v]);
-
-          } else {//11 or 1n
-            fvalue += options.values[v].id
-
-          }
-
-          // 4.judge whether the before != after.
-          // 5.push the != datas into the changes array.then into the database.
-          if (!fd.options.hidden) {
-            fd.options.uiSchema['x-component'] = 'Input';
-
-            if (fd.options.uiSchema.title.indexOf('[relation]') == -1) {
-              fd.options.uiSchema.title = fd.options.uiSchema.title + ' [relation]';//display tilte r = relationship,a =attribute.
-            }
-
-            changes.push({
-              field: fd.options,
-              after: fvalue,
-              before: bvalue,
-            });
-          }
-
+          changes.push({
+            field: to,
+            after: JSON.stringify(fvalue),
+            before: bvalue,
+          });
         }
       }
 
@@ -91,6 +82,10 @@ export function afterCreate(app: Application) {
         transaction,
         hooks: false,
       });
-    } catch (error) { }
+    } catch (error) {
+      // throw(error);
+      console.log(error);
+
+    }
   };
 }
