@@ -1,6 +1,8 @@
 import Application from '@nocobase/server';
 import { LOG_TYPE_DESTROY } from '../constants';
 
+import { cloneDeep } from 'lodash';
+
 export function afterDestroy(app: Application) {
   return async (model, options) => {
     const db = app.db;
@@ -31,7 +33,9 @@ export function afterDestroy(app: Application) {
       //push to changes.
       const as = collection.model.associations;
       for (const v of Object.keys(as)) {
-        if(['createdBy', 'updatedBy'].includes(v)){
+
+        //exclude the system associations createdBy,updatedBy.
+        if (['createdBy', 'updatedBy'].includes(v)) {
           continue;
         }
         //find all  associations,find all changed associations.
@@ -43,41 +47,40 @@ export function afterDestroy(app: Application) {
         });
 
         //handle the associations.
-        if (fd) {
-          let fvalue: string = '';
-
-          // 2.read the before values.using the model.get[object] method ,read from database.
-          const datas = await model['get' + v[0].toUpperCase() + v.substring(1)]();
-          // const datas = await model.get(v);
-          let bvalue: string = '';
-
-          //judge whether the object is a list or a object.
-          if (datas instanceof Array) {//nn
-
-            // 3.read the after values.which is submit from the front pages.
-            for (let t of datas) {
-              bvalue += ',' + t.dataValues.id;
-            }
-            bvalue = bvalue.substring(1);
-
-          } else {//11 or 1n
-            bvalue += datas.dataValues.id;
-          }
-
-          fd.options.uiSchema['x-component'] = 'Input';
-
-          if (fd.options.uiSchema.title.indexOf('[relation]') == -1) {
-            fd.options.uiSchema.title = fd.options.uiSchema.title + ' [relation]';//display tilte r = relationship,a =attribute.
-          }
-
-          changes.push({
-            field: fd.options,
-            after: '',
-            before: bvalue,
-          });
-
+        if (!fd) {
+          continue;
         }
 
+        //fvale =aftervalue,bvalue=beforevalue.
+        let fvalue: string = '';
+        let bvalue: Array<string> = [];
+
+        // 2.read the before values.using the model.get[object] method ,read from database.
+        //get the association getter get the association'value.
+        const association = model.constructor.associations[v];
+        const getAccessor = association.accessors.get;
+        const datas = transaction ? await model[getAccessor]({ transaction }) : await model[getAccessor]();
+
+        //in destory case.just read all the relations and log out the id.
+        if (datas instanceof Array) {
+          for (let t of datas) {
+            bvalue.push(t.dataValues.id);
+          }
+        } else {
+          bvalue.push(datas.dataValues.id);
+        }
+
+        //clonedeep options to another object.
+        //set title with desc.display tilte r = relationship,a =attribute.
+        const to = cloneDeep(fd.options);
+        to.uiSchema['x-component'] = 'Input';
+        to.uiSchema.title = to.uiSchema.title + ' [relation]';
+
+        changes.push({
+          field: to,
+          after: '',
+          before: JSON.stringify(bvalue),
+        });
       }
 
       await AuditLog.repository.create({
@@ -95,6 +98,7 @@ export function afterDestroy(app: Application) {
       //   await transaction.commit();
       // }
     } catch (error) {
+      console.log(error);
       // if (!options.transaction) {
       //   await transaction.rollback();
       // }
