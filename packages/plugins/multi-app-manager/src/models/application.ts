@@ -99,7 +99,10 @@ export class ApplicationModel extends Model {
     }
 
     return {
-      database: rawDatabaseOptions,
+      database: {
+        ...rawDatabaseOptions,
+        tablePrefix: '',
+      },
     };
   }
 }

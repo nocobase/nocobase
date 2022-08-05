@@ -135,7 +135,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         },
         force: false,
       },
-      ...options,
+      ...lodash.clone(options),
     };
 
     if (options.storage && options.storage !== ':memory:') {
@@ -196,6 +196,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),
+    });
+
+    this.sequelize.beforeDefine((model, opts) => {
+      if (this.options.tablePrefix) {
+        opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
+      }
     });
   }
 
@@ -460,6 +466,18 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return super.on(event, listener);
   }
 
+  extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {
+    const collectionName = collectionOptions.name;
+    const existCollection = this.getCollection(collectionName);
+    if (existCollection) {
+      existCollection.updateOptions(collectionOptions, mergeOptions);
+    } else {
+      const existDelayExtends = this.delayCollectionExtend.get(collectionName) || [];
+
+      this.delayCollectionExtend.set(collectionName, [...existDelayExtends, { collectionOptions, mergeOptions }]);
+    }
+  }
+
   async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>> {
     const reader = new ImporterReader(options.directory, options.extensions);
     const modules = await reader.read();
@@ -467,15 +485,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     for (const module of modules) {
       if (module.extend) {
-        const collectionName = module.collectionOptions.name;
-        const existCollection = this.getCollection(collectionName);
-        if (existCollection) {
-          existCollection.updateOptions(module.collectionOptions, module.mergeOptions);
-        } else {
-          const existDelayExtends = this.delayCollectionExtend.get(collectionName) || [];
-
-          this.delayCollectionExtend.set(collectionName, [...existDelayExtends, module]);
-        }
+        this.extendCollection(module.collectionOptions, module.mergeOptions);
       } else {
         const collection = this.collection(module);
         result.set(collection.name, collection);
@@ -488,7 +498,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
 
-export function extend(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {
+export function extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {
   return {
     collectionOptions,
     mergeOptions,
@@ -496,16 +506,10 @@ export function extend(collectionOptions: CollectionOptions, mergeOptions?: Merg
   };
 }
 
+export const extend = extendCollection;
+
 export const defineCollection = (collectionOptions: CollectionOptions) => {
   return collectionOptions;
-};
-
-export const extendCollection = (collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) => {
-  return {
-    collectionOptions,
-    mergeOptions,
-    extend: true,
-  };
 };
 
 applyMixins(Database, [AsyncEmitter]);
