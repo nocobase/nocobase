@@ -32,13 +32,8 @@ export function afterUpdate(app: Application) {
       });
       if (field && !field.options.hidden && model.get(key) != model.previous(key)) {
 
-        //clonedeep options to another object.
-        //set title with desc.display tilte r = relationship,a =attribute.
-        const to = cloneDeep(field.options);
-        to.uiSchema.title = to.uiSchema.title + ' [attribute]';
-
         changes.push({
-          field: to,
+          field: field.options,
           after: model.get(key),
           before: model.previous(key),
         });
@@ -131,7 +126,9 @@ export function afterUpdate(app: Application) {
         //set title with desc.display tilte r = relationship,a =attribute.
         const to = cloneDeep(fd.options);
         to.uiSchema['x-component'] = 'Input';
-        to.uiSchema.title = to.uiSchema.title + ' [relation]';
+        if(to.uiSchema.title){
+          to.uiSchema.title += ' [relation]';
+        }
 
         changes.push({
           field: to,

@@ -60,11 +60,13 @@ export function afterCreate(app: Application) {
           //set title with desc.display tilte r = relationship,a =attribute.
           const to = cloneDeep(fd.options);
           to.uiSchema['x-component'] = 'Input';
-          to.uiSchema.title = to.uiSchema.title + ' [relation]';
+          if(to.uiSchema.title){
+            to.uiSchema.title += ' [relation]';
+          }
 
           changes.push({
             field: to,
-            after: JSON.stringify(fvalue),
+            after: cloneDeep(fvalue),
             before: bvalue,
           });
         }
