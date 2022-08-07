@@ -4,6 +4,12 @@ import { LOG_TYPE_UPDATE } from '../constants';
 
 import { cloneDeep, isEqual } from 'lodash';
 
+/**
+ * audit-logs v1.1
+ * this versions audit-logs is not the last version.
+ * we will rebuild it as a middleware,with feathers like api log,file log,etc.
+ * songyx 2022.8
+ */
 function isStringOrNumber(value: any) {
   return typeof value === 'string' || typeof value === 'number';
 }

@@ -3,6 +3,12 @@ import { LOG_TYPE_CREATE } from '../constants';
 
 import { cloneDeep } from 'lodash';
 
+/**
+ * audit-logs v1.1
+ * this versions audit-logs is not the last version.
+ * we will rebuild it as a middleware,with feathers like api log,file log,etc.
+ * songyx 2022.8
+ */
 export function afterCreate(app: Application) {
   return async (model, options) => {
     const db = app.db;
