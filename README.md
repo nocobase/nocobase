@@ -6,6 +6,10 @@ English | [中文](./README.zh-CN.md)
 
 NocoBase is in early stage of development and is subject to frequent changes, please use caution in production environments.
 
+## We are hiring
+
+We are looking for new full-time, remote product design, development, and testing colleagues to join the team. If you have a strong interest in NocoBase, please feel free to email us at hello@nocobase.com.
+
 ## What is NocoBase
 
 NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in minutes.
