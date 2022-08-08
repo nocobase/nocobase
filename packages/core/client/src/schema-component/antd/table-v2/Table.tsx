@@ -362,14 +362,7 @@ export const Table: any = observer((props: any) => {
   );
 
   return (
-    <div
-      className={css`
-        .ant-table {
-          overflow-x: auto;
-          overflow-y: hidden;
-        }
-      `}
-    >
+    <div>
       <SortableWrapper>
         <AntdTable
           rowKey={rowKey ?? defaultRowKey}
