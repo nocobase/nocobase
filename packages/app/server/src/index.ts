@@ -4,7 +4,7 @@ import config from './config';
 const app = new Application(config);
 
 if (require.main === module) {
-  app.parse();
+  app.runAsCLI();
 }
 
 export default app;

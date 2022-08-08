@@ -3,7 +3,7 @@ import { registerActions } from '@nocobase/actions';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
-import { Command, CommandOptions } from 'commander';
+import { Command, CommandOptions, ParseOptions } from 'commander';
 import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa from 'koa';
@@ -247,8 +247,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async parse(argv = process.argv) {
+    return this.runAsCLI(argv);
+  }
+
+  async runAsCLI(argv?: readonly string[], options?: ParseOptions) {
     await this.load();
-    return this.cli.parseAsync(argv);
+    return this.cli.parseAsync(argv, options);
   }
 
   async start(options: StartOptions = {}) {
