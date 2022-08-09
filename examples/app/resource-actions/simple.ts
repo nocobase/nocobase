@@ -1,10 +1,10 @@
 /*
-# 最简单的单应用
+# 最简单的 resource actions
 
 # 步骤
 
 Step 1:
-yarn run:example examples/app/single-app.ts start
+yarn run:example examples/app/resource-actions/simple.ts start
 
 Step 2:
 curl http://localhost:13000/api/test:list
@@ -36,23 +36,6 @@ app.resource({
     async list(ctx, next) {
       ctx.body = 'test list';
       await next();
-    },
-  },
-});
-
-app.resource({
-  name: 'test2',
-  actions: {
-    find: {
-      filter: {
-        field1: 'value1',
-      },
-      handler: async (ctx, next) => {
-        ctx.body = {
-          'ctx.action.params': ctx.action.params,
-        };
-        await next();
-      },
     },
   },
 });

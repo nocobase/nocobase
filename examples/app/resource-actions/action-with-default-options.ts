@@ -1,10 +1,10 @@
 /*
-# 最简单的单应用
+# 带默认参数的 Action
 
 # 步骤
 
 Step 1:
-yarn run:example examples/app/single-app.ts start
+yarn run:example examples/app/resource-actions/action-with-default-options.ts start
 
 Step 2:
 curl http://localhost:13000/api/test:list
@@ -32,16 +32,6 @@ const app = new Application({
 
 app.resource({
   name: 'test',
-  actions: {
-    async list(ctx, next) {
-      ctx.body = 'test list';
-      await next();
-    },
-  },
-});
-
-app.resource({
-  name: 'test2',
   actions: {
     find: {
       filter: {
