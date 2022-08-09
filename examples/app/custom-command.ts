@@ -1,13 +1,10 @@
 /*
-# 最简单的单应用
+# 自定义命令行
 
 # 步骤
 
 Step 1:
-yarn run:example examples/app/single-app.ts start
-
-Step 2:
-curl http://localhost:13000/api/test:list
+yarn run:example examples/app/custom-command.ts hello
 */
 import { Application } from '@nocobase/server';
 
@@ -30,13 +27,8 @@ const app = new Application({
   plugins: [],
 });
 
-app.resource({
-  name: 'test',
-  actions: {
-    async list(ctx) {
-      ctx.body = 'test list';
-    },
-  },
+app.command('hello').action(() => {
+  console.log('hello cli');
 });
 
 if (require.main === module) {
@@ -44,3 +36,4 @@ if (require.main === module) {
 }
 
 export default app;
+

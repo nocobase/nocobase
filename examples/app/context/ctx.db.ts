@@ -1,13 +1,13 @@
 /*
-# 最简单的单应用
+# ctx.db 用法
 
 # 步骤
 
 Step 1:
-yarn run:example examples/app/single-app.ts start
+yarn run:example examples/app/context/ctx.db.ts start
 
 Step 2:
-curl http://localhost:13000/api/test:list
+curl http://localhost:13000/
 */
 import { Application } from '@nocobase/server';
 
@@ -30,13 +30,23 @@ const app = new Application({
   plugins: [],
 });
 
-app.resource({
-  name: 'test',
-  actions: {
-    async list(ctx) {
-      ctx.body = 'test list';
+app.collection({
+  name: 'articles',
+  fields: [
+    {
+      type: 'string',
+      name: 'title',
     },
-  },
+    {
+      type: 'text',
+      name: 'content',
+    },
+  ],
+});
+
+app.use(async (ctx, next) => {
+  ctx.body = ctx.db.getCollection('articles').options;
+  await next();
 });
 
 if (require.main === module) {
