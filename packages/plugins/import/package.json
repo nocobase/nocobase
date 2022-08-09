@@ -1,0 +1,10 @@
+{
+  "name": "@nocobase/plugin-import",
+  "version": "0.7.4-alpha.1",
+  "main": "lib/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/server": "*",
+    "@nocobase/test": "*"
+  }
+}

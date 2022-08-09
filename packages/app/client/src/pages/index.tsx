@@ -7,6 +7,7 @@ export const app = new Application({
   plugins: [
     require('@nocobase/plugin-china-region/client').default,
     require('@nocobase/plugin-export/client').default,
+    require('@nocobase/plugin-import/client').default,
     require('@nocobase/plugin-audit-logs/client').default,
     require('@nocobase/plugin-workflow/client').default,
   ],
