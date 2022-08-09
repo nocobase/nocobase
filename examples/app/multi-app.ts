@@ -1,3 +1,11 @@
+/*
+# 多应用
+
+yarn run:example examples/app/multi-app.ts start
+
+curl http://localhost:13000/api/test:list
+curl http://localhost:13000/sub1/api/test:list
+*/
 import { Application } from '@nocobase/server';
 import { IncomingMessage } from 'http';
 
@@ -57,6 +65,3 @@ app.appManager.setAppSelector((req: IncomingMessage) => {
 });
 
 export default app;
-
-// http://localhost:13000/api/test:list
-// http://localhost:13000/sub1/api/test:list
