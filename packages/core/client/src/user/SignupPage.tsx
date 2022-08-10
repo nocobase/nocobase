@@ -4,6 +4,7 @@ import { message } from 'antd';
 import React from 'react';
 import { Redirect, useHistory } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
+import VerificationCode from './VerificationCode';
 
 const schema: ISchema = {
   type: 'object',
@@ -17,6 +18,24 @@ const schema: ISchema = {
       'x-validator': 'email',
       'x-decorator': 'FormItem',
       'x-component-props': { placeholder: '{{t("Email")}}', style: {} },
+    },
+    phone: {
+      type: 'string',
+      required: true,
+      'x-component': 'Input',
+      'x-validator': 'phone',
+      'x-decorator': 'FormItem',
+      'x-component-props': { placeholder: '{{t("Phone")}}', style: {} },
+    },
+    code: {
+      type: 'string',
+      required: true,
+      'x-component': 'VerificationCode',
+      'x-component-props': {
+        actionType: 'users:signup',
+        targetFieldName: 'phone',
+      },
+      'x-decorator': 'FormItem',
     },
     password: {
       type: 'string',
@@ -36,7 +55,7 @@ const schema: ISchema = {
       ],
     },
     confirm_password: {
-      type: 'string',
+      type: 'void',
       required: true,
       'x-component': 'Password',
       'x-decorator': 'FormItem',
@@ -110,5 +129,13 @@ export const SignupPage = () => {
   if (!allowSignUp) {
     return <Redirect to={'/signin'} />;
   }
-  return <SchemaComponent schema={schema} scope={{ useSignup }} />;
+  return (
+    <SchemaComponent
+      schema={schema}
+      components={{
+        VerificationCode
+      }}
+      scope={{ useSignup }}
+    />
+  );
 };

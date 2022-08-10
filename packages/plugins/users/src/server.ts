@@ -1,12 +1,18 @@
+import { resolve } from 'path';
+import parse from 'json-templates';
+
 import { Collection, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import parse from 'json-templates';
-import { resolve } from 'path';
+import VerificationPlugin from '@nocobase/plugin-verification';
+import { Registry } from '@nocobase/utils';
+import { HandlerType, MiddlewareManager } from '@nocobase/resourcer';
+
 import { namespace } from './';
 import * as actions from './actions/users';
 import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
 import * as middlewares from './middlewares';
+import initAuthenticators from './authenticators';
 
 export interface UserPluginConfig {
   jwt: JwtOptions;
@@ -15,7 +21,9 @@ export interface UserPluginConfig {
 export default class UsersPlugin extends Plugin<UserPluginConfig> {
   public jwtService: JwtService;
 
-  public tokenMiddleware;
+  public tokenMiddleware: MiddlewareManager;
+
+  public authenticators: Registry<HandlerType> = new Registry();
 
   constructor(app, options) {
     super(app, options);
@@ -30,7 +38,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     if (cmd) {
       cmd.requiredOption('-e, --root-email <rootEmail>', '', process.env.INIT_ROOT_EMAIL);
       cmd.requiredOption('-p, --root-password <rootPassword>', '', process.env.INIT_ROOT_PASSWORD);
-      cmd.option('-n, --root-nickname [rootNickname]');
+      cmd.option('-n, --root-nickname <rootNickname>');
     }
     this.db.registerOperators({
       $isCurrentUser(_, ctx) {
@@ -98,6 +106,71 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     await this.db.import({
       directory: resolve(__dirname, 'collections'),
     });
+
+    initAuthenticators(this);
+
+    // TODO(module): should move to preset
+    const verificationPlugin = this.app.getPlugin('@nocobase/plugin-verification') as VerificationPlugin;
+    if (verificationPlugin && process.env.DEFAULT_SMS_VERIFY_CODE_PROVIDER) {
+      verificationPlugin.interceptors.register('users:signin', {
+        manual: true,
+        provider: process.env.DEFAULT_SMS_VERIFY_CODE_PROVIDER,
+        getReceiver(ctx) {
+          return ctx.action.params.values.phone;
+        },
+        validate: async (phone) => {
+          if (!phone) {
+            return false;
+          }
+          const User = this.db.getCollection('users');
+          const exists = await User.model.count({
+            where: {
+              phone,
+            },
+          });
+
+          return Boolean(exists);
+        }
+      });
+
+      verificationPlugin.interceptors.register('users:signup', {
+        provider: process.env.DEFAULT_SMS_VERIFY_CODE_PROVIDER,
+        getReceiver(ctx) {
+          return ctx.action.params.values.phone;
+        },
+        validate: async (phone) => {
+          if (!phone) {
+            return false;
+          }
+          const User = this.db.getCollection('users');
+          const exists = await User.model.count({
+            where: {
+              phone,
+            },
+          });
+
+          return !exists;
+        }
+      });
+
+      this.authenticators.register('sms', (ctx, next) => verificationPlugin.intercept(ctx, async () => {
+        const { values } = ctx.action.params;
+
+        const User = ctx.db.getCollection('users');
+        const user = await User.model.findOne({
+          where: {
+            phone: values.phone,
+          },
+        });
+        if (!user) {
+          return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
+        }
+
+        ctx.state.currentUser = user;
+
+        return next();
+      }));
+    }
   }
 
   getInstallingData(options: any = {}) {
