@@ -49,7 +49,7 @@ describe('i18next', () => {
     });
     const response1 = await agent.get('/api/tests:get');
     expect(response1.text).toEqual('Hello');
-    const response2 = await agent.get('/api/tests:get').set('Accept-Language', 'zh-CN');
+    const response2 = await agent.get('/api/tests:get').set('X-Locale', 'zh-CN');
     expect(response2.text).toEqual('你好');
     const response3 = await agent.get('/api/tests:get?locale=zh-CN');
     expect(response3.text).toEqual('你好');
