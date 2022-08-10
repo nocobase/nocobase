@@ -6,7 +6,7 @@
 # 步骤：
 
 Step 1:
-yarn run:example examples/app/context/ctx.action.mergeParams.ts start
+yarn run:example app/context/ctx.action.mergeParams start
 
 Step 2:
 curl http://localhost:13000/api/test:list?filter%5Ba%5D=a2&fields=col1

@@ -2,7 +2,7 @@
 # 国际化多语言
 
 Step 1:
-yarn run:example examples/app/i18n.ts start
+yarn run:example app/i18n start
 
 Step 2:
 curl http://localhost:13000/api/test:get

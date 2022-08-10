@@ -4,7 +4,7 @@
 # 步骤
 
 Step 1:
-yarn run:example examples/app/context/ctx.db.ts start
+yarn run:example app/context/ctx.db start
 
 Step 2:
 curl http://localhost:13000/

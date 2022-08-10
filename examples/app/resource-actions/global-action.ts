@@ -6,7 +6,7 @@
 # 步骤
 
 Step 1:
-yarn run:example examples/app/resource-actions/global-action.ts start
+yarn run:example app/resource-actions/global-action start
 
 Step 2: test:export 的 action.params 带 fields
 curl http://localhost:13000/api/test:export

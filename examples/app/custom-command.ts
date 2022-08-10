@@ -4,7 +4,7 @@
 # 步骤
 
 Step 1:
-yarn run:example examples/app/custom-command.ts hello
+yarn run:example app/custom-command.ts hello
 */
 import { Application } from '@nocobase/server';
 

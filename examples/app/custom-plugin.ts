@@ -4,7 +4,7 @@
 # 步骤
 
 Step 1: Start app
-yarn run:example examples/plugins/custom-plugin.ts start
+yarn run:example plugins/custom-plugin start
 
 Step 2: View test list
 http://localhost:13000/api/test:list
