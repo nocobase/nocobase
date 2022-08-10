@@ -1,7 +1,8 @@
 /*
 # 编写 Application 测试用例
 
-yarn test examples/app/__tests__/app.test.ts
+# 执行测试
+yarn jest examples/app/__tests__/app.test.ts
 */
 import { MockServer, mockServer } from '@nocobase/test';
 
