@@ -1,8 +1,8 @@
 /*
-Step 1:
-yarn run:example app/collection2resource.ts db:sync
+Step 1: 将 collections 同步给数据库（建表和字段）
+yarn run:example app/collection2resource db:sync
 
-Step 2:
+Step 2: 启动应用
 yarn run:example app/collection2resource start
 
 Step 3: Create article
