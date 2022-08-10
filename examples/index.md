@@ -25,7 +25,8 @@
 - [国际化多语言](./app/i18n.ts)
 - [自定义命令行](./app/custom-command.ts)
 - [编写一个最简单的插件](./app/custom-plugin.ts)
-- 编写测试用例
+- 编写 Application 测试用例
+  - [最简单的测试用例](./app/__tests__/app.test.ts)
 
 ## Database
 
