@@ -6,6 +6,7 @@ import {
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
+import { saveAs } from 'file-saver';
 import { cloneDeep } from 'lodash';
 import { useTranslation } from 'react-i18next';
 
@@ -48,14 +49,7 @@ export const useExportAction = () => {
         },
       );
       let blob = new Blob([data], { type: 'application/x-xls' });
-      const a = document.createElement('a');
-      const blobUrl = window.URL.createObjectURL(blob);
-      a.download = `${compile(title)}.xlsx`;
-      a.href = blobUrl;
-      document.body.appendChild(a);
-      a.click();
-      URL.revokeObjectURL(blobUrl);
-      document.body.removeChild(a);
+      saveAs(blob, `${compile(title)}.xlsx`);
     },
   };
 };
