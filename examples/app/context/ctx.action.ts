@@ -4,7 +4,7 @@
 # 步骤
 
 Step 1:
-yarn run:example examples/app/context/ctx.action.ts start
+yarn run:example app/context/ctx.action start
 
 Step 2:
 curl http://localhost:13000/api/test:list

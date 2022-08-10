@@ -4,7 +4,7 @@
 # 步骤
 
 Step 1:
-yarn run:example examples/app/middleware/resourcer.ts start
+yarn run:example app/middleware/resourcer start
 
 Step 2:
 curl http://localhost:13000/api/test:list

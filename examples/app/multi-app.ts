@@ -1,7 +1,7 @@
 /*
 # 多应用
 
-yarn run:example examples/app/multi-app.ts start
+yarn run:example app/multi-app start
 
 curl http://localhost:13000/api/test:list
 curl http://localhost:13000/sub1/api/test:list

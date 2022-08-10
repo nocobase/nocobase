@@ -1,9 +1,9 @@
 /*
 Step 1:
-yarn run:example examples/app/association2resource.ts db:sync
+yarn run:example app/association2resource.ts db:sync
 
 Step 2:
-yarn run:example examples/app/association2resource.ts start
+yarn run:example app/association2resource start
 
 Step 3: Create article
 curl --location --request POST 'http://localhost:13000/api/articles:create' \
