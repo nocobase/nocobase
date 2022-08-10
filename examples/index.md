@@ -27,8 +27,12 @@
 - [编写一个最简单的插件](./app/custom-plugin.ts)
 - 编写 Application 测试用例
   - [最简单的测试用例](./app/__tests__/app.test.ts)
+- 客户端 SDK（APIClient）示例
+  - [客户端常规请求 —— api.request()](./api-client/api.request.ts)
+  - [客户端资源请求 —— api.resource().action()](./api-client/api.resource.ts)
 
 ## Database
 
-## Client
+- 配置 Collections & Fields
 
+## Client
