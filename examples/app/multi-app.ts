@@ -1,5 +1,5 @@
 /*
-# 多应用
+# 支持多应用（子应用）
 
 yarn run:example app/multi-app start
 

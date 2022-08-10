@@ -30,11 +30,13 @@ const app = new Application({
   plugins: [],
 });
 
+// 定义了一个 test 资源，并提供了相对应的 list 方法
 app.resource({
   name: 'test',
   actions: {
-    async list(ctx) {
+    async list(ctx, next) {
       ctx.body = 'test list';
+      await next();
     },
   },
 });
