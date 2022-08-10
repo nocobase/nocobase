@@ -21,7 +21,7 @@ import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
-import { Migrations } from './migration';
+import { MigrationItem, Migrations } from './migration';
 import { Model } from './model';
 import { ModelHook } from './model-hook';
 import extendOperators from './operators';
@@ -205,7 +205,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
   }
 
-  addMigration(item) {
+  addMigration(item: MigrationItem) {
     return this.migrations.add(item);
   }
 
