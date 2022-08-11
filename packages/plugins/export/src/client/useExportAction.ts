@@ -41,6 +41,7 @@ export const useExportAction = () => {
           columns: JSON.stringify(compile(exportSettings)),
           appends: service.params[0]?.appends?.join(),
           filter: JSON.stringify(service.params[0]?.filter),
+          sort: service.params[0]?.sort,
         },
         {
           method: 'get',

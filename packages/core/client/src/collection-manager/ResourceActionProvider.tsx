@@ -35,10 +35,7 @@ const CollectionResourceActionProvider = (props) => {
       params: {
         ...others,
         ...request?.params,
-        appends: [
-          ...collection?.fields?.filter?.((field) => field.target).map((field) => field.name),
-          ...appends,
-        ],
+        appends: [...collection?.fields?.filter?.((field) => field.target).map((field) => field.name), ...appends],
         sort: dragSort ? [collection.sortable === true ? 'sort' : collection.sortable] : request?.params?.sort,
       },
     },
@@ -66,10 +63,7 @@ const AssociationResourceActionProvider = (props) => {
       ...request,
       params: {
         ...request?.params,
-        appends: [
-          ...collection?.fields?.filter?.((field) => field.target).map((field) => field.name),
-          ...appends,
-        ],
+        appends: [...collection?.fields?.filter?.((field) => field.target).map((field) => field.name), ...appends],
       },
     },
     { uid },
