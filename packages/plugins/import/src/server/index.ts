@@ -1,5 +1,6 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-
+import { importXlsx } from './actions';
+import { importMiddleware } from './middleware';
 export class ImportPlugin extends Plugin {
   getName(): string {
     return this.getPackageName(__dirname);
@@ -10,18 +11,16 @@ export class ImportPlugin extends Plugin {
   }
 
   async load() {
-    // TODO
-    // Visit: http://localhost:13000/api/testImport:getInfo
+    // Visit: http://localhost:13000/api/import:importXlsx
+    this.app.resourcer.use(importMiddleware);
+    // this.app.resourcer.registerActionHandler('import', importXlsx);
     this.app.resource({
-      name: 'testImport',
+      name: 'import',
       actions: {
-        async getInfo(ctx, next) {
-          ctx.body = `Hello import!`;
-          next();
-        },
+        importXlsx,
       },
     });
-    this.app.acl.allow('testImport', 'getInfo');
+    this.app.acl.allow('import', 'importXlsx');
   }
 
   async install(options: InstallOptions) {
