@@ -28,10 +28,6 @@ const app = new Application({
   plugins: [],
 });
 
-if (require.main === module) {
-  app.runAsCLI();
-}
-
 const subApp1 = app.appManager.createApplication('sub1', {
   database: app.db,
   resourcer: {
@@ -63,5 +59,9 @@ app.appManager.setAppSelector((req: IncomingMessage) => {
   }
   return null;
 });
+
+if (require.main === module) {
+  app.runAsCLI();
+}
 
 export default app;
