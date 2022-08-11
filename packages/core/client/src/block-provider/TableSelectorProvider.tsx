@@ -1,7 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
-import { useCollection, useCollectionManager } from '../collection-manager';
+import { useCollectionManager } from '../collection-manager';
 import { useRecord } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
@@ -60,7 +60,7 @@ export const TableSelectorProvider = (props) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (appends?.length) {
+  if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
   if (collectionField) {
