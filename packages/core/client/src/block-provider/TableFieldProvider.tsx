@@ -17,8 +17,8 @@ const InternalTableFieldProvider = (props) => {
   const formBlockCtx = useFormBlockContext();
   const formFieldCtx = useFormFieldContext();
 
-  const fullFieldName = formFieldCtx && formFieldCtx.fieldName  ? `${formFieldCtx.fieldName}.${fieldName}` : fieldName;
-  
+  const fullFieldName = formFieldCtx && formFieldCtx.fieldName ? `${formFieldCtx.fieldName}.${fieldName}` : fieldName;
+
   if (!formBlockCtx?.updateAssociationValues?.includes(fullFieldName)) {
     formBlockCtx?.updateAssociationValues?.push(fullFieldName);
   }
