@@ -21,6 +21,7 @@ const db = new Database({
 
 db.collection({
   name: 'categories',
+  tree: 'adjacency-list',
   fields: [
     {
       type: 'string',
