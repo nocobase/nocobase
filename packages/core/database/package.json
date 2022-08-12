@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/database",
-  "version": "0.7.4-alpha.1",
+  "version": "0.7.4-alpha.4",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -12,7 +12,7 @@
     }
   ],
   "dependencies": {
-    "@nocobase/utils": "0.7.4-alpha.1",
+    "@nocobase/utils": "0.7.4-alpha.4",
     "async-mutex": "^0.3.2",
     "deepmerge": "^4.2.2",
     "flat": "^5.0.2",
@@ -30,5 +30,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/database"
   },
-  "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
+  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
 }
