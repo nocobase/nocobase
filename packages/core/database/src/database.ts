@@ -86,7 +86,7 @@ class DatabaseVersion {
       postgres: {
         sql: 'select version() as version',
         get: (v) => {
-          const keys = v.split(' ');
+          const keys = v.split(/\s|,/);
           keys.shift();
           return semver.minVersion(keys.shift()).version;
         },
