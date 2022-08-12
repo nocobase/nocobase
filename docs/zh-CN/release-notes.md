@@ -1,5 +1,24 @@
 # 更新日志
 
+## 2022/08/12 ~ v0.7.4-alpha.4
+
+### New features
+
+- Field default value
+
+### Details
+
+- fix(database): error getting db version number
+- fix: record provider required for read pretty
+- fix: sync table sort to export (#723)
+- feat: full version of the NocoBase dockerfile (#719)
+- feat: add examples
+- chore: update node ci
+- fix(plugin-workflow): fix extend collection (#708)
+- fix: DB_TABLE_PREFIX doesn't get applied (#710)
+- feat: default value (#679)
+- fix: required field delete submit error (#688) (#694)
+
 ## 2022/07/28 ~ v0.7.4-alpha.1
 
 ### Details
