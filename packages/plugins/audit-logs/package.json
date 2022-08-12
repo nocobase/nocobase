@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-audit-logs",
-  "version": "0.7.4-alpha.2",
+  "version": "0.7.4-alpha.3",
   "main": "./lib/server/index.js",
   "types": "./lib/server/index.d.ts",
   "license": "Apache-2.0",
@@ -11,11 +11,11 @@
     }
   ],
   "dependencies": {
-    "@nocobase/client": "0.7.4-alpha.2",
-    "@nocobase/server": "0.7.4-alpha.2"
+    "@nocobase/client": "0.7.4-alpha.3",
+    "@nocobase/server": "0.7.4-alpha.3"
   },
   "devDependencies": {
-    "@nocobase/test": "0.7.4-alpha.2"
+    "@nocobase/test": "0.7.4-alpha.3"
   },
-  "gitHead": "40d079ceb4dadfd6a021ab44a42ef7f52f241745"
+  "gitHead": "542d6ca11dd2f5427aa63f7f20259122d1081a88"
 }

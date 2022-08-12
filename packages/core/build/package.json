@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/build",
-  "version": "0.7.4-alpha.2",
+  "version": "0.7.4-alpha.3",
   "description": "Library build tool based on rollup.",
   "main": "lib/index.js",
   "bin": {
@@ -74,5 +74,5 @@
     "@types/gulp-plumber": "^0.0.32",
     "umi-tools": "^0.4.0"
   },
-  "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
+  "gitHead": "542d6ca11dd2f5427aa63f7f20259122d1081a88"
 }
