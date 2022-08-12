@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/test",
-  "version": "0.7.4-alpha.1",
+  "version": "0.7.4-alpha.2",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
@@ -11,7 +11,7 @@
     }
   ],
   "dependencies": {
-    "@nocobase/server": "0.7.4-alpha.1",
+    "@nocobase/server": "0.7.4-alpha.2",
     "@types/supertest": "^2.0.11",
     "mockjs": "^1.1.0",
     "mysql2": "^2.3.3",
