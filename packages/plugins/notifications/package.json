@@ -17,5 +17,5 @@
     "@types/nodemailer": "6.4.4",
     "nodemailer-mock": "^1.5.11"
   },
-  "gitHead": "542d6ca11dd2f5427aa63f7f20259122d1081a88"
+  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
 }

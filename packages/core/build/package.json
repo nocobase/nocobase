@@ -74,5 +74,5 @@
     "@types/gulp-plumber": "^0.0.32",
     "umi-tools": "^0.4.0"
   },
-  "gitHead": "542d6ca11dd2f5427aa63f7f20259122d1081a88"
+  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
 }
