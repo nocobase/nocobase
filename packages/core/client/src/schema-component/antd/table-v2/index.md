@@ -7,10 +7,4 @@ group:
 
 # TableV2
 
-## TableBlock
-
-<code src="./demos/demo1.tsx" />
-
-## TableField
-
-<code src="./demos/demo2.tsx" />
+<code src="./demos/demo4.tsx" />

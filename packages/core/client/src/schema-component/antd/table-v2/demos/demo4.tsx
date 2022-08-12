@@ -94,9 +94,9 @@ const schema = {
     input: {
       type: 'array',
       default: [
-        { id: 1, name: 'Name1' },
-        { id: 2, name: 'Name2' },
-        { id: 3, name: 'Name3' },
+        { id: 1, name: 'Name1', title: 'Title1' },
+        { id: 2, name: 'Name2', title: 'Title2' },
+        { id: 3, name: 'Name3', title: 'Title3' },
       ],
       'x-component': 'TableV2',
       'x-initializer': 'AddColumn',
