@@ -196,6 +196,10 @@ function notEndsWith(a: string, b: string) {
   return !a.endsWith(b);
 }
 
+function concat(a: string, b: string) {
+  return a.concat(b);
+}
+calculators.register('concat', concat);
 calculators.register('includes', includes);
 calculators.register('notIncludes', notIncludes);
 calculators.register('startsWith', startsWith);

@@ -14,7 +14,7 @@ const colors = {
   green: '{{t("Green")}}',
   cyan: '{{t("Cyan")}}',
   blue: '{{t("Blue")}}',
-  geekblue: '{{t("Geek blue")}}',
+  geekblue: '{{t("Geek Blue")}}',
   purple: '{{t("Purple")}}',
   default: '{{t("Default")}}',
 };
