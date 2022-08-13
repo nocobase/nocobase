@@ -4,8 +4,9 @@ import { randomInt, randomUUID } from 'crypto';
 import { Op } from '@nocobase/database';
 import actions, { Context, Next } from '@nocobase/actions';
 
-import Plugin from '..';
+import Plugin, { namespace } from '..';
 import { CODE_STATUS_UNUSED } from '../constants';
+import moment from 'moment';
 
 const asyncRandomInt = promisify(randomInt);
 
@@ -32,7 +33,7 @@ export async function create(context: Context, next: Next) {
     return context.throw(400, { code: 'InvalidReceiver', message: 'Invalid receiver' });
   }
   const VerificationModel = context.db.getModel('verifications');
-  const exists = await VerificationModel.count({
+  const record = await VerificationModel.findOne({
     where: {
       type: values.type,
       receiver,
@@ -42,15 +43,18 @@ export async function create(context: Context, next: Next) {
       }
     }
   });
-  if (exists) {
-    return context.throw(429, { code: 'RateLimit', message: 'Please wait code to be expired' });
+  if (record) {
+    const seconds = moment(record.get('expiresAt')).diff(moment(), 'seconds');
+    // return context.throw(429, { code: 'RateLimit', message: context.t('Please don\'t retry in {{time}}', { time: moment().locale('zh').to(record.get('expiresAt')) }) });
+    return context.throw(429, { code: 'RateLimit', message: context.t('Please don\'t retry in {{time}} seconds', { time: seconds, ns: namespace }) });
   }
 
   const code = (<number>(await asyncRandomInt(999999))).toString(10).padStart(6, '0');
   if (interceptor.validate) {
-    const receiverValid = await interceptor.validate(receiver);
-    if (!receiverValid) {
-      return context.throw(400, { code: 'InvalidReceiver', message: 'Invalid receiver' });
+    try {
+      await interceptor.validate(context, receiver);
+    } catch (err) {
+      return context.throw(400, { code: 'InvalidReceiver', message: err.message });
     }
   }
 
@@ -58,7 +62,7 @@ export async function create(context: Context, next: Next) {
   const provider = new ProviderType(plugin, providerItem.get('options'));
 
   try {
-    await provider.send(receiver, { code });
+    // await provider.send(receiver, { code });
     console.log('sms verification code sent');
   } catch (error) {
     switch (error.name) {

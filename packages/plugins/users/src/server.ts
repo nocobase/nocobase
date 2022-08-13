@@ -118,9 +118,10 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         getReceiver(ctx) {
           return ctx.action.params.values.phone;
         },
-        validate: async (phone) => {
+        expiresIn: 120,
+        validate: async (ctx, phone) => {
           if (!phone) {
-            return false;
+            throw new Error(ctx.t('Not a valid cellphone number, please re-enter'));
           }
           const User = this.db.getCollection('users');
           const exists = await User.model.count({
@@ -128,8 +129,11 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
               phone,
             },
           });
+          if (!exists) {
+            throw new Error(ctx.t('The phone number is not registered, please register first', { ns: namespace }));
+          }
 
-          return Boolean(exists);
+          return true;
         }
       });
 
@@ -138,9 +142,10 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         getReceiver(ctx) {
           return ctx.action.params.values.phone;
         },
-        validate: async (phone) => {
+        expiresIn: 120,
+        validate: async (ctx, phone) => {
           if (!phone) {
-            return false;
+            throw new Error(ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }));
           }
           const User = this.db.getCollection('users');
           const exists = await User.model.count({
@@ -148,8 +153,11 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
               phone,
             },
           });
+          if (exists) {
+            throw new Error(ctx.t('The phone number has been registered, please login directly', { ns: namespace }));
+          }
 
-          return !exists;
+          return true;
         }
       });
 

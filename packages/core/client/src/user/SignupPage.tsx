@@ -55,11 +55,11 @@ const schema: ISchema = {
       ],
     },
     confirm_password: {
-      type: 'void',
+      type: 'string',
       required: true,
       'x-component': 'Password',
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Confirm password")}}', checkStrength: true, style: {} },
+      'x-component-props': { placeholder: '{{t("Confirm password")}}', style: {} },
       'x-reactions': [
         {
           dependencies: ['.password'],

@@ -4,10 +4,13 @@ import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Op } from '@nocobase/database';
 import { HandlerType } from '@nocobase/resourcer';
+import { Context } from '@nocobase/actions';
 
 import initProviders, { Provider } from './providers';
 import initActions from './actions';
 import { CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
+import { namespace } from '.';
+import { zhCN } from './locale';
 
 export interface Interceptor {
   manual?: boolean;
@@ -15,7 +18,7 @@ export interface Interceptor {
   expiresIn?: number;
   getReceiver(ctx): string;
   getCode?(ctx): string;
-  validate?(receiver: string): boolean | Promise<boolean>;
+  validate?(ctx: Context, receiver: string): boolean | Promise<boolean>;
 };
 
 export default class VerificationPlugin extends Plugin {
@@ -96,7 +99,7 @@ export default class VerificationPlugin extends Plugin {
         values: {
           id: DEFAULT_SMS_VERIFY_CODE_PROVIDER,
           type: PROVIDER_TYPE_SMS_ALIYUN,
-          title: 'default sms sender',
+          title: 'Default SMS sender',
           options: {
             accessKeyId: ALI_SMS_ACCESS_KEY,
             accessKeySecret: ALI_SMS_ACCESS_KEY_SECRET,
@@ -111,6 +114,8 @@ export default class VerificationPlugin extends Plugin {
 
   async load() {
     const { app, db, options } = this;
+
+    app.i18n.addResources('zh-CN', namespace, zhCN);
 
     await db.import({
       directory: path.resolve(__dirname, 'collections'),
