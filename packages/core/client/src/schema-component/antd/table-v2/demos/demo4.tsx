@@ -6,7 +6,7 @@ import {
   SchemaInitializer,
   SchemaInitializerItemOptions,
   SchemaInitializerProvider,
-  TableV2
+  TableV2,
 } from '@nocobase/client';
 import React from 'react';
 
@@ -91,23 +91,160 @@ const CustomSchemaInitializerProvider: React.FC = (props) => {
 const schema = {
   type: 'object',
   properties: {
-    input: {
+    table: {
       type: 'array',
       default: [
         { id: 1, name: 'Name1', title: 'Title1' },
         { id: 2, name: 'Name2', title: 'Title2' },
         { id: 3, name: 'Name3', title: 'Title3' },
+        { id: 4, name: 'Name3', title: 'Title3' },
+        { id: 5, name: 'Name3', title: 'Title3' },
+        { id: 6, name: 'Name3', title: 'Title3' },
+        { id: 7, name: 'Name3', title: 'Title3' },
+        { id: 8, name: 'Name3', title: 'Title3' },
+        { id: 9, name: 'Name3', title: 'Title3' },
+        { id: 10, name: 'Name3', title: 'Title3' },
+        { id: 11, name: 'Name3', title: 'Title3' },
       ],
       'x-component': 'TableV2',
       'x-initializer': 'AddColumn',
       'x-component-props': {
         rowKey: 'id',
+        sticky: { offsetHeader: 50 },
+        scroll: { x: 1000 },
       },
       properties: {
         column1: {
           type: 'void',
           title: 'Name',
           'x-component': 'TableV2.Column',
+          'x-component-props': { fixed: 'left', width: 100 },
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.name',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column2: {
+          type: 'void',
+          title: 'Title',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {},
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.name',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column3: {
+          type: 'void',
+          title: 'Title',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {},
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.name',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column4: {
+          type: 'void',
+          title: 'Title',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {},
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.name',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column5: {
+          type: 'void',
+          title: 'Title',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {},
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.name',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column6: {
+          type: 'void',
+          title: 'Title',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {},
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.name',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column7: {
+          type: 'void',
+          title: 'Title',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {},
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.name',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column8: {
+          type: 'void',
+          title: 'Title',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {},
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.name',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column9: {
+          type: 'void',
+          title: 'Title',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {},
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.name',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column10: {
+          type: 'void',
+          title: 'Title',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {},
           properties: {
             name: {
               type: 'string',

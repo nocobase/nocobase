@@ -40,14 +40,13 @@ const useTableColumns = () => {
       const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
 
       return {
+        ...s['x-component-props'],
         title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
         dataIndex,
         key: s.name,
         sorter: s['x-component-props']?.['sorter'],
-        // width: 300,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          // console.log((Date.now() - start) / 1000);
           return (
             <RecordIndexProvider index={index}>
               <RecordProvider record={record}>
@@ -362,14 +361,7 @@ export const Table: any = observer((props: any) => {
   );
 
   return (
-    <div
-      className={css`
-        .ant-table {
-          overflow-x: auto;
-          overflow-y: hidden;
-        }
-      `}
-    >
+    <>
       <SortableWrapper>
         <AntdTable
           rowKey={rowKey ?? defaultRowKey}
@@ -380,8 +372,6 @@ export const Table: any = observer((props: any) => {
           onChange={(pagination, filters, sorter, extra) => {
             onTableChange?.(pagination, filters, sorter, extra);
           }}
-          // tableLayout={'auto'}
-          // scroll={{ x: 12 * 300 + 80 }}
           columns={columns}
           dataSource={field?.value?.slice?.()}
         />
@@ -393,6 +383,6 @@ export const Table: any = observer((props: any) => {
           })}
         </div>
       )}
-    </div>
+    </>
   );
 });
