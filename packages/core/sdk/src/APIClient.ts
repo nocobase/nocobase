@@ -94,7 +94,7 @@ export class Auth {
     this.api.storage.setItem('NOCOBASE_TOKEN', token || '');
     if (!token) {
       this.setRole(null);
-      this.setLocale(null);
+      // this.setLocale(null);
     }
   }
 

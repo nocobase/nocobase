@@ -63,14 +63,14 @@ export async function create(context: Context, next: Next) {
 
   try {
     await provider.send(receiver, { code });
-    console.log('sms verification code sent');
+    console.log('verification code sent');
   } catch (error) {
     switch (error.name) {
       case 'InvalidReceiver':
-        return context.throw(400, { code: 'InvalidReceiver', message: 'Invalid receiver' });
+        return context.throw(400, error);
       default:
         console.error(error);
-        return context.throw(500);
+        return context.throw(500, context.t('Verification send failed, please try later or contact to administrator', { ns: namespace }));
     }
   }
 

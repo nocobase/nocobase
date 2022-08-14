@@ -37,7 +37,7 @@ export default class extends Provider {
 
     try {
       const { body } = await this.client.sendSmsWithOptions(request, new RuntimeOptions({}));
-      let err = new Error(i18n.t('SMS send failed, please try later or connect to administrator'));
+      let err = new Error();
       switch (body.code) {
         case 'OK':
           break;
