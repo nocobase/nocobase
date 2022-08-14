@@ -3,7 +3,7 @@ import * as OpenApi from '@alicloud/openapi-client';
 import { RuntimeOptions } from '@alicloud/tea-util';
 
 import { Provider } from '.';
-import { namespace } from '..';
+
 
 export default class extends Provider {
   client: DysmsApi;
@@ -44,7 +44,6 @@ export default class extends Provider {
 
         case 'isv.MOBILE_NUMBER_ILLEGAL':
           err.name = 'InvalidReceiver';
-          err.message = i18n.t('Not a valid cellphone number, please re-enter', {ns: namespace });
           return Promise.reject(err);
 
         case 'isv.BUSINESS_LIMIT_CONTROL':
