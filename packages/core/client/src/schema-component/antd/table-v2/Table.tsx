@@ -20,9 +20,11 @@ const isCollectionFieldComponent = (schema: ISchema) => {
   return schema['x-component'] === 'CollectionField';
 };
 
+const BASE_WIDTH = 100;
 const useTableColumns = () => {
   const start = Date.now();
   const field = useField<ArrayField>();
+  console.log('%c [ field ]-26', 'font-size:13px; background:pink; color:#bf2c9f;', field);
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns = schema
@@ -153,8 +155,12 @@ const useValidator = (validator: (value: any) => string) => {
 export const Table: any = observer((props: any) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
+  console.log('%c [ columns ]-156', 'font-size:13px; background:pink; color:#bf2c9f;', columns);
+
   const { pagination: pagination1, useProps, onChange, ...others1 } = props;
+  console.log('%c [ others1 ]-160', 'font-size:13px; background:pink; color:#bf2c9f;', others1);
   const { pagination: pagination2, ...others2 } = useProps?.() || {};
+  console.log('%c [ others2 ]-162', 'font-size:13px; background:pink; color:#bf2c9f;', others2);
   const {
     dragSort = false,
     showIndex = true,
@@ -163,8 +169,10 @@ export const Table: any = observer((props: any) => {
     rowSelection,
     rowKey,
     required,
+    scroll,
     ...others
   } = { ...others1, ...others2 } as any;
+
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
   const requiredValidator = field.required || required;
@@ -247,7 +255,10 @@ export const Table: any = observer((props: any) => {
       },
     };
   }, [field, onRowDragEnd, dragSort]);
-
+  const getScrollRange = useMemo(() => {
+    if (!scroll) return {};
+    return { x: Math.max(scroll?.x, columns.length * BASE_WIDTH), y: scroll?.y };
+  }, [columns.length, scroll]);
   const defaultRowKey = (record: any) => {
     return field.value?.indexOf?.(record);
   };
@@ -374,6 +385,7 @@ export const Table: any = observer((props: any) => {
           }}
           columns={columns}
           dataSource={field?.value?.slice?.()}
+          scroll={getScrollRange}
         />
       </SortableWrapper>
       {field.errors.length > 0 && (
