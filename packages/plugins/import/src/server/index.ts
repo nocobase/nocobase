@@ -13,14 +13,14 @@ export class ImportPlugin extends Plugin {
   async load() {
     // Visit: http://localhost:13000/api/import:importXlsx
     this.app.resourcer.use(importMiddleware);
-    // this.app.resourcer.registerActionHandler('import', importXlsx);
-    this.app.resource({
-      name: 'import',
-      actions: {
-        importXlsx,
-      },
-    });
-    this.app.acl.allow('import', 'importXlsx');
+    this.app.resourcer.registerActionHandler('importXlsx', importXlsx);
+    // this.app.resource({
+    //   name: 'import',
+    //   actions: {
+    //     importXlsx,
+    //   },
+    // });
+    this.app.acl.allow('*', 'importXlsx');
   }
 
   async install(options: InstallOptions) {

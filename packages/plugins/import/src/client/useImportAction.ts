@@ -36,7 +36,7 @@ export const useImportAction = () => {
         }
       });
       // 创建一个 input 节点
-      var input = document.createElement('input');
+      const input = document.createElement('input');
       // 设置 type 为 file 类型
       input.setAttribute('type', 'file');
       // 设置为多选选中文件 | 单选情况下不要设置
@@ -48,7 +48,7 @@ export const useImportAction = () => {
         // 这里的this 指的是 当前input事件中的this, 可以通过拿到 files
         // 不管选一个文件还是两个文件，最终得到的结果都是 数组结构
         // 这里我们只要单文件，所以拿到 索引为0的文件即可
-        var file = input.files[0];
+        const file = input.files[0];
         // 创建一个formData对象 | 这个是浏览器自带的
         let formData = new FormData();
         // 将得到的file 资源放到到formData中
@@ -57,8 +57,9 @@ export const useImportAction = () => {
         // 可以附带其他参数 | 如 id
         // formData.append('id', 1);
         // 这里的uploadImage 为axios封装的 export 出来的一个方法
-        await apiClient.axios.post('import:importXlsx', formData, {});
+        await apiClient.axios.post(`${name}:importXlsx`, formData, {});
         //   .catch((err) => {});
+        service?.refresh?.();
       };
 
       // 执行 click 事件，弹出文件选择框
