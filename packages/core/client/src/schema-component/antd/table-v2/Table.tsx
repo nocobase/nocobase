@@ -24,7 +24,6 @@ const BASE_WIDTH = 100;
 const useTableColumns = () => {
   const start = Date.now();
   const field = useField<ArrayField>();
-  console.log('%c [ field ]-26', 'font-size:13px; background:pink; color:#bf2c9f;', field);
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns = schema
@@ -155,12 +154,9 @@ const useValidator = (validator: (value: any) => string) => {
 export const Table: any = observer((props: any) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
-  console.log('%c [ columns ]-156', 'font-size:13px; background:pink; color:#bf2c9f;', columns);
 
   const { pagination: pagination1, useProps, onChange, ...others1 } = props;
-  console.log('%c [ others1 ]-160', 'font-size:13px; background:pink; color:#bf2c9f;', others1);
   const { pagination: pagination2, ...others2 } = useProps?.() || {};
-  console.log('%c [ others2 ]-162', 'font-size:13px; background:pink; color:#bf2c9f;', others2);
   const {
     dragSort = false,
     showIndex = true,
