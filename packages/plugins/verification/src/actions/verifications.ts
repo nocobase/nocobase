@@ -62,7 +62,7 @@ export async function create(context: Context, next: Next) {
   const provider = new ProviderType(plugin, providerItem.get('options'));
 
   try {
-    // await provider.send(receiver, { code });
+    await provider.send(receiver, { code });
     console.log('sms verification code sent');
   } catch (error) {
     switch (error.name) {
