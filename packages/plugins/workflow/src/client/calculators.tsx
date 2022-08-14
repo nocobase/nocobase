@@ -44,6 +44,7 @@ export const calculators = [
     title: '{{t("String operation")}}',
     children: [
       { value: 'concat', name: '{{t("concat")}}' },
+      {value: 'format_number_concat', name: '{{t("format_number_concat")}}'},
       { value: 'includes', name: '{{t("contains")}}' },
       { value: 'notIncludes', name: '{{t("does not contain")}}' },
       { value: 'startsWith', name: '{{t("starts with")}}' },

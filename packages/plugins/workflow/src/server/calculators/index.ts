@@ -56,7 +56,7 @@ export type Operand = ContextOperand | InputOperand | JobOperand | ConstantOpera
 // HACK: if no path provided, return self
 // @see https://github.com/lodash/lodash/pull/1270
 // TODO(question): should add default value as lodash?
-function get(object, path?: string | Array<string>) {
+function get(object: any, path?: string | Array<string>) {
   return path == null || !path.length ? object : getWithPath(object, path);
 }
 
@@ -100,27 +100,27 @@ export function calculate(operand: Operand, lastJob: JobModel, processor: Proces
 
 // built-in functions
 
-function equal(a, b) {
+function equal(a: any, b: any) {
   return a === b;
 }
 
-function notEqual(a, b) {
+function notEqual(a: any, b: any) {
   return a !== b;
 }
 
-function gt(a, b) {
+function gt(a: number, b: number) {
   return a > b;
 }
 
-function gte(a, b) {
+function gte(a: number, b: number) {
   return a >= b;
 }
 
-function lt(a, b) {
+function lt(a: number, b: number) {
   return a < b;
 }
 
-function lte(a, b) {
+function lte(a: number, b: number) {
   return a <= b;
 }
 
@@ -140,23 +140,23 @@ calculators.register('<=', lte);
 
 
 
-function add(...args) {
+function add(...args: any[]) {
   return args.reduce((sum, a) => sum + toNumber(a), 0);
 }
 
-function minus(a, b) {
+function minus(a: any, b: any) {
   return toNumber(a) - toNumber(b);
 }
 
-function multiple(...args) {
+function multiple(...args: any[]) {
   return args.reduce((result, a) => result * toNumber(a), 1);
 }
 
-function divide(a, b) {
+function divide(a: any, b: any) {
   return toNumber(a) / toNumber(b);
 }
 
-function mod(a, b) {
+function mod(a: any, b: any) {
   return toNumber(a) % toNumber(b);
 }
 
@@ -172,11 +172,11 @@ calculators.register('*', multiple);
 calculators.register('/', divide);
 calculators.register('%', mod);
 
-function includes(a, b) {
+function includes(a: string | any[], b: any) {
   return a.includes(b);
 }
 
-function notIncludes(a, b) {
+function notIncludes(a: string | any[], b: any) {
   return !a.includes(b);
 }
 
@@ -199,6 +199,19 @@ function notEndsWith(a: string, b: string) {
 function concat(a: string, b: string) {
   return a.concat(b);
 }
+
+function format_number_concat(a: string, b: number) {
+  if (b < 10) {
+    return a.concat("0000").concat(b.toFixed());
+  } else if (b >= 10 && b < 100) {
+    return a.concat("000").concat(b.toFixed());
+  } else if (b >= 100 && b < 1000) {
+    return a.concat("00").concat(b.toFixed());
+  } else if (b >= 1000 && b < 10000) {
+    return a.concat("0").concat(b.toFixed());
+  } else return a.concat(b.toFixed());
+}
+
 calculators.register('concat', concat);
 calculators.register('includes', includes);
 calculators.register('notIncludes', notIncludes);
@@ -206,6 +219,8 @@ calculators.register('startsWith', startsWith);
 calculators.register('notStartsWith', notStartsWith);
 calculators.register('endsWith', endsWith);
 calculators.register('notEndsWith', notEndsWith);
+calculators.register('format_number_concat',format_number_concat);
+
 
 function before(a: string, b: string) {
   return a < b;

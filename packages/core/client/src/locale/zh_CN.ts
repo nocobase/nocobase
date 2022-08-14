@@ -237,6 +237,7 @@ export default {
   "Default is the ID field": "默认为 ID 字段",
   "Set default sorting rules": "设置排序规则",
   "concat": "拼接",
+  "format_number_concat": "拼接ID",
 
   "Set validation rules": "设置验证规则",
   "Max length": "最大长度",
