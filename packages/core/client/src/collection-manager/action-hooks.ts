@@ -1,5 +1,6 @@
 import { useForm } from '@formily/react';
 import { message } from 'antd';
+import omit from 'lodash/omit';
 import { useEffect } from 'react';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
@@ -256,6 +257,25 @@ export const useBulkDestroyAction = () => {
     },
   };
 };
+
+export const useUpdateCollectionActionAndRefreshCM = (options) => {
+  const { refreshCM } = useCollectionManager();
+  const form = useForm();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource, targetKey } = useResourceContext();
+  const { [targetKey]: filterByTk } = useRecord();
+  return {
+    async run() {
+      await form.submit();
+      await resource.update({ filterByTk, values: omit(form.values, ['fields']) });
+      ctx.setVisible(false);
+      await form.reset();
+      refresh();
+      await refreshCM();
+    },
+  };
+}
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
