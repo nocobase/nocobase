@@ -17,3 +17,5 @@ docs-dist/
 .npmrc
 dist/
 docker/**/storage
+.vscode/launch.json
+
