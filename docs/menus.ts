@@ -7,7 +7,7 @@ export default [
       '/index',
       '/why',
       '/who',
-      '/roadmap',
+      '/release-notes',
     ],
   },
   {
@@ -132,7 +132,7 @@ export default [
     children: [
       '/contributing',
       '/translations',
-      '/release-notes',
+      '/roadmap',
       '/faq',
       '/thanks',
     ],
