@@ -1,5 +1,11 @@
 # 更新日志
 
+## 2022/08/15 ~ v0.7.4-alpha.7
+
+### Details
+
+- fix(collection-manager): update collection without fields
+
 ## 2022/08/12 ~ v0.7.4-alpha.4
 
 ### New features
