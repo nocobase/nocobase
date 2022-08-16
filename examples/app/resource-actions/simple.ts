@@ -1,10 +1,10 @@
 /*
-# 最简单的单应用
+# 最简单的 resource actions
 
 # 步骤
 
 Step 1:
-yarn run:example app/single-app start
+yarn run:example app/resource-actions/simple start
 
 Step 2:
 curl http://localhost:13000/api/test:list
@@ -30,7 +30,6 @@ const app = new Application({
   plugins: [],
 });
 
-// 定义了一个 test 资源，并提供了相对应的 list 方法
 app.resource({
   name: 'test',
   actions: {

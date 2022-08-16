@@ -1,15 +1,15 @@
 /*
-# 最简单的单应用
+# 编写一个最简单的插件
 
 # 步骤
 
-Step 1:
-yarn run:example app/single-app start
+Step 1: Start app
+yarn run:example plugins/custom-plugin start
 
-Step 2:
-curl http://localhost:13000/api/test:list
+Step 2: View test list
+http://localhost:13000/api/test:list
 */
-import { Application } from '@nocobase/server';
+import { Application, Plugin } from '@nocobase/server';
 
 const app = new Application({
   database: {
@@ -30,16 +30,25 @@ const app = new Application({
   plugins: [],
 });
 
-// 定义了一个 test 资源，并提供了相对应的 list 方法
-app.resource({
-  name: 'test',
-  actions: {
-    async list(ctx, next) {
-      ctx.body = 'test list';
-      await next();
-    },
-  },
-});
+// Encapsulate modules into a plugin
+class MyPlugin extends Plugin {
+  getName() {
+    return 'MyPlugin';
+  }
+  async load() {
+    app.resource({
+      name: 'test',
+      actions: {
+        async list(ctx) {
+          ctx.body = 'test list';
+        },
+      },
+    });
+  }
+}
+
+// Register plugin
+app.plugin(MyPlugin);
 
 if (require.main === module) {
   app.runAsCLI();

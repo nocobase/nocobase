@@ -1,13 +1,16 @@
 /*
-# 最简单的单应用
+# 客户端请求
 
 # 步骤
 
-Step 1:
-yarn run:example app/single-app start
+Step 1: 启动服务器
+yarn run:example api-client/server start
 
-Step 2:
-curl http://localhost:13000/api/test:list
+Step 2: 客户端常规请求 —— api.request()
+yarn run:example api-client/api.request
+
+Step 3: 客户端资源请求 —— api.resource(name).action(params)
+yarn run:example api-client/api.resource
 */
 import { Application } from '@nocobase/server';
 
