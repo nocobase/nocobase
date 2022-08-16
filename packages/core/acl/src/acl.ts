@@ -127,7 +127,7 @@ export class ACL extends EventEmitter {
     return this.configResources.includes(name);
   }
 
-  setAvailableAction(name: string, options: AvailableActionOptions) {
+  setAvailableAction(name: string, options: AvailableActionOptions = {}) {
     this.availableActions.set(name, new AclAvailableAction(name, options));
 
     if (options.aliases) {
