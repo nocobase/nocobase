@@ -174,12 +174,18 @@ export abstract class Field {
     if (this.options.index) {
       this.context.collection.addIndex([this.name]);
     }
+    if (this.options.unique) {
+      this.context.collection.addIndex({
+        fields: [this.name],
+        unique: true
+      });
+    }
   }
 
   unbind() {
     const { model } = this.context.collection;
     model.removeAttribute(this.name);
-    if (this.options.index) {
+    if (this.options.index || this.options.unique) {
       this.context.collection.removeIndex([this.name]);
     }
   }

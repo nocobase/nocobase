@@ -72,13 +72,13 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('fields.afterUpdateWithAssociations', async (model, { context, transaction }) => {
       if (context) {
-        await model.load({ transaction });
+        await model.migrate({ transaction });
       }
     });
 
     this.app.db.on('fields.afterCreateWithAssociations', async (model, { context, transaction }) => {
       if (context) {
-        await model.load({ transaction });
+        await model.migrate({ transaction });
       }
     });
 
@@ -122,6 +122,19 @@ export class CollectionManagerPlugin extends Plugin {
         });
       }
       await next();
+    });
+
+    this.app.resourcer.use(async (ctx, next) => {
+      try {
+        await next();
+      } catch (err) {
+        switch (err.name) {
+          case 'SequelizeUniqueConstraintError':
+            return ctx.throw(400, ctx.t(`The value ${Object.values(err.fields)} of ${Object.keys(err.fields)} duplicated`));
+          default:
+            return ctx.throw(500);
+        }
+      }
     });
 
     // this.app.resourcer.use(async (ctx, next) => {

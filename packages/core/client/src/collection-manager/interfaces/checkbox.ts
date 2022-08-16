@@ -1,4 +1,4 @@
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 
 export const checkbox: IField = {
@@ -18,6 +18,7 @@ export const checkbox: IField = {
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    unique
   },
   filterable: {
     operators: operators.boolean,

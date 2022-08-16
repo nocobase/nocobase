@@ -28,20 +28,26 @@ export class FieldModel extends MagicAttributeModel {
       const uiSchema = await UISchema.findByPk(options.uiSchemaUid, {
         transaction: loadOptions.transaction,
       });
-      return collection.setField(name, { ...options, uiSchema: uiSchema.get() });
-    } else {
-      return collection.setField(name, options);
+      Object.assign(options, { uiSchema: uiSchema.get() });
     }
+    return collection.setField(name, options);
   }
 
-  async migrate(options?: SyncOptions & Transactionable) {
+  async migrate({ transaction, ...options }: SyncOptions & Transactionable = {}) {
     const field = await this.load({
-      transaction: options.transaction,
+      transaction,
     });
     if (!field) {
       return;
     }
+    // TODO: to use `model.options.indexes` to determine if the index exists will not be stable
+    const { model } = field.collection;
+    const uniqueIndex = model.options.indexes.find(item => item.unique && item.fields.join() === field.name);
     try {
+      if (uniqueIndex && !field.options.unique) {
+        const queryInterface = this.db.sequelize.getQueryInterface();
+        await queryInterface.removeIndex(model.tableName, uniqueIndex.name);
+      }
       await field.sync(options);
     } catch (error) {
       // field sync failed, delete from memory

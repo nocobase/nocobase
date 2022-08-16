@@ -1,4 +1,4 @@
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 
 export const phone: IField = {
@@ -24,6 +24,7 @@ export const phone: IField = {
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    unique,
   },
   filterable: {
     operators: operators.string,
