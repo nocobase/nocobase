@@ -32,6 +32,8 @@ export * from './table';
 export * from './table-v2';
 export * from './tabs';
 export * from './time-picker';
+export * from './tree';
 export * from './tree-select';
 export * from './upload';
 import './index.less';
+
