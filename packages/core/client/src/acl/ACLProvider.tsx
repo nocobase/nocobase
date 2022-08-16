@@ -7,7 +7,7 @@ import { useCollection } from '../collection-manager';
 import { useRecordIsOwn } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
-export const ACLContext = createContext(null);
+export const ACLContext = createContext<any>({});
 
 export const ACLProvider = (props) => {
   return (
