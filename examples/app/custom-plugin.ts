@@ -36,7 +36,7 @@ class MyPlugin extends Plugin {
     return 'MyPlugin';
   }
   async load() {
-    app.resource({
+    this.app.resource({
       name: 'test',
       actions: {
         async list(ctx) {
