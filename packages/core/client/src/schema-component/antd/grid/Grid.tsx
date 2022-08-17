@@ -1,14 +1,14 @@
-import { useDndContext, useDndMonitor, useDroppable } from '@dnd-kit/core';
+import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { useFormBlockContext, useSchemaInitializer } from '../../../';
+import { useDesignable, useFormBlockContext, useSchemaInitializer } from '../../../';
 import { DndContext } from '../../common/dnd-context';
 
-const GridRowContext = createContext(null);
-const GridColContext = createContext(null);
+const GridRowContext = createContext<any>({});
+const GridColContext = createContext<any>({});
 const GridContext = createContext<any>({});
 
 const breakRemoveOnGrid = (s: Schema) => s['x-component'] === 'Grid';
@@ -19,6 +19,8 @@ const ColDivider = (props) => {
     id: props.id,
     data: props.data,
   });
+  const { dn } = useDesignable();
+  const dividerRef = useRef<HTMLElement>();
 
   const droppableStyle = {
     backgroundColor: isOver ? 'rgba(241, 139, 98, .1)' : undefined,
@@ -38,10 +40,89 @@ const ColDivider = (props) => {
       visible = activeSchema !== currentSchema && downSchema !== activeSchema;
     }
   }
+  const prevSchema = props.cols[props.index];
+  const nextSchema = props.cols[props.index + 1];
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDraggableNodeRef,
+    isDragging,
+  } = useDraggable({
+    disabled: props.first || props.last,
+    id: props.id,
+    data: {
+      dividerRef,
+      prevSchema,
+      nextSchema,
+    },
+  });
+
+  const [clientWidths, setClientWidths] = useState([0, 0]);
+
+  useDndMonitor({
+    onDragStart(event) {
+      if (!isDragging) {
+        return;
+      }
+      const el = dividerRef.current;
+      const prev = el.previousElementSibling as HTMLDivElement;
+      const next = el.nextElementSibling as HTMLDivElement;
+      setClientWidths([prev.clientWidth, next.clientWidth]);
+    },
+    onDragMove(event) {
+      if (!isDragging) {
+        return;
+      }
+      const el = dividerRef.current;
+      const prev = el.previousElementSibling as HTMLDivElement;
+      const next = el.nextElementSibling as HTMLDivElement;
+      prev.style.width = `calc(${clientWidths[0]}px + ${event.delta.x}px)`;
+      next.style.width = `calc(${clientWidths[1]}px - ${event.delta.x}px)`;
+    },
+    onDragEnd(event) {
+      if (clientWidths[0] <= 0 || clientWidths[1] <= 0) {
+        return;
+      }
+      setClientWidths([0, 0]);
+      if (!prevSchema || !nextSchema) {
+        return;
+      }
+      const el = dividerRef.current;
+      const prev = el.previousElementSibling as HTMLDivElement;
+      const next = el.nextElementSibling as HTMLDivElement;
+      prevSchema['x-component-props'] = prevSchema['x-component-props'] || {};
+      nextSchema['x-component-props'] = nextSchema['x-component-props'] || {};
+      prevSchema['x-component-props']['width'] =
+        (100 * (prev?.clientWidth + 24 + 24 / props.cols.length)) / el.parentElement.clientWidth;
+      nextSchema['x-component-props']['width'] =
+        (100 * (next?.clientWidth + 24 + 24 / props.cols.length)) / el.parentElement.clientWidth;
+      dn.emit('batchPatch', {
+        schemas: [
+          {
+            ['x-uid']: prevSchema['x-uid'],
+            'x-component-props': {
+              ...prevSchema['x-component-props'],
+            },
+          },
+          {
+            ['x-uid']: nextSchema['x-uid'],
+            'x-component-props': {
+              ...nextSchema['x-component-props'],
+            },
+          },
+        ],
+      });
+    },
+  });
 
   return (
     <div
-      ref={visible ? setNodeRef : null}
+      ref={(el) => {
+        if (visible) {
+          setNodeRef(el);
+          dividerRef.current = el;
+        }
+      }}
       className={cls(
         'nb-col-divider',
         css`
@@ -49,7 +130,36 @@ const ColDivider = (props) => {
         `,
       )}
       style={{ ...droppableStyle }}
-    ></div>
+    >
+      <div
+        ref={setDraggableNodeRef}
+        {...listeners}
+        {...attributes}
+        className={
+          props.first || props.last
+            ? null
+            : css`
+                &::before {
+                  content: ' ';
+                  width: 12px;
+                  height: 100%;
+                  left: 6px;
+                  position: absolute;
+                  cursor: col-resize;
+                }
+                &:hover {
+                  &::before {
+                    background: rgba(241, 139, 98, 0.06) !important;
+                  }
+                }
+                width: 24px;
+                height: 100%;
+                position: absolute;
+                cursor: col-resize;
+              `
+        }
+      ></div>
+    </div>
   );
 };
 
@@ -255,7 +365,7 @@ Grid.Row = observer((props) => {
   const cols = useColProperties();
 
   return (
-    <GridRowContext.Provider value={{ cols }}>
+    <GridRowContext.Provider value={{ schema: fieldSchema, cols }}>
       <div
         className={cls(
           'nb-grid-row',
@@ -285,6 +395,7 @@ Grid.Row = observer((props) => {
               <ColDivider
                 cols={cols}
                 index={index}
+                last={index === cols.length - 1}
                 id={`${addr}_${index + 1}`}
                 data={{
                   breakRemoveOn: breakRemoveOnRow,
@@ -303,20 +414,23 @@ Grid.Row = observer((props) => {
 
 Grid.Col = observer((props: any) => {
   const { cols } = useContext(GridRowContext);
-  const w = props.width || 100 / cols.length;
+  const schema = useFieldSchema();
+  const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
   const width = `calc(${w}% - 24px - 24px / ${cols.length})`;
   return (
-    <div
-      style={{ width }}
-      className={cls(
-        'nb-grid-col',
-        css`
-          position: relative;
-          /* z-index: 0; */
-        `,
-      )}
-    >
-      {props.children}
-    </div>
+    <GridColContext.Provider value={{ cols, schema }}>
+      <div
+        style={{ width }}
+        className={cls(
+          'nb-grid-col',
+          css`
+            position: relative;
+            /* z-index: 0; */
+          `,
+        )}
+      >
+        {props.children}
+      </div>
+    </GridColContext.Provider>
   );
 });

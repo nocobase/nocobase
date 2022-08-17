@@ -111,7 +111,37 @@ export class Designable {
     if (!api) {
       return;
     }
-    this.on('insertAdjacent', async ({ onSuccess, current, position, schema, wrap, removed }) => {
+    const updateColumnSize = async (parent: Schema) => {
+      if (!parent) {
+        return;
+      }
+      const len = Object.values(parent.properties).length;
+      const schemas = [];
+      parent.mapProperties((s) => {
+        s['x-component-props'] = s['x-component-props'] || {};
+        s['x-component-props']['width'] = 100 / len;
+        if (s['x-uid']) {
+          schemas.push({
+            'x-uid': s['x-uid'],
+            'x-component-props': s['x-component-props'],
+          });
+        }
+      });
+      if (parent['x-uid'] && schemas.length) {
+        await api.request({
+          url: `/uiSchemas:batchPatch`,
+          method: 'post',
+          data: schemas,
+        });
+      }
+    };
+    this.on('insertAdjacent', async ({ onSuccess, current, position, schema, wrap, wrapped, removed }) => {
+      if (wrapped?.['x-component'] === 'Grid.Col') {
+        updateColumnSize(wrapped.parent);
+      }
+      if (removed?.['x-component'] === 'Grid.Col') {
+        updateColumnSize(removed.parent);
+      }
       refresh();
       if (!current['x-uid']) {
         return;
@@ -147,7 +177,19 @@ export class Designable {
       });
       message.success(t('Saved successfully'), 0.2);
     });
+    this.on('batchPatch', async ({ schemas }) => {
+      refresh();
+      await api.request({
+        url: `/uiSchemas:batchPatch`,
+        method: 'post',
+        data: schemas,
+      });
+      message.success(t('Saved successfully'), 0.2);
+    });
     this.on('remove', async ({ removed }) => {
+      if (removed?.['x-component'] === 'Grid.Col') {
+        updateColumnSize(removed.parent);
+      }
       refresh();
       if (!removed?.['x-uid']) {
         return;
@@ -177,14 +219,14 @@ export class Designable {
     generateUid(schema);
   }
 
-  on(name: 'insertAdjacent' | 'remove' | 'error' | 'patch', listener: any) {
+  on(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch', listener: any) {
     if (!this.events[name]) {
       this.events[name] = [];
     }
     this.events[name].push(listener);
   }
 
-  emit(name: 'insertAdjacent' | 'remove' | 'error' | 'patch', ...args) {
+  emit(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch', ...args) {
     if (!this.events[name]) {
       return;
     }
@@ -356,6 +398,7 @@ export class Designable {
     this.emit('insertAdjacent', {
       position: 'beforeBegin',
       schema: schema2,
+      wrapped,
       wrap: schema1,
       ...opts,
     });
@@ -407,6 +450,7 @@ export class Designable {
       position: 'afterBegin',
       schema: schema2,
       wrap: schema1,
+      wrapped,
       ...opts,
     });
   }
@@ -447,6 +491,7 @@ export class Designable {
       position: 'beforeEnd',
       schema: schema2,
       wrap: schema1,
+      wrapped,
       ...opts,
     });
   }
@@ -508,6 +553,7 @@ export class Designable {
       position: 'afterEnd',
       schema: schema2,
       wrap: schema1,
+      wrapped,
       ...opts,
     });
   }
