@@ -1,4 +1,5 @@
 import { Database } from '@nocobase/database';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
 import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { mockServer, MockServer } from '@nocobase/test';
@@ -62,6 +63,7 @@ describe('server hooks', () => {
     db = app.db;
 
     app.plugin(UiSchemaStoragePlugin);
+    app.plugin(PluginErrorHandler);
     app.plugin(PluginCollectionManager);
 
     await app.loadAndInstall();

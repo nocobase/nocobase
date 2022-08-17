@@ -2,19 +2,16 @@ import { Database } from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
 import CollectionManagerPlugin from '@nocobase/plugin-collection-manager';
 import { UiSchemaStoragePlugin } from '@nocobase/plugin-ui-schema-storage';
+import { createApp } from '.';
 
 describe('action test', () => {
   let db: Database;
   let app: MockServer;
 
   beforeEach(async () => {
-    app = mockServer();
-    app.plugin(CollectionManagerPlugin);
-    app.plugin(UiSchemaStoragePlugin);
-
+    app = await createApp();
+    await app.install({ clean: true });
     db = app.db;
-    await db.clean({ drop: true });
-    await app.loadAndInstall();
   });
 
   afterEach(async () => {

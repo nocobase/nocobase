@@ -1,9 +1,13 @@
 import Database, { MagicAttributeModel } from '@nocobase/database';
-import { SyncOptions, Transactionable } from 'sequelize';
+import { SyncOptions, Transactionable, UniqueConstraintError } from 'sequelize';
 
 interface LoadOptions extends Transactionable {
   // TODO
   skipExist?: boolean;
+}
+
+function findFieldUniqueIndex(field, indexes) {
+  return indexes.find(item => item.fields.map(f => typeof f === 'string' ? f : f.attribute).join() === field.name && item.unique);
 }
 
 export class FieldModel extends MagicAttributeModel {
@@ -33,22 +37,29 @@ export class FieldModel extends MagicAttributeModel {
     return collection.setField(name, options);
   }
 
-  async migrate({ transaction, ...options }: SyncOptions & Transactionable = {}) {
+  async migrate(options: SyncOptions & Transactionable = {}) {
     const field = await this.load({
-      transaction,
+      transaction: options.transaction,
     });
     if (!field) {
       return;
     }
-    // TODO: to use `model.options.indexes` to determine if the index exists will not be stable
     const { model } = field.collection;
-    const uniqueIndex = model.options.indexes.find(item => item.unique && item.fields.join() === field.name);
+    const queryInterface = this.db.sequelize.getQueryInterface();
     try {
-      if (uniqueIndex && !field.options.unique) {
-        const queryInterface = this.db.sequelize.getQueryInterface();
-        await queryInterface.removeIndex(model.tableName, uniqueIndex.name);
+      const existedIndexes = await queryInterface.showIndex(model.tableName, { transaction: options.transaction }) as any[];
+      const indexBefore = findFieldUniqueIndex(field, existedIndexes);
+      if (indexBefore && !field.options.unique) {
+        await queryInterface.removeConstraint(model.tableName, indexBefore.name, { transaction: options.transaction });
       }
       await field.sync(options);
+      const updatedIndexes = await queryInterface.showIndex(model.tableName, { transaction: options.transaction }) as any[];
+      const indexAfter = findFieldUniqueIndex(field, updatedIndexes);
+      if (field.options.unique && !indexAfter) {
+        throw new UniqueConstraintError({
+          fields: { [field.name]: undefined }
+        });
+      }
     } catch (error) {
       // field sync failed, delete from memory
       field.remove();

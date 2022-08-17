@@ -24,8 +24,10 @@ describe('field indexes', () => {
   });
 
   it('field value cannot be duplicated with unique index', async () => {
-    await agent
-      .resource('collections.fields', 'test1')
+    const tableName = 'test1';
+    // create an field with unique constraint
+    const field = await agent
+      .resource('collections.fields', tableName)
       .create({
         values: {
           name: 'title',
@@ -34,19 +36,47 @@ describe('field indexes', () => {
         },
       });
 
-    const response1 = await agent.resource('test1').create({
+    // create a record
+    const response1 = await agent.resource(tableName).create({
       values: {
         title: 't1'
       }
     });
+    expect(response1.status).toBe(200);
     expect(response1.body.data.title).toBe('t1');
 
-    const response2 = await agent.resource('test1').create({
+    // create another record with the same value on unique field should fail
+    const response2 = await agent.resource(tableName).create({
       values: {
         title: 't1'
       }
     });
-
     expect(response2.status).toBe(400);
+
+    // update field to remove unique constraint
+    await agent.resource('fields').update({
+      filterByTk: field.id,
+      values: {
+        unique: false
+      }
+    });
+
+    // create another record with the same value on unique field should be ok
+    const response3 = await agent.resource(tableName).create({
+      values: {
+        title: 't1'
+      }
+    });
+    expect(response3.status).toBe(200);
+    expect(response3.body.data.title).toBe('t1');
+
+    // update field to add unique constraint should fail because of duplicated records
+    const response4 = await agent.resource('fields').update({
+      filterByTk: field.id,
+      values: {
+        unique: true
+      }
+    });
+    expect(response4.status).toBe(400);
   });
 });

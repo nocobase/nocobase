@@ -1,6 +1,11 @@
-import { Plugin } from '@nocobase/server';
-import lodash from 'lodash';
 import path from 'path';
+
+import lodash from 'lodash';
+import { UniqueConstraintError } from 'sequelize';
+
+import { Plugin } from '@nocobase/server';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
+
 import { CollectionRepository } from '.';
 import {
   afterCreateForReverseField,
@@ -64,21 +69,15 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
-    this.app.db.on('fields.afterCreate', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterSave', async (model, { context, transaction }) => {
       if (context) {
         await model.migrate({ transaction });
       }
     });
 
-    this.app.db.on('fields.afterUpdateWithAssociations', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterSaveWithAssociations', async (model, { context, transaction }) => {
       if (context) {
-        await model.migrate({ transaction });
-      }
-    });
-
-    this.app.db.on('fields.afterCreateWithAssociations', async (model, { context, transaction }) => {
-      if (context) {
-        await model.migrate({ transaction });
+        await model.load({ transaction });
       }
     });
 
@@ -122,19 +121,6 @@ export class CollectionManagerPlugin extends Plugin {
         });
       }
       await next();
-    });
-
-    this.app.resourcer.use(async (ctx, next) => {
-      try {
-        await next();
-      } catch (err) {
-        switch (err.name) {
-          case 'SequelizeUniqueConstraintError':
-            return ctx.throw(400, ctx.t(`The value ${Object.values(err.fields)} of ${Object.keys(err.fields)} duplicated`));
-          default:
-            return ctx.throw(500);
-        }
-      }
     });
 
     // this.app.resourcer.use(async (ctx, next) => {
@@ -181,6 +167,14 @@ export class CollectionManagerPlugin extends Plugin {
     await this.app.db.import({
       directory: path.resolve(__dirname, './collections'),
     });
+
+    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('@nocobase/plugin-error-handler');
+    errorHandlerPlugin.errorHandler.register(
+      err => err instanceof UniqueConstraintError,
+      (err, ctx) => {
+        return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
+      }
+    );
   }
 
   getName(): string {

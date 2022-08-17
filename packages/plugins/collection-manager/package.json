@@ -9,6 +9,12 @@
       "url": "http://www.apache.org/licenses/LICENSE-2.0"
     }
   ],
+  "dependencies": {
+    "@nocobase/database": "0.7.4-alpha.4",
+    "@nocobase/plugin-error-handler": "0.7.4-alpha.4",
+    "@nocobase/server": "0.7.4-alpha.4",
+    "sequelize": "^6.9.0"
+  },
   "devDependencies": {
     "@nocobase/test": "0.7.4-alpha.4"
   },
