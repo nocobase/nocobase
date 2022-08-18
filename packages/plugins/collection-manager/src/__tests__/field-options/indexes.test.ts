@@ -78,5 +78,19 @@ describe('field indexes', () => {
       }
     });
     expect(response4.status).toBe(400);
+
+    // remove a duplicated record
+    await agent.resource(tableName).destroy({
+      filterByTk: response3.body.data.id
+    });
+
+    // update field to add unique constraint should be ok
+    const response6 = await agent.resource('fields').update({
+      filterByTk: field.id,
+      values: {
+        unique: true
+      }
+    });
+    expect(response6.status).toBe(200);
   });
 });
