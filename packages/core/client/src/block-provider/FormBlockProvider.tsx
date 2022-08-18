@@ -2,6 +2,7 @@ import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const FormBlockContext = createContext<any>({});
@@ -33,7 +34,13 @@ const InternalFormBlockProvider = (props) => {
         formBlockRef,
       }}
     >
-      <div ref={formBlockRef}>{props.children}</div>
+      {readPretty ? (
+        <RecordProvider record={service?.data?.data}>
+          <div ref={formBlockRef}>{props.children}</div>
+        </RecordProvider>
+      ) : (
+        <div ref={formBlockRef}>{props.children}</div>
+      )}
     </FormBlockContext.Provider>
   );
 };

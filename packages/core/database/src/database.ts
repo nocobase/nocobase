@@ -21,7 +21,7 @@ import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
-import { Migrations } from './migration';
+import { MigrationItem, Migrations } from './migration';
 import { Model } from './model';
 import { ModelHook } from './model-hook';
 import extendOperators from './operators';
@@ -81,14 +81,16 @@ class DatabaseVersion {
       },
       mysql: {
         sql: 'select version() as version',
-        get: (v) => v,
+        get: (v) => {
+          const m = /([\d+\.]+)/.exec(v);
+          return m[0];
+        },
       },
       postgres: {
         sql: 'select version() as version',
         get: (v) => {
-          const keys = v.split(' ');
-          keys.shift();
-          return semver.minVersion(keys.shift()).version;
+          const m = /([\d+\.]+)/.exec(v);
+          return semver.minVersion(m[0]).version;
         },
       },
     };
@@ -205,7 +207,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
   }
 
-  addMigration(item) {
+  addMigration(item: MigrationItem) {
     return this.migrations.add(item);
   }
 

@@ -258,7 +258,7 @@ export const collectionSchema: ISchema = {
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
-                                    useAction: '{{ cm.useUpdateActionAndRefreshCM }}',
+                                    useAction: '{{ cm.useUpdateCollectionActionAndRefreshCM }}',
                                   },
                                 },
                               },
