@@ -80,7 +80,7 @@ export async function resetpassword(ctx: Context, next: Next) {
     },
   });
   if (!user) {
-    ctx.throw(404, 'Unauthorized');
+    ctx.throw(404);
   }
   user.token = null;
   user.resetToken = null;
@@ -99,7 +99,7 @@ export async function getUserByResetToken(ctx: Context, next: Next) {
     },
   });
   if (!user) {
-    ctx.throw(401, 'Unauthorized');
+    ctx.throw(401);
   }
   ctx.body = user;
   await next();
@@ -108,7 +108,7 @@ export async function getUserByResetToken(ctx: Context, next: Next) {
 export async function updateProfile(ctx: Context, next: Next) {
   const { values } = ctx.action.params;
   if (!ctx.state.currentUser) {
-    ctx.throw(401, 'Unauthorized');
+    ctx.throw(401);
   }
   await ctx.state.currentUser.update(values);
   ctx.body = ctx.state.currentUser;
@@ -120,7 +120,7 @@ export async function changePassword(ctx: Context, next: Next) {
     values: { oldPassword, newPassword },
   } = ctx.action.params;
   if (!ctx.state.currentUser) {
-    ctx.throw(401, 'Unauthorized');
+    ctx.throw(401);
   }
   const User = ctx.db.getCollection('users');
   const user = await User.model.findOne<any>({

@@ -107,6 +107,14 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       directory: resolve(__dirname, 'collections'),
     });
 
+    this.db.addMigrations({
+      namespace: 'users',
+      directory: resolve(__dirname, 'migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+
     initAuthenticators(this);
 
     // TODO(module): should move to preset
