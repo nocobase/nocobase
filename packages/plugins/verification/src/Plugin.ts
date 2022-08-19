@@ -82,17 +82,17 @@ export default class VerificationPlugin extends Plugin {
   async install() {
     const {
       DEFAULT_SMS_VERIFY_CODE_PROVIDER,
-      ALI_SMS_ACCESS_KEY,
-      ALI_SMS_ACCESS_KEY_SECRET,
-      ALI_SMS_ENDPOINT = 'dysmsapi.aliyuncs.com',
-      ALI_SMS_VERIFY_CODE_TEMPLATE,
-      ALI_SMS_VERIFY_CODE_SIGN
+      INIT_ALI_SMS_ACCESS_KEY,
+      INIT_ALI_SMS_ACCESS_KEY_SECRET,
+      INIT_ALI_SMS_ENDPOINT = 'dysmsapi.aliyuncs.com',
+      INIT_ALI_SMS_VERIFY_CODE_TEMPLATE,
+      INIT_ALI_SMS_VERIFY_CODE_SIGN
     } = process.env;
 
-    if (ALI_SMS_ACCESS_KEY
-      && ALI_SMS_ACCESS_KEY_SECRET
-      && ALI_SMS_VERIFY_CODE_TEMPLATE
-      && ALI_SMS_VERIFY_CODE_SIGN
+    if (INIT_ALI_SMS_ACCESS_KEY
+      && INIT_ALI_SMS_ACCESS_KEY_SECRET
+      && INIT_ALI_SMS_VERIFY_CODE_TEMPLATE
+      && INIT_ALI_SMS_VERIFY_CODE_SIGN
     ) {
       const ProviderRepo = this.db.getRepository('verifications_providers');
       await ProviderRepo.create({
@@ -101,11 +101,11 @@ export default class VerificationPlugin extends Plugin {
           type: PROVIDER_TYPE_SMS_ALIYUN,
           title: 'Default SMS sender',
           options: {
-            accessKeyId: ALI_SMS_ACCESS_KEY,
-            accessKeySecret: ALI_SMS_ACCESS_KEY_SECRET,
-            endpoint: ALI_SMS_ENDPOINT,
-            sign: ALI_SMS_VERIFY_CODE_SIGN,
-            template: ALI_SMS_VERIFY_CODE_TEMPLATE
+            accessKeyId: INIT_ALI_SMS_ACCESS_KEY,
+            accessKeySecret: INIT_ALI_SMS_ACCESS_KEY_SECRET,
+            endpoint: INIT_ALI_SMS_ENDPOINT,
+            sign: INIT_ALI_SMS_VERIFY_CODE_SIGN,
+            template: INIT_ALI_SMS_VERIFY_CODE_TEMPLATE
           }
         }
       });

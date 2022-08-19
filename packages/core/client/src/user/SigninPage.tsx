@@ -126,22 +126,26 @@ export const SigninPage = () => {
   const { t } = useTranslation();
   useCurrentDocumentTitle('Signin');
   const ctx = useSystemSettings();
-  const allowSignUp = ctx?.data?.data?.allowSignUp;
+  const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   return (
     <div>
       <Tabs defaultActiveKey="password">
         <Tabs.TabPane tab={t('Sign in via account')} key="password">
           <SchemaComponent scope={{ usePasswordSignIn }} schema={passwordForm} />
         </Tabs.TabPane>
-        <Tabs.TabPane tab={t('Sign in via phone')} key="phone">
-          <SchemaComponent
-            schema={phoneForm}
-            scope={{ usePhoneSignIn }}
-            components={{
-              VerificationCode
-            }}
-          />
-        </Tabs.TabPane>
+        {smsAuthEnabled
+          ? (
+            <Tabs.TabPane tab={t('Sign in via phone')} key="phone">
+              <SchemaComponent
+                schema={phoneForm}
+                scope={{ usePhoneSignIn }}
+                components={{
+                  VerificationCode
+                }}
+              />
+            </Tabs.TabPane>
+          )
+          : null}
       </Tabs>
       {allowSignUp
         ? (

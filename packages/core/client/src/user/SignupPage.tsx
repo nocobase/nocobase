@@ -26,6 +26,7 @@ const schema: ISchema = {
       'x-validator': 'phone',
       'x-decorator': 'FormItem',
       'x-component-props': { placeholder: '{{t("Phone")}}', style: {} },
+      'x-visible': '{{smsAuthEnabled}}'
     },
     code: {
       type: 'string',
@@ -36,6 +37,7 @@ const schema: ISchema = {
         targetFieldName: 'phone',
       },
       'x-decorator': 'FormItem',
+      'x-visible': '{{smsAuthEnabled}}'
     },
     password: {
       type: 'string',
@@ -125,7 +127,7 @@ export const useSignup = () => {
 export const SignupPage = () => {
   useCurrentDocumentTitle('Signup');
   const ctx = useSystemSettings();
-  const allowSignUp = ctx?.data?.data?.allowSignUp;
+  const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   if (!allowSignUp) {
     return <Redirect to={'/signin'} />;
   }
@@ -135,7 +137,7 @@ export const SignupPage = () => {
       components={{
         VerificationCode
       }}
-      scope={{ useSignup }}
+      scope={{ useSignup, smsAuthEnabled }}
     />
   );
 };

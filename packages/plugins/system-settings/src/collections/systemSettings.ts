@@ -17,6 +17,11 @@ export default defineCollection({
       defaultValue: true,
     },
     {
+      type: 'boolean',
+      name: 'smsAuthEnabled',
+      defaultValue: false
+    },
+    {
       type: 'belongsTo',
       name: 'logo',
       target: 'attachments',

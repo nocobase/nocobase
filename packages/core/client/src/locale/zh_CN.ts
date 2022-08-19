@@ -43,6 +43,7 @@ export default {
   "Super admin": "超级管理员",
   "Language": "语言设置",
   "Allow sign up": "允许注册",
+  "Enable SMS authentication": "启用短信登录和注册",
   "Sign out": "注销",
   "Cancel": "取消",
   "Submit": "提交",
