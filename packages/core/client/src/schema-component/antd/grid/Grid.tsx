@@ -19,7 +19,7 @@ const ColDivider = (props) => {
     id: props.id,
     data: props.data,
   });
-  const { dn } = useDesignable();
+  const { dn, designable } = useDesignable();
   const dividerRef = useRef<HTMLElement>();
 
   const droppableStyle = {
@@ -48,7 +48,7 @@ const ColDivider = (props) => {
     setNodeRef: setDraggableNodeRef,
     isDragging,
   } = useDraggable({
-    disabled: props.first || props.last,
+    disabled: props.first || props.last || !designable,
     id: props.id,
     data: {
       dividerRef,
@@ -136,7 +136,7 @@ const ColDivider = (props) => {
         {...listeners}
         {...attributes}
         className={
-          props.first || props.last
+          props.first || props.last || !designable
             ? null
             : css`
                 &::before {
