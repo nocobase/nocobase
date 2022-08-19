@@ -971,3 +971,18 @@ export const createKanbanBlockSchema = (options) => {
   };
   return schema;
 };
+
+export const cacheDropMenu = (() => {
+  const cache = {};
+  return (value, sb) => {
+    if (value && typeof value === 'string') {
+      if (value in cache) {
+        return cache[value];
+      } else {
+        const vb = sb();
+        cache[value] = vb;
+        return vb;
+      }
+    }
+  };
+})();

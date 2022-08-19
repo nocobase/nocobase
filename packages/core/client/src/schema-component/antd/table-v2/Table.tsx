@@ -360,21 +360,6 @@ export const Table: any = observer((props: any) => {
   const handleTableChange = useCallback((pagination, filters, sorter, extra) => {
     onTableChange?.(pagination, filters, sorter, extra);
   }, []);
-
-  const TableCache = React.memo((props) => (
-    <AntdTable
-      rowKey={rowKey ?? defaultRowKey}
-      {...others}
-      {...props}
-      pagination={paginationProps}
-      components={components}
-      onChange={handleTableChange}
-      // tableLayout={'auto'}
-      scroll={{ y: +height }}
-      columns={columns}
-      dataSource={value.length ? field?.value?.slice?.() : []}
-    />
-  ));
   return (
     <div
       className={css`
@@ -392,7 +377,18 @@ export const Table: any = observer((props: any) => {
         >
           {exists && [render()]}
         </div>
-        <TableCache {...restProps} />
+        <AntdTable
+          rowKey={rowKey ?? defaultRowKey}
+          {...others}
+          {...props}
+          pagination={paginationProps}
+          components={components}
+          onChange={handleTableChange}
+          // tableLayout={'auto'}
+          scroll={{ y: +height }}
+          columns={columns}
+          dataSource={value.length ? field?.value?.slice?.() : []}
+        />
       </SortableWrapper>
       {field.errors.length > 0 && (
         <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">

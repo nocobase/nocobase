@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { ISchema, observer } from '@formily/react';
 import { Button, Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useState } from 'react';
 import { Icon } from '../icon';
 import { useCompile, useDesignable } from '../schema-component/hooks';
 import {
@@ -11,7 +11,7 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerItemProps,
 } from './types';
-
+import { cacheDropMenu } from './utils';
 const defaultWrap = (s: ISchema) => s;
 
 export const SchemaInitializerItemContext = createContext(null);
@@ -30,6 +30,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     style,
     icon,
     onSuccess,
+    children,
     ...others
   } = props;
   const compile = useCompile();
@@ -42,62 +43,64 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       insertAdjacent(insertPosition, wrap(schema), { onSuccess });
     }
   };
-  const renderItems = (items: any) => {
-    return items?.map((item, indexA) => {
-      if (item.type === 'divider') {
-        return <Menu.Divider key={item.key || `item-${indexA}`} />;
-      }
-      if (item.type === 'item' && item.component) {
-        const Component = findComponent(item.component);
-        return (
-          Component && (
-            <SchemaInitializerItemContext.Provider
-              key={`${item.key || 'item'}-${indexA}`}
-              value={{
-                index: indexA,
-                item,
-                info: item,
-                insert: insertSchema,
-              }}
-            >
-              <Component
-                {...item}
-                item={{
-                  ...item,
-                  title: compile(item.title),
+  const renderItems = useCallback(
+    (items: any) => {
+      return items?.map((item, indexA) => {
+        if (item.type === 'divider') {
+          return <Menu.Divider key={item.key || `item-${indexA}`} />;
+        }
+        if (item.type === 'item' && item.component) {
+          const Component = findComponent(item.component);
+          return (
+            Component && (
+              <SchemaInitializerItemContext.Provider
+                key={`${item.key || 'item'}-${indexA}`}
+                value={{
+                  index: indexA,
+                  item,
+                  info: item,
+                  insert: insertSchema,
                 }}
-                insert={insertSchema}
-              />
-            </SchemaInitializerItemContext.Provider>
-          )
-        );
-      }
-      if (item.type === 'itemGroup') {
-        return (
-          !!item.children?.length && (
-            <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
-              {renderItems(item.children)}
-            </Menu.ItemGroup>
-          )
-        );
-      }
-      if (item.type === 'subMenu') {
-        return (
-          !!item.children?.length && (
-            <Menu.SubMenu key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
-              {renderItems(item.children)}
-            </Menu.SubMenu>
-          )
-        );
-      }
-    });
-  };
-  const menu = <Menu>{renderItems(items)}</Menu>;
+              >
+                <Component
+                  {...item}
+                  item={{
+                    ...item,
+                    title: compile(item.title),
+                  }}
+                  insert={insertSchema}
+                />
+              </SchemaInitializerItemContext.Provider>
+            )
+          );
+        }
+        if (item.type === 'itemGroup') {
+          return (
+            !!item.children?.length && (
+              <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+                {renderItems(item.children)}
+              </Menu.ItemGroup>
+            )
+          );
+        }
+        if (item.type === 'subMenu') {
+          return (
+            !!item.children?.length && (
+              <Menu.SubMenu key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+                {renderItems(item.children)}
+              </Menu.SubMenu>
+            )
+          );
+        }
+      });
+    },
+    [items],
+  );
+  const menu = <Menu>{cacheDropMenu(component || children || title, () => renderItems(items))}</Menu>;
 
   if (!designable && props.designable !== true) {
     return null;
   }
-
   return (
     <Dropdown
       className={classNames('nb-schema-initializer-button')}
@@ -131,7 +134,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
           {...others}
           icon={<Icon type={icon as string} />}
         >
-          {compile(props.children || props.title)}
+          {compile(children || title)}
         </Button>
       )}
     </Dropdown>

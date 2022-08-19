@@ -5,10 +5,10 @@ import { itemsMerge, useAssociatedTableColumnInitializerFields, useTableColumnIn
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
-  const { items = [] } = props;
-  const { t } = useTranslation();
   const tableColumnField = useMemo(() => useTableColumnInitializerFields(), []);
   const associatedFields = useMemo(() => useAssociatedTableColumnInitializerFields(), []);
+  const { items = [] } = props;
+  const { t } = useTranslation();
   const fieldItems: any[] = [
     {
       type: 'itemGroup',
@@ -38,32 +38,30 @@ export const TableColumnInitializers = (props: any) => {
       component: 'TableActionColumnInitializer',
     },
   );
-  const SchemaInitializerBtn = useMemo(() => {
-    return (
-      <SchemaInitializer.Button
-        insertPosition={'beforeEnd'}
-        icon={'SettingOutlined'}
-        wrap={(s) => {
-          if (s['x-action-column']) {
-            return s;
-          }
-          return {
-            type: 'void',
-            'x-decorator': 'TableV2.Column.Decorator',
-            'x-designer': 'TableV2.Column.Designer',
-            'x-component': 'TableV2.Column',
-            properties: {
-              [s.name]: {
-                ...s,
-              },
+
+  return (
+    <SchemaInitializer.Button
+      insertPosition={'beforeEnd'}
+      icon={'SettingOutlined'}
+      wrap={(s) => {
+        if (s['x-action-column']) {
+          return s;
+        }
+        return {
+          type: 'void',
+          'x-decorator': 'TableV2.Column.Decorator',
+          'x-designer': 'TableV2.Column.Designer',
+          'x-component': 'TableV2.Column',
+          properties: {
+            [s.name]: {
+              ...s,
             },
-          };
-        }}
-        items={itemsMerge(fieldItems, items)}
-      >
-        {t('Configure columns')}
-      </SchemaInitializer.Button>
-    );
-  }, [fieldItems.length, items.length]);
-  return SchemaInitializerBtn;
+          },
+        };
+      }}
+      items={itemsMerge(fieldItems, items)}
+    >
+      {t('Configure columns')}
+    </SchemaInitializer.Button>
+  );
 };
