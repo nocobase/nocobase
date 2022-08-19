@@ -478,6 +478,7 @@ export class Designable {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
+    delete schema['x-index'];
     const opts = { onSuccess: options.onSuccess };
     const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {

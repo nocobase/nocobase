@@ -415,11 +415,21 @@ Grid.Row = observer((props) => {
 Grid.Col = observer((props: any) => {
   const { cols } = useContext(GridRowContext);
   const schema = useFieldSchema();
+  const field = useField();
   const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
   const width = `calc(${w}% - 24px - 24px / ${cols.length})`;
+  const { isOver, setNodeRef } = useDroppable({
+    id: field.address.toString(),
+    data: {
+      insertAdjacent: 'beforeEnd',
+      schema,
+      wrapSchema: (s) => s,
+    },
+  });
   return (
     <GridColContext.Provider value={{ cols, schema }}>
       <div
+        ref={setNodeRef}
         style={{ width }}
         className={cls(
           'nb-grid-col',
