@@ -3,7 +3,6 @@ import parse from 'json-templates';
 
 import { Collection, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import VerificationPlugin from '@nocobase/plugin-verification';
 import { Registry } from '@nocobase/utils';
 import { HandlerType, MiddlewareManager } from '@nocobase/resourcer';
 
@@ -118,7 +117,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     initAuthenticators(this);
 
     // TODO(module): should move to preset
-    const verificationPlugin = this.app.getPlugin('@nocobase/plugin-verification') as VerificationPlugin;
+    const verificationPlugin = this.app.getPlugin('@nocobase/plugin-verification') as any;
     if (verificationPlugin && process.env.DEFAULT_SMS_VERIFY_CODE_PROVIDER) {
       verificationPlugin.interceptors.register('users:signin', {
         manual: true,
