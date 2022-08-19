@@ -25,7 +25,7 @@ const ApplicationVersion = () => {
 
 export const DropdownVisibleContext = createContext(null);
 
-export const CurrentUser = () => {
+export const CurrentUser = React.memo(() => {
   const history = useHistory();
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -68,4 +68,4 @@ export const CurrentUser = () => {
       </DropdownVisibleContext.Provider>
     </div>
   );
-};
+});

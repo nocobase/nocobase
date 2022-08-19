@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaComponent, SchemaComponentOptions } from '../../..';
 import { SchemaInitializer } from '../../../../schema-initializer';
 
-export const MenuItemInitializers = (props: any) => {
+export const MenuItemInitializers = React.memo((props: any) => {
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
@@ -35,7 +35,7 @@ export const MenuItemInitializers = (props: any) => {
       {t('Add menu item')}
     </SchemaInitializer.Button>
   );
-};
+});
 
 const itemWrap = SchemaInitializer.itemWrap;
 

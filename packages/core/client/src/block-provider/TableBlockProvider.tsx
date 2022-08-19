@@ -8,7 +8,7 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 export const TableBlockContext = createContext<any>({});
 
 const InternalTableBlockProvider = (props) => {
-  const { params, showIndex, dragSort, rowKey } = props;
+  const { params, showIndex, dragSort, rowKey, height } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   // if (service.loading) {
@@ -24,6 +24,7 @@ const InternalTableBlockProvider = (props) => {
         showIndex,
         dragSort,
         rowKey,
+        height,
       }}
     >
       {props.children}

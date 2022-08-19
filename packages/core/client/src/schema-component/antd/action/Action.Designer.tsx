@@ -32,7 +32,7 @@ const MenuGroup = (props) => {
   return <Menu.ItemGroup title={`${t('Customize')} > ${actionTitles[actionType]}`}>{props.children}</Menu.ItemGroup>;
 };
 
-export const ActionDesigner = (props) => {
+export const ActionDesigner = React.memo((props) => {
   const { modalTip, ...restProps } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -329,4 +329,4 @@ export const ActionDesigner = (props) => {
       </MenuGroup>
     </GeneralSchemaDesigner>
   );
-};
+});

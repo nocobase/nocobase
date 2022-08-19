@@ -50,7 +50,7 @@ export const useSchemaTemplate = () => {
   const fieldSchema = useFieldSchema();
   const schemaId = fieldSchema['x-uid'];
   const templateKey = fieldSchema['x-template-key'];
-  console.log('templateKey', { schemaId, templateKey })
+  // console.log('templateKey', { schemaId, templateKey })
   return useMemo(() => getTemplateBySchema(fieldSchema), [schemaId, templateKey]);
 };
 
@@ -120,14 +120,13 @@ export const useSchemaTemplateManager = () => {
       return templates?.find((template) => template.key === key);
     },
     getTemplatesByCollection(collectionName: string, resourceName: string = null) {
-      const items = templates?.filter?.((template) => (template.collectionName === collectionName));
+      const items = templates?.filter?.((template) => template.collectionName === collectionName);
       return items || [];
     },
-
   };
 };
 
-export const RemoteSchemaTemplateManagerProvider: React.FC = (props) => {
+export const RemoteSchemaTemplateManagerProvider: React.FC = React.memo((props) => {
   const api = useAPIClient();
   const options = {
     resource: 'uiSchemaTemplates',
@@ -152,4 +151,4 @@ export const RemoteSchemaTemplateManagerProvider: React.FC = (props) => {
       {props.children}
     </SchemaTemplateManagerProvider>
   );
-};
+});

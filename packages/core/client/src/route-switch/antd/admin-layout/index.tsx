@@ -17,7 +17,7 @@ import {
   useDocumentTitle,
   useRequest,
   useRoute,
-  useSystemSettings
+  useSystemSettings,
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
 import { PoweredBy } from '../../../powered-by';
@@ -108,7 +108,7 @@ const MenuEditor = (props) => {
   );
 };
 
-const InternalAdminLayout = (props: any) => {
+const InternalAdminLayout = React.memo((props: any) => {
   const route = useRoute();
   const history = useHistory();
   const match = useRouteMatch<any>();
@@ -187,7 +187,7 @@ const InternalAdminLayout = (props: any) => {
       </Layout>
     </Layout>
   );
-};
+});
 
 export const AdminLayout = (props) => {
   return (

@@ -31,7 +31,7 @@ const Registry = {
 
 Schema.registerCompiler(Registry.compile);
 
-export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
+export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = React.memo((props) => {
   const { designable, components, children } = props;
   const [, setUid] = useState(uid());
   const [formId, setFormId] = useState(uid());
@@ -61,4 +61,4 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
       </FormProvider>
     </SchemaComponentContext.Provider>
   );
-};
+});

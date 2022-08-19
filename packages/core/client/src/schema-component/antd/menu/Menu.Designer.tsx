@@ -197,7 +197,7 @@ const InsertMenuItems = (props) => {
   );
 };
 
-export const MenuDesigner = () => {
+export const MenuDesigner = React.memo(() => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
@@ -339,4 +339,4 @@ export const MenuDesigner = () => {
       />
     </GeneralSchemaDesigner>
   );
-};
+});

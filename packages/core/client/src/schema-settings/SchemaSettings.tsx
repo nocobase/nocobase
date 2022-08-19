@@ -22,7 +22,7 @@ import {
   useAPIClient,
   useCollection,
   useCompile,
-  useDesignable
+  useDesignable,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -632,6 +632,44 @@ SchemaSettings.BlockTitleItem = () => {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
             'x-component-props': fieldSchema['x-component-props'],
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+
+SchemaSettings.FixedHeader = () => {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Fixed table header')}
+      schema={
+        {
+          type: 'object',
+          title: t('Fixed table header'),
+          properties: {
+            height: {
+              title: t('table height'),
+              type: 'number',
+              default: fieldSchema?.['x-decorator-props']?.['height'],
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={({ height }) => {
+        fieldSchema['x-decorator-props']['height'] = height;
+        field.decoratorProps.height = height;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': fieldSchema['x-decorator-props'],
           },
         });
         dn.refresh();

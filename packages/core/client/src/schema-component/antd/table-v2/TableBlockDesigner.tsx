@@ -9,7 +9,7 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 
-export const TableBlockDesigner = () => {
+export const TableBlockDesigner = React.memo(() => {
   const { name, title, sortable } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -201,6 +201,7 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
+      <SchemaSettings.FixedHeader />
       <SchemaSettings.Divider />
       <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
@@ -212,4 +213,4 @@ export const TableBlockDesigner = () => {
       />
     </GeneralSchemaDesigner>
   );
-};
+});

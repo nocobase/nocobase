@@ -82,8 +82,7 @@ export const useTableColumnInitializerFields = () => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
         'x-read-pretty': true,
-        'x-component-props': {
-        },
+        'x-component-props': {},
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
@@ -120,14 +119,13 @@ export const useAssociatedTableColumnInitializerFields = () => {
             // type: 'string',
             name: `${field.name}.${subField.name}`,
             // title: subField?.uiSchema?.title || subField.name,
-            
+
             'x-component': 'CollectionField',
             'x-read-pretty': true,
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
-            'x-component-props': {
-            },
+            'x-component-props': {},
           };
-          
+
           return {
             type: 'item',
             title: subField?.uiSchema?.title || subField.name,
@@ -145,12 +143,12 @@ export const useAssociatedTableColumnInitializerFields = () => {
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
-        children: items, 
+        children: items,
       } as SchemaInitializerItemOptions;
     });
 
   return groups;
-}
+};
 
 export const useFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
@@ -171,8 +169,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {
-        },
+        'x-component-props': {},
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       return {
@@ -193,7 +190,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const { getInterface, getCollectionFields } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
-  const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o']
+  const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
 
   const groups = fields
     ?.filter((field) => {
@@ -234,11 +231,11 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
-        children: items, 
+        children: items,
       } as SchemaInitializerItemOptions;
     });
   return groups;
-}
+};
 
 export const useCustomFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
@@ -294,11 +291,11 @@ const removeSchema = (schema, cb) => {
 
 const recursiveParent = (schema: Schema) => {
   if (!schema.parent) return null;
-  
+
   if (schema.parent['x-initializer']) return schema.parent;
-  
+
   return recursiveParent(schema.parent);
-}
+};
 
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
   let fieldSchema = useFieldSchema();
@@ -319,17 +316,22 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   };
 };
 
-export const useRecordCollectionDataSourceItems = (componentName, item = null, collectionName = null, resourceName = null) => {
+export const useRecordCollectionDataSourceItems = (
+  componentName,
+  item = null,
+  collectionName = null,
+  resourceName = null,
+) => {
   const { t } = useTranslation();
   const collection = useCollection();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const templates = getTemplatesByCollection(collectionName || collection.name)
-  .filter((template) => {
-    return componentName && template.componentName === componentName;
-  })
-  .filter((template) => {
-    return ['FormItem', 'ReadPrettyFormItem'].includes(componentName) || (template.resourceName === resourceName);
-  });
+    .filter((template) => {
+      return componentName && template.componentName === componentName;
+    })
+    .filter((template) => {
+      return ['FormItem', 'ReadPrettyFormItem'].includes(componentName) || template.resourceName === resourceName;
+    });
   if (!templates.length) {
     return [];
   }
@@ -351,8 +353,9 @@ export const useRecordCollectionDataSourceItems = (componentName, item = null, c
       name: 'copy',
       title: t('Duplicate template'),
       children: templates.map((template) => {
-        const templateName =
-          ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName) ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+        const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+          ? `${template?.name} ${t('(Fields only)')}`
+          : template?.name;
         return {
           type: 'item',
           mode: 'copy',
@@ -369,8 +372,9 @@ export const useRecordCollectionDataSourceItems = (componentName, item = null, c
       name: 'ref',
       title: t('Reference template'),
       children: templates.map((template) => {
-        const templateName =
-          ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName) ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+        const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+          ? `${template?.name} ${t('(Fields only)')}`
+          : template?.name;
         return {
           type: 'item',
           mode: 'reference',
@@ -397,7 +401,11 @@ export const useCollectionDataSourceItems = (componentName) => {
         ?.filter((item) => !item.inherit)
         ?.map((item, index) => {
           const templates = getTemplatesByCollection(item.name).filter((template) => {
-            return componentName && template.componentName === componentName && (!template.resourceName || template.resourceName === item.name);
+            return (
+              componentName &&
+              template.componentName === componentName &&
+              (!template.resourceName || template.resourceName === item.name)
+            );
           });
           if (!templates.length) {
             return {

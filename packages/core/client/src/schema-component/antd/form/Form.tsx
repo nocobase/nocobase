@@ -18,7 +18,7 @@ export interface FormProps {
 
 export type FormUseValues = (opts?: Opts, props?: FormProps) => Result<any, any>;
 
-const FormComponent: React.FC<FormProps> = (props) => {
+const FormComponent: React.FC<FormProps> = React.memo((props) => {
   const { form, children, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -33,7 +33,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
       </FormContext.Provider>
     </FieldContext.Provider>
   );
-};
+});
 
 const Def = (props: any) => props.children;
 
