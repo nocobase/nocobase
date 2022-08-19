@@ -81,14 +81,16 @@ class DatabaseVersion {
       },
       mysql: {
         sql: 'select version() as version',
-        get: (v) => v,
+        get: (v) => {
+          const m = /([\d+\.]+)/.exec(v);
+          return m[0];
+        },
       },
       postgres: {
         sql: 'select version() as version',
         get: (v) => {
-          const keys = v.split(/\s|,/);
-          keys.shift();
-          return semver.minVersion(keys.shift()).version;
+          const m = /([\d+\.]+)/.exec(v);
+          return semver.minVersion(m[0]).version;
         },
       },
     };
