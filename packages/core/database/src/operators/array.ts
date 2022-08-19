@@ -1,5 +1,5 @@
 import { Op, Sequelize } from 'sequelize';
-import { isPg, isMySQL } from './utils';
+import { isMySQL, isPg } from './utils';
 
 const getFieldName = (ctx) => {
   const fieldName = ctx.fieldName;
@@ -53,7 +53,8 @@ export default {
     value = escape(JSON.stringify(value.sort()), ctx);
 
     if (isMySQL(ctx)) {
-      return Sequelize.literal(`JSON_CONTAINS(${fieldName}, ${value}) AND JSON_CONTAINS(${value}, ${fieldName})`);
+      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      return Sequelize.literal(`JSON_CONTAINS(${name}, ${value}) AND JSON_CONTAINS(${value}, ${name})`);
     }
 
     return {
@@ -70,7 +71,8 @@ export default {
     }
 
     if (isMySQL(ctx)) {
-      return Sequelize.literal(`not (JSON_CONTAINS(${fieldName}, ${value}) AND JSON_CONTAINS(${value}, ${fieldName}))`);
+      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      return Sequelize.literal(`not (JSON_CONTAINS(${name}, ${value}) AND JSON_CONTAINS(${value}, ${name}))`);
     }
     return {
       [Op.ne]: Sequelize.literal(`json(${value})`),
@@ -91,8 +93,8 @@ export default {
 
     if (isMySQL(ctx)) {
       value = escape(JSON.stringify(value), ctx);
-
-      return Sequelize.literal(`JSON_OVERLAPS(${fieldName}, ${value})`);
+      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      return Sequelize.literal(`JSON_OVERLAPS(${name}, ${value})`);
     }
 
     const subQuery = sqliteExistQuery(value, ctx);
@@ -115,7 +117,8 @@ export default {
     } else if (isMySQL(ctx)) {
       const fieldName = getFieldName(ctx);
       value = escape(JSON.stringify(value), ctx);
-      where = Sequelize.literal(`NOT JSON_OVERLAPS(${fieldName}, ${value})`);
+      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      where = Sequelize.literal(`NOT JSON_OVERLAPS(${name}, ${value})`);
     } else {
       const subQuery = sqliteExistQuery(value, ctx);
 
