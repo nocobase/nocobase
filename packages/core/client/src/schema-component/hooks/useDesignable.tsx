@@ -111,7 +111,7 @@ export class Designable {
     if (!api) {
       return;
     }
-    const updateColumnSize = async (parent: Schema) => {
+    const updateColumnSize = (parent: Schema) => {
       if (!parent) {
         return;
       }
@@ -128,19 +128,17 @@ export class Designable {
         }
       });
       if (parent['x-uid'] && schemas.length) {
-        await api.request({
-          url: `/uiSchemas:batchPatch`,
-          method: 'post',
-          data: schemas,
-        });
+        return schemas;
       }
+      return [];
     };
     this.on('insertAdjacent', async ({ onSuccess, current, position, schema, wrap, wrapped, removed }) => {
+      let schemas = [];
       if (wrapped?.['x-component'] === 'Grid.Col') {
-        updateColumnSize(wrapped.parent);
+        schemas = updateColumnSize(wrapped.parent);
       }
       if (removed?.['x-component'] === 'Grid.Col') {
-        updateColumnSize(removed.parent);
+        schemas = updateColumnSize(removed.parent);
       }
       refresh();
       if (!current['x-uid']) {
@@ -154,6 +152,13 @@ export class Designable {
           wrap,
         },
       });
+      if (schemas.length) {
+        await api.request({
+          url: `/uiSchemas:batchPatch`,
+          method: 'post',
+          data: schemas,
+        });
+      }
       if (removed?.['x-uid']) {
         await api.request({
           url: `/uiSchemas:remove/${removed['x-uid']}`,
@@ -187,8 +192,9 @@ export class Designable {
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('remove', async ({ removed }) => {
+      let schemas = [];
       if (removed?.['x-component'] === 'Grid.Col') {
-        updateColumnSize(removed.parent);
+        schemas = updateColumnSize(removed.parent);
       }
       refresh();
       if (!removed?.['x-uid']) {
@@ -198,6 +204,13 @@ export class Designable {
         url: `/uiSchemas:remove/${removed['x-uid']}`,
         method: 'post',
       });
+      if (schemas.length) {
+        await api.request({
+          url: `/uiSchemas:batchPatch`,
+          method: 'post',
+          data: schemas,
+        });
+      }
       message.success(t('Saved successfully'), 0.2);
     });
   }
