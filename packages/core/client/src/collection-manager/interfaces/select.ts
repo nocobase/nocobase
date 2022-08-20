@@ -1,4 +1,4 @@
-import { dataSource, defaultProps, operators, unique } from './properties';
+import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const select: IField = {
@@ -21,7 +21,6 @@ export const select: IField = {
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
-    unique,
     'uiSchema.enum': dataSource,
   },
   filterable: {
