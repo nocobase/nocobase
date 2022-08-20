@@ -124,12 +124,13 @@ export default class FilterParser {
               skipPrefix = origins.join('.');
 
               const queryValue = lodash.get(unflatten(originalFiler), skipPrefix);
-
+              const [fieldName, fullName] = this.getFieldNameFromQueryPath(skipPrefix);
               value = opKey(queryValue, {
                 app: this.context.app,
                 db: this.database,
                 path: skipPrefix,
-                fieldName: this.getFieldNameFromQueryPath(skipPrefix),
+                fullName,
+                fieldName,
                 model: this.model,
               });
               break;
@@ -230,14 +231,14 @@ export default class FilterParser {
   private getFieldNameFromQueryPath(queryPath: string) {
     const paths = queryPath.split('.');
     let fieldName;
+    let fullPaths = [];
     for (const path of paths) {
       if (path.startsWith('$') || !lodash.isNaN(parseInt(path))) {
         continue;
       }
-
+      fullPaths.push(path);
       fieldName = path;
     }
-
-    return fieldName;
+    return [fieldName, fullPaths.join('.')];
   }
 }

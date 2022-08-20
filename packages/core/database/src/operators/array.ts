@@ -1,5 +1,5 @@
 import { Op, Sequelize } from 'sequelize';
-import { isPg, isMySQL } from './utils';
+import { isMySQL, isPg } from './utils';
 
 const getFieldName = (ctx) => {
   const fieldName = ctx.fieldName;
@@ -13,10 +13,11 @@ const escape = (value, ctx) => {
 
 const sqliteExistQuery = (value, ctx) => {
   const fieldName = getFieldName(ctx);
+  const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
 
   const sqlArray = `(${value.map((v) => `'${v}'`).join(', ')})`;
 
-  const subQuery = `exists (select * from json_each(${fieldName}) where json_each.value in ${sqlArray})`;
+  const subQuery = `exists (select * from json_each(${name}) where json_each.value in ${sqlArray})`;
 
   return subQuery;
 };
@@ -53,7 +54,8 @@ export default {
     value = escape(JSON.stringify(value.sort()), ctx);
 
     if (isMySQL(ctx)) {
-      return Sequelize.literal(`JSON_CONTAINS(${fieldName}, ${value}) AND JSON_CONTAINS(${value}, ${fieldName})`);
+      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      return Sequelize.literal(`JSON_CONTAINS(${name}, ${value}) AND JSON_CONTAINS(${value}, ${name})`);
     }
 
     return {
@@ -66,11 +68,13 @@ export default {
     value = escape(JSON.stringify(value), ctx);
 
     if (isPg(ctx)) {
-      return Sequelize.literal(`not (${fieldName} <@ ${value}::JSONB and ${fieldName} @> ${value}::JSONB)`);
+      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
+      return Sequelize.literal(`not (${name} <@ ${value}::JSONB and ${name} @> ${value}::JSONB)`);
     }
 
     if (isMySQL(ctx)) {
-      return Sequelize.literal(`not (JSON_CONTAINS(${fieldName}, ${value}) AND JSON_CONTAINS(${value}, ${fieldName}))`);
+      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      return Sequelize.literal(`not (JSON_CONTAINS(${name}, ${value}) AND JSON_CONTAINS(${value}, ${name}))`);
     }
     return {
       [Op.ne]: Sequelize.literal(`json(${value})`),
@@ -81,8 +85,9 @@ export default {
     const fieldName = getFieldName(ctx);
 
     if (isPg(ctx)) {
+      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
       return Sequelize.literal(
-        `${fieldName} ?| ${escape(
+        `${name} ?| ${escape(
           value.map((i) => `${i}`),
           ctx,
         )}`,
@@ -91,8 +96,8 @@ export default {
 
     if (isMySQL(ctx)) {
       value = escape(JSON.stringify(value), ctx);
-
-      return Sequelize.literal(`JSON_OVERLAPS(${fieldName}, ${value})`);
+      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      return Sequelize.literal(`JSON_OVERLAPS(${name}, ${value})`);
     }
 
     const subQuery = sqliteExistQuery(value, ctx);
@@ -105,9 +110,10 @@ export default {
 
     if (isPg(ctx)) {
       const fieldName = getFieldName(ctx);
+      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
       // pg single quote
       where = Sequelize.literal(
-        `not (${fieldName} ?| ${escape(
+        `not (${name} ?| ${escape(
           value.map((i) => `${i}`),
           ctx,
         )})`,
@@ -115,7 +121,8 @@ export default {
     } else if (isMySQL(ctx)) {
       const fieldName = getFieldName(ctx);
       value = escape(JSON.stringify(value), ctx);
-      where = Sequelize.literal(`NOT JSON_OVERLAPS(${fieldName}, ${value})`);
+      const name = ctx.fullName === fieldName ? `\`${ctx.model.name}\`.\`${fieldName}\`` : `\`${fieldName}\``;
+      where = Sequelize.literal(`NOT JSON_OVERLAPS(${name}, ${value})`);
     } else {
       const subQuery = sqliteExistQuery(value, ctx);
 
