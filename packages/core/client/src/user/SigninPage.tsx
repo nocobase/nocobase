@@ -1,8 +1,8 @@
-import React, { useCallback } from 'react';
-import { Link, useHistory, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { ISchema, useForm } from '@formily/react';
 import { Tabs } from 'antd';
+import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useHistory, useLocation } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 import VerificationCode from './VerificationCode';
 
@@ -104,10 +104,8 @@ const phoneForm: ISchema = {
         style: { width: '100%' },
       },
     },
-  }
+  },
 };
-
-
 
 export function usePhoneSignIn() {
   const form = useForm();
@@ -129,31 +127,29 @@ export const SigninPage = () => {
   const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   return (
     <div>
-      <Tabs defaultActiveKey="password">
-        <Tabs.TabPane tab={t('Sign in via account')} key="password">
-          <SchemaComponent scope={{ usePasswordSignIn }} schema={passwordForm} />
-        </Tabs.TabPane>
-        {smsAuthEnabled
-          ? (
-            <Tabs.TabPane tab={t('Sign in via phone')} key="phone">
-              <SchemaComponent
-                schema={phoneForm}
-                scope={{ usePhoneSignIn }}
-                components={{
-                  VerificationCode
-                }}
-              />
-            </Tabs.TabPane>
-          )
-          : null}
-      </Tabs>
-      {allowSignUp
-        ? (
-          <div>
-            <Link to="/signup">{t("Create an account")}</Link>
-          </div>
-        )
-        : null}
+      {smsAuthEnabled ? (
+        <Tabs defaultActiveKey="password">
+          <Tabs.TabPane tab={t('Sign in via account')} key="password">
+            <SchemaComponent scope={{ usePasswordSignIn }} schema={passwordForm} />
+          </Tabs.TabPane>
+          <Tabs.TabPane tab={t('Sign in via phone')} key="phone">
+            <SchemaComponent
+              schema={phoneForm}
+              scope={{ usePhoneSignIn }}
+              components={{
+                VerificationCode,
+              }}
+            />
+          </Tabs.TabPane>
+        </Tabs>
+      ) : (
+        <SchemaComponent scope={{ usePasswordSignIn }} schema={passwordForm} />
+      )}
+      {allowSignUp && (
+        <div>
+          <Link to="/signup">{t('Create an account')}</Link>
+        </div>
+      )}
     </div>
   );
 };
