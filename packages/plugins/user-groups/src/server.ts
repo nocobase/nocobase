@@ -2,7 +2,7 @@ import { Collection, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import parse from 'json-templates';
 import { resolve } from 'path';
-import { namespace } from './';
+import { namespace } from '.';
 import { enUS, zhCN } from './locale';
 
 import { afterUsersCreate } from './hooks';
@@ -54,7 +54,7 @@ export default class UserGroupsPlugin extends Plugin<UserGroupPluginConfig> {
    */
   async install(options) {
     const { defaultname } = this.getInstallingData(options);
-    const UserGroup = this.db.getCollection('usergroups');
+    const UserGroup = this.db.getCollection('userGroups');
     const defaltUserGroup = await UserGroup.repository.create({
       values: {
         name: defaultname,
@@ -64,7 +64,7 @@ export default class UserGroupsPlugin extends Plugin<UserGroupPluginConfig> {
 
     const repo = this.db.getRepository<any>('collections');
     if (repo) {
-      await repo.db2cm('usergroups');
+      await repo.db2cm('userGroups');
     }
   }
 

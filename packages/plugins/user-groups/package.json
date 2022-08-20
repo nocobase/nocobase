@@ -1,5 +1,5 @@
 {
-    "name": "@nocobase/plugin-usergroups",
+    "name": "@nocobase/plugin-user-groups",
     "version": "0.7.4-alpha.7",
     "main": "lib/index.js",
     "license": "Apache-2.0",

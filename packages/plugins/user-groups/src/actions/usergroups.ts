@@ -1,5 +1,5 @@
 import { Context, Next } from '@nocobase/actions';
-import { namespace } from '../';
+import { namespace } from '..';
 
 export async function getTree(ctx: Context, next: Next) {
   await next();

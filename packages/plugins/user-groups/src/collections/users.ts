@@ -6,16 +6,16 @@ export default extend({
     {
       interface: 'm2m',
       type: 'belongsToMany',
-      name: 'usergroups',
-      target: 'usergroups',
+      name: 'userGroups',
+      target: 'userGroups',
       foreignKey: 'userId',
       otherKey: 'groupId',
       sourceKey: 'id',
       targetKey: 'id',
-      through: 'usergroupsUsers',
+      through: 'userGroupsUsers',
       uiSchema: {
         type: 'array',
-        title: '{{t("userGroups")}}',
+        title: '{{t("User groups")}}',
         'x-component': 'RecordPicker',
         'x-component-props': {
           multiple: true,

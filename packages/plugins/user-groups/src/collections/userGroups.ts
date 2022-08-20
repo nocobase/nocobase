@@ -1,8 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-    name: 'usergroups',
-    title: '{{t("UserGroups")}}',
+    name: 'userGroups',
+    title: '{{t("User groups")}}',
     sortable: 'sort',
     model: 'UserGroupModel',
     filterTargetKey: 'name',
@@ -35,10 +35,10 @@ export default {
             interface: 'm2o',
             type: 'belongsTo',
             name: 'parent',
-            target: 'usergroups',
+            target: 'userGroups',
             foreignKey: 'pid',
             uiSchema: {
-                title: '{{t("parentGroup")}}',
+                title: '{{t("Parent group")}}',
                 'x-component': 'RecordPicker',
                 'x-component-props': {
                     multiple: false,
@@ -53,10 +53,10 @@ export default {
             interface: 'o2m',
             type: 'hasMany',
             name: 'children',
-            target: 'usergroups',
+            target: 'userGroups',
             foreignKey: 'pid',
             uiSchema: {
-                title: '{{t("subGroups")}}',
+                title: '{{t("Sub-groups")}}',
                 'x-component': 'RecordPicker',
                 'x-component-props': {
                     multiple: true,
@@ -76,10 +76,10 @@ export default {
             otherKey: 'userId',
             sourceKey: 'id',
             targetKey: 'id',
-            through: 'usergroupsUsers',
+            through: 'userGroupsUsers',
             uiSchema: {
                 type: 'array',
-                title: '{{t("users")}}',
+                title: '{{t("Users")}}',
                 'x-component': 'RecordPicker',
                 'x-component-props': {
                     multiple: true,

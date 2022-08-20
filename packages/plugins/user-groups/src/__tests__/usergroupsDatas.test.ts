@@ -4,7 +4,7 @@
  * which will focus on the data table and datas.
  */
 import Database, { BelongsToManyRepository } from '@nocobase/database';
-import { default as UserGroupsPlugin } from '../';
+import { default as UserGroupsPlugin } from '..';
 
 import { mockServer, MockServer } from '@nocobase/test';
 
@@ -49,14 +49,14 @@ describe('A.load and install data tables', () => {
 
     //test the plugin was loaded.
     it('A.1.collection usergroups was create and loaded.', async () => {
-        const Test = app.db.getCollection('usergroups');
+        const Test = app.db.getCollection('userGroups');
         expect(Test).toBeDefined();
     });
 
     //test the usergroup table was created.
     it('A.2.table usergroups installed', async () => {
-        const Test = app.db.getRepository('usergroups');
-        expect(Test.model.name).toEqual('usergroups');
+        const Test = app.db.getRepository('userGroups');
+        expect(Test.model.name).toEqual('userGroups');
     });
 
 
@@ -64,8 +64,8 @@ describe('A.load and install data tables', () => {
     //test the usergroupsUsers table was created.
     //userplugin needed.
     it('A.3.table usergroupsUsers installed', async () => {
-        const Test = app.db.getRepository('usergroupsUsers');
-        expect(Test.model.name).toEqual('usergroupsUsers');
+        const Test = app.db.getRepository('userGroupsUsers');
+        expect(Test.model.name).toEqual('userGroupsUsers');
     });
 
 });
@@ -87,7 +87,7 @@ describe('B.test the installed default datas', () => {
     //need userplugin.
     it('B.1.default usergroup', async () => {
         // const Test = app.db.getRepository('usergroups');
-        const Test = await app.db.getRepository('usergroups').findOne({
+        const Test = await app.db.getRepository('userGroups').findOne({
             filter: {
                 name: 'default',
             },
@@ -107,7 +107,7 @@ describe('B.test the installed default datas', () => {
             },
         });
         // user1._model.getUserGroup();
-        let ts = await Tuser['getUsergroups']();
+        let ts = await Tuser['getUserGroups']();
         const groupid = await ts[0]['id'];
         expect(groupid).toBe(1);
     });

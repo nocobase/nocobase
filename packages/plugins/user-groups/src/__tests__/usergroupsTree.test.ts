@@ -40,7 +40,7 @@ describe('A.test usergroups tree data.', () => {
     //this test will test wheather the usergroup plugin will be installed.
     it('create a group,and set the parent to 1', async () => {
 
-        const group1 = await app.db.getRepository('usergroups').create({
+        const group1 = await app.db.getRepository('userGroups').create({
             values: {
                 name: 'group1',
                 status: 1,
@@ -56,14 +56,14 @@ describe('A.test usergroups tree data.', () => {
     //this test will test wheather the usergroup plugin will be installed.
     it('create a group,and set the childer', async () => {
 
-        const group1 = await app.db.getRepository('usergroups').create({
+        const group1 = await app.db.getRepository('userGroups').create({
             values: {
                 name: 'group1',
                 status: 1,
             },
         });
 
-        const group2 = await app.db.getRepository('usergroups').create({
+        const group2 = await app.db.getRepository('userGroups').create({
             values: {
                 name: 'group2',
                 status: 1,
@@ -79,21 +79,21 @@ describe('A.test usergroups tree data.', () => {
     //this test will test wheather the usergroup plugin will be installed.
     it('create a group,and set the parent to 1', async () => {
 
-        const group1 = await app.db.getRepository('usergroups').create({
+        const group1 = await app.db.getRepository('userGroups').create({
             values: {
                 name: 'group1',
                 status: 1,
             },
         });
 
-        const group2 = await app.db.getRepository('usergroups').create({
+        const group2 = await app.db.getRepository('userGroups').create({
             values: {
                 name: 'group2',
                 status: 1,
             },
         });
 
-        const group3 = await app.db.getRepository('usergroups').create({
+        const group3 = await app.db.getRepository('userGroups').create({
             values: {
                 name: 'group3',
                 status: 1,

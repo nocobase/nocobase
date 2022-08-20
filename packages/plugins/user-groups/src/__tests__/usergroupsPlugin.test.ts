@@ -27,7 +27,7 @@ describe('plugin', () => {
         it('plugin name', async () => {
             const plugin = app.plugin(UserGroupsPlugin);
             expect(plugin).toBeInstanceOf(Plugin);
-            expect(plugin.getName()).toBe('@nocobase/plugin-usergroups');
+            expect(plugin.getName()).toBe('@nocobase/plugin-user-groups');
         });
 
     });

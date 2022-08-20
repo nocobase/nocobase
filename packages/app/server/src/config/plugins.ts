@@ -7,7 +7,7 @@ export default [
   '@nocobase/plugin-ui-routes-storage',
   '@nocobase/plugin-file-manager',
   '@nocobase/plugin-system-settings',
-  '@nocobase/plugin-usergroups',
+  '@nocobase/plugin-user-groups',
   '@nocobase/plugin-users',
   '@nocobase/plugin-acl',
   '@nocobase/plugin-china-region',
