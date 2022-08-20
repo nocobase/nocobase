@@ -104,7 +104,28 @@ const useValidator = (validator: (value: any) => string) => {
   }, []);
 };
 
+const TdCell = (props: any) => {
+  const { onMouseEnter, onMouseLeave, children, ...restProps } = props;
+  return (
+    <td
+      {...restProps}
+      children={children[1]}
+      className={classNames(
+        props.className,
+        css`
+          max-width: 300px;
+          white-space: nowrap;
+          .nb-read-pretty-input-number {
+            text-align: right;
+          }
+        `,
+      )}
+    />
+  );
+};
+
 export const Table: any = observer((props: any) => {
+  const vnodeCache = [];
   const schema = useFieldSchema();
   const height = useTableBlockContext()?.height;
   const { exists, render } = useMemo(() => useSchemaInitializer(schema['x-initializer']), []);
@@ -191,32 +212,24 @@ export const Table: any = observer((props: any) => {
         row: (props) => {
           return <SortableRow {...props}></SortableRow>;
         },
-        cell: (props) => {
-          const { onMouseEnter, onMouseLeave, children, ...restProps } = props;
-          return (
-            <td
-              {...restProps}
-              children={children[1]}
-              className={classNames(
-                props.className,
-                css`
-                  max-width: 300px;
-                  white-space: nowrap;
-                  .nb-read-pretty-input-number {
-                    text-align: right;
-                  }
-                `,
-              )}
-            />
-          );
-        },
+        cell: TdCell,
       },
     };
   }, [field, onRowDragEnd, dragSort]);
 
-  const columnRender = React.useCallback(({ s, index }) => {
-    return <RecursionField schema={s} name={index} onlyRenderProperties />;
-  }, []);
+  const rowRender = ({ s, index, key }) => {
+    const cacheKey = `${index}+${key}`;
+    const cached = vnodeCache[cacheKey];
+    // 渲染 row,返回对应的 vnode
+    const ret = <RecursionField schema={s} name={index} onlyRenderProperties />;
+    if (cached && columns.length) {
+      return cached;
+    } else {
+      vnodeCache[cacheKey] = ret;
+      return ret;
+    }
+  };
+
   const columnSchema = schema.reduceProperties((buf, s) => {
     if (isColumnComponent(s)) {
       return buf.concat([s]);
@@ -239,7 +252,7 @@ export const Table: any = observer((props: any) => {
         shouldCellUpdate: (record, prevRecord) => {
           return record[s.name] !== prevRecord[s.name];
         },
-        render: (_, record, index) => columnRender({ s, record, index }),
+        render: (_, record, index) => rowRender({ s, key: s.name, index }),
       } as TableColumnProps<any>;
     });
     return columns;
