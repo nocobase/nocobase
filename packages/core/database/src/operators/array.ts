@@ -67,7 +67,8 @@ export default {
     value = escape(JSON.stringify(value), ctx);
 
     if (isPg(ctx)) {
-      return Sequelize.literal(`not (${fieldName} <@ ${value}::JSONB and ${fieldName} @> ${value}::JSONB)`);
+      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
+      return Sequelize.literal(`not (${name} <@ ${value}::JSONB and ${name} @> ${value}::JSONB)`);
     }
 
     if (isMySQL(ctx)) {
@@ -83,8 +84,9 @@ export default {
     const fieldName = getFieldName(ctx);
 
     if (isPg(ctx)) {
+      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
       return Sequelize.literal(
-        `${fieldName} ?| ${escape(
+        `${name} ?| ${escape(
           value.map((i) => `${i}`),
           ctx,
         )}`,
@@ -107,9 +109,10 @@ export default {
 
     if (isPg(ctx)) {
       const fieldName = getFieldName(ctx);
+      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
       // pg single quote
       where = Sequelize.literal(
-        `not (${fieldName} ?| ${escape(
+        `not (${name} ?| ${escape(
           value.map((i) => `${i}`),
           ctx,
         )})`,
