@@ -32,7 +32,7 @@ export const type: ISchema = {
 
 export const unique = {
   type: 'boolean',
-  title: '{{t("Unique")}}',
+  'x-content': '{{t("Unique")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
 };

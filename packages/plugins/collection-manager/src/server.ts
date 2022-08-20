@@ -3,8 +3,8 @@ import path from 'path';
 import lodash from 'lodash';
 import { UniqueConstraintError } from 'sequelize';
 
-import { Plugin } from '@nocobase/server';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
+import { Plugin } from '@nocobase/server';
 
 import { CollectionRepository } from '.';
 import {
@@ -69,9 +69,11 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
-    this.app.db.on('fields.afterSave', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterSave', async (model: FieldModel, { context, transaction }) => {
       if (context) {
-        await model.migrate({ transaction });
+        if (model.previous('options')?.['unique'] !== model.get('unique')) {
+          await model.migrate({ transaction });
+        }
       }
     });
 
