@@ -12,6 +12,30 @@ describe('magic-attribute-model', () => {
     await db.close();
   });
 
+  it('case 0', async () => {
+    db.registerModels({ MagicAttributeModel });
+
+    const Test = db.collection({
+      name: 'tests',
+      model: 'MagicAttributeModel',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'json', name: 'options' },
+      ],
+    });
+
+    await db.sync();
+
+    const test = await Test.model.create({
+      title: 'aa',
+      'x-component-props': { key1: 'val1', arr1: [1, 2, 3], arr2: [4, 5] },
+    });
+
+    test.set('x-component-props', { arr2: [1, 2, 3] });
+
+    expect(test.previous('options')['x-component-props']['arr2']).toEqual([4, 5]);
+  });
+
   it('case 1', async () => {
     db.registerModels({ MagicAttributeModel });
 
