@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
@@ -25,8 +26,15 @@ export const ActionBar = observer((props: any) => {
     );
   }
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...style }} {...others}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+    <div
+      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflowX: 'auto', ...style }}
+      {...others}
+    >
+      <div className={css`
+        .ant-space:last-child {
+          margin-left: 8px;
+        }
+      `} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
         <DndContext>
           <Space>
             {fieldSchema.mapProperties((schema, key) => {
