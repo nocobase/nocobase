@@ -69,9 +69,17 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
-    this.app.db.on('fields.afterSave', async (model: FieldModel, { context, transaction }) => {
+    this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
       if (context) {
-        if (model.previous('options')?.['unique'] !== model.get('unique')) {
+        await model.migrate({ transaction });
+      }
+    });
+
+    this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
+      if (context) {
+        const prev = model.previous('options')?.unique;
+        const next = model.get('options')?.unique;
+        if (lodash.isBoolean(prev) && lodash.isBoolean(next) && prev !== next) {
           await model.migrate({ transaction });
         }
       }
@@ -172,10 +180,10 @@ export class CollectionManagerPlugin extends Plugin {
 
     const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('@nocobase/plugin-error-handler');
     errorHandlerPlugin.errorHandler.register(
-      err => err instanceof UniqueConstraintError,
+      (err) => err instanceof UniqueConstraintError,
       (err, ctx) => {
         return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
-      }
+      },
     );
   }
 
