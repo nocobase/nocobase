@@ -124,6 +124,13 @@ const schema: ISchema = {
           'x-component': 'Checkbox',
           'x-decorator': 'FormItem',
         },
+        smsAuthEnabled: {
+          type: 'boolean',
+          default: false,
+          'x-content': '{{t("Enable SMS authentication")}}',
+          'x-component': 'Checkbox',
+          'x-decorator': 'FormItem',
+        },
         footer1: {
           type: 'void',
           'x-component': 'Action.Drawer.Footer',

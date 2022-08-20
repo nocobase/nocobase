@@ -10,12 +10,17 @@
     }
   ],
   "dependencies": {
-    "jsonwebtoken": "^8.5.1"
+    "@nocobase/actions": "0.7.4-alpha.7",
+    "@nocobase/database": "0.7.4-alpha.7",
+    "@nocobase/resourcer": "0.7.4-alpha.7",
+    "@nocobase/server": "0.7.4-alpha.7",
+    "@nocobase/utils": "0.7.4-alpha.7",
+    "jsonwebtoken": "^8.5.1",
+    "json-templates": "^4.2.0"
   },
   "devDependencies": {
     "@nocobase/test": "0.7.4-alpha.7",
-    "@types/jsonwebtoken": "^8.5.8",
-    "json-templates": "^4.2.0"
+    "@types/jsonwebtoken": "^8.5.8"
   },
   "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
 }

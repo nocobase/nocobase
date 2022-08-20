@@ -90,3 +90,29 @@ export class MiddlewareManager {
     this.middlewares.splice(this.middlewares.indexOf(middleware), 1);
   }
 }
+
+export function branch(
+  map: {
+    [key: string]: HandlerType;
+  } = {},
+  reducer: (ctx) => string,
+  options: {
+    keyNotFound?(ctx, next): void;
+    handlerNotSet?(ctx, next): void;
+  } = {}
+): HandlerType {
+  return (ctx, next) => {
+    const key = reducer(ctx);
+
+    if (!key) {
+      return options.keyNotFound ? options.keyNotFound(ctx, next) : ctx.throw(404);
+    }
+
+    const handler = map[key];
+    if (!handler) {
+      return options.handlerNotSet ? options.handlerNotSet(ctx, next) : ctx.throw(404);
+    }
+
+    return handler(ctx, next);
+  };
+}

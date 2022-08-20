@@ -23,6 +23,7 @@
     "@nocobase/plugin-ui-routes-storage": "0.7.4-alpha.7",
     "@nocobase/plugin-ui-schema-storage": "0.7.4-alpha.7",
     "@nocobase/plugin-users": "0.7.4-alpha.7",
+    "@nocobase/plugin-verification": "0.7.4-alpha.7",
     "@nocobase/plugin-workflow": "0.7.4-alpha.7",
     "@nocobase/server": "0.7.4-alpha.7"
   },
