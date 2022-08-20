@@ -3,13 +3,14 @@ import { createApp } from '..';
 
 describe('collections repository', () => {
   let app: MockServer;
+  let agent;
 
   beforeEach(async () => {
     app = await createApp();
+    agent = app.agent();
     await app.install({ clean: true });
     await app.start();
-    await app
-      .agent()
+    await agent
       .resource('collections')
       .create({
         values: {
@@ -22,8 +23,7 @@ describe('collections repository', () => {
           ],
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('collections')
       .create({
         values: {
@@ -36,8 +36,7 @@ describe('collections repository', () => {
           ],
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('collections.fields', 'tags')
       .create({
         values: {
@@ -46,8 +45,7 @@ describe('collections repository', () => {
           type: 'belongsToMany',
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('collections')
       .create({
         values: {
@@ -60,8 +58,7 @@ describe('collections repository', () => {
           ],
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('collections')
       .create({
         values: {
@@ -100,24 +97,21 @@ describe('collections repository', () => {
   it('case 2', async () => {
     const response = await app.agent().resource('posts').create();
     const postId = response.body.data.id;
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId)
       .create({
         values: {
           title: 'comment 1',
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId)
       .create({
         values: {
           title: 'comment 2',
         },
       });
-    const response2 = await app
-      .agent()
+    const response2 = await agent
       .resource('posts')
       .list({
         filter: {
@@ -130,16 +124,14 @@ describe('collections repository', () => {
   it('case 3', async () => {
     const response = await app.agent().resource('posts').create();
     const postId = response.body.data.id;
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId)
       .create({
         values: {
           title: 'comment 1',
         },
       });
-    const response2 = await app
-      .agent()
+    const response2 = await agent
       .resource('posts')
       .list({
         filter: {
@@ -152,16 +144,14 @@ describe('collections repository', () => {
   it('case 4', async () => {
     const response = await app.agent().resource('posts').create();
     const postId = response.body.data.id;
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId)
       .create({
         values: {
           title: 'comment 1',
         },
       });
-    const response2 = await app
-      .agent()
+    const response2 = await agent
       .resource('posts')
       .list({
         filter: {
@@ -186,8 +176,7 @@ describe('collections repository', () => {
   });
 
   it('case 6', async () => {
-    const response = await app
-      .agent()
+    const response = await agent
       .resource('posts')
       .create({
         values: {
@@ -205,8 +194,7 @@ describe('collections repository', () => {
   });
 
   it('case 7', async () => {
-    const response = await app
-      .agent()
+    const response = await agent
       .resource('posts')
       .create({
         values: {
@@ -219,8 +207,7 @@ describe('collections repository', () => {
         },
       });
     const postId = response.body.data.id;
-    const response1 = await app
-      .agent()
+    const response1 = await agent
       .resource('posts.tags', postId)
       .list({
         filter: {
@@ -231,8 +218,7 @@ describe('collections repository', () => {
   });
 
   it('case 8', async () => {
-    const response = await app
-      .agent()
+    const response = await agent
       .resource('posts')
       .create({
         values: {
@@ -248,8 +234,7 @@ describe('collections repository', () => {
         },
       });
     const postId = response.body.data.id;
-    const response1 = await app
-      .agent()
+    const response1 = await agent
       .resource('posts.tags', postId)
       .list({
         filter: {
@@ -260,8 +245,7 @@ describe('collections repository', () => {
   });
 
   it('case 9', async () => {
-    const response = await app
-      .agent()
+    const response = await agent
       .resource('posts')
       .create({
         values: {
@@ -277,8 +261,7 @@ describe('collections repository', () => {
         },
       });
     const postId = response.body.data.id;
-    const response1 = await app
-      .agent()
+    const response1 = await agent
       .resource('posts.tags', postId)
       .list({
         filter: {
@@ -289,8 +272,7 @@ describe('collections repository', () => {
   });
 
   it('case 10', async () => {
-    const response = await app
-      .agent()
+    const response = await agent
       .resource('posts')
       .create({
         values: {
@@ -306,8 +288,7 @@ describe('collections repository', () => {
         },
       });
     const postId = response.body.data.id;
-    const response1 = await app
-      .agent()
+    const response1 = await agent
       .resource('posts.tags', postId)
       .list({
         appends: ['foos'],
@@ -322,16 +303,14 @@ describe('collections repository', () => {
   it('case 11', async () => {
     const response = await app.agent().resource('posts').create();
     const postId = response.body.data.id;
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId)
       .create({
         values: {
           title: 'comment 1',
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId)
       .create({
         values: {
@@ -340,24 +319,21 @@ describe('collections repository', () => {
       });
     const response2 = await app.agent().resource('posts').create();
     const postId2 = response2.body.data.id;
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId2)
       .create({
         values: {
           title: 'comment 2',
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId2)
       .create({
         values: {
           title: 'comment 2',
         },
       });
-    const response3 = await app
-      .agent()
+    const response3 = await agent
       .resource('posts')
       .list({
         filter: {
@@ -377,32 +353,28 @@ describe('collections repository', () => {
   it('case 12', async () => {
     const response = await app.agent().resource('posts').create();
     const postId = response.body.data.id;
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId)
       .create({
         values: {
           title: 'comment 1',
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId)
       .create({
         values: {
           title: 'comment 2',
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('posts.comments', postId)
       .create({
         values: {
           title: 'comment 3',
         },
       });
-    const response2 = await app
-      .agent()
+    const response2 = await agent
       .resource('posts.comments', postId)
       .list({
         filter: {
@@ -424,24 +396,21 @@ describe('collections repository', () => {
     const tag1 = await tagRepository.create({ values: { title: 'tag1' } });
     const tag2 = await tagRepository.create({ values: { title: 'tag2' } });
     const tag3 = await tagRepository.create({ values: { title: 'tag3' } });
-    await app
-      .agent()
+    await agent
       .resource('posts')
       .create({
         values: {
           tags: [tag1.get('id'), tag3.get('id')],
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('posts')
       .create({
         values: {
           tags: [tag2.get('id')],
         },
       });
-    await app
-      .agent()
+    await agent
       .resource('posts')
       .create({
         values: {
@@ -449,8 +418,7 @@ describe('collections repository', () => {
         },
       });
 
-    const response1 = await app
-      .agent()
+    const response1 = await agent
       .resource('posts')
       .list({
         filter: {

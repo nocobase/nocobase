@@ -134,10 +134,8 @@ export class Collection<
   }
 
   private bindFieldEventListener() {
-    this.on('field.afterAdd', (field: Field) => {
-      field.bind();
-    });
-    this.on('field.afterRemove', (field) => field.unbind());
+    this.on('field.afterAdd', (field: Field) => field.bind());
+    this.on('field.afterRemove', (field: Field) => field.unbind());
   }
 
   forEachField(callback: (field: Field) => void) {
@@ -285,7 +283,7 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
-  addIndex(index: any) {
+  addIndex(index: string | string[] | { fields: string[], unique?: boolean,[key: string]: any }) {
     if (!index) {
       return;
     }
@@ -347,22 +345,22 @@ export class Collection<
   }
 
   async sync(syncOptions?: SyncOptions) {
-    const modelNames = [this.model.name];
+    const modelNames = new Set([this.model.name]);
 
     const associations = this.model.associations;
 
     for (const associationKey in associations) {
       const association = associations[associationKey];
-      modelNames.push(association.target.name);
+      modelNames.add(association.target.name);
       if ((<any>association).through) {
-        modelNames.push((<any>association).through.model.name);
+        modelNames.add((<any>association).through.model.name);
       }
     }
 
     const models: ModelCtor<Model>[] = [];
     // @ts-ignore
     this.context.database.sequelize.modelManager.forEachModel((model) => {
-      if (modelNames.includes(model.name)) {
+      if (modelNames.has(model.name)) {
         models.push(model);
       }
     });

@@ -179,7 +179,7 @@ export abstract class Field {
   unbind() {
     const { model } = this.context.collection;
     model.removeAttribute(this.name);
-    if (this.options.index) {
+    if (this.options.index || this.options.unique) {
       this.context.collection.removeIndex([this.name]);
     }
   }
