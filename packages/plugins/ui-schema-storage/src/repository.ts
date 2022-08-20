@@ -303,6 +303,14 @@ export class UiSchemaRepository extends Repository {
     await traverSchemaTree(newSchema);
   }
 
+  @transaction()
+  async batchPatch(schemas: any[], options?) {
+    const { transaction } = options;
+    for (const schema of schemas) {
+      await this.patch(schema, { ...options, transaction });
+    }
+  }
+
   async updateNode(uid: string, schema: any, transaction?: Transaction) {
     const nodeModel = await this.findOne({
       filter: {

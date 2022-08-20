@@ -111,7 +111,35 @@ export class Designable {
     if (!api) {
       return;
     }
-    this.on('insertAdjacent', async ({ onSuccess, current, position, schema, wrap, removed }) => {
+    const updateColumnSize = (parent: Schema) => {
+      if (!parent) {
+        return;
+      }
+      const len = Object.values(parent.properties).length;
+      const schemas = [];
+      parent.mapProperties((s) => {
+        s['x-component-props'] = s['x-component-props'] || {};
+        s['x-component-props']['width'] = 100 / len;
+        if (s['x-uid']) {
+          schemas.push({
+            'x-uid': s['x-uid'],
+            'x-component-props': s['x-component-props'],
+          });
+        }
+      });
+      if (parent['x-uid'] && schemas.length) {
+        return schemas;
+      }
+      return [];
+    };
+    this.on('insertAdjacent', async ({ onSuccess, current, position, schema, wrap, wrapped, removed }) => {
+      let schemas = [];
+      if (wrapped?.['x-component'] === 'Grid.Col') {
+        schemas = updateColumnSize(wrapped.parent);
+      }
+      if (removed?.['x-component'] === 'Grid.Col') {
+        schemas = updateColumnSize(removed.parent);
+      }
       refresh();
       if (!current['x-uid']) {
         return;
@@ -124,6 +152,13 @@ export class Designable {
           wrap,
         },
       });
+      if (schemas.length) {
+        await api.request({
+          url: `/uiSchemas:batchPatch`,
+          method: 'post',
+          data: schemas,
+        });
+      }
       if (removed?.['x-uid']) {
         await api.request({
           url: `/uiSchemas:remove/${removed['x-uid']}`,
@@ -147,7 +182,20 @@ export class Designable {
       });
       message.success(t('Saved successfully'), 0.2);
     });
+    this.on('batchPatch', async ({ schemas }) => {
+      refresh();
+      await api.request({
+        url: `/uiSchemas:batchPatch`,
+        method: 'post',
+        data: schemas,
+      });
+      message.success(t('Saved successfully'), 0.2);
+    });
     this.on('remove', async ({ removed }) => {
+      let schemas = [];
+      if (removed?.['x-component'] === 'Grid.Col') {
+        schemas = updateColumnSize(removed.parent);
+      }
       refresh();
       if (!removed?.['x-uid']) {
         return;
@@ -156,6 +204,13 @@ export class Designable {
         url: `/uiSchemas:remove/${removed['x-uid']}`,
         method: 'post',
       });
+      if (schemas.length) {
+        await api.request({
+          url: `/uiSchemas:batchPatch`,
+          method: 'post',
+          data: schemas,
+        });
+      }
       message.success(t('Saved successfully'), 0.2);
     });
   }
@@ -177,14 +232,14 @@ export class Designable {
     generateUid(schema);
   }
 
-  on(name: 'insertAdjacent' | 'remove' | 'error' | 'patch', listener: any) {
+  on(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch', listener: any) {
     if (!this.events[name]) {
       this.events[name] = [];
     }
     this.events[name].push(listener);
   }
 
-  emit(name: 'insertAdjacent' | 'remove' | 'error' | 'patch', ...args) {
+  emit(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch', ...args) {
     if (!this.events[name]) {
       return;
     }
@@ -356,6 +411,7 @@ export class Designable {
     this.emit('insertAdjacent', {
       position: 'beforeBegin',
       schema: schema2,
+      wrapped,
       wrap: schema1,
       ...opts,
     });
@@ -407,6 +463,7 @@ export class Designable {
       position: 'afterBegin',
       schema: schema2,
       wrap: schema1,
+      wrapped,
       ...opts,
     });
   }
@@ -421,6 +478,7 @@ export class Designable {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
+    delete schema['x-index'];
     const opts = { onSuccess: options.onSuccess };
     const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
@@ -447,6 +505,7 @@ export class Designable {
       position: 'beforeEnd',
       schema: schema2,
       wrap: schema1,
+      wrapped,
       ...opts,
     });
   }
@@ -508,6 +567,7 @@ export class Designable {
       position: 'afterEnd',
       schema: schema2,
       wrap: schema1,
+      wrapped,
       ...opts,
     });
   }

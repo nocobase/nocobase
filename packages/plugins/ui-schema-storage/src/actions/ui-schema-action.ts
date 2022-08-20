@@ -43,6 +43,7 @@ export const uiSchemaActions = {
   insertNewSchema: callRepositoryMethod('insertNewSchema', 'values'),
   remove: callRepositoryMethod('remove', 'resourceIndex'),
   patch: callRepositoryMethod('patch', 'values'),
+  batchPatch: callRepositoryMethod('batchPatch', 'values'),
   clearAncestor: callRepositoryMethod('clearAncestor', 'resourceIndex'),
 
   async insertAdjacent(ctx: Context, next) {
