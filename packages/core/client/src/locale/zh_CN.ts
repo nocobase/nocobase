@@ -655,4 +655,11 @@ export default {
   "Enabled languages": "启用的语言",
   "View all plugins": "查看所有插件",
   "Print": "打印",
+  "Start import": "开始导入",
+  "Import explain": "说明",
+  "Download template": "下载模板",
+  "Step 1: Download template": "1.下载模板",
+  "Step 2: Upload Excel": "2.上传完善后的表格",
+  "Download tip": "- 下载模板后，按格式填写数据\r\n - 只导入第一张工作表\r\n - 支持单次导入不超过10000行数据\r\n - 请勿改模板表头，防止导入失败",
+  "Upload placeholder": "将文件拖曳到此处或点击上传，文件大小不超过10M"
 }

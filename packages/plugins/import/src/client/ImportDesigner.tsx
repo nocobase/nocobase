@@ -12,10 +12,10 @@ export const ImportDesigner = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const [schema, setSchema] = useState<ISchema>();
-  const { schema: pageSchema } = useShared();
+  const { importSettingsSchema } = useShared();
 
   useEffect(() => {
-    setSchema(pageSchema);
+    setSchema(importSettingsSchema);
   }, [field.address, fieldSchema?.['x-action-settings']?.['importSettings']]);
 
   return (
