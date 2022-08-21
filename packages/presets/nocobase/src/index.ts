@@ -14,6 +14,7 @@ export class PresetNocoBase<O = any> extends Plugin {
       '@nocobase/plugin-file-manager',
       '@nocobase/plugin-system-settings',
       '@nocobase/plugin-verification',
+      '@nocobase/plugin-user-groups',
       '@nocobase/plugin-users',
       '@nocobase/plugin-acl',
       '@nocobase/plugin-china-region',
