@@ -197,7 +197,7 @@ Upload.Dragger = connect(
   (props: DraggerProps) => {
     return (
       <div className={usePrefixCls('upload-dragger')}>
-        <AntdUpload.Dragger {...useUploadProps(props)} />
+        <AntdUpload.Dragger {...useUploadProps(props)}>{props.children}</AntdUpload.Dragger>
       </div>
     );
   },

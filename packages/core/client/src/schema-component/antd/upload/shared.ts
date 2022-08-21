@@ -172,6 +172,7 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
   return {
     ...props,
     customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess, withCredentials }) {
+      debugger;
       const formData = new FormData();
       if (data) {
         Object.keys(data).forEach((key) => {

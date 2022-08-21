@@ -6,10 +6,16 @@ export const useShared = () => {
   const { name } = useCollection();
   const fields = useFields(name);
   return {
-    schema: {
+    importSettingsSchema: {
       type: 'void',
       'x-component': 'Grid',
       properties: {
+        explain: {
+          type: 'string',
+          title: '{{t("Import explain")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+        },
         importSettings: {
           type: 'array',
           'x-component': 'ArrayItems',
@@ -23,8 +29,7 @@ export const useShared = () => {
                 'x-component-props': {
                   className: css`
                     width: 100%;
-                    & .ant-space-item:nth-child(2),
-                    & .ant-space-item:nth-child(3) {
+                    & .ant-space-item:nth-child(2) {
                       flex: 1;
                     }
                   `,
@@ -49,14 +54,6 @@ export const useShared = () => {
                       },
                       // labelInValue: true,
                       changeOnSelect: false,
-                    },
-                  },
-                  title: {
-                    type: 'string',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input',
-                    'x-component-props': {
-                      placeholder: '{{ t("Custom column title") }}',
                     },
                   },
                   remove: {
@@ -87,6 +84,11 @@ export const useShared = () => {
           },
         },
       },
+    },
+    importSchema: {
+      type: 'void',
+      'x-component': 'Grid',
+      properties: {},
     },
   };
 };
