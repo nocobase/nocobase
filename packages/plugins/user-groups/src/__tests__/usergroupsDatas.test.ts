@@ -108,8 +108,8 @@ describe('B.test the installed default datas', () => {
         });
         // user1._model.getUserGroup();
         let ts = await Tuser['getUserGroups']();
-        const groupid = await ts[0]['id'];
-        expect(groupid).toBe(1);
+        const groupname = await ts[0]['name'];
+        expect(groupname).toEqual('default')
     });
     
 

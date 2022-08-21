@@ -7,11 +7,12 @@ export default extend({
       interface: 'm2m',
       type: 'belongsToMany',
       name: 'userGroups',
+      allowNull: true,
       target: 'userGroups',
       foreignKey: 'userId',
       otherKey: 'groupId',
       sourceKey: 'id',
-      targetKey: 'id',
+      targetKey: 'gid',
       through: 'userGroupsUsers',
       uiSchema: {
         type: 'array',
@@ -20,8 +21,8 @@ export default extend({
         'x-component-props': {
           multiple: true,
           fieldNames: {
-            label: 'title',
-            value: 'name',
+            label: 'name',
+            value: 'gid',
           },
         },
       },

@@ -1,43 +1,36 @@
 import Application from '@nocobase/server';
 
-export function afterUsersCreate(app: Application) {
+export function afterUsersCreateOrUpdate(app: Application) {
     return async (model, options) => {
         if (model.constructor.name != 'users') {
             return;
         }
         /**
          * @todo 
-         * 1.判断用户信息有没有关联的用户组信息。
-         * 2.没有就给用户增加默认用户组。
+         * 1.judge if the new user has the usergroup.
+         * 2.if not set to the default.
          * 
          */
-        const db = app.db;
         const transaction = options.transaction;
-        
-        const defaultGroup = await app.db.getRepository('userGroups').findOne({
-            filter: {
-                name: 'default',
-            },
-        });
 
-        await model.setUserGroups([defaultGroup], { transaction });
+        //if not the user do not set the usergroups.
+        //add transaction deelling.
+        if (!options?.values?.userGroups) {
+            try {
+                const defaultGroup = await app.db.getRepository('userGroups').findOne({
+                    filter: {
+                        name: 'default',
+                    },
+                    transaction: transaction,
+                });
 
-        // if (!model.associations) {
+                await model.setUserGroups([defaultGroup], { transaction: transaction });
+            } catch (error) {
+                console.log(error);
+                transaction.rollback();
+            }
 
-        //     //direct load the user's usergroups.
-        //     await model.getUserGroups();
-        //     //still not have.
-        //     if (!model.associations) {
+        }
 
-                // const defaultGroup = await app.db.getRepository('userGroups').findOne({
-                //     filter: {
-                //         name: 'default',
-                //     },
-                // });
-
-        //         //create the default assocations belong to the default usergroup.
-        //         await model.setUserGroups([defaultGroup], { transaction });
-        //     }
-        // }
     }
 }

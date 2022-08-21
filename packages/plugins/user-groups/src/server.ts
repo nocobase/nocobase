@@ -5,7 +5,7 @@ import { resolve } from 'path';
 import { namespace } from '.';
 import { enUS, zhCN } from './locale';
 
-import { afterUsersCreate } from './hooks';
+import { afterUsersCreateOrUpdate } from './hooks';
 
 export interface UserGroupPluginConfig {
 }
@@ -28,7 +28,9 @@ export default class UserGroupsPlugin extends Plugin<UserGroupPluginConfig> {
 
 
     //@todo 加个用户钩子，用户创建时如果没有机构，赋予默认机构。
-    this.db.on('afterCreate', afterUsersCreate(this.app));
+    this.db.on('afterCreate', afterUsersCreateOrUpdate(this.app));
+    //wheather add user update hook need to determine.
+    //this.db.on('afterUpdate', afterUsersCreateOrUpdate(this.app));
 
   }
 

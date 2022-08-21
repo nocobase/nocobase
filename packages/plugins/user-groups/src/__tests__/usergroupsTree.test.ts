@@ -44,12 +44,19 @@ describe('A.test usergroups tree data.', () => {
             values: {
                 name: 'group1',
                 status: 1,
-                parent: { id: 1 },
             },
         });
 
-        const tp = await group1['getParent']();
-        expect(tp['id']).toBe(1);
+        const group2 = await app.db.getRepository('userGroups').create({
+            values: {
+                name: 'group2',
+                status: 1,
+                parent: group1,
+            },
+        });
+
+        const tp = await group2['getParent']();
+        expect(tp['name']).toEqual('group1');
 
     });
 
@@ -72,7 +79,7 @@ describe('A.test usergroups tree data.', () => {
         });
 
         const tp = await group2['getChildren']();
-        expect(tp[0]['id']).toBe(2);
+        expect(tp[0]['name']).toEqual('group1');
 
     });
 

@@ -4,6 +4,7 @@ export default {
     name: 'userGroups',
     title: '{{t("User groups")}}',
     sortable: 'sort',
+    autoGenId: false,
     model: 'UserGroupModel',
     filterTargetKey: 'name',
     createdBy: true,
@@ -11,20 +12,22 @@ export default {
     logging: true,
     fields: [
         {
-            name: 'id',
-            type: 'integer',
-            autoIncrement: true,
+            type: 'uid',
+            name: 'gid',
+            prefix: 'g_',
             primaryKey: true,
-            allowNull: false,
-            interface: 'id',
-            uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
-            // const copy = readonly()
+            interface: 'input',
+            uiSchema: {
+                type: 'string',
+                title: '{{t("Group UID")}}',
+                'x-component': 'Input',
+            },
         },
         {
             type: 'string',
             name: 'name',
             interface: 'input',
-            uiSchema: { type: 'string', title: '{{t("Name")}}', 'x-component': 'Input' },
+            uiSchema: { type: 'string', title: '{{t("Group name")}}', 'x-component': 'Input' },
         },
         {//-1 deleted,0 created,1 enable,2 disable
             type: 'integer',
@@ -44,7 +47,7 @@ export default {
                     multiple: false,
                     fieldNames: {
                         label: 'name',
-                        value: 'id',
+                        value: 'gid',
                     },
                 },
             },
@@ -62,7 +65,7 @@ export default {
                     multiple: true,
                     fieldNames: {
                         label: 'name',
-                        value: 'id',
+                        value: 'gid',
                     },
                 },
             },
@@ -74,9 +77,10 @@ export default {
             target: 'users',
             foreignKey: 'groupId',
             otherKey: 'userId',
-            sourceKey: 'id',
+            sourceKey: 'gid',
             targetKey: 'id',
             through: 'userGroupsUsers',
+            allowNull: true,
             uiSchema: {
                 type: 'array',
                 title: '{{t("Users")}}',
