@@ -1,0 +1,21 @@
+{
+    "name": "@nocobase/plugin-user-groups",
+    "version": "0.7.4-alpha.7",
+    "main": "lib/index.js",
+    "license": "Apache-2.0",
+    "licenses": [
+      {
+        "type": "Apache-2.0",
+        "url": "http://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ],
+    "dependencies": {
+    },
+    "devDependencies": {
+      "@nocobase/test": "0.7.4-alpha.7",
+      "@types/jsonwebtoken": "^8.5.8",
+      "json-templates": "^4.2.0"
+    },
+    "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  }
+  
