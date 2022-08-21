@@ -20,7 +20,7 @@
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
     "find-package-json": "^1.2.0",
-    "i18next": "^21.3.2",
+    "i18next": "^21.6.0",
     "koa": "^2.13.4",
     "koa-bodyparser": "^4.3.0",
     "koa-static": "^5.0.0",
