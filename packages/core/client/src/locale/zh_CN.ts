@@ -234,6 +234,7 @@ export default {
   "Custom column name": "自定义列名称",
   "Edit description": "编辑描述",
   "Required": "必填",
+  "Unique": "不允许重复",
   "Label field": "标签字段",
   "Default is the ID field": "默认为 ID 字段",
   "Set default sorting rules": "设置排序规则",

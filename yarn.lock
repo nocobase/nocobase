@@ -11974,13 +11974,6 @@ humanize-ms@^1.2.0, humanize-ms@^1.2.1:
   dependencies:
     ms "^2.0.0"
 
-i18next@^21.3.2:
-  version "21.5.3"
-  resolved "https://registry.npmjs.org/i18next/-/i18next-21.5.3.tgz#b2d4fd24bef7ea4ec4eba2ed3cadc0c28c0e3b4c"
-  integrity sha512-9R8127a0/N5okiD7eeo6XBPQsHgHsLr1GdQEa35Pcw305ArC9KZDLs9kbgdn3xuVUNYlVu8+gWzz73eVkna0gA==
-  dependencies:
-    "@babel/runtime" "^7.12.0"
-
 i18next@^21.6.0:
   version "21.6.0"
   resolved "https://registry.npmjs.org/i18next/-/i18next-21.6.0.tgz#257abf455b24136640a20728b44cf59f60cdeb5c"

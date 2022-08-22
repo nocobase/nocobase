@@ -1,6 +1,4 @@
-import { registerValidateRules } from '@formily/core';
-import { ISchema } from '@formily/react';
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 import { i18n } from '../../i18n';
 
@@ -27,6 +25,7 @@ export const number: IField = {
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    unique,
     'uiSchema.x-component-props.step': {
       type: 'string',
       title: '{{t("Precision")}}',
