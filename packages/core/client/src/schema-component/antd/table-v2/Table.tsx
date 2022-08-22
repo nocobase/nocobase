@@ -37,7 +37,6 @@ const SortableRow = (props) => {
   const { setNodeRef, isOver, active, over } = useSortable({
     id,
   });
-
   const className =
     (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable.index ?? -1)
       ? topActiveClass
@@ -217,11 +216,17 @@ export const Table: any = observer((props: any) => {
     };
   }, [field, onRowDragEnd, dragSort]);
 
-  const rowRender = ({ s, index, key }) => {
+  const rowRender = ({ s, index, record, key }) => {
     const cacheKey = `${index}+${key}`;
     const cached = vnodeCache[cacheKey];
     // 渲染 row,返回对应的 vnode
-    const ret = <RecursionField schema={s} name={index} onlyRenderProperties />;
+    const ret = (
+      <RecordIndexProvider index={index}>
+        <RecordProvider record={record}>
+          <RecursionField schema={s} name={index} onlyRenderProperties />
+        </RecordProvider>
+      </RecordIndexProvider>
+    );
     if (cached && columns.length) {
       return cached;
     } else {
@@ -252,10 +257,17 @@ export const Table: any = observer((props: any) => {
         shouldCellUpdate: (record, prevRecord) => {
           return record[s.name] !== prevRecord[s.name];
         },
-        render: (_, record, index) => rowRender({ s, key: s.name, index }),
+        render: (_, record, index) => rowRender({ s, key: s.name, record, index }),
       } as TableColumnProps<any>;
     });
-    return columns;
+    if (!exists) {
+      return columns;
+    }
+    return columns.concat({
+      title: render(),
+      dataIndex: 'TABLE_COLUMN_INITIALIZER',
+      key: 'TABLE_COLUMN_INITIALIZER',
+    });
   }, [columnFlag, columnSchema.length]);
   const defaultRowKey = (record: any) => {
     return field.value?.indexOf?.(record);
@@ -387,18 +399,16 @@ export const Table: any = observer((props: any) => {
           className={css`
             text-align: right;
           `}
-        >
-          {exists && [render()]}
-        </div>
+        ></div>
         <AntdTable
           rowKey={rowKey ?? defaultRowKey}
           {...others}
-          {...props}
+          {...restProps}
           pagination={paginationProps}
           components={components}
           onChange={handleTableChange}
           // tableLayout={'auto'}
-          scroll={{ y: +height }}
+          scroll={{ y: +height || null }}
           columns={columns}
           dataSource={value.length ? field?.value?.slice?.() : []}
         />

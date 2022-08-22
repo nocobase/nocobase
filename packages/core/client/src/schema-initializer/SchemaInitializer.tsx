@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { ISchema, observer } from '@formily/react';
 import { Button, Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Icon } from '../icon';
 import { useCompile, useDesignable } from '../schema-component/hooks';
 import {
@@ -11,7 +11,7 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerItemProps,
 } from './types';
-import { cacheDropMenu } from './utils';
+
 const defaultWrap = (s: ISchema) => s;
 
 export const SchemaInitializerItemContext = createContext(null);
@@ -30,7 +30,6 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     style,
     icon,
     onSuccess,
-    children,
     ...others
   } = props;
   const compile = useCompile();
@@ -96,11 +95,12 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     },
     [items],
   );
-  const menu = <Menu>{cacheDropMenu(component || children || title, () => renderItems(items))}</Menu>;
+  const menu = <Menu>{renderItems(items)}</Menu>;
 
   if (!designable && props.designable !== true) {
     return null;
   }
+
   return (
     <Dropdown
       className={classNames('nb-schema-initializer-button')}
@@ -134,7 +134,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
           {...others}
           icon={<Icon type={icon as string} />}
         >
-          {compile(children || title)}
+          {compile(props.children || props.title)}
         </Button>
       )}
     </Dropdown>
