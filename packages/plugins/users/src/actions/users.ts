@@ -107,11 +107,16 @@ export async function getUserByResetToken(ctx: Context, next: Next) {
 
 export async function updateProfile(ctx: Context, next: Next) {
   const { values } = ctx.action.params;
-  if (!ctx.state.currentUser) {
+  const { currentUser } = ctx.state;
+  if (!currentUser) {
     ctx.throw(401);
   }
-  await ctx.state.currentUser.update(values);
-  ctx.body = ctx.state.currentUser;
+  const UserRepo = ctx.db.getRepository('users');
+  const result = await UserRepo.update({
+    filterByTk: currentUser.id,
+    values
+  });
+  ctx.body = result;
   await next();
 }
 
