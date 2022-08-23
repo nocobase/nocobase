@@ -8,7 +8,7 @@ NocoBase is in early stage of development and is subject to frequent changes, pl
 
 ## We are hiring
 
-We are looking for new full-time, remote product design, development, and testing colleagues to join the team. If you have a strong interest in NocoBase, please feel free to email us at hello@nocobase.com.
+We are looking for full-time, remote product design and development colleagues to join the team. If you have a strong interest in NocoBase, please feel free to email us at hello@nocobase.com.
 
 ## What is NocoBase
 
