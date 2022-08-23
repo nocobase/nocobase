@@ -20,6 +20,7 @@ export class ClientPlugin extends Plugin {
   async load() {
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
+    this.app.acl.allow('app', 'getPlugins', 'loggedIn');
     this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
     this.app.resource({
       name: 'app',
@@ -51,6 +52,10 @@ export class ClientPlugin extends Plugin {
           ctx.body = {
             lang,
           };
+          await next();
+        },
+        async getPlugins(ctx, next) {
+          ctx.body = ['china-region', 'export', 'audit-logs', 'workflow'];
           await next();
         },
       },
