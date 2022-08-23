@@ -659,4 +659,5 @@ export default {
   "Enabled languages": "启用的语言",
   "View all plugins": "查看所有插件",
   "Print": "打印",
+  'Sign up successfully, and automatically jump to the sign in page': '注册成功，即将跳转到登录页面',
 }
