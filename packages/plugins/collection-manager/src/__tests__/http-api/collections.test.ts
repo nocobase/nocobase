@@ -8,8 +8,6 @@ describe('collections repository', () => {
   beforeEach(async () => {
     app = await createApp();
     agent = app.agent();
-    await app.install({ clean: true });
-    await app.start();
     await agent
       .resource('collections')
       .create({

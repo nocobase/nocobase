@@ -5,23 +5,28 @@ export class PresetNocoBase<O = any> extends Plugin {
     return this.getPackageName(__dirname);
   }
 
-  beforeLoad(): void {
-    this.app.loadPluginConfig([
-      '@nocobase/plugin-error-handler',
-      '@nocobase/plugin-collection-manager',
-      '@nocobase/plugin-ui-schema-storage',
-      '@nocobase/plugin-ui-routes-storage',
-      '@nocobase/plugin-file-manager',
-      '@nocobase/plugin-system-settings',
-      '@nocobase/plugin-verification',
-      '@nocobase/plugin-users',
-      '@nocobase/plugin-acl',
-      '@nocobase/plugin-china-region',
-      '@nocobase/plugin-workflow',
-      '@nocobase/plugin-client',
-      '@nocobase/plugin-export',
-      '@nocobase/plugin-audit-logs',
-    ]);
+  initialize() {
+    this.app.on('beforeInstall', async () => {
+      const plugins = [
+        'error-handler',
+        'collection-manager',
+        'ui-schema-storage',
+        'ui-routes-storage',
+        'file-manager',
+        'system-settings',
+        'verification',
+        'users',
+        'acl',
+        'china-region',
+        'workflow',
+        'client',
+        'export',
+        'audit-logs',
+      ];
+      for (const plugin of plugins) {
+        await this.app.pm.add(plugin);
+      }
+    });
   }
 }
 

@@ -32,6 +32,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     this.app = app;
     this.db = app.db;
     this.setOptions(options);
+    this.initialize();
   }
 
   setOptions(options: O) {
@@ -39,6 +40,8 @@ export abstract class Plugin<O = any> implements PluginInterface {
   }
 
   public abstract getName(): string;
+
+  initialize() {}
 
   beforeLoad() {}
 

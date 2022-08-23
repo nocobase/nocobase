@@ -250,8 +250,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.runAsCLI(argv);
   }
 
-  async runAsCLI(argv?: readonly string[], options?: ParseOptions) {
-    await this.load();
+  async runAsCLI(argv = process.argv, options?: ParseOptions) {
+    if (argv?.[2] !== 'install') {
+      await this.load();
+    }
     return this.cli.parseAsync(argv, options);
   }
 
@@ -328,8 +330,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options: InstallOptions = {}) {
-    await this.emitAsync('beforeInstall', this, options);
-
     const r = await this.db.version.satisfies({
       mysql: '>=8.0.17',
       sqlite: '3.x',
@@ -345,6 +345,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
     }
 
+    await this.emitAsync('beforeInstall', this, options);
+
+    await this.load();
     await this.db.sync(options?.sync);
     await this.pm.install(options);
     await this.version.update();

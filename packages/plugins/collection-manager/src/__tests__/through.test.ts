@@ -12,7 +12,6 @@ describe('collections repository', () => {
     await app1.cleanDb();
     app1.plugin(PluginErrorHandler);
     app1.plugin(Plugin);
-    await app1.load();
     await app1.install({ clean: true });
     await app1.start();
     await app1

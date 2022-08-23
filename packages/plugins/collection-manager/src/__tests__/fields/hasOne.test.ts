@@ -1,4 +1,4 @@
-import Database, { Collection as DBCollection, StringFieldOptions } from '@nocobase/database';
+import Database, { Collection as DBCollection } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '..';
 
@@ -10,7 +10,6 @@ describe('hasOne field options', () => {
 
   beforeEach(async () => {
     app = await createApp();
-    await app.db.sync();
     db = app.db;
     Collection = db.getCollection('collections');
     Field = db.getCollection('fields');

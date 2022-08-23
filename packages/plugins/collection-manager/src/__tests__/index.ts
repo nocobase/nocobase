@@ -15,6 +15,8 @@ export async function createApp(options = {}) {
   app.plugin(Plugin);
   app.plugin(PluginUiSchema);
 
-  await app.load();
+  // await app.load();
+  await app.install({ clean: true });
+  await app.start();
   return app;
 }
