@@ -555,4 +555,5 @@ export default {
   "View all plugins": "View all plugins",
   "Print": "Print",
   'Single select and radio fields can be used as the grouping field': 'Single select and radio fields can be used as the grouping field',
+  'Sign up successfully, and automatically jump to the sign in page': 'Sign up successfully, and automatically jump to the sign in page',
 }
