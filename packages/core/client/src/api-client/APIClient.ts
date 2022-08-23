@@ -4,7 +4,7 @@ import { notification } from 'antd';
 import React from 'react';
 
 export class APIClient extends APIClientSDK {
-  services: Record<string, Result<any, any>>;
+  services: Record<string, Result<any, any>> = {};
 
   interceptors() {
     super.interceptors();

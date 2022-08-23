@@ -88,15 +88,16 @@ export const ImportDesigner = () => {
       <SchemaSettings.ActionModalItem
         title={t('Importable fields')}
         schema={schema}
-        initialValues={{ importSettings: fieldSchema?.['x-action-settings']?.importSettings }}
+        initialValues={{ ...(fieldSchema?.['x-action-settings']?.importSettings ?? {}) }}
         components={{ ArrayItems }}
-        onSubmit={({ importSettings }) => {
-          fieldSchema['x-action-settings']['importSettings'] = importSettings
+        onSubmit={({ importColumns, explain }) => {
+          const columns = importColumns
             ?.filter((fieldItem) => fieldItem?.dataIndex?.length)
             .map((item) => ({
               dataIndex: item.dataIndex.map((di) => di.name ?? di),
               title: item.title,
             }));
+          fieldSchema['x-action-settings']['importSettings'] = { importColumns: columns, explain };
 
           dn.emit('patch', {
             schema: {

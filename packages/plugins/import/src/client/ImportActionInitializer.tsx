@@ -1,4 +1,5 @@
 import { css } from '@emotion/css';
+import type { ISchema } from '@formily/react';
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { SchemaInitializer, useCollection, useCompile, useDesignable } from '@nocobase/client';
@@ -35,8 +36,8 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
 };
 
 const initImportSettings = (fields) => {
-  const importSettings = fields?.filter((f) => !f.children).map((f) => ({ dataIndex: [f.name] }));
-  return importSettings;
+  const importColumns = fields?.filter((f) => !f.children).map((f) => ({ dataIndex: [f.name] }));
+  return { importColumns, explain: '' };
 };
 
 export const ImportActionInitializer = (props) => {
@@ -47,12 +48,12 @@ export const ImportActionInitializer = (props) => {
   const { name } = useCollection();
   const fields = useFields(name);
 
-  const schema = {
+  const schema: ISchema = {
     type: 'void',
     title: '{{ t("Import") }}',
     'x-action': 'import',
     'x-action-settings': {
-      importSettings: [],
+      importSettings: { importColumns: [], explain: '' },
     },
     'x-designer': 'ImportDesigner',
     'x-component': 'Action',
@@ -65,13 +66,14 @@ export const ImportActionInitializer = (props) => {
         type: 'void',
         title: '{{ t("Add record") }}',
         'x-component': 'Action.Container',
+        'x-decorator': 'Form',
         'x-component-props': {
           width: '50%',
         },
         properties: {
-          form: {
+          formLayout: {
             type: 'void',
-            'x-component': 'FormV2',
+            'x-component': 'FormLayout',
             properties: {
               download: {
                 type: 'void',
@@ -99,32 +101,22 @@ export const ImportActionInitializer = (props) => {
                       className: css`
                         margin-top: 5px;
                       `,
+                      useAction: '{{ useDownloadXlsxTemplateAction }}',
                     },
                   },
                 },
               },
               upload: {
-                type: 'void',
+                type: 'array',
                 title: '{{ t("Step 2: Upload Excel") }}',
                 'x-decorator': 'FormItem',
                 'x-component': 'Upload.Dragger',
+                'x-validator': '{{ uploadValidator }}',
                 'x-component-props': {
                   action: '',
                   height: '150px',
+                  tipContent: '{{ t("Upload placeholder") }}',
                   beforeUpload: '{{ beforeUploadHandler }}',
-                },
-                properties: {
-                  placeholder: {
-                    type: 'void',
-                    'x-component': 'Markdown.Void',
-                    'x-editable': false,
-                    'x-component-props': {
-                      className: css`
-                        color: #999;
-                      `,
-                      content: '{{ t("Upload placeholder") }}',
-                    },
-                  },
                 },
               },
             },
@@ -139,6 +131,7 @@ export const ImportActionInitializer = (props) => {
                 'x-component-props': {},
                 properties: {
                   cancel: {
+                    type: 'void',
                     title: '{{ t("Cancel") }}',
                     'x-component': 'Action',
                     'x-component-props': {
@@ -146,12 +139,19 @@ export const ImportActionInitializer = (props) => {
                     },
                   },
                   submit: {
+                    type: 'void',
                     title: '{{ t("Start import") }}',
                     'x-component': 'Action',
                     'x-component-props': {
                       type: 'primary',
                       htmlType: 'submit',
-                      useProps: '{{ useImportAction }}',
+                      useAction: '{{ useImportStartAction }}',
+                    },
+                    'x-reactions': {
+                      dependencies: ['upload'],
+                      fulfill: {
+                        run: 'validateUpload($form, $self, $deps)',
+                      },
                     },
                   },
                 },

@@ -1,5 +1,5 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { importXlsx } from './actions';
+import { downloadXlsxTemplate, importXlsx } from './actions';
 import { importMiddleware } from './middleware';
 export class ImportPlugin extends Plugin {
   getName(): string {
@@ -13,6 +13,7 @@ export class ImportPlugin extends Plugin {
   async load() {
     // Visit: http://localhost:13000/api/import:importXlsx
     this.app.resourcer.use(importMiddleware);
+    this.app.resourcer.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
     this.app.resourcer.registerActionHandler('importXlsx', importXlsx);
     // this.app.resource({
     //   name: 'import',
@@ -20,6 +21,7 @@ export class ImportPlugin extends Plugin {
     //     importXlsx,
     //   },
     // });
+    this.app.acl.allow('*', 'downloadXlsxTemplate');
     this.app.acl.allow('*', 'importXlsx');
   }
 
