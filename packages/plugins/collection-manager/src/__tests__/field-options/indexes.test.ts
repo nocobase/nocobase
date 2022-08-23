@@ -23,6 +23,36 @@ describe('field indexes', () => {
     await app.destroy();
   });
 
+  it('create unique constraint after added dulplicated records', async () => {
+    const tableName = 'test1';
+    // create an field with unique constraint
+    const field = await agent
+      .resource('collections.fields', tableName)
+      .create({
+        values: {
+          name: 'title',
+          type: 'string'
+        },
+      });
+
+    // create a record
+    const response1 = await agent.resource(tableName).create({
+      values: { title: 't1' }
+    });
+    // create another same record
+    const response2 = await agent.resource(tableName).create({
+      values: { title: 't1' }
+    });
+
+    const response3 = await agent.resource('fields').update({
+      filterByTk: field.id,
+      values: {
+        unique: true
+      }
+    });
+    expect(response3.status).toBe(400);
+  });
+
   it('field value cannot be duplicated with unique index', async () => {
     const tableName = 'test1';
     // create an field with unique constraint
