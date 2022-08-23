@@ -1,13 +1,26 @@
 import { useFieldSchema } from '@formily/react';
 import { useCollectionManager } from '@nocobase/client';
 
+const EXCLUDE_INTERFACES = [
+  'icon',
+  'formula',
+  'attachment',
+  'markdown',
+  'richText',
+  'id',
+  'createdAt',
+  'createdBy',
+  'updatedAt',
+  'updatedBy',
+];
+
 export const useFields = (collectionName: string) => {
   const fieldSchema = useFieldSchema();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   const { getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
-    if (!field.interface) {
+    if (!field.interface || EXCLUDE_INTERFACES.includes(field.interface)) {
       return;
     }
     const option = {
