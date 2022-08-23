@@ -74,7 +74,6 @@ export const Action: ComposedAction = observer((props: any) => {
     component,
     useAction = useA,
     className,
-    disabled,
     icon,
     title,
     ...others

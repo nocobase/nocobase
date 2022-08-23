@@ -12,6 +12,7 @@ export type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
 export type DraggerProps = Omit<AntdDraggerProps, 'onChange'> & {
   onChange?: (fileList: UploadFile[]) => void;
   serviceErrorMessage?: string;
+  tipContent?: string | React.ReactNode;
   children?: React.ReactNode;
 };
 

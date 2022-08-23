@@ -1,8 +1,16 @@
 import { css } from '@emotion/css';
+import type { VoidField } from '@formily/core';
 import { useCollection } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
 import { useFields } from './useFields';
 
+const INCLUDE_FILE_TYPE = [
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+];
+
 export const useShared = () => {
+  const { t } = useTranslation();
   const { name } = useCollection();
   const fields = useFields(name);
   return {
@@ -16,7 +24,7 @@ export const useShared = () => {
           'x-decorator': 'FormItem',
           'x-component': 'Input.TextArea',
         },
-        importSettings: {
+        importColumns: {
           type: 'array',
           'x-component': 'ArrayItems',
           'x-decorator': 'FormItem',
@@ -85,10 +93,38 @@ export const useShared = () => {
         },
       },
     },
-    importSchema: {
-      type: 'void',
-      'x-component': 'Grid',
-      properties: {},
+    beforeUploadHandler() {
+      return false;
+    },
+    uploadValidator(value, rule) {
+      if (value.length > 1) {
+        return {
+          type: 'error',
+          message: t('Only one file is allowed to be uploaded'),
+        };
+      }
+      const file = value[0] ?? {};
+      if (file.size > 10 * 1024 * 1024) {
+        return {
+          type: 'error',
+          message: t('File size cannot exceed 10M'),
+        };
+      }
+      if (!INCLUDE_FILE_TYPE.includes(file.type)) {
+        return {
+          type: 'error',
+          message: t('Please upload the file of Excel'),
+        };
+      }
+      return '';
+    },
+    validateUpload(form, submitField: VoidField, deps) {
+      const [upload] = deps;
+      submitField.disabled = upload?.length === 0;
+      submitField.componentProps = {
+        ...submitField.componentProps,
+        disabled: upload?.length === 0 || form.errors?.length > 0,
+      };
     },
   };
 };

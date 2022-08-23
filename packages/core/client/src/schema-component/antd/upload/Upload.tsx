@@ -195,9 +195,13 @@ Upload.Attachment = connect((props: UploadProps) => {
 
 Upload.Dragger = connect(
   (props: DraggerProps) => {
+    const { tipContent } = props;
     return (
       <div className={usePrefixCls('upload-dragger')}>
-        <AntdUpload.Dragger {...useUploadProps(props)}>{props.children}</AntdUpload.Dragger>
+        <AntdUpload.Dragger {...useUploadProps(props)}>
+          {tipContent}
+          {props.children}
+        </AntdUpload.Dragger>
       </div>
     );
   },

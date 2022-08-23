@@ -1,1 +1,2 @@
-export * from './import-xlsx';
+export * from './downloadXlsxTemplate';
+export * from './importXlsx';
