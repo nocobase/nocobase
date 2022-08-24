@@ -51,6 +51,12 @@ describe('field indexes', () => {
       }
     });
     expect(response3.status).toBe(400);
+
+    const response4 = await agent.resource(tableName).create({
+      values: { title: 't1' }
+    });
+    expect(response4.status).toBe(200);
+    expect(response4.body.data.title).toBe('t1');
   });
 
   it('field value cannot be duplicated with unique index', async () => {
