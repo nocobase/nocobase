@@ -1,0 +1,41 @@
+name: main-push-aliyun-registry
+
+on:
+  push:
+    branches:
+      - 'main'
+env:
+  registry: registry.cn-hangzhou.aliyuncs.com
+  registry_name_space: liyongfei
+  repo_name: nocobase
+  
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      -
+        name: Login to ali Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.registry }}/
+          username: ${{ env.ALI_REGISTRY_NAME }}
+          password: ${{ env.ALI_REGISTRY_PWD }}
+      -
+        name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |       
+            ${{ env.registry }}/${{ env.registry_name_space }}/${{ env.nocobase }}:latest
+            ${{ env.registry }}/${{ env.registry_name_space }}/${{ env.nocobase }}:${{ github.sha }}
