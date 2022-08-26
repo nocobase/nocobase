@@ -64,11 +64,16 @@ export const ImportActionInitializer = (props) => {
     properties: {
       modal: {
         type: 'void',
-        title: '{{ t("Add record") }}',
+        title: '{{ t("Import Data") }}',
         'x-component': 'Action.Container',
         'x-decorator': 'Form',
         'x-component-props': {
           width: '50%',
+          className: css`
+            .ant-formily-item-label {
+              height: 30px;
+            }
+          `,
         },
         properties: {
           formLayout: {
@@ -89,6 +94,10 @@ export const ImportActionInitializer = (props) => {
                         padding: 8px 15px;
                         background-color: #e6f7ff;
                         border: 1px solid #91d5ff;
+                        margin-bottom: 10px;
+                        li {
+                          line-height: 26px;
+                        }
                       `,
                       content: '{{ t("Download tip") }}',
                     },
@@ -138,7 +147,7 @@ export const ImportActionInitializer = (props) => {
                       useAction: '{{ cm.useCancelAction }}',
                     },
                   },
-                  submit: {
+                  startImport: {
                     type: 'void',
                     title: '{{ t("Start import") }}',
                     'x-component': 'Action',

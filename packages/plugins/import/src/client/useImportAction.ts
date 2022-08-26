@@ -1,5 +1,6 @@
-import { Schema, useFieldSchema } from '@formily/react';
+import { Schema, useFieldSchema, useForm } from '@formily/react';
 import {
+  useActionContext,
   useAPIClient,
   useBlockRequestContext,
   useCollection,
@@ -9,8 +10,8 @@ import {
 import { saveAs } from 'file-saver';
 import { cloneDeep } from 'lodash';
 import { useTranslation } from 'react-i18next';
-
-let uploadFile;
+import { useImportContext } from './context';
+import { ImportStatus } from './ImportModal';
 
 const useImportSchema = (s: Schema) => {
   let schema = s;
@@ -74,6 +75,9 @@ export const useImportStartAction = () => {
   const { name, title, getField } = useCollection();
   const { t } = useTranslation();
   const { schema: importSchema } = useImportSchema(actionSchema);
+  const form = useForm();
+  const { setVisible } = useActionContext();
+  const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   return {
     async run() {
       const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
@@ -93,22 +97,21 @@ export const useImportStartAction = () => {
         }
       });
       let formData = new FormData();
-      formData.append('file', uploadFile);
+      const uploadFiles = form.values.upload.map((f) => f.originFileObj);
+      console.log(form, uploadFiles);
+      formData.append('file', uploadFiles[0]);
       formData.append('columns', JSON.stringify(importColumns));
       formData.append('explain', explain);
-      await apiClient.axios.post(`${name}:importXlsx`, formData, {});
-      //   .catch((err) => {});
-      service?.refresh?.();
-      uploadFile = undefined;
+      setVisible(false);
+      setImportModalVisible(true);
+      setImportStatus(ImportStatus.IMPORTING);
+      const {
+        data: { data },
+      }: any = await apiClient.axios.post(`${name}:importXlsx`, formData, {}).catch((err) => {});
+      setImportResult(data);
+      form.reset();
+      await service?.refresh?.();
+      setImportStatus(ImportStatus.IMPORTED);
     },
   };
 };
-
-// export const useImportAction = () => {
-//   const { run } = useImportStartAction();
-//   return {
-//     async onClick() {
-//       run();
-//     },
-//   };
-// };
