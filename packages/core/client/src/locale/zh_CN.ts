@@ -655,6 +655,7 @@ export default {
   "Enabled languages": "启用的语言",
   "View all plugins": "查看所有插件",
   "Print": "打印",
+  "Import Data": "导入数据",
   "Start import": "开始导入",
   "Import explain": "说明",
   "Download template": "下载模板",
@@ -664,5 +665,9 @@ export default {
   "Upload placeholder": "将文件拖曳到此处或点击上传，文件大小不超过10M",
   "File size cannot exceed 10M": "文件大小不能超过10M",
   "Please upload the file of Excel": "请上传Excel的文件",
-  "Only one file is allowed to be uploaded": "只允许上传一个文件"
+  "Only one file is allowed to be uploaded": "只允许上传一个文件",
+  "Excel data importing": "数据导入中，请勿关闭窗口",
+  "Import done, total success have {{successCount}} , total failure have {{failureCount}}": "导入完成，共导入成功{{successCount}}条数据，共导入失败{{failureCount}}条数据",
+  "To download the failure data": "下载导入失败的数据",
+  "Done": "完成"
 }

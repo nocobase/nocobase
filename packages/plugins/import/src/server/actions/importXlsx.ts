@@ -21,7 +21,7 @@ export async function importXlsx(ctx: Context, next: Next) {
   let titles;
   if (list?.length > 1) {
     titles = list.shift();
-    const values = list.map((item) => transform({ record: item, titles, columns, fields: collectionFields }));
+    const values = list.map((item) => transform({ ctx, record: item, titles, columns, fields: collectionFields }));
     console.log(values);
 
     ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
@@ -29,10 +29,14 @@ export async function importXlsx(ctx: Context, next: Next) {
         records: values,
         transaction,
       });
+      return {
+        successCount: list?.length,
+        failureCount: 0,
+      };
     });
   } else {
     ctx.body = {
-      result: 'ok',
+      result: 'no record',
     };
   }
 
