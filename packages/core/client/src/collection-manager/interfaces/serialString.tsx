@@ -1,14 +1,14 @@
 import React, { useContext } from 'react';
 import { Button, Select } from 'antd';
-import { connect, observer, SchemaOptionsContext, useField, useForm, useFormEffects } from '@formily/react';
+import { onFieldValueChange } from '@formily/core';
+import { SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
 import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
 import { useTranslation } from 'react-i18next';
+import { css } from '@emotion/css';
 
+import { Cron, SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
 import { IField } from './types';
 import { defaultProps, operators, unique } from './properties';
-import { Cron, SchemaComponent, SchemaComponentOptions, useActionContext, useCompile } from '../../schema-component';
-import { css } from '@emotion/css';
-import { Field, onFieldValueChange } from '@formily/core';
 
 function RuleTypeSelect(props) {
   const compile = useCompile();
@@ -31,7 +31,7 @@ function RuleTypeSelect(props) {
   );
 }
 
-const RuleOptions = connect(function() {
+function RuleOptions() {
   const { type, options } = ArrayTable.useRecord();
   const ruleType = RuleTypes[type];
   const compile = useCompile();
@@ -55,7 +55,9 @@ const RuleOptions = connect(function() {
                 <dt>
                   {compile(title)}
                 </dt>
-                <dd>
+                <dd className={css`
+                  margin-bottom: 0;
+                `}>
                   <Component key={key} value={options[key]} />
                 </dd>
               </dl>
@@ -64,7 +66,7 @@ const RuleOptions = connect(function() {
         })}
     </div>
   );
-});
+};
 
 const RuleTypes = {
   string: {
@@ -190,16 +192,15 @@ const RuleTypes = {
   }
 };
 
-const RuleConfigForm = observer(function () {
+function RuleConfigForm() {
   const { t } = useTranslation();
   const compile = useCompile();
   const schemaOptions = useContext(SchemaOptionsContext);
   const form = useForm();
-  const field = useField<Field>();
   const { type, options } = ArrayTable.useRecord();
   const index = ArrayTable.useIndex();
   const ruleType = RuleTypes[type];
-  return ruleType.fieldset
+  return ruleType?.fieldset
     ? (
       <Button
         type="link"
@@ -244,7 +245,7 @@ const RuleConfigForm = observer(function () {
       </Button>
     )
     : null;
-});
+}
 
 export const serialString: IField = {
   name: 'serialString',
