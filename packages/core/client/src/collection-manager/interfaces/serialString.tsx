@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Button, Select } from 'antd';
-import { SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
+import { connect, observer, SchemaOptionsContext, useField, useForm, useFormEffects } from '@formily/react';
 import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
 import { useTranslation } from 'react-i18next';
 
@@ -8,9 +8,32 @@ import { IField } from './types';
 import { defaultProps, operators, unique } from './properties';
 import { Cron, SchemaComponent, SchemaComponentOptions, useActionContext, useCompile } from '../../schema-component';
 import { css } from '@emotion/css';
-import { onFieldValueChange } from '@formily/core';
+import { Field, onFieldValueChange } from '@formily/core';
 
-function renderRuleOptions(options = {}) {
+function RuleTypeSelect(props) {
+  const compile = useCompile();
+
+  const { setValuesIn } = useForm();
+  const index = ArrayTable.useIndex();
+
+  useFormEffects(() => {
+    onFieldValueChange(`patterns.${index}.type`, (field) => {
+      setValuesIn(`patterns.${index}.options`, {});
+    });
+  });
+
+  return (
+    <Select {...props}>
+      {Object.keys(RuleTypes).map(key => (
+        <Select.Option key={key} value={key}>{compile(RuleTypes[key].title)}</Select.Option>
+      ))}
+    </Select>
+  );
+}
+
+const RuleOptions = connect(function() {
+  const { type, options } = ArrayTable.useRecord();
+  const ruleType = RuleTypes[type];
   const compile = useCompile();
   return (
     <div className={css`
@@ -18,28 +41,30 @@ function renderRuleOptions(options = {}) {
       gap: 1em;
       flex-wrap: wrap;
     `}>
-      {Object.keys(options).map(key => {
-        const Component = this.optionRenders[key];
-        const { title } = this.fieldset[key]
-        return Component
-          ? (
-            <dl className={css`
-              margin: 0;
-              padding: 0;
-            `}>
-              <dt>
-                {compile(title)}
-              </dt>
-              <dd>
-                <Component key={key} value={options[key]} />
-              </dd>
-            </dl>
-          )
-          : null;
-      })}
+      {Object.keys(options)
+        .filter(key => typeof options[key] !== 'undefined')
+        .map(key => {
+          const Component = ruleType.optionRenders[key];
+          const { title } = ruleType.fieldset[key]
+          return Component
+            ? (
+              <dl key={key} className={css`
+                margin: 0;
+                padding: 0;
+              `}>
+                <dt>
+                  {compile(title)}
+                </dt>
+                <dd>
+                  <Component key={key} value={options[key]} />
+                </dd>
+              </dl>
+            )
+            : null;
+        })}
     </div>
   );
-}
+});
 
 const RuleTypes = {
   string: {
@@ -97,6 +122,7 @@ const RuleTypes = {
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
+          min: 1,
           max: 10
         },
         required: true,
@@ -119,7 +145,7 @@ const RuleTypes = {
         'x-decorator': 'FormItem',
         ['x-component']({ value, onChange }) {
           const shortValues = [
-            { label: '不重置', value: 0, cron: null },
+            { label: '不重置', value: 0 },
             { label: '每天', value: 1, cron: '0 0 * * *' },
             { label: '每周一', value: 2, cron: '0 0 * * 1' },
             { label: '每月', value: 3, cron: '0 0 1 * *' },
@@ -164,102 +190,61 @@ const RuleTypes = {
   }
 };
 
-function useRowOptions() {
-  const { options } = ArrayTable.useRecord();
-  return options;
-}
-
-function RuleConfig({ value, onChange }) {
-  const { type, options } = ArrayTable.useRecord();
-  const ruleType = RuleTypes[type];
-  return ruleType
-    ? (
-      <SchemaComponent
-        schema={{
-          type: 'object',
-          'x-component': 'fieldset',
-          properties: ruleType.fieldset
-        }}
-      />
-    )
-    : null;
-}
-
-function RuleTypeSelect(props) {
-  const compile = useCompile();
-  const index = ArrayTable.useIndex();
-  useFormEffects(() => {
-    onFieldValueChange(`patterns.${index}.type`, (field) => {
-      setValuesIn(`patterns.${index}.options`, null);
-    });
-  });
-
-  return (
-    <Select
-      {...props}
-      className={css`
-        min-width: 6em;
-      `}
-    >
-      {Object.keys(RuleTypes).map(key => (
-        <Select.Option key={key} value={key}>{compile(RuleTypes[key].title)}</Select.Option>
-      ))}
-    </Select>
-  );
-}
-
-function RuleConfigForm() {
+const RuleConfigForm = observer(function () {
   const { t } = useTranslation();
   const compile = useCompile();
   const schemaOptions = useContext(SchemaOptionsContext);
   const form = useForm();
+  const field = useField<Field>();
   const { type, options } = ArrayTable.useRecord();
   const index = ArrayTable.useIndex();
   const ruleType = RuleTypes[type];
-  return (
-    <Button
-      type="link"
-      onClick={() => {
-        FormDrawer(compile(ruleType.title), () => {
-          return (
-            <FormLayout layout="vertical">
-              <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
-                <SchemaComponent
-                  schema={{
-                    type: 'object',
-                    'x-component': 'fieldset',
-                    properties: ruleType.fieldset
-                  }}
-                />
-              </SchemaComponentOptions>
-              <FormDrawer.Footer>
-                <FormButtonGroup className={css`
-                  justify-content: flex-end;
-                `}>
-                  <Submit
-                    onSubmit={(values) => {
-                      return values;
+  return ruleType.fieldset
+    ? (
+      <Button
+        type="link"
+        onClick={() => {
+          FormDrawer(compile(ruleType.title), () => {
+            return (
+              <FormLayout layout="vertical">
+                <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
+                  <SchemaComponent
+                    schema={{
+                      type: 'object',
+                      'x-component': 'fieldset',
+                      properties: ruleType.fieldset
                     }}
-                  >
-                    {t('Submit')}
-                  </Submit>
-                </FormButtonGroup>
-              </FormDrawer.Footer>
-            </FormLayout>
-          )
-        })
-          .open({
-            initialValues: options,
+                  />
+                </SchemaComponentOptions>
+                <FormDrawer.Footer>
+                  <FormButtonGroup className={css`
+                    justify-content: flex-end;
+                  `}>
+                    <Submit
+                      onSubmit={(values) => {
+                        return values;
+                      }}
+                    >
+                      {t('Submit')}
+                    </Submit>
+                  </FormButtonGroup>
+                </FormDrawer.Footer>
+              </FormLayout>
+            )
           })
-          .then((values) => {
-            form.setValuesIn(`patterns.${index}`, { type, options: values });
-          })
-      }}
-    >
-      {t('Configure')}
-    </Button>
-  );
-}
+            .open({
+              initialValues: options,
+            })
+            .then((values) => {
+              form.setValuesIn(`patterns.${index}`, { type, options: { ...values } });
+            })
+        }}
+      >
+        {t('Configure')}
+      </Button>
+    )
+    : null;
+});
 
 export const serialString: IField = {
   name: 'serialString',
@@ -270,24 +255,19 @@ export const serialString: IField = {
   sortable: true,
   default: {
     type: 'string',
-    // name,
     uiSchema: {
       type: 'string',
-      // title,
       'x-component': 'code',
-      // 'x-component-props': {
-      // },
-      // 'x-validator': 'array',
     },
   },
   hasDefaultValue: false,
   properties: {
     ...defaultProps,
     unique,
-    // patterns: [{ type: 'integer', options: { digits: 1 } }, { type: 'string', options: { value: '123' }}]
     patterns: {
       type: 'array',
       title: '{{t("Serial rules")}}',
+      required: true,
       'x-decorator': 'FormItem',
       'x-component': 'ArrayTable',
       items: {
@@ -312,28 +292,10 @@ export const serialString: IField = {
             properties: {
               type: {
                 type: 'string',
+                name: 'type',
                 required: true,
                 'x-decorator': 'FormItem',
-                // 'x-component': 'Select',
-                'x-component': RuleTypeSelect,
-                enum: [
-                  { label: '{{t("Autoincrement")}}', value: 'integer' },
-                  { label: '{{t("Fixed text")}}', value: 'string' },
-                  { label: '{{t("Date")}}', value: 'date' },
-                ],
-                // 'x-reactions': {
-                //   target: '.options',
-                //   effects: ['onFieldInputValueChange'],
-                //   fulfill: {
-                //     state: {
-                //       value: '{{{}}}'
-                //     }
-                //   }
-                // }
-                // ['x-reactions'](field) {
-                //   console.log('------', field);
-                //   field.form.setValuesIn(`patterns.${field.path.segments[1]}`, { type: field.value, options: {} });
-                // }
+                'x-component': RuleTypeSelect
               },
             },
           },
@@ -344,20 +306,8 @@ export const serialString: IField = {
             properties: {
               options: {
                 type: 'object',
-                ['x-component'](props) {
-                  const row = ArrayTable.useRecord();
-                  const ruleType = RuleTypes[row.type];
-                  return renderRuleOptions.call(ruleType, row.options) ?? null;
-                },
-                'x-reactions': {
-                  dependencies: ['.type'],
-                  when: '{{$deps[0]}}',
-                  fulfill: {
-                    state: {
-                      value: '{{{}}}',
-                    },
-                  },
-                }
+                name: 'options',
+                'x-component': RuleOptions
               }
             }
           },
@@ -368,12 +318,25 @@ export const serialString: IField = {
               title: '{{t("Operations")}}',
               dataIndex: 'operations',
               fixed: 'right',
+              className: css`
+                > *:not(:last-child){
+                  margin-right: .5em;
+                }
+                button{
+                  padding: 0;
+                }
+              `
             },
             properties: {
               config: {
                 type: 'void',
-                title: '{{t("Configure")}}',
-                'x-component': RuleConfigForm
+                // 'x-component': 'span',
+                properties: {
+                  options: {
+                    type: 'object',
+                    'x-component': RuleConfigForm
+                  }
+                }
               },
               // configure: {
               //   type: 'void',
@@ -448,11 +411,3 @@ export const serialString: IField = {
     operators: operators.string,
   }
 };
-function clearFormGraph(arg0: string) {
-  throw new Error('Function not implemented.');
-}
-
-function setValuesIn(arg0: string, arg1: null) {
-  throw new Error('Function not implemented.');
-}
-

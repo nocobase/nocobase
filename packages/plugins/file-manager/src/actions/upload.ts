@@ -71,7 +71,7 @@ export async function middleware(ctx: Context, next: Next) {
   const multerOptions = {
     fileFilter: getFileFilter(ctx),
     limits: {
-      fileSize: getRules(ctx).size ?? LIMIT_MAX_FILE_SIZE,
+      fileSize: Math.min(getRules(ctx).size || LIMIT_MAX_FILE_SIZE, LIMIT_MAX_FILE_SIZE),
       // 每次只允许提交一个文件
       files: LIMIT_FILES,
     },

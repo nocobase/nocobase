@@ -8,11 +8,11 @@ import {
   FormLayout,
   Input,
   NumberPicker,
-  Select,
   Submit
 } from '@formily/antd';
-import { createForm, Field } from '@formily/core';
-import { connect, createSchemaField, observer, useField } from '@formily/react';
+import { Select } from 'antd';
+import { createForm, Field, onFieldValueChange } from '@formily/core';
+import { connect, createSchemaField, observer, useField, useForm, useFormEffects } from '@formily/react';
 import React from 'react';
 
 const ViewOptions = connect((props) => {
@@ -49,6 +49,25 @@ const types = {
     },
   },
 };
+
+function TypeSelect(props) {
+  const { setValuesIn } = useForm();
+  const index = ArrayTable.useIndex();
+
+  useFormEffects(() => {
+    onFieldValueChange(`projects.${index}.type`, (field) => {
+      setValuesIn(`projects.${index}.options`, {});
+    });
+  });
+
+  return (
+    <Select {...props}>
+      {Object.keys(types).map(key => (
+        <Select.Option key={key} value={key}>{types[key].title}</Select.Option>
+      ))}
+    </Select>
+  );
+}
 
 const EditOptions = observer((props) => {
   const record = ArrayTable.useRecord();
@@ -123,6 +142,17 @@ const schema = {
       items: {
         type: 'object',
         properties: {
+          sort: {
+            type: 'void',
+            'x-component': 'ArrayTable.Column',
+            'x-component-props': { width: 50, title: '', align: 'center' },
+            properties: {
+              sort: {
+                type: 'void',
+                'x-component': 'ArrayTable.SortHandle',
+              },
+            },
+          },
           column_33: {
             type: 'void',
             'x-component': 'ArrayTable.Column',
@@ -133,11 +163,7 @@ const schema = {
               type: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Select',
-                enum: [
-                  { label: 'Type1', value: 'type1' },
-                  { label: 'Type2', value: 'type2' },
-                ],
+                'x-component': TypeSelect
               },
             },
           },
@@ -150,16 +176,7 @@ const schema = {
             properties: {
               options: {
                 type: 'object',
-                'x-component': 'ViewOptions',
-                'x-reactions': {
-                  dependencies: ['.type'],
-                  when: '{{$deps[0]}}',
-                  fulfill: {
-                    state: {
-                      value: '{{{}}}',
-                    },
-                  },
-                },
+                'x-component': 'ViewOptions'
               },
             },
           },
