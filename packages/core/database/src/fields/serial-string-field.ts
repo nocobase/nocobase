@@ -1,4 +1,4 @@
-import { DataTypes, Op } from 'sequelize';
+import { DataTypes, Transactionable } from 'sequelize';
 import parser from 'cron-parser';
 import moment from 'moment';
 import { escapeRegExp } from 'lodash';
@@ -10,7 +10,7 @@ import { BaseColumnFieldOptions, Field, FieldContext } from './field';
 
 interface Pattern {
   validate?(options): string | null;
-  generate(this: SerialStringField, instance: Model, options, index: number): Promise<string> | string;
+  generate(this: SerialStringField, instance: Model, index: number, options: Transactionable): Promise<string> | string;
   getLength(options): number;
   getMatcher(options): string;
 }
@@ -24,7 +24,8 @@ serialPatterns.register('string', {
     }
     return null;
   },
-  generate(instance, { options }) {
+  generate(instance, index) {
+    const { options } = this.options.patterns[index];
     return options.value;
   },
   getLength(options) {
@@ -36,18 +37,20 @@ serialPatterns.register('string', {
 });
 
 serialPatterns.register('integer', {
-  async generate(instance: Model, pattern, index) {
+  async generate(instance: Model, index, { transaction }) {
     const model = <typeof Model>instance.constructor;
-    const { options = {} } = pattern;
+    const { options = {} } = this.options.patterns[index];
     const { digits = 1, start = 0, base = 10, cycle } = options;
-    const max = Math.pow(10, digits) - 1;
+    const max = Math.pow(base, digits) - 1;
     const requireLast = typeof options.current === 'undefined' || cycle;
     const last = requireLast
       ? await model.findOne({
         attributes: [this.options.name, 'createdAt'],
         order: [
-          ['createdAt', 'DESC']
-        ]
+          ['createdAt', 'DESC'],
+          [model.primaryKeyAttribute, 'DESC']
+        ],
+        transaction
       })
       : null;
 
@@ -82,9 +85,9 @@ serialPatterns.register('integer', {
     }
 
     // update options
-    Object.assign(pattern, { options });
+    Object.assign(this.options.patterns[index], { options });
 
-    return `${options.current}`.padStart(digits, '0');
+    return options.current.toString(base).padStart(digits, '0');
   },
 
   getLength({ digits = 1 } = {}) {
@@ -100,7 +103,8 @@ serialPatterns.register('integer', {
 });
 
 serialPatterns.register('date', {
-  generate(instance, { options }) {
+  generate(instance, index) {
+    const { options } = this.options.patterns[index];
     return moment(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
   },
   getLength(options) {
@@ -152,7 +156,7 @@ export class SerialStringField extends Field {
   setValue = async (instance, options) => {
     const { name, patterns } = this.options;
     const results = await patterns.reduce((promise, p, i) => promise.then(async result => {
-      const item = await serialPatterns.get(p.type).generate.call(this, instance, p, i);
+      const item = await serialPatterns.get(p.type).generate.call(this, instance, i, options);
       return result.concat(item);
     }), Promise.resolve([]));
     instance.set(name, results.join(''));
