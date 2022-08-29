@@ -5,13 +5,14 @@ import { ArrayField, Field } from '@formily/core';
 import { ISchema, observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, TableColumnProps, Skeleton } from 'antd';
+import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext } from '../..';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
+import { VList } from './VirtualTable';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -124,10 +125,10 @@ const TdCell = (props: any) => {
 };
 
 export const Table: any = observer((props: any) => {
-  const vnodeCache = [];
   const schema = useFieldSchema();
   const height = useTableBlockContext()?.height;
   const { exists, render } = useMemo(() => useSchemaInitializer(schema['x-initializer']), []);
+  const uuid = schema['x-uid'];
   const field = useField<ArrayField>();
   const { pagination: pagination1, useProps, onChange, value, ...others1 } = props;
   const { pagination: pagination2, ...others2 } = useProps?.() || {};
@@ -216,23 +217,55 @@ export const Table: any = observer((props: any) => {
     };
   }, [field, onRowDragEnd, dragSort]);
 
+  const vcomponents = useMemo(() => {
+    return {
+      header: {
+        wrapper: (props) => {
+          const { onMouseEnter, onMouseLeave, ...restProps } = props;
+          return (
+            <DndContext
+              onDragEnd={() => {
+                setColumnFlag(columnFlag++);
+              }}
+            >
+              <thead {...restProps} />
+            </DndContext>
+          );
+        },
+        cell: (props) => {
+          const { onMouseEnter, onMouseLeave, ...restProps } = props;
+          return (
+            <th
+              {...restProps}
+              className={cls(
+                props.className,
+                css`
+                  max-width: 300px;
+                  white-space: nowrap;
+                  &:hover .general-schema-designer {
+                    display: block;
+                  }
+                `,
+              )}
+            />
+          );
+        },
+      },
+      ...VList({
+        height: +height,
+        vid: uuid,
+      }),
+    };
+  }, [field, onRowDragEnd, dragSort]);
+
   const rowRender = ({ s, index, record, key }) => {
-    const cacheKey = `${index}+${key}`;
-    const cached = vnodeCache[cacheKey];
-    // 渲染 row,返回对应的 vnode
-    const ret = (
+    return (
       <RecordIndexProvider index={index}>
         <RecordProvider record={record}>
           <RecursionField schema={s} name={index} onlyRenderProperties />
         </RecordProvider>
       </RecordIndexProvider>
     );
-    if (cached && columns.length) {
-      return cached;
-    } else {
-      vnodeCache[cacheKey] = ret;
-      return ret;
-    }
   };
 
   const columnSchema = schema.reduceProperties((buf, s) => {
@@ -405,12 +438,12 @@ export const Table: any = observer((props: any) => {
           {...others}
           {...restProps}
           pagination={paginationProps}
-          components={components}
+          components={height ? vcomponents : components}
           onChange={handleTableChange}
           // tableLayout={'auto'}
           scroll={{ y: +height || null }}
           columns={columns}
-          dataSource={value.length ? field?.value?.slice?.() : []}
+          dataSource={field?.value?.slice?.()}
         />
       </SortableWrapper>
       {field.errors.length > 0 && (

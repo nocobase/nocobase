@@ -653,6 +653,21 @@ SchemaSettings.FixedHeader = () => {
           type: 'object',
           title: t('Fixed table header'),
           properties: {
+            fixedHeader: {
+              title: t('fixed header'),
+              type: 'boolean',
+              default: fieldSchema?.['x-decorator-props']?.['fixedHeader'],
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              'x-reactions': {
+                target: 'height',
+                fulfill: {
+                  state: {
+                    required: '{{$self.value}}',
+                  },
+                },
+              },
+            },
             height: {
               title: t('table height'),
               type: 'number',
@@ -663,9 +678,11 @@ SchemaSettings.FixedHeader = () => {
           },
         } as ISchema
       }
-      onSubmit={({ height }) => {
+      onSubmit={({ height, fixedHeader }) => {
         fieldSchema['x-decorator-props']['height'] = height;
         field.decoratorProps.height = height;
+        fieldSchema['x-decorator-props']['fixedHeader'] = fixedHeader;
+        field.decoratorProps.fixedHeader = fixedHeader;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],

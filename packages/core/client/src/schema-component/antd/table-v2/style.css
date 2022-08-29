@@ -1,0 +1,16 @@
+.virtuallist .ant-table-tbody > tr > td > div {
+  box-sizing: border-box;
+  white-space: nowrap;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.virtuallist .ant-table-tbody > tr > td.ant-table-row-expand-icon-cell > div {
+  overflow: inherit;
+}
+
+.ant-table-bordered .virtuallist > table > .ant-table-tbody > tr > td {
+  border-right: 1px solid #f0f0f0;
+}
