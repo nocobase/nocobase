@@ -255,10 +255,15 @@ export const serialString: IField = {
   title: '{{t("Serial string")}}',
   sortable: true,
   default: {
-    type: 'string',
+    type: 'serialString',
     uiSchema: {
       type: 'string',
-      'x-component': 'code',
+      'x-component': 'Input',
+      'x-component-props': {
+        readOnly: true,
+        disabled: true
+      },
+      'x-read-pretty': true,
     },
   },
   hasDefaultValue: false,

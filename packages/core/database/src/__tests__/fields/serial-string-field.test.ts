@@ -323,5 +323,78 @@ describe('string field', () => {
       const item2 = await TestModel.create();
       expect(item2.get('name')).toBe(`A${YYYYMMDD}1`);
     });
+
+    it('changed after generated', async () => {
+      const testsCollection = db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'serialString',
+            name: 'name',
+            patterns: [
+              { type: 'string', options: { value: 'A' } },
+              { type: 'date' },
+              { type: 'integer' }
+            ]
+          }
+        ],
+      });
+      await db.sync();
+
+      const now = new Date();
+      const YYYYMMDD = moment(now).format('YYYYMMDD');
+
+      const TestModel = db.getModel('tests');
+      const item1 = await TestModel.create();
+      expect(item1.get('name')).toBe(`A${YYYYMMDD}0`);
+
+      testsCollection.setField('name', {
+        type: 'serialString',
+        patterns: [
+          { type: 'string', options: { value: 'A' } },
+          { type: 'date' },
+          // change options but no difference with default
+          { type: 'integer', options: { digits: 1 } }
+        ]
+      });
+
+      const item2 = await TestModel.create();
+      expect(item2.get('name')).toBe(`A${YYYYMMDD}1`);
+
+      testsCollection.setField('name', {
+        type: 'serialString',
+        patterns: [
+          { type: 'string', options: { value: 'A' } },
+          { type: 'date' },
+          { type: 'integer', options: { digits: 2 } }
+        ]
+      });
+
+      const item3 = await TestModel.create();
+      expect(item3.get('name')).toBe(`A${YYYYMMDD}00`);
+
+      testsCollection.setField('name', {
+        type: 'serialString',
+        patterns: [
+          { type: 'string', options: { value: 'a' } },
+          { type: 'date' },
+          { type: 'integer', options: { digits: 2 } }
+        ]
+      });
+
+      const item4 = await TestModel.create();
+      expect(item4.get('name')).toBe(`a${YYYYMMDD}01`);
+
+      testsCollection.setField('name', {
+        type: 'serialString',
+        patterns: [
+          { type: 'date' },
+          { type: 'integer', options: { digits: 2 } }
+        ]
+      });
+
+      const item5 = await TestModel.create();
+      expect(item5.get('name')).toBe(`${YYYYMMDD}00`);
+    });
   });
 });

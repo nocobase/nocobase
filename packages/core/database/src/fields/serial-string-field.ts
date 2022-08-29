@@ -1,6 +1,7 @@
 import { DataTypes, Op } from 'sequelize';
 import parser from 'cron-parser';
 import moment from 'moment';
+import { escapeRegExp } from 'lodash';
 
 import { Registry } from '@nocobase/utils';
 
@@ -9,8 +10,9 @@ import { BaseColumnFieldOptions, Field, FieldContext } from './field';
 
 interface Pattern {
   validate?(options): string | null;
-  generate(this: SerialStringField, instance: Model, options): Promise<string> | string;
+  generate(this: SerialStringField, instance: Model, options, index: number): Promise<string> | string;
   getLength(options): number;
+  getMatcher(options): string;
 }
 
 export const serialPatterns = new Registry<Pattern>();
@@ -27,14 +29,17 @@ serialPatterns.register('string', {
   },
   getLength(options) {
     return options.value.length;
+  },
+  getMatcher(options) {
+    return escapeRegExp(options.value);
   }
 });
 
 serialPatterns.register('integer', {
-  async generate(instance: Model, pattern) {
+  async generate(instance: Model, pattern, index) {
     const model = <typeof Model>instance.constructor;
     const { options = {} } = pattern;
-    const { digits = 1, start = 0, cycle } = options;
+    const { digits = 1, start = 0, base = 10, cycle } = options;
     const max = Math.pow(10, digits) - 1;
     const requireLast = typeof options.current === 'undefined' || cycle;
     const last = requireLast
@@ -47,7 +52,18 @@ serialPatterns.register('integer', {
       : null;
 
     if (typeof options.current === 'undefined') {
-      options.current = last ? Number.parseInt(this.parse(last[this.options.name], options), 10) + 1 : start;
+      if (last) {
+        // if match current pattern
+        const matcher = this.match(last.get(this.options.name));
+        if (matcher) {
+          const lastNumber = Number.parseInt(matcher[index + 1], base);
+          options.current = Number.isNaN(lastNumber) ? start : lastNumber + 1;
+        } else {
+          options.current = start;
+        }
+      } else {
+        options.current = start;
+      }
     } else {
       options.current += 1;
     }
@@ -73,6 +89,13 @@ serialPatterns.register('integer', {
 
   getLength({ digits = 1 } = {}) {
     return digits;
+  },
+
+  getMatcher(options = {}) {
+    const { digits = 1, start = 0, base = 10 } = options;
+    const startLen = start ? start.toString(base).length : 1;
+    const chars = '0123456789abcdefghijklmnopqrstuvwxyz'.slice(0, base);
+    return `[${chars}]{${digits}}`;
   }
 });
 
@@ -81,7 +104,10 @@ serialPatterns.register('date', {
     return moment(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
   },
   getLength(options) {
-    return options.format?.length ?? 0;
+    return options.format?.length ?? 8;
+  },
+  getMatcher(options = {}) {
+    return `.{${options?.format?.length ?? 8}}`;
   }
 });
 
@@ -117,23 +143,31 @@ export class SerialStringField extends Field {
         }
       }
     });
+
+    const patterns = options.patterns
+      .map(({ type, options }) => serialPatterns.get(type).getMatcher(options));
+    this.matcher = new RegExp(`^${patterns.map(p => `(${p})`).join('')}$`, 'i');
   }
 
   setValue = async (instance, options) => {
     const { name, patterns } = this.options;
-    const results = await patterns.reduce((promise, p) => promise.then(async result => {
-      const item = await serialPatterns.get(p.type).generate.call(this, instance, p);
+    const results = await patterns.reduce((promise, p, i) => promise.then(async result => {
+      const item = await serialPatterns.get(p.type).generate.call(this, instance, p, i);
       return result.concat(item);
     }), Promise.resolve([]));
     instance.set(name, results.join(''));
   };
 
-  parse(value: string, pattern: PatternConfig): string {
+  match(value) {
+    return value.match(this.matcher);
+  }
+
+  parse(value: string, patternIndex: number): string {
     for (let i = 0, index = 0; i < this.options.patterns.length; i += 1) {
       const { type, options } = this.options.patterns[i];
       const { getLength } = serialPatterns.get(type);
       const length = getLength(options);
-      if (pattern === this.options.patterns[i]) {
+      if (i === patternIndex) {
         return value.substring(index, index + length);
       }
       index += length;
@@ -144,5 +178,10 @@ export class SerialStringField extends Field {
   bind() {
     super.bind();
     this.on('beforeCreate', this.setValue);
+  }
+
+  unbind() {
+    super.unbind();
+    this.off('beforeCreate', this.setValue);
   }
 }
