@@ -2,6 +2,9 @@ import React, { useRef, useEffect, useContext, createContext, useReducer, useSta
 import { isNumber, debounce } from 'lodash-es';
 import styles from './style.css';
 
+const DEFAULT_VID = 'vTable';
+const vidMap = new Map();
+
 const initialState = {
   // 行高度
   rowHeight: 55,
@@ -50,10 +53,6 @@ function reducer(state, action) {
   }
 }
 
-const DEFAULT_VID = 'vtable';
-const vidMap = new Map();
-let debounceListRender: any;
-
 const ScrollContext = createContext({
   dispatch: undefined,
   renderLen: 1,
@@ -76,11 +75,8 @@ function VCell(props: any): JSX.Element {
 
 function VRow(props: any, ref: any): JSX.Element {
   const { dispatch, rowHeight, totalLen, vid } = useContext(ScrollContext);
-
   const { children, style, ...restProps } = props;
-
   const trRef = useRef<HTMLTableRowElement>(null);
-
   useEffect(() => {
     const initHeight = (tempRef) => {
       if (tempRef?.current?.offsetHeight && !rowHeight && totalLen) {
@@ -96,7 +92,6 @@ function VRow(props: any, ref: any): JSX.Element {
         });
       }
     };
-
     initHeight(Object.prototype.hasOwnProperty.call(ref, 'current') ? ref : trRef);
   }, [trRef, dispatch, rowHeight, totalLen, ref, vid]);
 
@@ -117,7 +112,6 @@ function VRow(props: any, ref: any): JSX.Element {
 
 function VWrapper(props: any): JSX.Element {
   const { children, ...restProps } = props;
-
   const { renderLen, start, dispatch, vid, totalLen } = useContext(ScrollContext);
 
   const contents = useMemo(() => {
@@ -139,35 +133,21 @@ function VWrapper(props: any): JSX.Element {
 
   let tempNode = null;
   if (Array.isArray(contents) && contents.length) {
-    tempNode = [
-      children[0],
-      contents.slice(start, start + (renderLen ?? 1)).map((item) => {
-        if (Array.isArray(item)) {
-          return item[0];
-        }
-        return item;
-      }),
-    ];
+    tempNode = [children[0], contents.slice(start, start + (renderLen ?? 1))];
   } else {
     tempNode = children;
   }
-
   return <tbody {...restProps}>{tempNode}</tbody>;
 }
 
 function VTable(props: any, otherParams): JSX.Element {
   const { style, children, ...rest } = props;
   const { width, ...rest_style } = style;
-
   const { vid, scrollY, reachEnd, onScroll, resetScrollTopWhenDataChange } = otherParams ?? {};
-
   const [state, dispatch] = useReducer(reducer, initialState);
-
   const wrap_tableRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
-
   const ifChangeRef = useRef(false);
-
   // 数据的总条数
   const [totalLen, setTotalLen] = useState<number>(children[1]?.props?.data?.length ?? 0);
   useEffect(() => {
@@ -225,12 +205,12 @@ function VTable(props: any, otherParams): JSX.Element {
 
   // 渲染的条数
   const renderLen = useMemo<number>(() => {
-    let temp = Math.ceil(tableScrollY / state.rowHeight);
+    let temp = Math.floor(tableScrollY / state.rowHeight);
     if (state.rowHeight && totalLen && tableScrollY) {
       if (tableScrollY <= 0) {
         temp = 0;
       } else {
-        const tempRenderLen = ((tableScrollY / state.rowHeight) | 0) + 1 + 2;
+        const tempRenderLen = ((tableScrollY / state.rowHeight) | 0) + 2;
         temp = tempRenderLen;
       }
     }
@@ -239,7 +219,6 @@ function VTable(props: any, otherParams): JSX.Element {
 
   // 渲染中的第一条
   let start = state.rowHeight ? (state.curScrollTop / state.rowHeight) | 0 : 0;
-
   // 偏移量
   let offsetStart = state.rowHeight ? state.curScrollTop % state.rowHeight : 0;
 
@@ -254,23 +233,19 @@ function VTable(props: any, otherParams): JSX.Element {
   // 数据变更 操作scrollTop
   useEffect(() => {
     const scrollNode = wrap_tableRef.current?.parentNode as HTMLElement;
-
     if (ifChangeRef?.current) {
       ifChangeRef.current = false;
-
       if (resetScrollTopWhenDataChange) {
         // 重置scrollTop
         if (scrollNode) {
           scrollNode.scrollTop = state.curScrollTop;
         }
-
         dispatch({ type: 'reset', ifScrollTopClear: true });
       } else {
         // 不重置scrollTop 不清空curScrollTop
         dispatch({ type: 'reset', ifScrollTopClear: false });
       }
     }
-
     if (vidMap.has(vid)) {
       vidMap.set(vid, {
         ...vidMap.get(vid),
@@ -291,7 +266,6 @@ function VTable(props: any, otherParams): JSX.Element {
         // 有滚动条的情况
         reachEnd && reachEnd();
       }
-
       onScroll && onScroll();
       dispatch({
         type: 'changeTrs',
@@ -302,13 +276,11 @@ function VTable(props: any, otherParams): JSX.Element {
     if (ref) {
       ref.addEventListener('scroll', throttleScroll);
     }
-
     return () => {
       ref.removeEventListener('scroll', throttleScroll);
     };
   }, [onScroll, reachEnd]);
 
-  debounceListRender(start, renderLen);
   return (
     <div
       className={styles['virtuallist']}
@@ -351,44 +323,18 @@ function VTable(props: any, otherParams): JSX.Element {
 
 export function VList(props: {
   height: number | string;
-  // 到底的回调函数
   onReachEnd?: () => void;
   onScroll?: () => void;
-  // 列表渲染时触发的回调函数(参数可以拿到 start: 渲染开始行, renderLen: 渲染行数)
-  // listRender: provide info: {start, renderLen} on render list.
-  // start: start index in render list.
-  // renderLen: render length in render list.
   onListRender?: (listInfo: { start: number; renderLen: number }) => void;
-  // 列表渲染时触发的回调函数防抖毫秒数.
-  // listRender debounceMs.
   debounceListRenderMS?: number;
-  // 唯一标识
   vid?: string;
-  // 重置scrollTop 当数据变更的时候.  默认为true
-  // reset scrollTop when data change
   resetTopWhenDataChange?: boolean;
 }): any {
-  const {
-    vid = DEFAULT_VID,
-    height,
-    onReachEnd,
-    onScroll,
-    onListRender,
-    debounceListRenderMS,
-    resetTopWhenDataChange = false,
-  } = props;
-
+  const { vid = DEFAULT_VID, height, onReachEnd, onScroll, onListRender, resetTopWhenDataChange = false } = props;
   const resetScrollTopWhenDataChange = onReachEnd ? false : resetTopWhenDataChange;
-
   if (!vidMap.has(vid)) {
     vidMap.set(vid, { _id: vid });
   }
-  debounceListRender = onListRender
-    ? debounce((_start, _renderLen) => {
-        onListRender({ start: _start, renderLen: _renderLen });
-      }, debounceListRenderMS ?? 300)
-    : () => {};
-
   return {
     table: (p) =>
       VTable(p, {
