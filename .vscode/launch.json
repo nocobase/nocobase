@@ -33,7 +33,7 @@
         "test",
         "--runInBand",
         // could be any single file path to debug
-        "${workspaceFolder}/packages/core/database/src/__tests__/fields/serial-string-field.test.ts"
+        "${workspaceFolder}/packages/plugins/workflow/src/__tests__/instructions/parallel.test.ts"
       ],
       "port": 9229,
       "skipFiles": [
