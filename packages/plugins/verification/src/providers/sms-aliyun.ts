@@ -33,11 +33,9 @@ export default class extends Provider {
       templateParam: JSON.stringify(data)
     });
 
-    const { i18n } = this.plugin.app;
-
     try {
       const { body } = await this.client.sendSmsWithOptions(request, new RuntimeOptions({}));
-      let err = new Error();
+      let err = new Error(body.message);
       switch (body.code) {
         case 'OK':
           break;
@@ -47,8 +45,12 @@ export default class extends Provider {
           return Promise.reject(err);
 
         case 'isv.BUSINESS_LIMIT_CONTROL':
-        // should not let user to know
+          err.name = 'RateLimit';
+          console.error(body);
+          return Promise.reject(err);
+
         default:
+          // should not let user to know
           console.error(body);
           err.name = 'SendSMSFailed';
           return Promise.reject(err);
