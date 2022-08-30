@@ -162,15 +162,19 @@ function VTable(props: any, otherParams): JSX.Element {
   }, [vid]);
 
   // 数据变更
-  useEffect(() => {
-    ifChangeRef.current = true;
-    if (isNumber(children[1]?.props?.data?.length)) {
-      dispatch({
-        type: 'changeTotalLen',
-        totalLen: children[1]?.props?.data?.length ?? 0,
-      });
-    }
-  }, [children[1].props.data]);
+  useEffect(
+    () => {
+      ifChangeRef.current = true;
+      if (isNumber(children[1]?.props?.data?.length)) {
+        dispatch({
+          type: 'changeTotalLen',
+          totalLen: children[1]?.props?.data?.length ?? 0,
+        });
+      }
+    },
+    [children[1].props.data],
+    scrollY,
+  );
 
   // table总高度
   const tableHeight = useMemo<string | number>(() => {
