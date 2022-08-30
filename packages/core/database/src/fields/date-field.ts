@@ -3,7 +3,7 @@ import { BaseColumnFieldOptions, Field } from './field';
 
 export class DateField extends Field {
   get dataType() {
-    return DataTypes.DATE;
+    return DataTypes.DATE(3);
   }
 }
 

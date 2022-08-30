@@ -10,7 +10,7 @@ import { BaseColumnFieldOptions, Field, FieldContext } from './field';
 
 interface Pattern {
   validate?(options): string | null;
-  generate(this: SerialStringField, instance: Model, index: number, options: Transactionable): Promise<string> | string;
+  generate(this: SerialStringField, instance: Model, index: number): string;
   getLength(options): number;
   getMatcher(options): string;
 }
@@ -37,27 +37,16 @@ serialPatterns.register('string', {
 });
 
 serialPatterns.register('integer', {
-  async generate(instance: Model, index, { transaction }) {
-    const model = <typeof Model>instance.constructor;
+  generate(instance: Model, index) {
     const { options = {} } = this.options.patterns[index];
     const { digits = 1, start = 0, base = 10, cycle } = options;
     const max = Math.pow(base, digits) - 1;
-    const requireLast = typeof options.current === 'undefined' || cycle;
-    const last = requireLast
-      ? await model.findOne({
-        attributes: [this.options.name, 'createdAt'],
-        order: [
-          ['createdAt', 'DESC'],
-          [model.primaryKeyAttribute, 'DESC']
-        ],
-        transaction
-      })
-      : null;
+    const { lastRecord = null } = this.options;
 
     if (typeof options.current === 'undefined') {
-      if (last) {
+      if (lastRecord) {
         // if match current pattern
-        const matcher = this.match(last.get(this.options.name));
+        const matcher = this.match(lastRecord.get(this.options.name));
         if (matcher) {
           const lastNumber = Number.parseInt(matcher[index + 1], base);
           options.current = Number.isNaN(lastNumber) ? start : lastNumber + 1;
@@ -72,8 +61,8 @@ serialPatterns.register('integer', {
     }
 
     // cycle as cron string
-    if (cycle && last) {
-      const interval = parser.parseExpression(cycle, { currentDate: <Date>last.get('createdAt') });
+    if (cycle && lastRecord) {
+      const interval = parser.parseExpression(cycle, { currentDate: <Date>lastRecord.get('createdAt') });
       const next = interval.next();
       if ((<Date>instance.get('createdAt')).getTime() >= next.getTime()) {
         options.current = start;
@@ -153,13 +142,31 @@ export class SerialStringField extends Field {
     this.matcher = new RegExp(`^${patterns.map(p => `(${p})`).join('')}$`, 'i');
   }
 
-  setValue = async (instance, options) => {
+  setValue = async (instance: Model, options) => {
     const { name, patterns } = this.options;
-    const results = await patterns.reduce((promise, p, i) => promise.then(async result => {
-      const item = await serialPatterns.get(p.type).generate.call(this, instance, i, options);
+    // NOTE: only load when value is not set, if null stand for no last record
+    if (typeof this.options.lastRecord === 'undefined') {
+      const model = <typeof Model>instance.constructor;
+      this.options.lastRecord = await model.findOne({
+        attributes: [model.primaryKeyAttribute, this.options.name, 'createdAt'],
+        order: [
+          ['createdAt', 'DESC'],
+          // TODO(bug): will cause problem if no auto-increment id
+          [model.primaryKeyAttribute, 'DESC']
+        ],
+        transaction: options.transaction
+      });
+    }
+
+    const results = patterns.reduce((result, p, i) => {
+      const item = serialPatterns.get(p.type).generate.call(this, instance, i, options);
       return result.concat(item);
-    }), Promise.resolve([]));
+    }, []);
     instance.set(name, results.join(''));
+  };
+
+  setLast = (instance: Model, options) => {
+    this.options.lastRecord = instance;
   };
 
   match(value) {
@@ -182,10 +189,12 @@ export class SerialStringField extends Field {
   bind() {
     super.bind();
     this.on('beforeCreate', this.setValue);
+    this.on('afterCreate', this.setLast);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeCreate', this.setValue);
+    this.off('afterCreate', this.setLast);
   }
 }

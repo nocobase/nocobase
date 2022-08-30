@@ -397,4 +397,59 @@ describe('string field', () => {
       expect(item5.get('name')).toBe(`${YYYYMMDD}00`);
     });
   });
+
+  describe('multiple serial fields', () => {
+    it('2 fields', async () => {
+      const testsCollection = db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'serialString',
+            name: 'name',
+            patterns: [
+              { type: 'string', options: { value: 'A' } },
+              { type: 'date' },
+              { type: 'integer', options: { digits: 2, cycle: '0 0 * * *' } }
+            ]
+          },
+          {
+            type: 'serialString',
+            name: 'code',
+            patterns: [
+              { type: 'string', options: { value: 'C' } },
+              { type: 'integer', options: { digits: 4 }}
+            ]
+          }
+        ]
+      });
+      await db.sync();
+
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const NOW = moment(now).format('YYYYMMDD');
+      const YESTERDAY = moment(yesterday).format('YYYYMMDD');
+
+      const TestModel = db.getModel('tests');
+      const item1 = await TestModel.create({ createdAt: yesterday });
+      expect(item1.get('name')).toBe(`A${YESTERDAY}00`);
+      expect(item1.get('code')).toBe(`C0000`);
+
+      const item2 = await TestModel.create();
+      expect(item2.get('name')).toBe(`A${NOW}00`);
+      expect(item2.get('code')).toBe(`C0001`);
+
+      testsCollection.setField('name', {
+        type: 'serialString',
+        patterns: [
+          { type: 'string', options: { value: 'a' } },
+          { type: 'date' },
+          { type: 'integer', options: { digits: 1 } }
+        ]
+      });
+
+      const item3 = await TestModel.create();
+      expect(item3.get('name')).toBe(`a${NOW}0`);
+      expect(item3.get('code')).toBe(`C0002`);
+    });
+  });
 });
