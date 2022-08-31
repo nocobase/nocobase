@@ -3,6 +3,8 @@ import { Repository } from '@nocobase/database';
 import xlsx from 'node-xlsx';
 import { transform } from '../utils';
 
+const IMPORT_LIMIT_COUNT = 10000;
+
 export async function importXlsx(ctx: Context, next: Next) {
   let { columns } = ctx.request.body;
   const { ['file']: file } = ctx;
@@ -18,27 +20,57 @@ export async function importXlsx(ctx: Context, next: Next) {
   const {
     0: { data: list },
   } = xlsx.parse(file.buffer);
-  let titles;
-  if (list?.length > 1) {
-    titles = list.shift();
-    const values = list.map((item) => transform({ ctx, record: item, titles, columns, fields: collectionFields }));
-    console.log(values);
-
-    ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
+  const failureData = list.splice(IMPORT_LIMIT_COUNT + 1);
+  const titles = list.shift();
+  if (list.length > 0 && titles?.length === columns.length) {
+    const results = (
+      await Promise.allSettled<any>(
+        list.map(async (item) => {
+          try {
+            return await transform({ ctx, record: item, columns, fields: collectionFields });
+          } catch (error) {
+            failureData.unshift(item);
+          }
+        }),
+      )
+    ).filter((item) => 'value' in item && item.value !== undefined);
+    //@ts-ignore
+    const values = results.map((r) => r.value);
+    const result = await ctx.db.sequelize.transaction(async (transaction) => {
       await repository.createMany({
         records: values,
         transaction,
       });
       return {
-        successCount: list?.length,
-        failureCount: 0,
+        successCount: list.length - failureData.length,
+        failureCount: failureData.length,
       };
     });
+    const header = columns?.map((column) => column.defaultTitle);
+    ctx.body = {
+      buffer: xlsx.build([
+        {
+          name: file.originalname,
+          data: [header].concat(failureData),
+        },
+      ]),
+      result,
+    };
   } else {
     ctx.body = {
-      result: 'no record',
+      buffer: file.buffer.toJSON(),
+      result: {
+        successCount: 0,
+        failureCount: 0,
+      },
     };
   }
+
+  ctx.set({
+    'Content-Type': 'application/octet-stream',
+    // to avoid "invalid character" error in header (RFC)
+    'Content-Disposition': `attachment; filename=${encodeURI('testTitle')}.xlsx`,
+  });
 
   await next();
 }

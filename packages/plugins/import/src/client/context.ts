@@ -5,8 +5,11 @@ export interface ImportContextType {
   setImportModalVisible: (visible: boolean) => void;
   importStatus: number;
   setImportStatus: (status: number) => void;
-  importResult: { successCount: number; failureCount: number };
-  setImportResult: (result: { successCount: number; failureCount: number }) => void;
+  importResult: { buffer: { type: string; data: any[] }; result: { successCount: number; failureCount: number } };
+  setImportResult: (result: {
+    buffer: { type: string; data: any[] };
+    result: { successCount: number; failureCount: number };
+  }) => void;
 }
 
 export const ImportContext = createContext<ImportContextType>(null);
