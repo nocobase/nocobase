@@ -69,6 +69,8 @@ export async function create(context: Context, next: Next) {
       case 'InvalidReceiver':
         // TODO: message should consider email and other providers, maybe use "receiver"
         return context.throw(400, context.t('Not a valid cellphone number, please re-enter', {ns: namespace }));
+      case 'RateLimit':
+        return context.throw(429, context.t('You are trying so frequently, please slow down', { ns: namespace }));
       default:
         console.error(error);
         return context.throw(500, context.t('Verification send failed, please try later or contact to administrator', { ns: namespace }));
