@@ -247,15 +247,15 @@ function RuleConfigForm() {
     : null;
 }
 
-export const serialString: IField = {
-  name: 'serialString',
+export const sequence: IField = {
+  name: 'sequence',
   type: 'object',
   group: 'advanced',
   order: 2,
-  title: '{{t("Serial string")}}',
+  title: '{{t("Sequence")}}',
   sortable: true,
   default: {
-    type: 'serialString',
+    type: 'sequence',
     uiSchema: {
       type: 'string',
       'x-component': 'Input',
@@ -272,7 +272,7 @@ export const serialString: IField = {
     unique,
     patterns: {
       type: 'array',
-      title: '{{t("Serial rules")}}',
+      title: '{{t("Sequence rules")}}',
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'ArrayTable',

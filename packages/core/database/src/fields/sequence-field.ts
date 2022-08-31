@@ -10,14 +10,14 @@ import { BaseColumnFieldOptions, Field, FieldContext } from './field';
 
 interface Pattern {
   validate?(options): string | null;
-  generate(this: SerialStringField, instance: Model, index: number): string;
+  generate(this: SequenceField, instance: Model, index: number): string;
   getLength(options): number;
   getMatcher(options): string;
 }
 
-export const serialPatterns = new Registry<Pattern>();
+export const sequencePatterns = new Registry<Pattern>();
 
-serialPatterns.register('string', {
+sequencePatterns.register('string', {
   validate(options) {
     if (!options?.value) {
       return 'options.value should be configured as a non-empty string';
@@ -36,7 +36,7 @@ serialPatterns.register('string', {
   }
 });
 
-serialPatterns.register('integer', {
+sequencePatterns.register('integer', {
   generate(instance: Model, index) {
     const { options = {} } = this.options.patterns[index];
     const { digits = 1, start = 0, base = 10, cycle } = options;
@@ -91,7 +91,7 @@ serialPatterns.register('integer', {
   }
 });
 
-serialPatterns.register('date', {
+sequencePatterns.register('date', {
   generate(instance, index) {
     const { options } = this.options.patterns[index];
     return moment(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
@@ -109,23 +109,23 @@ interface PatternConfig {
   title?: string;
   options?: any;
 }
-export interface SerialStringFieldOptions extends BaseColumnFieldOptions {
-  type: 'serialString';
+export interface SequenceFieldOptions extends BaseColumnFieldOptions {
+  type: 'sequence';
   patterns: PatternConfig[]
 }
 
-export class SerialStringField extends Field {
+export class SequenceField extends Field {
   get dataType() {
     return DataTypes.STRING;
   }
 
-  constructor(options: SerialStringFieldOptions, context: FieldContext) {
+  constructor(options: SequenceFieldOptions, context: FieldContext) {
     super(options, context);
     if (!options.patterns || !options.patterns.length) {
-      throw new Error('at least one pattern should be defined for serialString type');
+      throw new Error('at least one pattern should be defined for sequence type');
     }
     options.patterns.forEach(pattern => {
-      const P = serialPatterns.get(pattern.type);
+      const P = sequencePatterns.get(pattern.type);
       if (!P) {
         throw new Error(`pattern type ${pattern.type} is not registered`);
       }
@@ -138,7 +138,7 @@ export class SerialStringField extends Field {
     });
 
     const patterns = options.patterns
-      .map(({ type, options }) => serialPatterns.get(type).getMatcher(options));
+      .map(({ type, options }) => sequencePatterns.get(type).getMatcher(options));
     this.matcher = new RegExp(`^${patterns.map(p => `(${p})`).join('')}$`, 'i');
   }
 
@@ -159,7 +159,7 @@ export class SerialStringField extends Field {
     }
 
     const results = patterns.reduce((result, p, i) => {
-      const item = serialPatterns.get(p.type).generate.call(this, instance, i, options);
+      const item = sequencePatterns.get(p.type).generate.call(this, instance, i, options);
       return result.concat(item);
     }, []);
     instance.set(name, results.join(''));
@@ -176,7 +176,7 @@ export class SerialStringField extends Field {
   parse(value: string, patternIndex: number): string {
     for (let i = 0, index = 0; i < this.options.patterns.length; i += 1) {
       const { type, options } = this.options.patterns[i];
-      const { getLength } = serialPatterns.get(type);
+      const { getLength } = sequencePatterns.get(type);
       const length = getLength(options);
       if (i === patternIndex) {
         return value.substring(index, index + length);

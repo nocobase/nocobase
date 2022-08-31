@@ -1,7 +1,7 @@
 import moment from 'moment';
 
 import { Database } from '../../database';
-import { mockDatabase } from '../';
+import { mockDatabase } from '..';
 
 describe('string field', () => {
   let db: Database;
@@ -19,7 +19,7 @@ describe('string field', () => {
       expect(() => {
         db.collection({
           name: 'tests',
-          fields: [{ type: 'serialString', name: 'name' }],
+          fields: [{ type: 'sequence', name: 'name' }],
         });
       }).toThrow();
     });
@@ -28,7 +28,7 @@ describe('string field', () => {
       expect(() => {
         db.collection({
           name: 'tests',
-          fields: [{ type: 'serialString', name: 'name', patterns: [] }],
+          fields: [{ type: 'sequence', name: 'name', patterns: [] }],
         });
       }).toThrow();
     });
@@ -39,7 +39,7 @@ describe('string field', () => {
       expect(() => {
         db.collection({
           name: 'tests',
-          fields: [{ type: 'serialString', name: 'name', patterns: [{ type: 'string' }] }],
+          fields: [{ type: 'sequence', name: 'name', patterns: [{ type: 'string' }] }],
         });
       }).toThrow();
     });
@@ -49,7 +49,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               { type: 'string', options: { value: 'abc' } }
@@ -74,7 +74,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               {
@@ -99,7 +99,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               {
@@ -127,7 +127,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               {
@@ -152,7 +152,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               {
@@ -181,7 +181,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               {
@@ -224,7 +224,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               { type: 'date' }
@@ -247,7 +247,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               { type: 'date', options: { field: 'date' } }
@@ -276,7 +276,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               { type: 'date', options: { format: 'YYYY-MM-DD' } }
@@ -301,7 +301,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               { type: 'string', options: { value: 'A' } },
@@ -329,7 +329,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               { type: 'string', options: { value: 'A' } },
@@ -349,7 +349,7 @@ describe('string field', () => {
       expect(item1.get('name')).toBe(`A${YYYYMMDD}0`);
 
       testsCollection.setField('name', {
-        type: 'serialString',
+        type: 'sequence',
         patterns: [
           { type: 'string', options: { value: 'A' } },
           { type: 'date' },
@@ -362,7 +362,7 @@ describe('string field', () => {
       expect(item2.get('name')).toBe(`A${YYYYMMDD}1`);
 
       testsCollection.setField('name', {
-        type: 'serialString',
+        type: 'sequence',
         patterns: [
           { type: 'string', options: { value: 'A' } },
           { type: 'date' },
@@ -374,7 +374,7 @@ describe('string field', () => {
       expect(item3.get('name')).toBe(`A${YYYYMMDD}00`);
 
       testsCollection.setField('name', {
-        type: 'serialString',
+        type: 'sequence',
         patterns: [
           { type: 'string', options: { value: 'a' } },
           { type: 'date' },
@@ -386,7 +386,7 @@ describe('string field', () => {
       expect(item4.get('name')).toBe(`a${YYYYMMDD}01`);
 
       testsCollection.setField('name', {
-        type: 'serialString',
+        type: 'sequence',
         patterns: [
           { type: 'date' },
           { type: 'integer', options: { digits: 2 } }
@@ -404,7 +404,7 @@ describe('string field', () => {
         name: 'tests',
         fields: [
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'name',
             patterns: [
               { type: 'string', options: { value: 'A' } },
@@ -413,7 +413,7 @@ describe('string field', () => {
             ]
           },
           {
-            type: 'serialString',
+            type: 'sequence',
             name: 'code',
             patterns: [
               { type: 'string', options: { value: 'C' } },
@@ -439,7 +439,7 @@ describe('string field', () => {
       expect(item2.get('code')).toBe(`C0001`);
 
       testsCollection.setField('name', {
-        type: 'serialString',
+        type: 'sequence',
         patterns: [
           { type: 'string', options: { value: 'a' } },
           { type: 'date' },
