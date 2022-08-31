@@ -1,6 +1,7 @@
 import { ExclamationCircleFilled, LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Button, Modal, Space, Spin } from 'antd';
+import { saveAs } from 'file-saver';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useImportContext } from './context';
@@ -13,9 +14,14 @@ export const ImportStatus = {
 export const ImportModal = (props: any) => {
   const { t } = useTranslation();
   const { importModalVisible, importStatus, importResult, setImportModalVisible } = useImportContext();
-  debugger;
   const doneHandler = () => {
     setImportModalVisible(false);
+  };
+  const downloadFailureDataHandler = () => {
+    const { data } = importResult?.buffer ?? {};
+    const arrayBuffer = new Int8Array(data);
+    let blob = new Blob([arrayBuffer], { type: 'application/x-xls' });
+    saveAs(blob, `fail.xlsx`);
   };
   return (
     <Modal
@@ -42,11 +48,11 @@ export const ImportModal = (props: any) => {
             <ExclamationCircleFilled style={{ fontSize: 72, color: '#1890ff' }} />
             <p>
               {t('Import done, total success have {{successCount}} , total failure have {{failureCount}}', {
-                ...importResult,
+                ...(importResult?.result ?? {}),
               })}
             </p>
             <Space>
-              <Button>{t('To download the failure data')}</Button>
+              <Button onClick={downloadFailureDataHandler}>{t('To download the failure data')}</Button>
               <Button type="primary" onClick={doneHandler}>
                 {t('Done')}
               </Button>

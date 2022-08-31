@@ -1,4 +1,3 @@
-import { useFieldSchema } from '@formily/react';
 import { useCollectionManager } from '@nocobase/client';
 
 const EXCLUDE_INTERFACES = [
@@ -15,8 +14,6 @@ const EXCLUDE_INTERFACES = [
 ];
 
 export const useFields = (collectionName: string) => {
-  const fieldSchema = useFieldSchema();
-  const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   const { getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
@@ -28,7 +25,7 @@ export const useFields = (collectionName: string) => {
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
     };
-    if (!field.target || depth >= 3) {
+    if (!field.target || depth >= 2) {
       return option;
     }
 
