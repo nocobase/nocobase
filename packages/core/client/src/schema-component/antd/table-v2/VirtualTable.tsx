@@ -162,19 +162,15 @@ function VTable(props: any, otherParams): JSX.Element {
   }, [vid]);
 
   // 数据变更
-  useEffect(
-    () => {
-      ifChangeRef.current = true;
-      if (isNumber(children[1]?.props?.data?.length)) {
-        dispatch({
-          type: 'changeTotalLen',
-          totalLen: children[1]?.props?.data?.length ?? 0,
-        });
-      }
-    },
-    [children[1].props.data],
-    scrollY,
-  );
+  useEffect(() => {
+    ifChangeRef.current = true;
+    if (isNumber(children[1]?.props?.data?.length)) {
+      dispatch({
+        type: 'changeTotalLen',
+        totalLen: children[1]?.props?.data?.length ?? 0,
+      });
+    }
+  }, [children[1].props.data, scrollY]);
 
   // table总高度
   const tableHeight = useMemo<string | number>(() => {
@@ -185,25 +181,17 @@ function VTable(props: any, otherParams): JSX.Element {
     }
     return temp;
   }, [state.rowHeight, totalLen]);
-
-  // table的scrollY值
   const [tableScrollY, setTableScrollY] = useState(0);
-
-  // tableScrollY 随scrollY / tableHeight 进行变更
   useEffect(() => {
     let temp = 0;
-
     if (typeof scrollY === 'string') {
       temp = (wrap_tableRef.current?.parentNode as HTMLElement)?.offsetHeight ?? 0;
     } else {
       temp = scrollY;
     }
-
-    // 处理tableScrollY <= 0的情况
     if (temp <= 0) {
       temp = 0;
     }
-
     setTableScrollY(temp);
   }, [scrollY, tableHeight]);
 
@@ -263,7 +251,6 @@ function VTable(props: any, otherParams): JSX.Element {
       const scrollTop: number = e?.target?.scrollTop ?? 0;
       const scrollHeight: number = e?.target?.scrollHeight ?? 0;
       const clientHeight: number = e?.target?.clientHeight ?? 0;
-      // 到底了 没有滚动条就不会触发reachEnd.
       if (scrollTop === scrollHeight) {
         reachEnd && reachEnd();
       } else if (scrollTop + clientHeight >= scrollHeight) {
