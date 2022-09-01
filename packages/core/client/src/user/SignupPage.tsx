@@ -2,8 +2,10 @@ import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { message } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Redirect, useHistory } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
+import VerificationCode from './VerificationCode';
 
 const schema: ISchema = {
   type: 'object',
@@ -17,6 +19,26 @@ const schema: ISchema = {
       'x-validator': 'email',
       'x-decorator': 'FormItem',
       'x-component-props': { placeholder: '{{t("Email")}}', style: {} },
+    },
+    phone: {
+      type: 'string',
+      required: true,
+      'x-component': 'Input',
+      'x-validator': 'phone',
+      'x-decorator': 'FormItem',
+      'x-component-props': { placeholder: '{{t("Phone")}}', style: {} },
+      'x-visible': '{{smsAuthEnabled}}',
+    },
+    code: {
+      type: 'string',
+      required: true,
+      'x-component': 'VerificationCode',
+      'x-component-props': {
+        actionType: 'users:signup',
+        targetFieldName: 'phone',
+      },
+      'x-decorator': 'FormItem',
+      'x-visible': '{{smsAuthEnabled}}',
     },
     password: {
       type: 'string',
@@ -40,7 +62,7 @@ const schema: ISchema = {
       required: true,
       'x-component': 'Password',
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Confirm password")}}', checkStrength: true, style: {} },
+      'x-component-props': { placeholder: '{{t("Confirm password")}}', style: {} },
       'x-reactions': [
         {
           dependencies: ['.password'],
@@ -89,13 +111,14 @@ export const useSignup = () => {
   const history = useHistory();
   const form = useForm();
   const api = useAPIClient();
+  const { t } = useTranslation();
   return {
     async run() {
       await form.submit();
       await api.resource('users').signup({
         values: form.values,
       });
-      message.success('注册成功，即将跳转登录页');
+      message.success('Sign up successfully, and automatically jump to the sign in page');
       setTimeout(() => {
         history.push('/signin');
       }, 2000);
@@ -106,9 +129,17 @@ export const useSignup = () => {
 export const SignupPage = () => {
   useCurrentDocumentTitle('Signup');
   const ctx = useSystemSettings();
-  const allowSignUp = ctx?.data?.data?.allowSignUp;
+  const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   if (!allowSignUp) {
     return <Redirect to={'/signin'} />;
   }
-  return <SchemaComponent schema={schema} scope={{ useSignup }} />;
+  return (
+    <SchemaComponent
+      schema={schema}
+      components={{
+        VerificationCode,
+      }}
+      scope={{ useSignup, smsAuthEnabled }}
+    />
+  );
 };

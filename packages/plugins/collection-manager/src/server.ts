@@ -1,6 +1,11 @@
-import { Plugin } from '@nocobase/server';
-import lodash from 'lodash';
 import path from 'path';
+
+import lodash from 'lodash';
+import { UniqueConstraintError } from 'sequelize';
+
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
+import { Plugin } from '@nocobase/server';
+
 import { CollectionRepository } from '.';
 import {
   afterCreateForReverseField,
@@ -60,23 +65,33 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('collections.afterCreateWithAssociations', async (model, { context, transaction }) => {
       if (context) {
-        await model.migrate({ transaction });
+        await model.migrate({
+          isNew: true,
+          transaction
+        });
       }
     });
 
-    this.app.db.on('fields.afterCreate', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
       if (context) {
-        await model.migrate({ transaction });
+        await model.migrate({
+          isNew: true,
+          transaction
+        });
       }
     });
 
-    this.app.db.on('fields.afterUpdateWithAssociations', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
       if (context) {
-        await model.load({ transaction });
+        const { unique: prev } = model.previous('options');
+        const { unique: next } = model.get('options');
+        if (Boolean(prev) !== Boolean(next)) {
+          await model.migrate({ transaction });
+        }
       }
     });
 
-    this.app.db.on('fields.afterCreateWithAssociations', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterSaveWithAssociations', async (model, { context, transaction }) => {
       if (context) {
         await model.load({ transaction });
       }
@@ -168,6 +183,16 @@ export class CollectionManagerPlugin extends Plugin {
     await this.app.db.import({
       directory: path.resolve(__dirname, './collections'),
     });
+
+    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('@nocobase/plugin-error-handler');
+    errorHandlerPlugin.errorHandler.register(
+      (err) => {
+        return err instanceof UniqueConstraintError;
+      },
+      (err, ctx) => {
+        return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
+      },
+    );
   }
 
   getName(): string {

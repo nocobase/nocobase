@@ -1,5 +1,5 @@
 import { i18n } from '../../i18n';
-import { defaultProps } from './properties';
+import { defaultProps, unique } from './properties';
 import { IField } from './types';
 
 export const password: IField = {
@@ -21,6 +21,7 @@ export const password: IField = {
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    unique,
   },
   validateSchema(fieldSchema) {
     return {

@@ -1,7 +1,7 @@
 import { DndContext as DndKitContext, DragEndEvent, DragOverlay, rectIntersection } from '@dnd-kit/core';
 import { Props } from '@dnd-kit/core/dist/components/DndContext/DndContext';
 import { observer } from '@formily/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../';
 import { createDesignable, useDesignable } from '../../hooks';
@@ -18,6 +18,7 @@ const useDragEnd = (props?: any) => {
     const insertAdjacent = over?.data?.current?.insertAdjacent;
     const breakRemoveOn = over?.data?.current?.breakRemoveOn;
     const wrapSchema = over?.data?.current?.wrapSchema;
+    const onSuccess = over?.data?.current?.onSuccess;
 
     if (!activeSchema || !overSchema) {
       props?.onDragEnd?.(event);
@@ -49,6 +50,7 @@ const useDragEnd = (props?: any) => {
         wrap: wrapSchema,
         breakRemoveOn,
         removeParentsIfNoChildren: true,
+        onSuccess,
       });
       props?.onDragEnd?.(event);
       return;
@@ -58,15 +60,25 @@ const useDragEnd = (props?: any) => {
 
 export const DndContext = observer((props: Props) => {
   const { t } = useTranslation();
+  const [visible, setVisible] = useState(true);
   return (
-    <DndKitContext collisionDetection={rectIntersection} {...props} onDragEnd={useDragEnd(props)}>
+    <DndKitContext
+      collisionDetection={rectIntersection}
+      {...props}
+      onDragStart={(event) => {
+        const { active } = event;
+        const activeSchema = active?.data?.current?.schema;
+        setVisible(!!activeSchema);
+      }}
+      onDragEnd={useDragEnd(props)}
+    >
       <DragOverlay
         dropAnimation={{
           duration: 10,
           easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
         }}
       >
-        <span style={{ whiteSpace: 'nowrap' }}>{t('Dragging')}</span>
+        {visible && <span style={{ whiteSpace: 'nowrap' }}>{t('Dragging')}</span>}
       </DragOverlay>
       {props.children}
     </DndKitContext>

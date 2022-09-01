@@ -55,7 +55,12 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     const i18n = app.i18n.cloneInstance({ initImmediate: false });
     ctx.i18n = i18n;
     ctx.t = i18n.t.bind(i18n);
-    const lng = ctx.get('X-Locale') || (ctx.request.query.locale as string) || ctx.acceptsLanguages().shift() || 'en-US';
+    const lng =
+      ctx.get('X-Locale') ||
+      (ctx.request.query.locale as string) ||
+      app.i18n.language ||
+      ctx.acceptsLanguages().shift() ||
+      'en-US';
     if (lng !== '*' && lng) {
       i18n.changeLanguage(lng);
     }

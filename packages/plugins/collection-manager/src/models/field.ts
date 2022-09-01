@@ -1,9 +1,53 @@
-import Database, { MagicAttributeModel } from '@nocobase/database';
-import { SyncOptions, Transactionable } from 'sequelize';
+import Database, { Field, MagicAttributeModel } from '@nocobase/database';
+import { SyncOptions, Transactionable, UniqueConstraintError, Utils } from 'sequelize';
 
 interface LoadOptions extends Transactionable {
   // TODO
   skipExist?: boolean;
+}
+
+interface MigrateOptions extends SyncOptions, Transactionable {
+  isNew?: boolean;
+}
+
+async function migrate(field: Field, options: MigrateOptions): Promise<void> {
+  const { unique } = field.options;
+  const { model } = field.collection;
+  const ukName = `${model.tableName}_${field.name}_uk`;
+  const queryInterface = model.sequelize.getQueryInterface();
+  const fieldAttribute = model.rawAttributes[field.name];
+  // @ts-ignore
+  const existedConstraints = await queryInterface.showConstraint(model.tableName, ukName, { transaction: options.transaction }) as any[];
+  const constraintBefore = existedConstraints.find(item => item.constraintName === ukName);
+  if (typeof fieldAttribute?.unique !== 'undefined') {
+    if (constraintBefore && !unique) {
+      await queryInterface.removeConstraint(model.tableName, ukName, { transaction: options.transaction });
+    }
+    fieldAttribute.unique = Boolean(constraintBefore);
+  }
+
+  await field.sync(options);
+
+  if (!constraintBefore && unique) {
+    await queryInterface.addConstraint(model.tableName, {
+      type: 'unique',
+      fields: [field.name],
+      name: ukName,
+      transaction: options.transaction
+    });
+  }
+  if (typeof fieldAttribute?.unique !== 'undefined') {
+    fieldAttribute.unique = unique;
+  }
+
+  // @ts-ignore
+  const updatedConstraints = await queryInterface.showConstraint(model.tableName, ukName, { transaction: options.transaction }) as any[];
+  const indexAfter = updatedConstraints.find(item => item.constraintName === ukName);
+  if (unique && !indexAfter) {
+    throw new UniqueConstraintError({
+      fields: { [field.name]: undefined }
+    });
+  }
 }
 
 export class FieldModel extends MagicAttributeModel {
@@ -28,24 +72,27 @@ export class FieldModel extends MagicAttributeModel {
       const uiSchema = await UISchema.findByPk(options.uiSchemaUid, {
         transaction: loadOptions.transaction,
       });
-      return collection.setField(name, { ...options, uiSchema: uiSchema.get() });
-    } else {
-      return collection.setField(name, options);
+      Object.assign(options, { uiSchema: uiSchema.get() });
     }
+    return collection.setField(name, options);
   }
 
-  async migrate(options?: SyncOptions & Transactionable) {
+  async migrate({ isNew, ...options }: MigrateOptions = {}) {
     const field = await this.load({
       transaction: options.transaction,
     });
     if (!field) {
       return;
     }
+
     try {
-      await field.sync(options);
+      await migrate(field, options);
     } catch (error) {
       // field sync failed, delete from memory
-      field.remove();
+      if (isNew) {
+        // update field should not remove field from memory
+        field.remove();
+      }
       throw error;
     }
   }

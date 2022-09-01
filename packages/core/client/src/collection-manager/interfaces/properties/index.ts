@@ -30,6 +30,13 @@ export const type: ISchema = {
   ],
 };
 
+export const unique = {
+  type: 'boolean',
+  'x-content': '{{t("Unique")}}',
+  'x-decorator': 'FormItem',
+  'x-component': 'Checkbox',
+};
+
 export const relationshipType: ISchema = {
   type: 'string',
   title: '{{t("Relationship type")}}',

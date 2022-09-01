@@ -1,5 +1,6 @@
 import { Context, Next } from '@nocobase/actions';
 import { PasswordField } from '@nocobase/database';
+import { branch } from '@nocobase/resourcer';
 import crypto from 'crypto';
 import { namespace } from '../';
 
@@ -14,35 +15,22 @@ export async function check(ctx: Context, next: Next) {
 }
 
 export async function signin(ctx: Context, next: Next) {
-  const { uniqueField = 'email', values } = ctx.action.params;
-
-  if (!values[uniqueField]) {
-    ctx.throw(401, ctx.t('Please fill in your email address', { ns: namespace }));
+  const { authenticators, jwtService } = ctx.app.getPlugin('@nocobase/plugin-users');
+  const branches = {};
+  for (const [name, authenticator] of authenticators.getEntities()) {
+    branches[name] = authenticator;
   }
-  const User = ctx.db.getCollection('users');
-  const user = await User.model.findOne<any>({
-    where: {
-      [uniqueField]: values[uniqueField],
-    },
+
+  return branch(branches, context => context.action.params.authenticator ?? 'password')(ctx, () => {
+    const user = ctx.state.currentUser.toJSON();
+    const token = jwtService.sign({ userId: user.id });
+    ctx.body = {
+      user,
+      token,
+    };
+
+    return next();
   });
-  if (!user) {
-    ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
-  }
-  const pwd = User.getField<PasswordField>('password');
-  const isValid = await pwd.verify(values.password, user.password);
-  if (!isValid) {
-    ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
-  }
-
-  const pluginUser = ctx.app.getPlugin('@nocobase/plugin-users');
-
-  ctx.body = {
-    ...user.toJSON(),
-    token: pluginUser.jwtService.sign({
-      userId: user.get('id'),
-    }),
-  };
-  await next();
 }
 
 export async function signout(ctx: Context, next: Next) {
@@ -63,7 +51,7 @@ export async function lostpassword(ctx: Context, next: Next) {
     values: { email },
   } = ctx.action.params;
   if (!email) {
-    ctx.throw(401, ctx.t('Please fill in your email address', { ns: namespace }));
+    ctx.throw(400, { code: 'InvalidUserData', message: ctx.t('Please fill in your email address', { ns: namespace }) });
   }
   const User = ctx.db.getCollection('users');
   const user = await User.model.findOne<any>({
@@ -72,7 +60,7 @@ export async function lostpassword(ctx: Context, next: Next) {
     },
   });
   if (!user) {
-    ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
+    ctx.throw(404, { code: 'InvalidUserData', message: ctx.t('The email is incorrect, please re-enter', { ns: namespace }) });
   }
   user.resetToken = crypto.randomBytes(20).toString('hex');
   await user.save();
@@ -92,7 +80,7 @@ export async function resetpassword(ctx: Context, next: Next) {
     },
   });
   if (!user) {
-    ctx.throw(401, 'Unauthorized');
+    ctx.throw(404);
   }
   user.token = null;
   user.resetToken = null;
@@ -111,7 +99,7 @@ export async function getUserByResetToken(ctx: Context, next: Next) {
     },
   });
   if (!user) {
-    ctx.throw(401, 'Unauthorized');
+    ctx.throw(401);
   }
   ctx.body = user;
   await next();
@@ -119,11 +107,16 @@ export async function getUserByResetToken(ctx: Context, next: Next) {
 
 export async function updateProfile(ctx: Context, next: Next) {
   const { values } = ctx.action.params;
-  if (!ctx.state.currentUser) {
-    ctx.throw(401, 'Unauthorized');
+  const { currentUser } = ctx.state;
+  if (!currentUser) {
+    ctx.throw(401);
   }
-  await ctx.state.currentUser.update(values);
-  ctx.body = ctx.state.currentUser;
+  const UserRepo = ctx.db.getRepository('users');
+  const result = await UserRepo.update({
+    filterByTk: currentUser.id,
+    values
+  });
+  ctx.body = result;
   await next();
 }
 
@@ -132,7 +125,7 @@ export async function changePassword(ctx: Context, next: Next) {
     values: { oldPassword, newPassword },
   } = ctx.action.params;
   if (!ctx.state.currentUser) {
-    ctx.throw(401, 'Unauthorized');
+    ctx.throw(401);
   }
   const User = ctx.db.getCollection('users');
   const user = await User.model.findOne<any>({

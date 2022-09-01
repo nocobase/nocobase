@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/devtools",
-  "version": "0.7.4-alpha.1",
+  "version": "0.7.4-alpha.7",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -11,7 +11,7 @@
   ],
   "main": "./src/index.js",
   "dependencies": {
-    "@nocobase/build": "0.7.4-alpha.1",
+    "@nocobase/build": "0.7.4-alpha.7",
     "@testing-library/react": "^12.1.2",
     "@types/jest": "^26.0.0",
     "@types/koa": "^2.13.4",
@@ -61,5 +61,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/core/devtools"
   },
-  "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
+  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
 }

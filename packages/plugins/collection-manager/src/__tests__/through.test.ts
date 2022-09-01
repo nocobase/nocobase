@@ -1,5 +1,6 @@
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { mockServer } from '@nocobase/test';
-import CollectionManagerPlugin from '../server';
+import Plugin from '../server';
 
 describe('collections repository', () => {
   it('case 1', async () => {
@@ -9,7 +10,8 @@ describe('collections repository', () => {
       },
     });
     await app1.cleanDb();
-    app1.plugin(CollectionManagerPlugin);
+    app1.plugin(PluginErrorHandler);
+    app1.plugin(Plugin);
     await app1.load();
     await app1.install({ clean: true });
     await app1.start();
@@ -119,7 +121,8 @@ describe('collections repository', () => {
         tablePrefix: 'through_',
       },
     });
-    app2.plugin(CollectionManagerPlugin);
+    app2.plugin(PluginErrorHandler);
+    app2.plugin(Plugin);
     await app2.load();
     await app2.start();
 

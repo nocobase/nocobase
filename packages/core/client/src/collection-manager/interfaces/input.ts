@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 import { i18n } from '../../i18n';
 
@@ -21,6 +21,7 @@ export const input: IField = {
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    unique,
   },
   filterable: {
     operators: operators.string,
