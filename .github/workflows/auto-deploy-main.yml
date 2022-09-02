@@ -74,8 +74,6 @@ jobs:
       -
         name: Build & push Docker image
         uses: mr-smithers-excellent/docker-build-push@v5
-        env:
-          npm_registry: http://localhost:4873
         with:
           image: ${{ secrets.image_name }}
           tags: ${{ github.sha }}, latest
