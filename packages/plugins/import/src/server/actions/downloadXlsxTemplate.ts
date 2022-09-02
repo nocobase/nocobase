@@ -7,11 +7,16 @@ export async function downloadXlsxTemplate(ctx: Context, next: Next) {
     columns = JSON.parse(columns);
   }
   const header = columns?.map((column) => column.defaultTitle);
+  const data = [header];
+  if (explain?.trim() !== '') {
+    data.push([explain]);
+  }
 
   ctx.body = xlsx.build([
     {
       name: title,
-      data: [header, [explain]],
+      data,
+      options: {},
     },
   ]);
 
