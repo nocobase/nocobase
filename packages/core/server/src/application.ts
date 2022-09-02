@@ -121,7 +121,7 @@ export class ApplicationVersion {
       if (!version) {
         return true;
       }
-      return semver.satisfies(version, range);
+      return semver.satisfies(version, range, { includePrerelease: true });
     }
     return true;
   }

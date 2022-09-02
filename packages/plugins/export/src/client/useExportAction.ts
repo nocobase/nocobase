@@ -24,7 +24,7 @@ export const useExportAction = () => {
         const { uiSchema, interface: fieldInterface } =
           getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
         es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
-        if (!es.enum && uiSchema.type === 'boolean') {
+        if (!es.enum && uiSchema?.type === 'boolean') {
           es.enum = [
             { value: true, label: t('Yes') },
             { value: false, label: t('No') },

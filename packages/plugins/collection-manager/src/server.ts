@@ -65,13 +65,19 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('collections.afterCreateWithAssociations', async (model, { context, transaction }) => {
       if (context) {
-        await model.migrate({ transaction });
+        await model.migrate({
+          isNew: true,
+          transaction
+        });
       }
     });
 
     this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
       if (context) {
-        await model.migrate({ transaction });
+        await model.migrate({
+          isNew: true,
+          transaction
+        });
       }
     });
 

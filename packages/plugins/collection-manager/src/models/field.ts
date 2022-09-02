@@ -6,7 +6,9 @@ interface LoadOptions extends Transactionable {
   skipExist?: boolean;
 }
 
-interface MigrateOptions extends SyncOptions, Transactionable {}
+interface MigrateOptions extends SyncOptions, Transactionable {
+  isNew?: boolean;
+}
 
 async function migrate(field: Field, options: MigrateOptions): Promise<void> {
   const { unique } = field.options;
@@ -75,19 +77,22 @@ export class FieldModel extends MagicAttributeModel {
     return collection.setField(name, options);
   }
 
-  async migrate(options: MigrateOptions = {}) {
+  async migrate({ isNew, ...options }: MigrateOptions = {}) {
     const field = await this.load({
       transaction: options.transaction,
     });
     if (!field) {
       return;
     }
-    // const migrator = Dialects[field.database.options.dialect] ?? migrate;
+
     try {
       await migrate(field, options);
     } catch (error) {
       // field sync failed, delete from memory
-      field.remove();
+      if (isNew) {
+        // update field should not remove field from memory
+        field.remove();
+      }
       throw error;
     }
   }

@@ -118,7 +118,7 @@ export class MockServer extends Koa {
       await next();
     });
     this.use(bodyParser());
-    this.use(table2resource());
+    this.use(table2resource);
     this.use(
       this.resourcer.restApiMiddleware({
         prefix: '/api',
