@@ -18,7 +18,6 @@ RUN cd /app \
 
 FROM node:16-stretch-slim
 
-# COPY ./sources.list /etc/apt/sources.list
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && case "${dpkgArch##*-}" in \
   amd64) ARCH='x64';; \
@@ -40,7 +39,5 @@ COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 WORKDIR /app/nocobase
 
 COPY docker-entrypoint.sh /app/
-# COPY docker-entrypoint.sh /usr/local/bin/
-# ENTRYPOINT ["docker-entrypoint.sh"]
 
 CMD ["/app/docker-entrypoint.sh"]
