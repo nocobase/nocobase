@@ -2,8 +2,6 @@ FROM node:16-stretch-slim as builder
 
 WORKDIR /app
 
-RUN yarn config set registry ${npm_registry:-https://registry.npmjs.org/}
-
 RUN cd /app \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
