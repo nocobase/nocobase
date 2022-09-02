@@ -2,7 +2,7 @@ FROM node:16-stretch-slim as builder
 
 WORKDIR /app
 
-RUN yarn config set registry http://verdaccio:4873
+RUN yarn config set registry http://localhost:4873
 
 RUN cd /app \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production \
