@@ -74,6 +74,8 @@ jobs:
       -
         name: Build & push Docker image
         uses: mr-smithers-excellent/docker-build-push@v5
+        env:
+          npm_registry: http://localhost:4873
         with:
           image: ${{ secrets.image_name }}
           tags: ${{ github.sha }}, latest
@@ -82,7 +84,6 @@ jobs:
           directory: ./workflow/
           username: ${{ secrets.registry_username }}
           password: ${{ secrets.registry_password }}
-          buildArgs: npm_registry=http://localhost:4873
 
       - name: copy deploy file via ssh password
         uses: appleboy/scp-action@master
