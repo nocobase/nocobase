@@ -12,6 +12,8 @@ export interface InstallOptions {
   sync?: SyncOptions;
 }
 
+type PluginConstructor<P, O = any> = { new(app: Application, options: O): P };
+
 export class PluginManager {
   app: Application;
   protected plugins = new Map<string, Plugin>();
@@ -28,7 +30,7 @@ export class PluginManager {
     return this.plugins.get(name);
   }
 
-  add<P = Plugin, O = any>(pluginClass: any, options?: O): P {
+  add<P extends Plugin = Plugin, O = any>(pluginClass: PluginConstructor<P, O>, options?: O): P {
     const instance = new pluginClass(this.app, options);
 
     const name = instance.getName();

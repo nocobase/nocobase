@@ -71,6 +71,6 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     app.use(dataWrapping());
   }
 
-  app.use(table2resource());
+  app.use(table2resource);
   app.use(app.resourcer.restApiMiddleware());
 }
