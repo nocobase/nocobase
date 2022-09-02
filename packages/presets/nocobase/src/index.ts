@@ -20,6 +20,7 @@ export class PresetNocoBase<O = any> extends Plugin {
       '@nocobase/plugin-workflow',
       '@nocobase/plugin-client',
       '@nocobase/plugin-export',
+      '@nocobase/plugin-import',
       '@nocobase/plugin-audit-logs',
     ]);
   }
