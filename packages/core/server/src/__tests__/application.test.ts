@@ -119,7 +119,7 @@ describe('application', () => {
       });
       await next();
     });
-    console.log(app.middleware);
+
     const response = await agent.get('/api/foos/1/bars');
     expect(response.body).toEqual([1, 2]);
   });
