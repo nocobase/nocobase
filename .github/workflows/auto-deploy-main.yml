@@ -46,8 +46,8 @@ jobs:
 
       - name: install expect
         run: |
-          apt-get update
-          apt-get -y install expect
+          sudo apt-get update
+          sudo apt-get -y install expect
       - name: adduser and login verdaccio npm registry
         run: |
           set timeout 10
