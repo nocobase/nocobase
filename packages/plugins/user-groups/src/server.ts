@@ -5,7 +5,10 @@ import { resolve } from 'path';
 import { namespace } from '.';
 import { enUS, zhCN } from './locale';
 
-import { afterUsersCreateOrUpdate } from './hooks';
+import * as userGroupsActions from './actions/usergroups';
+import * as usersActions from './actions/users';
+
+import { afterUsersCreateOrUpdate,afterUserGroupsCreateWithAssociation ,afterUserGroupsSaveWithAssociation} from './hooks';
 
 export interface UserGroupPluginConfig {
 }
@@ -26,9 +29,26 @@ export default class UserGroupsPlugin extends Plugin<UserGroupPluginConfig> {
     this.db.registerOperators({
     });
 
+    //regist usergroup's actions.
+    for (const [key, action] of Object.entries(userGroupsActions)) {
+      this.app.resourcer.registerActionHandler(`userGroups:${key}`, action);
+    }
+    this.app.acl.allow('userGroups', '*', 'loggedIn');
+
+    //regist the user's actions.
+    for (const [key, action] of Object.entries(usersActions)) {
+      this.app.resourcer.registerActionHandler(`users:${key}`, action);
+    }
+    this.app.acl.allow('users', '*', 'loggedIn');
+
+
 
     //@todo 加个用户钩子，用户创建时如果没有机构，赋予默认机构。
-    this.db.on('afterCreate', afterUsersCreateOrUpdate(this.app));
+    this.db.on('users.afterCreate', afterUsersCreateOrUpdate(this.app));
+    //@todo 加个用户组钩子，用户组创建时添加ptree，作为treepath
+    this.db.on('userGroups.afterCreateWithAssociations', afterUserGroupsCreateWithAssociation(this.app));
+    // this.db.on('userGroups.beforeUpdate', afterUserGroupsSaveWithAssociation(this.app));
+    // this.db.on('userGroups.afterBulkCreate', afterUserGroupsSaveWithAssociation(this.app));
     //wheather add user update hook need to determine.
     //this.db.on('afterUpdate', afterUsersCreateOrUpdate(this.app));
 

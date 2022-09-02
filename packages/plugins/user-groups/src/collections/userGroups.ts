@@ -6,7 +6,7 @@ export default {
     sortable: 'sort',
     autoGenId: false,
     model: 'UserGroupModel',
-    filterTargetKey: 'name',
+    filterTargetKey: 'gid',
     createdBy: true,
     updatedBy: true,
     logging: true,
@@ -33,6 +33,12 @@ export default {
             type: 'integer',
             name: 'status',
             defaultValue: '1',
+        },
+        {
+            //a gid tree path to the root. 
+            //looks like: 1,2,3,4,5,6,7,8 8 is the self gid.
+            type: 'string',
+            name: 'ptree',
         },
         {//self assocations which will get subgroups
             interface: 'm2o',
@@ -93,6 +99,18 @@ export default {
                     },
                 },
             },
+        },
+        {//extends the relations
+            interface: 'm2m',
+            type: 'belongsToMany',
+            name: 'roles',
+            allowNull: true,
+            target: 'roles',
+            foreignKey: 'groupId',
+            otherKey: 'roleName',
+            sourceKey: 'gid',
+            targetKey: 'name',
+            through: 'userGroupsRoles',
         }
     ],
 } as CollectionOptions;
