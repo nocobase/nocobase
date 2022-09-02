@@ -4,7 +4,7 @@ networks:
     driver: bridge
 services:
   app:
-    image: nocobase/nocobase:0.7.4-alpha.7
+    image: ${image_tag:-nocobase/nocobase:0.7.4-alpha.7}
     networks:
       - nocobase
     depends_on:
