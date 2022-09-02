@@ -15,12 +15,11 @@ on:
       - 'main'
 
 jobs:
-  docker:
+  deploy:
     strategy:
       matrix:
         node_version: [ '14' ]
     runs-on: ubuntu-latest
-    container: node:${{ matrix.node_version }}
     services:
       verdaccio: # used to build docker image
         image: verdaccio/verdaccio
@@ -33,6 +32,11 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v3
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node_version }}
 
       - name: yarn install and build
         run: |
@@ -67,9 +71,6 @@ jobs:
         id: publish_verdaccio
         run: |
           yarn release:force --registry http://verdaccio:4873
-
-      - name: setup docker
-        uses: docker-practice/actions-setup-docker@master
       -
         name: Build & push Docker image
         uses: mr-smithers-excellent/docker-build-push@v5
