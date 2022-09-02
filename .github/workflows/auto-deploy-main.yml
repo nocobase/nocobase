@@ -1,5 +1,5 @@
 name: auto-deploy-main
-# secrets:
+# environment: auto-deploy-main secrets:
 # registry_url
 # image_name
 # registry_username
@@ -8,7 +8,7 @@ name: auto-deploy-main
 # deploy_host_username
 # deploy_host_password
 env:
-  docker_compose_file: ./docker/app-mysql/docker-compose.yml
+  docker_compose_file: ./workflow/docker-compose.yml
 on:
   push:
     branches:
@@ -51,14 +51,14 @@ jobs:
       - name: adduser and login verdaccio npm registry
         run: |
           set timeout 10
-          spawn npm adduser --registry http://verdaccio:4873
+          spawn npm adduser --registry http://localhost:4873
           expect "Username:"
           send "test\n"
           expect "Password:"
           send "123456\n"
           expect "Email: (this IS public)"
           send "test@mail.com\n"
-          spawn npm login --registry http://verdaccio:4873
+          spawn npm login --registry http://localhost:4873
           expect "Username:"
           send "test\n"
           expect "Password:"
@@ -70,7 +70,7 @@ jobs:
       - name: publish to verdaccio npm registry
         id: publish_verdaccio
         run: |
-          yarn release:force --registry http://verdaccio:4873
+          yarn release:force --registry http://localhost:4873
       -
         name: Build & push Docker image
         uses: mr-smithers-excellent/docker-build-push@v5
@@ -78,11 +78,11 @@ jobs:
           image: ${{ secrets.image_name }}
           tags: ${{ github.sha }}, latest
           registry: ${{ secrets.registry_url }}
-          dockerfile: ./docker/nocobase/Dockerfile
-          directory: ./docker/nocobase/
+          dockerfile: ./workflow/Dockerfile
+          directory: ./workflow/
           username: ${{ secrets.registry_username }}
           password: ${{ secrets.registry_password }}
-          buildArgs: npm_registry=http://verdaccio:4873
+          buildArgs: npm_registry=http://localhost:4873
 
       - name: copy deploy file via ssh password
         uses: appleboy/scp-action@master
