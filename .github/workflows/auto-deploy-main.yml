@@ -87,9 +87,9 @@ jobs:
       - name: copy deploy file via ssh password
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.deploy_main_host }}
-          username: ${{ secrets.deploy_main_host_username }}
-          password: ${{ secrets.deploy_main_host_password }}
+          host: ${{ secrets.deploy_host }}
+          username: ${{ secrets.deploy_host_username }}
+          password: ${{ secrets.deploy_host_password }}
           source: ${{ env.docker_compose_file }}
           target: "/deploy"
 
@@ -98,9 +98,9 @@ jobs:
         env:
           image_tag: ${{ secrets.registry_url }}/${{ secrets.image_name }}:${{ github.sha }}
         with:
-          host: ${{ secrets.deploy_main_host }}
-          username: ${{ secrets.deploy_main_host_username }}
-          password: ${{ secrets.deploy_main_host_password }}
+          host: ${{ secrets.deploy_host }}
+          username: ${{ secrets.deploy_host_username }}
+          password: ${{ secrets.deploy_host_password }}
           script: |
             docker login --username=${{ secrets.registry_username }} --password=${{ secrets.registry_password }} ${{ secrets.registry_url }}
             docker pull ${{ env.image_tag }}
