@@ -41,7 +41,6 @@ jobs:
       - name: yarn install and build
         run: |
           yarn config set registry https://registry.npmjs.org/
-          ifconfig
           yarn install
           yarn build
 
@@ -71,32 +70,21 @@ jobs:
       - name: publish to verdaccio npm registry
         id: publish_verdaccio
         run: |
+          yarn version:alpha -y
+          git config user.email "test@mail.com"
+          git config user.name "test"
+          git add .
+          git commit -m "chore(versions): test publish packages xxx"
           yarn release:force --registry http://localhost:4873
-      -
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
 
-      -
-        name: Login docker Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ secrets.registry_url }}/
-          username: ${{ secrets.registry_username }}
-          password: ${{ secrets.registry_password }}
+      - name: build and publish docker image
+        run: |
+          yarn config
+          docker login --username=${{ secrets.registry_username }} --password=${{ secrets.registry_password }} ${{ secrets.registry_url }}
+          docker image build --network host -t ${{ secrets.registry_url }}/${{ secrets.image_name }}:latest -t ${{ secrets.registry_url }}/${{ secrets.image_name }}:${{ github.sha }} ./workflow
+          docker push ${{ secrets.registry_url }}/${{ secrets.image_name }}:${{ github.sha }}
+          docker push ${{ secrets.registry_url }}/${{ secrets.image_name }}:latest
 
-      - name: Build and push
-        uses: docker/build-push-action@v3
-        with:
-          context: ./workflow
-          platforms: linux/amd64
-          push: true
-          network: host
-          allow: network.host
-          tags: |
-            ${{ secrets.registry_url }}/${{ secrets.image_name }}:latest
-            ${{ secrets.registry_url }}/${{ secrets.image_name }}:${{ github.sha }}
 
       - name: copy deploy file via ssh password
         uses: appleboy/scp-action@master
