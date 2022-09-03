@@ -1,4 +1,4 @@
-version: "3"
+version: "3.8"
 networks:
   nocobase:
     driver: bridge
@@ -8,7 +8,8 @@ services:
     networks:
       - nocobase
     depends_on:
-      - mysql
+      mysql:
+          condition: service_healthy
     environment:
       - DB_DIALECT=mysql
       - DB_HOST=mysql
@@ -28,5 +29,11 @@ services:
       MYSQL_PASSWORD: nocobase
       MYSQL_ROOT_PASSWORD: nocobase
     restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping"]
+      timeout: 5s
+      interval: 10s
+      retries: 3
+
     networks:
       - nocobase
