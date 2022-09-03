@@ -21,6 +21,8 @@ services:
       - ./storage:/app/nocobase/storage
     ports:
       - "13000:80"
+    restart: always
+
   mysql:
     image: mysql:8
     environment:
