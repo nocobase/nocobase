@@ -79,7 +79,6 @@ jobs:
 
       - name: build and publish docker image
         run: |
-          yarn config
           docker login --username=${{ secrets.registry_username }} --password=${{ secrets.registry_password }} ${{ secrets.registry_url }}
           docker image build --network host -t ${{ secrets.registry_url }}/${{ secrets.image_name }}:latest -t ${{ secrets.registry_url }}/${{ secrets.image_name }}:${{ github.sha }} ./workflow
           docker push ${{ secrets.registry_url }}/${{ secrets.image_name }}:${{ github.sha }}
