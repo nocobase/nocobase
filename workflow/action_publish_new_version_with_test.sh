@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# because chmod +x will modify this script, and  yarn release:force need commit this change
+git config user.email "test@mail.com"
+git config user.name "test"
+git add .
+git commit -m "chore(versions): publish packages xxx"
+
 # publish test npm registry
 yarn release:force --registry http://verdaccio:4873
 npm config set registry http://verdaccio:4873
