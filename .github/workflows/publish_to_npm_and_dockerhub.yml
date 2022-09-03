@@ -1,0 +1,123 @@
+name: publish to npm and dockerhub
+# secrets: NPM_TOKEN
+# environment: publish-dockerhub secrets:
+# image_name
+# registry_username
+# registry_password
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        node_version: ['14']
+
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    services:
+      verdaccio:
+        image: verdaccio/verdaccio
+        ports:
+          - 4873:4873
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: yarn install and build
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn build
+      - name: install expect
+        run: |
+          apt-get update
+          apt-get -y install expect
+      - name: adduser and login test npm registry
+        run: |
+          set timeout 10
+          spawn npm adduser --registry http://verdaccio:4873
+          expect "Username:"
+          send "test\n"
+          expect "Password:"
+          send "123456\n"
+          expect "Email: (this IS public)"
+          send "test@mail.com\n"
+          spawn npm login --registry http://verdaccio:4873
+          expect "Username:"
+          send "test\n"
+          expect "Password:"
+          send "123456\n"
+          expect "Email: (this IS public)"
+          send "test@mail.com\n"
+        shell: expect {0}
+      - name: publish new version to test npm registry
+        id: publish_version
+        run: |
+          echo '::echo::on'
+          chmod +x ./workflow/action_publish_new_version_with_test.sh
+          ./workflow/action_publish_new_version_with_test.sh
+          test_flag=$?
+          version_info_line=$(npm view '@nocobase/server')
+          version=$(echo $version_info_line |awk '{print $1}' |awk -F '@' '{print $3}' |sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
+          echo "version=$version" >> $GITHUB_ENV
+          exit $test_flag
+        shell: bash {0}
+      - name: set output
+        id: set_out
+        run: |
+          echo '::set-output name=version::${{ env.version }}'
+
+    outputs:
+      output_version: ${{ steps.set_out.outputs.version }}
+
+  publish_npmjs_org:
+    needs: test
+    if: ${{ success() }}
+    strategy:
+      matrix:
+        node_version: ['14']
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: yarn install and build
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn build
+      -
+        name: publish npmjs.org
+        run: |
+          npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+          yarn release:force --registry https://registry.npmjs.org
+
+  publish-dockerhub:
+    needs: [test, publish_npmjs_org]
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    environment:
+      name: publish-dockerhub  # Settings -> Environments ->
+      # url: https://github.com
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      - name: publish docker hub
+        uses: mr-smithers-excellent/docker-build-push@v5
+        with:
+          image: ${{ secrets.image_name }}
+          tags: ${{ needs.test.outputs.output_version }}, latest
+          registry: docker.io
+          dockerfile: ./workflow/publishDockerfile
+          directory: ./workflow/
+          username: ${{ secrets.registry_username }}
+          password: ${{ secrets.registry_password }}
+
+
+
