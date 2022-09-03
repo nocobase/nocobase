@@ -1,4 +1,4 @@
-name: auto-deploy-main
+name: manual-deploy-pr
 # environment: manual-deploy-pr secrets:
 # registry_url
 # image_name
