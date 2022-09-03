@@ -33,7 +33,7 @@ services:
       test: ["CMD", "mysqladmin", "ping"]
       timeout: 5s
       interval: 10s
-      retries: 3
+      retries: 60
 
     networks:
       - nocobase
