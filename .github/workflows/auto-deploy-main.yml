@@ -41,6 +41,7 @@ jobs:
       - name: yarn install and build
         run: |
           yarn config set registry https://registry.npmjs.org/
+          ifconfig
           yarn install
           yarn build
 
@@ -92,6 +93,7 @@ jobs:
           platforms: linux/amd64
           push: true
           network: host
+          allow: network.host
           tags: |
             ${{ secrets.registry_url }}/${{ secrets.image_name }}:latest
             ${{ secrets.registry_url }}/${{ secrets.image_name }}:${{ github.sha }}
