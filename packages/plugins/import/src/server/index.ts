@@ -21,6 +21,10 @@ export class ImportPlugin extends Plugin {
     //     importXlsx,
     //   },
     // });
+    this.app.acl.setAvailableAction('import', {
+      displayName: '{{t("Import")}}',
+      allowConfigureFields: true,
+    });
     this.app.acl.allow('*', 'downloadXlsxTemplate');
     this.app.acl.allow('*', 'importXlsx');
   }
