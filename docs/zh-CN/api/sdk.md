@@ -1,4 +1,4 @@
-# JavaScript SDK
+# SDK
 
 ## APIClient
 

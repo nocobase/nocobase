@@ -1,4 +1,4 @@
-# 与众不同之处
+# 功能特色
 
 ## 1. “数据结构”与“使用界面”分离
 
@@ -6,12 +6,12 @@
 
 NocoBase 采用数据结构与使用界面分离的设计思路，可以为数据表创建任意数量、任意形态的区块（数据视图），每个区块里可以定义不同的样式、文案、操作。这样既兼顾了无代码的简单操作，又具备了原生开发的灵活性。
 
-![2.collection-block.png](./user-manual/introduction/important-features/2.collection-block.png)
+![2.collection-block.png](./features/2.collection-block.png)
 
 ## 2. “配置”与“使用”融为一体
 NocoBase 可以开发复杂和有特色的业务系统，但这并意味着需要复杂和专业的操作。只需一次点击，就可以在使用界面上显示出配置选项，这意味着具备系统配置权限的管理员可以用所见即所得的操作方式，直接配置用户的使用界面。
 
-![2.user-root.gif](./user-manual/introduction/important-features/2.user-root.gif)
+![2.user-root.gif](./features/2.user-root.gif)
 
 ## 3. 功能即插件
 

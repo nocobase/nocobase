@@ -4,9 +4,9 @@
 
 NocoBase 支持三种安装方式：
 
-- [Docker 安装（推荐）](./docker-compose.md)
-- [create-nocobase-app 安装](./create-nocobase-app.md)
-- [Git 源码安装](./git-clone.md)
+- [Docker 安装（推荐）](./installation/docker-compose.md)
+- [create-nocobase-app 安装](./installation/create-nocobase-app.md)
+- [Git 源码安装](./installation/git-clone.md)
 
 ## 如何选择
 
