@@ -1,6 +1,7 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import { Card } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -156,6 +157,113 @@ const schema: ISchema = {
       },
     },
   },
+};
+
+const schema2: ISchema = {
+  type: 'object',
+  properties: {
+    [uid()]: {
+      'x-decorator': 'Form',
+      'x-decorator-props': {
+        useValues: '{{ useSystemSettingsValues }}',
+      },
+      'x-component': 'div',
+      type: 'void',
+      title: '{{t("System settings")}}',
+      properties: {
+        title: {
+          type: 'string',
+          title: "{{t('System title')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          required: true,
+        },
+        logo: {
+          type: 'string',
+          title: "{{t('Logo')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Upload.Attachment',
+          'x-component-props': {
+            action: 'attachments:upload',
+            multiple: false,
+            // accept: 'jpg,png'
+          },
+        },
+        enabledLanguages: {
+          type: 'array',
+          title: '{{t("Enabled languages")}}',
+          'x-component': 'Select',
+          'x-component-props': {
+            mode: 'multiple',
+          },
+          'x-decorator': 'FormItem',
+          enum: langs,
+          'x-reactions': (field) => {
+            field.dataSource = langs.map((item) => {
+              let label = item.label;
+              if (field.value?.[0] === item.value) {
+                label += `(${i18n.t('Default')})`;
+              }
+              return {
+                label,
+                value: item.value,
+              };
+            });
+          },
+        },
+        allowSignUp: {
+          type: 'boolean',
+          default: true,
+          'x-content': '{{t("Allow sign up")}}',
+          'x-component': 'Checkbox',
+          'x-decorator': 'FormItem',
+        },
+        smsAuthEnabled: {
+          type: 'boolean',
+          default: false,
+          'x-content': '{{t("Enable SMS authentication")}}',
+          'x-component': 'Checkbox',
+          'x-decorator': 'FormItem',
+        },
+        footer1: {
+          type: 'void',
+          'x-component': 'ActionBar',
+          'x-component-props': {
+            layout: 'one-column',
+          },
+          properties: {
+            cancel: {
+              title: 'Cancel',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ useCloseAction }}',
+              },
+            },
+            submit: {
+              title: 'Submit',
+              'x-component': 'Action',
+              'x-component-props': {
+                type: 'primary',
+                htmlType: 'submit',
+                useAction: '{{ useSaveSystemSettingsValues }}',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const SystemSettingsPane = () => {
+  return (
+    <Card bordered={false}>
+      <SchemaComponent
+        scope={{ useSaveSystemSettingsValues, useSystemSettingsValues, useCloseAction }}
+        schema={schema2}
+      />
+    </Card>
+  );
 };
 
 export const SystemSettingsShortcut = () => {

@@ -12,6 +12,7 @@ import { RemoteDocumentTitleProvider } from '../document-title';
 import { FileStorageShortcut } from '../file-manager';
 import { i18n } from '../i18n';
 import { PluginManagerProvider } from '../plugin-manager';
+import PMProvider, { PluginManagerLink } from '../pm';
 import {
   AdminLayout,
   AuthLayout,
@@ -101,6 +102,7 @@ export class Application {
         SystemSettingsShortcut,
         SchemaTemplateShortcut,
         FileStorageShortcut,
+        PluginManagerLink,
       },
     });
     this.use(SchemaComponentProvider, { components: { Link, NavLink } });
@@ -113,6 +115,7 @@ export class Application {
     this.use(AntdSchemaComponentProvider);
     this.use(ACLProvider);
     this.use(RemoteDocumentTitleProvider);
+    this.use(PMProvider);
   }
 
   use(component, props?: any) {

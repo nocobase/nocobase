@@ -37,22 +37,57 @@ export class PluginManager {
         { type: 'string', name: 'name', unique: true },
         { type: 'string', name: 'version' },
         { type: 'boolean', name: 'enabled' },
+        { type: 'boolean', name: 'builtIn' },
         { type: 'json', name: 'options' },
       ],
     });
+    const pm = this;
     this.repository = this.collection.repository as PluginManagerRepository;
     this.app.resourcer.define({
       name: 'pm',
       actions: {
         async add(ctx, next) {
-          ctx.body = 'ok';
+          const { filterByTk } = ctx.action.params;
+          if (!filterByTk) {
+            ctx.throw(400, 'null');
+          }
+          await pm.add(filterByTk);
+          ctx.body = filterByTk;
           await next();
         },
         async enable(ctx, next) {
+          const { filterByTk } = ctx.action.params;
+          if (!filterByTk) {
+            ctx.throw(400, 'filterByTk invalid');
+          }
+          const name = pm.getPackageName(filterByTk);
+          const plugin = pm.get(name);
+          if (plugin.model) {
+            plugin.model.set('enabled', true);
+            await plugin.model.save();
+          }
+          if (!plugin) {
+            ctx.throw(400, 'plugin invalid');
+          }
+          await plugin.load();
           ctx.body = 'ok';
           await next();
         },
         async disable(ctx, next) {
+          const { filterByTk } = ctx.action.params;
+          if (!filterByTk) {
+            ctx.throw(400, 'filterByTk invalid');
+          }
+          const name = pm.getPackageName(filterByTk);
+          const plugin = pm.get(name);
+          if (plugin.model) {
+            plugin.model.set('enabled', false);
+            await plugin.model.save();
+          }
+          if (!plugin) {
+            ctx.throw(400, 'plugin invalid');
+          }
+          await plugin.disable();
           ctx.body = 'ok';
           await next();
         },
@@ -65,6 +100,14 @@ export class PluginManager {
           await next();
         },
       },
+    });
+    this.app.acl.use(async (ctx, next) => {
+      if (ctx.action.resourceName === 'pm') {
+        ctx.permission = {
+          skip: true,
+        };
+      }
+      await next();
     });
     this.app.on('beforeInstall', async () => {
       await this.collection.sync();
@@ -102,6 +145,7 @@ export class PluginManager {
         version: model.get('version'),
         enabled: model.get('enabled'),
       });
+      instance.setModel(model);
       this.plugins.set(packageName, instance);
       return instance;
     } catch (error) {}
@@ -124,7 +168,7 @@ export class PluginManager {
           values: {
             name: pluginClass,
             version: packageJson.version,
-            enabled: true,
+            enabled: false,
             options: {},
           },
         });
@@ -154,10 +198,16 @@ export class PluginManager {
     await this.app.emitAsync('beforeLoadAll');
 
     for (const [name, plugin] of this.plugins) {
+      if (!plugin.enabled) {
+        continue;
+      }
       await plugin.beforeLoad();
     }
 
     for (const [name, plugin] of this.plugins) {
+      if (!plugin.enabled) {
+        continue;
+      }
       await this.app.emitAsync('beforeLoadPlugin', plugin);
       await plugin.load();
       await this.app.emitAsync('afterLoadPlugin', plugin);

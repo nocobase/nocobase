@@ -1,10 +1,11 @@
-import { AppstoreOutlined, EllipsisOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ConfigProvider, Menu, MenuItemProps, Spin, Tooltip } from 'antd';
 import cls from 'classnames';
 import { get } from 'lodash';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useHistory } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { PluginManagerContext } from './context';
 
@@ -20,7 +21,7 @@ export const usePrefixCls = (
 
 type PluginManagerType = {
   Toolbar?: React.FC<ToolbarProps> & {
-    Item?: React.FC<MenuItemProps & { selected?: boolean, subtitle?: string }>;
+    Item?: React.FC<MenuItemProps & { selected?: boolean; subtitle?: string }>;
   };
 };
 
@@ -55,6 +56,7 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
   const { items = [] } = props;
   const [pinned, unpinned] = splitItems(items);
   const { t } = useTranslation();
+  const history = useHistory();
   return (
     <div style={{ display: 'inline-block' }}>
       <Menu style={{ width: '100%' }} selectable={false} mode={'horizontal'} theme={'dark'}>
@@ -69,7 +71,7 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
           );
         })}
         {unpinned.length > 0 && (
-          <Menu.SubMenu popupClassName={'pm-sub-menu'} key={'more'} title={<EllipsisOutlined />}>
+          <Menu.SubMenu popupClassName={'pm-sub-menu'} key={'more'} title={<SettingOutlined />}>
             {unpinned.map((item, index) => {
               const Action = get(components, item.component);
               return (
@@ -81,8 +83,14 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
               );
             })}
             {unpinned.length > 0 && <Menu.Divider key={'divider'}></Menu.Divider>}
-            <Menu.Item key={'plugins'} disabled icon={<AppstoreOutlined />}>
-              {t('View all plugins')}
+            <Menu.Item
+              key={'plugins'}
+              onClick={() => {
+                history.push('/admin/settings');
+              }}
+              icon={<SettingOutlined />}
+            >
+              {t('View more')}
             </Menu.Item>
           </Menu.SubMenu>
         )}
@@ -97,22 +105,23 @@ PluginManager.Toolbar.Item = (props) => {
   const prefix = usePrefixCls();
   const className = cls({ [`${prefix}-menu-item-selected`]: selected });
   if (item.pin) {
-
     const subtitleComponent = subtitle && (
       <div
         className={css`
           font-size: 12px;
           color: #999;
         `}
-      >{subtitle}</div>
-    )
+      >
+        {subtitle}
+      </div>
+    );
 
     const titleComponent = (
       <div>
         <div>{title}</div>
         {subtitleComponent}
       </div>
-    )
+    );
 
     return (
       <Tooltip title={titleComponent}>

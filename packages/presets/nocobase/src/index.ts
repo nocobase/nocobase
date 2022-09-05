@@ -24,7 +24,12 @@ export class PresetNocoBase<O = any> extends Plugin {
         'audit-logs',
       ];
       for (const plugin of plugins) {
-        await this.app.pm.add(plugin);
+        const instance = await this.app.pm.add(plugin);
+        if (instance.model) {
+          instance.model.enabled = true;
+          instance.model.builtIn = true;
+          await instance.model.save();
+        }
       }
     });
   }

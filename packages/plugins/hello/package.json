@@ -1,0 +1,10 @@
+{
+  "name": "@nocobase/plugin-hello",
+  "version": "0.7.4-alpha.7",
+  "main": "lib/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/server": "*",
+    "@nocobase/test": "*"
+  }
+}

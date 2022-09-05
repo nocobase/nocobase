@@ -207,6 +207,10 @@ export class Resourcer {
     return this.resources.has(name);
   }
 
+  removeResource(name) {
+    return this.resources.delete(name);
+  }
+
   registerAction(name: ActionName, handler: HandlerType) {
     this.registerActionHandler(name, handler);
   }

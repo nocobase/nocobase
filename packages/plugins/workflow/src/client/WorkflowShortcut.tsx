@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
 import { PartitionOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { ActionContext, PluginManager, SchemaComponent } from '@nocobase/client';
+import { Card } from 'antd';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { PluginManager, ActionContext, SchemaComponent } from '@nocobase/client';
-
+import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { workflowSchema } from './schemas/workflows';
 import { WorkflowLink } from './WorkflowLink';
-import { ExecutionResourceProvider } from './ExecutionResourceProvider';
-
-
 
 const schema: ISchema = {
   type: 'object',
@@ -24,6 +22,29 @@ const schema: ISchema = {
       },
     },
   },
+};
+
+const schema2: ISchema = {
+  type: 'object',
+  properties: {
+    [uid()]: workflowSchema,
+  },
+};
+
+export const WorkflowPane = () => {
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(false);
+  return (
+    <Card bordered={false}>
+      <SchemaComponent
+        schema={schema2}
+        components={{
+          WorkflowLink,
+          ExecutionResourceProvider,
+        }}
+      />
+    </Card>
+  );
 };
 
 export const WorkflowShortcut = () => {
@@ -42,7 +63,7 @@ export const WorkflowShortcut = () => {
         schema={schema}
         components={{
           WorkflowLink,
-          ExecutionResourceProvider
+          ExecutionResourceProvider,
         }}
       />
     </ActionContext.Provider>

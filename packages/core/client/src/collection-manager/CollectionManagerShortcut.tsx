@@ -1,6 +1,7 @@
 import { DatabaseOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { Card } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PluginManager } from '../plugin-manager';
@@ -21,6 +22,23 @@ const schema: ISchema = {
       },
     },
   },
+};
+
+const schema2: ISchema = {
+  type: 'object',
+  properties: {
+    [uid()]: {
+      'x-component': 'ConfigurationTable',
+    },
+  },
+};
+
+export const CollectionManagerPane = () => {
+  return (
+    <Card bordered={false}>
+      <SchemaComponent schema={schema2} components={{ ConfigurationTable, AddFieldAction, EditFieldAction }} />
+    </Card>
+  );
 };
 
 export const CollectionManagerShortcut = () => {
