@@ -11,7 +11,7 @@ import { UserRepository } from '../repository/userRepository';
 
 import supertest from 'supertest';
 
-describe('test the users actions.', () => {
+describe('test the users repository.', () => {
 
     let app: MockServer;
     let db: Database;
@@ -178,7 +178,7 @@ describe('test the users actions.', () => {
     // /userGroups:getParentGroup
     it('send fake id,should get nothing!', async () => {
 
-        const userid = user1.id + 'abc';
+        const userid = user1.id + 10;
         const treeRoles = await userRepository.getTreeRoles(userid);
 
         expect(treeRoles).toBeNull();

@@ -178,7 +178,7 @@ describe('test the users repository.', () => {
     // /userGroups:getParentGroup
     it('send fake id,should get nothing!', async () => {
 
-        const userid = user1.id + 'abc';
+        const userid = user1.id + 10;
         const treeRoles = await userRepository.getParentGroupTree(userid);
         expect(treeRoles).toBeNull();
 
