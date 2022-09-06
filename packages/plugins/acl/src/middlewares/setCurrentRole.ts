@@ -17,13 +17,16 @@ export async function setCurrentRole(ctx, next) {
     return next();
   }
 
-  // const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id);
-  // const roles = await repository.find();
-
-  //get the user's self roles and user's parents groups roles.(inherated roles)
+  //judge the plugins for get treeroles.
+  let roles;
   const userRepository = ctx.db.getCollection('users').repository as UserRepository;
-  const roles = await userRepository.getTreeRoles(ctx.state.currentUser.id);
-  
+  if (userRepository['getTreeRoles']) {
+    roles = await userRepository.getTreeRoles(ctx.state.currentUser.id);
+  } else {
+    const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id);
+    roles = await repository.find();
+  }
+
   ctx.state.currentUser.setDataValue('roles', roles);
 
   if (roles.length == 1) {
