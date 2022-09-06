@@ -16,6 +16,7 @@ export const type: ISchema = {
     { label: 'Text', value: 'text' },
     { label: 'Integer', value: 'integer' },
     { label: 'Float', value: 'float' },
+    { label: 'Double', value: 'double' },
     { label: 'Decimal', value: 'decimal' },
     { label: 'Date', value: 'date' },
     { label: 'DateOnly', value: 'dateonly' },
