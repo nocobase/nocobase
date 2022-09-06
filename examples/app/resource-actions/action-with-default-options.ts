@@ -7,7 +7,7 @@ Step 1:
 yarn run:example app/resource-actions/action-with-default-options start
 
 Step 2:
-curl http://localhost:13000/api/test:list
+curl http://localhost:13000/api/test:find
 */
 import { Application } from '@nocobase/server';
 
