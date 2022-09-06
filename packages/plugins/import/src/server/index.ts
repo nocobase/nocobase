@@ -21,12 +21,19 @@ export class ImportPlugin extends Plugin {
     //     importXlsx,
     //   },
     // });
-    this.app.acl.setAvailableAction('import', {
+    this.app.acl.setAvailableAction('importXlsx', {
       displayName: '{{t("Import")}}',
       allowConfigureFields: true,
     });
-    this.app.acl.allow('*', 'downloadXlsxTemplate');
-    this.app.acl.allow('*', 'importXlsx');
+    this.app.acl.use(async (ctx, next) => {
+      const { actionName } = ctx.action;
+      if (['downloadXlsxTemplate', 'importXlsx'].includes(actionName)) {
+        ctx.permission = {
+          skip: true,
+        };
+      }
+      await next();
+    });
   }
 
   async install(options: InstallOptions) {
