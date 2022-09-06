@@ -6,6 +6,7 @@ export default {
     sortable: 'sort',
     autoGenId: false,
     model: 'UserGroupModel',
+    repository: 'UserGroupsRepository',
     filterTargetKey: 'gid',
     createdBy: true,
     updatedBy: true,
@@ -46,6 +47,8 @@ export default {
             name: 'parent',
             target: 'userGroups',
             foreignKey: 'pid',
+            targetKey: 'gid',
+            sourceKey: 'gid',
             uiSchema: {
                 title: '{{t("Parent group")}}',
                 'x-component': 'RecordPicker',
@@ -64,6 +67,8 @@ export default {
             name: 'children',
             target: 'userGroups',
             foreignKey: 'pid',
+            targetKey: 'gid',
+            sourceKey: 'gid',
             uiSchema: {
                 title: '{{t("Sub-groups")}}',
                 'x-component': 'RecordPicker',
@@ -111,6 +116,18 @@ export default {
             sourceKey: 'gid',
             targetKey: 'name',
             through: 'userGroupsRoles',
+            uiSchema: {
+                type: 'array',
+                title: '{{t("Roles")}}',
+                'x-component': 'RecordPicker',
+                'x-component-props': {
+                    multiple: true,
+                    fieldNames: {
+                        label: 'title',
+                        value: 'name',
+                    },
+                },
+            },
         }
     ],
 } as CollectionOptions;

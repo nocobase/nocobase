@@ -28,57 +28,8 @@ import { Context, Next } from '@nocobase/actions';
 import { Op } from 'sequelize';
 import _ from 'lodash';
 
-import { listParentPgroupTree, crtErrorBody } from './util';
+import { UserGroupsRepository } from '../repository/userGroupRepository';
 
-/**
- * find the parent obj and return
- * @param ctx {parpams:{}}
- * @param next 
- */
-export async function getParentGroup(ctx: Context, next: Next) {
-  const { filter: { gid } } = ctx.action.params;
-  const repostory = ctx.db.getRepository('userGroups');
-
-  if (!gid) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `not a ligel groupid gid:${gid}`);
-    return next();
-  };
-
-  //find the object.and get out the parent.
-  const groupObj = await repostory.findOne({
-    where: { gid },
-    include: 'parent',
-  });
-
-  //if not find the obj return 
-  if (!groupObj || !groupObj['name']) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `found nothing from the gid:${gid}`);
-    return next();
-  };
-
-  //get associated parent.
-  const userGroup = await groupObj['getParent']();
-
-  ctx.response.status = 201;
-  if (!userGroup) {//the group has no parent.
-    ctx.response.body = {
-      userGroup: groupObj,
-      parentGroup: null,
-      msg: 'no parent.',
-      code: 2,
-    };
-  } else {//nomal parent.
-    ctx.response.body = {
-      userGroup: groupObj,
-      parentGroup: userGroup,
-      msg: 'ok.',
-      code: 1,
-    };
-  }
-  await next();
-}
 
 /**
  * find the tree of the group.
@@ -88,103 +39,30 @@ export async function getParentGroup(ctx: Context, next: Next) {
 export async function getParentGroupTree(ctx: Context, next: Next) {
 
   const { filter: { gid } } = ctx.action.params;
-  const repostory = ctx.db.getRepository('userGroups');
-  const sequelizeModel = ctx.db.getCollection('userGroups').model;
+  const userGroupRepository = ctx.db.getCollection('userGroups').repository as UserGroupsRepository;
 
   if (!gid) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `not a ligel groupid gid:${gid}`);
-    return next();
+    ctx.throw(400, `not a ligel groupid gid:${gid}`);
   };
 
-  //find the object.
-  const groupObj = await repostory.findOne({
-    where: { gid },
-  });
+  const parents = await userGroupRepository.getParentGroupTree(gid);
 
-  //if not find the obj return 
-  if (!groupObj || !groupObj['name']) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `found nothing from the gid:${gid}`);
-    return next();
+  if (parents == null) {
+    ctx.throw(400, `found nothing from the gid:${gid}`);
   };
-
-  //get associated parent.
-  let parentUids = <string>groupObj['ptree'];
-  //if ptree error,return error.
-  if (!parentUids || parentUids.indexOf(',') == -1) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `the gid:${gid} group's ptree:${parentUids} error.`);
-    return next();
-  };
-
-  //get the parent group tree list.
-  const parents = await listParentPgroupTree(ctx, parentUids);
 
   ctx.response.status = 201;
-  if (!parents || parents.length == 0) {//the group has no parent.
+  if (parents.length == 0) {//the group has no parent.
     ctx.response.body = {
-      userGroup: groupObj,
+      gid: gid,
       parentGroupTree: null,
       msg: 'no parent tree.',
       code: 2,
     };
   } else {//nomal parent.
     ctx.response.body = {
-      userGroup: groupObj,
+      gid: gid,
       parentGroupTree: parents,
-      msg: 'ok.',
-      code: 1,
-    };
-  }
-  await next();
-}
-
-/**
- * find the direct sub groups
- * without the all the subs.
- * @param ctx 
- * @param next 
- * @returns 
- */
-export async function getSubGroups(ctx: Context, next: Next) {
-  const { filter: { gid } } = ctx.action.params;
-  const repostory = ctx.db.getRepository('userGroups');
-
-  if (!gid) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `not a ligel groupid gid:${gid}`);
-    return next();
-  };
-
-  //find the object.
-  const groupObj = await repostory.findOne({
-    where: { gid },
-    include: 'children',
-  });
-
-  //if not find the obj return 
-  if (!groupObj || !groupObj['name']) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `found nothing from the gid:${gid}`);
-    return next();
-  };
-
-  //get associated childrens.
-  const subGroups = await groupObj['getChildren']();
-
-  ctx.response.status = 201;
-  if (!subGroups || subGroups.length == 0) {//the group has no parent.
-    ctx.response.body = {
-      userGroup: groupObj,
-      subGroups: null,
-      msg: 'no sub groups.',
-      code: 2,
-    };
-  } else {//nomal parent.
-    ctx.response.body = {
-      userGroup: groupObj,
-      subGroups: subGroups,
       msg: 'ok.',
       code: 1,
     };
@@ -201,104 +79,26 @@ export async function getSubGroups(ctx: Context, next: Next) {
  */
 export async function getSubGroupTree(ctx: Context, next: Next) {
   const { filter: { gid }, noTree = false } = ctx.action.params;
-  const repostory = ctx.db.getRepository('userGroups');
+  const userGroupRepository = ctx.db.getCollection('userGroups').repository as UserGroupsRepository;
 
-  //no groupid return 400.
   if (!gid) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `not a ligel groupid gid:${gid}`);
-    return next();
+    ctx.throw(400, `not a ligel groupid gid:${gid}`);
   };
 
-  //find the object.
-  //!!!---dababase query---!!!
-  const groupObj = await repostory.findOne({
-    where: { gid },
-  });
+  const treeData = await userGroupRepository.getSubGroupTree(gid, noTree);
 
-  //if not find the obj return 
-  if (!groupObj || !groupObj['name']) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `found nothing from the gid:${gid}`);
-    return next();
+  if (treeData == null) {
+    ctx.throw(400, `found nothing from the gid:${gid}`);
   };
-
-  //get ptree data.
-  let parentUids = <string>groupObj['ptree'];
-  //if ptree error,return error.
-  if (!parentUids || parentUids.indexOf(',') == -1) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `the gid:${gid} group's ptree:${parentUids} error.`);
-    return next();
-  };
-
-  /**
-   * using the like operator to find all the sub groups in array.
-   * all the group has the ptree data ,the tree is deep the ptree is long.
-   * the ptree looks like : g_b0jm3isjuaj,g_p572hy1haci,g_w1ikc73pa3f,g_nv22di17e0q,
-   * which is a root to self ids list.
-   * [Op.like]: 'g_b0jm3isjuaj,g_p572hy1haci,g_w1ikc73pa3f,g_nv22di17e0q,%',
-   * which will query out all the sub groups.
-   */
-  const childrens = await repostory.find({
-    where: {
-      ptree: {
-        [Op.like]: `${parentUids}%`,
-      }
-    },
-    order: ['ptree'],
-  });
-
-  let treedata = {};
-  if (noTree) {//return a plan node.
-    treedata = childrens;
-  } else {//create the tree.
-
-    //pick the data attr from the model data.
-    const dataAttr = ['name', 'gid', 'pid', 'ptree', 'sort', 'status', 'createdAt', 'updatedAt'];
-    let root = _.pick(childrens[0], dataAttr);
-    let datanodes = _.cloneDeep(childrens);
-
-    //the tree recursion invokes.
-    const crtTree: any = (datanode) => {
-      //remove self node for a better performance.
-      _.remove(datanodes, td => td['gid'] == datanode.gid);
-      datanode.subGroups = [];
-      //find all subs from the array.
-      for (let ad of datanodes) {
-        if (ad['pid'] == datanode.gid) {
-          //pick the data attr from the model data.
-          const td = _.pick(ad, dataAttr);
-          datanode.subGroups.push(td);
-        }
-      }
-      for (let cd of datanode.subGroups) {
-        crtTree(cd);
-      }
-    };
-
-    //create the trees.
-    crtTree(root);
-    //set the treedata.
-    treedata = root;
-  }
 
   ctx.response.status = 201;
-  if (!childrens) {//the group has no parent.
-    ctx.response.body = {
-      userGroup: groupObj,
-      subGroupTree: null,
-      msg: 'no sub groups tree.',
-      code: 2,
-    };
-  } else {//nomal parent.
-    ctx.response.body = {
-      userGroup: groupObj,
-      subGroupTree: treedata,
-      msg: 'ok.',
-      code: 1,
-    };
-  }
+  ctx.response.body = {
+    gid,
+    subGroupTree: treeData,
+    msg: 'ok.',
+    code: 1,
+  };
+
   await next();
 }
 
@@ -309,64 +109,29 @@ export async function getSubGroupTree(ctx: Context, next: Next) {
  */
 export async function getTreeRoles(ctx: Context, next: Next) {
   const { filter: { gid } } = ctx.action.params;
-  const repostory = ctx.db.getRepository('userGroups');
+  const userGroupRepository = ctx.db.getCollection('userGroups').repository as UserGroupsRepository;
 
   if (!gid) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `not a ligel groupid gid:${gid}`);
-    return next();
+    ctx.throw(400, `not a ligel groupid gid:${gid}`);
   };
 
-  //find the object.
-  const groupObj = await repostory.findOne({
-    where: { gid },
-  });
+  const troles = await userGroupRepository.getTreeRoles(gid);
 
-  //if not find the obj return 
-  if (!groupObj || !groupObj['name']) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `found nothing from the gid:${gid}`);
-    return next();
+  if (troles == null) {
+    ctx.throw(400, `found nothing from the gid:${gid}`);
   };
-
-  //get associated parent.
-  let parentUids = <string>groupObj['ptree'];
-
-  //if ptree error,return error.
-  if (!parentUids || parentUids.indexOf(',') == -1) {
-    ctx.response.status = 400;
-    ctx.response.body = crtErrorBody(gid, `the gid:${gid} group's ptree:${parentUids} error.`);
-    return next();
-  };
-
-  //get groups in desc with roles.
-  const parents = await listParentPgroupTree(ctx, parentUids, true, ['roles']);
-
-  //get the tree roles
-  //iterate through the trees and get all the roles.
-  const troles = [];
-  for (let tp of parents) {
-    if (!tp['roles']) {
-      tp['getRoles']();
-    }
-    const ttr = tp['roles'];
-    for (let tr of ttr) {
-      troles.push(tr);
-    }
-
-  }
 
   ctx.response.status = 201;
-  if (!parents || parents.length == 0) {//the group has no parent.
+  if (troles.length == 0) {//the group has no parent.
     ctx.response.body = {
-      userGroup: groupObj,
+      gid,
       treeRoles: null,
       msg: 'no parent tree.',
       code: 2,
     };
   } else {//nomal parent.
     ctx.response.body = {
-      userGroup: groupObj,
+      gid,
       treeRoles: troles,
       msg: 'ok.',
       code: 1,

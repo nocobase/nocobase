@@ -2,6 +2,7 @@ import { extend } from '@nocobase/database';
 
 export default extend({
   name: 'users',
+  repository: 'UserRepository',
   fields: [
     {
       interface: 'm2m',

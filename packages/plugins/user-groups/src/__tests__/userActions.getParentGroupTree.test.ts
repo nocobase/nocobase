@@ -167,9 +167,9 @@ describe('test the users actions.', () => {
         let response = await adminAgent.resource('users').getParentGroupTree(requestdata);
 
         expect(response.statusCode).toEqual(400);
-        expect(response.body.data.error).toBeDefined();
+        expect(response.error.text).toBeDefined();
 
-        console.log(response.body.data.msg);
+        console.log(response.error.text);
 
     });
 
@@ -181,9 +181,9 @@ describe('test the users actions.', () => {
         let response = await adminAgent.resource('users').getParentGroupTree(requestdata);
 
         expect(response.statusCode).toEqual(400);
-        expect(response.body.data.error).toBeDefined();
+        expect(response.error.text).toBeDefined();
 
-        console.log(response.body.data.msg);
+        console.log(response.error.text);
 
     });
 

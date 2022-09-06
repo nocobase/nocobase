@@ -3,14 +3,15 @@ import Database, { BelongsToManyRepository } from '@nocobase/database';
 
 import { mockServer, MockServer } from '@nocobase/test';
 
-import { Plugin } from '@nocobase/server';
 import PluginUsers from '@nocobase/plugin-users';
 import PluginAcl from '@nocobase/plugin-acl';
 import { default as UserGroupsPlugin } from '..';
 
+import { UserGroupsRepository } from '../repository/userGroupRepository';
+
 import supertest from 'supertest';
 
-describe('test the users actions.', () => {
+describe('test the usergroups actions.', () => {
 
     let app: MockServer;
     let db: Database;
@@ -21,7 +22,8 @@ describe('test the users actions.', () => {
 
     let group1, group2, group3, group4;
     let role1, role2, role3, role4, role5, role6;
-    let user1, user2, user3, user4;
+
+    let userGroupRepository;
 
     beforeEach(async () => {
 
@@ -37,6 +39,7 @@ describe('test the users actions.', () => {
 
         await app.loadAndInstall();
         db = app.db;
+        userGroupRepository = db.getCollection('userGroups').repository as UserGroupsRepository;
 
         //登录admin用户
         const userPlugin = app.getPlugin('@nocobase/plugin-users') as PluginUsers;
@@ -83,14 +86,14 @@ describe('test the users actions.', () => {
         });
 
         //产生初始化测用户组试数据
-        group1 = await app.db.getRepository('userGroups').create({
+        group1 = await userGroupRepository.create({
             values: {
                 name: 'group1',
                 status: 1,
                 roles: [role1],
             },
         });
-        group2 = await app.db.getRepository('userGroups').create({
+        group2 = await userGroupRepository.create({
             values: {
                 name: 'group2',
                 parent: group1,
@@ -98,7 +101,7 @@ describe('test the users actions.', () => {
                 roles: [role2],
             },
         });
-        group3 = await app.db.getRepository('userGroups').create({
+        group3 = await userGroupRepository.create({
             values: {
                 name: 'group3',
                 parent: group2,
@@ -107,49 +110,12 @@ describe('test the users actions.', () => {
             },
         });
 
-        group4 = await app.db.getRepository('userGroups').create({
+        group4 = await userGroupRepository.create({
             values: {
                 name: 'group4',
                 parent: group3,
                 status: 1,
                 // roles:[role5,role6],
-            },
-        });
-
-        //产生用户初始化数据
-        user1 = await app.db.getRepository('users').create({
-            values: {
-                nickname: 'user1',
-                email: 'user1@user.com',
-                phone: '12312311231',
-                password: '123123123',
-                roles:[role3,role4],
-                userGroups:[group4],
-            },
-        });
-        user2 = await app.db.getRepository('users').create({
-            values: {
-                nickname: 'user2',
-                email: 'user2@user.com',
-                phone: '12312311232',
-                password: '123123123',
-                userGroups:[group4],
-            },
-        });
-        user3 = await app.db.getRepository('users').create({
-            values: {
-                nickname: 'user3',
-                email: 'user3@user.com',
-                phone: '12312311233',
-                password: '123123123',
-            },
-        });
-        user4 = await app.db.getRepository('users').create({
-            values: {
-                nickname: 'user4',
-                email: 'user4@user.com',
-                phone: '12312311234',
-                password: '123123123',
             },
         });
 
@@ -164,44 +130,32 @@ describe('test the users actions.', () => {
 
     it('send null id,should get nothing!', async () => {
 
-        const requestdata = { filter: { id: '' } };
-        let response = await adminAgent.resource('users').getTreeRoles(requestdata);
+        const gid = '';
+        const subTrees = await userGroupRepository.getSubGroupTree(gid, true);
 
-        expect(response.statusCode).toEqual(400);
-        expect(response.error.text).toBeDefined();
-
-        console.log(response.error.text);
+        expect(subTrees).toBeNull();
 
     });
 
     // /userGroups:getParentGroup
     it('send fake id,should get nothing!', async () => {
 
-        const requestdata = { filter: { id: user1.id + '1' } };//fake gid!
+        const gid = group1.gid + 'abc';
+        const subTrees = await userGroupRepository.getSubGroupTree(gid);
 
-        let response = await adminAgent.resource('users').getTreeRoles(requestdata);
-
-        expect(response.statusCode).toEqual(400);
-        expect(response.error.text).toBeDefined();
-
-        console.log(response.error.text);
+        expect(subTrees).toBeNull();
 
     });
 
     //test the usergroups parent.
-    it('user1 belong to group4 should get parent tree:group1 group2 group3 group4', async () => {
+    it('group4 should get roles in group1,group2 :role1 role2', async () => {
 
-        const requestdata = { filter: { id: user1.id } };
-        let response = await adminAgent.resource('users').getTreeRoles(requestdata);
+        const gid = group4.gid;
+        const treeRoles = await userGroupRepository.getTreeRoles(gid);
 
-        const data = response.body.data;
-        const code = response.body.data.code;
-
-        expect(response.statusCode).toEqual(201);
-        expect(data.treeRoles.length).toBe(4);
-        expect(code).toBe(1);
-
-        console.log(response.body.data.msg);
+        expect(treeRoles.length).toBe(2);
+        expect(treeRoles[0].name).toEqual('role2');
+        expect(treeRoles[1].name).toEqual('role1');
     });
 
 

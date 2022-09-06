@@ -5,6 +5,7 @@ import { mockServer, MockServer } from '@nocobase/test';
 
 import { Plugin } from '@nocobase/server';
 import PluginUsers from '@nocobase/plugin-users';
+import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
 
 let app: MockServer;
 let db: Database;
@@ -15,6 +16,7 @@ describe('plugin', () => {
         // app = await prepareApp();
         // db = app.db;
         app = mockServer();
+
     });
 
     afterEach(async () => {
@@ -25,7 +27,14 @@ describe('plugin', () => {
     describe('define plugin', () => {
 
         it('plugin name', async () => {
+
+            await app.cleanDb();
+
+            app.plugin(PluginUiSchema);
             const plugin = app.plugin(UserGroupsPlugin);
+            
+            await app.loadAndInstall();
+
             expect(plugin).toBeInstanceOf(Plugin);
             expect(plugin.getName()).toBe('@nocobase/plugin-user-groups');
         });

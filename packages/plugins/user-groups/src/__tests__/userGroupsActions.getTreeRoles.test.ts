@@ -19,8 +19,8 @@ describe('test the usergroups actions.', () => {
 
     let adminAgent;
 
-    let group1,group2,group3,group4;
-    let role1,role2,role3,role4,role5,role6;
+    let group1, group2, group3, group4;
+    let role1, role2, role3, role4, role5, role6;
 
     beforeEach(async () => {
 
@@ -86,21 +86,21 @@ describe('test the usergroups actions.', () => {
             values: {
                 name: 'group1',
                 status: 1,
-                roles:[role1],
+                roles: [role1],
             },
         });
         group2 = await app.db.getRepository('userGroups').create({
             values: {
                 name: 'group2',
-                parent:group1,
+                parent: group1,
                 status: 1,
-                roles:[role2],
+                roles: [role2],
             },
         });
         group3 = await app.db.getRepository('userGroups').create({
             values: {
                 name: 'group3',
-                parent:group2,
+                parent: group2,
                 status: 1,
                 // roles:[role3,role4],
             },
@@ -109,7 +109,7 @@ describe('test the usergroups actions.', () => {
         group4 = await app.db.getRepository('userGroups').create({
             values: {
                 name: 'group4',
-                parent:group3,
+                parent: group3,
                 status: 1,
                 // roles:[role5,role6],
             },
@@ -130,9 +130,9 @@ describe('test the usergroups actions.', () => {
         let response = await adminAgent.resource('userGroups').getTreeRoles(requestdata);
 
         expect(response.statusCode).toEqual(400);
-        expect(response.body.data.error).toBeDefined();
+        expect(response.error.text).toBeDefined();
 
-        console.log(response.body.data.msg);
+        console.log(response.error.text);
 
     });
 
@@ -144,9 +144,9 @@ describe('test the usergroups actions.', () => {
         let response = await adminAgent.resource('userGroups').getTreeRoles(requestdata);
 
         expect(response.statusCode).toEqual(400);
-        expect(response.body.data.error).toBeDefined();
+        expect(response.error.text).toBeDefined();
 
-        console.log(response.body.data.msg);
+        console.log(response.error.text);
 
     });
 

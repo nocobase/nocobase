@@ -1,4 +1,6 @@
 import Application from '@nocobase/server';
+import _ from 'lodash';
+
 
 /**
  * a hook that will add ptree after usergroups added.
@@ -20,11 +22,19 @@ export function afterUserGroupsCreateWithAssociation(app: Application) {
 
         //if not the user do not set the usergroups.
         //add transaction deelling.
-        let ptree = model.gid+',';
+        let ptree = model.gid + ',';
         //load Parent if not.
-        if(options.values.parent){//get parent ptree and add self .
-            await options.values.parent.reload();
-            ptree=options.values.parent.ptree+ptree;
+        if (options.values.parent) {//get parent ptree and add self .
+            if (_.isString(options.values.parent)) {
+                // model.findOne
+                const rep = app.db.getCollection('userGroups').repository;
+                const parent = await rep.findById(options.values.parent);
+                ptree = parent['ptree'] + ptree;
+            } else {
+                await options.values.parent.reload();
+                ptree = options.values.parent.ptree + ptree;
+            }
+
         }
         model.ptree = ptree;
 
@@ -40,7 +50,7 @@ export function afterUserGroupsCreateWithAssociation(app: Application) {
 
 export function afterUserGroupsSaveWithAssociation(app: Application) {
     return async (model, options) => {
-        if (model.constructor.name != 'userGroups'||!options?.association) {
+        if (model.constructor.name != 'userGroups' || !options?.association) {
             return;
         }
         /**
@@ -53,7 +63,7 @@ export function afterUserGroupsSaveWithAssociation(app: Application) {
 
         //if not the user do not set the usergroups.
         //add transaction deelling.
-        let ptree = model.gid+',';
+        let ptree = model.gid + ',';
         //load Parent if not.
         // model.ptree = ptree;
 

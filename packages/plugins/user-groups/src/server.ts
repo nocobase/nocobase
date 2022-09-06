@@ -8,7 +8,10 @@ import { enUS, zhCN } from './locale';
 import * as userGroupsActions from './actions/usergroups';
 import * as usersActions from './actions/users';
 
-import { afterUsersCreateOrUpdate,afterUserGroupsCreateWithAssociation ,afterUserGroupsSaveWithAssociation} from './hooks';
+import { UserGroupsRepository } from './repository/userGroupRepository';
+import { UserRepository } from './repository/userRepository';
+
+import { afterUsersCreateOrUpdate, afterUserGroupsCreateWithAssociation, afterUserGroupsSaveWithAssociation } from './hooks';
 
 export interface UserGroupPluginConfig {
 }
@@ -21,13 +24,24 @@ export default class UserGroupsPlugin extends Plugin<UserGroupPluginConfig> {
     super(app, options);
   }
 
+  /**
+   *regist repository.
+   */
+  registerRepository() {
+    this.app.db.registerRepositories({
+      UserGroupsRepository,
+    });
+    this.app.db.registerRepositories({
+      UserRepository,
+    });
+  }
+
   async beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);
     const cmd = this.app.findCommand('install');
 
-    this.db.registerOperators({
-    });
+    this.registerRepository();
 
     //regist usergroup's actions.
     for (const [key, action] of Object.entries(userGroupsActions)) {
@@ -61,7 +75,7 @@ export default class UserGroupsPlugin extends Plugin<UserGroupPluginConfig> {
   }
 
   getInstallingData(options: any = {}) {
-    const { INIT_USERGROUP_NAME} = process.env;
+    const { INIT_USERGROUP_NAME } = process.env;
     const {
       defaultname = INIT_USERGROUP_NAME || 'default',
     } = options.users || options?.cliArgs?.[0] || {};

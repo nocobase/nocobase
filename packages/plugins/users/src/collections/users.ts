@@ -5,6 +5,7 @@ export default {
   title: '{{t("Users")}}',
   sortable: 'sort',
   model: 'UserModel',
+  repository: 'UserRepository',
   createdBy: true,
   updatedBy: true,
   logging: true,

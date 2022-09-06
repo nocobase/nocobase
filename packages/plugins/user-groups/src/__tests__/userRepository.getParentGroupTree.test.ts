@@ -8,9 +8,11 @@ import PluginUsers from '@nocobase/plugin-users';
 import PluginAcl from '@nocobase/plugin-acl';
 import { default as UserGroupsPlugin } from '..';
 
+import { UserRepository } from '../repository/userRepository';
+
 import supertest from 'supertest';
 
-describe('test the users actions.', () => {
+describe('test the users repository.', () => {
 
     let app: MockServer;
     let db: Database;
@@ -22,6 +24,8 @@ describe('test the users actions.', () => {
     let group1, group2, group3, group4;
     let role1, role2, role3, role4, role5, role6;
     let user1, user2, user3, user4;
+
+    let userRepository;
 
     beforeEach(async () => {
 
@@ -37,6 +41,7 @@ describe('test the users actions.', () => {
 
         await app.loadAndInstall();
         db = app.db;
+        userRepository = db.getCollection('users').repository as UserRepository;
 
         //登录admin用户
         const userPlugin = app.getPlugin('@nocobase/plugin-users') as PluginUsers;
@@ -123,7 +128,6 @@ describe('test the users actions.', () => {
                 email: 'user1@user.com',
                 phone: '12312311231',
                 password: '123123123',
-                roles:[role3,role4],
                 userGroups:[group4],
             },
         });
@@ -164,44 +168,28 @@ describe('test the users actions.', () => {
 
     it('send null id,should get nothing!', async () => {
 
-        const requestdata = { filter: { id: '' } };
-        let response = await adminAgent.resource('users').getTreeRoles(requestdata);
+        const userid = '';
+        const treeRoles = await userRepository.getParentGroupTree(userid);
 
-        expect(response.statusCode).toEqual(400);
-        expect(response.error.text).toBeDefined();
-
-        console.log(response.error.text);
+        expect(treeRoles).toBeNull();
 
     });
 
     // /userGroups:getParentGroup
     it('send fake id,should get nothing!', async () => {
 
-        const requestdata = { filter: { id: user1.id + '1' } };//fake gid!
-
-        let response = await adminAgent.resource('users').getTreeRoles(requestdata);
-
-        expect(response.statusCode).toEqual(400);
-        expect(response.error.text).toBeDefined();
-
-        console.log(response.error.text);
+        const userid = user1.id + 'abc';
+        const treeRoles = await userRepository.getParentGroupTree(userid);
+        expect(treeRoles).toBeNull();
 
     });
 
     //test the usergroups parent.
     it('user1 belong to group4 should get parent tree:group1 group2 group3 group4', async () => {
 
-        const requestdata = { filter: { id: user1.id } };
-        let response = await adminAgent.resource('users').getTreeRoles(requestdata);
-
-        const data = response.body.data;
-        const code = response.body.data.code;
-
-        expect(response.statusCode).toEqual(201);
-        expect(data.treeRoles.length).toBe(4);
-        expect(code).toBe(1);
-
-        console.log(response.body.data.msg);
+        const userid = user1.id;
+        const parents = await userRepository.getParentGroupTree(userid);
+        expect(parents.length).toBe(4);
     });
 
 

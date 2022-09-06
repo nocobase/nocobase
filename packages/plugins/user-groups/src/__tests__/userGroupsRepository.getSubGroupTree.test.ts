@@ -8,6 +8,8 @@ import PluginUsers from '@nocobase/plugin-users';
 import PluginAcl from '@nocobase/plugin-acl';
 import { default as UserGroupsPlugin } from '..';
 
+import { UserGroupsRepository } from '../repository/userGroupRepository';
+
 import supertest from 'supertest';
 
 describe('test the usergroups actions.', () => {
@@ -20,6 +22,7 @@ describe('test the usergroups actions.', () => {
     let adminAgent;
 
     let group1, group2, group3, group4, group5, group6, group7, group8, group9, group10;
+    let userGroupRepository;
 
     beforeEach(async () => {
 
@@ -35,6 +38,7 @@ describe('test the usergroups actions.', () => {
 
         await app.loadAndInstall();
         db = app.db;
+        userGroupRepository = db.getCollection('userGroups').repository as UserGroupsRepository;
 
         //登录admin用户
         const userPlugin = app.getPlugin('@nocobase/plugin-users') as PluginUsers;
@@ -43,69 +47,69 @@ describe('test the usergroups actions.', () => {
         }), { type: 'bearer' });
 
         //产生初始化测试数据
-        group1 = await app.db.getRepository('userGroups').create({
+        group1 = await userGroupRepository.create({
             values: {
                 name: 'group1',
                 status: 1,
             },
         });
-        group2 = await app.db.getRepository('userGroups').create({
+        group2 = await userGroupRepository.create({
             values: {
                 name: 'group2',
                 status: 1,
                 parent: group1,
             },
         });
-        group3 = await app.db.getRepository('userGroups').create({
+        group3 = await userGroupRepository.create({
             values: {
                 name: 'group3',
                 status: 1,
                 parent: group1,
             },
         });
-        group4 = await app.db.getRepository('userGroups').create({
+        group4 = await userGroupRepository.create({
             values: {
                 name: 'group4',
                 status: 1,
                 parent: group2,
             },
         });
-        group5 = await app.db.getRepository('userGroups').create({
+        group5 = await userGroupRepository.create({
             values: {
                 name: 'group5',
                 status: 1,
                 parent: group2,
             },
         });
-        group6 = await app.db.getRepository('userGroups').create({
+        group6 = await userGroupRepository.create({
             values: {
                 name: 'group6',
                 status: 1,
                 parent: group3,
             },
         });
-        group7 = await app.db.getRepository('userGroups').create({
+        group7 = await userGroupRepository.create({
             values: {
                 name: 'group7',
                 status: 1,
                 parent: group3,
             },
         });
-        group8 = await app.db.getRepository('userGroups').create({
+        group8 = await userGroupRepository.create({
             values: {
                 name: 'group8',
                 status: 1,
                 parent: group4,
             },
         });
-        group9 = await app.db.getRepository('userGroups').create({
+        group9 = await userGroupRepository.create({
             values: {
                 name: 'group9',
                 status: 1,
                 parent: group4,
             },
         });
-        group10 = await app.db.getRepository('userGroups').create({
+        group10 = await userGroupRepository.create({
             values: {
                 name: 'group10',
                 status: 1,
@@ -124,61 +128,39 @@ describe('test the usergroups actions.', () => {
 
     it('send null id,should get nothing!', async () => {
 
-        const requestdata = { filter: { gid: '' } };
-        let response = await adminAgent.resource('userGroups').getSubGroupTree(requestdata);
+        const gid = '';
+        const subTrees = await userGroupRepository.getSubGroupTree(gid, true);
 
-        expect(response.statusCode).toEqual(400);
-        expect(response.error.text).toBeDefined();
-
-        console.log(response.error.text);
+        expect(subTrees).toBeNull();
 
     });
 
     // /userGroups:getParentGroup
     it('send fake id,should get nothing!', async () => {
 
-        const requestdata = { filter: { gid: group1.gid + 'abc' } };//fake gid!
-        let response = await adminAgent.resource('userGroups').getSubGroupTree(requestdata);
+        const gid = group1.gid + 'abc';
+        const subTrees = await userGroupRepository.getSubGroupTree(gid);
 
-        expect(response.statusCode).toEqual(400);
-        expect(response.error.text).toBeDefined();
-
-        console.log(response.error.text);
+        expect(subTrees).toBeNull();
 
     });
 
     //test the usergroups parent.
     it('should get all the group1s sub tree', async () => {
 
-        const requestdata = { filter: { gid: group1.gid } };
-        let response = await adminAgent.resource('userGroups').getSubGroupTree(requestdata);
+        const gid = group1.gid;
+        const subTrees = await userGroupRepository.getSubGroupTree(gid);
 
-        const data = response.body.data;
-        const code = response.body.data.code;
-        const root = data.subGroupTree;
-
-        expect(response.statusCode).toEqual(201);
-        expect(root.subGroups.length).toBe(2);
-        expect(code).toBe(1);
-
-        console.log(response.body.data.msg);
+        expect(subTrees.subGroups.length).toBe(2);
     });
 
     //test the usergroups parent.
     it('should get all the group1s sub tree in array', async () => {
 
-        const requestdata = { filter: { gid: group1.gid }, noTree: true };
-        let response = await adminAgent.resource('userGroups').getSubGroupTree(requestdata);
+        const gid = group1.gid;
+        const subTrees = await userGroupRepository.getSubGroupTree(gid,true);
 
-        const data = response.body.data;
-        const code = response.body.data.code;
-        const root = data.subGroupTree;
-
-        expect(response.statusCode).toEqual(201);
-        expect(root.length).toBe(10);
-        expect(code).toBe(1);
-
-        console.log(response.body.data.msg);
+        expect(subTrees.length).toBe(10);
     });
 
 });

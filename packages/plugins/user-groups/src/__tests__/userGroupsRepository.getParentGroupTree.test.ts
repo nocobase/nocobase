@@ -1,12 +1,13 @@
 import Database, { BelongsToManyRepository } from '@nocobase/database';
 
-
 import { mockServer, MockServer } from '@nocobase/test';
 
-import { Plugin } from '@nocobase/server';
 import PluginUsers from '@nocobase/plugin-users';
 import PluginAcl from '@nocobase/plugin-acl';
+
 import { default as UserGroupsPlugin } from '..';
+
+import { UserGroupsRepository } from '../repository/userGroupRepository';
 
 import supertest from 'supertest';
 
@@ -24,6 +25,8 @@ describe('test the usergroups actions.', () => {
     let group3;
     let group4;
 
+    let userGroupRepository;
+
     beforeEach(async () => {
 
         app = mockServer({
@@ -35,9 +38,10 @@ describe('test the usergroups actions.', () => {
         app.plugin(PluginAcl);
         app.plugin(UserGroupsPlugin);
         app.plugin(PluginUsers);
-
+        
         await app.loadAndInstall();
         db = app.db;
+        userGroupRepository = db.getCollection('userGroups').repository as UserGroupsRepository;
 
         //登录admin用户
         const userPlugin = app.getPlugin('@nocobase/plugin-users') as PluginUsers;
@@ -46,20 +50,20 @@ describe('test the usergroups actions.', () => {
         }), { type: 'bearer' });
 
         //产生初始化测试数据
-        group1 = await app.db.getRepository('userGroups').create({
+        group1 = await userGroupRepository.create({
             values: {
                 name: 'group1',
                 status: 1,
             },
         });
-        group2 = await app.db.getRepository('userGroups').create({
+        group2 = await userGroupRepository.create({
             values: {
                 name: 'group2',
                 parent:group1,
                 status: 1,
             },
         });
-        group3 = await app.db.getRepository('userGroups').create({
+        group3 = await userGroupRepository.create({
             values: {
                 name: 'group3',
                 parent:group2,
@@ -67,7 +71,7 @@ describe('test the usergroups actions.', () => {
             },
         });
 
-        group4 = await app.db.getRepository('userGroups').create({
+        group4 = await userGroupRepository.create({
             values: {
                 name: 'group4',
                 parent:group3,
@@ -86,48 +90,17 @@ describe('test the usergroups actions.', () => {
 
     it('send null id,should get nothing!', async () => {
 
-        const requestdata = { filter: { gid: '' } };
-        let response = await adminAgent.resource('userGroups').getParentGroupTree(requestdata);
+        const parents = await userGroupRepository.listParentGroupTree(group4.gid);
 
-        expect(response.statusCode).toEqual(400);
-        expect(response.error.text).toBeDefined();
-
-        console.log(response.error.text);
-
-    });
-
-    // /userGroups:getParentGroup
-    it('send fake id,should get nothing!', async () => {
-
-        const requestdata = { filter: { gid: group1.gid + 'abc' } };//fake gid!
-
-        let response = await adminAgent.resource('userGroups').getParentGroupTree(requestdata);
-
-        expect(response.statusCode).toEqual(400);
-        expect(response.error.text).toBeDefined();
-
-        console.log(response.error.text);
+        expect(parents).toBeDefined();
+        expect(parents.length).toBe(4);
+        expect(parents[0].name).toBe('group1');
+        expect(parents[1].name).toBe('group2');
+        expect(parents[2].name).toBe('group3');
+        expect(parents[3].name).toBe('group4');
 
     });
 
-    //test the usergroups parent.
-    it('group4 should get parent tree:group1 group2 group3 group4', async () => {
-
-        const requestdata = { filter: { gid: group4.gid } };
-        let response = await adminAgent.resource('userGroups').getParentGroupTree(requestdata);
-
-        const data = response.body.data;
-        const code = response.body.data.code;
-
-        expect(response.statusCode).toEqual(201);
-        expect(data.parentGroupTree[0].name).toEqual('group1');
-        expect(data.parentGroupTree[1].name).toEqual('group2');
-        expect(data.parentGroupTree[2].name).toEqual('group3');
-        expect(data.parentGroupTree[3].name).toEqual('group4');
-        expect(code).toBe(1);
-
-        console.log(response.body.data.msg);
-    });
 
 
 });
