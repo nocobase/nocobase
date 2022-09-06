@@ -1,4 +1,4 @@
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import glob from 'glob';
@@ -222,7 +222,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
       this.migrations.add({
         name: namespace ? `${namespace}/${filename}` : filename,
-        migration: this.requireModule(file),
+        migration: requireModule(file),
         context,
       });
     }
@@ -230,16 +230,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   inDialect(...dialect: string[]) {
     return dialect.includes(this.sequelize.getDialect());
-  }
-
-  private requireModule(module: any) {
-    if (typeof module === 'string') {
-      module = require(module);
-    }
-    if (typeof module !== 'object') {
-      return module;
-    }
-    return module.__esModule ? module.default : module;
   }
 
   /**

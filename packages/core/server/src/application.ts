@@ -19,7 +19,6 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 const packageJson = require('../package.json');
 
 export type PluginConfiguration = string | [string, any];
-export type PluginsConfigurations = Array<PluginConfiguration>;
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -33,7 +32,7 @@ export interface ApplicationOptions {
   dataWrapping?: boolean;
   registerActions?: boolean;
   i18n?: i18n | InitOptions;
-  plugins?: PluginsConfigurations;
+  plugins?: PluginConfiguration[];
 }
 
 export interface DefaultState {
@@ -197,7 +196,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.pm.add(pluginClass, options);
   }
 
-  loadPluginConfig(pluginsConfigurations: PluginsConfigurations) {
+  loadPluginConfig(pluginsConfigurations: PluginConfiguration[]) {
     for (let pluginConfiguration of pluginsConfigurations) {
       if (typeof pluginConfiguration == 'string') {
         pluginConfiguration = [pluginConfiguration, {}];

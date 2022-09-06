@@ -113,9 +113,26 @@ export default {
       children: [
         '/api/server/index',
         '/api/server/application',
+        {
+          title: 'Database',
+          'title.zh-CN': '数据库',
+          type: 'subMenu',
+          children: [
+            '/api/server/database/index',
+            '/api/server/database/collection',
+          ]
+        },
+        {
+          title: 'Resourcer',
+          'title.zh-CN': '资源与路由',
+          type: 'subMenu',
+          children: [
+            '/api/server/index',
+            '/api/server/resource',
+            '/api/server/action',
+          ]
+        },
         '/api/server/plugin-manager',
-        '/api/server/database',
-        '/api/server/resourcer',
         '/api/server/i18n',
         '/api/server/acl',
       ]
