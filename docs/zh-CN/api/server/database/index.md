@@ -2,7 +2,21 @@
 
 NocoBase 内置的数据库访问类，通过封装 [Sequelize](https://sequelize.org/) 提供了更加简单的数据库访问接口和统一化的 JSON 数据库表配置方式，同时也提供了扩展字段类型和查询操作符的能力。
 
-Database 类继承自 EventEmitter，可以通过 `db.on('event', callback)` 监听数据库事件。
+Database 类继承自 EventEmitter，可以通过 `db.on('event', callback)` 监听数据库事件，以及 `db.off('event', callback)` 移除监听。
+
+## 包结构
+
+可通过以下方式引入相关实体：
+
+```ts
+import Database, {
+  Field,
+  Collection,
+  Repository,
+  Model,
+  extend
+} from '@nocobase/database';
+```
 
 ## 构造函数
 
@@ -388,5 +402,123 @@ db.getRepository('books').count({
 
 ### `sync()`
 
-同步数据库表结构。
+同步数据库表结构。等同于 `sequelize.sync()`，参数参考 [Sequelize 文档](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-sync)。
 
+### `close()`
+
+关闭数据库连接。等同于 `sequelize.close()`。
+
+### `on()`
+
+监听数据库事件。
+
+Database 除了对 sequelize 原生的事件封装以外，还提供以下可监听事件类型：
+
+| 事件名称 | 描述 |
+| --- | --- |
+| `'beforeDefineCollection'` | 定义 collection 之前触发 |
+| `'afterDefineCollection'` | 定义 collection 之后触发 |
+| `'beforeRemoveCollection'` | 移除 collection 之前触发 |
+| `'afterRemoveCollection'` | 移除 collection 之后触发 |
+| `<model_name>.<sequelize_model_event>` | 所有 sequelize model 的事件均可通过此方式监听，详见示例部分 |
+| `<model_name>.afterCreateWithAssociations` | NocoBase 扩展的当连同关联数据一并创建记录成功后触发的事件 |
+| `<model_name>.afterUpdateWithAssociations` | NocoBase 扩展的当连同关联数据一并更新记录成功后触发的事件 |
+
+**签名**
+
+* `on(event: string, listener: (...args: any[]) => void | Promise<void>): void`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| event | string | - | 事件名称 |
+| listener | Function | - | 事件监听器 |
+
+**示例**
+
+监听 books 表事件，当创建新记录成功后触发：
+
+```ts
+db.on('books.afterCreate', async (model, options) => {
+  const { transaction } = options;
+  const result = await model.constructor.findByPk(model.id, {
+    transaction
+  });
+  console.log(result);
+});
+```
+
+监听 books 表，当连同关联数据一并创建成功后触发的事件：
+
+```ts
+db.on('books.afterCreateWithAssociations', async (model, options) => {
+  const { transaction } = options;
+  const result = await model.constructor.findByPk(model.id, {
+    transaction
+  });
+  console.log(result);
+});
+```
+
+### `import()`
+
+导入文件目录下所有文件作为 collection 配置载入内存。
+
+**签名**
+
+* `async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options.directory` | `string` | - | 要导入的目录路径 |
+| `options.extensions` | `string[]` | `['ts', 'js']` | 扫描特定后缀 |
+
+**示例**
+
+```ts
+await db.import('./collections');
+```
+
+### `::extend()`
+
+扩展已在内存中的表结构定义。该方法是 `@nocobase/database` 包导出的顶级方法，不通过 db 实例调用。
+
+**签名**
+
+* `extend(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ExtendedCollectionOptions`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `collectionOptions` | `CollectionOptions` | - | 与所有 `db.collection()` 的参数相同 |
+| `mergeOptions?` | `MergeOptions` | - | npm 包 [deepmerge](https://npmjs.com/package/deepmerge) 的参数 |
+
+**示例**
+
+```ts
+import { extend } from '@nocobase/database';
+
+// 原始定义
+db.collection({
+  name: 'books',
+  fields: [
+    { name: 'title', type: 'string' }
+  ]
+});
+
+// 再次扩展
+extend({
+  name: 'books',
+  fields: [
+    { name: 'price', type: 'number' }
+  ]
+});
+```
+
+通过 `extend()` 再次扩展以后，books 表将拥有 `title` 和 `price` 两个字段。
+
+此方法在扩展已有插件已定义的表结构时非常有用。
