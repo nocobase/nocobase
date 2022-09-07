@@ -22,10 +22,11 @@ export class PresetNocoBase<O = any> extends Plugin {
         'client',
         'export',
         'audit-logs',
+        'hello',
       ];
       for (const plugin of plugins) {
         const instance = await this.app.pm.add(plugin);
-        if (instance.model) {
+        if (instance.model && plugin !== 'hello') {
           instance.model.enabled = true;
           instance.model.builtIn = true;
           await instance.model.save();

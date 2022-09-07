@@ -23,11 +23,13 @@ const PluginCard = (props) => {
       bordered={false}
       style={{ width: 'calc(20% - 24px)', marginRight: 24, marginBottom: 24 }}
       actions={[
-        <SettingOutlined
-          onClick={() => {
-            history.push(`/admin/settings/hello/tab1`);
-          }}
-        />,
+        data.enabled ? (
+          <SettingOutlined
+            onClick={() => {
+              history.push(`/admin/settings/hello/tab1`);
+            }}
+          />
+        ) : null,
         <Popconfirm
           title="Are you sure to delete this plugin?"
           onConfirm={async () => {
@@ -54,7 +56,7 @@ const PluginCard = (props) => {
           }}
           defaultChecked={data.enabled}
         ></Switch>,
-      ]}
+      ].filter(Boolean)}
     >
       <Card.Meta
         className={css`
@@ -278,20 +280,22 @@ const SettingsCenter = (props) => {
       <Layout>
         <Layout.Sider theme={'light'}>
           <Menu selectedKeys={[pluginName]} style={{ height: 'calc(100vh - 46px)' }}>
-            {Object.keys(items).sort().map((key) => {
-              const item = items[key];
-              const tabKey = Object.keys(item.tabs).shift();
-              return (
-                <Menu.Item
-                  key={key}
-                  onClick={() => {
-                    history.push(`/admin/settings/${key}/${tabKey}`);
-                  }}
-                >
-                  {item.title}
-                </Menu.Item>
-              );
-            })}
+            {Object.keys(items)
+              .sort()
+              .map((key) => {
+                const item = items[key];
+                const tabKey = Object.keys(item.tabs).shift();
+                return (
+                  <Menu.Item
+                    key={key}
+                    onClick={() => {
+                      history.push(`/admin/settings/${key}/${tabKey}`);
+                    }}
+                  >
+                    {item.title}
+                  </Menu.Item>
+                );
+              })}
           </Menu>
         </Layout.Sider>
         <Layout.Content>
