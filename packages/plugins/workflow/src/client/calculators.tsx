@@ -10,53 +10,112 @@ import { instructions, useNodeContext } from "./nodes";
 import { useFlowContext } from "./WorkflowCanvas";
 import { triggers } from "./triggers";
 import { useTranslation } from "react-i18next";
+import { Registry } from "@nocobase/utils/client";
 
 function NullRender() {
   return null;
 }
 
-export const calculators = [
+interface Calculator {
+  name: string;
+  group: string;
+}
+
+export const calculators = new Registry<Calculator>();
+
+calculators.register('equal', {
+  name: '=',
+  group: 'boolean',
+});
+calculators.register('notEqual', {
+  name: '≠',
+  group: 'boolean',
+});
+calculators.register('gt', {
+  name: '>',
+  group: 'boolean',
+});
+calculators.register('gte', {
+  name: '≥',
+  group: 'boolean',
+});
+calculators.register('lt', {
+  name: '<',
+  group: 'boolean',
+});
+calculators.register('lte', {
+  name: '≤',
+  group: 'boolean',
+});
+
+calculators.register('add', {
+  name: '+',
+  group: 'number',
+});
+calculators.register('minus', {
+  name: '-',
+  group: 'number',
+});
+calculators.register('multiple', {
+  name: '*',
+  group: 'number',
+});
+calculators.register('divide', {
+  name: '/',
+  group: 'number',
+});
+calculators.register('mod', {
+  name: '%',
+  group: 'number',
+});
+
+calculators.register('includes', {
+  name: '{{t("contains")}}',
+  group: 'string'
+});
+calculators.register('notIncludes', {
+  name: '{{t("does not contain")}}',
+  group: 'string'
+});
+calculators.register('startsWith', {
+  name: '{{t("starts with")}}',
+  group: 'string'
+});
+calculators.register('notStartsWith', {
+  name: '{{t("not starts with")}}',
+  group: 'string'
+});
+calculators.register('endsWith', {
+  name: '{{t("ends with")}}',
+  group: 'string'
+});
+calculators.register('notEndsWith', {
+  name: '{{t("not ends with")}}',
+  group: 'string'
+});
+
+const calculatorGroups = [
   {
     value: 'boolean',
-    title: '{{t("Comparison")}}',
-    children: [
-      { value: 'equal', name: '=' },
-      { value: 'notEqual', name: '≠' },
-      { value: 'gt', name: '>' },
-      { value: 'gte', name: '≥' },
-      { value: 'lt', name: '<' },
-      { value: 'lte', name: '≤' }
-    ]
+    title: '{{t("Comparison")}}'
   },
   {
     value: 'number',
-    title: '{{t("Arithmetic calculation")}}',
-    children: [
-      { value: 'add', name: '+' },
-      { value: 'minus', name: '-' },
-      { value: 'multiple', name: '*' },
-      { value: 'divide', name: '/' },
-      { value: 'mod', name: '%' },
-    ]
+    title: '{{t("Arithmetic calculation")}}'
   },
   {
     value: 'string',
-    title: '{{t("String operation")}}',
-    children: [
-      { value: 'includes', name: '{{t("contains")}}' },
-      { value: 'notIncludes', name: '{{t("does not contain")}}' },
-      { value: 'startsWith', name: '{{t("starts with")}}' },
-      { value: 'notStartsWith', name: '{{t("not starts with")}}' },
-      { value: 'endsWith', name: '{{t("ends with")}}' },
-      { value: 'notEndsWith', name: '{{t("not ends with")}}' }
-    ]
+    title: '{{t("String operation")}}'
   },
   {
     value: 'date',
-    title: '{{t("Date")}}',
-    children: []
+    title: '{{t("Date")}}'
   }
 ];
+
+function getGroupCalculators(group) {
+  return Array.from(calculators.getEntities()).filter(([key, value]) => value.group  === group);
+}
 
 const JT_VALUE_RE = /^\s*\{\{([\s\S]*)\}\}\s*$/;
 
@@ -320,10 +379,10 @@ export function Calculation({ calculator, operands = [], onChange }) {
                 onChange={v => onChange({ operands, calculator: v })}
                 placeholder={t('Calculator')}
               >
-                {calculators.map(group => (
+                {calculatorGroups.map(group => (
                   <Select.OptGroup key={group.value} label={compile(group.title)}>
-                    {group.children.map(item => (
-                      <Select.Option key={item.value} value={item.value}>{compile(item.name)}</Select.Option>
+                    {getGroupCalculators(group.value).map(([value, { name }]) => (
+                      <Select.Option key={value} value={value}>{compile(name)}</Select.Option>
                     ))}
                   </Select.OptGroup>
                 ))}
