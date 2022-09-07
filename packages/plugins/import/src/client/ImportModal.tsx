@@ -31,6 +31,7 @@ export const ImportModal = (props: any) => {
       visible={importModalVisible}
       footer={null}
       closable={importStatus === ImportStatus.IMPORTED}
+      onCancel={doneHandler}
     >
       <div
         className={css`
