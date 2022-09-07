@@ -4,6 +4,10 @@ export async function _({ value, field }) {
   return value;
 }
 
+export async function password({ value, field }) {
+  return `${value}`;
+}
+
 export async function o2o({ value, column, field, ctx }) {
   const { dataIndex, enum: enumData } = column;
   const repository = ctx.db.getRepository(field.options.target);
