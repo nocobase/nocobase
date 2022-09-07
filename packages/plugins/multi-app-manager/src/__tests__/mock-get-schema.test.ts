@@ -100,18 +100,21 @@ describe('test with start', () => {
     mockGetPluginByName.mockReturnValue(TestPlugin);
     PluginManager.resolvePlugin = mockGetPluginByName;
 
+    const name = `d_${uid()}`;
+    console.log(name);
+
     await db.getRepository('applications').create({
       values: {
-        name: 'sub1',
+        name,
         options: {
           plugins: ['test-package'],
         },
       },
     });
 
-    expect(app.appManager.applications.get('sub1')).toBeDefined();
+    expect(app.appManager.applications.get(name)).toBeDefined();
 
-    await app.appManager.applications.get('sub1').destroy();
+    await app.appManager.applications.get(name).destroy();
     await app.stop();
 
     let newApp = mockServer({
@@ -125,16 +128,16 @@ describe('test with start', () => {
     await newApp.start();
 
     expect(await newApp.db.getRepository('applications').count()).toEqual(1);
-    expect(newApp.appManager.applications.get('sub1')).not.toBeDefined();
+    expect(newApp.appManager.applications.get(name)).not.toBeDefined();
 
     newApp.appManager.setAppSelector(() => {
-      return 'sub1';
+      return name;
     });
 
     await newApp.agent().resource('test').test();
-    expect(newApp.appManager.applications.get('sub1')).toBeDefined();
+    expect(newApp.appManager.applications.get(name)).toBeDefined();
 
-    await newApp.appManager.applications.get('sub1').destroy();
+    await newApp.appManager.applications.get(name).destroy();
 
     await app.destroy();
   });
