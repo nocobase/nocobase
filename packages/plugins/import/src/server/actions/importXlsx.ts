@@ -37,10 +37,19 @@ export async function importXlsx(ctx: Context, next: Next) {
     //@ts-ignore
     const values = results.map((r) => r.value);
     const result = await ctx.db.sequelize.transaction(async (transaction) => {
-      await repository.createMany({
-        records: values,
-        transaction,
-      });
+      for (const val of values) {
+        try {
+          await repository.create({
+            values: { ...val },
+            transaction,
+          });
+        } catch (error) {
+          const failData = collectionFields.map((cf) => {
+            return val[cf.name];
+          });
+          failureData.unshift(failData);
+        }
+      }
       return {
         successCount: list.length - failureData.length,
         failureCount: failureData.length,
