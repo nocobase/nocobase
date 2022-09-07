@@ -181,7 +181,10 @@ export class PluginManager {
       return this.addByModel(pluginClass);
     }
 
-    const instance = new pluginClass(this.app, options);
+    const instance = new pluginClass(this.app, {
+      ...options,
+      enabled: true,
+    });
 
     const name = instance.getName();
 
@@ -218,6 +221,9 @@ export class PluginManager {
 
   async install(options: InstallOptions = {}) {
     for (const [name, plugin] of this.plugins) {
+      if (!plugin.enabled) {
+        continue;
+      }
       await this.app.emitAsync('beforeInstallPlugin', plugin, options);
       await plugin.install(options);
       await this.app.emitAsync('afterInstallPlugin', plugin, options);
