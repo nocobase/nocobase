@@ -41,6 +41,7 @@ export class PluginManager {
         { type: 'json', name: 'options' },
       ],
     });
+    const app = this.app;
     const pm = this;
     this.repository = this.collection.repository as PluginManagerRepository;
     this.app.resourcer.define({
@@ -69,7 +70,8 @@ export class PluginManager {
           if (!plugin) {
             ctx.throw(400, 'plugin invalid');
           }
-          await plugin.load();
+          await app.reload();
+          await app.start();
           ctx.body = 'ok';
           await next();
         },
@@ -87,7 +89,8 @@ export class PluginManager {
           if (!plugin) {
             ctx.throw(400, 'plugin invalid');
           }
-          await plugin.disable();
+          await app.reload();
+          await app.start();
           ctx.body = 'ok';
           await next();
         },
@@ -96,6 +99,17 @@ export class PluginManager {
           await next();
         },
         async remove(ctx, next) {
+          const { filterByTk } = ctx.action.params;
+          if (!filterByTk) {
+            ctx.throw(400, 'filterByTk invalid');
+          }
+          const name = pm.getPackageName(filterByTk);
+          const plugin = pm.get(name);
+          if (plugin.model) {
+            await plugin.model.destroy();
+          }
+          await app.reload();
+          await app.start();
           ctx.body = 'ok';
           await next();
         },
@@ -162,9 +176,20 @@ export class PluginManager {
   add<P = Plugin, O = any>(pluginClass: any, options?: O) {
     if (typeof pluginClass === 'string') {
       const packageName = this.getPackageName(pluginClass);
+      try {
+        require.resolve(packageName);
+      } catch (error) {
+        throw new Error(`${pluginClass} plugin does not exist`);
+      }
       const packageJson = require(`${packageName}/package.json`);
       const addNew = async () => {
-        const model = await this.repository.create({
+        let model = await this.repository.findOne({
+          filter: { name: pluginClass },
+        });
+        if (model) {
+          throw new Error(`${pluginClass} plugin already exists`);
+        }
+        model = await this.repository.create({
           values: {
             name: pluginClass,
             version: packageJson.version,

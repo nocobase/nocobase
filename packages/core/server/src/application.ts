@@ -128,21 +128,21 @@ export class ApplicationVersion {
 }
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
-  public readonly db: Database;
+  protected _db: Database;
 
-  public readonly resourcer: Resourcer;
+  protected _resourcer: Resourcer;
 
-  public readonly cli: Command;
+  protected _cli: Command;
 
-  public readonly i18n: i18n;
+  protected _i18n: i18n;
 
-  public readonly pm: PluginManager;
+  protected _pm: PluginManager;
 
-  public readonly acl: ACL;
+  protected _acl: ACL;
 
-  public readonly appManager: AppManager;
+  protected _appManager: AppManager;
 
-  public readonly version: ApplicationVersion;
+  protected _version: ApplicationVersion;
 
   protected plugins = new Map<string, Plugin>();
 
@@ -150,18 +150,61 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   constructor(public options: ApplicationOptions) {
     super();
+    this.init();
+  }
 
-    this.acl = createACL();
-    this.db = this.createDatabase(options);
-    this.resourcer = createResourcer(options);
-    this.cli = new Command('nocobase').usage('[command] [options]');
-    this.i18n = createI18n(options);
+  get db() {
+    return this._db;
+  }
 
-    this.pm = new PluginManager({
+  get resourcer() {
+    return this._resourcer;
+  }
+
+  get cli() {
+    return this._cli;
+  }
+
+  get acl() {
+    return this._acl;
+  }
+
+  get i18n() {
+    return this._i18n;
+  }
+
+  get pm() {
+    return this._pm;
+  }
+
+  get version() {
+    return this._version;
+  }
+
+  get appManager() {
+    return this._appManager;
+  }
+
+  protected init() {
+    const options = this.options;
+    // @ts-ignore
+    this._events = [];
+    // @ts-ignore
+    this._eventsCount = [];
+    this.middleware = [];
+    // this.context = Object.create(context);
+    this.plugins = new Map<string, Plugin>();
+    this._acl = createACL();
+    this._db = this.createDatabase(options);
+    this._resourcer = createResourcer(options);
+    this._cli = new Command('nocobase').usage('[command] [options]');
+    this._i18n = createI18n(options);
+
+    this._pm = new PluginManager({
       app: this,
     });
 
-    this.appManager = new AppManager(this);
+    this._appManager = new AppManager(this);
 
     registerMiddlewares(this, options);
 
@@ -173,7 +216,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     registerCli(this);
 
-    this.version = new ApplicationVersion(this);
+    this._version = new ApplicationVersion(this);
   }
 
   private createDatabase(options: ApplicationOptions) {
@@ -239,6 +282,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async load() {
+    await this.pm.load();
+  }
+
+  async reload() {
+    this.init();
     await this.pm.load();
   }
 

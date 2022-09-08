@@ -9,6 +9,7 @@ export function registerCli(app: Application) {
   require('./migrator').default(app);
   require('./start').default(app);
   require('./upgrade').default(app);
+  require('./pm').default(app);
 
   // development only with @nocobase/cli
   app.command('build').argument('[packages...]');
