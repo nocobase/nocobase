@@ -108,6 +108,7 @@ export class PluginManager {
           if (plugin.model) {
             await plugin.model.destroy();
           }
+          pm.remove(name);
           await app.reload();
           await app.start();
           ctx.body = 'ok';
@@ -171,6 +172,10 @@ export class PluginManager {
 
   get(name: string) {
     return this.plugins.get(name);
+  }
+
+  remove(name: string) {
+    return this.plugins.delete(name);
   }
 
   add<P = Plugin, O = any>(pluginClass: any, options?: O) {
