@@ -119,6 +119,7 @@ export default {
           type: 'subMenu',
           children: [
             '/api/server/database/index',
+            '/api/server/database/field',
             '/api/server/database/collection',
           ]
         },

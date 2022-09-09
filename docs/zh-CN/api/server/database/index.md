@@ -482,7 +482,9 @@ db.on('books.afterCreateWithAssociations', async (model, options) => {
 await db.import('./collections');
 ```
 
-### `::extend()`
+## 包级导出
+
+### `extend()`
 
 扩展已在内存中的表结构定义。该方法是 `@nocobase/database` 包导出的顶级方法，不通过 db 实例调用。
 
