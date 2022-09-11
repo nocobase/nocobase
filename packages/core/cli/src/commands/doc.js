@@ -22,6 +22,7 @@ module.exports = (cli) => {
       } else {
         process.env.DUMI_THEME = isAbsolute(docThemePath) ? docThemePath : resolve(process.cwd(), docThemePath);
       }
+      // TODO(bug): space replace = not work
       const index = process.argv.indexOf(`--lang=${options.lang}`);
       if (index > 0) {
         process.argv.splice(index, 1);
