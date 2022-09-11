@@ -268,8 +268,10 @@ describe('database', () => {
     });
 
     await Test.sync();
+    expect(Test.model.prototype).toBeInstanceOf(CustomModel);
 
     const test = await Test.model.create<any>();
+    expect(test).toBeInstanceOf(CustomModel);
     test.customMethod();
     expect(test.get('abc')).toBe('abc');
   });
