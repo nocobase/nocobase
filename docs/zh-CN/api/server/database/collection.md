@@ -10,7 +10,7 @@
 
 **签名**
 
-* `new Collection(options: CollectionOptions): Collection`
+* `constructor(options: CollectionOptions): Collection`
 
 **参数**
 

@@ -8,7 +8,7 @@
 
 **签名**
 
-* `constructor(options: FieldOptions, context: FieldContext): Field`
+* `constructor(options: FieldOptions, context: FieldContext)`
 
 **参数**
 

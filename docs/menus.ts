@@ -121,6 +121,8 @@ export default {
             '/api/server/database/index',
             '/api/server/database/field',
             '/api/server/database/collection',
+            '/api/server/database/repository',
+            '/api/server/database/operators',
           ]
         },
         {

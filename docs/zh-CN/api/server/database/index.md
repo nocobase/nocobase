@@ -243,8 +243,10 @@ db.registerModels({
 
 const ModelClass = db.getModel('books');
 
-ModelClass === MyModel // true
+console.log(ModelClass.prototype instanceof MyModel) // true
 ```
+
+注：从 collection 中获取的模型类并不与注册时的模型类严格相等，而是继承自注册时的模型类。由于 Sequelize 的模型类在初始化过程中属性会被修改，所以 NocoBase 自动处理了这个继承关系。除类不相等以外，其他所有定义都可以正常使用。
 
 ### `getRepository()`
 
