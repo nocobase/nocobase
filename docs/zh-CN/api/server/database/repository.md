@@ -169,6 +169,8 @@ const result = await posts.findOne({
 | 参数名 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |
 | `options.values` | `M` | `{}` | 插入的数据对象 |
+| `options.whitelist?` | `string[]` | - | `values` 字段的白名单，只有名单内的字段会被存储 |
+| `options.blacklist?` | `string[]` | - | `values` 字段的黑名单，名单内的字段不会被存储 |
 | `options.transaction?` | `Transaction` | - | 事务 |
 
 如果没有传入事务参数，该方法会自动创建一个内部事务。
@@ -204,6 +206,8 @@ const result = await posts.create({
 | 参数名 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |
 | `options.records` | `Model[]` | - | 插入的数据对象数组 |
+| `options.whitelist?` | `string[]` | - | `values` 字段的白名单，只有名单内的字段会被存储 |
+| `options.blacklist?` | `string[]` | - | `values` 字段的黑名单，名单内的字段不会被存储 |
 | `options.transaction?` | `Transaction` | - | 事务 |
 
 如果没有传入事务参数，该方法会自动创建一个内部事务。
@@ -249,6 +253,8 @@ const results = await posts.createMany({
 | `options.filterByTk` | `number \| string` | - | 查询主键 |
 | `options.filter` | `Filter` | - | 查询条件 |
 | `options.values` | `M` | `{}` | 更新的数据对象 |
+| `options.whitelist?` | `string[]` | - | `values` 字段的白名单，只有名单内的字段会被存储 |
+| `options.blacklist?` | `string[]` | - | `values` 字段的黑名单，名单内的字段不会被存储 |
 | `options.transaction?` | `Transaction` | - | 事务 |
 
 `filterByTk` 与 `filter` 至少要传其一。如果没有传入事务参数，该方法会自动创建一个内部事务。
@@ -310,9 +316,9 @@ const result = await posts.update({
 ```ts
 const posts = db.getRepository('posts');
 
-const transaction = await posts.getTransaction();
+const transaction = await posts.getTransaction({}, true);
 
-await posts.create();
+await posts.create({ transaction });
 
 // 在同一事务中查询计数
 const count = await posts.count({
@@ -322,36 +328,9 @@ const count = await posts.count({
 await transaction.commit();
 ```
 
-### `relation()`
-
-获取基于当前表关系字段的关系表数据仓库管理创建工厂类。通常调用后还需要继续调用工厂类实例上的 `.of(id)` 方法，以指定当前表的主键值，并获得关系表的数据仓库实例。基于获取到关系的数据仓库管理实例上的方法，会自动在查询条件中加入当前表的主键值。
-
-**签名**
-
-* `relation(association: string): RelationRepositoryBuilder`
-
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `association` | `string` | - | 关系字段名 |
-
-**示例**
-
-```ts
-const users = db.getRepository('users');
-const usersPosts = users.ralation('posts').of(1);
-
-const post = await usersPosts.create({
-  values: {
-    title: '用户 1 的新文章'
-  }
-});
-```
-
 ## 关系数据仓库类
 
-通过 `relation(key).of(id)` 方法获取到的关系数据仓库管理实例，在调用方法时，会自动在查询条件中加入当前表的主键值。除此以外，还拥有一些基于不同关系类型特有的成员和关系操作方法。
+通过 `db.getRepository('<name.associatedField>', <id>)` 方法获取到的关系数据仓库管理实例，在调用方法时，会自动在查询条件中加入当前表的主键值。除此以外，还拥有一些基于不同关系类型特有的成员和关系操作方法。
 
 ### `set()`
 
