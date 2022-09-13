@@ -130,9 +130,9 @@ export default {
           'title.zh-CN': '资源与路由',
           type: 'subMenu',
           children: [
-            '/api/server/index',
-            '/api/server/resource',
-            '/api/server/action',
+            '/api/server/resourcer/index',
+            '/api/server/resourcer/resource',
+            '/api/server/resourcer/action',
           ]
         },
         '/api/server/plugin-manager',
