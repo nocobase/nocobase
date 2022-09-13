@@ -1,26 +1,21 @@
 import { Context, Next } from '@nocobase/actions';
-import { MiddlewareManager } from '@nocobase/resourcer';
-import UsersPlugin from '../server';
 
-export function parseToken(options?: { plugin: UsersPlugin }) {
-  const middleware = new MiddlewareManager();
-  middleware.use(async function (ctx: Context, next: Next) {
-    const user = await findUserByToken(ctx, options.plugin);
-    if (user) {
-      ctx.state.currentUser = user;
-    }
-    return next();
-  });
-  return middleware;
-}
+export async function parseToken(ctx: Context, next: Next) {
+  const user = await findUserByToken(ctx);
+  if (user) {
+    ctx.state.currentUser = user;
+  }
+  return next();
+};
 
-async function findUserByToken(ctx: Context, plugin: UsersPlugin) {
+async function findUserByToken(ctx: Context) {
   const token = ctx.getBearerToken();
   if (!token) {
     return null;
   }
+  const { jwtService } = ctx.app.getPlugin('@nocobase/plugin-users');
   try {
-    const { userId } = await plugin.jwtService.decode(token);
+    const { userId } = await jwtService.decode(token);
     const collection = ctx.db.getCollection('users');
     ctx.state.currentUserAppends = ctx.state.currentUserAppends || [];
     for (const [, field] of collection.fields) {
