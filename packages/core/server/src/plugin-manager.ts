@@ -179,6 +179,14 @@ export class PluginManager {
   }
 
   add<P = Plugin, O = any>(pluginClass: any, options?: O) {
+    if (Array.isArray(pluginClass)) {
+      const addMultiple = async () => {
+        for (const plugin of pluginClass) {
+          await this.add(plugin);
+        }
+      }
+      return addMultiple();
+    }
     if (typeof pluginClass === 'string') {
       const packageName = this.getPackageName(pluginClass);
       try {

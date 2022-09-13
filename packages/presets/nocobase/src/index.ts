@@ -22,7 +22,6 @@ export class PresetNocoBase<O = any> extends Plugin {
         'client',
         'export',
         'audit-logs',
-        'hello',
       ];
       for (const plugin of plugins) {
         const instance = await this.app.pm.add(plugin);
