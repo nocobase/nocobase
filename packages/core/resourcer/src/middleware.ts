@@ -1,7 +1,7 @@
 import compose from 'koa-compose';
+import { requireModule } from '@nocobase/utils';
 import { ActionName } from './action';
 import { HandlerType } from './resourcer';
-import { requireModule } from './utils';
 
 export type MiddlewareType = string | string[] | HandlerType | HandlerType[] | MiddlewareOptions | MiddlewareOptions[];
 
@@ -23,6 +23,7 @@ export interface MiddlewareOptions {
 
 export class Middleware {
   protected options: MiddlewareOptions;
+  private middlewares: HandlerType[] = [];
 
   constructor(options: MiddlewareOptions | Function) {
     options = requireModule(options);
@@ -38,7 +39,15 @@ export class Middleware {
     if (typeof handler !== 'function') {
       throw new Error('Handler must be a function!');
     }
-    return handler;
+    return (ctx, next) => compose([handler, ...this.middlewares])(ctx, next);
+  }
+
+  use(middleware: HandlerType) {
+    this.middlewares.push(middleware);
+  }
+
+  unuse(middleware: HandlerType) {
+    this.middlewares.splice(this.middlewares.indexOf(middleware), 1);
   }
 
   canAccess(name: ActionName) {
@@ -74,22 +83,6 @@ export class Middleware {
 }
 
 export default Middleware;
-
-export class MiddlewareManager {
-  protected middlewares: HandlerType[] = [];
-
-  compose() {
-    return (ctx, next) => compose(this.middlewares)(ctx, next);
-  }
-
-  use(middleware: HandlerType) {
-    this.middlewares.push(middleware);
-  }
-
-  unuse(middleware: HandlerType) {
-    this.middlewares.splice(this.middlewares.indexOf(middleware), 1);
-  }
-}
 
 export function branch(
   map: {
