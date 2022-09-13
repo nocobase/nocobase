@@ -1,4 +1,6 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
+import { namespace } from '..';
+import { enUS, zhCN } from '../locale';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { importMiddleware } from './middleware';
 export class ImportPlugin extends Plugin {
@@ -7,7 +9,8 @@ export class ImportPlugin extends Plugin {
   }
 
   beforeLoad() {
-    // TODO
+    this.app.i18n.addResources('zh-CN', namespace, zhCN);
+    this.app.i18n.addResources('en-US', namespace, enUS);
   }
 
   async load() {
