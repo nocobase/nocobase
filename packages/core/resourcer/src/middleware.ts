@@ -46,7 +46,7 @@ export class Middleware {
     this.middlewares.push(middleware);
   }
 
-  unuse(middleware: HandlerType) {
+  disuse(middleware: HandlerType) {
     this.middlewares.splice(this.middlewares.indexOf(middleware), 1);
   }
 

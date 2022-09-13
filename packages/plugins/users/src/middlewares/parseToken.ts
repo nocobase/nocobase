@@ -1,13 +1,12 @@
 import { Context, Next } from '@nocobase/actions';
-import { Middleware } from '@nocobase/resourcer';
 
-export const parseToken = new Middleware(async (ctx: Context, next: Next) => {
+export async function parseToken(ctx: Context, next: Next) {
   const user = await findUserByToken(ctx);
   if (user) {
     ctx.state.currentUser = user;
   }
   return next();
-});
+};
 
 async function findUserByToken(ctx: Context) {
   const token = ctx.getBearerToken();

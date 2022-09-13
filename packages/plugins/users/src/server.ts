@@ -10,7 +10,7 @@ import { namespace } from './';
 import * as actions from './actions/users';
 import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
-import * as middlewares from './middlewares';
+import { parseToken } from './middlewares';
 import initAuthenticators from './authenticators';
 
 export interface UserPluginConfig {
@@ -27,7 +27,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
   constructor(app, options) {
     super(app, options);
     this.jwtService = new JwtService(options?.jwt || {});
-    this.tokenMiddleware = middlewares.parseToken;
+    this.tokenMiddleware = new Middleware(parseToken);
   }
 
   async beforeLoad() {
