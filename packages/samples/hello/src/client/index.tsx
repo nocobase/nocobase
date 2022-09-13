@@ -48,7 +48,7 @@ export default React.memo((props) => {
   return (
     <SettingsCenterProvider
       settings={{
-        hello: {
+        'hello-sample': {
           title: 'Hello',
           tabs: {
             tab1: {

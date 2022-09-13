@@ -1,7 +1,7 @@
 import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Avatar, Card, Layout, Menu, message, PageHeader, Popconfirm, Spin, Switch, Tabs } from 'antd';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { Redirect, useHistory, useRouteMatch } from 'react-router-dom';
 import { ACLPane } from '../acl';
 import { useAPIClient, useRequest } from '../api-client';
@@ -26,7 +26,7 @@ const PluginCard = (props) => {
         data.enabled ? (
           <SettingOutlined
             onClick={() => {
-              history.push(`/admin/settings/hello/tab1`);
+              history.push(`/admin/settings/${data.name}`);
             }}
           />
         ) : null,
@@ -270,9 +270,22 @@ const SettingsCenter = (props) => {
   const match = useRouteMatch<any>();
   const history = useHistory<any>();
   const items = useContext(SettingsCenterContext);
+  const firstUri = useMemo(() => {
+    const keys = Object.keys(items).sort();
+    const pluginName = keys.shift();
+    const tabName = Object.keys(items?.[pluginName]?.tabs || {}).shift();
+    return `/admin/settings/${pluginName}/${tabName}`;
+  }, [items]);
   const { pluginName, tabName } = match.params || {};
   if (!pluginName) {
-    return <Redirect to={`/admin/settings/acl/roles`} />;
+    return <Redirect to={firstUri} />;
+  }
+  if (!items[pluginName]) {
+    return <Redirect to={firstUri} />;
+  }
+  if (!tabName) {
+    const firstTabName = Object.keys(items[pluginName]?.tabs).shift();
+    return <Redirect to={`/admin/settings/${pluginName}/${firstTabName}`} />;
   }
   const component = items[pluginName]?.tabs?.[tabName]?.component;
   return (
@@ -309,7 +322,7 @@ const SettingsCenter = (props) => {
                   history.push(`/admin/settings/${pluginName}/${activeKey}`);
                 }}
               >
-                {Object.keys(items[pluginName].tabs).map((tabKey) => {
+                {Object.keys(items[pluginName]?.tabs).map((tabKey) => {
                   const tab = items[pluginName].tabs?.[tabKey];
                   return <Tabs.TabPane tab={tab?.title} key={tabKey} />;
                 })}
