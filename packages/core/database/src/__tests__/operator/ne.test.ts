@@ -30,4 +30,16 @@ describe('ne operator', () => {
 
     expect(results).toEqual(1);
   });
+
+  it('compare with null', async () => {
+    await db.getRepository('tests').create({});
+
+    const results = await db.getRepository('tests').count({
+      filter: {
+        'name.$ne': null,
+      },
+    });
+
+    expect(results).toBe(0);
+  });
 });

@@ -10,7 +10,7 @@ export class SortField extends Field {
     return DataTypes.INTEGER;
   }
 
-  async setSortValue(instance, options) {
+  setSortValue = async (instance, options) => {
     const { name, scopeKey } = this.options;
     const { model } = this.context.collection;
 
@@ -34,14 +34,14 @@ export class SortField extends Field {
     });
   }
 
-  async onScopeChange(instance, options) {
+  onScopeChange = async (instance, options) => {
     const { scopeKey } = this.options;
     if (scopeKey && !instance.isNewRecord && instance._previousDataValues[scopeKey] != instance[scopeKey]) {
       await this.setSortValue(instance, options);
     }
   }
 
-  async initRecordsSortValue({ transaction }) {
+  initRecordsSortValue = async ({ transaction }) => {
     const totalCount = await this.collection.repository.count({
       transaction,
     });
@@ -77,16 +77,16 @@ export class SortField extends Field {
 
   bind() {
     super.bind();
-    this.on('afterSync', this.initRecordsSortValue.bind(this));
-    this.on('beforeUpdate', this.onScopeChange.bind(this));
-    this.on('beforeCreate', this.setSortValue.bind(this));
+    this.on('afterSync', this.initRecordsSortValue);
+    this.on('beforeUpdate', this.onScopeChange);
+    this.on('beforeCreate', this.setSortValue);
   }
 
   unbind() {
     super.unbind();
-    this.off('beforeUpdate', this.onScopeChange.bind(this));
-    this.off('beforeCreate', this.setSortValue.bind(this));
-    this.off('afterSync', this.initRecordsSortValue.bind(this));
+    this.off('beforeUpdate', this.onScopeChange);
+    this.off('beforeCreate', this.setSortValue);
+    this.off('afterSync', this.initRecordsSortValue);
   }
 }
 
