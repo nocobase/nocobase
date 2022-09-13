@@ -1,4 +1,5 @@
 import { str2moment } from '@nocobase/utils';
+import * as math from 'mathjs';
 
 export async function _({ value, field }) {
   return value;
@@ -87,7 +88,7 @@ export const time = datetime;
 export async function percent({ value, field }) {
   if (value) {
     const numberValue = Number(value.split('%')[0]);
-    return numberValue / 100;
+    return math.round(numberValue / 100, 9);
   }
   return 0;
 }
