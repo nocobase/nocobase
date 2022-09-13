@@ -1,11 +1,15 @@
 import { str2moment } from '@nocobase/utils';
 import * as math from 'mathjs';
+import { namespace } from '../../';
 
 export async function _({ value, field }) {
   return value;
 }
 
-export async function password({ value, field }) {
+export async function password({ value, field, ctx }) {
+  if (value === undefined || value === null) {
+    throw new Error(ctx.t('password is empty', { ns: namespace }));
+  }
   return `${value}`;
 }
 
@@ -93,7 +97,7 @@ export async function percent({ value, field }) {
   return 0;
 }
 export async function checkbox({ value, column, field, ctx }) {
-  return value === '是' ? 1 : null;
+  return value === ctx.t('Yes', { ns: namespace }) ? 1 : null;
 }
 
 export const boolean = checkbox;
@@ -101,6 +105,9 @@ export const boolean = checkbox;
 export async function select({ value, column, field, ctx }) {
   const { enum: enumData } = column;
   const item = enumData.find((item) => item.label === value);
+  if (item === undefined || item === null) {
+    throw new Error(ctx.t('can not find value', { ns: namespace }) + `(${value})`);
+  }
   return item?.value;
 }
 export const radio = select;
@@ -110,7 +117,13 @@ export const radioGroup = select;
 export async function multipleSelect({ value, column, field, ctx }) {
   const values = value.split(';');
   const { enum: enumData } = column;
-  const results = values.map((val) => enumData.find((item) => item.label === val));
+  const results = values.map((val) => {
+    const item = enumData.find((item) => item.label === val);
+    if (item === undefined || item === null) {
+      throw new Error(ctx.t('can not find value', { ns: namespace }) + `(${value})`);
+    }
+    return item;
+  });
   return results.map((result) => result.value);
 }
 

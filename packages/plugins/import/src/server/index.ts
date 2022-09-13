@@ -1,7 +1,7 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { namespace } from '..';
-import { enUS, zhCN } from '../locale';
 import { downloadXlsxTemplate, importXlsx } from './actions';
+import { enUS, zhCN } from './locale';
 import { importMiddleware } from './middleware';
 export class ImportPlugin extends Plugin {
   getName(): string {

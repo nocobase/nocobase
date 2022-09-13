@@ -105,9 +105,7 @@ export const useImportStartAction = () => {
       setVisible(false);
       setImportModalVisible(true);
       setImportStatus(ImportStatus.IMPORTING);
-      const {
-        data: { data },
-      }: any = await apiClient.axios.post(`${name}:importXlsx`, formData, {}).catch((err) => {});
+      const { data }: any = await apiClient.axios.post(`${name}:importXlsx`, formData, {}).catch((err) => {});
       setImportResult(data);
       form.reset();
       await service?.refresh?.();

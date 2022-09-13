@@ -29,7 +29,7 @@ export async function importXlsx(ctx: Context, next: Next) {
           try {
             return await transform({ ctx, record: item, columns, fields: collectionFields });
           } catch (error) {
-            failureData.unshift(item);
+            failureData.unshift([...item, error.message]);
           }
         }),
       )
@@ -37,16 +37,18 @@ export async function importXlsx(ctx: Context, next: Next) {
     //@ts-ignore
     const values = results.map((r) => r.value);
     const result = await ctx.db.sequelize.transaction(async (transaction) => {
-      for (const val of values) {
+      for (const [index, val] of values.entries()) {
+        if (val === undefined || val === null) {
+          continue;
+        }
         try {
           await repository.create({
             values: { ...val },
             transaction,
           });
         } catch (error) {
-          const failData = collectionFields.map((cf) => {
-            return val[cf.name];
-          });
+          const failData = list[index];
+          failData.push(error?.original?.message ?? error.message);
           failureData.unshift(failData);
         }
       }
@@ -57,21 +59,19 @@ export async function importXlsx(ctx: Context, next: Next) {
     });
     const header = columns?.map((column) => column.defaultTitle);
     ctx.body = {
-      buffer: xlsx.build([
+      rows: xlsx.build([
         {
           name: file.originalname,
           data: [header].concat(failureData),
         },
       ]),
-      result,
+      ...result,
     };
   } else {
     ctx.body = {
-      buffer: file.buffer.toJSON(),
-      result: {
-        successCount: 0,
-        failureCount: 0,
-      },
+      rows: file.buffer.toJSON(),
+      successCount: 0,
+      failureCount: list?.length ?? 0,
     };
   }
 

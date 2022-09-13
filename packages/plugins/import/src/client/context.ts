@@ -5,10 +5,10 @@ export interface ImportContextType {
   setImportModalVisible: (visible: boolean) => void;
   importStatus: number;
   setImportStatus: (status: number) => void;
-  importResult: { buffer: { type: string; data: any[] }; result: { successCount: number; failureCount: number } };
+  importResult: { data: { type: string; data: any[] }; meta: { successCount: number; failureCount: number } };
   setImportResult: (result: {
-    buffer: { type: string; data: any[] };
-    result: { successCount: number; failureCount: number };
+    data: { type: string; data: any[] };
+    meta: { successCount: number; failureCount: number };
   }) => void;
 }
 

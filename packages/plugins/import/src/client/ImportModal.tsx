@@ -14,12 +14,12 @@ export const ImportStatus = {
 export const ImportModal = (props: any) => {
   const { t } = useTranslation();
   const { importModalVisible, importStatus, importResult, setImportModalVisible } = useImportContext();
+  const { data: fileData, meta } = importResult ?? {};
   const doneHandler = () => {
     setImportModalVisible(false);
   };
   const downloadFailureDataHandler = () => {
-    const { data } = importResult?.buffer ?? {};
-    const arrayBuffer = new Int8Array(data);
+    const arrayBuffer = new Int8Array(fileData?.data);
     let blob = new Blob([arrayBuffer], { type: 'application/x-xls' });
     saveAs(blob, `fail.xlsx`);
   };
@@ -49,11 +49,13 @@ export const ImportModal = (props: any) => {
             <ExclamationCircleFilled style={{ fontSize: 72, color: '#1890ff' }} />
             <p>
               {t('Import done, total success have {{successCount}} , total failure have {{failureCount}}', {
-                ...(importResult?.result ?? {}),
+                ...(meta ?? {}),
               })}
             </p>
             <Space>
-              <Button onClick={downloadFailureDataHandler}>{t('To download the failure data')}</Button>
+              {meta?.failureCount > 0 && (
+                <Button onClick={downloadFailureDataHandler}>{t('To download the failure data')}</Button>
+              )}
               <Button type="primary" onClick={doneHandler}>
                 {t('Done')}
               </Button>

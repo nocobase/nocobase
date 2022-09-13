@@ -31,8 +31,8 @@ export const ImportContextProvider = (props: any) => {
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importStatus, setImportStatus] = useState<number>(ImportStatus.IMPORTING);
   const [importResult, setImportResult] = useState<{
-    buffer: { type: string; data: any[] };
-    result: { successCount: number; failureCount: number };
+    data: { type: string; data: any[] };
+    meta: { successCount: number; failureCount: number };
   }>(null);
   return (
     <ImportContext.Provider
