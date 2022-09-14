@@ -51,6 +51,7 @@ export const AttachActionInitializer = (props) => {
   const ctx = useTableBlockContext();
   const ctx1 = useContext(CollectionFieldContext);
   const ctx2=useBlockResource()
+  console.log(ctx)
   const { resource, service } = useBlockRequestContext();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(name);
@@ -86,7 +87,7 @@ export const AttachActionInitializer = (props) => {
             'x-acl-action': `${name}:list`,
             'x-decorator-props': {
               action: 'list',
-              params: { pageSize: 20,filter:{orderGid:{$is: null,}} },
+              params: { pageSize: 20},
               rowKey: 'id',
               dragSort: false,
               resource: name,
