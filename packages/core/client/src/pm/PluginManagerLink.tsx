@@ -31,7 +31,7 @@ export const PluginManagerLink = () => {
     <ActionContext.Provider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         icon={<AppstoreOutlined />}
-        title={t('Plugin Manager')}
+        title={t('Plugin manager')}
         onClick={() => {
           history.push('/admin/plugins');
         }}

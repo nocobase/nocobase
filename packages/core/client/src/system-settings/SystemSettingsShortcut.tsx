@@ -1,10 +1,11 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Card } from 'antd';
+import { Card, message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useHistory } from 'react-router-dom';
 import { useSystemSettings } from '.';
 import { i18n, PluginManager, useAPIClient, useRequest } from '..';
 import locale from '../locale';
@@ -40,6 +41,7 @@ const useSaveSystemSettingsValues = () => {
   const form = useForm();
   const { mutate, data } = useSystemSettings();
   const api = useAPIClient();
+  const { t } = useTranslation();
   return {
     async run() {
       await form.submit();
@@ -55,6 +57,7 @@ const useSaveSystemSettingsValues = () => {
         method: 'post',
         data: values,
       });
+      message.success(t('Saved successfully'));
       const lang = values.enabledLanguages?.[0] || 'en-US';
       if (values.enabledLanguages.length < 2 && api.auth.getLocale() !== lang) {
         api.auth.setLocale('');
@@ -136,13 +139,6 @@ const schema: ISchema = {
           type: 'void',
           'x-component': 'Action.Drawer.Footer',
           properties: {
-            cancel: {
-              title: 'Cancel',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ useCloseAction }}',
-              },
-            },
             submit: {
               title: 'Submit',
               'x-component': 'Action',
@@ -150,6 +146,13 @@ const schema: ISchema = {
                 type: 'primary',
                 htmlType: 'submit',
                 useAction: '{{ useSaveSystemSettingsValues }}',
+              },
+            },
+            cancel: {
+              title: 'Cancel',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ useCloseAction }}',
               },
             },
           },
@@ -232,13 +235,6 @@ const schema2: ISchema = {
             layout: 'one-column',
           },
           properties: {
-            cancel: {
-              title: 'Cancel',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ useCloseAction }}',
-              },
-            },
             submit: {
               title: 'Submit',
               'x-component': 'Action',
@@ -248,6 +244,13 @@ const schema2: ISchema = {
                 useAction: '{{ useSaveSystemSettingsValues }}',
               },
             },
+            // cancel: {
+            //   title: 'Cancel',
+            //   'x-component': 'Action',
+            //   'x-component-props': {
+            //     useAction: '{{ useCloseAction }}',
+            //   },
+            // },
           },
         },
       },
@@ -267,6 +270,20 @@ export const SystemSettingsPane = () => {
 };
 
 export const SystemSettingsShortcut = () => {
+  const { t } = useTranslation();
+  const history = useHistory();
+  return (
+    <PluginManager.Toolbar.Item
+      icon={<SettingOutlined />}
+      title={t('System settings')}
+      onClick={() => {
+        history.push('/admin/settings/system-settings/system-settings');
+      }}
+    />
+  );
+};
+
+export const SystemSettingsShortcut2 = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   return (

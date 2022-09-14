@@ -15,10 +15,11 @@ export const WorkflowProvider = (props) => {
     <SettingsCenterProvider
       settings={{
         workflow: {
-          title: 'Workflow',
+          icon: 'PartitionOutlined',
+          title: '{{t("Workflow")}}',
           tabs: {
             workflows: {
-              title: 'Workflow',
+              title: '{{t("Workflow")}}',
               component: WorkflowPane,
             },
           },

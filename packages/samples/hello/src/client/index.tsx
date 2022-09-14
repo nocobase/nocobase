@@ -50,6 +50,7 @@ export default React.memo((props) => {
       settings={{
         'hello-sample': {
           title: 'Hello',
+          icon: 'ApiOutlined',
           tabs: {
             tab1: {
               title: 'Hello tab',

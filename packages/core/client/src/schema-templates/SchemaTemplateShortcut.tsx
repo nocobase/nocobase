@@ -12,7 +12,7 @@ export const SchemaTemplateShortcut = () => {
       icon={<LayoutOutlined />}
       title={t('Block templates')}
       onClick={() => {
-        history.push('/admin/plugins/block-templates');
+        history.push('/admin/settings/block-templates/list');
       }}
     />
   );

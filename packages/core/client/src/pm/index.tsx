@@ -2,13 +2,16 @@ import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Avatar, Card, Layout, Menu, message, PageHeader, Popconfirm, Spin, Switch, Tabs } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Redirect, useHistory, useRouteMatch } from 'react-router-dom';
 import { ACLPane } from '../acl';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerPane } from '../collection-manager';
 import { useDocumentTitle } from '../document-title';
 import { FileStoragePane } from '../file-manager';
+import { Icon } from '../icon';
 import { RouteSwitchContext } from '../route-switch';
+import { useCompile } from '../schema-component';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
 
@@ -18,6 +21,7 @@ const PluginCard = (props) => {
   const history = useHistory<any>();
   const { data = {} } = props;
   const api = useAPIClient();
+  const { t } = useTranslation();
   return (
     <Card
       bordered={false}
@@ -31,17 +35,17 @@ const PluginCard = (props) => {
           />
         ) : null,
         <Popconfirm
-          title="Are you sure to delete this plugin?"
+          title={t('Are you sure to delete this plugin?')}
           onConfirm={async () => {
             await api.request({
               url: `pm:remove/${data.name}`,
             });
-            message.success('插件删除成功');
+            message.success(t('插件删除成功'));
             window.location.reload();
           }}
           onCancel={() => {}}
-          okText="Yes"
-          cancelText="No"
+          okText={t('Yes')}
+          cancelText={t('No')}
         >
           <DeleteOutlined />
         </Popconfirm>,
@@ -51,7 +55,7 @@ const PluginCard = (props) => {
             await api.request({
               url: `pm:${checked ? 'enable' : 'disable'}/${data.name}`,
             });
-            message.success(checked ? '插件激活成功' : '插件禁用成功');
+            message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
             window.location.reload();
           }}
           defaultChecked={data.enabled}
@@ -175,7 +179,8 @@ const BuiltinPlugins = () => {
 };
 
 const MarketplacePlugins = () => {
-  return <div style={{ fontSize: 18 }}>Coming soon...</div>;
+  const { t } = useTranslation();
+  return <div style={{ fontSize: 18 }}>{t('Coming soon...')}</div>;
 };
 
 const PluginList = (props) => {
@@ -183,11 +188,13 @@ const PluginList = (props) => {
   const history = useHistory<any>();
   const { tabName = 'local' } = match.params || {};
   const { setTitle } = useDocumentTitle();
+  const { t } = useTranslation();
+
   return (
     <div>
       <PageHeader
         ghost={false}
-        title={'Plugin manager'}
+        title={t('Plugin manager')}
         footer={
           <Tabs
             activeKey={tabName}
@@ -195,9 +202,9 @@ const PluginList = (props) => {
               history.push(`/admin/plugins/${activeKey}`);
             }}
           >
-            <Tabs.TabPane tab={'Local'} key={'local'} />
-            <Tabs.TabPane tab={'Built-in'} key={'built-in'} />
-            <Tabs.TabPane tab={'Marketplace'} key={'marketplace'} />
+            <Tabs.TabPane tab={t('Local')} key={'local'} />
+            <Tabs.TabPane tab={t('Built-in')} key={'built-in'} />
+            <Tabs.TabPane tab={t('Marketplace')} key={'marketplace'} />
           </Tabs>
         }
       />
@@ -216,37 +223,41 @@ const PluginList = (props) => {
 
 const settings = {
   acl: {
-    title: 'ACL',
+    title: '{{t("ACL")}}',
+    icon: 'LockOutlined',
     tabs: {
       roles: {
-        title: 'Roles & Permissions',
+        title: '{{t("Roles & Permissions")}}',
         component: ACLPane,
       },
     },
   },
   'block-templates': {
-    title: 'Block templates',
+    title: '{{t("Block templates")}}',
+    icon: 'LayoutOutlined',
     tabs: {
-      collections: {
-        title: 'Block templates',
+      list: {
+        title: '{{t("Block templates")}}',
         component: BlockTemplatesPane,
       },
     },
   },
   'collection-manager': {
-    title: 'Collection manager',
+    icon: 'DatabaseOutlined',
+    title: '{{t("Collection manager")}}',
     tabs: {
       collections: {
-        title: 'Collections & Fields',
+        title: '{{t("Collections & Fields")}}',
         component: CollectionManagerPane,
       },
     },
   },
   'file-manager': {
-    title: 'File manager',
+    title: '{{t("File manager")}}',
+    icon: 'FileOutlined',
     tabs: {
       storages: {
-        title: 'File storages',
+        title: '{{t("File storages")}}',
         component: FileStoragePane,
       },
       // test: {
@@ -256,10 +267,11 @@ const settings = {
     },
   },
   'system-settings': {
-    title: 'System settings',
+    icon: 'SettingOutlined',
+    title: '{{t("System settings")}}',
     tabs: {
       'system-settings': {
-        title: 'System settings',
+        title: '{{t("System settings")}}',
         component: SystemSettingsPane,
       },
     },
@@ -270,6 +282,7 @@ const SettingsCenter = (props) => {
   const match = useRouteMatch<any>();
   const history = useHistory<any>();
   const items = useContext(SettingsCenterContext);
+  const compile = useCompile();
   const firstUri = useMemo(() => {
     const keys = Object.keys(items).sort();
     const pluginName = keys.shift();
@@ -301,11 +314,12 @@ const SettingsCenter = (props) => {
                 return (
                   <Menu.Item
                     key={key}
+                    icon={item.icon ? <Icon type={item.icon} /> : null}
                     onClick={() => {
                       history.push(`/admin/settings/${key}/${tabKey}`);
                     }}
                   >
-                    {item.title}
+                    {compile(item.title)}
                   </Menu.Item>
                 );
               })}
@@ -314,7 +328,7 @@ const SettingsCenter = (props) => {
         <Layout.Content>
           <PageHeader
             ghost={false}
-            title={items[pluginName]?.title}
+            title={compile(items[pluginName]?.title)}
             footer={
               <Tabs
                 activeKey={tabName}
@@ -324,7 +338,7 @@ const SettingsCenter = (props) => {
               >
                 {Object.keys(items[pluginName]?.tabs).map((tabKey) => {
                   const tab = items[pluginName].tabs?.[tabKey];
-                  return <Tabs.TabPane tab={tab?.title} key={tabKey} />;
+                  return <Tabs.TabPane tab={compile(tab?.title)} key={tabKey} />;
                 })}
               </Tabs>
             }

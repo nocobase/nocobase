@@ -5,7 +5,7 @@ import { ActionContext, PluginManager, SchemaComponent } from '@nocobase/client'
 import { Card } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
+import { useHistory } from 'react-router-dom';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { workflowSchema } from './schemas/workflows';
 import { WorkflowLink } from './WorkflowLink';
@@ -48,6 +48,20 @@ export const WorkflowPane = () => {
 };
 
 export const WorkflowShortcut = () => {
+  const { t } = useTranslation();
+  const history = useHistory();
+  return (
+    <PluginManager.Toolbar.Item
+      icon={<PartitionOutlined />}
+      title={t('Workflow')}
+      onClick={() => {
+        history.push('/admin/settings/workflow/workflows');
+      }}
+    />
+  );
+};
+
+export const WorkflowShortcut2 = () => {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   return (
