@@ -669,4 +669,7 @@ export default {
   'Marketplace': '插件市场',
   'Coming soon...': '敬请期待...',
   'Settings center': '配置中心',
+
+  'Bookmark': '书签',
+  'Manage all settings': '管理所有配置',
 }

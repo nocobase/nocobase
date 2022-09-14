@@ -12,7 +12,7 @@ import { RemoteDocumentTitleProvider } from '../document-title';
 import { FileStorageShortcut } from '../file-manager';
 import { i18n } from '../i18n';
 import { PluginManagerProvider } from '../plugin-manager';
-import PMProvider, { PluginManagerLink } from '../pm';
+import PMProvider, { PluginManagerLink, SettingsCenterDropdown } from '../pm';
 import {
   AdminLayout,
   AuthLayout,
@@ -103,6 +103,7 @@ export class Application {
         SchemaTemplateShortcut,
         FileStorageShortcut,
         PluginManagerLink,
+        SettingsCenterDropdown,
       },
     });
     this.use(SchemaComponentProvider, { components: { Link, NavLink } });
@@ -142,7 +143,7 @@ export class Application {
         (async () => {
           const res = await this.apiClient.request({ url: 'app:getPlugins' });
           if (Array.isArray(res.data?.data)) {
-            plugins.push(...res.data.data)
+            plugins.push(...res.data.data);
           }
           for (const plugin of plugins) {
             const pluginModule = await dynamicImport(plugin);

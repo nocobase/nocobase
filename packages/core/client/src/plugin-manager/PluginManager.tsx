@@ -1,12 +1,11 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { ConfigProvider, Menu, MenuItemProps, Spin, Tooltip } from 'antd';
+import { ConfigProvider, Menu, MenuItemProps, Tooltip } from 'antd';
 import cls from 'classnames';
 import { get } from 'lodash';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { useAPIClient, useRequest } from '../api-client';
 import { PluginManagerContext } from './context';
 
 export const usePrefixCls = (
@@ -123,12 +122,16 @@ PluginManager.Toolbar.Item = (props) => {
       </div>
     );
 
-    return (
+    return title ? (
       <Tooltip title={titleComponent}>
         <Menu.Item {...others} className={className} eventKey={item.component}>
           {icon}
         </Menu.Item>
       </Tooltip>
+    ) : (
+      <Menu.Item {...others} className={className} eventKey={item.component}>
+        {icon}
+      </Menu.Item>
     );
   }
   return (
@@ -139,13 +142,19 @@ PluginManager.Toolbar.Item = (props) => {
 };
 
 export const RemotePluginManagerToolbar = () => {
-  const api = useAPIClient();
-  const { data, loading } = useRequest({
-    resource: 'plugins',
-    action: 'getPinned',
-  });
-  if (loading) {
-    return <Spin />;
-  }
-  return <PluginManager.Toolbar items={data?.data} />;
+  // const api = useAPIClient();
+  // const { data, loading } = useRequest({
+  //   resource: 'plugins',
+  //   action: 'getPinned',
+  // });
+  // if (loading) {
+  //   return <Spin />;
+  // }
+  const items = [
+    { component: 'DesignableSwitch', pin: true },
+    { component: 'PluginManagerLink', pin: true },
+    { component: 'SettingsCenterDropdown', pin: true },
+    // ...data?.data,
+  ];
+  return <PluginManager.Toolbar items={items} />;
 };

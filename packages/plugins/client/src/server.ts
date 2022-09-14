@@ -80,8 +80,6 @@ export class ClientPlugin extends Plugin {
         // TODO: 临时
         async getPinned(ctx, next) {
           ctx.body = [
-            { component: 'DesignableSwitch', pin: true },
-            { component: 'PluginManagerLink', pin: true },
             { component: 'CollectionManagerShortcut' },
             { component: 'ACLShortcut' },
             { component: 'WorkflowShortcut' },
