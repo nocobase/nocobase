@@ -53,7 +53,7 @@ await books.myQuery();
 
 ## 实例方法
 
-### `count`
+### `count()`
 
 从数据库查询特定条件的数据总数。相当于 Sequelize 中的 `Model.count()`。
 

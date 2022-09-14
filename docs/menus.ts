@@ -133,6 +133,7 @@ export default {
             '/api/server/resourcer/index',
             '/api/server/resourcer/resource',
             '/api/server/resourcer/action',
+            '/api/server/resourcer/middleware',
           ]
         },
         '/api/server/plugin-manager',
