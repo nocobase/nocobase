@@ -6,7 +6,7 @@ export function columns2Appends(columns, ctx) {
     const appendColumns = [];
     for (let i = 0, iLen = column.dataIndex.length; i < iLen; i++) {
       let field = collection.getField(column.dataIndex[i]);
-      if (field.target) {
+      if (field?.target) {
         appendColumns.push(column.dataIndex[i]);
         collection = ctx.db.getCollection(field.target);
       }

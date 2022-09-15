@@ -10,10 +10,10 @@ export async function exportXlsx(ctx: Context, next: Next) {
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
   }
-  const appends = columns2Appends(columns, ctx);
-  columns = columns?.filter((col) => col?.dataIndex?.length > 0);
   const repository = ctx.db.getRepository<any>(resourceName, resourceOf) as Repository;
   const collection = repository.collection;
+  columns = columns?.filter((col) => collection.hasField(col.dataIndex[0]) && col?.dataIndex?.length > 0);
+  const appends = columns2Appends(columns, ctx);
   const data = await repository.find({
     filter,
     fields,
