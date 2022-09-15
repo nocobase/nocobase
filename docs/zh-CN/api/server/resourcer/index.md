@@ -9,8 +9,7 @@ Resourcer 主要用于管理 API 资源与路由，也是 NocoBase 的内置模�
 可通过以下方式引入相关实体：
 
 ```ts
-import Database, {
-  Resourcer,
+import Resourcer, {
   Resource,
   Action,
   Middleware,
@@ -224,4 +223,30 @@ app.resourcer.use(async (ctx, next) => {
   console.log(ctx.req.url);
   await next();
 });
+```
+
+### `middleware()`
+
+生成一个兼容 Koa 的中间件，用于将资源的路由处理注入到应用中。
+
+**签名**
+
+* `middleware(options: KoaMiddlewareOptions): KoaMiddleware`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options.prefix?` | `string` | `''` | 路径前缀。 |
+| `options.accessors?` | `Object` | `{}` | 常用方法的名称映射，与构造函数的 `accessors` 参数结构相同。 |
+
+**示例**
+
+```ts
+const koa = new Koa();
+
+const resourcer = new Resourcer();
+
+// 生成兼容 Koa 的中间件
+koa.use(resourcer.middleware());
 ```

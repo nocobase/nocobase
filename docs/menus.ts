@@ -112,22 +112,28 @@ export default {
       type: 'subMenu',
       children: [
         '/api/server/index',
-        '/api/server/application',
+        {
+          title: 'Server',
+          type: 'subMenu',
+          children: [
+            '/api/server/application',
+            '/api/server/plugin-manager',
+            '/api/server/i18n',
+          ]
+        },
         {
           title: 'Database',
-          'title.zh-CN': '数据库',
           type: 'subMenu',
           children: [
             '/api/server/database/index',
-            '/api/server/database/field',
             '/api/server/database/collection',
+            '/api/server/database/field',
             '/api/server/database/repository',
             '/api/server/database/operators',
           ]
         },
         {
           title: 'Resourcer',
-          'title.zh-CN': '资源与路由',
           type: 'subMenu',
           children: [
             '/api/server/resourcer/index',
@@ -136,8 +142,6 @@ export default {
             '/api/server/resourcer/middleware',
           ]
         },
-        '/api/server/plugin-manager',
-        '/api/server/i18n',
         '/api/server/acl',
       ]
     },

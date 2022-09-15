@@ -32,8 +32,17 @@ import Database, {
 
 | 参数名 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |
-| `options.tablePrefix` | `string` | `''` | 表名前缀 |
-| `options.migrator` | `UmzugOptions` | `{}` | 迁移管理器相关参数，参考 [Umzug](https://github.com/sequelize/umzug/blob/main/src/types.ts#L15) 实现 |
+| `options.host` | `string` | `'localhost'` | 数据库主机 |
+| `options.port` | `number` | - | 数据库服务端口，根据使用的数据库有对应默认端口 |
+| `options.username` | `string` | - | 数据库用户名 |
+| `options.password` | `string` | - | 数据库密码 |
+| `options.database` | `string` | - | 数据库名称 |
+| `options.dialect` | `string` | `'mysql'` | 数据库类型 |
+| `options.storage` | `string` | `':memory:'` | SQLite 的存储模式 |
+| `options.logging` | `boolean` | `false` | 是否开启日志 |
+| `options.define` | `Object` | `{}` | 默认的表定义参数 |
+| `options.tablePrefix?` | `string` | `''` | NocoBase 扩展，表名前缀 |
+| `options.migrator?` | `UmzugOptions` | `{}` | NocoBase 扩展，迁移管理器相关参数，参考 [Umzug](https://github.com/sequelize/umzug/blob/main/src/types.ts#L15) 实现 |
 
 **示例**
 
@@ -60,6 +69,20 @@ const app = new Database({
 ### `options`
 
 初始化的配置参数，包含了 Sequelize 的配置参数和 NocoBase 的额外配置参数。
+
+### `version`
+
+连接的数据库的版本信息对象，可通过 `await db.version.satisfies(<sem_ver>)` 检查是否满足特定数据库版本要求。
+
+**示例**
+
+```ts
+const r = await this.db.version.satisfies({
+  mysql: '>=8.0.17',
+  sqlite: '3.x',
+  postgres: '>=10',
+});
+```
 
 ## 实例方法
 
@@ -422,9 +445,11 @@ Database 除了对 sequelize 原生的事件封装以外，还提供以下可监
 | `'afterDefineCollection'` | 定义 collection 之后触发 |
 | `'beforeRemoveCollection'` | 移除 collection 之前触发 |
 | `'afterRemoveCollection'` | 移除 collection 之后触发 |
+| `<sequelize_model_global_event>` | 所有 sequelize 的全局事件均可通过此方式监听，详见示例部分 |
 | `<model_name>.<sequelize_model_event>` | 所有 sequelize model 的事件均可通过此方式监听，详见示例部分 |
-| `<model_name>.afterCreateWithAssociations` | NocoBase 扩展的当连同关联数据一并创建记录成功后触发的事件 |
-| `<model_name>.afterUpdateWithAssociations` | NocoBase 扩展的当连同关联数据一并更新记录成功后触发的事件 |
+| `<model_name>.afterCreateWithAssociations` | NocoBase 扩展的当连同关联数据一并创建记录成功后触发的事件（使用 Repository 的 create 方法会触发） |
+| `<model_name>.afterUpdateWithAssociations` | NocoBase 扩展的当连同关联数据一并更新记录成功后触发的事件（使用 Repository 的 update 方法会触发） |
+| `<model_name>.afterSaveWithAssociations` | NocoBase 扩展的当连同关联数据一并创建或更新记录成功后触发的事件（使用 Repository 的 create/update 方法都会触发） |
 
 **签名**
 
@@ -463,6 +488,39 @@ db.on('books.afterCreateWithAssociations', async (model, options) => {
 });
 ```
 
+监听任意表的删除事件：
+
+```ts
+db.on('afterDestroy', async (model, options) => {
+  console.log(model);
+});
+```
+
+### `off()`
+
+移除事件监听函数。
+
+**签名**
+
+* `off(name: string, listener: Function)`
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| name | string | - | 事件名称 |
+| listener | Function | - | 事件监听器 |
+
+**示例**
+
+```ts
+const listener = async (model, options) => {
+  console.log(model);
+};
+
+db.on('afterCreate', listener);
+
+db.off('afterCreate', listener);
+```
+
 ### `import()`
 
 导入文件目录下所有文件作为 collection 配置载入内存。
@@ -480,15 +538,37 @@ db.on('books.afterCreateWithAssociations', async (model, options) => {
 
 **示例**
 
+`./collections/books.ts` 文件定义的 collection 如下：
+
 ```ts
-await db.import('./collections');
+export default {
+  name: 'books',
+  fields: [
+    {
+      type: 'string',
+      name: 'title',
+    }
+  ]
+};
+```
+
+在插件加载时导入相关配置：
+
+```ts
+class Plugin {
+  async load() {
+    await this.app.db.import({
+      directory: path.resolve(__dirname, './collections'),
+    });
+  }
+}
 ```
 
 ## 包级导出
 
 ### `extend()`
 
-扩展已在内存中的表结构定义。该方法是 `@nocobase/database` 包导出的顶级方法，不通过 db 实例调用。
+扩展已在内存中的表结构定义，主要用于。该方法是 `@nocobase/database` 包导出的顶级方法，不通过 db 实例调用。
 
 **签名**
 
@@ -503,19 +583,24 @@ await db.import('./collections');
 
 **示例**
 
-```ts
-import { extend } from '@nocobase/database';
+原始 books 表定义（books.ts）：
 
-// 原始定义
-db.collection({
+```ts
+export default {
   name: 'books',
   fields: [
     { name: 'title', type: 'string' }
   ]
-});
+}
+```
+
+扩展 books 表定义（books.extend.ts）：
+
+```ts
+import { extend } from '@nocobase/database';
 
 // 再次扩展
-extend({
+export default extend({
   name: 'books',
   fields: [
     { name: 'price', type: 'number' }
@@ -523,6 +608,6 @@ extend({
 });
 ```
 
-通过 `extend()` 再次扩展以后，books 表将拥有 `title` 和 `price` 两个字段。
+以上两个文件如在调用 `import()` 时导入，通过 `extend()` 再次扩展以后，books 表将拥有 `title` 和 `price` 两个字段。
 
 此方法在扩展已有插件已定义的表结构时非常有用。
