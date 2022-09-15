@@ -1,13 +1,15 @@
-import React from "react";
+import React ,{useContext}from "react";
 import { TableOutlined } from '@ant-design/icons';
-
+import { SchemaInitializerContext } from '@nocobase/client';
 import { useCollectionManager } from "../../collection-manager";
 import { useSchemaTemplateManager } from "../../schema-templates";
 import { SchemaInitializer } from "../SchemaInitializer";
-import { createTableBlockSchema, useRecordCollectionDataSourceItems } from "../utils";
+import { createAssociateTableBlockSchema, useRecordCollectionDataSourceItems } from "../utils";
+
 
 export const RecordAssociationBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  console.log(item)
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { getCollection } = useCollectionManager();
   const field = item.field;
@@ -23,7 +25,7 @@ export const RecordAssociationBlockInitializer = (props) => {
           insert(s);
         } else {
           insert(
-            createTableBlockSchema({
+            createAssociateTableBlockSchema({
               rowKey: collection.filterTargetKey,
               collection: field.target,
               resource,

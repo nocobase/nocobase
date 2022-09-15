@@ -54,30 +54,6 @@ export const TableActionInitializers = {
             },
           },
         },
-        {
-          type: 'item',
-          title: "{{t('Attach')}}",
-          component: 'AttachActionInitializer',
-          schema: {
-            'x-align': 'right',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
-          },
-        },
-        {
-          type: 'item',
-          title: "{{t('Detach')}}",
-          component: 'DetachActionInitializer',
-          schema: {
-            'x-align': 'right',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
-          },
-        },
       ],
     },
   ],

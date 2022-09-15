@@ -9,6 +9,7 @@ import { TableSelector } from './TableSelector';
 export * from './TableBlockDesigner';
 export * from './TableField';
 export * from './TableSelectorDesigner';
+export * from './AssociateTableDesginer'
 
 export const TableV2 = Table;
 
