@@ -106,55 +106,57 @@ export default {
   //   ],
   // },
   '/api': [
+    '/api/index',
+    '/api/env',
     {
-      title: 'Server',
-      'title.zh-CN': '服务端',
+      title: '@nocobase/server',
       type: 'subMenu',
       children: [
-        '/api/server/index',
-        {
-          title: 'Server',
-          type: 'subMenu',
-          children: [
-            '/api/server/application',
-            '/api/server/plugin-manager',
-            '/api/server/i18n',
-          ]
-        },
-        {
-          title: 'Database',
-          type: 'subMenu',
-          children: [
-            '/api/server/database/index',
-            '/api/server/database/collection',
-            '/api/server/database/field',
-            '/api/server/database/repository',
-            '/api/server/database/operators',
-          ]
-        },
-        {
-          title: 'Resourcer',
-          type: 'subMenu',
-          children: [
-            '/api/server/resourcer/index',
-            '/api/server/resourcer/resource',
-            '/api/server/resourcer/action',
-            '/api/server/resourcer/middleware',
-          ]
-        },
-        '/api/server/acl',
+        '/api/server/application',
+        '/api/server/plugin-manager',
+        '/api/server/i18n',
       ]
     },
     {
-      title: 'Client',
-      'title.zh-CN': '客户端',
+      title: '@nocobase/database',
+      type: 'subMenu',
+      children: [
+        '/api/database/index',
+        '/api/database/collection',
+        '/api/database/field',
+        '/api/database/repository',
+        '/api/database/operators',
+      ]
+    },
+    {
+      title: '@nocobase/resourcer',
+      type: 'subMenu',
+      children: [
+        '/api/resourcer/index',
+        '/api/resourcer/resource',
+        '/api/resourcer/action',
+        '/api/resourcer/middleware',
+      ]
+    },
+    {
+      title: '@nocobase/acl',
+      path: '/api/acl'
+    },
+    {
+      title: '@nocobase/client',
       type: 'subMenu',
       children: [
         '/api/client/index',
       ]
     },
-    '/api/env',
-    '/api/cli',
+    {
+      title: '@nocobase/cli',
+      path: '/api/cli'
+    },
+    {
+      title: '@nocobase/sdk',
+      path: '/api/sdk'
+    },
     {
       title: 'HTTP API',
       type: 'subMenu',
@@ -165,6 +167,5 @@ export default {
         '/api/http-api/filter-operators'
       ]
     },
-    '/api/sdk',
   ]
 };
