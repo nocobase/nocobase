@@ -1,4 +1,3 @@
-
 export default {
   '/introduction': [
     '/introduction/index',
@@ -17,8 +16,8 @@ export default {
         '/getting-started/installation/index',
         '/getting-started/installation/docker-compose',
         '/getting-started/installation/create-nocobase-app',
-        '/getting-started/installation/git-clone'
-      ]
+        '/getting-started/installation/git-clone',
+      ],
     },
     '/getting-started/upgrading',
   ],
@@ -33,6 +32,37 @@ export default {
     '/manual/file-storages',
     '/manual/system-settings',
     '/manual/plugins',
+  ],
+  '/development': [
+    {
+      title: 'Getting started',
+      'title.zh-CN': '快速开始',
+      type: 'group',
+      children: ['/development/index', '/development/your-fisrt-plugin'],
+    },
+    {
+      title: 'Extension Guides',
+      'title.zh-CN': '扩展指南',
+      type: 'group',
+      children: [
+        '/development/guide/index',
+        '/development/guide/collections-fields',
+        '/development/guide/commands',
+        '/development/guide/hooks',
+        '/development/guide/i18n',
+        '/development/guide/middleware',
+        '/development/guide/migration',
+        '/development/guide/resources-actions',
+        '/development/guide/ui-schema-designer',
+        '/development/guide/ui-router',
+      ],
+    },
+    {
+      title: 'Test & Build',
+      'title.zh-CN': '测试与构建',
+      type: 'group',
+      children: ['/development/pre-release/test', '/development/pre-release/build'],
+    },
   ],
   // {
   //   title: 'Development',
@@ -106,51 +136,77 @@ export default {
   //   ],
   // },
   '/api': [
+    '/api/server/index',
+    // {
+    //   title: 'Server',
+    //   'title.zh-CN': '服务端',
+    //   type: 'subMenu',
+    //   children: [
+    //   ],
+    // },
     {
-      title: 'Server',
-      'title.zh-CN': '服务端',
+      title: '@nocobase/server',
+      'title.zh-CN': '@nocobase/server',
+      type: 'subMenu',
+      children: ['/api/server/application', '/api/server/plugin-manager', '/api/server/i18n', '/api/server/acl'],
+    },
+    {
+      title: 'Database',
+      'title.zh-CN': '@nocobase/database',
       type: 'subMenu',
       children: [
-        '/api/server/index',
-        '/api/server/application',
-        {
-          title: 'Database',
-          'title.zh-CN': '数据库',
-          type: 'subMenu',
-          children: [
-            '/api/server/database/index',
-            '/api/server/database/field',
-            '/api/server/database/collection',
-            '/api/server/database/repository',
-            '/api/server/database/operators',
-          ]
-        },
-        {
-          title: 'Resourcer',
-          'title.zh-CN': '资源与路由',
-          type: 'subMenu',
-          children: [
-            '/api/server/resourcer/index',
-            '/api/server/resourcer/resource',
-            '/api/server/resourcer/action',
-            '/api/server/resourcer/middleware',
-          ]
-        },
-        '/api/server/plugin-manager',
-        '/api/server/i18n',
-        '/api/server/acl',
-      ]
+        '/api/server/database/index',
+        '/api/server/database/field',
+        '/api/server/database/collection',
+        '/api/server/database/repository',
+        '/api/server/database/operators',
+      ],
+    },
+    {
+      title: 'Resourcer',
+      'title.zh-CN': '@nocobase/resourcer',
+      type: 'subMenu',
+      children: [
+        '/api/server/resourcer/index',
+        '/api/server/resourcer/resource',
+        '/api/server/resourcer/action',
+        '/api/server/resourcer/middleware',
+      ],
     },
     {
       title: 'Client',
-      'title.zh-CN': '客户端',
+      'title.zh-CN': '@nocobase/client',
       type: 'subMenu',
       children: [
         '/api/client/index',
-      ]
+        '/api/client/application',
+        '/api/client/route-switch',
+        {
+          title: 'SchemaDesigner',
+          'title.zh-CN': 'SchemaDesigner',
+          type: 'subMenu',
+          children: [
+            '/api/client/schema-designer/schema-component',
+            '/api/client/schema-designer/schema-initializer',
+            '/api/client/schema-designer/schema-settings',
+          ],
+        },
+        {
+          title: 'Extensions',
+          'title.zh-CN': 'Extensions',
+          type: 'subMenu',
+          children: [
+            '/api/client/extensions/schema-component',
+            '/api/client/extensions/collection-manager',
+            '/api/client/extensions/block-provider',
+            '/api/client/extensions/acl',
+          ],
+        },
+      ],
     },
-    '/api/env',
+    '/api/sdk',
     '/api/cli',
+    '/api/env',
     {
       title: 'HTTP API',
       type: 'subMenu',
@@ -158,9 +214,8 @@ export default {
         '/api/http-api/index',
         '/api/http-api/rest-api',
         '/api/http-api/action-api',
-        '/api/http-api/filter-operators'
-      ]
+        '/api/http-api/filter-operators',
+      ],
     },
-    '/api/sdk',
-  ]
+  ],
 };
