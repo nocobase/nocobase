@@ -1,4 +1,4 @@
-# SDK
+# @nocobase/sdk
 
 ## APIClient
 

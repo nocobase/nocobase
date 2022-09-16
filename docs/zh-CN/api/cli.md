@@ -1,1 +1,1 @@
-# CLI
+# @nocobase/cli

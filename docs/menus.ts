@@ -1,4 +1,3 @@
-
 export default {
   '/introduction': [
     '/introduction/index',
@@ -17,8 +16,8 @@ export default {
         '/getting-started/installation/index',
         '/getting-started/installation/docker-compose',
         '/getting-started/installation/create-nocobase-app',
-        '/getting-started/installation/git-clone'
-      ]
+        '/getting-started/installation/git-clone',
+      ],
     },
     '/getting-started/upgrading',
   ],
@@ -33,6 +32,37 @@ export default {
     '/manual/file-storages',
     '/manual/system-settings',
     '/manual/plugins',
+  ],
+  '/development': [
+    {
+      title: 'Getting started',
+      'title.zh-CN': '快速开始',
+      type: 'group',
+      children: ['/development/index', '/development/your-fisrt-plugin'],
+    },
+    {
+      title: 'Extension Guides',
+      'title.zh-CN': '扩展指南',
+      type: 'group',
+      children: [
+        '/development/guide/index',
+        '/development/guide/collections-fields',
+        '/development/guide/commands',
+        '/development/guide/hooks',
+        '/development/guide/i18n',
+        '/development/guide/middleware',
+        '/development/guide/migration',
+        '/development/guide/resources-actions',
+        '/development/guide/ui-schema-designer',
+        '/development/guide/ui-router',
+      ],
+    },
+    {
+      title: 'Test & Build',
+      'title.zh-CN': '测试与构建',
+      type: 'group',
+      children: ['/development/pre-release/test', '/development/pre-release/build'],
+    },
   ],
   // {
   //   title: 'Development',
@@ -111,11 +141,7 @@ export default {
     {
       title: '@nocobase/server',
       type: 'subMenu',
-      children: [
-        '/api/server/application',
-        '/api/server/plugin-manager',
-        '/api/server/i18n',
-      ]
+      children: ['/api/server/application', '/api/server/plugin-manager', '/api/server/i18n'],
     },
     {
       title: '@nocobase/database',
@@ -126,7 +152,7 @@ export default {
         '/api/database/field',
         '/api/database/repository',
         '/api/database/operators',
-      ]
+      ],
     },
     {
       title: '@nocobase/resourcer',
@@ -136,26 +162,49 @@ export default {
         '/api/resourcer/resource',
         '/api/resourcer/action',
         '/api/resourcer/middleware',
-      ]
+      ],
     },
     {
       title: '@nocobase/acl',
-      path: '/api/acl'
+      path: '/api/acl',
     },
     {
       title: '@nocobase/client',
       type: 'subMenu',
       children: [
         '/api/client/index',
-      ]
+        '/api/client/application',
+        '/api/client/route-switch',
+        {
+          title: 'SchemaDesigner',
+          'title.zh-CN': 'SchemaDesigner',
+          type: 'subMenu',
+          children: [
+            '/api/client/schema-designer/schema-component',
+            '/api/client/schema-designer/schema-initializer',
+            '/api/client/schema-designer/schema-settings',
+          ],
+        },
+        {
+          title: 'Extensions',
+          'title.zh-CN': 'Extensions',
+          type: 'subMenu',
+          children: [
+            '/api/client/extensions/schema-component',
+            '/api/client/extensions/collection-manager',
+            '/api/client/extensions/block-provider',
+            '/api/client/extensions/acl',
+          ],
+        },
+      ],
     },
     {
       title: '@nocobase/cli',
-      path: '/api/cli'
+      path: '/api/cli',
     },
     {
       title: '@nocobase/sdk',
-      path: '/api/sdk'
+      path: '/api/sdk',
     },
     {
       title: 'HTTP API',
@@ -164,8 +213,8 @@ export default {
         '/api/http-api/index',
         '/api/http-api/rest-api',
         '/api/http-api/action-api',
-        '/api/http-api/filter-operators'
-      ]
+        '/api/http-api/filter-operators',
+      ],
     },
-  ]
+  ],
 };
