@@ -67,6 +67,7 @@ Action 是对资源的操作过程的描述，通常包含数据库处理等，�
 参数中还包含请求资源路由的描述部分，具体如下：
 
 | 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
 | `resourceName` | `string` | - | 资源名称 |
 | `resourceIndex` | `string \| number` | - | 资源的主键值 |
 | `associatedName` | `string` | - | 所属关系资源的名称 |

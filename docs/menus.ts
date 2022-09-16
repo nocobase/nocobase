@@ -136,14 +136,8 @@ export default {
   //   ],
   // },
   '/api': [
-    '/api/server/index',
-    // {
-    //   title: 'Server',
-    //   'title.zh-CN': '服务端',
-    //   type: 'subMenu',
-    //   children: [
-    //   ],
-    // },
+    '/api/index',
+    '/api/env',
     {
       title: '@nocobase/server',
       'title.zh-CN': '@nocobase/server',
@@ -206,7 +200,6 @@ export default {
     },
     '/api/sdk',
     '/api/cli',
-    '/api/env',
     {
       title: 'HTTP API',
       type: 'subMenu',

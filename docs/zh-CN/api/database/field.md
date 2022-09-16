@@ -1,10 +1,12 @@
 # Field
 
-数据表字段管理类。同时是所有字段类型的基类，其他任意字段类型均通过继承该类来实现。
+数据表字段管理类（抽象类）。同时是所有字段类型的基类，其他任意字段类型均通过继承该类来实现。
 
 ## 构造函数
 
 通常不会直接由开发者调用，主要通过 `db.collection({ fields: [] })` 方法作为代理入口调用。
+
+在扩展字段时主要通过继承 `Field` 抽象类，再注册到 Database 实例中来实现。
 
 **签名**
 
@@ -43,6 +45,105 @@
 
 字段上下文对象。
 
+## 实例方法
+
+### `on()`
+
+基于数据表事件的快捷定义方式。相当于 `db.on(this.collection.name + '.' + eventName, listener)`。
+
+继承时通常无需覆盖此方法。
+
+**签名**
+
+* `on(eventName: string, listener: (...args: any[]) => void)`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `eventName` | `string` | - | 事件名称 |
+| `listener` | `(...args: any[]) => void` | - | 事件监听器 |
+
+### `off()`
+
+基于数据表事件的快捷移除方式。相当于 `db.off(this.collection.name + '.' + eventName, listener)`。
+
+继承时通常无需覆盖此方法。
+
+**签名**
+
+* `off(eventName: string, listener: (...args: any[]) => void)`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `eventName` | `string` | - | 事件名称 |
+| `listener` | `(...args: any[]) => void` | - | 事件监听器 |
+
+### `bind()`
+
+当字段被添加到数据表时触发的执行内容。通常用于添加数据表事件监听器和其他处理。
+
+继承时需要先调用对应的 `super.bind()` 方法。
+
+**签名**
+
+* `bind()`
+
+### `unbind()`
+
+当字段从数据表中移除时触发的执行内容。通常用于移除数据表事件监听器和其他处理。
+
+继承时需要先调用对应的 `super.unbind()` 方法。
+
+**签名**
+
+* `unbind()`
+
+### `remove()`
+
+从数据表中移除字段（仅从内存中移除）。
+
+**示例**
+
+```ts
+const books = db.getCollections('books');
+
+books.getField('isbn').remove();
+
+// really remove from db
+await books.sync();
+```
+
+### `removeFromDb()`
+
+从数据库中移除字段。
+
+**签名**
+
+* `removeFromDb(options?: Transactionable): Promise<void>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options.transaction?` | `Transaction` | - | 事务实例 |
+
+### `existsInDb()`
+
+判断字段是否存在于数据库中。
+
+**签名**
+
+* `existsInDb(options?: Transactionable): Promise<boolean>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options.transaction?` | `Transaction` | - | 事务实例 |
+
 ## 内置字段类型列表
 
 NocoBase 内置了一些常用的字段类型，可以直接在定义数据表的字段是使用对应的 type 名称来指定类型。不同类型的字段参数配置不同，具体可参考下面的列表。
@@ -51,7 +152,29 @@ NocoBase 内置了一些常用的字段类型，可以直接在定义数据表�
 
 另外 server 端的字段类型主要解决数据库存储和部分算法的问题，与前端的字段展示类型和使用组件基本无关。前端字段类型可以参考教程对应说明。
 
-### `'integer'`
+### 逻辑类型
+
+#### `'boolean'`
+
+逻辑值类型。
+
+**示例**
+
+```js
+db.collection({
+  name: 'books',
+  fields: [
+    {
+      type: 'boolean',
+      name: 'published'
+    }
+  ]
+});
+```
+
+### 数字类型
+
+#### `'integer'`
 
 整型（32 位）。
 
@@ -69,7 +192,7 @@ db.collection({
 });
 ```
 
-### `'bigInt'`
+#### `'bigInt'`
 
 长整型（64 位）。
 
@@ -87,7 +210,7 @@ db.collection({
 });
 ```
 
-### `'double'`
+#### `'double'`
 
 双精度浮点型（64 位）。
 
@@ -105,17 +228,17 @@ db.collection({
 });
 ```
 
-### `'real'`
+#### `'real'`
 
-实数类型（仅 PostgreSQL 可用）。
+实数类型（仅 PG 适用）。
 
-### `'decimal'`
+#### `'decimal'`
 
 十进制小数类型。
 
-### `'string'`
+#### `'string'`
 
-字符串类型。
+字符串类型。相当于大部分数据库的 `VARCHAR` 类型。
 
 **示例**
 
@@ -131,9 +254,9 @@ db.collection({
 });
 ```
 
-### `'text'`
+#### `'text'`
 
-文本类型。
+文本类型。相当于大部分数据库的 `TEXT` 类型。
 
 **示例**
 
@@ -149,9 +272,9 @@ db.collection({
 });
 ```
 
-### `'password'`
+#### `'password'`
 
-密码类型。基于 Node.js 原生的 crypto 包的 `scrypt` 方法进行密码加密。
+密码类型（NocoBase 扩展）。基于 Node.js 原生的 crypto 包的 `scrypt` 方法进行密码加密。
 
 **示例**
 
@@ -176,33 +299,41 @@ db.collection({
 | `length` | `number` | 64 | 字符长度 |
 | `randomBytesSize` | `number` | 8 | 随机字节大小 |
 
-### `'boolean'`
+### 日期时间
 
-逻辑值类型。
-
-### `'date'`
+#### `'date'`
 
 日期类型。
 
-### `'array'`
+#### `'time'`
 
-数组类型。
+时间类型。
 
-### `'json'`
+### 高级类型
+
+#### `'array'`
+
+数组类型（仅 PG 适用）。
+
+#### `'json'`
 
 JSON 类型。
 
-### `'uuid'`
+#### `'jsonb'`
+
+JSONB 类型（仅 PG 适用，其他会被兼容为 `'json'` 类型）。
+
+#### `'uuid'`
 
 UUID 类型。
 
-### `'uid'`
+#### `'uid'`
 
-UID 类型。NocoBase 扩展的短随机字符串 ID 类型。
+UID 类型（NocoBase 扩展）。短随机字符串 ID 类型。
 
-### `'formula'`
+#### `'formula'`
 
-公式类型。可配置基于 [mathjs](https://www.npmjs.com/package/mathjs) 的数学公式计算，公式中可以引用同一条记录中其他列的数值参与计算。
+公式类型（NocoBase 扩展）。可配置基于 [mathjs](https://www.npmjs.com/package/mathjs) 的数学公式计算，公式中可以引用同一条记录中其他列的数值参与计算。
 
 **示例**
 
@@ -227,9 +358,9 @@ db.collection({
 });
 ```
 
-### `'radio'`
+#### `'radio'`
 
-单选类型。全表最多有一行数据的该字段值为 `true`，其他都为 `false` 或 `null`。
+单选类型（NocoBase 扩展）。全表最多有一行数据的该字段值为 `true`，其他都为 `false` 或 `null`。
 
 **示例**
 
@@ -247,9 +378,9 @@ db.collection({
 });
 ```
 
-### `'sort'`
+#### `'sort'`
 
-排序类型。基于整型数字进行排序，为新记录自动生成新序号，当移动数据时进行序号重排。
+排序类型（NocoBase 扩展）。基于整型数字进行排序，为新记录自动生成新序号，当移动数据时进行序号重排。
 
 数据表如果定义了 `sortable` 选项，也会自动生成对应字段。
 
@@ -274,7 +405,13 @@ db.collection({
 });
 ```
 
-### `'belongsTo'`
+#### `'virtual'`
+
+虚拟类型。不实际储存数据，仅用于特殊 getter/setter 定义时使用。
+
+### 关联类型
+
+#### `'belongsTo'`
 
 多对一关联类型。外键储存在自身表，与 hasOne/hasMany 相对。
 
@@ -297,7 +434,7 @@ db.collection({
 });
 ```
 
-### `'hasOne'`
+#### `'hasOne'`
 
 一对一关联类型。外键储存在关联表，与 belongsTo 相对。
 
@@ -318,7 +455,7 @@ db.collection({
 })
 ```
 
-### `'hasMany'`
+#### `'hasMany'`
 
 一对多关联类型。外键储存在关联表，与 belongsTo 相对。
 
@@ -340,7 +477,7 @@ db.collection({
 });
 ```
 
-### `'belongsToMany'`
+#### `'belongsToMany'`
 
 多对多关联类型。使用中间表储存双方外键，如不指定已存在的表为中间表的话，将会自动创建中间表。
 
@@ -375,7 +512,3 @@ db.collection({
   ]
 });
 ```
-
-### `'virtual'`
-
-虚拟类型。

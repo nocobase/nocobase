@@ -34,7 +34,7 @@ db.collection({
 await db.sync();
 
 const books = db.getRepository('books') as MyRepository;
-await books.myQuery();
+await books.myQuery('SELECT * FROM books;');
 ```
 
 ## 实例成员
