@@ -9,22 +9,111 @@ import {
   useDesignable,
   useCollectionManager,
   CollectionFieldContext,
+  useAPIClient,
+  useResourceActionContext,
+  AssociateTableSelectorContext,
+  useRecord,
+  useFilterByTk,
 } from '@nocobase/client';
 import { uid } from '@formily/shared';
+import { useTranslation } from 'react-i18next';
+import { useAssociateTableSelectorContext } from '../../block-provider/AssociateTableProvider';
 import { useCollection } from '@nocobase/client';
 import { ISchema, useForm, useField, Schema, useFieldSchema } from '@formily/react';
 import { ActionInitializer } from './ActionInitializer';
 
+function useAttachAction(props) {
+  console.log(props);
+  const { t } = useTranslation();
+  const { dn } = useDesignable();
+  const ctx1 = useAssociateTableSelectorContext();
+  const form = useForm();
+  const api = useAPIClient();
+  const ctx = useActionContext();
+  console.log(ctx, ctx1);
+  const field = useField();
+  console.log(field);
+
+  return {
+    async run() {
+      console.log(ctx1);
+      ctx.setVisible(false);
+      dn.refresh();
+    },
+  };
+
+  // return {
+  //   async run() {
+  //     await form.submit();
+  //     await api.resource('add', data.id).update({
+  //       filterByTk: data.id,
+  //       values: {
+  //         title: form.values.title,
+  //         config: form.values.config
+  //       }
+  //     });
+  //     ctx.setVisible(false);
+  //     refresh();
+  //   },
+  // };
+}
+
+// const usePickActionProps = () => {
+//   const { setVisible } = useActionContext();
+//   const filterByTk = useFilterByTk();
+//   const { resource, service, block, __parent } = useBlockRequestContext();
+
+//   const form = useForm();
+//   console.log(console.log(useRecord()));
+//   console.log(filterByTk, resource, service, block, __parent);
+//   console.log(useAssociateTableSelectorContext())
+//   console.log(useContext(RecordPickerContext))
+//   return {
+//     onClick() {
+//       console.log('usePickActionProps', form.values);
+//     },
+//   };
+// };
+const usePickActionProps = () => {
+  const { setVisible } = useActionContext();
+  // const { multiple, selectedRows, onChange } = useContext(RecordPickerContext);
+  // console.log(selectedRows)
+  return {
+    onClick() {
+      // if (multiple) {
+      //   onChange(selectedRows);
+      // } else {
+      //   onChange(selectedRows?.[0] || null);
+      // }
+      setVisible(false);
+    },
+  };
+};
+// const { multiple, selectedRows, onChange } = useContext(RecordPickerContext);
+// return {
+//   onClick() {
+//     if (multiple) {
+//       onChange(selectedRows);
+//     } else {
+//       onChange(selectedRows?.[0] || null);
+//     }
+//     setVisible(false);
+//   },
+// };
+// };
+
 export const AttachActionInitializer = (props) => {
   const { name } = useCollection();
-  const { dn } = useDesignable();
   const ctx = useTableBlockContext();
   const ctx1 = useContext(CollectionFieldContext);
   const ctx2 = useBlockResource();
   const association = useBlockAssociationContext();
+  const schema1 = useFieldSchema();
+  console.log(useContext(AssociateTableSelectorContext));
 
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(name);
+  console.log(fields);
 
   const schema: ISchema = {
     type: 'void',
@@ -36,7 +125,7 @@ export const AttachActionInitializer = (props) => {
     'x-component-props': {
       icon: 'LinkOutlined',
       openMode: 'drawer',
-      useProps: '{{ useTableFieldProps }}',
+      // useProps: '{{ useTableFieldProps }}',
     },
     'x-acl-action-props': {
       skipScopeCheck: true,
@@ -46,7 +135,10 @@ export const AttachActionInitializer = (props) => {
         type: 'void',
         title: '{{ t("Select record") }}',
         version: '2.0',
-        'x-component': 'Action.Drawer',
+        'x-component': 'RecordPicker.Selector',
+        'x-component-props': {
+          className: 'nb-record-picker-selector',
+        },
         properties: {
           grid: {
             type: 'void',
@@ -55,49 +147,32 @@ export const AttachActionInitializer = (props) => {
             'x-initializer-props': {
               association,
             },
+            'x-decorator-props': {
+              association,
+            },
           },
           footer: {
-            type: 'void',
-            'x-component': 'Action.Drawer.Footer',
+            'x-component': 'Action.Container.Footer',
+            'x-component-props': {},
             properties: {
-              cancel: {
-                title: '{{t("Cancel")}}',
-                'x-component': 'Action',
-                'x-component-props': {
-                  useAction() {
-                    const form = useForm();
-                    const ctx = useActionContext();
-                    return {
-                      async run() {
-                        ctx.setVisible(false);
-                        // console.log('form.values', JSON.stringify(form.values, null, 2));
-                      },
-                    };
+              actions: {
+                type: 'void',
+                'x-component': 'ActionBar',
+                'x-component-props': {},
+                properties: {
+                  submit: {
+                    title: '{{ t("Submit") }}',
+                    'x-action': 'submit',
+                    'x-component': 'Action',
+                    'x-designer': 'Action.Designer',
+                    'x-component-props': {
+                      type: 'primary',
+                      htmlType: 'submit',
+                      useProps: '{{ usePickActionProps }}',
+                      // useAction: useAttachAction,
+                    },
                   },
                 },
-              },
-              submit: {
-                title: '{{t("Submit")}}',
-                'x-component': 'Action',
-                'x-component-props': {
-                  type: 'primary',
-                  useProps: '{{ usePickActionProps }}',
-                  useAction() {
-                    const form = useForm();
-                    const ctx = useActionContext();
-                    const field = useField();
-                    // console.log(ctx, form, field);
-                    return {
-                      async run() {
-                        const { title } = form.values;
-                        ctx.setVisible(false);
-                        dn.refresh();
-                      },
-                    };
-                  },
-                },
-                'x-action': 'submit',
-                'x-designer': 'Action.Designer',
               },
             },
           },

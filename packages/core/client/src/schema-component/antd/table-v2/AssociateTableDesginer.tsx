@@ -12,6 +12,7 @@ import { useDesignable } from '../../hooks';
 export const AssociateTableDesginer = () => {
   const { name, title } = useCollection();
   const field = useField();
+  console.log(field)
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
   const sortFields = useSortFields(name);

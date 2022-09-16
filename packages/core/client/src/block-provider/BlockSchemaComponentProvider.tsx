@@ -9,7 +9,10 @@ import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider'
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
-import { AssociateTableProvider,useAssociateTableSelectorProps} from './AssociateTableProvider';
+import {
+  AssociateTableProvider,
+  useAssociateTableSelectorProps,
+} from './AssociateTableProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
 
 export const BlockSchemaComponentProvider: React.FC = (props) => {
