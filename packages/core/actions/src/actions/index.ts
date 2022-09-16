@@ -1,4 +1,5 @@
 export * from './list';
+export * from './getTree';
 export * from './create';
 export * from './update';
 export * from './destroy';
