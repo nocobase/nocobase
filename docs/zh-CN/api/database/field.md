@@ -45,7 +45,7 @@
 
 字段上下文对象。
 
-## 实例方法
+## 配置方法
 
 ### `on()`
 
@@ -101,6 +101,54 @@
 
 * `unbind()`
 
+### `get()`
+
+获取字段的配置项的值。
+
+**签名**
+
+* `get(key: string): any`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `key` | `string` | - | 配置项名称 |
+
+**示例**
+
+```ts
+const field = db.collection('users').getField('name');
+
+// 获取字段名称配置项的值，返回 'name'
+console.log(field.get('name'));
+```
+
+### `merge()`
+
+合并字段的配置项的值。
+
+**签名**
+
+* `merge(options: { [key: string]: any }): void`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `{ [key: string]: any }` | - | 要合并的配置项对象 |
+
+**示例**
+
+```ts
+const field = db.collection('users').getField('name');
+
+field.merge({
+  // 添加一个索引配置
+  index: true
+});
+```
+
 ### `remove()`
 
 从数据表中移除字段（仅从内存中移除）。
@@ -115,6 +163,8 @@ books.getField('isbn').remove();
 // really remove from db
 await books.sync();
 ```
+
+## 数据库方法
 
 ### `removeFromDb()`
 
@@ -152,9 +202,7 @@ NocoBase 内置了一些常用的字段类型，可以直接在定义数据表�
 
 另外 server 端的字段类型主要解决数据库存储和部分算法的问题，与前端的字段展示类型和使用组件基本无关。前端字段类型可以参考教程对应说明。
 
-### 逻辑类型
-
-#### `'boolean'`
+### `'boolean'`
 
 逻辑值类型。
 
@@ -172,9 +220,7 @@ db.collection({
 });
 ```
 
-### 数字类型
-
-#### `'integer'`
+### `'integer'`
 
 整型（32 位）。
 
@@ -192,7 +238,7 @@ db.collection({
 });
 ```
 
-#### `'bigInt'`
+### `'bigInt'`
 
 长整型（64 位）。
 
@@ -210,7 +256,7 @@ db.collection({
 });
 ```
 
-#### `'double'`
+### `'double'`
 
 双精度浮点型（64 位）。
 
@@ -228,15 +274,15 @@ db.collection({
 });
 ```
 
-#### `'real'`
+### `'real'`
 
 实数类型（仅 PG 适用）。
 
-#### `'decimal'`
+### `'decimal'`
 
 十进制小数类型。
 
-#### `'string'`
+### `'string'`
 
 字符串类型。相当于大部分数据库的 `VARCHAR` 类型。
 
@@ -254,7 +300,7 @@ db.collection({
 });
 ```
 
-#### `'text'`
+### `'text'`
 
 文本类型。相当于大部分数据库的 `TEXT` 类型。
 
@@ -272,7 +318,7 @@ db.collection({
 });
 ```
 
-#### `'password'`
+### `'password'`
 
 密码类型（NocoBase 扩展）。基于 Node.js 原生的 crypto 包的 `scrypt` 方法进行密码加密。
 
@@ -299,39 +345,35 @@ db.collection({
 | `length` | `number` | 64 | 字符长度 |
 | `randomBytesSize` | `number` | 8 | 随机字节大小 |
 
-### 日期时间
-
-#### `'date'`
+### `'date'`
 
 日期类型。
 
-#### `'time'`
+### `'time'`
 
 时间类型。
 
-### 高级类型
-
-#### `'array'`
+### `'array'`
 
 数组类型（仅 PG 适用）。
 
-#### `'json'`
+### `'json'`
 
 JSON 类型。
 
-#### `'jsonb'`
+### `'jsonb'`
 
 JSONB 类型（仅 PG 适用，其他会被兼容为 `'json'` 类型）。
 
-#### `'uuid'`
+### `'uuid'`
 
 UUID 类型。
 
-#### `'uid'`
+### `'uid'`
 
-UID 类型（NocoBase 扩展）。短随机字符串 ID 类型。
+UID 类型（NocoBase 扩展）。短随机字符串标识符类型。
 
-#### `'formula'`
+### `'formula'`
 
 公式类型（NocoBase 扩展）。可配置基于 [mathjs](https://www.npmjs.com/package/mathjs) 的数学公式计算，公式中可以引用同一条记录中其他列的数值参与计算。
 
@@ -358,7 +400,7 @@ db.collection({
 });
 ```
 
-#### `'radio'`
+### `'radio'`
 
 单选类型（NocoBase 扩展）。全表最多有一行数据的该字段值为 `true`，其他都为 `false` 或 `null`。
 
@@ -378,7 +420,7 @@ db.collection({
 });
 ```
 
-#### `'sort'`
+### `'sort'`
 
 排序类型（NocoBase 扩展）。基于整型数字进行排序，为新记录自动生成新序号，当移动数据时进行序号重排。
 
@@ -405,13 +447,11 @@ db.collection({
 });
 ```
 
-#### `'virtual'`
+### `'virtual'`
 
 虚拟类型。不实际储存数据，仅用于特殊 getter/setter 定义时使用。
 
-### 关联类型
-
-#### `'belongsTo'`
+### `'belongsTo'`
 
 多对一关联类型。外键储存在自身表，与 hasOne/hasMany 相对。
 
@@ -434,7 +474,7 @@ db.collection({
 });
 ```
 
-#### `'hasOne'`
+### `'hasOne'`
 
 一对一关联类型。外键储存在关联表，与 belongsTo 相对。
 
@@ -455,7 +495,7 @@ db.collection({
 })
 ```
 
-#### `'hasMany'`
+### `'hasMany'`
 
 一对多关联类型。外键储存在关联表，与 belongsTo 相对。
 
@@ -477,7 +517,7 @@ db.collection({
 });
 ```
 
-#### `'belongsToMany'`
+### `'belongsToMany'`
 
 多对多关联类型。使用中间表储存双方外键，如不指定已存在的表为中间表的话，将会自动创建中间表。
 

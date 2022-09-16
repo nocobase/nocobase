@@ -151,6 +151,7 @@ export default {
         '/api/database/collection',
         '/api/database/field',
         '/api/database/repository',
+        '/api/database/relation-repository',
         '/api/database/operators',
       ],
     },

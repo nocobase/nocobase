@@ -82,7 +82,7 @@ const posts = new Collection({
 
 数据仓库实例。
 
-## 实例方法
+## 字段配置方法
 
 ### `getField()`
 
@@ -307,6 +307,8 @@ const posts = db.collection({
 posts.forEachField(field => console.log(field.name));
 ```
 
+## 索引配置方法
+
 ### `addIndex()`
 
 添加数据表索引。
@@ -377,6 +379,34 @@ const posts = db.collection({
 posts.removeIndex(['title']);
 ```
 
+## 表配置方法
+
+### `remove()`
+
+删除数据表。
+
+**签名**
+
+* `remove(): void`
+
+**示例**
+
+```ts
+const posts = db.collection({
+  name: 'posts',
+  fields: [
+    {
+      type: 'string',
+      name: 'title',
+    }
+  ]
+});
+
+posts.remove();
+```
+
+## 数据库操作方法
+
 ### `sync()`
 
 同步数据表定义到数据库。除了 Sequelize 中默认的 `Model.sync` 的逻辑，还会一并处理关系字段对应的数据表。
@@ -401,13 +431,19 @@ const posts = db.collection({
 await posts.sync();
 ```
 
-### `remove()`
+### `existsInDb()`
 
-删除数据表。
+判断数据表是否存在于数据库中。
 
 **签名**
 
-* `remove(): void`
+* `existsInDb(options?: Transactionable): Promise<boolean>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options?.transaction` | `Transaction` | - | 事务实例 |
 
 **示例**
 
@@ -422,5 +458,27 @@ const posts = db.collection({
   ]
 });
 
-posts.remove();
+const existed = await posts.existsInDb();
+
+console.log(existed); // false
+```
+
+### `removeFromDb()`
+
+**签名**
+
+* `removeFromDb(): Promise<void>`
+
+**示例**
+
+```ts
+const books = db.collection({
+  name: 'books'
+});
+
+// 同步书籍表到数据库
+await db.sync();
+
+// 删除数据库中的书籍表
+await books.removeFromDb();
 ```

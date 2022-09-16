@@ -156,6 +156,18 @@ const result = await posts.findOne({
 });
 ```
 
+### `findAndCount()`
+
+从数据库查询特定条件的数据集和总数。相当于 Sequelize 中的 `Model.findAndCountAll()`。
+
+**签名**
+
+* `async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]>`
+
+**参数**
+
+所有参数与 [`find()`](#find) 相同。
+
 ### `create()`
 
 向数据表插入一条新创建的数据。相当于 Sequelize 中的 `Model.create()`。当要创建的数据对象携带关系字段的信息时，会一并创建或更新相应的关系数据记录。
@@ -295,38 +307,6 @@ const result = await posts.update({
 | `options.transaction?` | `Transaction` | - | 事务 |
 
 `filterByTk` 与 `filter` 至少要传其一。如果没有传入事务参数，该方法会自动创建一个内部事务。
-
-### `getTransaction()`
-
-从 options 参数获取事务实例。如果没有传入事务参数，根据 `autoGen` 的值自动创建一个事务。
-
-**签名**
-
-* `async getTransaction(options: any, autoGen = false): Promise<Transaction | null>`
-
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options.transaction?` | `Transaction` | - | 已有事务 |
-| `autoGen` | `boolean` | `false` | 是否自动创建事务 |
-
-**示例**
-
-```ts
-const posts = db.getRepository('posts');
-
-const transaction = await posts.getTransaction({}, true);
-
-await posts.create({ transaction });
-
-// 在同一事务中查询计数
-const count = await posts.count({
-  transaction
-});
-
-await transaction.commit();
-```
 
 ## 关系数据仓库类
 
