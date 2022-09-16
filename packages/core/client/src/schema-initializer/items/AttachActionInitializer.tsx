@@ -168,7 +168,7 @@ export const AttachActionInitializer = (props) => {
                     'x-component-props': {
                       type: 'primary',
                       htmlType: 'submit',
-                      useProps: '{{ usePickActionProps }}',
+                      useProps: '{{ useBulkDetachActionProps }}',
                       // useAction: useAttachAction,
                     },
                   },

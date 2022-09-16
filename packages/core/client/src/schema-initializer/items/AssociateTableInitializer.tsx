@@ -15,8 +15,8 @@ export const AssociateTableInitializer = (props) => {
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {
+        console.log(item)
         const field = item.field;
-        console.log(field)
         insert(
           createAssociateTableSelectorSchema({
             rowKey: collection.filterTargetKey,

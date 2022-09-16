@@ -46,42 +46,25 @@ const recursiveParent = (schema: Schema, component) => {
     : null;
 };
 
-const usePickActionProps = () => {
-  // const { setVisible } = useActionContext();
-  const ctx = useFormBlockContext();
-  return {
-    onClick() {
-      console.log(ctx)
-      // if (multiple) {
-      //   onChange(selectedRows);
-      // } else {
-      //   onChange(selectedRows?.[0] || null);
-      // }
-      // setVisible(false);
-    },
-  };
-};
+
 
 export const AssociateTableProvider = (props) => {
   const fieldSchema = useFieldSchema();
-  const ctx = useFormBlockContext();
+  // const ctx = useFormBlockContext();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const record = useRecord();
-  console.log(record);
   const collectionFieldSchema = recursiveParent(fieldSchema, 'AssociateTableInitializers');
-  console.log(fieldSchema, collectionFieldSchema);
   const { getField } = useCollection();
   const collectionField = null;
+  const ctx = useAssociateTableSelectorContext();
   const { association } = collectionFieldSchema?.['x-initializer-props'];
   const targetfield = getCollectionJoinField(association);
-  console.log(targetfield);
   const params = {
     ...props.params,
     filter: record[targetfield.sourceKey] &&{
       [targetfield.foreignKey]: { $notExists: record[targetfield.sourceKey] },
     },
   };
-  console.log(params);
   const appends = useAssociationNames(props.collection);
   if (props.dragSort) {
     params['sort'] = ['sort'];
@@ -144,7 +127,7 @@ export const AssociateTableProvider = (props) => {
   //   }
   // }
   return (
-    <BlockProvider {...props} params={params} scope={usePickActionProps}>
+    <BlockProvider {...props} params={params} >
       <InternalTableSelectorProvider {...props} params={params} />
     </BlockProvider>
   );

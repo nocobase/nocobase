@@ -8,24 +8,11 @@ export const DetachActionInitializer = (props) => {
       'x-action': 'detach',
       'x-designer': 'Action.Designer',
       'x-component': 'Action',
+      'x-decorator': 'ACLActionProvider',
       'x-component-props': {
         icon: 'PlusOutlined',
-        openMode: 'drawer',
-        type: 'primary',
-      },
-      properties: {
-        drawer: {
-          type: 'void',
-          title: '{{ t("select record") }}',
-          'x-component': 'Action.Container',
-          'x-component-props': {
-            className: 'nb-action-popup',
-          },
-          properties: {
-            'x-component': 'TableSelectorInitializer',
-          },
-        },
-      },
+        useProps: '{{ usePickActionProps }}',
+      }
     };
     return <ActionInitializer {...props} schema={schema} />;
   };

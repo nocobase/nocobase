@@ -14,6 +14,7 @@ import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import {useAssociateTableSelectorContext} from '../AssociateTableProvider'
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -388,6 +389,7 @@ export const useUpdateActionProps = () => {
 
 export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
+  console.log(filterByTk)
   const { resource, service, block, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   return {
@@ -442,6 +444,25 @@ export const useBulkDestroyActionProps = () => {
     },
   };
 };
+
+export const useBulkDetachActionProps = () => {
+  const data = useBlockRequestContext();
+  const { resource, service } = useBlockRequestContext();
+  console.log(data)
+  return {
+    async onClick() {
+      // if (!field?.data?.selectedRowKeys?.length) {
+      //   return;
+      // }
+      // await resource.destroy({
+      //   filterByTk: field.data?.selectedRowKeys,
+      // });
+      // field.data.selectedRowKeys = [];
+      service?.refresh?.();
+    },
+  };
+};
+
 
 export const useRefreshActionProps = () => {
   const { service } = useBlockRequestContext();
