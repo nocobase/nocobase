@@ -1,16 +1,18 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
-import { useCollectionManager, useCollection } from '../collection-manager';
+import { useCollectionManager } from '../collection-manager';
 import { useRecord } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { useFormBlockContext } from './FormBlockProvider';
 
-export const AssociateTableSelectorContext = createContext<any>({});
+const AssociateTableSelectorContext = createContext<any>({});
 
 const InternalTableSelectorProvider = (props) => {
   const { params, rowKey } = props;
   const field = useField();
+  const ctx = useAssociateTableSelectorContext();
+
+  console.log(field,ctx)
   const { resource, service } = useBlockRequestContext();
   // if (service.loading) {
   //   return <Spin />;
@@ -50,19 +52,15 @@ const recursiveParent = (schema: Schema, component) => {
 
 export const AssociateTableProvider = (props) => {
   const fieldSchema = useFieldSchema();
-  // const ctx = useFormBlockContext();
-  const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager();
   const record = useRecord();
   const collectionFieldSchema = recursiveParent(fieldSchema, 'AssociateTableInitializers');
-  const { getField } = useCollection();
-  const collectionField = null;
-  const ctx = useAssociateTableSelectorContext();
-  const { association } = collectionFieldSchema?.['x-initializer-props'];
-  const targetfield = getCollectionJoinField(association);
+  const { association } = collectionFieldSchema?.['x-initializer-props']||{};
+  const targetField = getCollectionJoinField(association);
   const params = {
     ...props.params,
-    filter: record[targetfield.sourceKey] &&{
-      [targetfield.foreignKey]: { $notExists: record[targetfield.sourceKey] },
+    filter: targetField&&record[targetField.sourceKey] &&{
+      [targetField.foreignKey]: { $notExists: record[targetField.sourceKey] },
     },
   };
   const appends = useAssociationNames(props.collection);
@@ -72,60 +70,7 @@ export const AssociateTableProvider = (props) => {
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
-  // if (collectionField) {
-  //   if (['oho', 'o2m'].includes(collectionField.interface)) {
-  //     if (record?.[collectionField.sourceKey]) {
-  //       params['filter'] = {
-  //         $or: [
-  //           {
-  //             [collectionField.foreignKey]: {
-  //               $is: null,
-  //             },
-  //           },
-  //           {
-  //             [collectionField.foreignKey]: {
-  //               $eq: record?.[collectionField.sourceKey],
-  //             },
-  //           },
-  //         ],
-  //       };
-  //     } else {
-  //       params['filter'] = {
-  //         [collectionField.foreignKey]: {
-  //           $is: null,
-  //         },
-  //       };
-  //     }
-  //   }
-  //   if (['obo'].includes(collectionField.interface)) {
-  //     const fields = getCollectionFields(collectionField.target);
-  //     const targetField = fields.find((f) => f.foreignKey && f.foreignKey === collectionField.foreignKey);
-  //     if (targetField) {
-  //       if (record?.[collectionField.foreignKey]) {
-  //         params['filter'] = {
-  //           $or: [
-  //             {
-  //               [`${targetField.name}.${targetField.foreignKey}`]: {
-  //                 $is: null,
-  //               },
-  //             },
-  //             {
-  //               [`${targetField.name}.${targetField.foreignKey}`]: {
-  //                 $eq: record?.[collectionField.foreignKey],
-  //               },
-  //             },
-  //           ],
-  //         };
-  //       } else {
-  //         params['filter'] = {
-  //           [`${targetField.name}.${targetField.foreignKey}`]: {
-  //             $is: null,
-  //           },
-  //         };
-  //       }
-  //     }
-  //   }
-  // }
+  
   return (
     <BlockProvider {...props} params={params} >
       <InternalTableSelectorProvider {...props} params={params} />
@@ -144,6 +89,7 @@ export const useAssociateTableSelectorContext = () => {
 export const useAssociateTableSelectorProps = () => {
   const field = useField<ArrayField>();
   const ctx = useAssociateTableSelectorContext();
+  console.log(ctx)
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
@@ -153,7 +99,9 @@ export const useAssociateTableSelectorProps = () => {
       field.componentProps.pagination.pageSize = ctx?.service?.data?.meta?.pageSize;
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
+      console.log(ctx)
     }
+    console.log(ctx)
   }, [ctx?.service?.loading]);
   return {
     loading: ctx?.service?.loading,
@@ -168,9 +116,9 @@ export const useAssociateTableSelectorProps = () => {
           }
         : false,
     onRowSelectionChange(selectedRowKeys, selectedRows) {
-      console.log(ctx.field.data)
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+      ctx.field.selectedRowKeys=selectedRowKeys;
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({

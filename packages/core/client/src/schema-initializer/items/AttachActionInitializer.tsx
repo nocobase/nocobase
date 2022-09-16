@@ -11,7 +11,6 @@ import {
   CollectionFieldContext,
   useAPIClient,
   useResourceActionContext,
-  AssociateTableSelectorContext,
   useRecord,
   useFilterByTk,
 } from '@nocobase/client';
@@ -109,7 +108,6 @@ export const AttachActionInitializer = (props) => {
   const ctx2 = useBlockResource();
   const association = useBlockAssociationContext();
   const schema1 = useFieldSchema();
-  console.log(useContext(AssociateTableSelectorContext));
 
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(name);
@@ -135,7 +133,16 @@ export const AttachActionInitializer = (props) => {
         type: 'void',
         title: '{{ t("Select record") }}',
         version: '2.0',
-        'x-component': 'RecordPicker.Selector',
+        'x-component': 'Action.Container',
+        'x-decorator': 'AssociateTableProvider',
+        'x-decorator-props': {
+          collection:name,
+          resource: name,
+          action: 'list',
+          params: {
+            pageSize: 20,
+          },
+        },
         'x-component-props': {
           className: 'nb-record-picker-selector',
         },
@@ -144,16 +151,12 @@ export const AttachActionInitializer = (props) => {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': 'AssociateTableInitializers',
-            'x-initializer-props': {
-              association,
-            },
             'x-decorator-props': {
               association,
             },
           },
           footer: {
             'x-component': 'Action.Container.Footer',
-            'x-component-props': {},
             properties: {
               actions: {
                 type: 'void',
@@ -168,8 +171,7 @@ export const AttachActionInitializer = (props) => {
                     'x-component-props': {
                       type: 'primary',
                       htmlType: 'submit',
-                      useProps: '{{ useBulkDetachActionProps }}',
-                      // useAction: useAttachAction,
+                      useProps: '{{ useBulkAetachActionProps }}',
                     },
                   },
                 },

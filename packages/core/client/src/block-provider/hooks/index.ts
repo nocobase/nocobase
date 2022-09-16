@@ -1,4 +1,5 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
+import React ,{useContext}from 'react';
 import { message, Modal } from 'antd';
 import parse from 'json-templates';
 import get from 'lodash/get';
@@ -18,9 +19,10 @@ import {useAssociateTableSelectorContext} from '../AssociateTableProvider'
 
 export const usePickActionProps = () => {
   const form = useForm();
+  const ctx=useAssociateTableSelectorContext()
   return {
     onClick() {
-      console.log('usePickActionProps', form.values);
+      console.log('usePickActionProps', ctx);
     },
   };
 };
@@ -445,19 +447,45 @@ export const useBulkDestroyActionProps = () => {
   };
 };
 
-export const useBulkDetachActionProps = () => {
-  const data = useBlockRequestContext();
+// 关联已有数据
+export const useBulkAetachActionProps = () => {
+  console.log(useAssociateTableSelectorContext())
+  const { field } = useAssociateTableSelectorContext();
   const { resource, service } = useBlockRequestContext();
-  console.log(data)
+  console.log(resource)
+  // .resource('posts.tags', p1.get('id'))
+  //     .add({
+  //       values: [t1.get('id'), t2.get('id')],
+  //     });
+  console.log(field)
   return {
     async onClick() {
-      // if (!field?.data?.selectedRowKeys?.length) {
-      //   return;
-      // }
-      // await resource.destroy({
-      //   filterByTk: field.data?.selectedRowKeys,
-      // });
-      // field.data.selectedRowKeys = [];
+      if (!field?.data?.selectedRowKeys?.length) {
+        return;
+      }
+      await resource.add(
+         field.data?.selectedRowKeys,
+      );
+      field.data.selectedRowKeys = [];
+      service?.refresh?.();
+    },
+  };
+};
+
+// 解除关联已有数据
+export const useBulkDetachActionProps = () => {
+  const { field } = useBlockRequestContext();
+  const { resource, service } = useBlockRequestContext();
+  console.log(field)
+  return {
+    async onClick() {
+      if (!field?.data?.selectedRowKeys?.length) {
+        return;
+      }
+      await resource.remove({
+        filterByTk: field.data?.selectedRowKeys,
+      });
+      field.data.selectedRowKeys = [];
       service?.refresh?.();
     },
   };

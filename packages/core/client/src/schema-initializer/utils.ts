@@ -854,18 +854,6 @@ export const createAssociateTableSelectorSchema = (options) => {
   const { collection, resource, rowKey, ...others } = options;
   const schema: ISchema = {
     type: 'void',
-    'x-acl-action': `${resource || collection}:list`,
-    'x-decorator': 'AssociateTableProvider',
-    'x-decorator-props': {
-      collection,
-      resource: resource || collection,
-      action: 'list',
-      params: {
-        pageSize: 10,
-      },
-      rowKey,
-      ...others,
-    },
     'x-designer': 'AssociateTableDesginer',
     'x-component': 'BlockItem',
     properties: {
