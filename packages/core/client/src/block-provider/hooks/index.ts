@@ -5,7 +5,7 @@ import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { useFormBlockContext } from '../..';
+import { useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
@@ -227,6 +227,67 @@ export const useCustomizeUpdateActionProps = () => {
       } else {
         message.success(compile(onSuccess?.successMessage));
       }
+    },
+  };
+};
+
+export const useCustomizeBulkUpdateActionProps = () => {
+  const { resource, __parent, service } = useBlockRequestContext();
+  const actionSchema = useFieldSchema();
+  const currentRecord = useRecord();
+  const tableBlockContext = useTableBlockContext();
+  const { rowKey } = tableBlockContext;
+  const { selectedRowKeys } = tableBlockContext.field?.data ?? {};
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
+  const history = useHistory();
+  const compile = useCompile();
+  const { t } = useTranslation();
+
+  return {
+    async onClick() {
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        updateMode,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentUser });
+      Modal.confirm({
+        title: t('Bulk update'),
+        content: updateMode === 'selected' ? t('Update selected data?') : t('Update all data?'),
+        async onOk() {
+          const updateData: { filter?: any; values: any } = {
+            values: { ...assignedValues },
+          };
+          if (updateMode === 'selected') {
+            updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRowKeys } }] };
+          }
+          await resource.update(updateData);
+          service?.refresh?.();
+          if (!(resource instanceof TableFieldResource)) {
+            __parent?.service?.refresh?.();
+          }
+          if (!onSuccess?.successMessage) {
+            return;
+          }
+          if (onSuccess?.manualClose) {
+            Modal.success({
+              title: compile(onSuccess?.successMessage),
+              onOk: async () => {
+                if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+                  if (isURL(onSuccess.redirectTo)) {
+                    window.location.href = onSuccess.redirectTo;
+                  } else {
+                    history.push(onSuccess.redirectTo);
+                  }
+                }
+              },
+            });
+          } else {
+            message.success(compile(onSuccess?.successMessage));
+          }
+        },
+      });
     },
   };
 };
