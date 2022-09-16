@@ -556,4 +556,12 @@ export default {
   "Print": "Print",
   'Single select and radio fields can be used as the grouping field': 'Single select and radio fields can be used as the grouping field',
   'Sign up successfully, and automatically jump to the sign in page': 'Sign up successfully, and automatically jump to the sign in page',
+  "Bulk update": "Bulk update",
+  "After successful bulk update": "After successful bulk update",
+  "Bulk edit": "Bulk edit",
+  "Data will be updated": "Data will be updated",
+  "Selected": "Selected",
+  "All": "All",
+  "Update selected data?": "Update selected data?",
+  "Update all data?": "Update all data?"
 }

@@ -660,4 +660,12 @@ export default {
   "View all plugins": "查看所有插件",
   "Print": "打印",
   'Sign up successfully, and automatically jump to the sign in page': '注册成功，即将跳转到登录页面',
+  "Bulk update": "批量更新",
+  "After successful bulk update": "批量成功更新后",
+  "Bulk edit": "批量编辑",
+  "Data will be updated": "更新的数据",
+  "Selected": "选中",
+  "All": "所有",
+  "Update selected data?": "更新选中的数据吗？",
+  "Update all data?": "更新全部数据吗？"
 }

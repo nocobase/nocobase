@@ -40,6 +40,7 @@ export const ActionDesigner = (props) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const isPopupAction = ['create', 'update', 'view', 'customize:popup'].includes(fieldSchema['x-action'] || '');
+  const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const context = useActionContext();
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] || '';
@@ -152,6 +153,26 @@ export const ActionDesigner = (props) => {
             }}
           />
         )}
+        {isUpdateModePopupAction && (
+          <SchemaSettings.SelectItem
+            title={t('Data will be updated')}
+            options={[
+              { label: t('Selected'), value: 'selected' },
+              { label: t('All'), value: 'all' },
+            ]}
+            value={fieldSchema?.['x-action-settings']?.['updateMode']}
+            onChange={(value) => {
+              fieldSchema['x-action-settings']['updateMode'] = value;
+              dn.emit('patch', {
+                schema: {
+                  'x-uid': fieldSchema['x-uid'],
+                  'x-action-settings': fieldSchema['x-action-settings'],
+                },
+              });
+              dn.refresh();
+            }}
+          />
+        )}
 
         {isValid(fieldSchema?.['x-action-settings']?.assignedValues) && (
           <SchemaSettings.ActionModalItem
@@ -247,6 +268,7 @@ export const ActionDesigner = (props) => {
                 'customize:update': t('After successful update'),
                 'customize:table:request': t('After successful request'),
                 'customize:form:request': t('After successful request'),
+                'customize:bulkUpdate': t('After successful bulk update'),
               }[actionType]
             }
             initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
@@ -258,6 +280,7 @@ export const ActionDesigner = (props) => {
                   'customize:update': t('After successful update'),
                   'customize:table:request': t('After successful request'),
                   'customize:form:request': t('After successful request'),
+                  'customize:bulkUpdate': t('After successful bulk update'),
                 }[actionType],
                 properties: {
                   successMessage: {
