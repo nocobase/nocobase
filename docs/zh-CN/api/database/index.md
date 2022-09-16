@@ -38,9 +38,9 @@ import Database, {
 | `options.password` | `string` | - | 数据库密码 |
 | `options.database` | `string` | - | 数据库名称 |
 | `options.dialect` | `string` | `'mysql'` | 数据库类型 |
-| `options.storage` | `string` | `':memory:'` | SQLite 的存储模式 |
-| `options.logging` | `boolean` | `false` | 是否开启日志 |
-| `options.define` | `Object` | `{}` | 默认的表定义参数 |
+| `options.storage?` | `string` | `':memory:'` | SQLite 的存储模式 |
+| `options.logging?` | `boolean` | `false` | 是否开启日志 |
+| `options.define?` | `Object` | `{}` | 默认的表定义参数 |
 | `options.tablePrefix?` | `string` | `''` | NocoBase 扩展，表名前缀 |
 | `options.migrator?` | `UmzugOptions` | `{}` | NocoBase 扩展，迁移管理器相关参数，参考 [Umzug](https://github.com/sequelize/umzug/blob/main/src/types.ts#L15) 实现 |
 
@@ -84,11 +84,41 @@ const r = await this.db.version.satisfies({
 });
 ```
 
-## 实例方法
+## 迁移相关方法
+
+### `addMigration()`
+
+添加单个迁移文件。
+
+**签名**
+
+* `addMigration(options: MigrationItem)`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options.name` | `string` | - | 迁移文件名称 |
+| `options.context?` | `string` | - | 迁移文件的 `up` 方法 |
+| `options.migration?` | `typeof Migration` | - | 迁移文件的自定义类 |
+| `options.up` | `Function` | - | 迁移文件的 `up` 方法 |
+| `options.down` | `Function` | - | 迁移文件的 `down` 方法 |
+
+**示例**
+
+```ts
+db.addMigration({
+  name: '20220916120411-test-1',
+  async up() {
+    const queryInterface = this.context.db.sequelize.getQueryInterface();
+    await queryInterface.query(/* your migration sqls */);
+  }
+});
+```
 
 ### `addMigrations()`
 
-添加迁移文件。
+添加指定目录下的迁移文件。
 
 **签名**
 
@@ -112,6 +142,8 @@ db.addMigrations({
 });
 ```
 
+## 工具方法
+
 ### `inDialect()`
 
 判断当前数据库类型是否为指定类型。
@@ -133,6 +165,8 @@ db.addMigrations({
 **签名**
 
 * `getTablePrefix(): string`
+
+## 数据表配置
 
 ### `collection()`
 
@@ -243,66 +277,50 @@ db.collection({ name: 'books' });
 db.removeCollection('books');
 ```
 
-### `getModel()`
+### `import()`
 
-获取已定义的数据模型类。如果没有在之前注册自定义模型类，将返回 Sequelize 默认的模型类。默认名称与 collection 定义的名称相同。
+导入文件目录下所有文件作为 collection 配置载入内存。
 
 **签名**
 
-* `getModel(name: string): Model`
+* `async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>>`
 
 **参数**
 
 | 参数名 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 已注册的模型名 |
+| `options.directory` | `string` | - | 要导入的目录路径 |
+| `options.extensions` | `string[]` | `['ts', 'js']` | 扫描特定后缀 |
 
 **示例**
 
-```ts
-db.registerModels({
-  books: class MyModel extends Model {}
-});
-
-const ModelClass = db.getModel('books');
-
-console.log(ModelClass.prototype instanceof MyModel) // true
-```
-
-注：从 collection 中获取的模型类并不与注册时的模型类严格相等，而是继承自注册时的模型类。由于 Sequelize 的模型类在初始化过程中属性会被修改，所以 NocoBase 自动处理了这个继承关系。除类不相等以外，其他所有定义都可以正常使用。
-
-### `getRepository()`
-
-获取自定义的数据仓库类。如果没有在之前注册自定义数据仓库类，将返回 NocoBase 默认的数据仓库类。默认名称与 collection 定义的名称相同。
-
-数据仓库类主要用于基于数据模型的增删改查等操作，参考 [数据仓库](/api/server/database/repository)。
-
-**签名**
-
-* `getRepository(name: string): Repository`
-* `getRepository(name: string, relationId?: string | number): Repository`
-
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `name` | `string` | - | 已注册的数据仓库名 |
-| `relationId` | `string` \| `number` | - | 关系数据的外键值 |
-
-当名称是形如 `'tables.relactions'` 的带关联的名称时，将返回关联的数据仓库类。如果提供了第二个参数，数据仓库在使用时（查询、修改等）会基于关系数据的外键值。
-
-**示例**
-
-假设有两张数据表_文章_与_作者_，并且文章表中有一个外键指向作者表：
+`./collections/books.ts` 文件定义的 collection 如下：
 
 ```ts
-const AuthorsRepo = db.getRepository('authors');
-const author1 = AuthorsRepo.create({ name: 'author1' });
-
-const PostsRepo = db.getRepository('authors.posts', author1.id);
-const post1 = AuthorsRepo.create({ title: 'post1' });
-asset(post1.authorId === author1.id); // true
+export default {
+  name: 'books',
+  fields: [
+    {
+      type: 'string',
+      name: 'title',
+    }
+  ]
+};
 ```
+
+在插件加载时导入相关配置：
+
+```ts
+class Plugin {
+  async load() {
+    await this.app.db.import({
+      directory: path.resolve(__dirname, './collections'),
+    });
+  }
+}
+```
+
+## 扩展注册与获取
 
 ### `registerFieldTypes()`
 
@@ -425,13 +443,68 @@ db.getRepository('books').count({
 });
 ```
 
-### `sync()`
+### `getModel()`
 
-同步数据库表结构。等同于 `sequelize.sync()`，参数参考 [Sequelize 文档](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-sync)。
+获取已定义的数据模型类。如果没有在之前注册自定义模型类，将返回 Sequelize 默认的模型类。默认名称与 collection 定义的名称相同。
 
-### `close()`
+**签名**
 
-关闭数据库连接。等同于 `sequelize.close()`。
+* `getModel(name: string): Model`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `name` | `string` | - | 已注册的模型名 |
+
+**示例**
+
+```ts
+db.registerModels({
+  books: class MyModel extends Model {}
+});
+
+const ModelClass = db.getModel('books');
+
+console.log(ModelClass.prototype instanceof MyModel) // true
+```
+
+注：从 collection 中获取的模型类并不与注册时的模型类严格相等，而是继承自注册时的模型类。由于 Sequelize 的模型类在初始化过程中属性会被修改，所以 NocoBase 自动处理了这个继承关系。除类不相等以外，其他所有定义都可以正常使用。
+
+### `getRepository()`
+
+获取自定义的数据仓库类。如果没有在之前注册自定义数据仓库类，将返回 NocoBase 默认的数据仓库类。默认名称与 collection 定义的名称相同。
+
+数据仓库类主要用于基于数据模型的增删改查等操作，参考 [数据仓库](/api/server/database/repository)。
+
+**签名**
+
+* `getRepository(name: string): Repository`
+* `getRepository(name: string, relationId?: string | number): Repository`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `name` | `string` | - | 已注册的数据仓库名 |
+| `relationId` | `string` \| `number` | - | 关系数据的外键值 |
+
+当名称是形如 `'tables.relactions'` 的带关联的名称时，将返回关联的数据仓库类。如果提供了第二个参数，数据仓库在使用时（查询、修改等）会基于关系数据的外键值。
+
+**示例**
+
+假设有两张数据表_文章_与_作者_，并且文章表中有一个外键指向作者表：
+
+```ts
+const AuthorsRepo = db.getRepository('authors');
+const author1 = AuthorsRepo.create({ name: 'author1' });
+
+const PostsRepo = db.getRepository('authors.posts', author1.id);
+const post1 = AuthorsRepo.create({ title: 'post1' });
+asset(post1.authorId === author1.id); // true
+```
+
+## 数据库事件 
 
 ### `on()`
 
@@ -521,58 +594,125 @@ db.on('afterCreate', listener);
 db.off('afterCreate', listener);
 ```
 
-### `import()`
+## 数据库操作
 
-导入文件目录下所有文件作为 collection 配置载入内存。
+### `auth()`
+
+数据库连接验证。可以用于确保应用与数据已建立连接。
 
 **签名**
 
-* `async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>>`
+* `auth(options: QueryOptions & { retry?: number } = {}): Promise<boolean>`
 
 **参数**
 
 | 参数名 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |
-| `options.directory` | `string` | - | 要导入的目录路径 |
-| `options.extensions` | `string[]` | `['ts', 'js']` | 扫描特定后缀 |
+| `options?` | `Object` | - | 验证选项 |
+| `options.retry?` | `number` | `10` | 验证失败时重试次数 |
+| `options.transaction?` | `Transaction` | - | 事务对象 |
+| `options.logging?` | `boolean \| Function` | `false` | 是否打印日志 |
+
+**示例**
+  
+```ts
+await db.auth();
+```
+
+### `reconnect()`
+
+重新连接数据库。
 
 **示例**
 
-`./collections/books.ts` 文件定义的 collection 如下：
-
 ```ts
-export default {
-  name: 'books',
-  fields: [
-    {
-      type: 'string',
-      name: 'title',
-    }
-  ]
-};
+await db.reconnect();
 ```
 
-在插件加载时导入相关配置：
+### `closed()`
+
+判断数据库是否已关闭连接。
+
+**签名**
+
+* `closed(): boolean`
+
+### `close()`
+
+关闭数据库连接。等同于 `sequelize.close()`。
+
+### `sync()`
+
+同步数据库表结构。等同于 `sequelize.sync()`，参数参考 [Sequelize 文档](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-sync)。
+
+### `clean()`
+
+清空数据库，将删除所有数据表。
+
+**签名**
+
+* `clean(options: CleanOptions): Promise<void>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options.drop` | `boolean` | `false` | 是否移除所有数据表 |
+| `options.skip` | `string[]` | - | 跳过的表名配置 |
+| `options.transaction` | `Transaction` | - | 事务对象 |
+
+**示例**
+
+移除除 `users` 表以外的所有表。
 
 ```ts
-class Plugin {
-  async load() {
-    await this.app.db.import({
-      directory: path.resolve(__dirname, './collections'),
-    });
-  }
-}
+await db.clean({
+  drop: true,
+  skip: ['users']
+})
 ```
 
 ## 包级导出
 
-### `extend()`
+### `defineCollection()`
 
-扩展已在内存中的表结构定义，主要用于。该方法是 `@nocobase/database` 包导出的顶级方法，不通过 db 实例调用。
+创建一个数据表的配置内容。
 
 **签名**
 
-* `extend(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ExtendedCollectionOptions`
+* `defineCollection(name: string, config: CollectionOptions): CollectionOptions`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `collectionOptions` | `CollectionOptions` | - | 与所有 `db.collection()` 的参数相同 |
+
+**示例**
+
+对于要被 `db.import()` 导入的数据表配置文件：
+
+```ts
+import { defineCollection } from '@nocobase/database';
+
+export default defineCollection({
+  name: 'users',
+  fields: [
+    {
+      type: 'string',
+      name: 'name',
+    },
+  ],
+});
+```
+
+### `extendCollection()`
+
+扩展已在内存中的表结构配置内容，主要用于 `import()` 方法导入的文件内容。该方法是 `@nocobase/database` 包导出的顶级方法，不通过 db 实例调用。也可以使用 `extend` 别名。
+
+**签名**
+
+* `extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ExtendedCollectionOptions`
 
 **参数**
 
