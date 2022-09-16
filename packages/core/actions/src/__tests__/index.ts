@@ -108,6 +108,7 @@ export class MockServer extends Koa {
       sync: {
         force: true,
       },
+      dialect:  'sqlite',
     });
     this.resourcer = new Resourcer({
       prefix: '/api',
