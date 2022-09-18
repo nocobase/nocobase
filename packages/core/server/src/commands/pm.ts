@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { resolve } from 'path';
 import Application from '../application';
 
 export default (app: Application) => {
@@ -6,16 +7,28 @@ export default (app: Application) => {
     .command('pm')
     .argument('<method>')
     .arguments('<plugins...>')
-    .action(async (method, plugins, ...args) => {
+    .action(async (method, plugins, options, ...args) => {
       const { APP_PORT, API_BASE_PATH = '/api/', API_BASE_URL } = process.env;
       const baseURL = API_BASE_URL || `http://localhost:${APP_PORT}${API_BASE_PATH}`;
       let started = true;
       try {
-        const res = await axios.get(`${baseURL}app:getLang`);
+        await axios.get(`${baseURL}app:getLang`);
       } catch (error) {
         started = false;
       }
       const pm = {
+        async create() {
+          const name = plugins[0];
+          const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
+          const generator = new PluginGenerator({
+            cwd: resolve(process.cwd(), name),
+            args: options,
+            context: {
+              name,
+            },
+          });
+          await generator.run();
+        },
         async add() {
           if (started) {
             const res = await axios.get(`${baseURL}pm:add/${plugins.join(',')}`);
