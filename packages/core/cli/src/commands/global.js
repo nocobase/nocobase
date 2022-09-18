@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { run, isDev, promptForTs } = require('../util');
+const { run, isDev, isProd, promptForTs } = require('../util');
 
 /**
  *
@@ -23,7 +23,7 @@ module.exports = (cli) => {
           `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
           ...process.argv.slice(2),
         ]);
-      } else {
+      } else if (isProd()) {
         run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, ...process.argv.slice(2)]);
       }
     });

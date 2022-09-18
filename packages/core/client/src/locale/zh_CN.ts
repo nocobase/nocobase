@@ -660,4 +660,16 @@ export default {
   "View all plugins": "查看所有插件",
   "Print": "打印",
   'Sign up successfully, and automatically jump to the sign in page': '注册成功，即将跳转到登录页面',
+  'File manager': '文件管理器',
+  'ACL': '访问控制',
+  'Collection manager': '数据表管理',
+  'Plugin manager': '插件管理器',
+  'Local': '本地',
+  'Built-in': '内置',
+  'Marketplace': '插件市场',
+  'Coming soon...': '敬请期待...',
+  'Settings center': '配置中心',
+
+  'Bookmark': '书签',
+  'Manage all settings': '管理所有配置',
 }

@@ -1,4 +1,4 @@
-import { Database } from '@nocobase/database';
+import { Database, Model } from '@nocobase/database';
 import finder from 'find-package-json';
 import { Application } from './application';
 import { InstallOptions } from './plugin-manager';
@@ -15,6 +15,7 @@ export interface PluginOptions {
   displayName?: string;
   description?: string;
   version?: string;
+  enabled?: boolean;
   install?: (this: Plugin) => void;
   load?: (this: Plugin) => void;
   plugin?: typeof Plugin;
@@ -27,18 +28,30 @@ export abstract class Plugin<O = any> implements PluginInterface {
   options: O;
   app: Application;
   db: Database;
+  model: Model;
 
   constructor(app: Application, options?: O) {
     this.app = app;
     this.db = app.db;
     this.setOptions(options);
+    this.initialize();
   }
 
   setOptions(options: O) {
     this.options = options || ({} as any);
   }
 
+  setModel(model) {
+    this.model = model;
+  }
+
+  get enabled() {
+    return (this.options as any).enabled;
+  }
+
   public abstract getName(): string;
+
+  initialize() {}
 
   beforeLoad() {}
 
@@ -51,6 +64,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
         directory: collectionPath,
       });
     }
+  }
+
+  async disable() {
+    
   }
 
   collectionPath() {

@@ -65,6 +65,14 @@ function resolveNocobasePackagesAlias(config) {
       config.resolve.alias.set(`@nocobase/plugin-${package}`, packageSrc);
     }
   }
+  const samples = fs.readdirSync(resolve(process.cwd(), './packages/samples'));
+  for (const package of samples) {
+    const packageSrc = resolve(process.cwd(), './packages/samples/', package, 'src');
+    if (existsSync(packageSrc)) {
+      config.module.rules.get('ts-in-node_modules').include.add(packageSrc);
+      config.resolve.alias.set(`@nocobase/plugin-${package}-sample`, packageSrc);
+    }
+  }
 }
 
 exports.getUmiConfig = getUmiConfig;
