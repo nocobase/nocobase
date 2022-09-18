@@ -62,13 +62,13 @@ export class Hello extends Plugin {
     this.app.resource({
       name: 'hello',
       actions: {
-        async getInfo(ctx, next) {
+        async get(ctx, next) {
           ctx.body = `Hello plugin1!`;
           next();
         },
       },
     });
-    this.app.acl.allow('hello', 'getInfo');
+    this.app.acl.allow('hello', 'get');
   }
 
   async install(options: InstallOptions) {
