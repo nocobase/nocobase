@@ -89,6 +89,60 @@ export default () => {
 
 ## 使用 observer 响应数据
 
+```tsx
+/**
+ * defaultShowCode: true
+ */
+import React from 'react';
+import { Input } from 'antd';
+import { connect, observer, useForm } from '@formily/react';
+import { SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+
+const SingleText = connect(Input);
+
+const UsedObserver = observer((props) => {
+  const form = useForm();
+  return <div>UsedObserver: {form.values.t1}</div>
+});
+
+const NotUsedObserver = (props) => {
+  const form = useForm();
+  return <div>NotUsedObserver: {form.values.t1}</div>
+};
+
+const schema = {
+  type: 'object',
+  properties: {
+    t1: {
+      type: 'string',
+      'x-component': 'SingleText',
+    },
+    t2: {
+      type: 'string',
+      'x-component': 'UsedObserver',
+    },
+    t3: {
+      type: 'string',
+      'x-component': 'NotUsedObserver',
+    },
+  }
+};
+
+const components = {
+  SingleText,
+  UsedObserver,
+  NotUsedObserver
+};
+
+export default () => {
+  return (
+    <SchemaComponentProvider components={components}>
+      <SchemaComponent schema={schema} />
+    </SchemaComponentProvider>
+  );
+};
+```
+
 ## 嵌套的 Schema
 
 - `props.children` 嵌套，适用于 void 和 object 类型，例子见 [void 和 object 类型 schema 的嵌套](#void-和-object-类型-schema-的嵌套)
@@ -261,7 +315,6 @@ const ArrayList = observer((props) => {
 });
 
 const Value = connect((props) => {
-  const schema = useFieldSchema();
   return <li>value: {props.value}</li>
 });
 
@@ -322,7 +375,6 @@ const ArrayList = observer((props) => {
 });
 
 const Value = connect((props) => {
-  const schema = useFieldSchema();
   return <li>value: {props.value}</li>
 });
 
