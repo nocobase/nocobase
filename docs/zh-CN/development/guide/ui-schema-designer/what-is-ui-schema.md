@@ -32,6 +32,13 @@ interface ISchema {
   ['x-validator']?: FieldValidator;
   // 默认数据
   default: ?:any;
+
+  // 设计器相关
+
+  // 设计器组件（工具栏）
+  ['x-designer']?: any;
+  // 初始化器组件（工具栏）
+  ['x-initializer']?: any;
 }
 ```
 
