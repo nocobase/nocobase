@@ -1,4 +1,4 @@
-# Your first plugin
+# 编写第一个插件
 
 在此之前，需要先安装好 NocoBase：
 
@@ -21,15 +21,15 @@ yarn dev
 首先，你可以通过 CLI 快速的创建一个初始化的插件，命令如下：
 
 ```bash
-yarn pm create plugin1
+yarn pm create hello
 ```
 
-新建的插件，会放置在 `packages/plugins/plugin1` 目录下。
+新建的插件，会放置在 `packages/plugins/hello` 目录下。
 
 ## 插件目录结构
 
 ```ts
-|- /plugin1
+|- /hello
   |- /src
     |- /client
     |- /server
@@ -42,12 +42,12 @@ yarn pm create plugin1
 
 ## 编写插件
 
-插件的主体文件在 `packages/plugins/plugin1/src/server/plugin.ts`，修改为：
+插件的主体文件在 `packages/plugins/hello/src/server/plugin.ts`，修改为：
 
 ```ts
 import { InstallOptions, Plugin } from '@nocobase/server';
 
-export class Plugin1Plugin extends Plugin {
+export class Hello extends Plugin {
   initialize() {
     // TODO
   }
@@ -58,9 +58,9 @@ export class Plugin1Plugin extends Plugin {
 
   async load() {
     // TODO
-    // Visit: http://localhost:13000/api/testPlugin1:getInfo
+    // Visit: http://localhost:13000/api/hello:get
     this.app.resource({
-      name: 'testPlugin1',
+      name: 'hello',
       actions: {
         async getInfo(ctx, next) {
           ctx.body = `Hello plugin1!`;
@@ -68,7 +68,7 @@ export class Plugin1Plugin extends Plugin {
         },
       },
     });
-    this.app.acl.allow('testPlugin1', 'getInfo');
+    this.app.acl.allow('hello', 'getInfo');
   }
 
   async install(options: InstallOptions) {
@@ -76,21 +76,21 @@ export class Plugin1Plugin extends Plugin {
   }
 }
 
-export default Plugin1Plugin;
+export default Hello;
 ```
 
 ## 注册插件
 
 ```bash
-yarn pm add plugin1
+yarn pm add hello
 ```
 
 ## 激活插件
 
 ```bash
-yarn pm enable plugin1
+yarn pm enable hello
 ```
 
 ## 体验插件功能
 
-访问地址 http://localhost:13000/api/testPlugin1:getInfo
+访问地址 http://localhost:13000/api/hello:get
