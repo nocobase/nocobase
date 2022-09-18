@@ -20,6 +20,7 @@ export default {
       ],
     },
     '/getting-started/upgrading',
+    '/getting-started/deployment',
   ],
   '/manual': [
     '/manual/functional-zoning',
@@ -53,7 +54,17 @@ export default {
         '/development/guide/middleware',
         '/development/guide/migration',
         '/development/guide/resources-actions',
-        '/development/guide/ui-schema-designer',
+        {
+          title: 'UI Schema Designer',
+          type: 'subMenu',
+          children: [
+            // '/development/guide/ui-schema-designer/index',
+            '/development/guide/ui-schema-designer/what-is-ui-schema',
+            '/development/guide/ui-schema-designer/extending-schema-components',
+            // '/development/guide/ui-schema-designer/insert-adjacent',
+            '/development/guide/ui-schema-designer/designable',
+          ],
+        },
         '/development/guide/ui-router',
       ],
     },
@@ -62,6 +73,14 @@ export default {
       'title.zh-CN': '测试与构建',
       type: 'group',
       children: ['/development/pre-release/test', '/development/pre-release/build'],
+    },
+    {
+      title: 'HTTP API',
+      type: 'group',
+      children: [
+        '/api/http-api/index',
+        '/api/http-api/rest-api',
+      ],
     },
   ],
   // {
@@ -204,18 +223,12 @@ export default {
       path: '/api/cli',
     },
     {
-      title: '@nocobase/sdk',
-      path: '/api/sdk',
+      title: '@nocobase/actions',
+      path: '/api/actions',
     },
     {
-      title: 'HTTP API',
-      type: 'subMenu',
-      children: [
-        '/api/http-api/index',
-        '/api/http-api/rest-api',
-        '/api/http-api/action-api',
-        '/api/http-api/filter-operators',
-      ],
+      title: '@nocobase/sdk',
+      path: '/api/sdk',
     },
   ],
 };
