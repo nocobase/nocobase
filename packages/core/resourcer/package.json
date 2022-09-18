@@ -12,6 +12,7 @@
     }
   ],
   "dependencies": {
+    "@nocobase/utils": "0.7.4-alpha.7",
     "deepmerge": "^4.2.2",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",

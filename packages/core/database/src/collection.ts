@@ -215,7 +215,7 @@ export class Collection<
     return this.db.collectionExistsInDb(this.name, options);
   }
 
-  removeField(name) {
+  removeField(name: string): void | Field {
     if (!this.fields.has(name)) {
       return;
     }
@@ -347,7 +347,7 @@ export class Collection<
   async sync(syncOptions?: SyncOptions) {
     const modelNames = new Set([this.model.name]);
 
-    const associations = this.model.associations;
+    const { associations } = this.model;
 
     for (const associationKey in associations) {
       const association = associations[associationKey];

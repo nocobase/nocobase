@@ -17,12 +17,11 @@ export class ApplicationModel extends Model {
   }
 
   static async handleAppStart(app: Application, options: registerAppOptions) {
-    await app.load();
-
-    if (!lodash.get(options, 'skipInstall', false)) {
+    if (!options?.skipInstall) {
       await app.install();
+    } else {
+      await app.load();
     }
-
     await app.start();
   }
 
@@ -32,14 +31,9 @@ export class ApplicationModel extends Model {
 
     const AppModel = this.constructor as typeof ApplicationModel;
 
-    const app = mainApp.appManager.createApplication(appName, {
-      ...AppModel.initOptions(appName, mainApp),
-      ...appOptions,
-    });
-
-    // create database before installation if it not exists
-    app.on('beforeInstall', async function createDatabase() {
-      const { host, port, username, password, database, dialect } = AppModel.getDatabaseConfig(app);
+    const createDatabase = async () => {
+      const database = appName;
+      const { host, port, username, password, dialect } = mainApp.db.options;
 
       if (dialect === 'mysql') {
         const mysql = require('mysql2/promise');
@@ -56,7 +50,7 @@ export class ApplicationModel extends Model {
           port,
           user: username,
           password,
-          database: 'postgres'
+          database: 'postgres',
         });
 
         await client.connect();
@@ -67,6 +61,15 @@ export class ApplicationModel extends Model {
 
         await client.end();
       }
+    };
+
+    if (!options?.skipInstall) {
+      await createDatabase();
+    }
+
+    const app = mainApp.appManager.createApplication(appName, {
+      ...AppModel.initOptions(appName, mainApp),
+      ...appOptions,
     });
 
     await AppModel.handleAppStart(app, options);

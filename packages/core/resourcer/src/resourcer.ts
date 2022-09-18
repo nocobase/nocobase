@@ -2,9 +2,10 @@ import glob from 'glob';
 import compose from 'koa-compose';
 import _ from 'lodash';
 import { pathToRegexp } from 'path-to-regexp';
+import { requireModule } from '@nocobase/utils';
 import Action, { ActionName } from './action';
 import Resource, { ResourceOptions } from './resource';
-import { getNameByParams, ParsedParams, parseQuery, parseRequest, requireModule } from './utils';
+import { getNameByParams, ParsedParams, parseQuery, parseRequest } from './utils';
 
 export interface ResourcerContext {
   resourcer?: Resourcer;
@@ -205,6 +206,10 @@ export class Resourcer {
 
   isDefined(name: string) {
     return this.resources.has(name);
+  }
+
+  removeResource(name) {
+    return this.resources.delete(name);
   }
 
   registerAction(name: ActionName, handler: HandlerType) {

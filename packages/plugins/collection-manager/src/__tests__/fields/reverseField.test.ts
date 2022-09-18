@@ -10,7 +10,6 @@ describe('reverseField options', () => {
 
   beforeEach(async () => {
     app = await createApp();
-    await app.db.sync();
     db = app.db;
     Collection = db.getCollection('collections');
     Field = db.getCollection('fields');

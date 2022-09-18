@@ -4,13 +4,13 @@ import parse from 'json-templates';
 import { Collection, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
-import { HandlerType, MiddlewareManager } from '@nocobase/resourcer';
+import { HandlerType, Middleware } from '@nocobase/resourcer';
 
 import { namespace } from './';
 import * as actions from './actions/users';
 import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
-import * as middlewares from './middlewares';
+import { parseToken } from './middlewares';
 import initAuthenticators from './authenticators';
 
 export interface UserPluginConfig {
@@ -20,14 +20,14 @@ export interface UserPluginConfig {
 export default class UsersPlugin extends Plugin<UserPluginConfig> {
   public jwtService: JwtService;
 
-  public tokenMiddleware: MiddlewareManager;
+  public tokenMiddleware: Middleware;
 
   public authenticators: Registry<HandlerType> = new Registry();
 
   constructor(app, options) {
     super(app, options);
     this.jwtService = new JwtService(options?.jwt || {});
-    this.tokenMiddleware = middlewares.parseToken({ plugin: this });
+    this.tokenMiddleware = new Middleware(parseToken);
   }
 
   async beforeLoad() {
@@ -92,7 +92,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    this.app.resourcer.use(this.tokenMiddleware.compose());
+    this.app.resourcer.use(this.tokenMiddleware.getHandler());
 
     const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
     const loggedInActions = ['signout', 'updateProfile', 'changePassword'];

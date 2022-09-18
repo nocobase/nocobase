@@ -183,16 +183,6 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
   return params;
 }
 
-export function requireModule(module: any) {
-  if (typeof module === 'string') {
-    module = require(module);
-  }
-  if (typeof module !== 'object') {
-    return module;
-  }
-  return module.__esModule ? module.default : module;
-}
-
 export function parseQuery(input: string): any {
   // 自带 query 处理的不太给力，需要用 qs 转一下
   const query = qs.parse(input, {
