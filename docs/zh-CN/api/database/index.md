@@ -13,7 +13,7 @@ import Database, {
   Field,
   Collection,
   Repository,
-  Model,
+  RelationRepository,
   extend
 } from '@nocobase/database';
 ```

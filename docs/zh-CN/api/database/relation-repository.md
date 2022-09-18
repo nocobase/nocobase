@@ -1,4 +1,4 @@
-# RalationRepository
+# RelationRepository
 
 关系型数据仓库抽象类。
 
