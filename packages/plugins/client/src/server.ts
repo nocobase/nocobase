@@ -20,6 +20,7 @@ export class ClientPlugin extends Plugin {
   async load() {
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
+    this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
     this.app.resource({
       name: 'app',
@@ -53,6 +54,24 @@ export class ClientPlugin extends Plugin {
           };
           await next();
         },
+        async getPlugins(ctx, next) {
+          const pm = ctx.db.getRepository('applicationPlugins');
+          const items = await pm.find({
+            filter: {
+              enabled: true,
+            },
+          });
+          ctx.body = items
+            .filter((item) => {
+              try {
+                require.resolve(`@nocobase/plugin-${item.name}/client`);
+                return true;
+              } catch (error) {}
+              return false;
+            })
+            .map((item) => item.name);
+          await next();
+        },
       },
     });
     this.app.resource({
@@ -61,8 +80,7 @@ export class ClientPlugin extends Plugin {
         // TODO: 临时
         async getPinned(ctx, next) {
           ctx.body = [
-            { component: 'DesignableSwitch', pin: true },
-            { component: 'CollectionManagerShortcut', pin: true },
+            { component: 'CollectionManagerShortcut' },
             { component: 'ACLShortcut' },
             { component: 'WorkflowShortcut' },
             { component: 'SchemaTemplateShortcut' },

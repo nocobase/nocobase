@@ -2,7 +2,7 @@ import { Migration } from '@nocobase/server';
 
 export default class AlertSubTableMigration extends Migration {
   async up() {
-    const match = await this.app.version.satisfies('<=0.7.4-alpha.8');
+    const match = await this.app.version.satisfies('<=0.7.4-alpha.7');
     if (!match) {
       return;
     }
@@ -10,8 +10,8 @@ export default class AlertSubTableMigration extends Migration {
     const existed = await Field.count({
       filter: {
         name: 'phone',
-        collectionName: 'users'
-      }
+        collectionName: 'users',
+      },
     });
     if (!existed) {
       await Field.create({
@@ -30,12 +30,10 @@ export default class AlertSubTableMigration extends Migration {
           },
         },
         // NOTE: to trigger hook
-        context: {}
+        context: {},
       });
     }
   }
 
-  async down() {
-
-  }
+  async down() {}
 }
