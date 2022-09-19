@@ -466,7 +466,7 @@ export const useBulkAetachActionProps = () => {
   const association = useBlockAssociationContext();
   const currentRecord = useRecord();
   const api = useAPIClient();
-  const { service, __parent } = useBlockRequestContext();
+  const { service, __parent ,resource} = useBlockRequestContext();
   return {
     async onClick() {
       if (!field?.data?.selectedRowKeys?.length) {
@@ -478,6 +478,9 @@ export const useBulkAetachActionProps = () => {
       field.data.selectedRowKeys = [];
       service?.refreshAsync?.();
       __parent?.service?.refresh?.();
+      if (!(resource instanceof TableFieldResource)) {
+        __parent?.__parent?.service?.refresh?.();
+      }
       setVisible?.(false);
     },
   };

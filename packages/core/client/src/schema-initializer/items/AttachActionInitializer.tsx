@@ -5,15 +5,16 @@ import {
   useTableBlockContext,
   useCollectionManager,
   CollectionFieldContext,
-  useCollection
+  useCollection,
 } from '@nocobase/client';
-import { ISchema,  useFieldSchema } from '@formily/react';
+import { ISchema, useFieldSchema } from '@formily/react';
 import { ActionInitializer } from './ActionInitializer';
-
 
 export const AttachActionInitializer = (props) => {
   const { name } = useCollection();
   const association = useBlockAssociationContext();
+  const { rowKey } = useTableBlockContext();
+
   const schema: ISchema = {
     type: 'void',
     title: '{{ t("Attach") }}',
@@ -36,12 +37,13 @@ export const AttachActionInitializer = (props) => {
         'x-component': 'Action.Container',
         'x-decorator': 'AssociateTableProvider',
         'x-decorator-props': {
-          collection:name,
+          collection: name,
           resource: name,
           action: 'list',
           params: {
             pageSize: 20,
           },
+          rowKey,
         },
         'x-component-props': {
           className: 'nb-record-picker-selector',

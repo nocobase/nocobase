@@ -3,7 +3,7 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { useRecord } from '../record-provider';
-import { BlockProvider, useBlockRequestContext,useBlockAssociationContext } from './BlockProvider';
+import { BlockProvider, useBlockRequestContext, useBlockAssociationContext } from './BlockProvider';
 
 const AssociateTableSelectorContext = createContext<any>({});
 
@@ -42,20 +42,25 @@ const recursiveParent = (schema: Schema, component) => {
     : null;
 };
 
-
-
 export const AssociateTableProvider = (props) => {
   const { getCollectionJoinField } = useCollectionManager();
   const association = useBlockAssociationContext();
   const record = useRecord();
   const targetField = getCollectionJoinField(association);
+  console.log(targetField);
+
   const params = {
     ...props.params,
-    filter: targetField&&record[targetField.sourceKey] &&{
-      [targetField.foreignKey]: { $notExists: record[targetField.sourceKey] },
-    },
   };
-  
+  if (targetField) {
+    if (['o2m'].includes(targetField.interface)) {
+      if (record[targetField.sourceKey]) {
+        params['filter'] = { [targetField.foreignKey]: { $notExists: record[targetField.sourceKey] } };
+      }
+    } else if (['m2m'].includes(targetField.interface)) {
+    }
+  }
+
   const appends = useAssociationNames(props.collection);
   if (props.dragSort) {
     params['sort'] = ['sort'];
@@ -63,7 +68,7 @@ export const AssociateTableProvider = (props) => {
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
-  
+
   return (
     <BlockProvider {...props} params={params} association={association}>
       <InternalTableSelectorProvider {...props} params={params} />
@@ -71,13 +76,9 @@ export const AssociateTableProvider = (props) => {
   );
 };
 
-
-
 export const useAssociateTableSelectorContext = () => {
   return useContext(AssociateTableSelectorContext);
 };
-
-
 
 export const useAssociateTableSelectorProps = () => {
   const field = useField<ArrayField>();
@@ -109,7 +110,7 @@ export const useAssociateTableSelectorProps = () => {
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
-      ctx.field.selectedRowKeys=selectedRowKeys;
+      ctx.field.selectedRowKeys = selectedRowKeys;
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({
