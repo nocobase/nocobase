@@ -3,7 +3,7 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { useRecord } from '../record-provider';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, useBlockRequestContext,useBlockAssociationContext } from './BlockProvider';
 
 const AssociateTableSelectorContext = createContext<any>({});
 
@@ -53,9 +53,10 @@ const recursiveParent = (schema: Schema, component) => {
 export const AssociateTableProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager();
+  const association = useBlockAssociationContext();
+
   const record = useRecord();
   const collectionFieldSchema = recursiveParent(fieldSchema, 'AssociateTableInitializers');
-  const { association } = collectionFieldSchema?.['x-initializer-props']||{};
   const targetField = getCollectionJoinField(association);
   const params = {
     ...props.params,
@@ -63,6 +64,7 @@ export const AssociateTableProvider = (props) => {
       [targetField.foreignKey]: { $notExists: record[targetField.sourceKey] },
     },
   };
+  console.log(params)
   const appends = useAssociationNames(props.collection);
   if (props.dragSort) {
     params['sort'] = ['sort'];
@@ -89,7 +91,6 @@ export const useAssociateTableSelectorContext = () => {
 export const useAssociateTableSelectorProps = () => {
   const field = useField<ArrayField>();
   const ctx = useAssociateTableSelectorContext();
-  console.log(ctx)
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
@@ -99,9 +100,7 @@ export const useAssociateTableSelectorProps = () => {
       field.componentProps.pagination.pageSize = ctx?.service?.data?.meta?.pageSize;
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
-      console.log(ctx)
     }
-    console.log(ctx)
   }, [ctx?.service?.loading]);
   return {
     loading: ctx?.service?.loading,

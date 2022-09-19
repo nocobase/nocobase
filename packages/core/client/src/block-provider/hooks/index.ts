@@ -1,5 +1,5 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import React ,{useContext}from 'react';
+import React, { useContext } from 'react';
 import { message, Modal } from 'antd';
 import parse from 'json-templates';
 import get from 'lodash/get';
@@ -12,14 +12,14 @@ import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
 import { useCurrentUserContext } from '../../user';
-import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
+import { useBlockRequestContext, useFilterByTk, useBlockAssociationContext } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import {useAssociateTableSelectorContext} from '../AssociateTableProvider'
+import { useAssociateTableSelectorContext } from '../AssociateTableProvider';
 
 export const usePickActionProps = () => {
   const form = useForm();
-  const ctx=useAssociateTableSelectorContext()
+  const ctx = useAssociateTableSelectorContext();
   return {
     onClick() {
       console.log('usePickActionProps', ctx);
@@ -391,7 +391,6 @@ export const useUpdateActionProps = () => {
 
 export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
-  console.log(filterByTk)
   const { resource, service, block, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   return {
@@ -449,25 +448,36 @@ export const useBulkDestroyActionProps = () => {
 
 // 关联已有数据
 export const useBulkAetachActionProps = () => {
-  console.log(useAssociateTableSelectorContext())
-  const { field } = useAssociateTableSelectorContext();
-  const { resource, service } = useBlockRequestContext();
-  console.log(resource)
+  console.log(useAssociateTableSelectorContext());
+    const { setVisible } = useActionContext();
+  const { field,resource ,service:ser} = useAssociateTableSelectorContext();
+  console.log(resource);
+  const association = useBlockAssociationContext();
+  const currentRecord = useRecord();
+  const api = useAPIClient();
+  const {  service } = useBlockRequestContext();
+
+  // const { getCollectionJoinField } = useCollectionManager();
+
   // .resource('posts.tags', p1.get('id'))
   //     .add({
   //       values: [t1.get('id'), t2.get('id')],
   //     });
-  console.log(field)
+  console.log(association,service,ser);
   return {
     async onClick() {
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
-      await resource.add(
-         field.data?.selectedRowKeys,
-      );
+      // await resource.add({
+      //   values: field.data?.selectedRowKeys,
+      // });
+      await api.resource('customer.orderGid', currentRecord.id).add({
+              values: field.data?.selectedRowKeys
+            });
       field.data.selectedRowKeys = [];
-      service?.refresh?.();
+      service?.refreshAsync?.();
+      setVisible?.(false);
     },
   };
 };
@@ -476,21 +486,19 @@ export const useBulkAetachActionProps = () => {
 export const useBulkDetachActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
-  console.log(field)
   return {
     async onClick() {
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
       await resource.remove({
-        filterByTk: field.data?.selectedRowKeys,
+        values: field.data?.selectedRowKeys,
       });
       field.data.selectedRowKeys = [];
       service?.refresh?.();
     },
   };
 };
-
 
 export const useRefreshActionProps = () => {
   const { service } = useBlockRequestContext();
