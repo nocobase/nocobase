@@ -11,6 +11,7 @@ const InternalTableSelectorProvider = (props) => {
   const { params, rowKey } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+  console.log(field)
   return (
     <AssociateTableSelectorContext.Provider
       value={{
@@ -47,8 +48,6 @@ export const AssociateTableProvider = (props) => {
   const association = useBlockAssociationContext();
   const record = useRecord();
   const targetField = getCollectionJoinField(association);
-  console.log(targetField);
-
   const params = {
     ...props.params,
   };
@@ -57,7 +56,6 @@ export const AssociateTableProvider = (props) => {
       if (record[targetField.sourceKey]) {
         params['filter'] = { [targetField.foreignKey]: { $notExists: record[targetField.sourceKey] } };
       }
-    } else if (['m2m'].includes(targetField.interface)) {
     }
   }
 
@@ -83,7 +81,8 @@ export const useAssociateTableSelectorContext = () => {
 export const useAssociateTableSelectorProps = () => {
   const field = useField<ArrayField>();
   const ctx = useAssociateTableSelectorContext();
-
+  const {__parent}=useBlockRequestContext();
+  const rcSelectRows=__parent.service.data.data
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
@@ -111,6 +110,10 @@ export const useAssociateTableSelectorProps = () => {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
       ctx.field.selectedRowKeys = selectedRowKeys;
+    },
+    rowSelection: {
+      type:  'checkbox' ,
+      selectedRowKeys: rcSelectRows?.map((item) => item[ctx.rowKey || 'id']),
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({
