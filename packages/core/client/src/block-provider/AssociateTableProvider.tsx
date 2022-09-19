@@ -11,7 +11,6 @@ const InternalTableSelectorProvider = (props) => {
   const { params, rowKey } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
-  console.log(field)
   return (
     <AssociateTableSelectorContext.Provider
       value={{
@@ -84,7 +83,6 @@ export const useAssociateTableSelectorProps = () => {
   const {__parent}=useBlockRequestContext();
   const rcSelectRows=__parent.service.data.data
   const selectKeys=rcSelectRows?.map((item) => item[ctx.rowKey || 'id'])
-  console.log(selectKeys)
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
@@ -109,7 +107,6 @@ export const useAssociateTableSelectorProps = () => {
           }
         : false,
     onRowSelectionChange(selectedRowKeys, selectedRows) {
-      console.log(selectedRowKeys)
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
       ctx.field.selectedRowKeys = selectedRowKeys;

@@ -166,7 +166,6 @@ export const Table: any = observer((props: any) => {
     required,
     ...others
   } = { ...others1, ...others2 } as any;
-  console.log(others)
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
   const requiredValidator = field.required || required;
