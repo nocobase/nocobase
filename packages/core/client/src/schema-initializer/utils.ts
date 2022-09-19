@@ -882,7 +882,6 @@ export const createAssociateTableSelectorSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 

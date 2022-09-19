@@ -10,13 +10,7 @@ const AssociateTableSelectorContext = createContext<any>({});
 const InternalTableSelectorProvider = (props) => {
   const { params, rowKey } = props;
   const field = useField();
-  const ctx = useAssociateTableSelectorContext();
-
-  console.log(field,ctx)
   const { resource, service } = useBlockRequestContext();
-  // if (service.loading) {
-  //   return <Spin />;
-  // }
   return (
     <AssociateTableSelectorContext.Provider
       value={{
@@ -51,12 +45,9 @@ const recursiveParent = (schema: Schema, component) => {
 
 
 export const AssociateTableProvider = (props) => {
-  const fieldSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager();
   const association = useBlockAssociationContext();
-
   const record = useRecord();
-  const collectionFieldSchema = recursiveParent(fieldSchema, 'AssociateTableInitializers');
   const targetField = getCollectionJoinField(association);
   const params = {
     ...props.params,
@@ -64,7 +55,7 @@ export const AssociateTableProvider = (props) => {
       [targetField.foreignKey]: { $notExists: record[targetField.sourceKey] },
     },
   };
-  console.log(params)
+  
   const appends = useAssociationNames(props.collection);
   if (props.dragSort) {
     params['sort'] = ['sort'];
@@ -74,7 +65,7 @@ export const AssociateTableProvider = (props) => {
   }
   
   return (
-    <BlockProvider {...props} params={params} >
+    <BlockProvider {...props} params={params} association={association}>
       <InternalTableSelectorProvider {...props} params={params} />
     </BlockProvider>
   );
@@ -91,6 +82,7 @@ export const useAssociateTableSelectorContext = () => {
 export const useAssociateTableSelectorProps = () => {
   const field = useField<ArrayField>();
   const ctx = useAssociateTableSelectorContext();
+
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;

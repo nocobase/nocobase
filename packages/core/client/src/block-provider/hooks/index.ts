@@ -448,44 +448,32 @@ export const useBulkDestroyActionProps = () => {
 
 // 关联已有数据
 export const useBulkAetachActionProps = () => {
-  console.log(useAssociateTableSelectorContext());
-    const { setVisible } = useActionContext();
-  const { field,resource ,service:ser} = useAssociateTableSelectorContext();
-  console.log(resource);
+  const { setVisible } = useActionContext();
+  const { field } = useAssociateTableSelectorContext();
   const association = useBlockAssociationContext();
   const currentRecord = useRecord();
   const api = useAPIClient();
-  const {  service } = useBlockRequestContext();
-
-  // const { getCollectionJoinField } = useCollectionManager();
-
-  // .resource('posts.tags', p1.get('id'))
-  //     .add({
-  //       values: [t1.get('id'), t2.get('id')],
-  //     });
-  console.log(association,service,ser);
+  const { service, __parent } = useBlockRequestContext();
   return {
     async onClick() {
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
-      // await resource.add({
-      //   values: field.data?.selectedRowKeys,
-      // });
-      await api.resource('customer.orderGid', currentRecord.id).add({
-              values: field.data?.selectedRowKeys
-            });
+      await api.resource(association, currentRecord.id).add({
+        values: field.data?.selectedRowKeys,
+      });
       field.data.selectedRowKeys = [];
       service?.refreshAsync?.();
+      __parent?.service?.refresh?.();
       setVisible?.(false);
     },
   };
 };
 
-// 解除关联已有数据
+// 解除关联
 export const useBulkDetachActionProps = () => {
   const { field } = useBlockRequestContext();
-  const { resource, service } = useBlockRequestContext();
+  const { resource, service, __parent } = useBlockRequestContext();
   return {
     async onClick() {
       if (!field?.data?.selectedRowKeys?.length) {
@@ -496,6 +484,7 @@ export const useBulkDetachActionProps = () => {
       });
       field.data.selectedRowKeys = [];
       service?.refresh?.();
+      __parent?.service?.refresh?.();
     },
   };
 };
