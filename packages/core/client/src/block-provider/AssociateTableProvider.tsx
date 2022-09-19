@@ -83,6 +83,8 @@ export const useAssociateTableSelectorProps = () => {
   const ctx = useAssociateTableSelectorContext();
   const {__parent}=useBlockRequestContext();
   const rcSelectRows=__parent.service.data.data
+  const selectKeys=rcSelectRows?.map((item) => item[ctx.rowKey || 'id'])
+  console.log(selectKeys)
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
@@ -107,13 +109,10 @@ export const useAssociateTableSelectorProps = () => {
           }
         : false,
     onRowSelectionChange(selectedRowKeys, selectedRows) {
+      console.log(selectedRowKeys)
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
       ctx.field.selectedRowKeys = selectedRowKeys;
-    },
-    rowSelection: {
-      type:  'checkbox' ,
-      selectedRowKeys: rcSelectRows?.map((item) => item[ctx.rowKey || 'id']),
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({
@@ -125,5 +124,8 @@ export const useAssociateTableSelectorProps = () => {
     onChange({ current, pageSize }) {
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize });
     },
+    getCheckboxProps: (record) => ({
+      disabled: selectKeys.includes(record[ctx.rowKey||'id']), // Column configuration not to be checked
+    }),
   };
 };
