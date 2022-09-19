@@ -18,3 +18,4 @@ export * from './TableSelectorInitializers';
 export * from './TabPaneInitializers';
 export * from './AssociateTableInitializers'
 export * from './AssociateTableActionInitializers';
+export * from './AssociateTableActionColumnInitializers';

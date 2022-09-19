@@ -407,6 +407,19 @@ export const useDestroyActionProps = () => {
   };
 };
 
+export const useDetachActionProps = () => {
+  const filterByTk = useFilterByTk();
+  const { resource, service} = useBlockRequestContext();
+  return {
+    async onClick() {
+      await resource.remove({
+        values:[filterByTk],
+      });
+      service?.refresh?.();
+    },
+  };
+};
+
 export const useDetailPrintActionProps = () => {
   const { formBlockRef } = useFormBlockContext();
 

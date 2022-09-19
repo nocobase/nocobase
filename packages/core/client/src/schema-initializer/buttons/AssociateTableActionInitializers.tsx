@@ -69,7 +69,7 @@ export const AssociateTableActionInitializers = {
           {
             type: 'item',
             title: "{{t('Detach')}}",
-            component: 'DetachActionInitializer',
+            component: 'BulkDetachActionInlitializer',
             schema: {
               'x-align': 'right',
               'x-decorator': 'ACLActionProvider',
