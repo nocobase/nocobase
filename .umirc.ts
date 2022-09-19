@@ -42,8 +42,8 @@ const getTitle = (item, lang) => {
   return item.title;
 };
 
-const parseMenuItems = (items, lang = null) => {
-  const menuItems = [];
+const parseMenuItems = (items: any[], lang: string) => {
+  const menuItems: any[] = [];
   for (const item of items) {
     if (typeof item === 'string') {
       const result = markdown(item, lang);
@@ -86,18 +86,63 @@ export default defineConfig({
   locales: [[lang, lang]],
   hash: true,
   logo: 'https://www.nocobase.com/images/logo.png',
-  navs: [
-    {
-      title: 'Docs',
-      path: '/',
-      hidden: true,
-    },
-    {
-      title: 'GitHub',
-      path: 'https://github.com/nocobase/nocobase',
-    },
-  ],
-  menus: {
-    '/': parseMenuItems(menus, lang),
+  navs: {
+    'en-US': [
+      {
+        title: 'Introduction',
+        path: '/introduction'
+      },
+      {
+        title: 'Getting started',
+        path: '/getting-started'
+      },
+      {
+        title: 'Manual',
+        path: '/manual'
+      },
+      {
+        title: 'Development',
+        path: '/development'
+      },
+      {
+        title: 'API reference',
+        path: '/api'
+      },
+      {
+        title: 'GitHub',
+        path: 'https://github.com/nocobase/nocobase',
+      },
+    ],
+    'zh-CN': [
+      {
+        title: '介绍',
+        path: '/introduction'
+      },
+      {
+        title: '快速开始',
+        path: '/getting-started'
+      },
+      {
+        title: '使用手册',
+        path: '/manual'
+      },
+      {
+        title: '开发教程',
+        path: '/development'
+      },
+      {
+        title: 'API 参考',
+        path: '/api'
+      },
+      {
+        title: 'GitHub',
+        path: 'https://github.com/nocobase/nocobase',
+      },
+    ]
   },
+  menus: Object.keys(menus).reduce((result, key) => {
+    const items = menus[key];
+    result[key] = parseMenuItems(items, lang);
+    return result;
+  }, {})
 });
