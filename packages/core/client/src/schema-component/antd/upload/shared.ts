@@ -1,11 +1,13 @@
 import { Field } from '@formily/core';
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadChangeParam } from 'antd/lib/upload';
 import { UploadFile } from 'antd/lib/upload/interface';
 import { useEffect } from 'react';
 import { useAPIClient } from '../../../api-client';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
+import {useDesignable} from '../../hooks/useDesignable'
 import { UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
 
@@ -163,6 +165,9 @@ export const useUploadValidator = (serviceErrorMessage = 'Upload Service Error')
 
 export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceErrorMessage, ...props }: T) {
   useUploadValidator(serviceErrorMessage);
+  const fieldSchema = useFieldSchema();
+  const ctx = useFormBlockContext();
+  const { dn } = useDesignable();
   const onChange = (param: UploadChangeParam<UploadFile>) => {
     props.onChange?.(normalizeFileList([...param.fileList]));
   };
@@ -178,6 +183,8 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
           formData.append(key, data[key]);
         });
       }
+      ctx.field.uploading=true;
+      dn.refresh();
       formData.append(filename, file);
       api.axios
         .post(action, formData, {
@@ -189,8 +196,15 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
         })
         .then(({ data }) => {
           onSuccess(data, file);
+          ctx.field.uploading=false;
+          dn.refresh();
         })
-        .catch(onError);
+        .catch(onError)
+        .finally(()=>{
+          console.log(3)
+          ctx.field.uploading=false;
+          dn.refresh();
+        })
 
       return {
         abort() {

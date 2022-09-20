@@ -323,7 +323,10 @@ export const useUpdateActionProps = () => {
   const { fields, getField } = useCollection();
   const compile = useCompile();
   const actionField = useField();
-  const { updateAssociationValues } = useFormBlockContext();
+  const { updateAssociationValues ,field:{uploading}} = useFormBlockContext();  
+  console.log(uploading)
+  actionField.data = field.data || {};
+  actionField.data.loading = uploading||false;
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
