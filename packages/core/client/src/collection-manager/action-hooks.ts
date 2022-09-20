@@ -111,7 +111,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
     }
     if (nested) {
       const targetFields = getCollectionFields(field.target);
-      const options = getOptions(targetFields, depth+1).filter(Boolean);
+      const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
     }
@@ -275,7 +275,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
       await refreshCM();
     },
   };
-}
+};
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
@@ -301,11 +301,21 @@ export const useValuesFromRA = (options) => {
 };
 
 export const useCreateActionAndRefreshCM = () => {
+  const form = useForm();
+  // handle tree collection
+  if (!!form.values?.treeType) {
+    // set children field target
+    form.values?.fields?.forEach((v) => {
+      if (v?.name === 'children') {
+        v.target = form.values?.name;
+      }
+    });
+  }
   const { run } = useCreateAction();
   const { refreshCM } = useCollectionManager();
   return {
     async run() {
-      await run();      
+      await run();
       await refreshCM();
     },
   };
@@ -337,7 +347,7 @@ export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
   const { refreshCM } = useCollectionManager();
   return {
-    async run() {      
+    async run() {
       await run();
       await refreshCM();
     },

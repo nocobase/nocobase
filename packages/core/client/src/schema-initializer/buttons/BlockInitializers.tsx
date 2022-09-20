@@ -19,6 +19,12 @@ export const BlockInitializers = {
           component: 'TableBlockInitializer',
         },
         {
+          key: 'treeTable',
+          type: 'item',
+          title: '{{t("Tree Table")}}',
+          component: 'TreeTableBlockInitializer',
+        },
+        {
           key: 'form',
           type: 'item',
           title: '{{t("Form")}}',

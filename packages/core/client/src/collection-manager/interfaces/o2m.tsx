@@ -87,7 +87,7 @@ export const o2m: IField = {
       };
     } else {
       schema['x-component'] = 'CollectionField';
-      schema.type = 'object';
+      schema.type = 'array';
 
       if (block === 'Form') {
         schema['properties'] = {
@@ -102,7 +102,7 @@ export const o2m: IField = {
         } else {
           schema['properties'] = {
             selector: cloneDeep(recordPickerSelector),
-          }
+          };
         }
       }
     }

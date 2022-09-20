@@ -47,11 +47,12 @@ const useTableColumns = () => {
         // width: 300,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          // console.log((Date.now() - start) / 1000);
+          const name = !!record.__path ? record.__path : index;
+
           return (
             <RecordIndexProvider index={index}>
               <RecordProvider record={record}>
-                <RecursionField schema={s} name={index} onlyRenderProperties />
+                <RecursionField schema={s} name={name} onlyRenderProperties />
               </RecordProvider>
             </RecordIndexProvider>
           );
@@ -196,6 +197,7 @@ export const Table: any = observer((props: any) => {
                 css`
                   max-width: 300px;
                   white-space: nowrap;
+
                   &:hover .general-schema-designer {
                     display: block;
                   }
@@ -238,6 +240,7 @@ export const Table: any = observer((props: any) => {
               css`
                 max-width: 300px;
                 white-space: nowrap;
+
                 .nb-read-pretty-input-number {
                   text-align: right;
                 }
@@ -290,18 +293,22 @@ export const Table: any = observer((props: any) => {
                     align-items: center;
                     justify-content: space-evenly;
                     padding-right: 8px;
+
                     .nb-table-index {
                       opacity: 0;
                     }
+
                     &:not(.checked) {
                       .nb-table-index {
                         opacity: 1;
                       }
                     }
+
                     &:hover {
                       .nb-table-index {
                         opacity: 0;
                       }
+
                       .nb-origin-node {
                         display: block;
                       }
@@ -331,6 +338,7 @@ export const Table: any = observer((props: any) => {
                       position: absolute;
                       right: 50%;
                       transform: translateX(50%);
+
                       &:not(.checked) {
                         display: none;
                       }

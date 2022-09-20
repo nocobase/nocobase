@@ -5,7 +5,7 @@ import { collectionFieldSchema } from './collectionFields';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
-}
+};
 
 const collection: CollectionOptions = {
   name: 'collections',
@@ -31,7 +31,20 @@ const collection: CollectionOptions = {
         title: '{{ t("Collection name") }}',
         type: 'string',
         'x-component': 'Input',
-        description: '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+        description:
+          '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+      },
+    },
+    {
+      type: 'string',
+      name: 'treeType',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Tree type") }}',
+        type: 'string',
+        required: true,
+        'x-component': 'Select',
+        enum: [{ label: '{{ t("Adjacency list") }}', value: 'adjacencyList' }],
       },
     },
     {
@@ -97,52 +110,9 @@ export const collectionSchema: ISchema = {
             create: {
               type: 'void',
               title: '{{ t("Create collection") }}',
-              'x-component': 'Action',
+              'x-component': 'CreateCollectionAction',
               'x-component-props': {
                 type: 'primary',
-              },
-              properties: {
-                drawer: {
-                  type: 'void',
-                  title: '{{ t("Create collection") }}',
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    useValues: '{{ useCollectionValues }}',
-                  },
-                  properties: {
-                    title: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    name: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                      'x-validator': 'uid',
-                    },
-                    footer: {
-                      type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        action1: {
-                          title: '{{ t("Cancel") }}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
-                          },
-                        },
-                        action2: {
-                          title: '{{ t("Submit") }}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                            useAction: '{{ cm.useCreateActionAndRefreshCM }}',
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
               },
             },
           },
