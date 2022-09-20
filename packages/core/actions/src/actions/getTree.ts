@@ -1,12 +1,14 @@
 import {Context} from "@nocobase/actions";
 import {getRepositoryFromParams} from "../utils";
 
-function toTree(arr: Array<any>, map: Map<any, any>, primaryKeyField: any) {
-  arr.forEach(value => {
+function toTree(arr: Array<any>, map: Map<any, any>, primaryKeyField: any, __path: string) {
+  arr.forEach((value, index) => {
+    let curPath = __path.length > 0 ? `${__path}.${index}` : `${index}`
     const childrenArr = map.get(value.get(primaryKeyField))
-    if (!!childrenArr) {
+    value.dataValues.__path = curPath
+    if (!!childrenArr && childrenArr.length > 0) {
       value.dataValues.children = childrenArr
-      toTree(childrenArr, map, primaryKeyField)
+      toTree(childrenArr, map, primaryKeyField, `${curPath}.children`)
     }
   })
 }
@@ -39,7 +41,7 @@ export async function getTree(ctx: Context, next) {
       children.push(row)
     }
   }
-  toTree(rootArray, map, primaryKeyField)
+  toTree(rootArray, map, primaryKeyField, "")
 
   ctx.body = rootArray;
   await next();

@@ -66,23 +66,25 @@ describe('getTree action', () => {
 
   });
 
-    afterEach(async () => {
-      await app.destroy();
-    });
+  afterEach(async () => {
+    await app.destroy();
+  });
 
-    test('getTree', async () => {
-      const response = await app
-        .agent()
-        .resource('cities')
-        .getTree({
-          paginate: false,
-          appends: [],
-        });
+  test('getTree', async () => {
+    const response = await app
+      .agent()
+      .resource('cities')
+      .getTree({
+        paginate: false,
+        appends: [],
+      });
 
-      const body = response.body;
-      expect(body.length).toEqual(1);
-      expect(body[0]['children'].length).toEqual(2);
-      expect(body[0]['children'][0]['children'].length).toEqual(2);
-    });
+    const body = response.body;
+    expect(body.length).toEqual(1);
+    expect(body[0]['children'].length).toEqual(2);
+    expect(body[0]['children'][0].__path).toEqual('0.children.0');
+    expect(body[0]['children'][0]['children'].length).toEqual(2);
+    expect(body[0]['children'][0]['children'][0].__path).toEqual('0.children.0.children.0');
+  });
 
 });
