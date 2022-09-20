@@ -660,4 +660,6 @@ export default {
   "View all plugins": "查看所有插件",
   "Print": "打印",
   'Sign up successfully, and automatically jump to the sign in page': '注册成功，即将跳转到登录页面',
+  'Detach':'解除关联',
+  'Attach':'附加关联'
 }
