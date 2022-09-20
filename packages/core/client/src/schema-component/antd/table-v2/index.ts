@@ -7,6 +7,7 @@ import { TableColumnDesigner } from './Table.Column.Designer';
 import { TableSelector } from './TableSelector';
 
 export * from './TableBlockDesigner';
+export * from './TreeTableBlockDesigner';
 export * from './TableField';
 export * from './TableSelectorDesigner';
 

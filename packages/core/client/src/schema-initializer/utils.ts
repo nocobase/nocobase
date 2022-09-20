@@ -736,7 +736,6 @@ export const createTableBlockSchema = (options) => {
 };
 
 export const createTreeTableBlockSchema = (options) => {
-  debugger;
   const { collection, resource, rowKey, ...others } = options;
   const schema: ISchema = {
     type: 'void',
@@ -755,7 +754,7 @@ export const createTreeTableBlockSchema = (options) => {
       dragSort: false,
       ...others,
     },
-    'x-designer': 'TableBlockDesigner',
+    'x-designer': 'TreeTableBlockDesigner',
     'x-component': 'CardItem',
     properties: {
       actions: {
@@ -805,7 +804,6 @@ export const createTreeTableBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
