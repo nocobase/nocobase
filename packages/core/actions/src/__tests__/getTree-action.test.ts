@@ -1,5 +1,5 @@
-import {registerActions} from '@nocobase/actions';
-import {mockServer} from './index';
+import { registerActions } from '@nocobase/actions';
+import { mockServer } from './index';
 
 describe('getTree action', () => {
   let app;
@@ -30,7 +30,6 @@ describe('getTree action', () => {
       ],
     });
 
-
     await app.db.sync();
 
     const c1 = await cities.repository.create({
@@ -41,13 +40,13 @@ describe('getTree action', () => {
     const c2 = await cities.repository.create({
       values: {
         cityName: 'hebei',
-        parentId: c1.get("id")
+        parentId: c1.get('id'),
       },
     });
     const c3 = await cities.repository.create({
       values: {
         cityName: 'shandong',
-        parentId: c1.get("id")
+        parentId: c1.get('id'),
       },
     });
 
@@ -55,15 +54,14 @@ describe('getTree action', () => {
       records: [
         {
           cityName: 'xingtai',
-          parentId: c2.get("id")
+          parentId: c2.get('id'),
         },
         {
           cityName: 'handan',
-          parentId: c2.get("id")
+          parentId: c2.get('id'),
         },
-      ]
+      ],
     });
-
   });
 
   afterEach(async () => {
@@ -71,13 +69,10 @@ describe('getTree action', () => {
   });
 
   test('getTree', async () => {
-    const response = await app
-      .agent()
-      .resource('cities')
-      .getTree({
-        paginate: false,
-        appends: [],
-      });
+    const response = await app.agent().resource('cities').getTree({
+      paginate: false,
+      appends: [],
+    });
 
     const body = response.body;
     expect(body.length).toEqual(1);
@@ -86,5 +81,4 @@ describe('getTree action', () => {
     expect(body[0]['children'][0]['children'].length).toEqual(2);
     expect(body[0]['children'][0]['children'][0].__path).toEqual('0.children.0.children.0');
   });
-
 });
