@@ -14,7 +14,7 @@ export const TreeTableBlockDesigner = () => {
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
       <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />
+      <SchemaSettings.Template componentName={'TreeTable'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
