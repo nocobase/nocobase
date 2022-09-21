@@ -30,6 +30,7 @@ export * from './select';
 export * from './space';
 export * from './table';
 export * from './table-v2';
+export * from './tree';
 export * from './tabs';
 export * from './time-picker';
 export * from './tree-select';

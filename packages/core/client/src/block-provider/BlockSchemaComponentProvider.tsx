@@ -10,6 +10,7 @@ import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
+import {TreeBlockProvider, useTreeBlockProps} from "@nocobase/client";
 
 export const BlockSchemaComponentProvider: React.FC = (props) => {
   return (
@@ -18,6 +19,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         CalendarBlockProvider,
         TableFieldProvider,
         TableBlockProvider,
+        TreeBlockProvider,
         TableSelectorProvider,
         FormBlockProvider,
         FormFieldProvider,
@@ -36,6 +38,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useDetailsBlockProps,
         useTableFieldProps,
         useTableBlockProps,
+        useTreeBlockProps,
         useTableSelectorProps,
         useKanbanBlockProps,
       }}

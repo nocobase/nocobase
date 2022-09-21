@@ -27,6 +27,7 @@ export * from './RecordReadPrettyFormBlockInitializer';
 export * from './SubmitActionInitializer';
 export * from './TableActionColumnInitializer';
 export * from './TableBlockInitializer';
+export * from './TreeBlockInitializer';
 export * from './TreeTableBlockInitializer';
 export * from './TableCollectionFieldInitializer';
 export * from './TableSelectorInitializer';

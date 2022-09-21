@@ -807,6 +807,48 @@ export const createTreeTableBlockSchema = (options) => {
   return schema;
 };
 
+export const createTreeBlockSchema = (options) => {
+  const { collection, resource, ...others } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-decorator': 'TreeBlockProvider',
+    'x-decorator-props': {
+      collection,
+      resource: resource || collection,
+      action: 'getTree',
+      params: {
+        paginate: false,
+        appends: [],
+      },
+      ...others,
+      fieldNames: {
+        key: 'id',
+        title: 'title',
+        children: 'children',
+      },
+    },
+    'x-component': 'CardItem',
+    'x-acl-action': `${resource || collection}:getTree`,
+    'x-designer': 'TreeBlockDesigner',
+    properties: {
+      [uid()]: {
+        type: 'array',
+        'x-component': 'Tree',
+        'x-component-props': {
+          showLine: {
+            showLeafIcon: false,
+          },
+
+          // hideNodeActionBar: true,
+          useProps: '{{useTreeBlockProps}}',
+        },
+        properties: {},
+      },
+    },
+  };
+  return schema;
+};
+
 export const createTableSelectorSchema = (options) => {
   const { collection, resource, rowKey, ...others } = options;
   const schema: ISchema = {
