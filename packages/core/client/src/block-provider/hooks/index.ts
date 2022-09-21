@@ -324,9 +324,6 @@ export const useUpdateActionProps = () => {
   const compile = useCompile();
   const actionField = useField();
   const { updateAssociationValues ,field:{uploading}} = useFormBlockContext();  
-  console.log(uploading)
-  actionField.data = field.data || {};
-  actionField.data.loading = uploading||false;
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
@@ -386,6 +383,7 @@ export const useUpdateActionProps = () => {
         actionField.data.loading = false;
       }
     },
+    disabled:uploading
   };
 };
 

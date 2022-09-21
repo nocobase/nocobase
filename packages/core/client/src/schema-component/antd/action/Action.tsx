@@ -74,12 +74,11 @@ export const Action: ComposedAction = observer((props: any) => {
     component,
     useAction = useA,
     className,
-    disabled,
     icon,
     title,
     ...others
   } = props;
-  const { onClick } = useProps(props);
+  const { onClick,disabled } = useProps(props);
   const [visible, setVisible] = useState(false);
   const [formValueChanged, setFormValueChanged] = useState(false);
   const Designer = useDesigner();
@@ -92,6 +91,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const renderButton = () => (
     <SortableItem
       {...others}
+      disabled={disabled}
       loading={field?.data?.loading}
       icon={<Icon type={icon} />}
       onClick={(e: React.MouseEvent) => {

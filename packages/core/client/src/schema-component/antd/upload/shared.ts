@@ -165,15 +165,12 @@ export const useUploadValidator = (serviceErrorMessage = 'Upload Service Error')
 
 export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceErrorMessage, ...props }: T) {
   useUploadValidator(serviceErrorMessage);
-  const fieldSchema = useFieldSchema();
   const ctx = useFormBlockContext();
   const { dn } = useDesignable();
   const onChange = (param: UploadChangeParam<UploadFile>) => {
     props.onChange?.(normalizeFileList([...param.fileList]));
   };
-
   const api = useAPIClient();
-
   return {
     ...props,
     customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess, withCredentials }) {
@@ -196,12 +193,9 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
         })
         .then(({ data }) => {
           onSuccess(data, file);
-          ctx.field.uploading=false;
-          dn.refresh();
         })
         .catch(onError)
         .finally(()=>{
-          console.log(3)
           ctx.field.uploading=false;
           dn.refresh();
         })

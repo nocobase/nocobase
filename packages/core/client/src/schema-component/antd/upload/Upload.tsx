@@ -43,7 +43,7 @@ Upload.Attachment = connect((props: UploadProps) => {
     <div>
       <div className={cls('ant-upload-picture-card-wrapper nb-upload')}>
         <div className={'ant-upload-list ant-upload-list-picture-card'}>
-          {fileList.map((file) => {
+          {fileList.map((file,index) => {
             const handleClick = (e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -56,7 +56,7 @@ Upload.Attachment = connect((props: UploadProps) => {
               }
             };
             return (
-              <div className={'ant-upload-list-picture-card-container'}>
+              <div className={'ant-upload-list-picture-card-container'} key={index}>
                 <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
                   <div className={'ant-upload-list-item-info'}>
                     <span className="ant-upload-span">
