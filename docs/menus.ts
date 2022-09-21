@@ -39,10 +39,7 @@ export default {
       title: 'Getting started',
       'title.zh-CN': '快速开始',
       type: 'group',
-      children: [
-        '/development/index',
-        '/development/your-fisrt-plugin'
-      ],
+      children: ['/development/index', '/development/your-fisrt-plugin'],
     },
     {
       title: 'Extension Guides',
@@ -83,10 +80,7 @@ export default {
     {
       title: 'HTTP API',
       type: 'group',
-      children: [
-        '/api/http-api/index',
-        '/api/http-api/rest-api',
-      ],
+      children: ['/api/http-api/index', '/api/http-api/rest-api'],
     },
   ],
   // {
@@ -166,7 +160,7 @@ export default {
     {
       title: '@nocobase/server',
       type: 'subMenu',
-      children: ['/api/server/application', '/api/server/plugin-manager', '/api/server/i18n'],
+      children: ['/api/server/application', '/api/server/plugin-manager', '/api/server/plugin'],
     },
     {
       title: '@nocobase/database',

@@ -145,10 +145,13 @@ export default () => {
 
 ## 嵌套的 Schema
 
-- `props.children` 嵌套，适用于 void 和 object 类型，例子见 [void 和 object 类型 schema 的嵌套](#void-和-object-类型-schema-的嵌套)
-- `<RecursionField />` 嵌套，适用于各种场景，例子见 [array 类型 schema 的嵌套](#array-类型-schema-的嵌套)
+- `props.children` 嵌套，适用于 void 和 object 类型的 properties，例子见 [void 和 object 类型 schema 的嵌套](#void-和-object-类型-schema-的嵌套)
+- `<RecursionField />` 自定义嵌套，所有类型都适用，例子见 [array 类型 schema 的嵌套](#array-类型-schema-的嵌套)
 
-注意：仅 void 和 object 类型的 schema 可以与 onlyRenderProperties 使用
+注意：
+
+- 除了 void 和 object 类型以外的 schema 的 `properties` 无法直接通过 `props.children` 渲染，但是可以使用 `<RecursionField />` 解决嵌套问题
+- 仅 void 和 object 类型的 schema 可以与 onlyRenderProperties 使用
 
 ```tsx | pure
 <RecursionField schema={schema} onlyRenderProperties />
@@ -190,7 +193,7 @@ export default () => {
 };
 ```
 
-各类型对比，array 和 string 并不会渲染 World 节点
+各类型 properties 渲染结果对比 
 
 ```tsx
 import React from 'react';
@@ -204,7 +207,7 @@ const schema = {
   properties: {
     title1: {
       type: 'void',
-      'x-content': 'Void schema',
+      'x-content': 'Void schema，渲染 properties',
     },
     void: {
       type: 'void',
@@ -219,7 +222,7 @@ const schema = {
     },
     title2: {
       type: 'void',
-      'x-content': 'Object schema',
+      'x-content': 'Object schema，渲染 properties',
     },
     object: {
       type: 'object',
@@ -234,7 +237,7 @@ const schema = {
     },
     title3: {
       type: 'void',
-      'x-content': 'Array schema',
+      'x-content': 'Array schema，不渲染 properties',
     },
     array: {
       type: 'array',
@@ -249,7 +252,7 @@ const schema = {
     },
     title4: {
       type: 'void',
-      'x-content': 'String schema',
+      'x-content': 'String schema，不渲染 properties',
     },
     string: {
       type: 'string',

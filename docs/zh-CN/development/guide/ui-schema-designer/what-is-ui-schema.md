@@ -15,10 +15,10 @@ interface ISchema {
   ['x-component']?: string;
   // 组件属性
   ['x-component-props']?: any;
-  // 组件的子节点，简单使用
-  ['x-content']?: any;
   // 展示状态，默认为 'visible'
   ['x-display']?: 'none' | 'hidden' | 'visible';
+  // 组件的子节点，简单使用
+  ['x-content']?: any;
   // children 节点 schema
   properties?: Record<string, ISchema>;
 
@@ -27,17 +27,17 @@ interface ISchema {
   // 字段联动
   ['x-reactions']?: SchemaReactions;
   // 字段 UI 交互模式，默认为 'editable'
-  ['x-pattern']?: 'editable' | 'disabled' | 'readOnly' | 'readPretty';
+  ['x-pattern']?: 'editable' | 'disabled' | 'readPretty';
   // 字段校验
-  ['x-validator']?: FieldValidator;
+  ['x-validator']?: Validator;
   // 默认数据
   default: ?:any;
 
   // 设计器相关
 
-  // 设计器组件（工具栏）
+  // 设计器组件（工具栏），包括：拖拽移动、插入新节点、修改参数、移除等
   ['x-designer']?: any;
-  // 初始化器组件（工具栏）
+  // 初始化器组件（工具栏），决定当前 schema 内部可以插入什么
   ['x-initializer']?: any;
 }
 ```
@@ -266,7 +266,7 @@ const schema = {
 };
 ```
 
-JSX 等价于
+JSX 等同于
 
 ```tsx | pure
 <div className={'form-item'}>
@@ -293,7 +293,7 @@ const schema = {
 };
 ```
 
-JSX 等价于
+JSX 等同于
 
 ```tsx | pure
 <div className={'form-item'}>
@@ -320,7 +320,7 @@ const schema = {
 };
 ```
 
-JSX 等价于
+JSX 等同于
 
 ```tsx | pure
 <div className={'form-item'}>
