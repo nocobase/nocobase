@@ -557,5 +557,6 @@ export default {
   'Single select and radio fields can be used as the grouping field': 'Single select and radio fields can be used as the grouping field',
   'Sign up successfully, and automatically jump to the sign in page': 'Sign up successfully, and automatically jump to the sign in page',
   'Detach':'Detach',
-  'Attach':'Attach'
+  'Attach':'Attach',
+  'Are you sure you want to detach it':'Are you sure you want to detach it'
 }

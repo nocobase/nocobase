@@ -409,13 +409,18 @@ export const useDestroyActionProps = () => {
 
 export const useDetachActionProps = () => {
   const filterByTk = useFilterByTk();
-  const { resource, service} = useBlockRequestContext();
+  const { resource, service, __parent } = useBlockRequestContext();
+  const { setVisible } = useActionContext();
   return {
     async onClick() {
       await resource.remove({
         values:[filterByTk],
       });
       service?.refresh?.();
+      if (!(service.data.data instanceof Array)) {
+        __parent?.service?.refresh?.();
+        setVisible?.(false);
+      }
     },
   };
 };

@@ -480,6 +480,7 @@ export const createDetailsBlockSchema = (options) => {
     ...others
   } = options;
   const resourceName = resource || association || collection;
+  console.log(resourceName)
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resourceName}:get`,
@@ -551,6 +552,7 @@ export const createFormBlockSchema = (options) => {
     ...others
   } = options;
   const resourceName = resource || association || collection;
+  const isAssociate=!resource&&resourceName.includes('.');
   const schema: ISchema = {
     type: 'void',
     'x-acl-action-props': {
@@ -585,7 +587,7 @@ export const createFormBlockSchema = (options) => {
           },
           actions: {
             type: 'void',
-            'x-initializer': actionInitializers,
+            'x-initializer':isAssociate?'UpdateAssociateFormActionInitializers': actionInitializers,
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',
@@ -606,7 +608,7 @@ export const createFormBlockSchema = (options) => {
 export const createReadPrettyFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'ReadPrettyFormActionInitializers',
+    actionInitializers='ReadPrettyFormActionInitializers',
     collection,
     association,
     resource,
@@ -614,6 +616,8 @@ export const createReadPrettyFormBlockSchema = (options) => {
     ...others
   } = options;
   const resourceName = resource || association || collection;
+  const isAssociate=!resource&&resourceName.includes('.');
+  console.log(resourceName)
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resourceName}:get`,
@@ -640,7 +644,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
         properties: {
           actions: {
             type: 'void',
-            'x-initializer': actionInitializers,
+            'x-initializer': isAssociate?'ReadPrettyFormAssociateActionInitializers':actionInitializers,
             'x-component': 'ActionBar',
             'x-component-props': {
               style: {
@@ -659,7 +663,6 @@ export const createReadPrettyFormBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
@@ -737,7 +740,6 @@ export const createTableBlockSchema = (options) => {
 
 export const createAssociateTableBlockSchema = (options) => {
   const { collection, resource, rowKey, ...others } = options;
-  console.log(rowKey);
   const schema: ISchema = {
     type: 'void',
     'x-decorator': 'TableBlockProvider',
@@ -803,7 +805,6 @@ export const createAssociateTableBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 

@@ -587,6 +587,7 @@ export default {
   "Error message": "エラーメッセージ",
   "Record picker": "レコードピッカー",
   "Sortable": "ソート可能",
-  'Detach':'解除关联',
-  'Attach':'附加关联'
+  'Detach':'関連付け解除',
+  'Attach':'関連データ',
+  'Are you sure you want to detach it':'関連付け解除を確認しますか'
 }
