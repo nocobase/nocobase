@@ -6,7 +6,7 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
-import Koa from 'koa';
+import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import { isBoolean } from 'lodash';
 import semver from 'semver';
 import { createACL } from './acl';
@@ -35,14 +35,15 @@ export interface ApplicationOptions {
   plugins?: PluginConfiguration[];
 }
 
-export interface DefaultState {
+export interface DefaultState extends KoaDefaultState {
   currentUser?: any;
   [key: string]: any;
 }
 
-export interface DefaultContext {
+export interface DefaultContext extends KoaDefaultContext {
   db: Database;
   resourcer: Resourcer;
+  i18n: any;
   [key: string]: any;
 }
 
@@ -198,6 +199,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._resourcer = createResourcer(options);
     this._cli = new Command('nocobase').usage('[command] [options]');
     this._i18n = createI18n(options);
+    this.context.db = this._db;
+    this.context.resourcer = this._resourcer;
 
     this._pm = new PluginManager({
       app: this,
