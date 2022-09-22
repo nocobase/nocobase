@@ -25,6 +25,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { transactionWrapperBuilder } from './transaction-decorator';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
+import { handleAppendsQuery } from './utils';
 
 const debug = require('debug')('noco-database');
 
@@ -228,59 +229,31 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return { row, pk: row.get(primaryKeyField) };
       });
 
+      if (ids.length == 0) {
+        return [];
+      }
+
       const where = {
         [primaryKeyField]: {
           [Op.in]: ids.map((id) => id['pk']),
         },
       };
 
-      // a single promise represents a list with appended data
-      const promises = opts.include.map((include) => {
-        return model
-          .findAll({
-            ...omit(opts, ['limit', 'offset']),
-            include: include,
-            where,
-            transaction,
-          })
-          .then((rows) => {
-            return { rows, include };
-          });
+      return await handleAppendsQuery({
+        queryPromises: opts.include.map((include) => {
+          return model
+            .findAll({
+              ...omit(opts, ['limit', 'offset']),
+              include: include,
+              where,
+              transaction,
+            })
+            .then((rows) => {
+              return { rows, include };
+            });
+        }),
+        templateModel: ids[0].row,
       });
-
-      const results = await Promise.all(promises);
-
-      let rows: Array<Model>;
-
-      for (const appendedResult of results) {
-        if (!rows) {
-          rows = appendedResult.rows;
-
-          if (rows.length == 0) {
-            return [];
-          }
-
-          const modelOptions = ids[0]['row']['_options'];
-          for (const row of rows) {
-            row['_options'] = {
-              ...row['_options'],
-              include: modelOptions['include'],
-              includeNames: modelOptions['includeNames'],
-              includeMap: modelOptions['includeMap'],
-            };
-          }
-          continue;
-        }
-
-        for (let i = 0; i < appendedResult.rows.length; i++) {
-          const key = appendedResult.include.association;
-          const val = appendedResult.rows[i].get(key);
-
-          rows[i].set(key, val);
-        }
-      }
-
-      return rows;
     }
 
     return await model.findAll({
