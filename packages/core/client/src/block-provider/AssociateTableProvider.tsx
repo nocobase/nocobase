@@ -83,6 +83,9 @@ export const useAssociateTableSelectorProps = () => {
   const {__parent}=useBlockRequestContext();
   const rcSelectRows=__parent.service.data.data
   const selectKeys=rcSelectRows?.map((item) => item[ctx.rowKey || 'id'])
+  useEffect(()=>{
+    ctx?.service.refresh()
+  },[])
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;

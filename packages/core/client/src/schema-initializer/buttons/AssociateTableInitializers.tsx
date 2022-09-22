@@ -4,7 +4,6 @@ import { SchemaInitializer } from '../..';
 import { gridRowColWrap } from '../utils';
 
 export const AssociateTableInitializers = (props: any) => {
-  console.log(props)
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button

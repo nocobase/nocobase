@@ -1,13 +1,10 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import {
   useBlockAssociationContext,
-  useBlockResource,
   useTableBlockContext,
-  useCollectionManager,
-  CollectionFieldContext,
   useCollection,
 } from '@nocobase/client';
-import { ISchema, useFieldSchema } from '@formily/react';
+import { ISchema } from '@formily/react';
 import { ActionInitializer } from './ActionInitializer';
 
 export const AttachActionInitializer = (props) => {

@@ -19,10 +19,9 @@ import { useAssociateTableSelectorContext } from '../AssociateTableProvider';
 
 export const usePickActionProps = () => {
   const form = useForm();
-  const ctx = useAssociateTableSelectorContext();
   return {
     onClick() {
-      console.log('usePickActionProps', ctx);
+      console.log('usePickActionProps', form.values);
     },
   };
 };
@@ -493,8 +492,7 @@ export const useBulkAetachActionProps = () => {
 
 // 解除关联
 export const useBulkDetachActionProps = () => {
-  const { field } = useBlockRequestContext();
-  const { resource, service, __parent } = useBlockRequestContext();
+  const { resource, service, __parent ,field} = useBlockRequestContext();
   return {
     async onClick() {
       if (!field?.data?.selectedRowKeys?.length) {
