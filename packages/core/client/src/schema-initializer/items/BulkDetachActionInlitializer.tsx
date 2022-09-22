@@ -13,7 +13,7 @@ export const BulkDetachActionInlitializer = (props) => {
       disabled:true,
       icon: 'DisconnectOutlined',
       confirm: {
-        title: "{{t('Detach record')}}",
+        title: "{{t('Detach')}}",
         content: "{{t('Are you sure you want to detach it?')}}",
       },
       useProps: '{{ useBulkDetachActionProps }}',

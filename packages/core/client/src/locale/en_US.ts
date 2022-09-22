@@ -558,5 +558,5 @@ export default {
   'Sign up successfully, and automatically jump to the sign in page': 'Sign up successfully, and automatically jump to the sign in page',
   'Detach':'Detach',
   'Attach':'Attach',
-  'Are you sure you want to detach it':'Are you sure you want to detach it'
+  'Are you sure you want to detach it?':'Are you sure you want to detach it'
 }

@@ -662,5 +662,6 @@ export default {
   'Sign up successfully, and automatically jump to the sign in page': '注册成功，即将跳转到登录页面',
   'Detach':'取消关联',
   'Attach':'关联数据',
-  'Are you sure you want to detach it':'确定取消关联吗'
+  'Detach record':'取消关联',
+  'Are you sure you want to detach it?':'确定取消关联吗'
 }
