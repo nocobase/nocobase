@@ -65,7 +65,6 @@ export const AssociateTableProvider = (props) => {
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
-
   return (
     <BlockProvider {...props} params={params} association={association}>
       <InternalTableSelectorProvider {...props} params={params} />
@@ -83,9 +82,6 @@ export const useAssociateTableSelectorProps = () => {
   const {__parent}=useBlockRequestContext();
   const rcSelectRows=__parent.service.data.data
   const selectKeys=rcSelectRows?.map((item) => item[ctx.rowKey || 'id'])
-  useEffect(()=>{
-    ctx?.service.refresh()
-  },[])
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
