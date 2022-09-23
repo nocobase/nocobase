@@ -79,6 +79,7 @@ export const useAssociationNames = (collection) => {
 };
 
 export const TableBlockProvider = (props) => {
+  console.log(props)
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
   const form = useMemo(() => createForm(), []);
@@ -145,8 +146,7 @@ export const useTableBlockProps = () => {
         ? sorter.order === `ascend`
           ? [sorter.field]
           : [`-${sorter.field}`]
-        : globalSort || null;
-
+        : globalSort || ctx.service.params?.[0].sort;
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
   };
