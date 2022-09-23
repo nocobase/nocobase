@@ -9,11 +9,12 @@ import {
   FindOptions,
   TargetKey,
   TK,
-  UpdateOptions
+  UpdateOptions,
 } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 import { RelationRepository, transaction } from './relation-repository';
+import mustHasFilter from '../decorators/must-has-filter-decorator';
 
 export interface FindAndCountOptions extends CommonFindOptions {}
 
