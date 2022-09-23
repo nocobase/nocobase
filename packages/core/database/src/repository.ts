@@ -25,7 +25,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import mustHasFilter from './decorators/must-have-filter-decorator';
+import mustHaveFilter from './decorators/must-have-filter-decorator';
 
 const debug = require('debug')('noco-database');
 
@@ -346,7 +346,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   @transaction()
-  @mustHasFilter()
+  @mustHaveFilter()
   async update(options: UpdateOptions & { forceUpdate?: boolean }) {
     const transaction = await this.getTransaction(options);
     const guard = UpdateGuard.fromOptions(this.model, options);
