@@ -1,16 +1,16 @@
 # Application
 
-NocoBase 的应用程序类，服务端的应用进程将实例化该类并启动。因为继承自 [Koa](https://koajs.com/)，所以也可以直接调用 Koa 实例的方法。
-
-同时因为 Koa 还继承自 [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter)，所以也可以通过 `app.on` 监听事件。
+基于 [Koa](https://koajs.com/) 实现的 WEB 框架，兼容所有的 Koa 插件。
 
 ## 构造函数
+
+### `constructor()`
+
+创建一个应用实例。
 
 **签名**
 
 * `constructor(options: ApplicationOptions)`
-
-创建一个应用实例。
 
 **参数**
 
@@ -18,11 +18,19 @@ NocoBase 的应用程序类，服务端的应用进程将实例化该类并启�
 | --- | --- | --- | --- |
 | `options.database` | `IDatabaseOptions` or `Database` | `{}` | 数据库配置 |
 | `options.resourcer` | `ResourcerOptions` | `{}` | 资源路由配置 |
-| `options.cors` | `CorsOptions` | `{}` | 跨域配置，参考 [@koa/cors](https://npmjs.com/package/@koa/cors) |
+| `options.cors` | [`CorsOptions`](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/koa__cors/index.d.ts#L24) | `{}` | 跨域配置，参考 [@koa/cors](https://npmjs.com/package/@koa/cors) |
 | `options.dataWrapping` | `boolean` | `true` | 是否包装响应数据，`true` 则将把通常的 `ctx.body` 包装为 `{ data, meta }` 的结构。 |
-| `options.registerActions` | `boolean` | `true` | 是否注册默认的 action |
-| `options.i18n` | `I18nOptions` | `{}` | 国际化配置，参考 [i18next](https://www.npmjs.com/package/i18next) |
+| `options.registerActions` | `boolean` | `true` | 是否注册默认的 [actions](#) |
+| `options.i18n` | `I18nOptions` | `{}` | 国际化配置，参考 [i18next](https://www.i18next.com/overview/api) |
 | `options.plugins` | `PluginConfiguration[]` | `[]` | 默认启用的插件配置 |
+
+Type
+
+```ts
+interface ApplicationOptions {
+
+}
+```
 
 **示例**
 
@@ -51,31 +59,38 @@ const app = new Application({
 
 ### `db`
 
-应用初始化自动创建的数据库实例，通过 `@nocobase/database` 封装的数据库访问类，相关方法参考 [Database](./database)。
+数据库实例，相关 API 参考 [Database](/api/database)。
 
 ### `resourcer`
 
-应用初始化自动创建的资源路由管理实例，相关方法参考 [Resourcer](./resourcer)。
-
-### `cli`
-
-应用初始化自动创建的命令行工具实例，相关方法参考 [CLI](../cli)。
+应用初始化自动创建的资源路由管理实例，相关 API 参考 [Resourcer](/api/resourcer)。
 
 ### `acl`
 
-应用初始化自动创建的访问控制表实例，相关方法参考 [ACL](./acl)。
+ACL 实例，相关 API 参考 [ACL](/api/acl)。
 
 ### `i18n`
 
-应用初始化自动创建的国际化工具实例，相关方法参考 [I18n](./i18n)。
-
-### `appManager`
-
-应用初始化自动创建的应用管理实例，相关方法参考 [AppManager](./app-manager)。
+I18next 实例，相关 API 参考 [I18next](https://www.i18next.com/overview/api)。
 
 ### `pm`
 
-应用初始化自动创建的插件管理器实例，相关方法参考 [PluginManager](./plugin-manager)。
+插件管理器实例，相关 API 参考 [PluginManager](./plugin-manager)。
+
+### `version`
+
+应用版本实例，相关 API 参考 [ApplicationVersion](./application-version)。
+
+### `middleware`
+
+内置的中间件有：
+
+- i18next
+- bodyParser
+- cors
+- dataWrapping
+- collection2resource
+- restApiMiddleware
 
 ### `context`
 
@@ -94,74 +109,41 @@ NocoBase 默认对 context 注入了以下成员，可以在请求处理函数�
 
 ## 实例方法
 
-### `getVersion()`
-
-获取当前版本。
-
-**签名**
-
-* `getVersion(): string`
-
-**示例**
-
-```ts
-console.log(app.getVersion()); // 0.7.4-alpha.7
-```
-
-### `plugin()`
-
-向应用中注册插件的快捷方法，等同于 `app.pm.add()`，参考 [PluginManager](./plugin-manager#add)。
-
-### `loadPluginConfig()`
-
-批量注册插件与默认参数。
-
-**签名**
-
-* `loadPluginConfig(pluginsConfigurations: PluginConfiguration[]): void`
-
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `pluginsConfigurations[]` | `string` | - | 插件的 npm 包名 |
-| `pluginsConfigurations[]` | `[string, any]` | - | 插件的 npm 包名与默认参数 |
-
-### `getPlugin()`
-
-获取已注册的插件实例，等同于 `app.pm.get(name)`，参考 [PluginManager](./plugin-manager#get)。
-
 ### `use()`
 
-注册应用级中间件的快捷方法，等同于 `koa.use()`。
+注册中间件，兼容所有 [Koa 插件](https://www.npmjs.com/search?q=koa)
 
 ### `on()`
 
 订阅应用级事件，主要与生命周期相关，等同于 `eventEmitter.on()`。所有可订阅事件参考 [事件](#事件)。
 
-### `collection()`
-
-向数据库注册数据表模型的快捷方法，等同于 `app.db.collection()`，参考 [Database](./database#collection)。
-
-### `resource()`
-
-向资源路由管理器注册资源的快捷方法，等同于 `app.resourcer.define()`，参考 [Resourcer](./resourcer#define)。
-
-### `actions()`
-
-向资源路由管理器注册 action 的快捷方法，等同于 `app.resourcer.registerActions()`，参考 [Resourcer](./resourcer#registerActions)。
-
 ### `command()`
 
-向命令行工具注册命令的快捷方法，等同于 `app.cli.command()`，参考 [cli](./cli)。
+### `findCommand()`
+
+### `runAsCLI()`
+
+以 CLI 的方式运行。
 
 ### `load()`
 
-应用生命周期方法，用于加载所有已注册的插件，等同于 `app.pm.load()`，参考 [PluginManager](./plugin-manager#load)。
+加载应用配置。
 
 **签名**
 
 * `async load(): Promise<void>`
+
+### `reload()`
+
+重载应用配置。
+
+### `install()`
+
+初始化安装应用，同步安装插件。
+
+### `upgrade()`
+
+升级应用，同步升级插件。
 
 ### `start()`
 
@@ -179,84 +161,16 @@ console.log(app.getVersion()); // 0.7.4-alpha.7
 | `options.listen.port?` | `number` | 13000 | 端口 |
 | `options.listen.host?` | `string` | `'localhost'` | 域名 |
 
-**事件**
-
-`start()` 调用会触发两个事件：
-
-* `'beforeStart'`：在应用启动前触发。
-* `'afterStart'`：在应用启动后触发。
-
 ### `stop()`
 
-停止应用，如果应用正在监听，将停止监听，并关闭数据库连接。
-
-**签名**
-
-* `async stop(options: any): Promise<void>`
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options?` | `any` | - | 将透传至停止事件的参数 |
-
-**事件**
-
-`stop()` 调用会触发两个事件：
-
-* `'beforeStop'`：在应用停止前触发。
-* `'afterStop'`：在应用停止后触发。
+停止应用，此方法会关闭数据库连接，关闭 HTTP 端口，不会删除数据。
 
 ### `destroy()`
 
-销毁并停止应用，包含 `stop()` 的调用。
-
-**事件**
-
-`destroy()` 调用会触发两个事件：
-
-* `'beforeDestroy'`：在应用销毁前触发。
-* `'afterDestroy'`：在应用销毁后触发。
-
-插件相关的销毁事件可以基于该事件进行扩展。
-
-### `install()`
-
-应用初始化安装调用接口，用于安装应用的基础数据，包括：
-
-* 同步已通过 `db.collection()` 和 `db.import()` 注入的数据库表结构到数据库。
-* 调用所有已注册插件实例的 `install()` 方法，执行相应安装过程。
-
-**事件**
-
-* `'beforeInstall'`：在应用安装前触发。
-* `'afterInstall'`：在应用安装后触发。
-
-### `upgrade()`
-
-应用调用接口，当更新新版本代码后通过命令行工具调用，用于执行应用的升级过程，包括：
-
-* 数据库迁移工具执行。
-
-**事件**
-
-* `'beforeUpgrade'`：在应用升级前触发。
-* `'afterUpgrade'`：在应用升级后触发。
+删除应用，此方法会删除应用对应的数据库。
 
 ## 事件
 
-应用生命周期会触发相应事件，扩展开发可以基于这些事件进行。
-
-| 事件名称 | 是否异步 | 描述 |
-| --- | --- | --- |
-| `'beforeInstall'` | 是 | 安装前触发 |
-| `'afterInstall'` | 是 | 安装后触发 |
-| `'beforeUpgrade'` | 是 | 升级前触发 |
-| `'afterUpgrade'` | 是 | 升级后触发 |
-| `'beforeStart'` | 是 | 启动前触发 |
-| `'afterStart'` | 是 | 启动后触发 |
-| `'beforeStop'` | 是 | 停止前触发 |
-| `'afterStop'` | 是 | 停止后触发 |
-| `'beforeDestroy'` | 是 | 销毁前触发 |
-| `'afterDestroy'` | 是 | 销毁后触发 |
 
 **示例**
 
@@ -265,3 +179,20 @@ app.on('beforeStart', async () => {
   console.log('app before start');
 });
 ```
+
+### beforeLoadAll
+### afterLoadAll
+### beforeLoadPlugin
+### afterLoadPlugin
+### beforeInstallPlugin
+### afterInstallPlugin
+### beforeInstall
+### afterInstall
+### beforeUpgrade
+### afterUpgrade
+### beforeStart
+### afterStart
+### beforeStop
+### afterStop
+### beforeDestroy
+### afterDestroy

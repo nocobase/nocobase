@@ -4,30 +4,18 @@
 
 ## 实例方法
 
+### `create()`
+
 ### `add()`
 
-**签名**
+### `get()`
 
-* `add(pluginClass: PluginConstructor, options?: any): Plugin`
+### `install()`
 
-**参数**
+### `upgrade()`
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `pluginClass` | `PluginConstructor` | - | 插件类，参考 [Plugin 类](./plugin) |
+### `enable()`
 
-**返回值**
+### `disable()`
 
-对应插件类的实例
-
-**示例**
-
-```ts
-import Application, { Plugin } from '@nocobase/server';
-
-class MyPlugin extends Plugin {}
-
-const app = new Application();
-
-app.pm.add(MyPlugin, { a: 1 });
-```
+### `remove()`

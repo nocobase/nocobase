@@ -2,10 +2,10 @@ import cors from '@koa/cors';
 import Database from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
 import i18next from 'i18next';
-import { DefaultContext, DefaultState } from 'koa';
 import bodyParser from 'koa-bodyparser';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
+import { i18n } from './middlewares/i18n';
 import { table2resource } from './middlewares/table2resource';
 
 export function createI18n(options: ApplicationOptions) {
@@ -46,26 +46,14 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     }),
   );
 
-  app.use<DefaultState, DefaultContext>(async (ctx, next) => {
+  app.use(async (ctx, next) => {
     ctx.getBearerToken = () => {
       return ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
     };
-    ctx.db = app.db;
-    ctx.resourcer = app.resourcer;
-    const i18n = app.i18n.cloneInstance({ initImmediate: false });
-    ctx.i18n = i18n;
-    ctx.t = i18n.t.bind(i18n);
-    const lng =
-      ctx.get('X-Locale') ||
-      (ctx.request.query.locale as string) ||
-      app.i18n.language ||
-      ctx.acceptsLanguages().shift() ||
-      'en-US';
-    if (lng !== '*' && lng) {
-      i18n.changeLanguage(lng);
-    }
     await next();
   });
+
+  app.use(i18n);
 
   if (options.dataWrapping !== false) {
     app.use(dataWrapping());
