@@ -1,8 +1,10 @@
 {
-  "name": "@nocobase/plugin-sample-hello",
+  "name": "@nocobase/plugin-sample-shop-modeling",
   "version": "0.7.4-alpha.7",
   "main": "lib/server/index.js",
-  "dependencies": {},
+  "dependencies": {
+    "nodejs-snowflake": "2.0.1"
+  },
   "devDependencies": {
     "@nocobase/client": "0.7.4-alpha.7",
     "@nocobase/server": "0.7.4-alpha.7",

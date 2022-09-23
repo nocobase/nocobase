@@ -6,113 +6,39 @@
 
 ### Collection
 
-Collection 是所有同类数据的集合，在 NocoBase 中对应数据库表的概念，如订单、商品、用户、评论等都可以形成 Collection 定义，不同 Collection 通过 name 区分，如：
+Collection 是所有同类数据的集合，在 NocoBase 中对应数据库表的概念，如订单、商品、用户、评论等都可以形成 Collection 定义，不同 Collection 通过 name 区分，包含的字段由 `fields` 定义，如：
 
 ```ts
-// 订单
-{
-  name: 'orders',
-}
-// 商品
-{
-  name: 'products',
-}
-// 用户
-{
-  name: 'users',
-}
-// 评论
-{
-  name: 'comments',
-}
+db.collection({
+  name: 'posts',
+  fields: [
+    { name: 'title', type: 'string' },
+    { name: 'content', type: 'text' },
+    // ...
+  ]
+});
 ```
+
+定义完成后 collection 暂时只处于内存中，还需要调用 [`db.sync()`](/api/database#sync) 方法将其同步到数据库中。
 
 ### Field
 
 对应数据库表“字段”的概念，每个数据表（Collection）都可以有若干 Fields，例如：
 
 ```ts
-{
+db.collection({
   name: 'users',
   fields: [
     { type: 'string', name: 'name' },
     { type: 'integer', name: 'age' },
     // 其他字段
   ],
-}
+});
 ```
 
-其中字段名称（`name`）和字段类型（`type`）是必填项，不同字段通过字段名（`name`）区分，除 `name` 与 `type` 以外，根据不同字段类型可以有更多的配置信息。
+其中字段名称（`name`）和字段类型（`type`）是必填项，不同字段通过字段名（`name`）区分，除 `name` 与 `type` 以外，根据不同字段类型可以有更多的配置信息。所有数据库字段类型及配置详见 API 参考的[内置字段类型列表](/api/database/field#内置字段类型列表)部分。
 
-由于 NocoBase 是同时面向低代码和无代码设计，字段不仅是服务端的概念，也包含客户端的概念，因此会有下面三方面的内容。
-
-**数据类型**
-
-字段配置中 `type` 仅表示字段的数据类型，主要用于服务端存储处理。所有数据库字段类型及配置详见 API 参考的[内置字段类型列表](/api/database/field#内置字段类型列表)部分。
-
-**组件类型**
-
-对一个字段在前端展示时，使用 `uiSchema` 进行配置：
-
-```ts
-{
-  type: 'string',
-  name: 'email',
-  uiSchema: {
-    'x-component': 'Input',
-    'x-component-props': { size: 'large' },
-    'x-validator': 'email',
-    'x-pattern': 'editable', // 可编辑状态，还有 readonly 不可编辑状态、read-pretty 阅读态
-  },
-}
-```
-
-其中 `uiSchema['x-component']` 就是组件类型，如 `Input`、`Select`、`DatePicker` 等，`uiSchema` 的其他配置项根据每种组件类型的不同也个有差异，详见[字段组件列表](ui-schema-designer/component-library#字段组件)。
-
-**字段模板**
-
-很多时候字段的数据类型和组件类型并不一一对应，比如存储值类型是 `number` 的字段可能作为填写数字的输入框，也可能作为选择枚举项的下拉框组件。选择枚举项的下拉框除了可以对应 `number` 类型的值，也可以对应 `string` 类型的值，所以实际使用中两者可能是多对多的关系。
-
-为了在大部分无代码场景中提供更常用的默认模板，引入了 `interface` 的概念，用于对字段配置进行模板化，如：
-
-```ts
-// email 字段的模板
-interface email {
-  type: 'string';
-  uiSchema: {
-    'x-component': 'Input',
-    'x-component-props': {},
-    'x-validator': 'email',
-  };
-}
-
-// phone 字段的模板
-interface phone {
-  type: 'string';
-  uiSchema: {
-    'x-component': 'Input',
-    'x-component-props': {},
-    'x-validator': 'phone',
-  };
-}
-
-// 简化之后的字段配置
-// email
-{
-  interface: 'email',
-  name: 'email',
-}
-
-// phone
-{
-  interface: 'phone',
-  name: 'phone',
-}
-```
-
-注：为了更方便理解 `interface`，上面例子用 `interface email {}` 的写法表示 email 的模板，实际配置字段的 interface 模板时并不是这样配置的。
-
-## 场景示例
+## 示例
 
 对于开发者，通常我们会建立与普通数据表不同的一些功能型数据表，并把这些数据表固化成插件的一部分，并结合其他数据处理流程以形成完整的功能。
 
@@ -120,7 +46,7 @@ interface phone {
 
 ### 插件中定义并创建数据表
 
-对于一个店铺，首先需要建立一张商品的数据表，命名为 `products`，并且为这个数据表的定义创建一个文件命名为 `collections/products.ts`，填入以下内容：
+对于一个店铺，首先需要建立一张商品的数据表，命名为 `products`。与直接调用 [`db.collection()`](/api/database#collection) 这样的方法稍有差异，在插件中我们会使用更方便的方法一次性导入多个文件定义的数据表。所以我们先为商品数据表的定义创建一个文件命名为 `collections/products.ts`，填入以下内容：
 
 ```ts
 export default {
@@ -151,12 +77,13 @@ export default {
 该文件定义的数据表我们可以在插件主类的 `load()` 周期中使用 `db.import()` 引入并完成定义。如下所示：
 
 ```ts
+import path from 'path';
 import { Plugin } from '@nocobase/server';
 
 export default class ShopPlugin extends Plugin {
   async load() {
     await this.db.import({
-      directory: resolve(__dirname, 'collections'),
+      directory: path.resolve(__dirname, 'collections'),
     });
   }
 }
@@ -237,7 +164,7 @@ export default {
   name: 'orders',
   fields: [
     {
-      type: 'uuid'
+      type: 'uuid',
       name: 'id',
       primaryKey: true
     },
@@ -284,3 +211,98 @@ export extend({
 这样，原先已存在的用户表也就拥有了一个 `orders` 关联字段，我们可以通过 `GET /api/users/<userId>/orders:list` 来获取指定用户的所有订单数据。
 
 这个方法在扩展其他已有插件已定义的数据表时非常有用，使得其他已有插件不会反向依赖新的插件，仅形成单向依赖关系，方便在扩展层面进行一定程度的解耦。
+
+### 扩展字段类型
+
+我们在定义订单表的时候针对 `id` 字段使用了 `uuid` 类型，这是一个内置的字段类型，有时候我们也会觉得 UUID 看起来太长比较浪费空间，且查询性能不佳，希望用一个更适合的字段类型，比如一个含日期信息等复杂的编号逻辑，或者是 Snowflake 算法，我们就需要扩展一个自定义字段类型。
+
+假设我们需要直接应用 Snowflake ID 生成算法，扩展出一个 `snowflake` 字段类型，我们可以创建一个 `fields/snowflake.ts` 文件：
+
+```ts
+import { DataTypes } from 'sequelize';
+// 引入算法工具包
+import { Snowflake } from 'nodejs-snowflake';
+// 引入字段类型基类
+import { Field, BaseColumnFieldOptions } from '@nocobase/database';
+
+export interface SnowflakeFieldOptions extends BaseColumnFieldOptions {
+  epoch: number;
+  instanceId: number;
+}
+
+export class SnowflakeField extends Field {
+  get dataType() {
+    return DataTypes.BIGINT;
+  }
+
+  constructor(options: SnowflakeFieldOptions, context) {
+    super(options, context);
+
+    const {
+      epoch: custom_epoch,
+      instanceId: instance_id = process.env.INSTANCE_ID ? Number.parseInt(process.env.INSTANCE_ID) : 0,
+    } = options;
+    this.generator = new Snowflake({ custom_epoch, instance_id });
+  }
+  
+  setValue = (instance) => {
+    const { name } = this.options;
+    instance.set(name, this.generator.getUniqueID());
+  };
+
+  bind() {
+    super.bind();
+    this.on('beforeCreate', this.setValue);
+  }
+
+  unbind() {
+    super.unbind();
+    this.off('beforeCreate', this.setValue);
+  }
+}
+
+export default SnowflakeField;
+```
+
+之后在插件主文件向数据库注册新的字段类型：
+
+```ts
+import SnowflakeField from './fields/snowflake';
+
+export default class ShopPlugin extends Plugin {
+  initialize() {
+    // ...
+    this.db.registerFieldTypes({
+      snowflake: SnowflakeField
+    });
+    // ...
+  }
+}
+```
+
+这样，我们就可以在订单表中使用 `snowflake` 字段类型了：
+
+```ts
+export default {
+  name: 'orders',
+  fields: [
+    {
+      type: 'snowflake'
+      name: 'id',
+      primaryKey: true
+    },
+    // ...other fields
+  ]
+}
+```
+
+## 小结
+
+通过上面的示例，我们基本了解了如何在一个插件中进行数据建模，包括：
+
+* 定义数据表和普通字段
+* 定义关联表和关联字段关系
+* 扩展已有的数据表的字段
+* 扩展新的字段类型
+
+我们将本章所涉及的代码放到了一个完整的示例包 [packages/samples/shop-modeling](https://github.com/nocobase/nocobase/tree/develop/packages/samples/shop-modeling) 中，可以直接在本地运行，查看效果。
