@@ -14,7 +14,7 @@ import {
 import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 import { RelationRepository, transaction } from './relation-repository';
-import mustHasFilter from '../decorators/must-has-filter-decorator';
+import mustHasFilter from '../decorators/must-have-filter-decorator';
 
 export interface FindAndCountOptions extends CommonFindOptions {}
 

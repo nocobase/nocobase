@@ -25,7 +25,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import mustHasFilter from './decorators/must-has-filter-decorator';
+import mustHasFilter from './decorators/must-have-filter-decorator';
 
 const debug = require('debug')('noco-database');
 

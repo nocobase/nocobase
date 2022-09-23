@@ -1,4 +1,4 @@
-const mustHasFilter = () => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+const mustHaveFilter = () => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
   const oldValue = descriptor.value;
 
   descriptor.value = function () {
@@ -14,4 +14,4 @@ const mustHasFilter = () => (target: any, propertyKey: string, descriptor: Prope
   return descriptor;
 };
 
-export default mustHasFilter;
+export default mustHaveFilter;
