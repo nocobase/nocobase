@@ -43,7 +43,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     });
   }
 
-  async find(options?: SingleRelationFindOption): Promise<Model<any>> {
+  async find(options?: SingleRelationFindOption): Promise<Model<any> | null> {
     const transaction = await this.getTransaction(options);
     const findOptions = this.buildQueryOptions({
       ...options,
