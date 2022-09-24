@@ -16,22 +16,22 @@ const useTableSelectorProps = () => {
   const field = useField<ArrayField>();
   const { multiple, value, setSelectedRows, selectedRows: rcSelectRows } = useContext(RecordPickerContext);
   const { onRowSelectionChange, rowKey, ...others } = useTsp();
-  // console.log('useTableSelectorProps', field.value, value);
+  console.log('useTableSelectorProps', field.value, value);
   return {
     ...others,
     rowKey,
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
       // defaultSelectedRowKeys: rcSelectRows?.map((item) => item[rowKey||'id']),
-      selectedRowKeys: rcSelectRows?.map((item) => item[rowKey||'id']),
+      selectedRowKeys: rcSelectRows?.map((item) => item[rowKey || 'id']),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       if (multiple) {
         const scopeRows = field.value || [];
         const allSelectedRows = rcSelectRows || [];
-        const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey||'id');
-        const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey||'id');
-        const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey||'id'])
+        const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey || 'id');
+        const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey || 'id');
+        const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey || 'id']);
         setSelectedRows?.(unionSelectedRows);
         onRowSelectionChange?.(unionSelectedRowKeys, unionSelectedRows);
       } else {
@@ -50,6 +50,7 @@ const usePickActionProps = () => {
       if (multiple) {
         onChange(selectedRows);
       } else {
+        console.log(555)
         onChange(selectedRows?.[0] || null);
       }
       setVisible(false);
@@ -68,19 +69,20 @@ const useAssociation = (props) => {
 };
 
 export const InputRecordPicker: React.FC<any> = (props) => {
+  console.log(3334)
   const { value, multiple, onChange, ...others } = props;
   const fieldNames = useFieldNames(props);
   const [visible, setVisible] = useState(false);
   const fieldSchema = useFieldSchema();
   const collectionField = useAssociation(props);
   const compile = useCompile();
-  
+
   const [selectedRows, setSelectedRows] = useState([]);
   const [options, setOptions] = useState([]);
 
   useEffect(() => {
     if (value) {
-      const opts = (Array.isArray(value) ? value : value ? [value] : []).map(option => {
+      const opts = (Array.isArray(value) ? value : value ? [value] : []).map((option) => {
         const label = option[fieldNames.label];
         return {
           ...option,
@@ -90,14 +92,14 @@ export const InputRecordPicker: React.FC<any> = (props) => {
       setOptions(opts);
       setSelectedRows(opts);
     }
-  }, [value])
+  }, [value]);
 
   const getValue = () => {
     if (multiple == null) return null;
     // console.log('getValue', multiple, value, Array.isArray(value));
-    
-    return Array.isArray(value) ? value?.map(v => v[fieldNames.value]) : value?.[fieldNames.value];
-  }
+
+    return Array.isArray(value) ? value?.map((v) => v[fieldNames.value]) : value?.[fieldNames.value];
+  };
   return (
     <div>
       <Select

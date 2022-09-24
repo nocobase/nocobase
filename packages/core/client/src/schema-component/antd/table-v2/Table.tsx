@@ -264,6 +264,7 @@ export const Table: any = observer((props: any) => {
   const restProps = {
     rowSelection: rowSelection
       ? {
+        ...others,
           type: 'checkbox',
           selectedRowKeys: field?.data?.selectedRowKeys || [],
           onChange(selectedRowKeys: any[], selectedRows: any[]) {

@@ -64,6 +64,7 @@ export const TableSelectorProvider = (props) => {
     params['appends'] = appends;
   }
   if (collectionField) {
+    console.log(collectionField.foreignKey)
     if (['oho', 'o2m'].includes(collectionField.interface)) {
       if (record?.[collectionField.sourceKey]) {
         params['filter'] = {

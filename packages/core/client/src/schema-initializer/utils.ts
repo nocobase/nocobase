@@ -82,8 +82,7 @@ export const useTableColumnInitializerFields = () => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
         'x-read-pretty': true,
-        'x-component-props': {
-        },
+        'x-component-props': {},
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
@@ -120,14 +119,13 @@ export const useAssociatedTableColumnInitializerFields = () => {
             // type: 'string',
             name: `${field.name}.${subField.name}`,
             // title: subField?.uiSchema?.title || subField.name,
-            
+
             'x-component': 'CollectionField',
             'x-read-pretty': true,
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
-            'x-component-props': {
-            },
+            'x-component-props': {},
           };
-          
+
           return {
             type: 'item',
             title: subField?.uiSchema?.title || subField.name,
@@ -145,12 +143,12 @@ export const useAssociatedTableColumnInitializerFields = () => {
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
-        children: items, 
+        children: items,
       } as SchemaInitializerItemOptions;
     });
 
   return groups;
-}
+};
 
 export const useFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
@@ -171,8 +169,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {
-        },
+        'x-component-props': {},
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       return {
@@ -193,7 +190,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const { getInterface, getCollectionFields } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
-  const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o']
+  const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
 
   const groups = fields
     ?.filter((field) => {
@@ -234,11 +231,11 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
-        children: items, 
+        children: items,
       } as SchemaInitializerItemOptions;
     });
   return groups;
-}
+};
 
 export const useCustomFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
@@ -294,11 +291,11 @@ const removeSchema = (schema, cb) => {
 
 const recursiveParent = (schema: Schema) => {
   if (!schema.parent) return null;
-  
+
   if (schema.parent['x-initializer']) return schema.parent;
-  
+
   return recursiveParent(schema.parent);
-}
+};
 
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
   let fieldSchema = useFieldSchema();
@@ -319,17 +316,22 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   };
 };
 
-export const useRecordCollectionDataSourceItems = (componentName, item = null, collectionName = null, resourceName = null) => {
+export const useRecordCollectionDataSourceItems = (
+  componentName,
+  item = null,
+  collectionName = null,
+  resourceName = null,
+) => {
   const { t } = useTranslation();
   const collection = useCollection();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const templates = getTemplatesByCollection(collectionName || collection.name)
-  .filter((template) => {
-    return componentName && template.componentName === componentName;
-  })
-  .filter((template) => {
-    return ['FormItem', 'ReadPrettyFormItem'].includes(componentName) || (template.resourceName === resourceName);
-  });
+    .filter((template) => {
+      return componentName && template.componentName === componentName;
+    })
+    .filter((template) => {
+      return ['FormItem', 'ReadPrettyFormItem'].includes(componentName) || template.resourceName === resourceName;
+    });
   if (!templates.length) {
     return [];
   }
@@ -351,8 +353,9 @@ export const useRecordCollectionDataSourceItems = (componentName, item = null, c
       name: 'copy',
       title: t('Duplicate template'),
       children: templates.map((template) => {
-        const templateName =
-          ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName) ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+        const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+          ? `${template?.name} ${t('(Fields only)')}`
+          : template?.name;
         return {
           type: 'item',
           mode: 'copy',
@@ -369,8 +372,9 @@ export const useRecordCollectionDataSourceItems = (componentName, item = null, c
       name: 'ref',
       title: t('Reference template'),
       children: templates.map((template) => {
-        const templateName =
-          ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName) ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+        const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+          ? `${template?.name} ${t('(Fields only)')}`
+          : template?.name;
         return {
           type: 'item',
           mode: 'reference',
@@ -397,7 +401,11 @@ export const useCollectionDataSourceItems = (componentName) => {
         ?.filter((item) => !item.inherit)
         ?.map((item, index) => {
           const templates = getTemplatesByCollection(item.name).filter((template) => {
-            return componentName && template.componentName === componentName && (!template.resourceName || template.resourceName === item.name);
+            return (
+              componentName &&
+              template.componentName === componentName &&
+              (!template.resourceName || template.resourceName === item.name)
+            );
           });
           if (!templates.length) {
             return {
@@ -472,6 +480,7 @@ export const createDetailsBlockSchema = (options) => {
     ...others
   } = options;
   const resourceName = resource || association || collection;
+  console.log(resourceName)
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resourceName}:get`,
@@ -543,6 +552,7 @@ export const createFormBlockSchema = (options) => {
     ...others
   } = options;
   const resourceName = resource || association || collection;
+  const isAssociate=!resource&&resourceName.includes('.');
   const schema: ISchema = {
     type: 'void',
     'x-acl-action-props': {
@@ -577,7 +587,7 @@ export const createFormBlockSchema = (options) => {
           },
           actions: {
             type: 'void',
-            'x-initializer': actionInitializers,
+            'x-initializer':isAssociate?'UpdateAssociateFormActionInitializers': actionInitializers,
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',
@@ -598,7 +608,7 @@ export const createFormBlockSchema = (options) => {
 export const createReadPrettyFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'ReadPrettyFormActionInitializers',
+    actionInitializers='ReadPrettyFormActionInitializers',
     collection,
     association,
     resource,
@@ -606,6 +616,8 @@ export const createReadPrettyFormBlockSchema = (options) => {
     ...others
   } = options;
   const resourceName = resource || association || collection;
+  const isAssociate=!resource&&resourceName.includes('.');
+  console.log(resourceName)
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resourceName}:get`,
@@ -632,7 +644,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
         properties: {
           actions: {
             type: 'void',
-            'x-initializer': actionInitializers,
+            'x-initializer': isAssociate?'ReadPrettyFormAssociateActionInitializers':actionInitializers,
             'x-component': 'ActionBar',
             'x-component-props': {
               style: {
@@ -651,7 +663,6 @@ export const createReadPrettyFormBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
@@ -727,6 +738,76 @@ export const createTableBlockSchema = (options) => {
   return schema;
 };
 
+export const createAssociateTableBlockSchema = (options) => {
+  const { collection, resource, rowKey, ...others } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-decorator': 'TableBlockProvider',
+    'x-acl-action': `${resource || collection}:list`,
+    'x-decorator-props': {
+      collection,
+      resource: resource || collection,
+      action: 'list',
+      params: {
+        pageSize: 20,
+      },
+      rowKey,
+      showIndex: true,
+      dragSort: false,
+      ...others,
+    },
+    'x-designer': 'TableBlockDesigner',
+    'x-component': 'CardItem',
+    properties: {
+      actions: {
+        type: 'void',
+        'x-initializer': 'AssociateTableActionInitializers',
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 16,
+          },
+        },
+        properties: {},
+      },
+      [uid()]: {
+        type: 'array',
+        'x-initializer': 'TableColumnInitializers',
+        'x-component': 'TableV2',
+        'x-component-props': {
+          rowSelection: {
+            type: 'checkbox',
+          },
+          useProps: '{{ useTableBlockProps }}',
+        },
+        properties: {
+          actions: {
+            type: 'void',
+            title: '{{ t("Actions") }}',
+            'x-action-column': 'actions',
+            'x-decorator': 'TableV2.Column.ActionBar',
+            'x-component': 'TableV2.Column',
+            'x-designer': 'TableV2.ActionColumnDesigner',
+            'x-initializer': 'AssociateTableActionColumnInitializers',
+            properties: {
+              actions: {
+                type: 'void',
+                'x-decorator': 'DndContext',
+                'x-component': 'Space',
+                'x-component-props': {
+                  split: '|',
+                },
+                properties: {},
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  return schema;
+};
+
 export const createTableSelectorSchema = (options) => {
   const { collection, resource, rowKey, ...others } = options;
   const schema: ISchema = {
@@ -772,6 +853,41 @@ export const createTableSelectorSchema = (options) => {
     },
   };
   console.log(JSON.stringify(schema, null, 2));
+  return schema;
+};
+
+export const createAssociateTableSelectorSchema = (options) => {
+  const { collection, resource, rowKey, ...others } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-designer': 'AssociateTableDesginer',
+    'x-component': 'BlockItem',
+    properties: {
+      actions: {
+        type: 'void',
+        'x-initializer': 'TableActionInitializers',
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 16,
+          },
+        },
+        properties: {},
+      },
+      value: {
+        type: 'array',
+        'x-initializer': 'TableColumnInitializers',
+        'x-component': 'TableV2.Selector',
+        'x-component-props': {
+          rowSelection: {
+            type: 'checkbox',
+          },
+          useProps: '{{ useAssociateTableSelectorProps }}',
+        },
+        properties: {},
+      },
+    },
+  };
   return schema;
 };
 

@@ -1,4 +1,5 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
+import React, { useContext } from 'react';
 import { message, Modal } from 'antd';
 import parse from 'json-templates';
 import get from 'lodash/get';
@@ -7,13 +8,14 @@ import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { useFormBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
-import { useCollection } from '../../collection-manager';
+import { useCollection ,useCollectionManager} from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
 import { useCurrentUserContext } from '../../user';
-import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
+import { useBlockRequestContext, useFilterByTk, useBlockAssociationContext } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import { useAssociateTableSelectorContext } from '../AssociateTableProvider';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -404,6 +406,26 @@ export const useDestroyActionProps = () => {
   };
 };
 
+export const useDetachActionProps = () => {
+  const filterByTk = useFilterByTk();
+  const { resource, service, __parent } = useBlockRequestContext();
+  const association = useBlockAssociationContext();
+  const { getCollectionJoinField } = useCollectionManager();
+  const targetField = getCollectionJoinField(association);
+   const params=['linkTo', 'o2m', 'm2m'].includes(targetField.interface)?{values:[filterByTk]}:null
+  const { setVisible } = useActionContext();
+  return {
+    async onClick() {
+      await resource.remove(params);
+      service?.refresh?.();
+      if (!(service.data.data instanceof Array)) {
+        __parent?.service?.refresh?.();
+        setVisible?.(false);
+      }
+    },
+  };
+};
+
 export const useDetailPrintActionProps = () => {
   const { formBlockRef } = useFormBlockContext();
 
@@ -439,6 +461,51 @@ export const useBulkDestroyActionProps = () => {
       });
       field.data.selectedRowKeys = [];
       service?.refresh?.();
+    },
+  };
+};
+
+// 关联已有数据
+export const useBulkAetachActionProps = () => {
+  const { setVisible } = useActionContext();
+  const { field } = useAssociateTableSelectorContext();
+  const association = useBlockAssociationContext();
+  const currentRecord = useRecord();
+  const api = useAPIClient();
+  const { service, __parent ,resource} = useBlockRequestContext();
+  return {
+    async onClick() {
+      if (!field?.data?.selectedRowKeys?.length) {
+        return;
+      }
+      await api.resource(association, currentRecord.id).add({
+        values: field.data?.selectedRowKeys,
+      });
+      field.data.selectedRowKeys = [];
+      service?.refreshAsync?.();
+      __parent?.service?.refresh?.();
+      if (!(resource instanceof TableFieldResource)) {
+        __parent?.__parent?.service?.refresh?.();
+      }
+      setVisible?.(false);
+    },
+  };
+};
+
+// 解除关联
+export const useBulkDetachActionProps = () => {
+  const { resource, service, __parent ,field} = useBlockRequestContext();
+  return {
+    async onClick() {
+      if (!field?.data?.selectedRowKeys?.length) {
+        return;
+      }
+      await resource.remove({
+        values: field.data?.selectedRowKeys,
+      });
+      field.data.selectedRowKeys = [];
+      service?.refresh?.();
+      __parent?.service?.refresh?.();
     },
   };
 };

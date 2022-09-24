@@ -32,3 +32,7 @@ export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';
+export * from './AttachActionInitializer';
+export * from './DetachActionInitializer';
+export * from './BulkDetachActionInlitializer';
+export *  from './AssociateTableInitializer';
