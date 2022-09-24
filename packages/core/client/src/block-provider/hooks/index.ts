@@ -8,7 +8,7 @@ import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { useFormBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
-import { useCollection } from '../../collection-manager';
+import { useCollection ,useCollectionManager} from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
 import { useCurrentUserContext } from '../../user';
@@ -409,12 +409,14 @@ export const useDestroyActionProps = () => {
 export const useDetachActionProps = () => {
   const filterByTk = useFilterByTk();
   const { resource, service, __parent } = useBlockRequestContext();
+  const association = useBlockAssociationContext();
+  const { getCollectionJoinField } = useCollectionManager();
+  const targetField = getCollectionJoinField(association);
+   const params=['linkTo', 'o2m', 'm2m'].includes(targetField.interface)?{values:[filterByTk]}:null
   const { setVisible } = useActionContext();
   return {
     async onClick() {
-      await resource.remove({
-        values:[filterByTk],
-      });
+      await resource.remove(params);
       service?.refresh?.();
       if (!(service.data.data instanceof Array)) {
         __parent?.service?.refresh?.();
