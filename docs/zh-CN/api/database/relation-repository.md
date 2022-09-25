@@ -108,7 +108,18 @@ console.log(profile.toJSON());
 
 **签名**
 
-* `async find(options?: FindOptions): Promise<Model[]>`
+* `async find(options?: SingleRelationFindOption): Promise<Model<any> | null>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options.fields` | `Fields` | - | 参见 repository.find.fields |
+| `options.except` | `Except` | - | 参见 repository.find.except |
+| `options.appends` | `Appends` | - | 参见 repository.find.appends |
+| `options.filter` | `Filter` | - | 参见 repository.find.filter |
+
+**示例**
 
 ```typescript
 const profile = await UserProfileRepository.find();
@@ -118,6 +129,18 @@ const profile = await UserProfileRepository.find();
 ### `update()`
 
 更新关联对象
+
+**签名**
+
+* `async update(options: UpdateOptions): Promise<Model>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `UpdateOptions` | - | 参见 repository.update |
+
+**示例**
 
 ```typescript
 const profile = await UserProfileRepository.update({
@@ -131,6 +154,18 @@ profile.get('avatar'); // 'avatar2'
 
 移除关联对象，仅解除关联关系，不删除关联对象
 
+**签名**
+
+* `async remove(options?: Transactionable): Promise<void>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options.transaction` | `Transaction` | - | Transaction |
+
+**示例**
+
 ```typescript
 await UserProfileRepository.remove();
 await UserProfileRepository.find() == null; // true
@@ -142,6 +177,19 @@ await Profile.repository.count() === 1; // true
 
 删除关联对象
 
+**签名**
+
+* `async destroy(options?: Transactionable): Promise<Boolean>`
+
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options.transaction` | `Transaction` | - | Transaction |
+
+**示例**
+
 ```typescript
 await UserProfileRepository.destroy();
 await UserProfileRepository.find() == null; // true
@@ -152,49 +200,181 @@ await Profile.repository.count() === 0; // true
 
 设置关联对象
 
+**签名**
+
+* `async set(options: TargetKey | SetOption): Promise<void>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | ` TargetKey \| SetOption` | - | 需要 set 的对象的 targetKey，如果需要一同传入 transaction 则修改为 object 类型参数 |
+
+**示例**
+
 ```typescript
 const newProfile = await Profile.repository.create({
   values: { avatar: 'avatar2' },
 });
 
-await UserProfileRepository.set(newProfile);
+await UserProfileRepository.set(newProfile.get('id'));
 
 (await UserProfileRepository.find()).get('id') === newProfile.get('id'); // true
 ```
 
 ## BelongsToRepository
 
-### `find()`
-
-### `update()`
-
-### `destroy()`
-
-### `remove()`
-
-### `set()`
+`BelongsToRepository` 是用于处理 `BelongsTo` 关系的 `Repository`，它提供了一些便捷的方法来处理 `BelongsTo` 关系。其接口与 [HasOneRepository](#has-one-repository) 一致。
 
 ## HasManyRepository
 
-### `count()`
+`HasManyRepository` 是用于处理 `HasMany` 关系的 `Repository`。
 
 ### `find()`
 
+查找关联对象
+
+**签名**
+
+* `async find(options?: FindOptions): Promise<M[]>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `FindOptions` | - | 参见 repository.find |
+
 ### `findOne()`
+
+查找关联对象，仅返回一条记录
+
+**签名**
+
+* `async findOne(options?: FindOneOptions): Promise<M>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `FindOneOptions` | - | 参见 repository.findOne |
+
+### `count()`
+
+返回符合查询条件的记录数
+
+**签名**
+
+* `async count(options?: CountOptions)`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `CountOptions` | - | 参见 repository.count |
+
 
 ### `findAndCount()`
 
+同时返回符合查询条件的记录集合与记录数
+
+**签名**
+
+* `async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `FindAndCountOptions` | - | 参见 repository.findAndCount |
+
+
 ### `create()`
+
+创建关联对象
+
+**签名**
+
+* `async create(options?: CreateOptions): Promise<M>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `CreateOptions` | - | 参见 repository.create |
+
 
 ### `update()`
 
+更新符合条件的关联对象
+
+**签名**
+
+* `async update(options?: UpdateOptions): Promise<M>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `UpdateOptions` | - | 参见 repository.update |
+
+
 ### `destroy()`
+
+删除符合条件的关联对象
+
+**签名**
+
+* `async destroy(options?: TK | DestroyOptions): Promise<M>`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `TK \|DestroyOptions` | - | 传入删除对象的 `targetKeyId`，或者 `targetKeyId` 数组。需传 `transaction` 时 使用 `DestroyOptions` 类型 |
 
 ### `add()`
 
+添加关联对象
+
+**签名**
+* `async add(options: TargetKey | TargetKey[] | AssociatedOptions)`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `TargetKey` | - | 关联对象的 `targetKeyId` |
+| `options` | `TargetKey[]` | - | 多个关联对象的 `targetKeyId` 数组 |
+| `options` | `AssociatedOptions` | - | `options.tk`, 为 `targetKeyId` 或者 `targetKeyId` 数组；`options.transaction`，为 `Transaction` 对象 |
+
+
 ### `remove()`
 
+移除符合条件的关联对象
+
+**签名**
+* `async remove(options: TargetKey | TargetKey[] | AssociatedOptions)`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `TargetKey \| TargetKey[] \| AssociatedOptions` | - | 同 [add](#add) |
+
+
 ### `set()`
+
+设置当前关系的关联对象
+
+**签名**
+
+* `async set(options: TargetKey | TargetKey[] | AssociatedOptions)`
+
+**参数**
+
+| 参数名 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `options` | `TargetKey \| TargetKey[] \| AssociatedOptions` | - | 同 [add](#add) |
 
 ## BelongsToManyRepository
 
