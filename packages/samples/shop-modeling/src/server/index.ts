@@ -23,10 +23,10 @@ export class ShopPlugin extends Plugin {
     await this.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
-  }
 
-  async disable() {
-    // this.app.resourcer.removeResource('testHello');
+    this.app.acl.allow('products', '*');
+    this.app.acl.allow('categories', '*');
+    this.app.acl.allow('orders', '*');
   }
 
   async install(options: InstallOptions) {

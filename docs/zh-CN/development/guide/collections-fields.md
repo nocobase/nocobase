@@ -85,9 +85,15 @@ export default class ShopPlugin extends Plugin {
     await this.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
+
+    this.app.acl.allow('products', '*');
+    this.app.acl.allow('categories', '*');
+    this.app.acl.allow('orders', '*');
   }
 }
 ```
+
+同时我们为了方便测试，先暂时允许针对这几张表数据资源的所有访问权限，后面我们会在 [权限管理](/development/guide/acl) 中详细介绍如何管理资源的权限。
 
 这样在插件被主应用加载时，我们定义的 `products` 表也就被加载到数据库管理实例的内存中了。同时，基于 NocoBase 约定式的数据表资源映射，在应用的服务启动以后，会自动生成对应的 CRUD HTTP API。
 
@@ -226,6 +232,7 @@ import { Snowflake } from 'nodejs-snowflake';
 import { Field, BaseColumnFieldOptions } from '@nocobase/database';
 
 export interface SnowflakeFieldOptions extends BaseColumnFieldOptions {
+  type: 'snowflake';
   epoch: number;
   instanceId: number;
 }

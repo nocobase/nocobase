@@ -5,6 +5,7 @@ import { Snowflake } from 'nodejs-snowflake';
 import { Field, BaseColumnFieldOptions } from '@nocobase/database';
 
 export interface SnowflakeFieldOptions extends BaseColumnFieldOptions {
+  type: 'snowflake';
   epoch: number;
   instanceId: number;
 }
@@ -14,11 +15,13 @@ export class SnowflakeField extends Field {
     return DataTypes.BIGINT;
   }
 
-  initialize() {
+  constructor(options: SnowflakeFieldOptions, context) {
+    super(options, context);
+
     const {
-      epoch: custom_epoch = Date.now(),
+      epoch: custom_epoch,
       instanceId: instance_id = process.env.INSTANCE_ID ? Number.parseInt(process.env.INSTANCE_ID) : 0,
-    } = this.options;
+    } = options;
     this.generator = new Snowflake({ custom_epoch, instance_id });
   }
 
