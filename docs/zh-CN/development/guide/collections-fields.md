@@ -42,7 +42,7 @@ db.collection({
 
 对于开发者，通常我们会建立与普通数据表不同的一些功能型数据表，并把这些数据表固化成插件的一部分，并结合其他数据处理流程以形成完整的功能。
 
-接下来我们以一个简单的在线商店插件为例来介绍如何建模并管理插件的数据表。假设你已经学习过 [编写第一个插件](/development/your-first-plugin)，我们继续在之前的插件代码上开发，只不过插件的名称从 `hello` 改为 `shop`。
+接下来我们以一个简单的在线商店插件为例来介绍如何建模并管理插件的数据表。假设你已经学习过 [编写第一个插件](/development/your-first-plugin)，我们继续在之前的插件代码上开发，只不过插件的名称从 `hello` 改为 `shop-modeling`。
 
 ### 插件中定义并创建数据表
 
@@ -198,7 +198,7 @@ export default {
 }
 ```
 
-为了简化，订单表中与商品的关联我们只简单的定义为多对一关系，而在实际业务中可能会用到多对多或快照等复杂的建模方式。可以看到，一个订单除了对应某个商品，我们还增加了一个对应用户的关系定义，用户是 NocoBase 内置插件管理的数据表（详细参考[用户插件的代码](https://github.com/nocobase/nocobase/tree/main/packages/plugins/users)），如果我们希望针对已存在的用户表扩展定义“一个用户所拥有的多个订单”的关系，可以在当前的 shop 插件内继续新增一个数据表文件 `collections/users.ts`，与直接导出 JSON 数据表配置不同的是，这里使用 `@nocobase/database` 包的 `extend()` 方法，进行对已有数据表的扩展定义：
+为了简化，订单表中与商品的关联我们只简单的定义为多对一关系，而在实际业务中可能会用到多对多或快照等复杂的建模方式。可以看到，一个订单除了对应某个商品，我们还增加了一个对应用户的关系定义，用户是 NocoBase 内置插件管理的数据表（详细参考[用户插件的代码](https://github.com/nocobase/nocobase/tree/main/packages/plugins/users)），如果我们希望针对已存在的用户表扩展定义“一个用户所拥有的多个订单”的关系，可以在当前的 shop-modeling 插件内继续新增一个数据表文件 `collections/users.ts`，与直接导出 JSON 数据表配置不同的是，这里使用 `@nocobase/database` 包的 `extend()` 方法，进行对已有数据表的扩展定义：
 
 ```ts
 import { extend } from '@nocobase/database';
