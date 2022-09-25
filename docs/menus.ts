@@ -48,12 +48,12 @@ export default {
       children: [
         '/development/guide/index',
         '/development/guide/collections-fields',
+        '/development/guide/resources-actions',
+        '/development/guide/middleware',
         '/development/guide/commands',
         '/development/guide/hooks',
         '/development/guide/i18n',
-        '/development/guide/middleware',
         '/development/guide/migration',
-        '/development/guide/resources-actions',
         {
           title: 'UI Schema Designer',
           type: 'subMenu',
