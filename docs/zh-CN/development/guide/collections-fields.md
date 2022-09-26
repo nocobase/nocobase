@@ -191,6 +191,10 @@ export default {
       name: 'status'
     },
     {
+      type: 'string',
+      name: 'address'
+    },
+    {
       type: 'belongsTo',
       name: 'user'
     }
@@ -312,4 +316,4 @@ export default {
 * 扩展已有的数据表的字段
 * 扩展新的字段类型
 
-我们将本章所涉及的代码放到了一个完整的示例包 [packages/samples/shop-modeling](https://github.com/nocobase/nocobase/tree/develop/packages/samples/shop-modeling) 中，可以直接在本地运行，查看效果。
+我们将本章所涉及的代码放到了一个完整的示例包 [packages/samples/shop-modeling](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-modeling) 中，可以直接在本地运行，查看效果。
