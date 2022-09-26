@@ -19,7 +19,7 @@ yarn pm enable sample-shop-modeling
 yarn dev
 
 # for production
-yarn build samples/shop-modeling
+yarn build
 yarn start
 ```
 
