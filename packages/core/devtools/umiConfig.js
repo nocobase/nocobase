@@ -70,7 +70,7 @@ function resolveNocobasePackagesAlias(config) {
     const packageSrc = resolve(process.cwd(), './packages/samples/', package, 'src');
     if (existsSync(packageSrc)) {
       config.module.rules.get('ts-in-node_modules').include.add(packageSrc);
-      config.resolve.alias.set(`@nocobase/plugin-${package}-sample`, packageSrc);
+      config.resolve.alias.set(`@nocobase/plugin-sample-${package}`, packageSrc);
     }
   }
 }

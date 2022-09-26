@@ -20,7 +20,7 @@
       "@nocobase/app-*": [
         "packages/app/*/src"
       ],
-      "@nocobase/plugin-*-sample": [
+      "@nocobase/plugin-sample-*": [
         "packages/samples/*/src"
       ],
       "@nocobase/plugin-*": [
