@@ -15,6 +15,7 @@ import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { createCache, ICacheConfig, Cache } from '@nocobase/cache';
 
 const packageJson = require('../package.json');
 
@@ -27,6 +28,7 @@ export interface ResourcerOptions {
 
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
+  cache?: ICacheConfig;
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;
@@ -43,7 +45,9 @@ export interface DefaultState {
 
 export interface DefaultContext {
   db: Database;
+  cache: Cache;
   resourcer: Resourcer;
+
   [key: string]: any;
 }
 
@@ -130,6 +134,8 @@ export class ApplicationVersion {
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   public readonly db: Database;
 
+  public readonly cache: Cache;
+
   public readonly resourcer: Resourcer;
 
   public readonly cli: Command;
@@ -153,6 +159,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.acl = createACL();
     this.db = this.createDatabase(options);
+    this.cache = createCache(options.cache);
     this.resourcer = createResourcer(options);
     this.cli = new Command('nocobase').usage('[command] [options]');
     this.i18n = createI18n(options);
