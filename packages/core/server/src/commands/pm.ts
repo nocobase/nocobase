@@ -35,10 +35,9 @@ export default (app: Application) => {
           try {
             if (started) {
               const res = await axios.get(`${baseURL}pm:add/${plugins.join(',')}`);
-              console.log(res.data);
-              return;
+            } else {
+              await app.pm.add(plugins);
             }
-            await app.pm.add(plugins);
           } catch (error) {}
           const fs = require('fs/promises');
           await Promise.all(
