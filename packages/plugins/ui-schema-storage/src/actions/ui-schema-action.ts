@@ -4,7 +4,18 @@ import lodash from 'lodash';
 import UiSchemaRepository from '../repository';
 
 const getRepositoryFromCtx = (ctx: Context) => {
-  return ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;
+  const repo = ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;
+  repo.setCache(ctx.cache);
+  return repo;
+};
+
+const cacheMethods = {
+  getJsonSchema: async (ctx: Context, params, func) => {
+    return ctx.cache.wrap(params, func);
+  },
+  getProperties: async (ctx: Context, params, func) => {
+    return ctx.cache.wrap(params, func);
+  },
 };
 
 const callRepositoryMethod = (method, paramsKey: 'resourceIndex' | 'values', optionsBuilder?) => {
@@ -12,8 +23,16 @@ const callRepositoryMethod = (method, paramsKey: 'resourceIndex' | 'values', opt
     const params = lodash.get(ctx.action.params, paramsKey);
     const options = optionsBuilder ? optionsBuilder(ctx.action.params) : {};
 
-    const repository = getRepositoryFromCtx(ctx);
-    const returnValue = await repository[method](params, options);
+    let returnValue;
+    if (!!cacheMethods[method]) {
+      returnValue = await cacheMethods[method](ctx, params, () => {
+        const repository = getRepositoryFromCtx(ctx);
+        return repository[method](params, options);
+      });
+    } else {
+      const repository = getRepositoryFromCtx(ctx);
+      returnValue = await repository[method](params, options);
+    }
 
     ctx.body = returnValue || {
       result: 'ok',
@@ -51,6 +70,7 @@ export const uiSchemaActions = {
     const repository = getRepositoryFromCtx(ctx);
 
     const { schema, wrap } = parseInsertAdjacentValues(values);
+
 
     ctx.body = await repository.insertAdjacent(position, resourceIndex, schema, {
       removeParentsIfNoChildren,
@@ -93,6 +113,7 @@ export const uiSchemaActions = {
 
 function insertPositionActionBuilder(position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd') {
   return async function (ctx: Context, next) {
+    await ctx.cache.reset();
     const { resourceIndex, values, removeParentsIfNoChildren, breakRemoveOn } = ctx.action.params;
     const repository = getRepositoryFromCtx(ctx);
     const { schema, wrap } = parseInsertAdjacentValues(values);
