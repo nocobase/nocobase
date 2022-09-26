@@ -1,20 +1,29 @@
 # Modeling for simple shop scenario
 
-## Installation
+## Register
 
-```bash
-yarn build samples/shop-modeling
+```ts
 yarn pm add sample-shop-modeling
-yarn enable sample-shop-modeling
 ```
 
-## Test
-
-Start the local development server:
+## Activate
 
 ```bash
-yarn dev --server
+yarn pm enable sample-shop-modeling
 ```
+
+## Launch the app
+
+```bash
+# for development
+yarn dev
+
+# for production
+yarn build samples/shop-modeling
+yarn start
+```
+
+## Connect to the API
 
 ### Products API
 
