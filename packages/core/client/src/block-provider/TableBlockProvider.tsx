@@ -79,7 +79,6 @@ export const useAssociationNames = (collection) => {
 };
 
 export const TableBlockProvider = (props) => {
-  console.log(props)
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
   const form = useMemo(() => createForm(), []);
