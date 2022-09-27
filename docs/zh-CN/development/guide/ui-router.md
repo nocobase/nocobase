@@ -1,5 +1,7 @@
 # UI Router
 
+NocoBase Client 的 Router 基于 [React Router](https://v5.reactrouter.com/web/guides/quick-start)，可以通过 `<RouteSwitch routes={[]} />` 来配置 ui routes，例子如下：
+
 ```tsx
 import React from 'react';
 import { Link, MemoryRouter as Router } from 'react-router-dom';
@@ -33,3 +35,26 @@ export default () => {
   );
 };
 ```
+
+在完整的 NocoBase 应用里，可以类似以下的的方式扩展 Route：
+
+```tsx | pure
+import { RouteSwitchContext } from '@nocobase/client';
+import React, { useContext } from 'react';
+
+const HelloWorld = () => {
+  return <div>Hello ui router</div>;
+};
+
+export default React.memo((props) => {
+  const ctx = useContext(RouteSwitchContext);
+  ctx.routes.push({
+    type: 'route',
+    path: '/hello-world',
+    component: HelloWorld,
+  });
+  return <RouteSwitchContext.Provider value={ctx}>{props.children}</RouteSwitchContext.Provider>;
+});
+```
+
+完整示例查看 [packages/samples/custom-page](https://github.com/nocobase/nocobase/tree/develop/packages/samples/custom-page)

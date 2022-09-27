@@ -1,4 +1,4 @@
-# Modeling for simple shop scenario
+# Custom page
 
 ## Register
 
