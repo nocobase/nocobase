@@ -1,6 +1,6 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 
-export class CustomUIRoutePlugin extends Plugin {
+export class CustomPagePlugin extends Plugin {
   getName(): string {
     return this.getPackageName(__dirname);
   }
@@ -18,4 +18,4 @@ export class CustomUIRoutePlugin extends Plugin {
   }
 }
 
-export default CustomUIRoutePlugin;
+export default CustomPagePlugin;

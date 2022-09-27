@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-sample-custom-ui-route",
+  "name": "@nocobase/plugin-sample-custom-page",
   "version": "0.7.4-alpha.7",
   "main": "lib/server/index.js",
   "dependencies": {},
