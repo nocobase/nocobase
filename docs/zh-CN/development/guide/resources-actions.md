@@ -355,7 +355,7 @@ export default class ShopPlugin extends Plugin {
               const product = await ctx.db.getRepository('products').findOne({
                 filterByTk: productId,
                 filter: {
-                  enabled: 1,
+                  enabled: true,
                   inventory: {
                     $gt: 0
                   }
