@@ -1,0 +1,11 @@
+{
+  "name": "@nocobase/plugin-sample-custom-page",
+  "version": "0.7.4-alpha.7",
+  "main": "lib/server/index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "@nocobase/client": "0.7.4-alpha.7",
+    "@nocobase/server": "0.7.4-alpha.7",
+    "@nocobase/test": "0.7.4-alpha.7"
+  }
+}

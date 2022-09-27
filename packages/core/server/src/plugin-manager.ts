@@ -111,11 +111,18 @@ export class PluginManager {
             ctx.throw(400, 'filterByTk invalid');
           }
           const name = pm.getPackageName(filterByTk);
+          console.log(name, pm.plugins.keys());
           const plugin = pm.get(name);
-          if (plugin.model) {
+          if (plugin?.model) {
             await plugin.model.destroy();
+            pm.remove(name);
+          } else {
+            await pm.repository.destroy({
+              filter: {
+                name: filterByTk,
+              },
+            });
           }
-          pm.remove(name);
           await app.reload();
           await app.start();
           ctx.body = 'ok';
