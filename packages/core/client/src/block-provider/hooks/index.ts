@@ -124,6 +124,7 @@ export const useCreateActionProps = () => {
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
+  const { field:{uploading}} = useFormBlockContext();  
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
@@ -175,6 +176,7 @@ export const useCreateActionProps = () => {
         actionField.data.loading = false;
       }
     },
+    disabled:uploading
   };
 };
 
