@@ -1,17 +1,5 @@
 # Modeling for simple shop scenario
 
-## Add package
-
-Add dependency to `packages/app/server/package.json`:
-
-```json
-{
-  "dependencies": {
-    "@nocobase/plugin-sample-shop-actions": "*"
-  }
-}
-```
-
 ## Register
 
 ```ts
@@ -28,10 +16,10 @@ yarn pm enable sample-shop-actions
 
 ```bash
 # for development
-yarn dev --db-sync
+yarn dev
 
 # for production
-yarn build samples/shop-actions
+yarn build
 yarn start
 ```
 
