@@ -4,241 +4,11 @@ import { Spin } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useRequest } from '@nocobase/client';
 import '@antv/x6-react-shape';
-import { headClass, tableNameClass,tableBtnClass } from './style';
+import { headClass, tableNameClass, tableBtnClass } from './style';
+import { formatData } from './utils';
 
 const LINE_HEIGHT = 24;
-const NODE_WIDTH = 150;
-const data = [
-  {
-    id: '1',
-    shape: 'er-rect',
-    label: '学生',
-    width: 150,
-    height: 24,
-    position: {
-      x: 24,
-      y: 150,
-    },
-    ports: [
-      {
-        id: '1-1',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'ID',
-          },
-          portTypeLabel: {
-            text: 'STRING',
-          },
-        },
-      },
-      {
-        id: '1-2',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'Name',
-          },
-          portTypeLabel: {
-            text: 'STRING',
-          },
-        },
-      },
-      {
-        id: '1-3',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'Class',
-          },
-          portTypeLabel: {
-            text: 'NUMBER',
-          },
-        },
-      },
-      {
-        id: '1-4',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'Gender',
-          },
-          portTypeLabel: {
-            text: 'BOOLEAN',
-          },
-        },
-      },
-    ],
-  },
-  {
-    id: '2',
-    shape: 'er-rect',
-    label: '课程',
-    width: 150,
-    height: 24,
-    position: {
-      x: 250,
-      y: 210,
-    },
-    ports: [
-      {
-        id: '2-1',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'ID',
-          },
-          portTypeLabel: {
-            text: 'STRING',
-          },
-        },
-      },
-      {
-        id: '2-2',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'Name',
-          },
-          portTypeLabel: {
-            text: 'STRING',
-          },
-        },
-      },
-      {
-        id: '2-3',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'StudentID',
-          },
-          portTypeLabel: {
-            text: 'STRING',
-          },
-        },
-      },
-      {
-        id: '2-4',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'TeacherID',
-          },
-          portTypeLabel: {
-            text: 'STRING',
-          },
-        },
-      },
-      {
-        id: '2-5',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'Description',
-          },
-          portTypeLabel: {
-            text: 'STRING',
-          },
-        },
-      },
-    ],
-  },
-  {
-    id: '3',
-    shape: 'er-rect',
-    label: '老师',
-    width: 150,
-    height: 24,
-    position: {
-      x: 480,
-      y: 350,
-    },
-    ports: [
-      {
-        id: '3-1',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'ID',
-          },
-          portTypeLabel: {
-            text: 'STRING',
-          },
-        },
-      },
-      {
-        id: '3-2',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'Name',
-          },
-          portTypeLabel: {
-            text: 'STRING',
-          },
-        },
-      },
-      {
-        id: '3-3',
-        group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: 'Age',
-          },
-          portTypeLabel: {
-            text: 'NUMBER',
-          },
-        },
-      },
-    ],
-  },
-  {
-    id: '4',
-    shape: 'edge',
-    source: {
-      cell: '1',
-      port: '1-1',
-    },
-    target: {
-      cell: '2',
-      port: '2-3',
-    },
-    labels: 'true',
-    attrs: {
-      line: {
-        stroke: '#A2B1C3',
-        strokeWidth: 1,
-      },
-      text: {
-        text: '1:N',
-      },
-    },
-    connector: 'rounded',
-    zIndex: 0,
-  },
-  {
-    id: '5',
-    shape: 'edge',
-    labels: 'true',
-    source: {
-      cell: '3',
-      port: '3-1',
-    },
-    target: {
-      cell: '2',
-      port: '2-4',
-    },
-    connector: 'rounded',
-    attrs: {
-      line: {
-        stroke: '#A2B1C3',
-        strokeWidth: 1,
-      },
-      text: { text: 'N:1' },
-    },
-    zIndex: 0,
-  },
-];
+const NODE_WIDTH = 170;
 
 export const GraphDrawerContext = createContext(null);
 
@@ -251,14 +21,14 @@ export const GraphDrawerProver: React.FC = (props) => {
       appends: ['fields', 'fields.uiSchema'],
     },
   });
-  //   console.log(data);
   if (loading) {
     return <Spin />;
   }
   return <GraphDrawerContext.Provider value={data?.data}>{props.children}</GraphDrawerContext.Provider>;
 };
 
-export class AlgoNode extends React.Component<{ node?: Node }> {
+//表格头
+class AlgoNode extends React.Component<{ node?: Node }> {
   shouldComponentUpdate() {
     const { node } = this.props;
     if (node) {
@@ -280,23 +50,47 @@ export class AlgoNode extends React.Component<{ node?: Node }> {
       <div className={headClass}>
         <span className={tableNameClass}>{label}</span>
         <div className={tableBtnClass}>
-          <DeleteOutlined  onClick={()=>{console.log('table delete')}}/>
-          <EditOutlined  onClick={()=>{
-            console.log('table edit ')
-          }}/>
+          <DeleteOutlined
+            onClick={() => {
+              console.log('table delete');
+            }}
+          />
+          <EditOutlined
+            onClick={() => {
+              console.log('table edit ');
+            }}
+          />
         </div>
       </div>
     );
   }
 }
 
+class FieldNode extends React.Component<{ node?: Node }> {
+  render() {
+    const { node } = this.props;
+    const {
+      store: {
+        data: { label },
+      },
+    } = node;
+    console.log(node);
+    return (
+      <div>
+        <span>{label}</span>
+      </div>
+    );
+  }
+}
+
 export const Editor = () => {
-  console.log(useContext(GraphDrawerContext));
   const graph = useRef(null);
   graph.current = null;
+  const rawData = useContext(GraphDrawerContext);
   const getCollectionData = () => {
+    const collectionData: any[] = formatData(rawData);
     const cells: Cell[] = [];
-    data.forEach((item: any) => {
+    collectionData.forEach((item: any) => {
       if (item.shape === 'edge') {
         cells.push(graph.current.createEdge(item));
       } else {
@@ -305,7 +99,6 @@ export const Editor = () => {
     });
     graph.current.resetCells(cells);
     graph.current.zoomToFit({ padding: 10, maxScale: 1 });
-    setup();
   };
 
   useLayoutEffect(() => {
@@ -481,19 +274,6 @@ export const Editor = () => {
   useEffect(() => {
     graph.current && getCollectionData();
   }, [graph.current]);
-
-  // 监听自定义事件
-  const setup = () => {
-    graph.current.on('node:edit', ({ e, node }) => {
-      e.stopPropagation();
-      console.log('edit');
-    });
-
-    graph.current.on('node:delete', ({ e, node }) => {
-      e.stopPropagation();
-      console.log('delete');
-    });
-  };
 
   return <div id="container" style={{ width: '100%', height: '800px' }}></div>;
 };

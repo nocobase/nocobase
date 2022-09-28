@@ -212,7 +212,7 @@ export const headClass=css`
 `
 
 export const tableNameClass=css`
-    max-width: 50%;
+    max-width: 80%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
