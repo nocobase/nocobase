@@ -28,7 +28,7 @@ export interface ResourcerOptions {
 
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
-  cache?: ICacheConfig;
+  cache?: ICacheConfig | ICacheConfig[];
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;
@@ -40,6 +40,7 @@ export interface ApplicationOptions {
 
 export interface DefaultState {
   currentUser?: any;
+
   [key: string]: any;
 }
 
