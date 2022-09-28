@@ -5,6 +5,7 @@ const shape = {
 };
 
 export const formatData = (data) => {
+    
   const edgeData = [];
   const targetTablekeys = [];
   const tableData = data.map((item, index) => {
@@ -45,6 +46,7 @@ export const formatData = (data) => {
 };
 
 const formatEdgeData = (data, targetTables, tableData) => {
+    console.log(data)
   const edges = [];
   for (let i = 0; i < data.length; i++) {
     if (
@@ -80,7 +82,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
             {
               markup: [
                 {
-                  tagName: 'rect',
+                  tagName: 'ellipse',
                   selector: 'labelBody',
                 },
                 {
@@ -97,17 +99,17 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 },
                 labelBody: {
                   ref: 'labelText',
-                  refX: -8,
-                  refY: -5,
+                //   refX: -8,
+                //   refY: -5,
                   refWidth: '100%',
                   refHeight: '100%',
-                  refWidth2: 16,
-                  refHeight2: 10,
+                //   refWidth2: 16,
+                //   refHeight2: 10,
                   stroke: '#ffa940',
                   fill: '#fff',
                   strokeWidth: 1,
-                  rx: 5,
-                  ry: 5,
+                  rx: 15,
+                  ry: 15,
                 },
               },
               position: {
@@ -133,22 +135,27 @@ const formatEdgeData = (data, targetTables, tableData) => {
               attrs: {
                 labelText: {
                   text: getRelationship(data[i].interface)[1],
-                  fill: '#31d0c6',
+                  fill: '#ffa940',
                   textAnchor: 'middle',
                   textVerticalAnchor: 'middle',
                 },
                 labelBody: {
                   ref: 'labelText',
-                  refRx: '80%',
-                  refRy: '80%',
-                  stroke: '#31d0c6',
+                  refWidth: '100%',
+                  refHeight: '100%',
+                  stroke: '#ffa940',
                   fill: '#fff',
+                  rx: 15,
+                  ry: 15,
                   strokeWidth: 1,
                 },
               },
               position: {
                 distance: 0.7,
-                angle: 45,
+                args: {
+                    keepGradient: true,
+                    ensureLegibility: true,
+                  },
               },
             },
           ],
