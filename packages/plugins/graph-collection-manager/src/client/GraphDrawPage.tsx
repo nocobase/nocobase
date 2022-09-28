@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef, useEffect, useContext, createContext } from 'react';
-import { Graph, Cell, Shape } from '@antv/x6';
+import { Graph, Cell } from '@antv/x6';
+import ReactDOM from 'react-dom'
 import { Spin } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useRequest } from '@nocobase/client';
@@ -83,6 +84,8 @@ class FieldNode extends React.Component<{ node?: Node }> {
   }
 }
 
+
+
 export const Editor = () => {
   const graph = useRef(null);
   graph.current = null;
@@ -123,68 +126,6 @@ export const Editor = () => {
       {
         inherit: 'react-shape',
         component: <AlgoNode />,
-        // markup: [
-        //   {
-        //     tagName: 'rect',
-        //     selector: 'body',
-        //   },
-        //   {
-        //     tagName: 'text',
-        //     selector: 'label',
-        //   },
-        //   {
-        //     tagName: 'g',
-        //     attrs: {
-        //       class: 'btn del',
-        //     },
-        //     children: [
-        //       {
-        //         tagName: 'circle',
-        //         attrs: {
-        //           class: 'del',
-        //         },
-        //       },
-        //       {
-        //         tagName: 'text',
-        //         attrs: {
-        //           class: 'del',
-        //         },
-        //       },
-        //     ],
-        //   },
-        //   {
-        //     tagName: 'g',
-        //     attrs: {
-        //       class: 'btn edit',
-        //     },
-        //     children: [
-        //       {
-        //         tagName: 'circle',
-        //         attrs: {
-        //           class: 'edit',
-        //         },
-        //       },
-        //       {
-        //         tagName: 'text',
-        //         attrs: {
-        //           class: 'edit',
-        //         },
-        //       },
-        //     ],
-        //   },
-        // ],
-        // attrs: {
-        //   rect: {
-        //     strokeWidth: 1,
-        //     stroke: '#5F95FF',
-        //     fill: '#5F95FF',
-        //   },
-        //   label: {
-        //     fontWeight: 'bold',
-        //     fill: '#ffffff',
-        //     fontSize: 12,
-        //   },
-        // },
         ports: {
           groups: {
             list: {
@@ -231,9 +172,9 @@ export const Editor = () => {
       },
       true,
     );
+   
     const myGraph = new Graph({
       container: document.getElementById('container')!,
-      //   minimap:true,
       panning: true,
       scroller: {
         enabled: !0,
@@ -244,9 +185,6 @@ export const Editor = () => {
       autoResize: true,
       selecting: false,
       connecting: {
-        connector: {
-          name: 'rounded',
-        },
         router: {
           name: 'er',
           args: {
