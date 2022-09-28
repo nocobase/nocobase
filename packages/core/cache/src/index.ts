@@ -1,4 +1,5 @@
 import { Cache, CacheOptions, caching, StoreConfig } from 'cache-manager';
+import lodash from 'lodash';
 
 /**
  * be used for create cache {@link createCache}
@@ -6,6 +7,8 @@ import { Cache, CacheOptions, caching, StoreConfig } from 'cache-manager';
 export type ICacheConfig = StoreConfig &
   CacheOptions & {
     storePackage?: string;
+    // json string, be used init store
+    storeConfig?: object;
   };
 
 /**
@@ -31,6 +34,10 @@ export function createCache(cacheConfig: ICacheConfig = createDefaultCacheConfig
   // if storePackage exist then load storePackage and instead store
   if (!!cacheConfig.storePackage) {
     cacheConfig.store = require(cacheConfig.storePackage);
+  }
+
+  if (!!cacheConfig.storeConfig) {
+    cacheConfig = lodash.assign(cacheConfig, cacheConfig.storeConfig);
   }
   return caching(cacheConfig);
 }
