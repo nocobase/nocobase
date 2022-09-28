@@ -49,6 +49,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     }),
     {
       group: 'cors',
+      after: 'bodyParser',
     },
   );
 
@@ -59,12 +60,12 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     await next();
   });
 
-  app.use(i18n, { group: 'i18n' });
+  app.use(i18n, { group: 'i18n', after: 'cors' });
 
   if (options.dataWrapping !== false) {
-    app.use(dataWrapping(), { group: 'dataWrapping' });
+    app.use(dataWrapping(), { group: 'dataWrapping', after: 'i18n' });
   }
 
-  app.use(db2resource, { group: 'db2resource' });
-  app.use(app.resourcer.restApiMiddleware(), { group: 'restApi' });
+  app.use(db2resource, { group: 'db2resource', after: 'dataWrapping' });
+  app.use(app.resourcer.restApiMiddleware(), { group: 'restApi', after: 'db2resource' });
 }

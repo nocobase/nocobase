@@ -6,9 +6,7 @@
 2. `app.resourcer.use()` 添加资源级中间件，只有请求已定义的 resource 时才执行
 3. `app.use()` 添加应用级中间件，每次请求都执行
 
-## 特性
-
-### 洋葱圈模型
+## 洋葱圈模型
 
 ```ts
 app.use(async (ctx, next) => {
@@ -32,13 +30,39 @@ app.use(async (ctx, next) => {
 {"data": [1,3,4,2]}
 ```
 
-### 优先级
+## 内置中间件及执行顺序
 
-完整的链路从 acl 开始，再到 resourcer，最终执行 app 的
+1. `bodyParser`
+2. `cors`
+3. `i18n`
+4. `dataWrapping`
+5. `db2resource`
+6. `restApi`
+   1. `parseToken`
+   2. `checkRole`
+   3. `acl`
+      1. `acl.use()` 添加的其他中间件
+   4. `resourcer.use()` 添加的其他中间件
+   5. action handler
+7. `app.use()` 添加的其他中间件
 
-1. acl middleware
-2. resource middleware & action
-3. app middleware
+也可以使用 `before` 或 `after` 将中间件插入到前面的某个 `tag` 标记的位置，如：
+
+```ts
+app.use(m1, { tag: 'restApi' });
+app.resourcer.use(m2, { tag: 'parseToken' });
+app.resourcer.use(m3, { tag: 'checkRole' });
+// m4 将排在 m1 前面
+app.use(m4, { before: 'restApi' });
+// m5 会插入到 m2 和 m3 之间
+app.resourcer.use(m5, { after: 'parseToken', before: 'checkRole' });
+```
+
+如果未特殊指定位置，新增的中间件的执行顺序是：
+
+1. 优先执行 acl.use 添加的，
+2. 然后是 resourcer.use 添加的，包括 middleware handler 和 action handler，
+3. 最后是 app.use 添加的。
 
 ```ts
 app.use(async (ctx, next) => {
@@ -112,29 +136,6 @@ app.resourcer.use(async (ctx, next) => {
 ```
 
 以上示例，hello 资源未定义，不会进入 resourcer，所以就不会执行 resourcer 里的中间件
-
-## 内置中间件
-
-<img src="./m.svg" />
-
-### 应用级中间件
-
-通过 app.use() 添加
-
-- bodyParser
-- cors
-- i18n
-- dataWrapping
-- db2resource
-- restApi
-
-### 资源级中间件
-
-通过 app.resourcer.use() 添加
-
-- parseToken
-- checkRole
-- acl
 
 ## 中间件用途
 

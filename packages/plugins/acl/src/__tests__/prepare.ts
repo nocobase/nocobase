@@ -5,11 +5,10 @@ import PluginUsers from '@nocobase/plugin-users';
 import { mockServer } from '@nocobase/test';
 import PluginACL from '../server';
 
-
-
 export async function prepareApp() {
   const app = mockServer({
     registerActions: true,
+    acl: true,
   });
 
   await app.cleanDb();

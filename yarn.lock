@@ -3201,12 +3201,12 @@
 
 "@hapi/hoek@^10.0.0":
   version "10.0.1"
-  resolved "http://localhost:10104/@hapi%2fhoek/-/hoek-10.0.1.tgz#ee9da297fabc557e1c040a0f44ee89c266ccc306"
+  resolved "https://registry.npmjs.org/@hapi%2fhoek/-/hoek-10.0.1.tgz#ee9da297fabc557e1c040a0f44ee89c266ccc306"
   integrity sha512-CvlW7jmOhWzuqOqiJQ3rQVLMcREh0eel4IBnxDx2FAcK8g7qoJRQK4L1CPBASoCY6y8e6zuCy3f2g+HWdkzcMw==
 
 "@hapi/topo@^6.0.0":
   version "6.0.0"
-  resolved "http://localhost:10104/@hapi%2ftopo/-/topo-6.0.0.tgz#6548e23e0a3d3b117eb0671dba49f654c9224c21"
+  resolved "https://registry.npmjs.org/@hapi%2ftopo/-/topo-6.0.0.tgz#6548e23e0a3d3b117eb0671dba49f654c9224c21"
   integrity sha512-aorJvN1Q1n5xrZuA50Z4X6adI6VAM2NalIVm46ALL9LUvdoqhof3JPY69jdJH8asM3PsWr2SUVYzp57EqUP41A==
   dependencies:
     "@hapi/hoek" "^10.0.0"

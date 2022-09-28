@@ -1,4 +1,5 @@
 import { Context, Next } from '@nocobase/actions';
+import stream from 'stream';
 
 export function dataWrapping() {
   return async function dataWrapping(ctx: Context, next: Next) {
@@ -11,6 +12,10 @@ export function dataWrapping() {
     // if (!ctx?.action?.params) {
     //   return;
     // }
+
+    if (ctx.body instanceof stream.Readable) {
+      return;
+    }
 
     if (ctx.body instanceof Buffer) {
       return;
