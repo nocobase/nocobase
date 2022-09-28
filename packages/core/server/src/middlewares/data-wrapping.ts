@@ -7,10 +7,6 @@ export function dataWrapping() {
     if (ctx.withoutDataWrapping) {
       return;
     }
-
-    if (!ctx?.action?.params) {
-      return;
-    }
  
     if (ctx.body instanceof Buffer) {
       return;
@@ -20,6 +16,13 @@ export function dataWrapping() {
       if (ctx.action.actionName == 'get') {
         ctx.status = 200;
       }
+    }
+
+    if (Array.isArray(ctx.body)) {
+      ctx.body = {
+        data: ctx.body,
+      };
+      return;
     }
 
     const { rows, ...meta } = ctx.body || {};

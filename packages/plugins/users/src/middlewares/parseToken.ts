@@ -6,7 +6,7 @@ export async function parseToken(ctx: Context, next: Next) {
     ctx.state.currentUser = user;
   }
   return next();
-};
+}
 
 async function findUserByToken(ctx: Context) {
   const token = ctx.getBearerToken();

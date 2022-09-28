@@ -5,8 +5,8 @@ import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
+import { db2resource } from './middlewares/db2resource';
 import { i18n } from './middlewares/i18n';
-import { table2resource } from './middlewares/table2resource';
 
 export function createI18n(options: ApplicationOptions) {
   const instance = i18next.createInstance();
@@ -36,6 +36,9 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
       bodyParser({
         ...options.bodyParser,
       }),
+      {
+        group: 'bodyParser',
+      },
     );
   }
 
@@ -44,6 +47,9 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
       exposeHeaders: ['content-disposition'],
       ...options.cors,
     }),
+    {
+      group: 'cors',
+    },
   );
 
   app.use(async (ctx, next) => {
@@ -53,12 +59,12 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     await next();
   });
 
-  app.use(i18n);
+  app.use(i18n, { group: 'i18n' });
 
   if (options.dataWrapping !== false) {
-    app.use(dataWrapping());
+    app.use(dataWrapping(), { group: 'dataWrapping' });
   }
 
-  app.use(table2resource);
-  app.use(app.resourcer.restApiMiddleware());
+  app.use(db2resource, { group: 'db2resource' });
+  app.use(app.resourcer.restApiMiddleware(), { group: 'restApi' });
 }
