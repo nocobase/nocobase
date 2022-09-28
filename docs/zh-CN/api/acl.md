@@ -5,7 +5,7 @@ ACL 为 Nocobase 中的权限控制模块。在 ACL 中注册角色、资源以�
 ## 概念解释
 
 * 角色 (`ACLRole`)：权限判断的对象
-* 资源 (Resource)：在 Nocobase ACL 中，资源通常对应一个数据库表，概念上可类比为 Restful API 中的 Resource。
+* 资源 (`ACLResource`)：在 Nocobase ACL 中，资源通常对应一个数据库表，概念上可类比为 Restful API 中的 Resource。
 * Action：对资源的操作，如 `create`、`read`、`update`、`delete` 等。
 * 授权：在 `AclRole` 实例中调用 `grantAction` 函数，为角色授予 `Action` 的访问权限。
 * 鉴权：在 `ACL` 实例中调用 `can` 函数，函数返回结果既为用户的鉴权结果。
@@ -85,3 +85,26 @@ role.grantAction('posts:edit', {});
 * params - 鉴权结果参数
 
 ## ACLRole
+
+ACLRole，ACL 系统中的用户角色类。在 ACL 系统中，通常使用 `acl.define` 定义角色。
+
+### `constructor(public acl: ACL, public name: string)`
+
+* acl - ACL 实例
+* name - 角色名称 
+
+### `grantAction(path: string, options?: RoleActionParams)`
+
+为角色授予 Action 权限
+
+* path - 资源Action路径，如 `posts:edit`，表示 `posts` 资源的 `edit` Action, 资源名称和 Action 之间使用 `:` 冒号分隔。
+* options?: RoleActionParams - 配置参数
+  * fields - 可访问的字段
+  * filter - 可访问的过滤条件
+  * own - 是否只能访问自己的数据
+  * whitelist - 白名单，只有在白名单中的字段才能被访问
+  * blacklist - 黑名单，黑名单中的字段不能被访问
+
+
+### ACLResource
+
