@@ -289,9 +289,6 @@ export class Action {
     const handers = [...this.resource.resourcer.getMiddlewares(), ...this.getMiddlewareHandlers(), this.getHandler()].filter(
       Boolean,
     );
-
-    console.log(handers);
-
     return handers;
   }
 

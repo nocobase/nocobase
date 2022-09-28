@@ -319,7 +319,7 @@ export class PluginACL extends Plugin {
       });
     });
 
-    this.app.resourcer.use(setCurrentRole, { group: 'setCurrentRole', after: 'parseToken' });
+    this.app.resourcer.use(setCurrentRole, { group: 'setCurrentRole', before: 'acl', after: 'parseToken' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
 

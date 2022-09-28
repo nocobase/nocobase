@@ -7,13 +7,17 @@ export function dataWrapping() {
     if (ctx.withoutDataWrapping) {
       return;
     }
- 
+
+    // if (!ctx?.action?.params) {
+    //   return;
+    // }
+
     if (ctx.body instanceof Buffer) {
       return;
     }
- 
+
     if (!ctx.body) {
-      if (ctx.action.actionName == 'get') {
+      if (ctx.action?.actionName == 'get') {
         ctx.status = 200;
       }
     }
@@ -25,17 +29,19 @@ export function dataWrapping() {
       return;
     }
 
-    const { rows, ...meta } = ctx.body || {};
- 
-    if (rows) {
-      ctx.body = {
-        data: rows,
-        meta,
-      };
-    } else {
-      ctx.body = {
-        data: ctx.body,
-      };
+    if (ctx.body) {
+      const { rows, ...meta } = ctx.body;
+
+      if (rows) {
+        ctx.body = {
+          data: rows,
+          meta,
+        };
+      } else {
+        ctx.body = {
+          data: ctx.body,
+        };
+      }
     }
   };
 }

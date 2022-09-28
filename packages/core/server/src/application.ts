@@ -33,6 +33,7 @@ export interface ApplicationOptions {
   registerActions?: boolean;
   i18n?: i18n | InitOptions;
   plugins?: PluginConfiguration[];
+  acl?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -210,7 +211,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._appManager = new AppManager(this);
 
-    this._resourcer.use(this._acl.middleware(), { group: 'acl', after: ['parseToken'] });
+    if (this.options.acl !== false) {
+      this._resourcer.use(this._acl.middleware(), { group: 'acl', after: ['parseToken'] });
+    }
 
     registerMiddlewares(this, options);
 
