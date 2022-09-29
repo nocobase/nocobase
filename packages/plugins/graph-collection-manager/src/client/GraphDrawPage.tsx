@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useRef, useEffect, useContext, createContext } 
 import { Graph, Cell } from '@antv/x6';
 import dagre from 'dagre';
 import { Spin } from 'antd';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined ,TableOutlined} from '@ant-design/icons';
 import { useRequest } from '@nocobase/client';
 import '@antv/x6-react-shape';
 import { headClass, tableNameClass, tableBtnClass } from './style';
@@ -51,6 +51,7 @@ class AlgoNode extends React.Component<{ node?: Node }> {
       <div className={headClass}>
         <span className={tableNameClass}>{label}</span>
         <div className={tableBtnClass}>
+         <TableOutlined />
           <DeleteOutlined
             onClick={() => {
               console.log('table delete');
@@ -246,7 +247,8 @@ export const Editor = () => {
       },
       interacting:{
         magnetConnectable: false 
-      }
+      },
+ 
     });
     graph.current = myGraph;
   }, []);
@@ -258,3 +260,4 @@ export const Editor = () => {
 
   return <div id="container" style={{ width: '100%' }}></div>;
 };
+
