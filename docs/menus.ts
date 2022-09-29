@@ -72,15 +72,15 @@ export default {
       ],
     },
     {
+      title: 'HTTP API',
+      type: 'group',
+      children: ['/development/http-api/index', '/development/http-api/rest-api'],
+    },
+    {
       title: 'Test & Build',
       'title.zh-CN': '测试与构建',
       type: 'group',
       children: ['/development/pre-release/test', '/development/pre-release/build'],
-    },
-    {
-      title: 'HTTP API',
-      type: 'group',
-      children: ['/api/http-api/index', '/api/http-api/rest-api'],
     },
   ],
   // {
