@@ -92,7 +92,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    this.app.resourcer.use(parseToken, { group: 'parseToken' });
+    this.app.resourcer.use(parseToken, { tag: 'parseToken' });
 
     const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
     const loggedInActions = ['signout', 'updateProfile', 'changePassword'];

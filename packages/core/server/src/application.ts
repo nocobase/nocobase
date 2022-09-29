@@ -212,7 +212,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._appManager = new AppManager(this);
 
     if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { group: 'acl', after: ['parseToken'] });
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
     }
 
     registerMiddlewares(this, options);

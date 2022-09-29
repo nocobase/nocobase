@@ -31,27 +31,27 @@ export function createResourcer(options: ApplicationOptions) {
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
-  if (options.bodyParser !== false) {
-    app.use(
-      bodyParser({
-        ...options.bodyParser,
-      }),
-      {
-        group: 'bodyParser',
-      },
-    );
-  }
-
   app.use(
     cors({
       exposeHeaders: ['content-disposition'],
       ...options.cors,
     }),
     {
-      group: 'cors',
+      tag: 'cors',
       after: 'bodyParser',
     },
   );
+
+  if (options.bodyParser !== false) {
+    app.use(
+      bodyParser({
+        ...options.bodyParser,
+      }),
+      {
+        tag: 'bodyParser',
+      },
+    );
+  }
 
   app.use(async (ctx, next) => {
     ctx.getBearerToken = () => {
@@ -60,12 +60,12 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     await next();
   });
 
-  app.use(i18n, { group: 'i18n', after: 'cors' });
+  app.use(i18n, { tag: 'i18n', after: 'cors' });
 
   if (options.dataWrapping !== false) {
-    app.use(dataWrapping(), { group: 'dataWrapping', after: 'i18n' });
+    app.use(dataWrapping(), { tag: 'dataWrapping', after: 'i18n' });
   }
 
-  app.use(db2resource, { group: 'db2resource', after: 'dataWrapping' });
-  app.use(app.resourcer.restApiMiddleware(), { group: 'restApi', after: 'db2resource' });
+  app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
+  app.use(app.resourcer.restApiMiddleware(), { tag: 'restApi', after: 'db2resource' });
 }

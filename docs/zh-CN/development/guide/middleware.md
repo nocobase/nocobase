@@ -32,8 +32,8 @@ app.use(async (ctx, next) => {
 
 ## 内置中间件及执行顺序
 
-1. `bodyParser`
-2. `cors`
+1. `cors`
+2. `bodyParser`
 3. `i18n`
 4. `dataWrapping`
 5. `db2resource`
