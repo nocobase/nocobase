@@ -127,23 +127,42 @@ role.grantAction('posts:edit', {});
 
 判断传入的资源名称是否为配置资源
 
+### `setAvailableAction(name: string, options: AvailableActionOptions = {})`
+
+设置 ACL 中有效的 Action 名称。
+
+**参数**
+
+* name - action 名称
+* options - action 选项
+  * displayName - action 显示名称
+  * aliases - action 别名
+  * resource - action 所属资源名称
+  * onNewRecord - action 是否是在创建新的数据库记录
+  * allowConfigureFields - action 是否允许配置字段
+
+
+### `getAvailableAction(name: string)`
+
+获取 ACL 中有效的 Action。
+
 ### `setAvailableStrategy(name: string, options: AvailableStrategyOptions)`
 
 设置可用的权限策略，详见 [`AvailableStrategyOptions`](#AvailableStrategyOptions)
 
-### `allow(resourceName: string, actionNames: string[] | string, condition?: any)`
+### `allow(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc)`
 
 在不指定角色的情况下，开放资源的访问权限。
 举例来说，例如登录操作，可以被公开访问：
 
 ```typescript
-// users:login 可以被公开访问
+// 注册 users:login 可以被公开访问
 acl.allow('users', 'login');
 ```
 
 **参数**
 * resourceName - 资源名称
-* action - 资源动作名
+* actionNames - 资源动作名
 * condition? - 配置生效条件
   * 传入 `string`，表示使用已定义的条件，注册条件使用 `acl.allowManager.registerCondition` 方法。
     ```typescript
@@ -154,7 +173,7 @@ acl.allow('users', 'login');
     // 开放 users:list 的权限，条件为 superUser
     acl.allow('users', 'list', 'superUser');
     ```
-  * 传入 function，可接收 `ctx` 参数，返回 `boolean`，表示是否生效。
+  * 传入 ConditionFunc，可接收 `ctx` 参数，返回 `boolean`，表示是否生效。
     ```typescript
     // 当用户ID为1时，可以访问 user:list 
     acl.allow('users', 'list', (ctx) => {

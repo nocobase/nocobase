@@ -6,7 +6,7 @@ import lodash from 'lodash';
 import { ACLAvailableAction, AvailableActionOptions } from './acl-available-action';
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
-import { AllowManager } from './allow-manager';
+import { AllowManager, ConditionFunc } from './allow-manager';
 
 interface CanResult {
   role: string;
@@ -217,7 +217,7 @@ export class ACL extends EventEmitter {
     this.middlewares.push(fn);
   }
 
-  allow(resourceName: string, actionNames: string[] | string, condition?: any) {
+  allow(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
     if (!Array.isArray(actionNames)) {
       actionNames = [actionNames];
     }

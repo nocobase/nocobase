@@ -10,6 +10,3 @@ ACL 为 Nocobase 中的权限控制模块。在 ACL 中注册角色、资源以�
 * 策略 (`ACLAvailableStrategy`): 通常每个角色都有自己的权限策略，策略中定义了默认情况下的用户权限。
 * 授权：在 `ACLRole` 实例中调用 `grantAction` 函数，为角色授予 `Action` 的访问权限。
 * 鉴权：在 `ACL` 实例中调用 `can` 函数，函数返回结果既为用户的鉴权结果。
-
-
-

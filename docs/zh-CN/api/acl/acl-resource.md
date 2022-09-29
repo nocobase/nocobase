@@ -4,14 +4,7 @@ ACLResource，ACL 系统中的资源类。在 ACL 系统中，为用户授予权
 
 ## 基础数据结构
 
-### `RoleActionParams`
-RoleActionParams 为授权时，对应 action 的可配置参数，用以实现更细粒度的权限控制。
 
-* fields - 可访问的字段
-* filter - 可访问的过滤条件
-* own - 是否只能访问自己的数据
-* whitelist - 白名单，只有在白名单中的字段才能被访问
-* blacklist - 黑名单，黑名单中的字段不能被访问
 
 ### `ResourceActions`
 
