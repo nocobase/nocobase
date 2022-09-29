@@ -136,6 +136,7 @@ export function mockServer(options: ApplicationOptions = {}) {
   }
 
   return new MockServer({
+    acl: false,
     ...options,
     database,
   });

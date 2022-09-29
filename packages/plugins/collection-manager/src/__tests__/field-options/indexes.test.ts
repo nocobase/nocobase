@@ -21,7 +21,7 @@ describe('field indexes', () => {
     await app.destroy();
   });
 
-  it('create unique constraint after added dulplicated records', async () => {
+  it.only('create unique constraint after added dulplicated records', async () => {
     const tableName = 'test1';
     // create an field with unique constraint
     const field = await agent
