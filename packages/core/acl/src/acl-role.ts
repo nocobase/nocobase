@@ -25,25 +25,8 @@ export class ACLRole {
     return this.resources.get(name);
   }
 
-  setResource(name: string, resource: ACLResource) {
-    this.resources.set(name, resource);
-  }
-
   public setStrategy(value: string | AvailableStrategyOptions) {
     this.strategy = value;
-  }
-
-  public grantResource(resourceName: string, options: ResourceActionsOptions) {
-    const resource = new ACLResource({
-      role: this,
-      name: resourceName,
-    });
-
-    for (const [actionName, actionParams] of Object.entries(options)) {
-      resource.setAction(actionName, actionParams);
-    }
-
-    this.resources.set(resourceName, resource);
   }
 
   public getResourceActionsParams(resourceName: string) {

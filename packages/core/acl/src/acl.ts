@@ -3,7 +3,7 @@ import EventEmitter from 'events';
 import parse from 'json-templates';
 import compose from 'koa-compose';
 import lodash from 'lodash';
-import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
+import { ACLAvailableAction, AvailableActionOptions } from './acl-available-action';
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager } from './allow-manager';
@@ -41,7 +41,7 @@ interface CanArgs {
 }
 
 export class ACL extends EventEmitter {
-  protected availableActions = new Map<string, AclAvailableAction>();
+  protected availableActions = new Map<string, ACLAvailableAction>();
   protected availableStrategy = new Map<string, ACLAvailableStrategy>();
   protected middlewares = [];
 
@@ -126,7 +126,7 @@ export class ACL extends EventEmitter {
   }
 
   setAvailableAction(name: string, options: AvailableActionOptions = {}) {
-    this.availableActions.set(name, new AclAvailableAction(name, options));
+    this.availableActions.set(name, new ACLAvailableAction(name, options));
 
     if (options.aliases) {
       const aliases = lodash.isArray(options.aliases) ? options.aliases : [options.aliases];

@@ -1,4 +1,4 @@
-# ACLRole
+# ACL Role
 
 ACLRole，ACL 系统中的用户角色类。在 ACL 系统中，通常使用 `acl.define` 定义角色。
 
