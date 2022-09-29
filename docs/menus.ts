@@ -185,8 +185,8 @@ export default {
       ],
     },
     {
-      title: '@nocobase/acl',
-      path: '/api/acl',
+      title: '@nocobase/actions',
+      path: '/api/actions',
     },
     {
       title: '@nocobase/client',
@@ -219,12 +219,12 @@ export default {
       ],
     },
     {
-      title: '@nocobase/cli',
-      path: '/api/cli',
+      title: '@nocobase/acl',
+      path: '/api/acl',
     },
     {
-      title: '@nocobase/actions',
-      path: '/api/actions',
+      title: '@nocobase/cli',
+      path: '/api/cli',
     },
     {
       title: '@nocobase/sdk',
