@@ -1,16 +1,16 @@
 import path from 'path';
 
-import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
+import { Context } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 import { HandlerType } from '@nocobase/resourcer';
-import { Context } from '@nocobase/actions';
+import { Plugin } from '@nocobase/server';
+import { Registry } from '@nocobase/utils';
 
-import initProviders, { Provider } from './providers';
+import { namespace } from '.';
 import initActions from './actions';
 import { CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
-import { namespace } from '.';
 import { zhCN } from './locale';
+import initProviders, { Provider } from './providers';
 
 export interface Interceptor {
   manual?: boolean;

@@ -7,6 +7,7 @@ curl http://localhost:13000/api/test:list
 curl http://localhost:13000/sub1/api/test:list
 */
 import { Application } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 import { IncomingMessage } from 'http';
 
 const app = new Application({
@@ -20,16 +21,18 @@ const app = new Application({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT as any,
     timezone: process.env.DB_TIMEZONE,
-    tablePrefix: process.env.DB_TABLE_PREFIX,
+    tablePrefix: `t_${uid()}_`,
   },
   resourcer: {
     prefix: '/api',
   },
+  acl: false,
   plugins: [],
 });
 
 const subApp1 = app.appManager.createApplication('sub1', {
   database: app.db,
+  acl: false,
   resourcer: {
     prefix: '/sub1/api/',
   },

@@ -1,7 +1,7 @@
-import { getNameByParams, parseRequest, ResourcerContext, ResourceType } from '@nocobase/resourcer';
 import Database from '@nocobase/database';
+import { getNameByParams, parseRequest, ResourcerContext, ResourceType } from '@nocobase/resourcer';
 
-export function table2resource(ctx: ResourcerContext & { db: Database }, next: () => Promise<any>) {
+export function db2resource(ctx: ResourcerContext & { db: Database }, next: () => Promise<any>) {
   const resourcer = ctx.resourcer;
   const database = ctx.db;
   let params = parseRequest(
@@ -40,4 +40,4 @@ export function table2resource(ctx: ResourcerContext & { db: Database }, next: (
   return next();
 }
 
-export default table2resource;
+export default db2resource;

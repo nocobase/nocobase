@@ -8,6 +8,7 @@ describe('collections repository', () => {
       database: {
         tablePrefix: 'through_',
       },
+      acl: false,
     });
     await app1.cleanDb();
     app1.plugin(PluginErrorHandler);

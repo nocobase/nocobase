@@ -25,7 +25,6 @@ export class ErrorHandler {
 
   middleware() {
     const self = this;
-
     return async function errorHandler(ctx, next) {
       try {
         await next();

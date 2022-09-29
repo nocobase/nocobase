@@ -1,11 +1,13 @@
-import { MockServer, mockServer } from '@nocobase/test';
-import { PluginErrorHandler } from '../server';
 import { Database } from '@nocobase/database';
+import { MockServer, mockServer } from '@nocobase/test';
 import supertest from 'supertest';
+import { PluginErrorHandler } from '../server';
 describe('create with exception', () => {
   let app: MockServer;
   beforeEach(async () => {
-    app = mockServer();
+    app = mockServer({
+      acl: false,
+    });
     await app.cleanDb();
     app.plugin(PluginErrorHandler);
   });
@@ -14,7 +16,7 @@ describe('create with exception', () => {
     await app.destroy();
   });
 
-  it('should handle not null error', async () => {
+  it.only('should handle not null error', async () => {
     app.collection({
       name: 'users',
       fields: [

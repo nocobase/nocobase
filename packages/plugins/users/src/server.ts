@@ -1,17 +1,17 @@
-import { resolve } from 'path';
 import parse from 'json-templates';
+import { resolve } from 'path';
 
 import { Collection, Op } from '@nocobase/database';
+import { HandlerType, Middleware } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
-import { HandlerType, Middleware } from '@nocobase/resourcer';
 
 import { namespace } from './';
 import * as actions from './actions/users';
+import initAuthenticators from './authenticators';
 import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
 import { parseToken } from './middlewares';
-import initAuthenticators from './authenticators';
 
 export interface UserPluginConfig {
   jwt: JwtOptions;
@@ -92,7 +92,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    this.app.resourcer.use(this.tokenMiddleware.getHandler());
+    this.app.resourcer.use(parseToken, { tag: 'parseToken' });
 
     const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
     const loggedInActions = ['signout', 'updateProfile', 'changePassword'];
@@ -141,7 +141,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           }
 
           return true;
-        }
+        },
       });
 
       verificationPlugin.interceptors.register('users:signup', {
@@ -165,26 +165,28 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           }
 
           return true;
-        }
+        },
       });
 
-      this.authenticators.register('sms', (ctx, next) => verificationPlugin.intercept(ctx, async () => {
-        const { values } = ctx.action.params;
+      this.authenticators.register('sms', (ctx, next) =>
+        verificationPlugin.intercept(ctx, async () => {
+          const { values } = ctx.action.params;
 
-        const User = ctx.db.getCollection('users');
-        const user = await User.model.findOne({
-          where: {
-            phone: values.phone,
-          },
-        });
-        if (!user) {
-          return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
-        }
+          const User = ctx.db.getCollection('users');
+          const user = await User.model.findOne({
+            where: {
+              phone: values.phone,
+            },
+          });
+          if (!user) {
+            return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
+          }
 
-        ctx.state.currentUser = user;
+          ctx.state.currentUser = user;
 
-        return next();
-      }));
+          return next();
+        }),
+      );
     }
   }
 
@@ -209,7 +211,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       values: {
         email: rootEmail,
         password: rootPassword,
-        nickname: rootNickname
+        nickname: rootNickname,
       },
     });
 

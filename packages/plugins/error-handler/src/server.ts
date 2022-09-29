@@ -52,7 +52,6 @@ export class PluginErrorHandler extends Plugin {
   async load() {
     this.app.i18n.addResources('zh-CN', this.i18nNs, zhCN);
     this.app.i18n.addResources('en-US', this.i18nNs, enUS);
-
-    this.app.middleware.unshift(this.errorHandler.middleware());
+    this.app.middleware.nodes.unshift(this.errorHandler.middleware());
   }
 }
