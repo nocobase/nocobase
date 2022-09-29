@@ -5,7 +5,7 @@ import compose from 'koa-compose';
 import lodash from 'lodash';
 import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
-import { ACLRole, RoleActionParams } from './acl-role';
+import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager } from './allow-manager';
 
 interface CanResult {
@@ -18,10 +18,8 @@ interface CanResult {
 export interface DefineOptions {
   role: string;
   allowConfigure?: boolean;
-  strategy?: string | Omit<AvailableStrategyOptions, 'acl'>;
-  actions?: {
-    [key: string]: RoleActionParams;
-  };
+  strategy?: string | AvailableStrategyOptions;
+  actions?: ResourceActionsOptions;
   routes?: any;
 }
 
@@ -147,7 +145,7 @@ export class ACL extends EventEmitter {
     return this.availableActions;
   }
 
-  setAvailableStrategy(name: string, options: Omit<AvailableStrategyOptions, 'acl'>) {
+  setAvailableStrategy(name: string, options: AvailableStrategyOptions) {
     this.availableStrategy.set(name, new ACLAvailableStrategy(this, options));
   }
 

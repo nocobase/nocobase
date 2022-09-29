@@ -11,7 +11,7 @@ export interface RoleActionParams {
   [key: string]: any;
 }
 
-interface ResourceActionsOptions {
+export interface ResourceActionsOptions {
   [actionName: string]: RoleActionParams;
 }
 
@@ -51,7 +51,7 @@ export class ACLRole {
     return resource.getActions();
   }
 
-  public revokeResource(resourceName) {
+  public revokeResource(resourceName: string) {
     for (const key of [...this.resources.keys()]) {
       if (key === resourceName || key.includes(`${resourceName}.`)) {
         this.resources.delete(key);
