@@ -482,7 +482,7 @@ describe('acl', () => {
     expect(menuResponse.statusCode).toEqual(200);
   });
 
-  it.only('should toggle role menus', async () => {
+  it('should toggle role menus', async () => {
     const role = await db.getRepository('roles').create({
       values: {
         name: 'new',
