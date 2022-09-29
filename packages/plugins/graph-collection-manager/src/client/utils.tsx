@@ -33,16 +33,12 @@ export const formatData = (data) => {
       label: item.name,
       width: 170,
       height: 24,
-      position: {
-        x: 24 + 200 * index + 40 * (index + 1),
-        y: 170 + 50 * index,
-      },
       ports,
     };
   });
   const edges = formatEdgeData(edgeData, targetTablekeys, tableData);
   console.log([...tableData, ...edges]);
-  return [...tableData, ...edges];
+  return {nodes:tableData, edges};
 };
 
 const formatEdgeData = (data, targetTables, tableData) => {
@@ -66,7 +62,6 @@ const formatEdgeData = (data, targetTables, tableData) => {
           cell: targetTable.id,
           port: targetTable.ports.find((v) => v.attrs.portNameLabel.text === data[i].targetKey).id,
         },
-        // labels: 'true',
         attrs: {
           line: {
             stroke: '#A2B1C3',
@@ -78,7 +73,6 @@ const formatEdgeData = (data, targetTables, tableData) => {
         connector: 'rounded',
         zIndex: 0,
         labels: [
-            // label1
             {
               markup: [
                 {
@@ -99,12 +93,8 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 },
                 labelBody: {
                   ref: 'labelText',
-                //   refX: -8,
-                //   refY: -5,
                   refWidth: '100%',
                   refHeight: '100%',
-                //   refWidth2: 16,
-                //   refHeight2: 10,
                   stroke: '#ffa940',
                   fill: '#fff',
                   strokeWidth: 1,
@@ -120,7 +110,6 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 },
               },
             },
-            // label 2
             {
               markup: [
                 {

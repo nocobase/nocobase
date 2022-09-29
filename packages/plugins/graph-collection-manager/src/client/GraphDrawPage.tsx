@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef, useEffect, useContext, createContext } from 'react';
 import { Graph, Cell } from '@antv/x6';
-import ReactDOM from 'react-dom'
+import dagre from 'dagre';
 import { Spin } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useRequest } from '@nocobase/client';
@@ -67,41 +67,80 @@ class AlgoNode extends React.Component<{ node?: Node }> {
   }
 }
 
-class FieldNode extends React.Component<{ node?: Node }> {
-  render() {
-    const { node } = this.props;
-    const {
-      store: {
-        data: { label },
-      },
-    } = node;
-    console.log(node);
-    return (
-      <div>
-        <span>{label}</span>
-      </div>
-    );
-  }
+let dir = 'LR'; // LR RL TB BT 竖排
+
+//计算布局
+function layout(graph) {
+  const nodes = graph.getNodes();
+  const edges = graph.getEdges();
+  const g :any= new dagre.graphlib.Graph();
+  g.setGraph({ rankdir: dir, nodesep: 100, ranksep: 100 });
+  g.setDefaultEdgeLabel(() => ({}));
+  let width = 0;
+  let height = 0;
+  nodes.forEach((node, i) => {
+    if (node.id !== 'parent') {
+      width = 150;
+      height = 200;
+      g.setNode(node.id, { width, height });
+    }
+  });
+
+  edges.forEach((edge) => {
+    const source = edge.getSource();
+    const target = edge.getTarget();
+    g.setEdge(source.cell, target.cell);
+  });
+  dagre.layout(g);
+
+  graph.freeze();
+
+  g.nodes().forEach((id) => {
+    const node = graph.getCell(id);
+    if (node) {
+      const pos:any = g.node(id);
+      node.position(pos.x, pos.y);
+    }
+  });
+  graph.unfreeze();
+  graph.centerContent();
 }
 
+function getNodes(nodes, graph) {
+  nodes.forEach((item) => {
+    if (item.shape !== 'edge') {
+      graph.addNode(item);
+    }
+  });
+}
 
+function getEdges(edges, graph) {
+  edges.forEach((item) => {
+    if (item.shape == 'edge') {
+      if (item.source && item.target) {
+        graph.addEdge({
+          ...item,
+          connector: {
+            name: 'rounded',
+            zIndex: 10000,
+          },
+        });
+      }
+    }
+  });
+}
 
 export const Editor = () => {
   const graph = useRef(null);
   graph.current = null;
   const rawData = useContext(GraphDrawerContext);
   const getCollectionData = () => {
-    const collectionData: any[] = formatData(rawData);
+    const { nodes, edges } = formatData(rawData);
     const cells: Cell[] = [];
-    collectionData.forEach((item: any) => {
-      if (item.shape === 'edge') {
-        cells.push(graph.current.createEdge(item));
-      } else {
-        cells.push(graph.current.createNode(item));
-      }
-    });
     graph.current.resetCells(cells);
-    graph.current.zoomToFit({ padding: 10, maxScale: 1 });
+    getNodes(nodes, graph.current);
+    getEdges(edges, graph.current);
+    layout(graph.current);
   };
 
   useLayoutEffect(() => {
@@ -172,18 +211,17 @@ export const Editor = () => {
       },
       true,
     );
-   
+
     const myGraph = new Graph({
       container: document.getElementById('container')!,
       panning: true,
+      height:800,
       scroller: {
         enabled: !0,
         pageVisible: !1,
         pageBreak: !1,
-        pannable: !0,
       },
       autoResize: true,
-      selecting: false,
       connecting: {
         router: {
           name: 'er',
@@ -193,18 +231,23 @@ export const Editor = () => {
           },
         },
       },
+      mousewheel: {
+        enabled: true,
+        modifiers: ['ctrl', 'meta'],
+      },
       snapline: {
         enabled: !0,
       },
       keyboard: {
-        enabled: !0,
+        enabled: false,
       },
       clipboard: {
-        enabled: !0,
+        enabled: false,
       },
+      interacting:{
+        magnetConnectable: false 
+      }
     });
-    myGraph.centerContent();
-    myGraph.disableSelection();
     graph.current = myGraph;
   }, []);
 
@@ -213,5 +256,5 @@ export const Editor = () => {
     graph.current && getCollectionData();
   }, [graph.current]);
 
-  return <div id="container" style={{ width: '100%', height: '800px' }}></div>;
+  return <div id="container" style={{ width: '100%' }}></div>;
 };
