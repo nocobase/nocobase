@@ -101,8 +101,40 @@ role.grantAction('posts:edit', {});
 * role - 角色名称
 * resource - 资源名称
 * action - 操作名称
-* params - 鉴权结果参数
+* params - 注册权限时传入的参数
 
+```typescript
+acl.define({
+  role: 'admin',
+  actions: {
+    'posts:edit': {
+      fields: ['title', 'content'],
+    },
+  },
+});
+
+const canResult = acl.can({
+  role: 'admin',
+  resource: 'posts',
+  action: 'edit',
+});
+/**
+ * canResult = {
+ *   role: 'admin',
+ *   resource: 'posts',
+ *   action: 'edit',
+ *   params: {
+ *     fields: ['title', 'content'],
+ *   }
+ * }
+ */
+
+acl.can({
+  role: 'admin',
+  resource: 'posts',
+  action: 'destroy',
+}); // null
+```
 ### `use(fn: any)`
 
 向 middlewares 中添加中间件函数。
