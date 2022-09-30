@@ -1,5 +1,10 @@
 import { TableOutlined } from '@ant-design/icons';
-import { SchemaComponentOptions, SchemaInitializer, SchemaInitializerContext } from '@nocobase/client';
+import {
+  SchemaComponentOptions,
+  SchemaInitializer,
+  SchemaInitializerContext, SettingsCenterProvider
+} from '@nocobase/client';
+import { Card } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HelloDesigner } from './HelloDesigner';
@@ -40,8 +45,23 @@ export default React.memo((props) => {
     component: 'HelloBlockInitializer',
   });
   return (
-    <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
-      <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
-    </SchemaComponentOptions>
+    <SettingsCenterProvider
+      settings={{
+        'sample-hello': {
+          title: 'Hello',
+          icon: 'ApiOutlined',
+          tabs: {
+            tab1: {
+              title: 'Hello tab',
+              component: () => <Card bordered={false}>Hello Settings</Card>,
+            },
+          },
+        },
+      }}
+    >
+      <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
+        <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
+      </SchemaComponentOptions>
+    </SettingsCenterProvider>
   );
 });
