@@ -9,7 +9,7 @@ export class AllowManager {
 
   constructor(public acl: ACL) {
     this.registerAllowCondition('loggedIn', (ctx) => {
-      return ctx.state.currentUser;
+      return ctx.state.currentUserId;
     });
 
     this.registerAllowCondition('allowConfigure', async (ctx) => {

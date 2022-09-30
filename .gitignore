@@ -17,4 +17,4 @@ docs-dist/
 .npmrc
 dist/
 docker/**/storage
-./cache/
+cache/diskstore-*

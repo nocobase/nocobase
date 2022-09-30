@@ -30,9 +30,10 @@ describe('role', () => {
   });
 
   it('should set role with X-Role when exists', async () => {
-    ctx.state.currentUser = await db.getRepository('users').findOne({
+    const currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
     });
+    ctx.state.currentUserId = currentUser.get('id')
     ctx.get = function(name) {
       if (name === 'X-Role') {
         return 'admin';
@@ -43,9 +44,10 @@ describe('role', () => {
   });
 
   it('should set role with default', async () => {
-    ctx.state.currentUser = await db.getRepository('users').findOne({
+    const currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
     });
+    ctx.state.currentUserId = currentUser.get('id')
     ctx.get = function (name) {
       if (name === 'X-Role') {
         return '';
@@ -56,9 +58,10 @@ describe('role', () => {
   });
 
   it('should set role with default when x-role does not exist', async () => {
-    ctx.state.currentUser = await db.getRepository('users').findOne({
+    const currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
     });
+    ctx.state.currentUserId = currentUser.get('id')
     ctx.get = function (name) {
       if (name === 'X-Role') {
         return 'abc';
@@ -69,9 +72,10 @@ describe('role', () => {
   });
 
   it('should set role with anonymous', async () => {
-    ctx.state.currentUser = await db.getRepository('users').findOne({
+    const currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
     });
+    ctx.state.currentUserId = currentUser.get('id')
     ctx.get = function (name) {
       if (name === 'X-Role') {
         return 'anonymous';

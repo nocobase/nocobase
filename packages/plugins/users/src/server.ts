@@ -42,7 +42,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     this.db.registerOperators({
       $isCurrentUser(_, ctx) {
         return {
-          [Op.eq]: ctx?.app?.ctx?.state?.currentUser?.id || -1,
+          [Op.eq]: ctx?.app?.ctx?.state?.currentUserId || -1,
         };
       },
       $isVar(val, ctx) {
@@ -59,7 +59,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         collection.setField('createdById', {
           type: 'context',
           dataType: 'integer',
-          dataIndex: 'state.currentUser.id',
+          dataIndex: 'state.currentUserId',
           createOnly: true,
           visible: true,
           index: true,
@@ -75,7 +75,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         collection.setField('updatedById', {
           type: 'context',
           dataType: 'integer',
-          dataIndex: 'state.currentUser.id',
+          dataIndex: 'state.currentUserId',
           visible: true,
           index: true,
         });
@@ -141,7 +141,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           }
 
           return true;
-        }
+        },
       });
 
       verificationPlugin.interceptors.register('users:signup', {
@@ -165,26 +165,29 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           }
 
           return true;
-        }
+        },
       });
 
-      this.authenticators.register('sms', (ctx, next) => verificationPlugin.intercept(ctx, async () => {
-        const { values } = ctx.action.params;
+      this.authenticators.register('sms', (ctx, next) =>
+        verificationPlugin.intercept(ctx, async () => {
+          const { values } = ctx.action.params;
 
-        const User = ctx.db.getCollection('users');
-        const user = await User.model.findOne({
-          where: {
-            phone: values.phone,
-          },
-        });
-        if (!user) {
-          return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
-        }
+          const User = ctx.db.getCollection('users');
+          const user = await User.model.findOne({
+            where: {
+              phone: values.phone,
+            },
+          });
+          if (!user) {
+            return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
+          }
 
-        ctx.state.currentUser = user;
+          ctx.state.currentUser = user;
+          ctx.state.currentUserId = user.get('id');
 
-        return next();
-      }));
+          return next();
+        }),
+      );
     }
   }
 
@@ -209,7 +212,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       values: {
         email: rootEmail,
         password: rootPassword,
-        nickname: rootNickname
+        nickname: rootNickname,
       },
     });
 

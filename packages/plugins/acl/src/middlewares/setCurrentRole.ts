@@ -6,26 +6,20 @@ export async function setCurrentRole(ctx, next) {
     return next();
   }
 
-  if (!ctx.state.currentUser) {
+  if (!ctx.state.currentUserId) {
     return next();
   }
 
-  const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id);
-  const roles = await repository.find();
-  ctx.state.currentUser.setDataValue('roles', roles);
-
-  if (roles.length == 1) {
-    currentRole = roles[0].name;
-  } else if (roles.length > 1) {
-    const role = roles.find((item) => item.name === currentRole);
-    if (!role) {
-      const defaultRole = roles.find((item) => item?.rolesUsers?.default);
-      currentRole = (defaultRole || roles[0])?.name;
+  const roleNames = ctx.state.roleNames;
+  if (Array.isArray(roleNames) && roleNames.length > 0) {
+    if (roleNames.indexOf(currentRole) > -1) {
+      ctx.state.currentRole = currentRole;
+    } else {
+      ctx.state.currentRole = roleNames[0];
     }
-  }
-
-  if (currentRole) {
-    ctx.state.currentRole = currentRole;
+  } else {
+    // if currentRole is not in system role names, force set currentRole = anonymous
+    ctx.state.currentRole = 'anonymous';
   }
 
   await next();

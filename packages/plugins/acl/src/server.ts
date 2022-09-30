@@ -313,7 +313,7 @@ export class PluginACL extends Plugin {
             key: 'own',
             name: '{{t("Own records")}}',
             scope: {
-              createdById: '{{ ctx.state.currentUser.id }}',
+              createdById: '{{ ctx.state.currentUserId }}',
             },
           },
         ],

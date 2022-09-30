@@ -2,11 +2,13 @@ import Database from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
 import PluginUsers from '../server';
 import { userPluginConfig } from './utils';
+import PluginACL from '@nocobase/plugin-acl';
 
 describe('actions', () => {
   let app: MockServer;
   let db: Database;
   let adminUser;
+  const roleNames: string[] = [];
   let agent;
   let adminAgent;
   let pluginUser;
@@ -17,7 +19,9 @@ describe('actions', () => {
     process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
+    app.plugin(PluginACL);
     app.plugin(PluginUsers, userPluginConfig);
+
 
     await app.loadAndInstall();
     db = app.db;
@@ -25,14 +29,30 @@ describe('actions', () => {
     pluginUser = app.getPlugin('@nocobase/plugin-users');
     adminUser = await db.getRepository('users').findOne({
       filter: {
-        email: process.env.INIT_ROOT_EMAIL
-      }
+        email: process.env.INIT_ROOT_EMAIL,
+      },
+    });
+    // const repository = db.getRepository('rolesUsers', adminUser.get('id')) as any;
+    // const roles = await db.getRepository('rolesUsers').find({
+    //   filter: {
+    //     userId: adminUser.get('id'),
+    //   },
+    //   order: [['default', 'DESC']],
+    // });
+    const repository = db.getRepository('users.roles', adminUser.get('id')) as any;
+    const roles = await repository.find({
+      order: [['default', 'DESC']],
+    });
+
+    roles.forEach((role) => {
+      roleNames.push(role.get('name') as string);
     });
 
     agent = app.agent();
     adminAgent = app.agent().auth(
       pluginUser.jwtService.sign({
         userId: adminUser.get('id'),
+        roleNames,
       }),
       { type: 'bearer' },
     );
@@ -46,7 +66,7 @@ describe('actions', () => {
     const { INIT_ROOT_EMAIL, INIT_ROOT_PASSWORD } = process.env;
 
     let response = await agent.resource('users').check();
-    expect(response.body.data.id).toBeUndefined();
+    expect(response.body?.data?.id).toBeUndefined();
 
     response = await agent.post('/users:signin').send({
       email: INIT_ROOT_EMAIL,
@@ -67,16 +87,23 @@ describe('actions', () => {
     const res1 = await agent.resource('users').updateProfile({
       filterByTk: adminUser.id,
       values: {
-        nickname: 'a'
-      }
+        nickname: 'a',
+      },
     });
-    expect(res1.status).toBe(401);
+    // because load PluginACL plugin ,so status will be 403
+    expect(res1.status).toBe(403);
 
+    // need req login api first , set cache user login status (token status)
+    const { INIT_ROOT_EMAIL, INIT_ROOT_PASSWORD } = process.env;
+     await agent.post('/users:signin').send({
+      email: INIT_ROOT_EMAIL,
+      password: INIT_ROOT_PASSWORD,
+    });
     const res2 = await adminAgent.resource('users').updateProfile({
       filterByTk: adminUser.id,
       values: {
-        nickname: 'a'
-      }
+        nickname: 'a',
+      },
     });
     expect(res2.status).toBe(200);
   });

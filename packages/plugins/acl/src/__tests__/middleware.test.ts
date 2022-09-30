@@ -146,7 +146,7 @@ describe('middleware', () => {
         values: {
           name: 'own',
           scope: {
-            createdById: '{{ ctx.state.currentUser.id }}',
+            createdById: '{{ ctx.state.currentUserId }}',
           },
         },
       });

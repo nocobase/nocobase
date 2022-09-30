@@ -33,7 +33,7 @@ describe('acl', () => {
       action: 'edit',
       params: {
         filter: {
-          createdById: '{{ ctx.state.currentUser.id }}',
+          createdById: '{{ ctx.state.currentUserId }}',
         },
       },
     });
@@ -62,7 +62,7 @@ describe('acl', () => {
       action: 'edit',
       params: {
         filter: {
-          createdById: '{{ ctx.state.currentUser.id }}',
+          createdById: '{{ ctx.state.currentUserId }}',
         },
       },
     });
@@ -206,7 +206,7 @@ describe('acl', () => {
       actions: {
         'posts:view': {
           filter: {
-            createdById: '{{ ctx.state.currentUser.id }}',
+            createdById: '{{ ctx.state.currentUserId }}',
           },
         },
       },
@@ -220,7 +220,7 @@ describe('acl', () => {
       action: 'view',
       params: {
         filter: {
-          createdById: '{{ ctx.state.currentUser.id }}',
+          createdById: '{{ ctx.state.currentUserId }}',
         },
       },
     });
@@ -242,7 +242,7 @@ describe('acl', () => {
       actions: {
         'posts:view': {
           filter: {
-            createdById: '{{ ctx.state.currentUser.id }}',
+            createdById: '{{ ctx.state.currentUserId }}',
           },
         },
       },
@@ -252,7 +252,7 @@ describe('acl', () => {
 
     expect(params).toMatchObject({
       filter: {
-        createdById: '{{ ctx.state.currentUser.id }}',
+        createdById: '{{ ctx.state.currentUserId }}',
       },
     });
   });

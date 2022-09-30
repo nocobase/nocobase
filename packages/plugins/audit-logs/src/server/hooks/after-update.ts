@@ -14,7 +14,7 @@ export function afterUpdate(app: Application) {
     }
     const transaction = options.transaction;
     const AuditLog = db.getCollection('auditLogs');
-    const currentUserId = options?.context?.state?.currentUser?.id;
+    const currentUserId = options?.context?.state?.currentUserId;
     const changes = [];
     changed.forEach((key: string) => {
       const field = collection.findField((field) => {
