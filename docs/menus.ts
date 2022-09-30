@@ -64,11 +64,14 @@ export default {
             // '/development/guide/ui-schema-designer/insert-adjacent',
             '/development/guide/ui-schema-designer/designable',
             '/development/guide/ui-schema-designer/component-library',
-            '/development/guide/ui-schema-designer/collection-manager',
-            '/development/guide/ui-schema-designer/acl',
+            // '/development/guide/ui-schema-designer/collection-manager',
+            // '/development/guide/ui-schema-designer/acl',
+            '/development/guide/ui-schema-designer/x-designer',
+            '/development/guide/ui-schema-designer/x-initializer',
           ],
         },
         '/development/guide/ui-router',
+        '/development/guide/settings-center',
       ],
     },
     {
@@ -77,10 +80,13 @@ export default {
       children: ['/development/http-api/index', '/development/http-api/rest-api'],
     },
     {
-      title: 'Test & Build',
-      'title.zh-CN': '测试与构建',
+      title: 'Testing',
+      'title.zh-CN': '单元测试',
       type: 'group',
-      children: ['/development/pre-release/test', '/development/pre-release/build'],
+      children: [
+        '/development/pre-release/test', 
+        // '/development/pre-release/build',
+      ],
     },
   ],
   // {
