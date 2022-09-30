@@ -36,10 +36,6 @@ export const HelloBlockInitializer = (props) => {
   );
 };
 
-const ActionDesigner = () => {
-  return <div>AA</div>
-}
-
 export default React.memo((props) => {
   const items = useContext(SchemaInitializerContext);
   const children = items.BlockInitializers.items[2].children;
@@ -64,7 +60,7 @@ export default React.memo((props) => {
         },
       }}
     >
-      <SchemaComponentOptions components={{ 'Action.Designer': ActionDesigner, HelloDesigner, HelloBlockInitializer }}>
+      <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
         <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
       </SchemaComponentOptions>
     </SettingsCenterProvider>
