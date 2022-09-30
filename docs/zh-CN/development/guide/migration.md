@@ -57,11 +57,11 @@ import { Migration } from '@nocobase/server';
 
 export default class MyMigration extends Migration {
   async up() {
-
+    // TODO
   }
 
   async down() {
-
+    // TODO
   }
 }
 ```
@@ -131,9 +131,19 @@ export default class MyMigration extends Migration {
 
 在一个脚本中有多项数据库操作时，建议使用事务保证所有操作都成功才算迁移完成。
 
+### 执行升级
+
+迁移脚本准备好以后，在项目目录下执行对应的升级命令即可完成数据库变更：
+
+```bash
+yarn nocobase upgrade
+```
+
+根据数据库迁移的机制，迁移脚本执行成功后也会被记录在数据库的升级记录表中，只有第一次执行有效，之后的多次重复执行都会被忽略。
+
 ## 示例
 
-### 修改字段类型
+### 修改主键字段类型
 
 假设订单表一开始使用数字类型，但后期希望改成可以包含字母的字符串类型，我们可以在迁移文件中填写：
 
@@ -206,10 +216,4 @@ export default class MyMigration extends Migration {
 
 通常修改列类型在已存在数据量较大的表里操作时也建议用新列代替旧列的方式，性能会更好。其他更多细节可以参考 [Sequelize 的 `queryInterface` API](https://sequelize.org/api/v6/class/src/dialects/abstract/query-interface.js)，以及各个数据库引擎的细节。
 
-迁移脚本准备好以后，在项目目录下执行对应的升级命令即可完成数据库变更：
-
-```bash
-yarn nocobase migrator up
-```
-
-在应用启动之前请确保变更的表结构能够对应上 collections 中定义的内容，以免不一致导致错误。
+注：在执行升级命令后，应用启动之前请确保变更的表结构能够对应上 collections 中定义的内容，以免不一致导致错误。
