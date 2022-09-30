@@ -1,14 +1,32 @@
 # 命令行
 
-## 基础概念
+## 简介
 
-一些时候，我们不希望启动应用的进程，但又需要使用到应用的部分程序功能时，可以通过扩展命令行工具来处理对应的功能。
+NocoBase Server Application 除了用作 WEB 服务器以外，也是个强大可扩展的 CLI 工具。
 
-Nocobase 内置了命令行工具，应用进程大部分时候通过命令行启动，同时内部基于 npm 包 [Commander](https://www.npmjs.com/package/commander) 支持扩展更多的子命令。大部分 NocoBase 自身提供的命令也通过此方法定义。
+新建一个 `app.js` 文件，代码如下：
 
-### 扩展命令
+```ts
+const Application = require('@nocobase/server');
 
-使用 `app.command()` 接口定义子命令，之后可以链式调用标准的 Commander 包的命令定义方法：
+// 此处省略具体配置
+const app = new Application({/*...*/});
+
+app.runAsCLI();
+```
+
+以 `runAsCLI()` 方式运行的 app.js 是一个 CLI，在命令行工具就可以像这样操作了：
+
+```bash
+node app.js install # 安装
+node app.js start # 启动
+```
+
+为了更好的开发、构建和部署 NocoBase 应用，NocoBase 内置了许多命令，详情查看 [NocoBase CLI](/api/cli) 章节。
+
+## 自定义 Command
+
+NocoBase CLI 的设计思想与 [Laravel Artisan](https://laravel.com/docs/9.x/artisan) 非常相似，都是可扩展的。NocoBase CLI 基于 [commander](https://www.npmjs.com/package/commander) 实现，可以这样扩展 Command：
 
 ```ts
 app
@@ -22,7 +40,7 @@ app
   });
 ```
 
-这个方法定义了以下的子命令：
+这个方法定义了以下命令：
 
 ```bash
 yarn nocobase echo
