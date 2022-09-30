@@ -1,11 +1,4 @@
-import {
-  CacheOptions,
-  caching,
-  CachingConfig,
-  multiCaching,
-  StoreConfig,
-  WrapArgsType,
-} from 'cache-manager';
+import { CacheOptions, caching, CachingConfig, multiCaching, StoreConfig, WrapArgsType } from 'cache-manager';
 
 /**
  * be used for create cache {@link createCache}
@@ -51,7 +44,7 @@ export interface Cache {
  * @param {ICacheConfig | ICacheConfig[]} cacheConfig
  * @returns {Cache}
  */
-export function createCache(cacheConfig: ICacheConfig | ICacheConfig[]): Cache {
+export function createCache(cacheConfig: ICacheConfig | ICacheConfig[] = createDefaultCacheConfig()): Cache {
   if (Array.isArray(cacheConfig)) {
     // multi cache
     if (cacheConfig.length === 1) {
