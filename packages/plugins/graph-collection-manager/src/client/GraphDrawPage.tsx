@@ -2,19 +2,26 @@ import React, { useLayoutEffect, useRef, useEffect, useContext, createContext } 
 import { Graph, Cell } from '@antv/x6';
 import dagre from 'dagre';
 import { Spin } from 'antd';
-import { DeleteOutlined, EditOutlined ,TableOutlined} from '@ant-design/icons';
-import { useRequest } from '@nocobase/client';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import {
+  useRequest,
+  SchemaComponent,
+  SchemaComponentProvider,
+  Action,
+  APIClient,
+} from '@nocobase/client';
 import '@antv/x6-react-shape';
 import { headClass, tableNameClass, tableBtnClass } from './style';
 import { formatData } from './utils';
 
 const LINE_HEIGHT = 24;
 const NODE_WIDTH = 170;
+const api = new APIClient();
 
 export const GraphDrawerContext = createContext(null);
 
 export const GraphDrawerProver: React.FC = (props) => {
-  const { data, loading } = useRequest({
+  const { data, loading, refresh } = useRequest({
     resource: 'collections',
     action: 'list',
     params: {
@@ -25,11 +32,13 @@ export const GraphDrawerProver: React.FC = (props) => {
   if (loading) {
     return <Spin />;
   }
-  return <GraphDrawerContext.Provider value={data?.data}>{props.children}</GraphDrawerContext.Provider>;
+  return (
+    <GraphDrawerContext.Provider value={{ data: data?.data, refresh }}>{props.children}</GraphDrawerContext.Provider>
+  );
 };
 
 //表格头
-class AlgoNode extends React.Component<{ node?: Node }> {
+class AlgoNode extends React.Component<{ node?: Node | any; graph: Graph }> {
   shouldComponentUpdate() {
     const { node } = this.props;
     if (node) {
@@ -41,27 +50,65 @@ class AlgoNode extends React.Component<{ node?: Node }> {
   }
 
   render() {
-    const { node } = this.props;
+    const { node, graph } = this.props;
     const {
       store: {
         data: { label },
       },
+      id,
     } = node;
+    const useDestroyAction = () => {
+      return {
+        async run() {
+          await api.request({
+            url: `/api/collections:destroy?filterByTk=${label}`,
+            method: 'post',
+          });
+        },
+      };
+    };
+    const useDestroyActionAndRefreshCM = () => {
+      const { run } = useDestroyAction();
+      return {
+        async run() {
+          await run();
+          graph.removeNode(id);
+        },
+      };
+    };
     return (
       <div className={headClass}>
         <span className={tableNameClass}>{label}</span>
         <div className={tableBtnClass}>
-         <TableOutlined />
-          <DeleteOutlined
-            onClick={() => {
-              console.log('table delete');
-            }}
-          />
           <EditOutlined
             onClick={() => {
               console.log('table edit ');
             }}
           />
+          <SchemaComponentProvider components={{ DeleteOutlined }}>
+            <SchemaComponent
+              components={{ Action, DeleteOutlined }}
+              schema={{
+                type: 'void',
+                properties: {
+                  action: {
+                    type: 'void',
+                    'x-action': 'destroy',
+                    'x-component': 'Action',
+                    'x-component-props': {
+                      component: DeleteOutlined,
+                      icon: 'DeleteOutlined',
+                      confirm: {
+                        title: "{{t('Delete record')}}",
+                        content: "{{t('Are you sure you want to delete it?')}}",
+                      },
+                      useAction: useDestroyActionAndRefreshCM,
+                    },
+                  },
+                },
+              }}
+            />
+          </SchemaComponentProvider>
         </div>
       </div>
     );
@@ -69,12 +116,11 @@ class AlgoNode extends React.Component<{ node?: Node }> {
 }
 
 let dir = 'LR'; // LR RL TB BT 竖排
-
 //计算布局
 function layout(graph) {
   const nodes = graph.getNodes();
   const edges = graph.getEdges();
-  const g :any= new dagre.graphlib.Graph();
+  const g: any = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: dir, nodesep: 100, ranksep: 100 });
   g.setDefaultEdgeLabel(() => ({}));
   let width = 0;
@@ -86,20 +132,17 @@ function layout(graph) {
       g.setNode(node.id, { width, height });
     }
   });
-
   edges.forEach((edge) => {
     const source = edge.getSource();
     const target = edge.getTarget();
     g.setEdge(source.cell, target.cell);
   });
   dagre.layout(g);
-
   graph.freeze();
-
   g.nodes().forEach((id) => {
     const node = graph.getCell(id);
     if (node) {
-      const pos:any = g.node(id);
+      const pos: any = g.node(id);
       node.position(pos.x, pos.y);
     }
   });
@@ -134,7 +177,7 @@ function getEdges(edges, graph) {
 export const Editor = () => {
   const graph = useRef(null);
   graph.current = null;
-  const rawData = useContext(GraphDrawerContext);
+  const { data: rawData } = useContext(GraphDrawerContext);
   const getCollectionData = () => {
     const { nodes, edges } = formatData(rawData);
     const cells: Cell[] = [];
@@ -145,6 +188,43 @@ export const Editor = () => {
   };
 
   useLayoutEffect(() => {
+    const myGraph = new Graph({
+      container: document.getElementById('container')!,
+      panning: true,
+      height: 800,
+      scroller: {
+        enabled: !0,
+        pageVisible: !1,
+        pageBreak: !1,
+      },
+      autoResize: true,
+      connecting: {
+        router: {
+          name: 'er',
+          args: {
+            offset: 25,
+            direction: 'H',
+          },
+        },
+      },
+      mousewheel: {
+        enabled: true,
+        modifiers: ['ctrl', 'meta'],
+      },
+      snapline: {
+        enabled: !0,
+      },
+      keyboard: {
+        enabled: false,
+      },
+      clipboard: {
+        enabled: false,
+      },
+      interacting: {
+        magnetConnectable: false,
+      },
+    });
+    graph.current = myGraph;
     Graph.registerPortLayout(
       'erPortPosition',
       (portsPositionArgs) => {
@@ -165,7 +245,7 @@ export const Editor = () => {
       'er-rect',
       {
         inherit: 'react-shape',
-        component: <AlgoNode />,
+        component: <AlgoNode graph={myGraph} />,
         ports: {
           groups: {
             list: {
@@ -212,45 +292,6 @@ export const Editor = () => {
       },
       true,
     );
-
-    const myGraph = new Graph({
-      container: document.getElementById('container')!,
-      panning: true,
-      height:800,
-      scroller: {
-        enabled: !0,
-        pageVisible: !1,
-        pageBreak: !1,
-      },
-      autoResize: true,
-      connecting: {
-        router: {
-          name: 'er',
-          args: {
-            offset: 25,
-            direction: 'H',
-          },
-        },
-      },
-      mousewheel: {
-        enabled: true,
-        modifiers: ['ctrl', 'meta'],
-      },
-      snapline: {
-        enabled: !0,
-      },
-      keyboard: {
-        enabled: false,
-      },
-      clipboard: {
-        enabled: false,
-      },
-      interacting:{
-        magnetConnectable: false 
-      },
- 
-    });
-    graph.current = myGraph;
   }, []);
 
   //监听数据，实时更新并渲染
@@ -260,4 +301,3 @@ export const Editor = () => {
 
   return <div id="container" style={{ width: '100%' }}></div>;
 };
-

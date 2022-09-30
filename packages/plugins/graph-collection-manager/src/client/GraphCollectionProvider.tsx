@@ -1,22 +1,13 @@
 import { PluginManagerContext, RouteSwitchContext, SettingsCenterProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { GraphCollectionPage } from './GraphCollectionPage';
 import { GraphCollectionPane, GraphCollectionShortcut } from './GraphCollectionShortcut';
-
-
-
-
 
 
 
 export const GraphCollectionProvider = (props) => {
   const ctx = useContext(PluginManagerContext);
   const { routes, components, ...others } = useContext(RouteSwitchContext);
-  routes[1].routes.unshift({
-    type: 'route',
-    path: '/admin/graph/collection/:id',
-    component: 'GraphCollectionPage',
-  });
+
   return (
     <SettingsCenterProvider
       settings={{
@@ -40,7 +31,7 @@ export const GraphCollectionProvider = (props) => {
           },
         }}
       >
-        <RouteSwitchContext.Provider value={{ components: { ...components, GraphCollectionPage }, ...others, routes }}>
+        <RouteSwitchContext.Provider value={{ components: { ...components }, ...others, routes }}>
           {props.children}
         </RouteSwitchContext.Provider>
       </PluginManagerContext.Provider>

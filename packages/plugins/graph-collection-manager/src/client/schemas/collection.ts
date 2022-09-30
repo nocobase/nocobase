@@ -1,59 +1,43 @@
-import { css } from "@emotion/css";
-import { useForm } from "@formily/react";
-import { useCollectionFilterOptions } from "@nocobase/client";
 
-export const collection = {
-  type: 'string',
-  title: '{{t("Collection")}}',
-  name: 'config.collection',
-  required: true,
-  'x-reactions': ['{{useCollectionDataSource()}}'],
-  'x-decorator': 'FormItem',
-  'x-component': 'Select',
-  'x-component-props': {
-    placeholder: '{{t("Select collection")}}'
-  }
-};
+import { CollectionOptions } from '@nocobase/client';
 
-export const values = {
-  type: 'object',
-  title: '{{t("Fields values")}}',
-  name: 'config.params.values',
-  'x-decorator': 'FormItem',
-  'x-decorator-props': {
-    labelAlign: 'left',
-    className: css`
-      flex-direction: column;
-    `
-  },
-  'x-component': 'CollectionFieldset',
-  description: '{{t("Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.")}}',
-};
 
-export const filter = {
-  type: 'object',
-  title: '{{t("Filter")}}',
-  name: 'config.params.filter',
-  'x-decorator': 'FormItem',
-  'x-decorator-props': {
-    labelAlign: 'left',
-    className: css`
-      flex-direction: column;
-    `
-  },
-  'x-component': 'Filter',
-  'x-component-props': {
-    useProps() {
-      const { values } = useForm();
-      const options = useCollectionFilterOptions(values.config?.collection);
-      return {
-        options,
-        className: css`
-          position: relative;
-          width: 100%;
-        `
-      };
+export const collection: CollectionOptions = {
+  name: 'collections',
+  filterTargetKey: 'name',
+  targetKey: 'name',
+  fields: [
+    {
+      type: 'integer',
+      name: 'title',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Collection display name") }}',
+        type: 'number',
+        'x-component': 'Input',
+        required: true,
+      },
     },
-    dynamicComponent: 'VariableComponent'
-  }
+    {
+      type: 'string',
+      name: 'name',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Collection name") }}',
+        type: 'string',
+        'x-component': 'Input',
+        description: '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+      },
+    },
+    {
+      type: 'hasMany',
+      name: 'fields',
+      target: 'fields',
+      collectionName: 'collections',
+      sourceKey: 'name',
+      targetKey: 'name',
+      uiSchema: {},
+    },
+  ],
 };
+

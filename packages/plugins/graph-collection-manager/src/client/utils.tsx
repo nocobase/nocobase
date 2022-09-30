@@ -17,6 +17,7 @@ export const formatData = (data) => {
         attrs: {
           portNameLabel: {
             text: field.name,
+            fill:''
           },
           portTypeLabel: {
             text: field.type || field.interface,
@@ -26,7 +27,7 @@ export const formatData = (data) => {
     });
     targetTablekeys.push(item.name);
     return {
-      id: index + 1,
+      id: item.key,
       shape: shape.ER,
       label: item.name,
       width: 170,

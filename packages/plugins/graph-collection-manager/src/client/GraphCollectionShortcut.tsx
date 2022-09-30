@@ -2,6 +2,7 @@ import { PartitionOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useActionContext, useRequest,PluginManager, SchemaComponent,CollectionOptions} from '@nocobase/client';
+import { DeleteOutlined, EditOutlined, TableOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +11,7 @@ import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { graphCollections } from './schemas/graphCollection';
 import { GraphCollectionLink } from './GraphCollectionLink';
 import { Editor, GraphDrawerProver } from './GraphDrawPage';
+import {collection} from './schemas/collection'
 
 
 const useCollectionValues = (options) => {
@@ -115,44 +117,7 @@ const useCollectionValues = (options) => {
   return result;
 };
 
-const collection: CollectionOptions = {
-  name: 'collections',
-  filterTargetKey: 'name',
-  targetKey: 'name',
-  fields: [
-    {
-      type: 'integer',
-      name: 'title',
-      interface: 'input',
-      uiSchema: {
-        title: '{{ t("Collection display name") }}',
-        type: 'number',
-        'x-component': 'Input',
-        required: true,
-      },
-    },
-    {
-      type: 'string',
-      name: 'name',
-      interface: 'input',
-      uiSchema: {
-        title: '{{ t("Collection name") }}',
-        type: 'string',
-        'x-component': 'Input',
-        description: '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
-      },
-    },
-    {
-      type: 'hasMany',
-      name: 'fields',
-      target: 'fields',
-      collectionName: 'collections',
-      sourceKey: 'name',
-      targetKey: 'name',
-      uiSchema: {},
-    },
-  ],
-};
+
 export const GraphCollectionPane = () => {
   const { t } = useTranslation();
   return (
@@ -255,6 +220,7 @@ export const GraphCollectionPane = () => {
         components={{
           Editor,
           GraphDrawerProver,
+          DeleteOutlined
         }}
         scope={{useCollectionValues}}
       />

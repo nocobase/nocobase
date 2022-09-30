@@ -223,4 +223,8 @@ export const tableBtnClass=css`
     margin-right: 5px;
     cursor: pointer;
   }
+  a{
+    margin-right: 5px;
+    color: #fff;
+  }
 `
