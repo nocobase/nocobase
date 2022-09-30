@@ -512,17 +512,19 @@ asset(post1.authorId === author1.id); // true
 
 Database 除了对 sequelize 原生的事件封装以外，还提供以下可监听事件类型：
 
-| 事件名称 | 描述 |
-| --- | --- |
-| `'beforeDefineCollection'` | 定义 collection 之前触发 |
-| `'afterDefineCollection'` | 定义 collection 之后触发 |
-| `'beforeRemoveCollection'` | 移除 collection 之前触发 |
-| `'afterRemoveCollection'` | 移除 collection 之后触发 |
-| `<sequelize_model_global_event>` | 所有 sequelize 的全局事件均可通过此方式监听，详见示例部分 |
-| `<model_name>.<sequelize_model_event>` | 所有 sequelize model 的事件均可通过此方式监听，详见示例部分 |
-| `<model_name>.afterCreateWithAssociations` | NocoBase 扩展的当连同关联数据一并创建记录成功后触发的事件（使用 Repository 的 create 方法会触发） |
-| `<model_name>.afterUpdateWithAssociations` | NocoBase 扩展的当连同关联数据一并更新记录成功后触发的事件（使用 Repository 的 update 方法会触发） |
-| `<model_name>.afterSaveWithAssociations` | NocoBase 扩展的当连同关联数据一并创建或更新记录成功后触发的事件（使用 Repository 的 create/update 方法都会触发） |
+| 事件名称 | 是否异步 | 描述 |
+| --- | --- | --- |
+| `'beforeDefineCollection'` | 否 | 定义 collection 之前触发 |
+| `'afterDefineCollection'` | 否 | 定义 collection 之后触发 |
+| `'beforeRemoveCollection'` | 否 | 移除 collection 之前触发 |
+| `'afterRemoveCollection'` | 否 | 移除 collection 之后触发 |
+| `<sequelize_model_global_event>` | - | 所有 sequelize 的全局事件均可通过此方式监听，详见示例部分，是否异步根据具体事件 |
+| `<model_name>.<sequelize_model_event>` | 是 | 所有 sequelize model 的事件均可通过此方式监听，详见示例部分 |
+| `<model_name>.afterCreateWithAssociations` | 是 | NocoBase 扩展的当连同关联数据一并创建记录成功后触发的事件（使用 Repository 的 create 方法会触发） |
+| `<model_name>.afterUpdateWithAssociations` | 是 | NocoBase 扩展的当连同关联数据一并更新记录成功后触发的事件（使用 Repository 的 update 方法会触发） |
+| `<model_name>.afterSaveWithAssociations` | 是 | NocoBase 扩展的当连同关联数据一并创建或更新记录成功后触发的事件（使用 Repository 的 create/update 方法都会触发） |
+
+其中 `<model_name>.afterXXXWithAssociations` 事件只有在使用 Repository 的实例方法时才会被触发，所以建议大部分时候都使用 Repository 来进行数据操作。
 
 **签名**
 
