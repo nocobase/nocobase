@@ -51,7 +51,7 @@ export default {
         '/development/guide/resources-actions',
         '/development/guide/middleware',
         '/development/guide/commands',
-        '/development/guide/hooks',
+        '/development/guide/events',
         '/development/guide/i18n',
         '/development/guide/migration',
         {
