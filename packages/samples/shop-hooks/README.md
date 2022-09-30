@@ -1,15 +1,15 @@
-# Actions for simple shop scenario
+# Hooks for simple shop scenario
 
 ## Register
 
 ```ts
-yarn pm add sample-shop-actions
+yarn pm add sample-shop-hooks
 ```
 
 ## Activate
 
 ```bash
-yarn pm enable sample-shop-actions
+yarn pm enable sample-shop-hooks
 ```
 
 ## Launch the app
@@ -39,6 +39,6 @@ curl -X POST -H "Content-Type: application/json" -d '{"title": "iPhone 14 Pro", 
 curl -X POST -H "Content-Type: application/json" -d '{"productId": 1, "quantity": 1, "totalPrice": 0, "userId": 2}' 'http://localhost:13000/api/orders'
 # {"id": <id>, "status": 0, "productId": 1, "quantity": 1, "totalPrice": 7999, "userId": 1}
 
-# list orders which userId=1 with product
-curl 'http://localhost:13000/api/orders?filter={"status":2}&appends=product'
+# create an expired delivery to watch schedule task
+curl -X POST -H "Content-Type: application/json" -d '{"orderId": 1, "provider": "SF", "trackingNumber": "123456789", "userId": 2, "createdAt": "2022-09-01T00:00:00Z"}' 'http://localhost:13000/api/deliveries'
 ```
