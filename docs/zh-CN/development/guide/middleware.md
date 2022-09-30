@@ -145,5 +145,4 @@ app.resourcer.use(async (ctx, next) => {
 
 待补充
 
-- samples/xxx
-- samples/yyy
+- [samples/ratelimit](https://github.com/nocobase/nocobase/blob/main/packages/samples/ratelimit/) IP rate-limiting
