@@ -50,7 +50,6 @@ export default {
         '/development/guide/collections-fields',
         '/development/guide/resources-actions',
         '/development/guide/middleware',
-        '/development/guide/commands',
         '/development/guide/hooks',
         '/development/guide/i18n',
         '/development/guide/migration',
@@ -72,6 +71,7 @@ export default {
         },
         '/development/guide/ui-router',
         '/development/guide/settings-center',
+        '/development/guide/commands',
       ],
     },
     {
