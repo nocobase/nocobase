@@ -33,6 +33,7 @@ export const formatData = (data) => {
       width: 170,
       height: 24,
       ports,
+      item:item,
     };
   });
   const edges = formatEdgeData(edgeData, targetTablekeys, tableData);

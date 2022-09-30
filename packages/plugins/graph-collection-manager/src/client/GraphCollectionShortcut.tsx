@@ -7,11 +7,9 @@ import { Card } from 'antd';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { ExecutionResourceProvider } from './ExecutionResourceProvider';
-import { graphCollections } from './schemas/graphCollection';
-import { GraphCollectionLink } from './GraphCollectionLink';
-import { Editor, GraphDrawerProver } from './GraphDrawPage';
+import { Editor } from './GraphDrawPage';
 import {collection} from './schemas/collection'
+import {GraphDrawerProver} from './GraphCollectionEditorProvder'
 
 
 const useCollectionValues = (options) => {
