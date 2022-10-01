@@ -50,7 +50,8 @@ export default {
         '/development/guide/collections-fields',
         '/development/guide/resources-actions',
         '/development/guide/middleware',
-        '/development/guide/hooks',
+        '/development/guide/commands',
+        '/development/guide/events',
         '/development/guide/i18n',
         '/development/guide/migration',
         {
