@@ -72,6 +72,7 @@ export default {
         },
         '/development/guide/ui-router',
         '/development/guide/settings-center',
+        '/development/guide/commands',
       ],
     },
     {
