@@ -42,9 +42,24 @@ export class ShopPlugin extends Plugin {
                 return ctx.throw(404);
               }
 
+              ctx.state.product = product;
+
               await next();
             }
-          ]
+          ],
+          async handler(ctx, next) {
+            const { product } = ctx.state;
+            const order = await ctx.db.getRepository('orders').create({
+              values: {
+                ...ctx.action.params.values,
+                productId: product.id,
+                quantity: 1,
+                totalPrice: product.price
+              }
+            });
+
+            ctx.body = order;
+          }
         },
         list: {
           filter: {
@@ -70,6 +85,7 @@ export class ShopPlugin extends Plugin {
               }
             }
           });
+          order.delivery = await order.getDelivery();
 
           ctx.body = order;
 
