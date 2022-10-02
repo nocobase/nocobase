@@ -184,7 +184,7 @@ curl -X POST -F "file=@/path/to/some-file.txt" -F 'meta={"length": 100}' "http:/
 
 ### `update()`
 
-更新一条或多条数据。对应的 URL 为 `DELETE /api/<resource>:update`。
+更新一条或多条数据。对应的 URL 为 `PUT /api/<resource>:update`。
 
 **参数**
 
