@@ -81,11 +81,11 @@ export default {
       children: ['/development/http-api/index', '/development/http-api/rest-api'],
     },
     {
-      title: 'Testing',
-      'title.zh-CN': '单元测试',
+      title: 'Others',
+      'title.zh-CN': '其他',
       type: 'group',
       children: [
-        '/development/pre-release/test', 
+        '/development/others/testing',
         // '/development/pre-release/build',
       ],
     },
