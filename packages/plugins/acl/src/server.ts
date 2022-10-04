@@ -11,6 +11,7 @@ import { setCurrentRole } from './middlewares/setCurrentRole';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
+import { delRoleNameObj } from './util';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -179,9 +180,15 @@ export class PluginACL extends Plugin {
       }
     });
 
-    this.app.db.on('roles.afterDestroy', (model) => {
+    this.app.db.on('roles.afterDestroy', async (model, options) => {
       const roleName = model.get('name');
       this.acl.removeRole(roleName);
+      const { context } = options;
+      await delRoleNameObj(context.cache);
+    });
+    this.app.db.on('roles.afterCreate', async (model, options) => {
+      const { context } = options;
+      await delRoleNameObj(context.cache);
     });
 
     this.app.db.on('rolesResources.afterSaveWithAssociations', async (model: RoleResourceModel, options) => {
@@ -420,19 +427,19 @@ export class PluginACL extends Plugin {
     const User = this.db.getCollection('users');
     await User.repository.update({
       values: {
-        roles: ['root', 'admin', 'member']
-      }
+        roles: ['root', 'admin', 'member'],
+      },
     });
 
     const RolesUsers = this.db.getCollection('rolesUsers');
     await RolesUsers.repository.update({
       filter: {
         userId: 1,
-        roleName: 'root'
+        roleName: 'root',
       },
       values: {
-        default: true
-      }
+        default: true,
+      },
     });
   }
 

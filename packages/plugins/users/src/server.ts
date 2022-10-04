@@ -12,6 +12,8 @@ import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
 import { parseToken } from './middlewares';
 import initAuthenticators from './authenticators';
+import { getTokenStatus, setTokenStatus, TokenStatus } from './util';
+import lodash from 'lodash';
 
 export interface UserPluginConfig {
   jwt: JwtOptions;
@@ -85,6 +87,37 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           foreignKey: 'updatedById',
           targetKey: 'id',
         });
+      }
+    });
+
+    this.db.on('users.beforeUpdate', async (model, options) => {
+      // if roles changed, then do setTokenStatus
+      const userId = model.get('id');
+      const { context, transaction, values } = options;
+      const rolesSet = new Set(values.roles);
+      let rolesChanged = false;
+      const roles = await context.db.getRepository('rolesUsers').find(
+        {
+          filter: {
+            userId: userId,
+          },
+        },
+        transaction,
+      );
+
+      if (rolesSet.size !== roles.length) {
+        rolesChanged = true;
+      } else {
+        roles.forEach((role) => {
+          if (!rolesSet.has(role.get('roleName'))) {
+            rolesChanged = true;
+          }
+        });
+      }
+      if (rolesChanged) {
+        if (!lodash.isUndefined(await getTokenStatus(context.cache, userId))) {
+          await setTokenStatus(context.cache, userId, TokenStatus.EXPIRE);
+        }
       }
     });
 

@@ -1,3 +1,5 @@
+import { getRoleNameObj } from '../util';
+
 export async function setCurrentRole(ctx, next) {
   let currentRole = ctx.get('X-Role');
 
@@ -11,6 +13,19 @@ export async function setCurrentRole(ctx, next) {
   }
 
   const roleNames = ctx.state.roleNames;
+
+  const roleNameObj = await getRoleNameObj(ctx.cache, ctx.db);
+  if (!roleNameObj[currentRole]) {
+    // if current role is not in system, then select one role from roleNames
+    for (const roleName of roleNames) {
+      if (roleName !== currentRole) {
+        ctx.state.currentRole = roleName;
+        break;
+      }
+    }
+    return next();
+  }
+
   if (Array.isArray(roleNames) && roleNames.length > 0) {
     if (roleNames.indexOf(currentRole) > -1) {
       ctx.state.currentRole = currentRole;
