@@ -25,13 +25,18 @@ describe('role check action', () => {
     });
     const user = await db.getRepository('users').create({
       values: {
-        roles: ['test']
-      }
+        roles: ['test'],
+      },
     });
+    await app.cache.set(user.get('id') as string, 1);
     const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
-    const agent = app.agent().auth(userPlugin.jwtService.sign({
-      userId: user.get('id'),
-    }), { type: 'bearer' });
+    const agent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: user.get('id'),
+        roleNames: user.get('roles'),
+      }),
+      { type: 'bearer' },
+    );
 
     // @ts-ignore
     const response = await agent.resource('roles').check();

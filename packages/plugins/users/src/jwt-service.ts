@@ -8,7 +8,7 @@ export interface JwtOptions {
 export class JwtService {
   constructor(protected options: JwtOptions) {}
 
-  private expiresIn() {
+  expiresIn() {
     return this.options.expiresIn || process.env.JWT_EXPIRES_IN || '7d';
   }
 

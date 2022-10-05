@@ -32,14 +32,19 @@ describe('role api', () => {
       const UserRepo = db.getCollection('users').repository;
       admin = await UserRepo.create({
         values: {
-          roles: ['admin']
-        }
+          roles: ['admin'],
+        },
       });
 
+      await app.cache.set(admin.get('id') as string, 1);
       const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
-      adminAgent = app.agent().auth(userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }), { type: 'bearer' });
+      adminAgent = app.agent().auth(
+        userPlugin.jwtService.sign({
+          userId: admin.get('id'),
+          roleNames: admin.get('roles'),
+        }),
+        { type: 'bearer' },
+      );
     });
 
     it('should list actions', async () => {
@@ -49,15 +54,13 @@ describe('role api', () => {
 
     it('should grant universal role actions', async () => {
       // grant role actions
-      const response = await adminAgent
-        .resource('roles')
-        .update({
-          values: {
-            strategy: {
-              actions: ['create:all', 'view:own'],
-            },
+      const response = await adminAgent.resource('roles').update({
+        values: {
+          strategy: {
+            actions: ['create:all', 'view:own'],
           },
-        });
+        },
+      });
 
       expect(response.statusCode).toEqual(200);
 

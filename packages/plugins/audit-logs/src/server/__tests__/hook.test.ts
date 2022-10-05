@@ -60,7 +60,7 @@ describe('hook', () => {
       values: { title: 't1' },
       context: {
         state: {
-          currentUser: user,
+          currentUserId: user.get('id'),
         },
       },
     });

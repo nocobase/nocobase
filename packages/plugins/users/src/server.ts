@@ -12,6 +12,8 @@ import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
 import { parseToken } from './middlewares';
 import initAuthenticators from './authenticators';
+import { getTokenStatus, setTokenStatus, TokenStatus } from './util';
+import lodash from 'lodash';
 
 export interface UserPluginConfig {
   jwt: JwtOptions;
@@ -42,7 +44,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     this.db.registerOperators({
       $isCurrentUser(_, ctx) {
         return {
-          [Op.eq]: ctx?.app?.ctx?.state?.currentUser?.id || -1,
+          [Op.eq]: ctx?.app?.ctx?.state?.currentUserId || -1,
         };
       },
       $isVar(val, ctx) {
@@ -59,7 +61,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         collection.setField('createdById', {
           type: 'context',
           dataType: 'integer',
-          dataIndex: 'state.currentUser.id',
+          dataIndex: 'state.currentUserId',
           createOnly: true,
           visible: true,
           index: true,
@@ -75,7 +77,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         collection.setField('updatedById', {
           type: 'context',
           dataType: 'integer',
-          dataIndex: 'state.currentUser.id',
+          dataIndex: 'state.currentUserId',
           visible: true,
           index: true,
         });
@@ -85,6 +87,35 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           foreignKey: 'updatedById',
           targetKey: 'id',
         });
+      }
+    });
+
+    this.db.on('users.beforeUpdate', async (model, options) => {
+      // if roles changed, then do setTokenStatus
+      const userId = model.get('id');
+      const { transaction, values } = options;
+      const rolesSet = new Set(values.roles);
+      let rolesChanged = false;
+      const roles = await this.db.getRepository('rolesUsers').find({
+        filter: {
+          userId: userId,
+        },
+        transaction,
+      });
+
+      if (rolesSet.size !== roles.length) {
+        rolesChanged = true;
+      } else {
+        roles.forEach((role) => {
+          if (!rolesSet.has(role.get('roleName'))) {
+            rolesChanged = true;
+          }
+        });
+      }
+      if (rolesChanged) {
+        if (!lodash.isUndefined(await getTokenStatus(this.app.cache, userId))) {
+          await setTokenStatus(this.app.cache, userId, TokenStatus.EXPIRE);
+        }
       }
     });
 
@@ -141,7 +172,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           }
 
           return true;
-        }
+        },
       });
 
       verificationPlugin.interceptors.register('users:signup', {
@@ -165,26 +196,29 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           }
 
           return true;
-        }
+        },
       });
 
-      this.authenticators.register('sms', (ctx, next) => verificationPlugin.intercept(ctx, async () => {
-        const { values } = ctx.action.params;
+      this.authenticators.register('sms', (ctx, next) =>
+        verificationPlugin.intercept(ctx, async () => {
+          const { values } = ctx.action.params;
 
-        const User = ctx.db.getCollection('users');
-        const user = await User.model.findOne({
-          where: {
-            phone: values.phone,
-          },
-        });
-        if (!user) {
-          return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
-        }
+          const User = ctx.db.getCollection('users');
+          const user = await User.model.findOne({
+            where: {
+              phone: values.phone,
+            },
+          });
+          if (!user) {
+            return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
+          }
 
-        ctx.state.currentUser = user;
+          ctx.state.currentUser = user;
+          ctx.state.currentUserId = user.get('id');
 
-        return next();
-      }));
+          return next();
+        }),
+      );
     }
   }
 
@@ -209,7 +243,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       values: {
         email: rootEmail,
         password: rootPassword,
-        nickname: rootNickname
+        nickname: rootNickname,
       },
     });
 

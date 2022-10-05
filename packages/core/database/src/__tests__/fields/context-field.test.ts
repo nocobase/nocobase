@@ -37,7 +37,7 @@ describe('context field', () => {
           {
             type: 'context',
             name: 'userId',
-            dataIndex: 'state.currentUser.id',
+            dataIndex: 'state.currentUserId',
             dataType: 'integer',
           },
         ],

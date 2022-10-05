@@ -26,6 +26,7 @@ export default async function(ctx: Context, next: Next) {
   }
 
   ctx.state.currentUser = user;
+  ctx.state.currentUserId = user.get('id');
 
   return next();
 }

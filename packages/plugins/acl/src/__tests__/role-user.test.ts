@@ -102,7 +102,8 @@ describe('role', () => {
     await userRolesRepo.add('test1');
     await userRolesRepo.add('test2');
 
-    const userToken = usersPlugin.jwtService.sign({ userId: user.get('id') });
+    await api.cache.set(user.get('id') as string, 1);
+    const userToken = usersPlugin.jwtService.sign({ userId: user.get('id'), roleNames: ['test1', 'test2'] });
     const response = await api
       .agent()
       .post('/users:setDefaultRole')

@@ -6,9 +6,9 @@ import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, values } = context.action.params;
-  const { currentUser } = context.state;
+  const { currentUserId } = context.state;
 
-  if (!currentUser) {
+  if (!currentUserId) {
     return context.throw(401);
   }
 
@@ -32,8 +32,8 @@ export async function submit(context: Context, next) {
     context.throw(400);
   }
 
-  if (!assignees.includes(currentUser.id)
-    || instance.userId !== currentUser.id
+  if (!assignees.includes(currentUserId)
+    || instance.userId !== currentUserId
   ) {
     return context.throw(404);
   }

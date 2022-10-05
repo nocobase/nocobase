@@ -42,7 +42,7 @@ describe('createdBy/updatedBy', () => {
       await Post.repository.create({
         context: {
           state: {
-            currentUser,
+            currentUserId: currentUser.get('id'),
           },
         },
       });
@@ -66,7 +66,7 @@ describe('createdBy/updatedBy', () => {
       const p1 = await Post.repository.create<any>({
         context: {
           state: {
-            currentUser: user1,
+            currentUserId: user1.get('id'),
           },
         },
       });
@@ -75,7 +75,7 @@ describe('createdBy/updatedBy', () => {
         filterByTk: p1.id,
         context: {
           state: {
-            currentUser: user2,
+            currentUserId: user2.get('id'),
           },
         },
       });

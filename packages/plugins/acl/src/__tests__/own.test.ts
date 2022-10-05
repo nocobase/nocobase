@@ -1,9 +1,9 @@
-import { ACL } from '@nocobase/acl';
-import { Database } from '@nocobase/database';
+import {ACL} from '@nocobase/acl';
+import {Database} from '@nocobase/database';
 import PluginUser from '@nocobase/plugin-users';
-import { MockServer } from '@nocobase/test';
+import {MockServer} from '@nocobase/test';
 
-import { prepareApp } from './prepare';
+import {prepareApp} from './prepare';
 
 describe('own test', () => {
   let app: MockServer;
@@ -33,8 +33,8 @@ describe('own test', () => {
     const PostCollection = db.collection({
       name: 'posts',
       fields: [
-        { type: 'string', name: 'title' },
-        { type: 'belongsToMany', name: 'tags' },
+        {type: 'string', name: 'title'},
+        {type: 'belongsToMany', name: 'tags'},
       ],
       createdBy: true,
     });
@@ -42,15 +42,15 @@ describe('own test', () => {
     const TagCollection = db.collection({
       name: 'tags',
       fields: [
-        { type: 'string', name: 'name' },
-        { type: 'belongsToMany', name: 'posts' },
+        {type: 'string', name: 'name'},
+        {type: 'belongsToMany', name: 'posts'},
       ],
       createdBy: true,
     });
 
     const TestCollection = db.collection({
       name: 'tests',
-      fields: [{ type: 'string', name: 'name' }],
+      fields: [{type: 'string', name: 'name'}],
     });
 
     await db.sync();
@@ -69,9 +69,9 @@ describe('own test', () => {
 
     pluginUser = app.getPlugin('@nocobase/plugin-users');
 
-    adminToken = pluginUser.jwtService.sign({ userId: admin.get('id') });
+    adminToken = pluginUser.jwtService.sign({userId: admin.get('id')});
 
-    adminAgent = app.agent().auth(adminToken, { type: 'bearer' });
+    adminAgent = app.agent().auth(adminToken, {type: 'bearer'});
 
     user = await db.getRepository('users').create({
       values: {
@@ -80,9 +80,10 @@ describe('own test', () => {
       },
     });
 
-    userToken = pluginUser.jwtService.sign({ userId: user.get('id') });
+    await app.cache.set(user.get('id'), 1);
+    userToken = pluginUser.jwtService.sign({userId: user.get('id'), roleNames: user.get('roles')});
 
-    userAgent = app.agent().auth(userToken, { type: 'bearer' });
+    userAgent = app.agent().auth(userToken, {type: 'bearer'});
   });
 
   it('should list without createBy', async () => {
@@ -93,7 +94,7 @@ describe('own test', () => {
           actions: ['view:own'],
         },
       })
-      .set({ Authorization: 'Bearer ' + adminToken });
+      .set({Authorization: 'Bearer ' + adminToken});
 
     const response = await userAgent.get('/tests:list');
     expect(response.statusCode).toEqual(200);

@@ -10,7 +10,7 @@ export function afterCreate(app: Application) {
     }
     const transaction = options.transaction;
     const AuditLog = db.getCollection('auditLogs');
-    const currentUserId = options?.context?.state?.currentUser?.id;
+    const currentUserId = options?.context?.state?.currentUserId;
     try {
       const changes = [];
       const changed = model.changed();

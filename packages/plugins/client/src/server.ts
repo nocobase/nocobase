@@ -2,6 +2,26 @@ import { Plugin } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
 import { isAbsolute, resolve } from 'path';
+import { Context } from '@nocobase/actions';
+
+async function getUserInfo(ctx: Context, userId: string = ctx.state.currentUserId) {
+  if (!userId) {
+    return;
+  }
+  const collection = ctx.db.getCollection('users');
+  const appends = [];
+  for (const [, field] of collection.fields) {
+    if (field.type === 'belongsTo') {
+      appends.push(field.name);
+    }
+  }
+  return await ctx.db.getRepository('users').findOne({
+    appends: appends,
+    filter: {
+      id: userId,
+    },
+  });
+}
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {
@@ -28,7 +48,7 @@ export class ClientPlugin extends Plugin {
           const SystemSetting = ctx.db.getRepository('systemSettings');
           const systemSetting = await SystemSetting.findOne();
           const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
-          const currentUser = ctx.state.currentUser;
+          const currentUser = (await getUserInfo(ctx as Context)) as any;
           let lang = enabledLanguages?.[0] || process.env.APP_LANG || 'en-US';
           if (enabledLanguages.includes(currentUser?.appLang)) {
             lang = currentUser?.appLang;
@@ -43,7 +63,7 @@ export class ClientPlugin extends Plugin {
           const SystemSetting = ctx.db.getRepository('systemSettings');
           const systemSetting = await SystemSetting.findOne();
           const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
-          const currentUser = ctx.state.currentUser;
+          const currentUser = (await getUserInfo(ctx as Context)) as any;
           let lang = enabledLanguages?.[0] || process.env.APP_LANG || 'en-US';
           if (enabledLanguages.includes(currentUser?.appLang)) {
             lang = currentUser?.appLang;

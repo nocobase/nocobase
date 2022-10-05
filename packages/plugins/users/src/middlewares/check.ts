@@ -1,9 +1,9 @@
 // TODO(usage): 拦截用户的处理暂时作为一个中间件导出，应用需要的时候可以直接使用这个中间件
 export function check(options) {
   return async function check(ctx, next) {
-    const { currentUser } = ctx.state;
+    const { currentUserId } = ctx.state;
 
-    if (!currentUser) {
+    if (!currentUserId) {
       return ctx.throw(401, 'Unauthorized');
     }
     return next();

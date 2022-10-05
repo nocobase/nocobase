@@ -10,7 +10,7 @@ export function afterDestroy(app: Application) {
     }
     const transaction = options.transaction;
     const AuditLog = db.getCollection('auditLogs');
-    const currentUserId = options?.context?.state?.currentUser?.id;
+    const currentUserId = options?.context?.state?.currentUserId;
     try {
       const changes = [];
       Object.keys(model.get()).forEach((key: string) => {

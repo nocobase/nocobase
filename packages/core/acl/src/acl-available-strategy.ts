@@ -28,7 +28,7 @@ export function strategyValueMatched(strategy: StrategyValue, value: string) {
 export const predicate = {
   own: {
     filter: {
-      createdById: '{{ ctx.state.currentUser.id }}',
+      createdById: '{{ ctx.state.currentUserId }}',
     },
   },
   all: {},

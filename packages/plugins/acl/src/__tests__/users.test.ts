@@ -21,15 +21,17 @@ describe('actions', () => {
     pluginUser = app.getPlugin('@nocobase/plugin-users');
     adminUser = await db.getRepository('users').findOne({
       filter: {
-        email: process.env.INIT_ROOT_EMAIL
+        email: process.env.INIT_ROOT_EMAIL,
       },
-      appends: ['roles']
+      appends: ['roles'],
     });
 
+    await app.cache.set(adminUser.get('id'), 1);
     agent = app.agent();
     adminAgent = app.agent().auth(
       pluginUser.jwtService.sign({
         userId: adminUser.get('id'),
+        roleNames: adminUser.get('roles'),
       }),
       { type: 'bearer' },
     );
@@ -44,8 +46,8 @@ describe('actions', () => {
       filterByTk: adminUser.id,
       values: {
         nickname: 'a',
-        roles: adminUser.roles
-      }
+        roles: adminUser.roles,
+      },
     });
     expect(res2.status).toBe(200);
   });
