@@ -5,6 +5,19 @@ const { join, resolve } = require('path');
 const { Generator } = require('@umijs/utils');
 const { downloadPackageFromNpm, updateJsonFile } = require('./util');
 
+const cacheStorePackageAndVersion = {
+  'cache-manager-redis': '^0.6.0',
+  'cache-manager-redis-store': '^2.0.0',
+  'cache-manager-ioredis ': '^2.1.0',
+  'cache-manager-mongodb': '^0.3.0',
+  'cache-manager-mongoose': '^1.0.1',
+  'cache-manager-fs-binary': '^1.0.4',
+  'cache-manager-fs-hash': '^1.0.0',
+  'cache-manager-hazelcast': '^0.2.1',
+  'cache-manager-memcached-store': '^4.0.0',
+  'cache-manager-couchbase': '^0.1.5',
+};
+
 class AppGenerator extends Generator {
   constructor(options) {
     const { context = {}, ...opts } = options;
@@ -66,7 +79,7 @@ class AppGenerator extends Generator {
     const env = this.env;
     const envs = [];
     const dependencies = [];
-    const { dbDialect, allDbDialect } = this.args;
+    const { dbDialect, allDbDialect, cacheStorePackage } = this.args;
 
     if (allDbDialect) {
       dependencies.push(`"mysql2": "^2.3.3"`);
@@ -105,6 +118,23 @@ class AppGenerator extends Generator {
         break;
     }
 
+    // handle cache store package
+    let envCacheStorePackage = '';
+    if (cacheStorePackage === 'all') {
+      for (const key in cacheStorePackageAndVersion) {
+        dependencies.push(`"${key}": "${cacheStorePackageAndVersion[key]}"`);
+      }
+      dependencies.push(`"memcache-pp": "^0.3.3"`);
+    } else if (!!cacheStorePackage ) {
+      envCacheStorePackage = cacheStorePackage;
+      dependencies.push(`"${cacheStorePackage}": "${cacheStorePackageAndVersion[cacheStorePackage]}"`);
+      if (cacheStorePackage === 'cache-manager-memcached-store') {
+        dependencies.push(`"memcache-pp": "^0.3.3"`);
+      }
+    }
+    console.log(`cacheStorePackage is  ${cacheStorePackage}`)
+    console.log(dependencies)
+
     return {
       ...this.context,
       dependencies: dependencies.join(`,\n    `),
@@ -113,6 +143,7 @@ class AppGenerator extends Generator {
         APP_PORT: 13000,
         APP_ENV: 'development',
         DB_DIALECT: dbDialect,
+        CACHE_STORE_PACKAGE: envCacheStorePackage,
         APP_KEY: crypto.randomBytes(256).toString('base64'),
         ...env,
       },

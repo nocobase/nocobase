@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/actions",
+  "name": "@nocobase/cache",
   "version": "0.7.4-alpha.7",
   "description": "",
   "license": "Apache-2.0",
@@ -12,14 +12,15 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/database": "0.7.4-alpha.7",
-    "@nocobase/resourcer": "0.7.4-alpha.7",
-    "@nocobase/cache": "0.7.4-alpha.7"
+    "cache-manager": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/cache-manager": "^4.0.2",
+    "cache-manager-fs-hash": "^1.0.0"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
-    "directory": "packages/actions"
-  },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+    "directory": "packages/cache"
+  }
 }
