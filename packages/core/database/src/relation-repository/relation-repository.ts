@@ -53,7 +53,7 @@ export abstract class RelationRepository {
   }
 
   @transaction()
-  async create(options?: CreateOptions): Promise<any> {
+  async create(options?: CreateOptions): Promise<Model> {
     const createAccessor = this.accessors().create;
 
     const guard = UpdateGuard.fromOptions(this.targetModel, options);

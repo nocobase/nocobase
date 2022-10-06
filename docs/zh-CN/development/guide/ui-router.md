@@ -1,4 +1,4 @@
-# UI Router
+# UI 路由
 
 NocoBase Client 的 Router 基于 [React Router](https://v5.reactrouter.com/web/guides/quick-start)，可以通过 `<RouteSwitch routes={[]} />` 来配置 ui routes，例子如下：
 
