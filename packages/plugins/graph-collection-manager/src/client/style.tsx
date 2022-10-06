@@ -219,12 +219,9 @@ export const tableNameClass=css`
 `
 
 export const tableBtnClass=css`
+  display:flex;
   span{
     margin-right: 5px;
     cursor: pointer;
-  }
-  a{
-    margin-right: 5px;
-    color: #fff;
   }
 `

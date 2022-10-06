@@ -1,30 +1,30 @@
-
-
-import React, { useLayoutEffect, useRef, useEffect, useContext, createContext } from 'react';
-import {
-    useRequest,
-    SchemaComponent,
-    SchemaComponentProvider,
-    Action,
-    APIClient,
-  } from '@nocobase/client';
-  import { Spin } from 'antd';
+import React, { createContext, useState } from 'react';
+import { useRequest, useAPIClient } from '@nocobase/client';
+import { Spin } from 'antd';
 
 export const GraphDrawerContext = createContext(null);
 
+export const options = {
+  resource: 'collections',
+  action: 'list',
+  params: {
+    paginate: false,
+    appends: ['fields', 'fields.uiSchema'],
+  },
+};
 export const GraphDrawerProver: React.FC = (props) => {
-  const { data, loading, refresh } = useRequest({
-    resource: 'collections',
-    action: 'list',
-    params: {
-      paginate: false,
-      appends: ['fields', 'fields.uiSchema'],
-    },
-  });
-  if (loading) {
+  const service = useRequest(options);
+
+  if (service.loading) {
     return <Spin />;
   }
   return (
-    <GraphDrawerContext.Provider value={{ data: data?.data, refresh }}>{props.children}</GraphDrawerContext.Provider>
+    <GraphDrawerContext.Provider
+      value={{
+        data: service.data?.data,
+      }}
+    >
+      {props.children}
+    </GraphDrawerContext.Provider>
   );
 };

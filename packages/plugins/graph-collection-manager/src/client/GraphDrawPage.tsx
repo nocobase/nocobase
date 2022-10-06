@@ -1,15 +1,23 @@
-import React, { useLayoutEffect, useRef, useEffect, useContext } from 'react';
+import React, { useLayoutEffect, useRef, useEffect, useContext, useState } from 'react';
 import { Graph, Cell } from '@antv/x6';
 import dagre from 'dagre';
 import '@antv/x6-react-shape';
+import {
+  useAPIClient,
+  useActionContext,
+  useRequest,
+  useCollectionManager,
+  APIClient,
+  useResourceActionContext,
+  useResourceContext,
+  useRecord,
+} from '@nocobase/client';
 import { formatData } from './utils';
-import {GraphDrawerContext} from './GraphCollectionEditorProvder';
+import { GraphDrawerContext, options } from './GraphCollectionEditorProvder';
 import CollectionNode from './components/CollectionNode';
 
 const LINE_HEIGHT = 24;
 const NODE_WIDTH = 170;
-
-
 
 let dir = 'LR'; // LR RL TB BT 竖排
 //计算布局
@@ -70,20 +78,20 @@ function getEdges(edges, graph) {
   });
 }
 
+function getCollectionData(rawData, graph) {
+  const { nodes, edges } = formatData(rawData);
+  const cells: Cell[] = [];
+  graph.resetCells(cells);
+  getNodes(nodes, graph);
+  getEdges(edges, graph);
+  layout(graph);
+}
 export const Editor = () => {
+  const api = useAPIClient();
   const graph = useRef(null);
   graph.current = null;
-  const { data: rawData } = useContext(GraphDrawerContext);
-  const getCollectionData = () => {
-    const { nodes, edges } = formatData(rawData);
-    const cells: Cell[] = [];
-    graph.current.resetCells(cells);
-    getNodes(nodes, graph.current);
-    getEdges(edges, graph.current);
-    layout(graph.current);
-  };
-
-  useLayoutEffect(() => {
+  const { data } = useContext(GraphDrawerContext);
+  const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
       panning: true,
@@ -136,12 +144,11 @@ export const Editor = () => {
       },
       true,
     );
-
     Graph.registerNode(
       'er-rect',
       {
         inherit: 'react-shape',
-        component: <CollectionNode graph={myGraph} />,
+        component: <CollectionNode graph={myGraph} refreshGraph={refreshGraph} />,
         ports: {
           groups: {
             list: {
@@ -188,12 +195,24 @@ export const Editor = () => {
       },
       true,
     );
+  };
+
+  useLayoutEffect(() => {
+    initGraphCollections();
+    return () => {
+      graph.current = null;
+    };
   }, []);
+
+  const refreshGraph = async () => {
+    const { data } = await api.request(options);
+    getCollectionData(data.data, graph.current);
+  };
 
   //监听数据，实时更新并渲染
   useEffect(() => {
-    graph.current && getCollectionData();
-  }, [graph.current]);
+    graph.current && getCollectionData(data, graph.current);
+  }, []);
 
   return <div id="container" style={{ width: '100%' }}></div>;
 };

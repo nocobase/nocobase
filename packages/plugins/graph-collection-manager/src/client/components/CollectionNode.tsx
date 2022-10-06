@@ -8,17 +8,24 @@ import {
   APIClient,
   FormItem,
   CollectionField,
-  Form
-  
+  Form,
+  Input,
+  CollectionProvider,
 } from '@nocobase/client';
 import '@antv/x6-react-shape';
+
 import { headClass, tableNameClass, tableBtnClass } from '../style';
 import { collection } from '../schemas/collection';
-import { useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction } from '../action-hooks';
-const api = new APIClient();
+import {CollectionNodeProvder} from './CollectionNodeProvder';
+import {
+  useValuesFromRecord,
+  useUpdateCollectionActionAndRefreshCM,
+  useCancelAction,
+  useDestroyActionAndRefreshCM,
+} from '../action-hooks';
 
 //collection表格
-export default class CollectionNode extends React.Component<{ node?: Node | any; graph: Graph }> {
+export default class CollectionNode extends React.Component<{ node?: Node | any; graph: Graph | any ,refreshGraph:() => Promise<void>}> {
   shouldComponentUpdate() {
     const { node } = this.props;
     if (node) {
@@ -30,66 +37,45 @@ export default class CollectionNode extends React.Component<{ node?: Node | any;
   }
 
   render() {
-    const { node, graph } = this.props;
+    const { node, graph ,refreshGraph} = this.props;
     const {
       store: {
-        data: { label, item },
+        data: { title,name, item },
       },
       id,
     } = node;
-    console.log(this.props);
-    const useDestroyAction = () => {
-      return {
-        async run() {
-          await api.request({
-            url: `/api/collections:destroy?filterByTk=${label}`,
-            method: 'post',
-          });
-        },
-      };
-    };
-    const useDestroyActionAndRefreshCM = () => {
-      const { run } = useDestroyAction();
-      return {
-        async run() {
-          await run();
-          graph.removeNode(id);
-        },
-      };
-    };
     return (
       <div className={headClass}>
-        <span className={tableNameClass}>{label}</span>
+        <span className={tableNameClass}>{title}</span>
         <div className={tableBtnClass}>
-          {/* <EditOutlined
-              onClick={() => {
-                console.log('table edit ');
-              }}
-            /> */}
-
-          <SchemaComponentProvider components={{ DeleteOutlined }}>
-            <SchemaComponent
-              scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
-              components={{ Action, EditOutlined  }}
-              schema={{
-                type: 'void',
-                properties: {
-                  update: {
-                    type: 'void',
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      component: EditOutlined,
-                    },
-                    properties: {
-                      drawer: {
-                        type: 'void',
-                        'x-component': 'Action.Drawer',
-                        'x-decorator': 'Form',
-                        'x-decorator-props': {
-                          useValues: (arg)=>useValuesFromRecord(arg,item) ,
-                        },
-                        title: '{{ t("Edit collection") }}',
-                        properties: {
+          <SchemaComponentProvider  >
+            <CollectionNodeProvder refresh={refreshGraph}>
+            <CollectionProvider
+              collection={collection}
+            >
+              <SchemaComponent
+                scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
+                components={{ Action, EditOutlined, FormItem, CollectionField, Input, Form }}
+                schema={{
+                  type: 'object',
+                  properties: {
+                    update: {
+                      type: 'void',
+                      title: '{{ t("Edit collection") }}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        component: EditOutlined,
+                      },
+                      properties: {
+                        drawer: {
+                          type: 'void',
+                          'x-component': 'Action.Drawer',
+                          'x-decorator': 'Form',
+                          'x-decorator-props': {
+                            useValues: (arg) => useValuesFromRecord(arg, item),
+                          },
+                          title: '{{ t("Edit collection") }}',
+                          properties: {
                             title: {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
@@ -121,12 +107,13 @@ export default class CollectionNode extends React.Component<{ node?: Node | any;
                               },
                             },
                           },
+                        },
                       },
                     },
                   },
-                },
-              }}
-            />
+                }}
+              />
+            </CollectionProvider>
             <SchemaComponent
               components={{ Action, DeleteOutlined }}
               schema={{
@@ -143,12 +130,13 @@ export default class CollectionNode extends React.Component<{ node?: Node | any;
                         title: "{{t('Delete record')}}",
                         content: "{{t('Are you sure you want to delete it?')}}",
                       },
-                      useAction: useDestroyActionAndRefreshCM,
+                      useAction: () => useDestroyActionAndRefreshCM({ name, id, graph }),
                     },
                   },
                 },
               }}
             />
+            </CollectionNodeProvder>
           </SchemaComponentProvider>
         </div>
       </div>

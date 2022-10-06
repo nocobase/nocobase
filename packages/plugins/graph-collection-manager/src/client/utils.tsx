@@ -1,4 +1,5 @@
 import { uid } from '@formily/shared';
+
 const shape = {
   ER: 'er-rect',
   EDGE: 'edge',
@@ -29,7 +30,8 @@ export const formatData = (data) => {
     return {
       id: item.key,
       shape: shape.ER,
-      label: item.name,
+      name: item.name,
+      title:item.title,
       width: 170,
       height: 24,
       ports,
@@ -48,10 +50,10 @@ const formatEdgeData = (data, targetTables, tableData) => {
       targetTables.includes(data[i].target) &&
       ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(data[i].interface)
     ) {
-      const targetTable = tableData.find((v) => v.label === data[i].target);
-      const sourceTable = tableData.find((v) => v.label === data[i].collectionName);
+      const targetTable = tableData.find((v) => v.name === data[i].target);
+      const sourceTable = tableData.find((v) => v.name === data[i].collectionName);
       if (data[i].interface === 'm2m') {
-        const throughTable = tableData.find((v) => v.label === data[i].through);
+        const throughTable = tableData.find((v) => v.name === data[i].through);
         throughTable &&
           edges.push({
             id: uid(),
@@ -153,7 +155,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
           });
       } else {
         const legalEdge = tableData
-          .find((v) => v.label == data[i].collectionName)
+          .find((v) => v.name == data[i].collectionName)
           .ports.find((v) => v.attrs.portNameLabel.text === data[i].foreignKey);
         legalEdge &&
           edges.push({
@@ -284,3 +286,5 @@ const getRelationship = (relatioship) => {
       return [];
   }
 };
+
+
