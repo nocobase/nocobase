@@ -789,6 +789,9 @@ export const createTreeTableBlockSchema = (options) => {
           rowSelection: {
             type: 'checkbox',
           },
+          expandable: {
+            childrenColumnName: 'children',
+          },
           useProps: '{{ useTableBlockProps }}',
         },
         properties: {

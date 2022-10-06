@@ -155,7 +155,7 @@ const useValidator = (validator: (value: any) => string) => {
 export const Table: any = observer((props: any) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
-  const { pagination: pagination1, useProps, onChange, ...others1 } = props;
+  const { pagination: pagination1, expandable, useProps, onChange, ...others1 } = props;
   const { pagination: pagination2, ...others2 } = useProps?.() || {};
   const {
     dragSort = false,
@@ -383,6 +383,7 @@ export const Table: any = observer((props: any) => {
           rowKey={rowKey ?? defaultRowKey}
           {...others}
           {...restProps}
+          expandable={!!expandable ? expandable : { childrenColumnName: '-' }}
           pagination={paginationProps}
           components={components}
           onChange={(pagination, filters, sorter, extra) => {
