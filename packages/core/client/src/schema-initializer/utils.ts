@@ -398,7 +398,19 @@ export const useCollectionDataSourceItems = (componentName) => {
       type: 'itemGroup',
       title: t('Select collection'),
       children: collections
-        ?.filter((item) => !item.inherit)
+        ?.filter((item) => {
+          let flag = true
+          switch (componentName) {
+            case 'Tree':
+              flag = !!item.treeType
+              break;
+            case 'TreeTable':
+              flag = !!item.treeType
+              break;
+            default:
+          }
+          return !item.inherit && flag;
+        })
         ?.map((item, index) => {
           const templates = getTemplatesByCollection(item.name).filter((template) => {
             return (
