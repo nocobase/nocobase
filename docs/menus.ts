@@ -20,7 +20,7 @@ export default {
       ],
     },
     '/getting-started/upgrading',
-    '/getting-started/deployment',
+    // '/getting-started/deployment',
   ],
   '/manual': [
     '/manual/functional-zoning',
@@ -166,7 +166,11 @@ export default {
     {
       title: '@nocobase/server',
       type: 'subMenu',
-      children: ['/api/server/application', '/api/server/plugin-manager', '/api/server/plugin'],
+      children: [
+        '/api/server/application',
+        //'/api/server/plugin-manager',
+        '/api/server/plugin',
+      ],
     },
     {
       title: '@nocobase/database',
@@ -210,7 +214,7 @@ export default {
       title: '@nocobase/client',
       type: 'subMenu',
       children: [
-        '/api/client/index',
+        // '/api/client/index',
         '/api/client/application',
         '/api/client/route-switch',
         {
@@ -228,7 +232,7 @@ export default {
           'title.zh-CN': 'Extensions',
           type: 'subMenu',
           children: [
-            '/api/client/extensions/schema-component',
+            // '/api/client/extensions/schema-component',
             '/api/client/extensions/collection-manager',
             '/api/client/extensions/block-provider',
             '/api/client/extensions/acl',
