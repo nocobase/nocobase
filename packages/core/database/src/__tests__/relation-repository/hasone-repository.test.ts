@@ -31,6 +31,23 @@ describe('has one repository', () => {
     await db.sync();
   });
 
+  test('create', async () => {
+    const user = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const userProfileRepository = new HasOneRepository(User, 'profile', user['id']);
+    let profile = await userProfileRepository.find();
+
+    profile = await userProfileRepository.create({
+      values: {
+        avatar: 'avatar1',
+      },
+    });
+
+    console.log(profile.toJSON());
+  });
+
   test('find', async () => {
     const user = await User.repository.create({
       values: { name: 'u1' },

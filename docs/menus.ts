@@ -55,7 +55,7 @@ export default {
         '/development/guide/i18n',
         '/development/guide/migration',
         {
-          title: 'UI Schema Designer',
+          title: 'UI 设计器',
           type: 'subMenu',
           children: [
             // '/development/guide/ui-schema-designer/index',
@@ -72,7 +72,6 @@ export default {
         },
         '/development/guide/ui-router',
         '/development/guide/settings-center',
-        '/development/guide/commands',
       ],
     },
     {
@@ -177,7 +176,10 @@ export default {
         '/api/database/collection',
         '/api/database/field',
         '/api/database/repository',
-        '/api/database/relation-repository',
+        '/api/database/relation-repository/has-one-repository',
+        '/api/database/relation-repository/has-many-repository',
+        '/api/database/relation-repository/belongs-to-repository',
+        '/api/database/relation-repository/belongs-to-many-repository',
         '/api/database/operators',
       ],
     },
@@ -192,8 +194,17 @@ export default {
       ],
     },
     {
-      title: '@nocobase/actions',
-      path: '/api/actions',
+      title: '@nocobase/acl',
+      type: 'subMenu',
+      children: [
+        '/api/acl/index',
+        '/api/acl/acl',
+        '/api/acl/acl-role',
+        '/api/acl/acl-resource',
+        '/api/acl/acl-available-action',
+        '/api/acl/acl-available-strategy',
+        '/api/acl/allow-manager',
+      ],
     },
     {
       title: '@nocobase/client',
@@ -226,12 +237,12 @@ export default {
       ],
     },
     {
-      title: '@nocobase/acl',
-      path: '/api/acl',
-    },
-    {
       title: '@nocobase/cli',
       path: '/api/cli',
+    },
+    {
+      title: '@nocobase/actions',
+      path: '/api/actions',
     },
     {
       title: '@nocobase/sdk',
