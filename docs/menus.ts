@@ -39,7 +39,11 @@ export default {
       title: 'Getting started',
       'title.zh-CN': '快速开始',
       type: 'group',
-      children: ['/development/index', '/development/your-fisrt-plugin'],
+      children: [
+        '/development/index', 
+        '/development/your-fisrt-plugin',
+        '/development/learning-guide',
+      ],
     },
     {
       title: 'Extension Guides',

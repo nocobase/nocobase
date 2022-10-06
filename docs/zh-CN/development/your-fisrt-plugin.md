@@ -2,19 +2,10 @@
 
 在此之前，需要先安装好 NocoBase：
 
-- create-nocobase-app 安装
-- Git 源码安装
+- [create-nocobase-app 安装](/getting-started/installation/create-nocobase-app)
+- [Git 源码安装](/getting-started/installation/git-clone)
 
-相关安装、启动命令如下：
-
-```bash
-cd my-nocobase-app
-yarn install
-yarn nocobase install
-yarn dev
-```
-
-插件开发和调试，需要在开发环境并通过 `yarn dev` 启动。做好准备之后，我们就可以开始 NocoBase 的插件开发之旅了。
+安装好 NocoBase 之后，我们就可以开始插件开发之旅了。
 
 ## 创建插件
 
@@ -89,6 +80,17 @@ yarn pm add hello
 
 ```bash
 yarn pm enable hello
+```
+
+## 启动应用
+
+```bash
+# for development
+yarn dev
+
+# for production
+yarn build
+yarn start
 ```
 
 ## 体验插件功能
