@@ -1,12 +1,4 @@
-# SchemaComponent
-
-## Core
-
-- SchemaComponentProvider
-- SchemaComponent
-- createDesignable
-- useDesignable
-- useCompile
+# 适配的 Schema 组件
 
 ## Common
 

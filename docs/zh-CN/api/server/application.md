@@ -124,7 +124,11 @@ NocoBase 默认对 context 注入了以下成员，可以在请求处理函数�
 
 ### `command()`
 
+自定义 command
+
 ### `findCommand()`
+
+查找已定义 command
 
 ### `runAsCLI()`
 
