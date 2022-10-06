@@ -1,7 +1,7 @@
+import lodash from 'lodash';
 import { Model as SequelizeModel, ModelCtor } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
-import lodash from 'lodash';
 import { Field } from './fields';
 
 interface IModel {
@@ -22,6 +22,8 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 {
   public static database: Database;
   public static collection: Collection;
+
+  [key: string]: any;
 
   public toJSON<T extends TModelAttributes>(): T {
     const handleObj = (obj, options: JSONTransformerOptions) => {

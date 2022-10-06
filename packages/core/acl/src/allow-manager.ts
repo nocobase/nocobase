@@ -1,6 +1,6 @@
 import { ACL } from './acl';
 
-export type ConditionFunc = (ctx: any) => Promise<boolean>;
+export type ConditionFunc = (ctx: any) => Promise<boolean> | boolean;
 
 export class AllowManager {
   protected skipActions = new Map<string, Map<string, string | ConditionFunc | true>>();
