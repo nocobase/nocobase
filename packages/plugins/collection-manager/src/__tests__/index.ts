@@ -5,7 +5,9 @@ import lodash from 'lodash';
 import Plugin from '../';
 
 export async function createApp(options = {}) {
-  const app = mockServer();
+  const app = mockServer({
+    acl: false,
+  });
 
   if (lodash.get(options, 'cleanDB', true)) {
     await app.cleanDb();

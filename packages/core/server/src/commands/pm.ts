@@ -19,6 +19,7 @@ export default (app: Application) => {
       const pm = {
         async create() {
           const name = plugins[0];
+          const { run } = require('@nocobase/cli/src/util');
           const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
           const generator = new PluginGenerator({
             cwd: resolve(process.cwd(), name),
@@ -28,14 +29,32 @@ export default (app: Application) => {
             },
           });
           await generator.run();
+          await run('yarn', ['install']);
         },
         async add() {
-          if (started) {
-            const res = await axios.get(`${baseURL}pm:add/${plugins.join(',')}`);
-            console.log(res.data);
-            return;
-          }
-          await app.pm.add(plugins);
+          try {
+            if (started) {
+              const res = await axios.get(`${baseURL}pm:add/${plugins.join(',')}`);
+            } else {
+              await app.pm.add(plugins);
+            }
+          } catch (error) {}
+          const fs = require('fs/promises');
+          await Promise.all(
+            plugins.map((plugin) => {
+              const file = resolve(
+                process.cwd(),
+                'packages',
+                process.env.APP_PACKAGE_ROOT || 'app',
+                'client/src/plugins',
+                `${plugin}.ts`,
+              );
+              console.log(file);
+              return fs.writeFile(file, `export { default } from '@nocobase/plugin-${plugin}/client';`);
+            }),
+          );
+          const { run } = require('@nocobase/cli/src/util');
+          await run('yarn', ['nocobase', 'postinstall']);
         },
         async enable() {
           if (started) {

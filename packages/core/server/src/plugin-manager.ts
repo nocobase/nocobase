@@ -37,6 +37,7 @@ export class PluginManager {
         { type: 'string', name: 'name', unique: true },
         { type: 'string', name: 'version' },
         { type: 'boolean', name: 'enabled' },
+        { type: 'boolean', name: 'installed' },
         { type: 'boolean', name: 'builtIn' },
         { type: 'json', name: 'options' },
       ],
@@ -71,6 +72,12 @@ export class PluginManager {
             ctx.throw(400, 'plugin invalid');
           }
           await app.reload();
+          if (plugin.model && !plugin.model.get('installed')) {
+            await app.db.sync();
+            await plugin.install();
+            plugin.model.set('installed', true);
+            await plugin.model.save();
+          }
           await app.start();
           ctx.body = 'ok';
           await next();
@@ -104,11 +111,18 @@ export class PluginManager {
             ctx.throw(400, 'filterByTk invalid');
           }
           const name = pm.getPackageName(filterByTk);
+          console.log(name, pm.plugins.keys());
           const plugin = pm.get(name);
-          if (plugin.model) {
+          if (plugin?.model) {
             await plugin.model.destroy();
+            pm.remove(name);
+          } else {
+            await pm.repository.destroy({
+              filter: {
+                name: filterByTk,
+              },
+            });
           }
-          pm.remove(name);
           await app.reload();
           await app.start();
           ctx.body = 'ok';
@@ -128,6 +142,7 @@ export class PluginManager {
       await this.collection.sync();
     });
     this.app.on('beforeLoadAll', async (options) => {
+      await this.collection.sync();
       const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
       if (!exists) {
         return;
@@ -184,7 +199,7 @@ export class PluginManager {
         for (const plugin of pluginClass) {
           await this.add(plugin);
         }
-      }
+      };
       return addMultiple();
     }
     if (typeof pluginClass === 'string') {

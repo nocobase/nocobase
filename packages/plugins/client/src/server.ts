@@ -96,7 +96,7 @@ export class ClientPlugin extends Plugin {
       root = resolve(process.cwd(), root);
     }
     if (process.env.APP_ENV !== 'production' && root) {
-      this.app.middleware.unshift(async (ctx, next) => {
+      this.app.middleware.nodes.unshift(async (ctx, next) => {
         if (ctx.path.startsWith(this.app.resourcer.options.prefix)) {
           return next();
         }

@@ -2,11 +2,12 @@ import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
+import compose from 'koa-compose';
 import { isBoolean } from 'lodash';
 import semver from 'semver';
 import { createACL } from './acl';
@@ -15,7 +16,6 @@ import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-
 const packageJson = require('../package.json');
 
 export type PluginConfiguration = string | [string, any];
@@ -33,6 +33,7 @@ export interface ApplicationOptions {
   registerActions?: boolean;
   i18n?: i18n | InitOptions;
   plugins?: PluginConfiguration[];
+  acl?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -148,6 +149,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public listenServer: Server;
 
+  declare middleware: any;
+
   constructor(public options: ApplicationOptions) {
     super();
     this.init();
@@ -191,7 +194,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._events = [];
     // @ts-ignore
     this._eventsCount = [];
-    this.middleware = [];
+    this.middleware = new Toposort<any>();
     // this.context = Object.create(context);
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
@@ -207,6 +210,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this._appManager = new AppManager(this);
+
+    if (this.options.acl !== false) {
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
+    }
 
     registerMiddlewares(this, options);
 
@@ -255,12 +262,27 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
+  // @ts-ignore
   use<NewStateT = {}, NewContextT = {}>(
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
-    options?: MiddlewareOptions,
+    options?: ToposortOptions,
   ) {
-    // @ts-ignore
-    return super.use(middleware);
+    this.middleware.add(middleware, options);
+    return this;
+  }
+
+  callback() {
+    const fn = compose(this.middleware.nodes);
+
+    if (!this.listenerCount('error')) this.on('error', this.onerror);
+
+    const handleRequest = (req, res) => {
+      const ctx = this.createContext(req, res);
+      // @ts-ignore
+      return this.handleRequest(ctx, fn);
+    };
+
+    return handleRequest;
   }
 
   collection(options: CollectionOptions) {

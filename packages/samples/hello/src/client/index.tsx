@@ -2,8 +2,7 @@ import { TableOutlined } from '@ant-design/icons';
 import {
   SchemaComponentOptions,
   SchemaInitializer,
-  SchemaInitializerContext,
-  SettingsCenterProvider
+  SchemaInitializerContext, SettingsCenterProvider
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext } from 'react';
@@ -48,7 +47,7 @@ export default React.memo((props) => {
   return (
     <SettingsCenterProvider
       settings={{
-        'hello-sample': {
+        'sample-hello': {
           title: 'Hello',
           icon: 'ApiOutlined',
           tabs: {

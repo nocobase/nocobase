@@ -1,4 +1,5 @@
 import { Action } from '@nocobase/resourcer';
+import { Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
 import parse from 'json-templates';
 import compose from 'koa-compose';
@@ -43,7 +44,7 @@ interface CanArgs {
 export class ACL extends EventEmitter {
   protected availableActions = new Map<string, ACLAvailableAction>();
   protected availableStrategy = new Map<string, ACLAvailableStrategy>();
-  protected middlewares = [];
+  protected middlewares: Toposort<any>;
 
   public allowManager = new AllowManager(this);
 
@@ -55,6 +56,8 @@ export class ACL extends EventEmitter {
 
   constructor() {
     super();
+
+    this.middlewares = new Toposort<any>();
 
     this.beforeGrantAction((ctx) => {
       if (lodash.isPlainObject(ctx.params) && ctx.params.own) {
@@ -83,7 +86,7 @@ export class ACL extends EventEmitter {
       }
     });
 
-    this.middlewares.push(this.allowManager.aclMiddleware());
+    this.middlewares.add(this.allowManager.aclMiddleware());
   }
 
   define(options: DefineOptions): ACLRole {
@@ -213,8 +216,8 @@ export class ACL extends EventEmitter {
     return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
   }
 
-  use(fn: any) {
-    this.middlewares.push(fn);
+  use(fn: any, options?: ToposortOptions) {
+    this.middlewares.add(fn, options);
   }
 
   allow(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
@@ -263,7 +266,7 @@ export class ACL extends EventEmitter {
         can: ctx.can({ resource: resourceName, action: actionName }),
       };
 
-      return compose(acl.middlewares)(ctx, async () => {
+      return compose(acl.middlewares.nodes)(ctx, async () => {
         const permission = ctx.permission;
 
         if (permission.skip) {

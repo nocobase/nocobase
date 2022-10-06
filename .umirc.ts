@@ -127,7 +127,7 @@ export default defineConfig({
         path: '/manual'
       },
       {
-        title: '开发教程',
+        title: '插件开发',
         path: '/development'
       },
       {
