@@ -1,26 +1,47 @@
 export default {
-  '/introduction': [
-    '/introduction/index',
-    '/introduction/features',
-    '/introduction/when',
-    '/introduction/quickstart',
-    '/introduction/roadmap',
-    '/introduction/thanks',
-  ],
-  '/getting-started': [
+  '/welcome': [
     {
-      title: 'Installation',
-      'title.zh-CN': '安装',
-      type: 'subMenu',
+      title: 'Welcome',
+      'title.zh-CN': '欢迎',
+      type: 'group',
       children: [
-        '/getting-started/installation/index',
-        '/getting-started/installation/docker-compose',
-        '/getting-started/installation/create-nocobase-app',
-        '/getting-started/installation/git-clone',
+        '/welcome/introduction/index',
+        '/welcome/introduction/features',
+        '/welcome/introduction/when',
+        '/welcome/introduction/learning-guide',
       ],
     },
-    '/getting-started/upgrading',
-    // '/getting-started/deployment',
+    {
+      title: 'Getting started',
+      'title.zh-CN': '快速开始',
+      type: 'group',
+      children: [
+        {
+          title: 'Installation',
+          'title.zh-CN': '安装',
+          type: 'subMenu',
+          children: [
+            '/welcome/getting-started/installation/index',
+            '/welcome/getting-started/installation/docker-compose',
+            '/welcome/getting-started/installation/create-nocobase-app',
+            '/welcome/getting-started/installation/git-clone',
+          ],
+        },
+        '/welcome/getting-started/upgrading',
+        '/welcome/getting-started/deployment',
+      ],
+    },
+    {
+      title: 'Community',
+      'title.zh-CN': '社区',
+      type: 'group',
+      children: [
+        '/welcome/community/contributing',
+        '/welcome/community/faq',
+        '/welcome/community/translations',
+        '/welcome/community/thanks',
+      ],
+    },
   ],
   '/manual': [
     '/manual/functional-zoning',
@@ -42,7 +63,6 @@ export default {
       children: [
         '/development/index', 
         '/development/your-fisrt-plugin',
-        '/development/learning-guide',
       ],
     },
     {

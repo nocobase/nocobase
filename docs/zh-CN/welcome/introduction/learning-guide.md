@@ -1,8 +1,10 @@
 # 学习路线指南
 
-## 第一步：从安装运行 NocoBase 开始
+## 1. 从安装运行 NocoBase 开始
 
-主要的命令包括：
+**相关文档：<a href="/welcome/getting-started/installation" target="_blank">快速开始</a>**
+
+主要命令包括：
 
 下载
 
@@ -28,7 +30,9 @@ yarn build
 yarn start
 ```
 
-## 第二步：了解 NocoBase 平台提供的核心功能
+## 2. 了解 NocoBase 平台提供的核心功能
+
+**相关文档：<a href="/manual" target="_blank">使用手册</a>**
 
 主要的三部分包括：
 
@@ -36,7 +40,9 @@ yarn start
 - 插件管理器：功能需求扩展
 - 配置中心：已激活插件提供的配置功能
 
-## 第三步：进一步了解插件管理器的使用
+## 3. 进一步了解插件管理器的使用
+
+**相关文档：<a href="/development" target="_blank">插件开发</a>**
 
 NocoBase 提供了简易的插件管理器界面，但是在界面上只能处理本地插件的 enable、disable 和 remove，完整的操作需要通过 CLI
 
@@ -55,7 +61,9 @@ yarn pm remove hello
 
 更多插件示例，查看 packages/samples，通过 samples 插件能够了解插件的基本用法，就可以进一步开发插件了。
 
-## 第四步：开发新插件，了解模块分布
+## 4. 开发新插件，了解模块分布
+
+**相关文档：<a href="/development/guide" target="_blank">扩展指南</a>**
 
 [编写第一个插件](/development/your-fisrt-plugin) 章节，虽然简单的讲述了插件的主要开发流程，但是为了更快速的介入插件细节，你可能需要进一步了解 NocoBase 框架的模块分布：
 
@@ -74,7 +82,9 @@ yarn pm remove hello
   - Commands：自定义命令行
   - Migrations：迁移脚本
 
-## 第五步：查阅各模块主要 API
+## 5. 查阅各模块主要 API
+
+**相关文档：<a href="/api" target="_blank">API 参考</a>**
 
 查看各模块的 packages/samples，进一步了解模块主要 API 的用法
 
