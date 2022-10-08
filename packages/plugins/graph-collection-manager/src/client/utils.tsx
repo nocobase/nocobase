@@ -14,16 +14,17 @@ export const formatData = (data) => {
       edgeData.push(field);
       return {
         id: field.key,
+        name: field.name,
         group: 'list',
-        attrs: {
-          portNameLabel: {
-            text: field.name,
-            fill:''
-          },
-          portTypeLabel: {
-            text: field.type || field.interface,
-          },
-        },
+        // attrs: {
+        //     circle: {
+        //       r: 6,
+        //       magnet: true,
+        //       stroke: '#31d0c6',
+        //       fill: '#fff',
+        //       strokeWidth: 2,
+        //     },
+        //   },
       };
     });
     targetTablekeys.push(item.name);
@@ -31,11 +32,11 @@ export const formatData = (data) => {
       id: item.key,
       shape: shape.ER,
       name: item.name,
-      title:item.title,
-      width: 170,
+      title: item.title,
+      width: 200,
       height: 24,
       ports,
-      item:item,
+      item: item,
     };
   });
   const edges = formatEdgeData(edgeData, targetTablekeys, tableData);
@@ -52,19 +53,26 @@ const formatEdgeData = (data, targetTables, tableData) => {
     ) {
       const targetTable = tableData.find((v) => v.name === data[i].target);
       const sourceTable = tableData.find((v) => v.name === data[i].collectionName);
+
+      //   const sourceNode = _.find(this.nodes, (node: Node) => node.id === source);
+      //   const targetNode = _.find(this.nodes, (node: Node) => node.id === target);
       if (data[i].interface === 'm2m') {
         const throughTable = tableData.find((v) => v.name === data[i].through);
         throughTable &&
           edges.push({
             id: uid(),
-            shape: shape.EDGE,
+            // shape: shape.EDGE,
+            // source: sourceTable.id,
+            // target: throughTable.id,
             source: {
               cell: sourceTable.id,
-              port: sourceTable.ports.find((v) => v.attrs.portNameLabel.text === data[i].sourceKey).id,
+              port: sourceTable.ports.find((v) => v.name === data[i].sourceKey).id,
+              anchor: 'center',
             },
             target: {
               cell: throughTable.id,
-              port: throughTable.ports.find((v) => v.attrs.portNameLabel.text === data[i].foreignKey).id,
+              port: throughTable.ports.find((v) => v.name === data[i].foreignKey).id,
+              anchor: 'center', 
             },
             attrs: {
               line: {
@@ -75,7 +83,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
               },
             },
             connector: 'rounded',
-            router: 'metro',
+            router: 'manhattan',
             labels: [
               {
                 markup: [
@@ -156,18 +164,22 @@ const formatEdgeData = (data, targetTables, tableData) => {
       } else {
         const legalEdge = tableData
           .find((v) => v.name == data[i].collectionName)
-          .ports.find((v) => v.attrs.portNameLabel.text === data[i].foreignKey);
+          .ports.find((v) => v.name === data[i].foreignKey);
         legalEdge &&
           edges.push({
             id: uid(),
-            shape: shape.EDGE,
+            // shape: shape.EDGE,
+            // source: sourceTable.id,
+            // target: targetTable.id,
             source: {
               cell: sourceTable.id,
               port: legalEdge.id,
+              anchor: 'center',
             },
             target: {
               cell: targetTable.id,
-              port: targetTable.ports.find((v) => v.attrs.portNameLabel.text === data[i].targetKey).id,
+              port: targetTable.ports.find((v) => v.name === data[i].targetKey).id,
+              anchor: 'center',
             },
             attrs: {
               line: {
@@ -183,10 +195,10 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 ? {
                     name: 'oneSide',
                     args: {
-                      side: 'right',
+                      side: 'left',
                     },
                   }
-                : 'metro',
+                : 'manhattan',
             labels: [
               {
                 markup: [
@@ -286,5 +298,3 @@ const getRelationship = (relatioship) => {
       return [];
   }
 };
-
-

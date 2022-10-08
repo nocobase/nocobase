@@ -1,192 +1,6 @@
 import { css } from '@emotion/css';
 
-export const workflowPageClass = css`
-  height: 100%;
-  width: 100%;
-  overflow: auto;
 
-  .workflow-toolbar{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 1rem;
-    background: #fff;
-
-    header{
-      display: flex;
-      align-items: center;
-      gap: .5em;
-    }
-
-    aside{
-      display: flex;
-      align-items: center;
-      gap: .5em;
-    }
-  }
-
-  .workflow-canvas{
-    width: min-content;
-    min-width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2em;
-  }
-`;
-
-export const workflowVersionDropdownClass = css`
-  .ant-dropdown-menu-item{
-
-    &.unexecuted{
-      font-style: italic;
-    }
-
-    .ant-dropdown-menu-title-content{
-      text-align: right;
-
-      time{
-        margin-left: 0.5rem;
-        color: #999;
-        font-size: 80%;
-      }
-    }
-  }
-`;
-
-export const branchBlockClass = css`
-  display: flex;
-  position: relative;
-
-  :before{
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(50% - .5px);
-    width: 1px;
-    background-color: #f0f2f5;
-  }
-`;
-
-export const branchClass = css`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  padding: 0 2em;
-
-  .workflow-node-list{
-    flex-grow: 1;
-    min-width: 20em;
-  }
-
-  .workflow-branch-lines{
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background-color: #ddd;
-  }
-
-  :before,:after{
-    content: "";
-    position: absolute;
-    height: 1px;
-    background-color: #ddd;
-  }
-
-  :before{
-    top: 0;
-  }
-
-  :after{
-    bottom: 0;
-  }
-
-  :not(:first-child):not(:last-child){
-    :before,:after{
-      left: 0;
-      width: 100%;
-    }
-  }
-
-  :last-child:not(:first-child){
-    :before,:after{
-      right: 50%;
-      width: 50%;
-    }
-  }
-
-  :first-child:not(:last-child){
-    :before,:after{
-      left: 50%;
-      width: 50%;
-    }
-  }
-`;
-
-export const nodeBlockClass = css`
-  flex-grow: 1;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-`;
-
-export const nodeClass = css`
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
-
-export const nodeCardClass = css`
-  width: 20em;
-  background: #fff;
-  padding: 1em;
-  box-shadow: 0 .25em .5em rgba(0, 0, 0, .1);
-
-  .workflow-node-remove-button{
-    position: absolute;
-    right: -.5em;
-    top: -.5em;
-    color: #999;
-    opacity: 0;
-    transition: opacity .3s ease;
-
-    &[disabled]{
-      display: none;
-    }
-
-    &:hover {
-      color: red;
-    }
-  }
-
-  &:hover{
-    .workflow-node-remove-button{
-      opacity: 1;
-    }
-  }
-`;
-
-export const nodeHeaderClass = css`
-  position: relative;
-`;
-
-export const nodeMetaClass = css`
-  margin-bottom: .5em;
-`;
-
-export const nodeTitleClass = css`
-  font-weight: normal;
-
-  .workflow-node-id{
-    color: #999;
-  }
-`;
 
 export const nodeSubtreeClass = css`
   display: flex;
@@ -199,8 +13,86 @@ export const addButtonClass = css`
   padding: 2em 0;
 `;
 
-export const headClass=css`
+export const  entityContainer=css`
+    width: 200px;
     height: 100%;
+    // min-height:150px;
+    border-radius: 2px;
+    background-color: white;
+    .body {
+        width:100%;
+        height: 100%;
+        background-color:#EFF4FF;
+        overflow: auto;
+        cursor: pointer;
+        display: inline-table;
+
+        border: 1px solid #5F95FF;
+        .body-item {
+          width: 100%;
+          max-width:198px;
+          height: 28px;
+          font-size: 12px;
+          color: #595959;
+          height:25px;
+          border-bottom: 1px solid #5F95FF;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+
+          .field-operator {
+            display: none;
+          }
+          &:hover {
+            .field-operator {
+              display: block;
+              position: absolute;
+              width: 100%;
+              height: 25px;
+              line-height: 25px;
+              left: 0px;
+              background: rgba(59, 60, 61, 0.5);
+              z-index: 999;
+              cursor: pointer;
+              text-align: right;
+              span {
+                margin: 3px 5px 0;
+                font-size: 18px;
+                color: #ffffffd9;
+              }
+              span:hover {
+                color:#fff
+              }
+            }
+          }
+  
+          .name {
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            margin-left: 6px;
+  
+            .pk,
+            .fk {
+              width: 12px;
+              font-family: HelveticaNeue-CondensedBold;
+              color: #ffd666;
+              margin-right: 6px;
+            }
+          }
+  
+          .type {
+            color: #bfbfbf;
+            font-size: 8px;
+            margin-right: 8px;
+          }
+        }
+      }
+`
+
+export const headClass=css`
+    height: 20px;
     font-size: 12px;
     display: flex;
     flex-direction: row;

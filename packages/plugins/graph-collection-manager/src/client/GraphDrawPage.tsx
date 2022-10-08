@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useRef, useEffect, useContext, useState } from 
 import { Graph, Cell } from '@antv/x6';
 import dagre from 'dagre';
 import '@antv/x6-react-shape';
+import { find } from 'lodash';
 import {
   useAPIClient,
   useActionContext,
@@ -16,23 +17,23 @@ import { formatData } from './utils';
 import { GraphDrawerContext, options } from './GraphCollectionEditorProvder';
 import CollectionNode from './components/CollectionNode';
 
-const LINE_HEIGHT = 24;
-const NODE_WIDTH = 170;
+const LINE_HEIGHT = 25;
+const NODE_WIDTH = 200;
 
-let dir = 'LR'; // LR RL TB BT 竖排
+let dir = 'TB'; // LR RL TB BT 竖排
 //计算布局
 function layout(graph) {
   const nodes = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: dir, nodesep: 100, ranksep: 100 });
+  g.setGraph({ rankdir: dir, nodesep: 30, ranksep: 30 });
   g.setDefaultEdgeLabel(() => ({}));
   let width = 0;
   let height = 0;
   nodes.forEach((node, i) => {
     if (node.id !== 'parent') {
-      width = 150;
-      height = 200;
+      width = 300;
+      height = 400;
       g.setNode(node.id, { width, height });
     }
   });
@@ -41,6 +42,7 @@ function layout(graph) {
     const target = edge.getTarget();
     g.setEdge(source.cell, target.cell);
   });
+  console.log(g);
   dagre.layout(g);
   graph.freeze();
   g.nodes().forEach((id) => {
@@ -56,24 +58,21 @@ function layout(graph) {
 
 function getNodes(nodes, graph) {
   nodes.forEach((item) => {
-    if (item.shape !== 'edge') {
       graph.addNode(item);
-    }
   });
 }
 
 function getEdges(edges, graph) {
+  const nodes = graph.getNodes();
   edges.forEach((item) => {
-    if (item.shape == 'edge') {
-      if (item.source && item.target) {
-        graph.addEdge({
-          ...item,
-          connector: {
-            name: 'rounded',
-            zIndex: 10000,
-          },
-        });
-      }
+    if (item.source && item.target) {
+      graph.addEdge({
+        ...item,
+        connector: {
+          name: 'rounded',
+          zIndex: 10000,
+        },
+      });
     }
   });
 }
@@ -91,6 +90,7 @@ export const Editor = () => {
   const graph = useRef(null);
   graph.current = null;
   const { data } = useContext(GraphDrawerContext);
+
   const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
@@ -106,7 +106,7 @@ export const Editor = () => {
         router: {
           name: 'er',
           args: {
-            offset: 25,
+            // offset: 25,
             direction: 'H',
           },
         },
@@ -157,35 +157,14 @@ export const Editor = () => {
                   tagName: 'rect',
                   selector: 'portBody',
                 },
-                {
-                  tagName: 'text',
-                  selector: 'portNameLabel',
-                },
-                {
-                  tagName: 'text',
-                  selector: 'portTypeLabel',
-                },
               ],
               attrs: {
                 portBody: {
                   width: NODE_WIDTH,
                   height: LINE_HEIGHT,
                   strokeWidth: 1,
-                  stroke: '#5F95FF',
-                  fill: '#EFF4FF',
                   magnet: true,
-                },
-                portNameLabel: {
-                  ref: 'portBody',
-                  refX: 6,
-                  refY: 6,
-                  fontSize: 10,
-                },
-                portTypeLabel: {
-                  ref: 'portBody',
-                  refX: 95,
-                  refY: 6,
-                  fontSize: 10,
+                  visibility:'hidden'
                 },
               },
               position: 'erPortPosition',
