@@ -10,7 +10,11 @@ import {
   CollectionField,
   Form,
   Input,
+  Select,
+  Checkbox,
   CollectionProvider,
+  ResourceActionProvider,
+  CollectionManagerProvider,
 } from '@nocobase/client';
 import '@antv/x6-react-shape';
 import { cx } from '@emotion/css';
@@ -23,7 +27,9 @@ import {
   useUpdateCollectionActionAndRefreshCM,
   useCancelAction,
   useDestroyActionAndRefreshCM,
+  useDestroyFieldActionAndRefreshCM,
 } from '../action-hooks';
+import { EditFieldAction } from './EditFieldAction';
 
 //collection表格
 export default class CollectionNode extends React.Component<{
@@ -147,17 +153,155 @@ export default class CollectionNode extends React.Component<{
         <div className="body">
           {item.fields.map((property) => {
             return (
-              <div
-                className="body-item"
-                key={property.key}
-                id={property.key}
-                onClick={() => {
-                  console.log(4);
-                }}
-              >
+              <div className="body-item" key={property.key} id={property.key}>
                 <div className="field-operator">
-                    <DeleteOutlined />
-                    <EditOutlined />
+                  <SchemaComponentProvider>
+                    <CollectionNodeProvder refresh={refreshGraph}>
+                      <CollectionManagerProvider collections={collection}>
+                        <SchemaComponent
+                          scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
+                          components={{
+                            Action,
+                            EditOutlined,
+                            FormItem,
+                            CollectionField,
+                            Input,
+                            Form,
+                            ResourceActionProvider,
+                            Select,
+                            Checkbox,
+                          }}
+                          schema={{
+                            type: 'object',
+                            'x-collection-field': 'collections.fields',
+                            'x-decorator': 'ResourceActionProvider',
+                            'x-decorator-props': {
+                              association: {
+                                sourceKey: 'name',
+                                targetKey: 'name',
+                              },
+                              collection,
+                              request: {
+                                resource: 'collections.fields',
+                                action: 'list',
+                                params: {
+                                  pageSize: 50,
+                                  filter: {
+                                    'interface.$not': null,
+                                  },
+                                  sort: ['sort'],
+                                  appends: ['uiSchema'],
+                                },
+                              },
+                            },
+                            properties: {
+                              update: {
+                                type: 'void',
+                                'x-action': 'update',
+                                'x-component': EditFieldAction,
+                                'x-component-props': {
+                                  item: {
+                                    ...property,
+                                    collectionName: item.name,
+                                  },
+                                },
+
+                                // 'x-component': 'Action',
+                                // 'x-component-props': {
+                                //   component: EditOutlined,
+                                // },
+                                // properties: {
+                                //   drawer: {
+                                //     type: 'void',
+                                //     'x-component': EditFieldAction,
+                                //         'x-component-props': {
+                                //           item: {
+                                //             ...property,
+                                //             collectionName: item.name,
+                                //           },
+                                //         },
+                                //     // 'x-component': 'Action.Drawer',
+                                //     // properties: {
+                                //     //   action: {
+                                //     //     type: 'void',
+                                //     //     'x-component': EditFieldAction,
+                                //     //     'x-component-props': {
+                                //     //       item: {
+                                //     //         ...property,
+                                //     //         collectionName: item.name,
+                                //     //       },
+                                //     //     },
+                                //     //   },
+                                //     // },
+                                //     // 'x-decorator': 'Form',
+                                //     // 'x-decorator-props': {
+                                //     //   useValues: (arg) => useValuesFromRecord(arg, item),
+                                //     // },
+                                //     // title: '{{ t("Edit collection") }}',
+                                //     // properties: {
+                                //     //   title: {
+                                //     //     'x-component': 'CollectionField',
+                                //     //     'x-decorator': 'FormItem',
+                                //     //   },
+                                //     //   name: {
+                                //     //     'x-component': 'CollectionField',
+                                //     //     'x-decorator': 'FormItem',
+                                //     //     'x-disabled': true,
+                                //     //   },
+                                //     //   footer: {
+                                //     //     type: 'void',
+                                //     //     'x-component': 'Action.Drawer.Footer',
+                                //     //     properties: {
+                                //     //       action1: {
+                                //     //         title: '{{ t("Cancel") }}',
+                                //     //         'x-component': 'Action',
+                                //     //         'x-component-props': {
+                                //     //           useAction: '{{ useCancelAction }}',
+                                //     //         },
+                                //     //       },
+                                //     //       action2: {
+                                //     //         title: '{{ t("Submit") }}',
+                                //     //         'x-component': 'Action',
+                                //     //         'x-component-props': {
+                                //     //           type: 'primary',
+                                //     //           useAction: '{{ useUpdateCollectionActionAndRefreshCM }}',
+                                //     //         },
+                                //     //       },
+                                //     //     },
+                                //     //   },
+                                //     // },
+                                //   },
+                                // },
+                              },
+                            },
+                          }}
+                        />
+                      </CollectionManagerProvider>
+                      <SchemaComponent
+                        components={{ Action, DeleteOutlined }}
+                        schema={{
+                          type: 'void',
+                          properties: {
+                            action: {
+                              type: 'void',
+                              'x-action': 'destroy',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                component: DeleteOutlined,
+                                icon: 'DeleteOutlined',
+                                confirm: {
+                                  title: "{{t('Delete record')}}",
+                                  content: "{{t('Are you sure you want to delete it?')}}",
+                                },
+                                useAction: () =>
+                                  useDestroyFieldActionAndRefreshCM({ name: property.name, collection: item.name }),
+                              },
+                            },
+                          },
+                        }}
+                      />
+                    </CollectionNodeProvder>
+                  </SchemaComponentProvider>
                 </div>
                 <div className="name">
                   {property?.isPK && <span className="pk">PK</span>}

@@ -87,3 +87,29 @@ export const useDestroyActionAndRefreshCM = (props) => {
     },
   };
 };
+
+
+const useDestroyFieldAction = (collection,name) => {
+    return {
+      async run() {
+        await api.request({
+          url: `/api/collections/${collection}/fields:destroy?filterByTk=${name}`,
+          method: 'post',
+        });
+      },
+    };
+  };
+  
+  export const useDestroyFieldActionAndRefreshCM = (props) => {
+    const { graph,collection, name, id } = props;
+    const { run } = useDestroyFieldAction(collection,name);
+    const { refresh } = useContext(GraphCollectionContext);
+
+    return {
+      async run() {
+        await run();
+        refresh()
+        // graph.removeNode(id);
+      },
+    };
+  };

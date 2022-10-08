@@ -46,7 +46,8 @@ export const  entityContainer=css`
           }
           &:hover {
             .field-operator {
-              display: block;
+              display: flex;
+              flex-direction: row-reverse;
               position: absolute;
               width: 100%;
               height: 25px;
