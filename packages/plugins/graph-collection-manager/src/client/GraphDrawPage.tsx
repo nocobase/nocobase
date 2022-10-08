@@ -2,16 +2,8 @@ import React, { useLayoutEffect, useRef, useEffect, useContext, useState } from 
 import { Graph, Cell } from '@antv/x6';
 import dagre from 'dagre';
 import '@antv/x6-react-shape';
-import { find } from 'lodash';
 import {
   useAPIClient,
-  useActionContext,
-  useRequest,
-  useCollectionManager,
-  APIClient,
-  useResourceActionContext,
-  useResourceContext,
-  useRecord,
   APIClientProvider
 } from '@nocobase/client';
 import { formatData } from './utils';
@@ -21,7 +13,7 @@ import CollectionNode from './components/CollectionNode';
 const LINE_HEIGHT = 25;
 const NODE_WIDTH = 200;
 
-let dir = 'TB'; // LR RL TB BT 竖排
+let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
 function layout(graph) {
   const nodes = graph.getNodes();
@@ -33,8 +25,8 @@ function layout(graph) {
   let height = 0;
   nodes.forEach((node, i) => {
     if (node.id !== 'parent') {
-      width = 300;
-      height = 400;
+      width = 200;
+      height = 300;
       g.setNode(node.id, { width, height });
     }
   });
@@ -107,7 +99,6 @@ export const Editor = () => {
         router: {
           name: 'er',
           args: {
-            // offset: 25,
             direction: 'H',
           },
         },
@@ -191,7 +182,6 @@ export const Editor = () => {
     getCollectionData(data.data, graph.current);
   };
 
-  //监听数据，实时更新并渲染
   useEffect(() => {
     graph.current && getCollectionData(data, graph.current);
   }, []);

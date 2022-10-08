@@ -1,18 +1,10 @@
 
 
-import React, { useLayoutEffect, useRef, useEffect, useContext, createContext } from 'react';
-import {
-    useRequest,
-    SchemaComponent,
-    SchemaComponentProvider,
-    Action,
-    APIClient,
-  } from '@nocobase/client';
-  import { Spin } from 'antd';
+import React, {createContext } from 'react';
 
  interface CollectionNodeOptions {
     refresh: () => Promise<void>;
-    record?:object;
+    record?:Object;
   }
 export const GraphCollectionContext = createContext(null);
 

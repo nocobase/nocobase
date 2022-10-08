@@ -150,7 +150,7 @@ const CollectionNode: React.FC<{
               <div className="field-operator">
                 <SchemaComponentProvider>
                   <CollectionNodeProvder refresh={refreshGraph} record={item}>
-                    <CollectionManagerProvider collections={[collection]}>
+                    <CollectionManagerProvider>
                       <SchemaComponent
                         scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
                         components={{
@@ -213,8 +213,6 @@ const CollectionNode: React.FC<{
                 </SchemaComponentProvider>
               </div>
               <div className="name">
-                {property?.isPK && <span className="pk">PK</span>}
-                {property?.isFK && <span className="fk">FK</span>}
                 {property.name}
               </div>
               <div className="type">{property.type || property.interface}</div>

@@ -1,8 +1,7 @@
 import { PartitionOutlined } from '@ant-design/icons';
-import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useActionContext, useRequest,PluginManager, SchemaComponent,CollectionOptions} from '@nocobase/client';
-import { DeleteOutlined, EditOutlined, TableOutlined } from '@ant-design/icons';
+import { useActionContext, useRequest,PluginManager, SchemaComponent} from '@nocobase/client';
+import { DeleteOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';

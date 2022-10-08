@@ -1,5 +1,5 @@
-import React, { createContext, useState } from 'react';
-import { useRequest, useAPIClient } from '@nocobase/client';
+import React, { createContext } from 'react';
+import { useRequest } from '@nocobase/client';
 import { Spin } from 'antd';
 
 export const GraphDrawerContext = createContext(null);
