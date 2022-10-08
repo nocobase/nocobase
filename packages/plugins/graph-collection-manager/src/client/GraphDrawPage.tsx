@@ -12,6 +12,7 @@ import {
   useResourceActionContext,
   useResourceContext,
   useRecord,
+  APIClientProvider
 } from '@nocobase/client';
 import { formatData } from './utils';
 import { GraphDrawerContext, options } from './GraphCollectionEditorProvder';
@@ -148,7 +149,9 @@ export const Editor = () => {
       'er-rect',
       {
         inherit: 'react-shape',
-        component: <CollectionNode graph={myGraph} refreshGraph={refreshGraph} />,
+        component: (node)=><APIClientProvider apiClient={api}>
+          <CollectionNode graph={myGraph} refreshGraph={refreshGraph} node={node}/>
+        </APIClientProvider>,
         ports: {
           groups: {
             list: {

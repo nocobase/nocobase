@@ -11,12 +11,13 @@ import {
   import { Spin } from 'antd';
 
  interface CollectionNodeOptions {
-    refresh?: () => Promise<void>;
+    refresh: () => Promise<void>;
+    record?:object;
   }
 export const GraphCollectionContext = createContext(null);
 
 export const  CollectionNodeProvder: React.FC <CollectionNodeOptions>= (props:any) => {
-  const { refresh} = props;
+  const { refresh,record} = props;
   return (
     <GraphCollectionContext.Provider
       value={{
@@ -25,6 +26,7 @@ export const  CollectionNodeProvder: React.FC <CollectionNodeOptions>= (props:an
             await refresh();
           }
         },
+        record,
       }}
     >
       {props.children}

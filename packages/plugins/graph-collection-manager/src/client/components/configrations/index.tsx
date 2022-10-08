@@ -1,9 +1,10 @@
 import { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
 import { Select } from 'antd';
-import React from 'react';
+import React,{useContext} from 'react';
 
 import { useCompile,useCollectionManager } from '@nocobase/client';
+import {GraphCollectionContext} from '../CollectionNodeProvder'
 
 
 // export const SourceForeignKey = observer(() => {
@@ -76,17 +77,15 @@ export const TargetForeignKey = observer(() => {
   );
 });
 
-// export const SourceCollection = observer(() => {
-//   const record = useRecord();
-//   const { getCollection } = useCollectionManager();
-//   const collection = record?.collectionName ? getCollection(record.collectionName) : record;
-//   const compile = useCompile();
-//   return (
-//     <div>
-//       <Select disabled value={collection.name} options={[{ value: collection.name, label: compile(collection.title) }]} />
-//     </div>
-//   );
-// });
+export const SourceCollection = observer(() => {
+  const {record}=useContext(GraphCollectionContext)
+  const compile = useCompile();
+  return (
+    <div>
+      <Select disabled value={record.name} options={[{ value: record.name, label: compile(record.title) }]} />
+    </div>
+  );
+});
 
 export const SourceKey = observer(() => {
   return (
