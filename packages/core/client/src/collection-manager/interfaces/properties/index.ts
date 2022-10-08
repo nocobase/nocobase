@@ -53,6 +53,90 @@ export const relationshipType: ISchema = {
   ],
 };
 
+export const reverseFieldProperties: Record<string, ISchema> = {
+  reverse: {
+    type: 'void',
+    'x-component': 'div',
+    'x-hidden': '{{ !createOnly }}',
+    properties: {
+      autoCreateReverseField: {
+        type: 'boolean',
+        default: true,
+        'x-decorator': 'FormItem',
+        'x-component': 'Checkbox',
+        'x-content': '{{t("Create inverse field in the target collection")}}',
+        'x-reactions': [
+          {
+            target: 'reverseField.type',
+            when: '{{!!($self.value) && createOnly}}',
+            fulfill: {
+              state: {
+                hidden: false,
+              },
+            },
+            otherwise: {
+              state: {
+                hidden: true,
+              },
+            },
+          },
+          {
+            target: 'reverseField.uiSchema.title',
+            when: '{{!!($self.value) && createOnly}}',
+            fulfill: {
+              state: {
+                hidden: false,
+              },
+            },
+            otherwise: {
+              state: {
+                hidden: true,
+              },
+            },
+          },
+          {
+            target: 'reverseField.name',
+            when: '{{!!($self.value) && createOnly}}',
+            fulfill: {
+              state: {
+                hidden: false,
+              },
+            },
+            otherwise: {
+              state: {
+                hidden: true,
+              },
+            },
+          },
+        ],
+      },
+      'reverseField.type': {
+        ...relationshipType,
+        'x-hidden': '{{ !createOnly }}',
+      },
+      'reverseField.uiSchema.title': {
+        type: 'string',
+        title: '{{t("Inverse field display name")}}',
+        // required: true,
+        default: '{{record.title}}',
+        'x-hidden': '{{ !createOnly }}',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+      'reverseField.name': {
+        type: 'string',
+        title: '{{t("Inverse field name")}}',
+        // required: true,
+        'x-hidden': '{{ !createOnly }}',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        description:
+          "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+      },
+    }
+  },
+};
+
 export const dateTimeProps: { [key: string]: ISchema } = {
   'uiSchema.x-component-props.dateFormat': {
     type: 'string',

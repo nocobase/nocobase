@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { recordPickerSelector, recordPickerViewer, relationshipType } from './properties';
+import { recordPickerSelector, recordPickerViewer, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 
 const internalSchameInitialize = (schema: ISchema, { field, block, readPretty, action }) => {
@@ -37,11 +37,11 @@ const internalSchameInitialize = (schema: ISchema, { field, block, readPretty, a
                 'x-initializer': 'FormItemInitializers',
                 properties: {},
               },
-            }
+            },
           },
         },
       },
-    }
+    };
   } else {
     schema.type = 'string';
     if (block === 'Form') {
@@ -57,11 +57,11 @@ const internalSchameInitialize = (schema: ISchema, { field, block, readPretty, a
       } else {
         schema['properties'] = {
           selector: cloneDeep(recordPickerSelector),
-        }
+        };
       }
     }
   }
-}
+};
 
 export const o2o: IField = {
   name: 'o2o',
@@ -206,6 +206,16 @@ export const o2o: IField = {
           },
         },
       },
+    },
+    'reverseField.name': {
+      type: 'string',
+      title: '{{t("Inverse field name")}}',
+      // required: true,
+      'x-hidden': '{{ !createOnly }}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      description:
+        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },
   },
   filterable: {
@@ -372,6 +382,7 @@ export const oho: IField = {
         },
       },
     },
+    ...reverseFieldProperties,
   },
   filterable: {
     nested: true,
