@@ -18,24 +18,20 @@ const AntdCompute = (props) => {
     onFormValuesChange((form) => {
       const scope = _.cloneDeep(form.values);
       let result;
+      debugger;
       try {
         result = math.evaluate(expression, scope);
-        result = math.round(result, 9);
-      } catch {}
+        result = Number.isFinite(result) ? math.round(result, 9) : null;
+      } catch{}
       if (onChange) {
         onChange(result);
       }
-    })
-  })
-  
-  return (
-    <InputNumber {...others} readOnly stringMode={true} />
-  );
-}
+    });
+  });
 
-export const Compute = connect(
-  AntdCompute,
-  mapReadPretty(ReadPretty)
-);
+  return <InputNumber {...others} readOnly stringMode={true} />;
+};
+
+export const Compute = connect(AntdCompute, mapReadPretty(ReadPretty));
 
 export default Compute;
