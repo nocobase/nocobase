@@ -24,6 +24,7 @@ export * from './RecordAssociationFormBlockInitializer';
 export * from './RecordFormBlockInitializer';
 export * from './RecordReadPrettyAssociationFormBlockInitializer';
 export * from './RecordReadPrettyFormBlockInitializer';
+export * from './RefreshActionInitializer';
 export * from './SubmitActionInitializer';
 export * from './TableActionColumnInitializer';
 export * from './TableBlockInitializer';
@@ -32,3 +33,4 @@ export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';
+
