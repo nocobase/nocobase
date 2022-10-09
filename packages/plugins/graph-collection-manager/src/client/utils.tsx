@@ -1,12 +1,13 @@
 import { uid } from '@formily/shared';
 
+
+
 const shape = {
   ER: 'er-rect',
   EDGE: 'edge',
 };
 
 export const formatData = (data) => {
-  console.log(data);
   const edgeData = [];
   const targetTablekeys = [];
   const tableData = data.map((item, index) => {
@@ -16,15 +17,6 @@ export const formatData = (data) => {
         id: field.key,
         name: field.name,
         group: 'list',
-        // attrs: {
-        //     circle: {
-        //       r: 6,
-        //       magnet: true,
-        //       stroke: '#31d0c6',
-        //       fill: '#fff',
-        //       strokeWidth: 2,
-        //     },
-        //   },
       };
     });
     targetTablekeys.push(item.name);
@@ -40,7 +32,6 @@ export const formatData = (data) => {
     };
   });
   const edges = formatEdgeData(edgeData, targetTablekeys, tableData);
-  console.log([...tableData, ...edges]);
   return { nodes: tableData, edges };
 };
 
@@ -53,17 +44,11 @@ const formatEdgeData = (data, targetTables, tableData) => {
     ) {
       const targetTable = tableData.find((v) => v.name === data[i].target);
       const sourceTable = tableData.find((v) => v.name === data[i].collectionName);
-
-      //   const sourceNode = _.find(this.nodes, (node: Node) => node.id === source);
-      //   const targetNode = _.find(this.nodes, (node: Node) => node.id === target);
       if (data[i].interface === 'm2m') {
         const throughTable = tableData.find((v) => v.name === data[i].through);
         throughTable &&
           edges.push({
             id: uid(),
-            // shape: shape.EDGE,
-            // source: sourceTable.id,
-            // target: throughTable.id,
             source: {
               cell: sourceTable.id,
               port: sourceTable.ports.find((v) => v.name === data[i].sourceKey).id,
@@ -168,9 +153,6 @@ const formatEdgeData = (data, targetTables, tableData) => {
         legalEdge &&
           edges.push({
             id: uid(),
-            // shape: shape.EDGE,
-            // source: sourceTable.id,
-            // target: targetTable.id,
             source: {
               cell: sourceTable.id,
               port: legalEdge.id,
@@ -298,3 +280,10 @@ const getRelationship = (relatioship) => {
       return [];
   }
 };
+
+
+
+ 
+
+
+  

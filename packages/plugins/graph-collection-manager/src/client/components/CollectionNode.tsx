@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Graph } from '@antv/x6';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import {
@@ -14,12 +14,15 @@ import {
   Checkbox,
   Radio,
   Grid,
+  useCompile,
   CollectionProvider,
   ResourceActionProvider,
   CollectionManagerProvider,
+  useCollectionManager,
 } from '@nocobase/client';
 import '@antv/x6-react-shape';
 import { cx } from '@emotion/css';
+import { Dropdown } from 'antd';
 import { headClass, tableNameClass, tableBtnClass, entityContainer } from '../style';
 import { collection } from '../schemas/collection';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
@@ -29,24 +32,32 @@ import {
   useCancelAction,
   useDestroyActionAndRefreshCM,
   useDestroyFieldActionAndRefreshCM,
+  useAsyncDataSource,
 } from '../action-hooks';
 import { EditFieldAction } from './EditFieldAction';
-import {SourceCollection} from './configrations'
-
-
+import { AddFieldAction } from './AddFieldAction';
+import { FieldSummary } from './FieldSummary';
 
 const CollectionNode: React.FC<{
   node?: Node | any;
   graph: Graph | any;
-  refreshGraph: () => Promise<void>;
 }> = (props) => {
-  const { node, graph, refreshGraph } = props;
+  const { node, graph } = props;
   const {
     store: {
       data: { title, name, item },
     },
     id,
   } = node;
+  const compile = useCompile();
+  const { collections = [] } = useCollectionManager();
+
+  const loadCollections = async (field: any) => {
+    return collections?.map((item: any) => ({
+      label: compile(item.title),
+      value: item.name,
+    }));
+  };
 
   return (
     <div className={cx(entityContainer)}>
@@ -54,7 +65,7 @@ const CollectionNode: React.FC<{
         <span className={tableNameClass}>{title}</span>
         <div className={tableBtnClass}>
           <SchemaComponentProvider>
-            <CollectionNodeProvder refresh={refreshGraph}>
+            <CollectionNodeProvder>
               <CollectionProvider collection={collection}>
                 <SchemaComponent
                   scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
@@ -148,26 +159,30 @@ const CollectionNode: React.FC<{
           return (
             <div className="body-item" key={property.key} id={property.key}>
               <div className="field-operator">
-                <SchemaComponentProvider>
-                  <CollectionNodeProvder refresh={refreshGraph} record={item}>
-                    <CollectionManagerProvider>
+                <SchemaComponentProvider
+                  components={{
+                    FormItem,
+                    CollectionField,
+                    Input,
+                    Form,
+                    ResourceActionProvider,
+                    Select,
+                    Checkbox,
+                    Radio,
+                    InputNumber,
+                    Grid,
+                    FieldSummary,
+                    Action,
+                    EditOutlined,
+                    DeleteOutlined,
+                    AddFieldAction,
+                    Dropdown,
+                  }}
+                  scope={{ useAsyncDataSource, loadCollections ,useCancelAction}}
+                >
+                  <CollectionNodeProvder record={item}>
                       <SchemaComponent
                         scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
-                        components={{
-                          Action,
-                          EditOutlined,
-                          FormItem,
-                          CollectionField,
-                          Input,
-                          Form,
-                          ResourceActionProvider,
-                          Select,
-                          Checkbox,
-                          Radio,
-                          InputNumber,
-                          Grid,
-                          SourceCollection
-                        }}
                         schema={{
                           type: 'object',
                           properties: {
@@ -185,9 +200,7 @@ const CollectionNode: React.FC<{
                           },
                         }}
                       />
-                    </CollectionManagerProvider>
                     <SchemaComponent
-                      components={{ Action, DeleteOutlined }}
                       schema={{
                         type: 'void',
                         properties: {
@@ -209,12 +222,29 @@ const CollectionNode: React.FC<{
                         },
                       }}
                     />
+                      <SchemaComponent
+                      scope={useCancelAction}
+                        schema={{
+                          type: 'object',
+                          properties: {
+                            create: {
+                              type: 'void',
+                              'x-action': 'create',
+                              'x-component': AddFieldAction,
+                              'x-component-props': {
+                                item: {
+                                  ...property,
+                                  collectionName: item.name,
+                                },
+                              },
+                            },
+                          },
+                        }}
+                      />
                   </CollectionNodeProvder>
                 </SchemaComponentProvider>
               </div>
-              <div className="name">
-                {property.name}
-              </div>
+              <div className="name">{property.name}</div>
               <div className="type">{property.type || property.interface}</div>
             </div>
           );

@@ -1,13 +1,10 @@
-import { useEffect, useContext } from 'react';
+import React, { useEffect, useContext } from 'react';
+import { action } from '@formily/reactive';
 import { useTranslation } from 'react-i18next';
 import omit from 'lodash/omit';
-import { message } from 'antd';
-import { useForm } from '@formily/react';
-import {
-  useActionContext,
-  useRequest,
-  useAPIClient,
-} from '@nocobase/client';
+import { message, Select } from 'antd';
+import { useActionContext, useRequest, useAPIClient, useCompile, useCollectionManager } from '@nocobase/client';
+import { observer, useForm } from '@formily/react';
 import { GraphCollectionContext } from './components/CollectionNodeProvder';
 
 export const useValuesFromRecord = (options, data) => {
@@ -24,6 +21,16 @@ export const useValuesFromRecord = (options, data) => {
   return result;
 };
 
+export const SourceCollection = observer(() => {
+  const { record } = useContext(GraphCollectionContext);
+  const compile = useCompile();
+  return (
+    <div>
+      <Select disabled value={record.name} options={[{ value: record.name, label: compile(record.title) }]} />
+    </div>
+  );
+});
+
 export const useCancelAction = () => {
   const form = useForm();
   const ctx = useActionContext();
@@ -31,6 +38,41 @@ export const useCancelAction = () => {
     async run() {
       ctx.setVisible(false);
       form.reset();
+    },
+  };
+};
+
+
+
+  export const useCreateActionAndRefreshCM = () => {
+    const form = useForm();
+    const ctx = useActionContext();
+    const api = useAPIClient();
+    const { refreshCM } = useCollectionManager();
+    return {
+      async run() {
+        await form.submit();
+        await api.resource('collections').create({ values: form.values });
+        ctx.setVisible(false);
+        await form.reset();
+        await refreshCM();
+      },
+    };
+  };
+
+export const useCreateAction = (collectionName) => {
+  const form = useForm();
+  const ctx = useActionContext();
+  const { refreshCM } = useCollectionManager();
+  const api = useAPIClient();
+
+  return {
+    async run() {
+      await form.submit();
+      await api.resource('collections.fields', collectionName).create({ values: form.values });
+      ctx.setVisible(false);
+      await form.reset();
+      await refreshCM();
     },
   };
 };
@@ -58,7 +100,8 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
   const { t } = useTranslation();
   const form = useForm();
   const ctx = useActionContext();
-  const { refresh } = useContext(GraphCollectionContext);
+  const { refreshCM } = useCollectionManager();
+
   const { name } = form.values;
   const api = useAPIClient();
 
@@ -72,7 +115,7 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
       ctx.setVisible(false);
       message.success(t('Saved successfully'));
       await form.reset();
-      refresh();
+      await refreshCM();
     },
   };
 };
@@ -113,12 +156,23 @@ const useDestroyFieldAction = (collectionName, name) => {
 export const useDestroyFieldActionAndRefreshCM = (props) => {
   const { collection, name } = props;
   const { run } = useDestroyFieldAction(collection, name);
-  const { refresh } = useContext(GraphCollectionContext);
+  const { refreshCM } = useCollectionManager();
 
   return {
     async run() {
       await run();
-      refresh();
+      await refreshCM();
     },
   };
+};
+
+export const useAsyncDataSource = (service: any) => (field: any) => {
+  field.loading = true;
+  service(field).then(
+    action.bound((data: any) => {
+      console.log(data);
+      field.dataSource = data;
+      field.loading = false;
+    }),
+  );
 };

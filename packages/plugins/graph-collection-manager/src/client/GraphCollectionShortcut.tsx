@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { Editor } from './GraphDrawPage';
 import {collection} from './schemas/collection'
-import {GraphDrawerProver} from './GraphCollectionEditorProvder'
+import {useCreateActionAndRefreshCM} from './action-hooks';
 
 
 const useCollectionValues = (options) => {
@@ -194,7 +194,7 @@ export const GraphCollectionPane = () => {
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
-                                    useAction: '{{ cm.useCreateActionAndRefreshCM }}',
+                                    useAction: '{{ useCreateActionAndRefreshCM }}',
                                   },
                                 },
                               },
@@ -209,17 +209,15 @@ export const GraphCollectionPane = () => {
             },
             editor: {
               type: 'void',
-              'x-decorator': 'GraphDrawerProver',
               'x-component': 'Editor',
             },
           },
         }}
         components={{
           Editor,
-          GraphDrawerProver,
           DeleteOutlined
         }}
-        scope={{useCollectionValues}}
+        scope={{useCollectionValues,useCreateActionAndRefreshCM}}
       />
     </Card>
   );

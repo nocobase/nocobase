@@ -1,30 +1,31 @@
+import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import cloneDeep from 'lodash/cloneDeep';
+import { Dropdown, Menu } from 'antd';
+import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
-import { EditOutlined } from '@ant-design/icons';
 import {
-  useAPIClient,
   useRequest,
   ActionContext,
   SchemaComponent,
   useCompile,
   useCollectionManager,
+  options,
   SourceForeignKey,
   ThroughForeignKey,
   TargetForeignKey,
   SourceKey,
   TargetKey,
 } from '@nocobase/client';
-import { useUpdateFieldAction,SourceCollection } from '../action-hooks';
+import { useCreateAction,SourceCollection ,useCancelAction} from '../action-hooks';
 
-const getSchema = (schema, collectionName: string, compile, name: string): ISchema => {
+const getSchema = (schema, record: any, compile): ISchema => {
   if (!schema) {
     return;
   }
+
   const properties = cloneDeep(schema.properties) as any;
-  properties.name['x-disabled'] = true;
 
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
@@ -32,6 +33,11 @@ const getSchema = (schema, collectionName: string, compile, name: string): ISche
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
 
+  const initialValue = {
+    name: `f_${uid()}`,
+    ...cloneDeep(schema.default),
+    interface: schema.name,
+  };
   return {
     type: 'object',
     properties: {
@@ -44,13 +50,13 @@ const getSchema = (schema, collectionName: string, compile, name: string): ISche
             return useRequest(
               () =>
                 Promise.resolve({
-                  data: cloneDeep(schema.default),
+                  data: initialValue,
                 }),
               options,
             );
           },
         },
-        title: `${compile(collectionName)} - ${compile('{{ t("Edit field") }}')}`,
+        title: `${compile(record.collectionName)} - ${compile('{{ t("Add field") }}')}`,
         properties: {
           summary: {
             type: 'void',
@@ -77,7 +83,8 @@ const getSchema = (schema, collectionName: string, compile, name: string): ISche
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: () => useUpdateCollectionField({ collectionName, name }),
+                  useAction: '{{ createCollectionField }}',
+                  record,
                 },
               },
             },
@@ -88,74 +95,62 @@ const getSchema = (schema, collectionName: string, compile, name: string): ISche
   };
 };
 
-const useUpdateCollectionField = (props) => {
+const useCreateCollectionField = (record) => {
   const form = useForm();
-  const { run } = useUpdateFieldAction(props);
+  const title = record.collectionName;
+  const { run } = useCreateAction(title);
+  const { refreshCM } = useCollectionManager();
   return {
     async run() {
       await form.submit();
-      const options = form?.values?.uiSchema?.enum?.slice() || [];
-      form.setValuesIn(
-        'uiSchema.enum',
-        options.map((option) => {
-          return {
-            value: uid(),
-            ...option,
-          };
-        }),
-      );
-
-      function recursiveChildren(children = [], prefix = 'children') {
-        children.forEach((item, index) => {
-          const itemOptions = item.uiSchema?.enum?.slice() || [];
-          form.setValuesIn(
-            `${prefix}[${index}].uiSchema.enum`,
-            itemOptions.map((option) => {
-              return {
-                value: uid(),
-                ...option,
-              };
-            }),
-          );
-          recursiveChildren(item.children, `${prefix}[${index}].children`);
-        });
+      if (['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(form?.values?.interface) && title) {
+        form.setValuesIn('reverseField.uiSchema.title', title);
       }
-      recursiveChildren(form?.values?.children);
+
       await run();
+      await refreshCM();
     },
   };
 };
 
-export const EditFieldAction = ({ item }) => {
-  const { name, collectionName, interface: type } = item;
+export const AddFieldAction = ({ item :record}) => {
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
-  const api = useAPIClient();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
-      <a
-        onClick={async () => {
-          const { data } = await api.resource('collections.fields', collectionName).get({
-            filterByTk: name,
-            appends: type === 'subTable' ? ['uiSchema', 'children'] : ['uiSchema'],
-          });
-          const schema = getSchema(
-            {
-              ...getInterface(type),
-              default: data?.data,
-            },
-            collectionName,
-            compile,
-            name,
-          );
-          setSchema(schema);
-          setVisible(true);
-        }}
+      <Dropdown
+        overlay={
+          <Menu
+            style={{
+              maxHeight: '60vh',
+              overflow: 'auto',
+            }}
+            onClick={(info) => {
+              const schema = getSchema(getInterface(info.key), record, compile);
+              setSchema(schema);
+              setVisible(true);
+            }}
+          >
+            {options.map((option) => {
+              return (
+                option.children.length > 0 && (
+                  <Menu.ItemGroup key={option.label} title={compile(option.label)}>
+                    {option.children
+                      .filter((child) => !['o2o', 'subTable'].includes(child.name))
+                      .map((child) => {
+                        return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
+                      })}
+                  </Menu.ItemGroup>
+                )
+              );
+            })}
+          </Menu>
+        }
       >
-        <EditOutlined />
-      </a>
+        <PlusOutlined />
+      </Dropdown>
       <SchemaComponent
         schema={schema}
         components={{
@@ -167,7 +162,7 @@ export const EditFieldAction = ({ item }) => {
           ArrayTable,
           SourceCollection
         }}
-        scope={{ useUpdateCollectionField }}
+        scope={{ createOnly: true, createCollectionField: () => useCreateCollectionField(record) ,useCancelAction}}
       />
     </ActionContext.Provider>
   );

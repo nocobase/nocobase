@@ -1,13 +1,9 @@
-import React, { useLayoutEffect, useRef, useEffect, useContext, useState } from 'react';
+import React, { useLayoutEffect, useRef, useEffect } from 'react';
 import { Graph, Cell } from '@antv/x6';
 import dagre from 'dagre';
 import '@antv/x6-react-shape';
-import {
-  useAPIClient,
-  APIClientProvider
-} from '@nocobase/client';
+import { useAPIClient, APIClientProvider, CollectionManagerProvider, useCollectionManager } from '@nocobase/client';
 import { formatData } from './utils';
-import { GraphDrawerContext, options } from './GraphCollectionEditorProvder';
 import CollectionNode from './components/CollectionNode';
 
 const LINE_HEIGHT = 25;
@@ -19,7 +15,7 @@ function layout(graph) {
   const nodes = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: dir, nodesep: 30, ranksep: 30 });
+  g.setGraph({ rankdir: dir, nodesep: 60, ranksep: 60 });
   g.setDefaultEdgeLabel(() => ({}));
   let width = 0;
   let height = 0;
@@ -35,7 +31,6 @@ function layout(graph) {
     const target = edge.getTarget();
     g.setEdge(source.cell, target.cell);
   });
-  console.log(g);
   dagre.layout(g);
   graph.freeze();
   g.nodes().forEach((id) => {
@@ -51,7 +46,7 @@ function layout(graph) {
 
 function getNodes(nodes, graph) {
   nodes.forEach((item) => {
-      graph.addNode(item);
+    graph.addNode(item);
   });
 }
 
@@ -82,8 +77,7 @@ export const Editor = () => {
   const api = useAPIClient();
   const graph = useRef(null);
   graph.current = null;
-  const { data } = useContext(GraphDrawerContext);
-
+  const { collections: data, refreshCM ,service} = useCollectionManager();
   const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
@@ -140,9 +134,22 @@ export const Editor = () => {
       'er-rect',
       {
         inherit: 'react-shape',
-        component: (node)=><APIClientProvider apiClient={api}>
-          <CollectionNode graph={myGraph} refreshGraph={refreshGraph} node={node}/>
-        </APIClientProvider>,
+        component: (node) => (
+          <APIClientProvider apiClient={api}>
+            <CollectionManagerProvider
+              collections={data}
+              refreshCM= {async()=>{
+              const {data}=  await api.resource('collections').list({
+                paginate: false,
+                appends: ['fields', 'fields.uiSchema'],
+              })
+               getCollectionData(data.data,myGraph)
+              }}
+            >
+              <CollectionNode graph={myGraph}  node={node} />
+            </CollectionManagerProvider>
+          </APIClientProvider>
+        ),
         ports: {
           groups: {
             list: {
@@ -158,7 +165,7 @@ export const Editor = () => {
                   height: LINE_HEIGHT,
                   strokeWidth: 1,
                   magnet: true,
-                  visibility:'hidden'
+                  visibility: 'hidden',
                 },
               },
               position: 'erPortPosition',
@@ -177,10 +184,6 @@ export const Editor = () => {
     };
   }, []);
 
-  const refreshGraph = async () => {
-    const { data } = await api.request(options);
-    getCollectionData(data.data, graph.current);
-  };
 
   useEffect(() => {
     graph.current && getCollectionData(data, graph.current);
