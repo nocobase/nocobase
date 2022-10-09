@@ -165,7 +165,7 @@ export const AddFieldAction = () => {
       <SchemaComponent
         schema={schema}
         components={{ ...components, ArrayTable }}
-        scope={{ createOnly: true, useCreateCollectionField, record }}
+        scope={{ createOnly: true, useCreateCollectionField, record, showReverseFieldConfig: true }}
       />
     </ActionContext.Provider>
   );

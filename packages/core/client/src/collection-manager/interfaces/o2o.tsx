@@ -548,6 +548,7 @@ export const obo: IField = {
         },
       },
     },
+    ...reverseFieldProperties,
   },
   filterable: {
     nested: true,

@@ -41,7 +41,12 @@ export class CollectionManagerPlugin extends Plugin {
         lodash.get(newValue, 'reverseField') &&
         !lodash.get(newValue, 'reverseField.key')
       ) {
-        throw new Error('cant update field without a reverseField key');
+        const field = await this.app.db
+          .getModel('fields')
+          .findByPk(model.get('reverseKey'), { transaction: options.transaction });
+        if (field) {
+          throw new Error('cant update field without a reverseField key');
+        }
       }
     });
 
@@ -67,7 +72,7 @@ export class CollectionManagerPlugin extends Plugin {
       if (context) {
         await model.migrate({
           isNew: true,
-          transaction
+          transaction,
         });
       }
     });
@@ -76,7 +81,7 @@ export class CollectionManagerPlugin extends Plugin {
       if (context) {
         await model.migrate({
           isNew: true,
-          transaction
+          transaction,
         });
       }
     });

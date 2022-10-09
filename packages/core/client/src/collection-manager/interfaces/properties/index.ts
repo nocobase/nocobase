@@ -57,7 +57,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
   reverse: {
     type: 'void',
     'x-component': 'div',
-    'x-hidden': '{{ !createOnly }}',
+    'x-hidden': '{{ !showReverseFieldConfig }}',
     properties: {
       autoCreateReverseField: {
         type: 'boolean',
@@ -68,7 +68,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
         'x-reactions': [
           {
             target: 'reverseField.type',
-            when: '{{!!($self.value) && createOnly}}',
+            when: '{{!!$self.value}}',
             fulfill: {
               state: {
                 hidden: false,
@@ -82,7 +82,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
           },
           {
             target: 'reverseField.uiSchema.title',
-            when: '{{!!($self.value) && createOnly}}',
+            when: '{{!!$self.value}}',
             fulfill: {
               state: {
                 hidden: false,
@@ -96,7 +96,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
           },
           {
             target: 'reverseField.name',
-            when: '{{!!($self.value) && createOnly}}',
+            when: '{{!!$self.value}}',
             fulfill: {
               state: {
                 hidden: false,
@@ -112,14 +112,12 @@ export const reverseFieldProperties: Record<string, ISchema> = {
       },
       'reverseField.type': {
         ...relationshipType,
-        'x-hidden': '{{ !createOnly }}',
       },
       'reverseField.uiSchema.title': {
         type: 'string',
         title: '{{t("Inverse field display name")}}',
         // required: true,
         default: '{{record.title}}',
-        'x-hidden': '{{ !createOnly }}',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
       },
@@ -127,9 +125,9 @@ export const reverseFieldProperties: Record<string, ISchema> = {
         type: 'string',
         title: '{{t("Inverse field name")}}',
         // required: true,
-        'x-hidden': '{{ !createOnly }}',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
+        'x-validator': 'uid',
         description:
           "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
       },

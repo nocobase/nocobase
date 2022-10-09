@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { recordPickerSelector, recordPickerViewer, relationshipType } from './properties';
+import { recordPickerSelector, recordPickerViewer, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 
 export const m2o: IField = {
@@ -203,6 +203,7 @@ export const m2o: IField = {
         },
       },
     },
+    ...reverseFieldProperties,
   },
   filterable: {
     nested: true,
