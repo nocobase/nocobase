@@ -1,5 +1,6 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Graph } from '@antv/x6';
+import { uid } from '@formily/shared';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import {
   SchemaComponent,
@@ -17,7 +18,6 @@ import {
   useCompile,
   CollectionProvider,
   ResourceActionProvider,
-  CollectionManagerProvider,
   useCollectionManager,
 } from '@nocobase/client';
 import '@antv/x6-react-shape';
@@ -51,7 +51,9 @@ const CollectionNode: React.FC<{
   } = node;
   const compile = useCompile();
   const { collections = [] } = useCollectionManager();
-
+  const useNewId = (prefix) => {
+    return `${prefix || ''}${uid()}`;
+  };
   const loadCollections = async (field: any) => {
     return collections?.map((item: any) => ({
       label: compile(item.title),
@@ -178,28 +180,28 @@ const CollectionNode: React.FC<{
                     AddFieldAction,
                     Dropdown,
                   }}
-                  scope={{ useAsyncDataSource, loadCollections ,useCancelAction}}
+                  scope={{ useAsyncDataSource, loadCollections, useCancelAction ,useNewId}}
                 >
                   <CollectionNodeProvder record={item}>
-                      <SchemaComponent
-                        scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
-                        schema={{
-                          type: 'object',
-                          properties: {
-                            update: {
-                              type: 'void',
-                              'x-action': 'update',
-                              'x-component': EditFieldAction,
-                              'x-component-props': {
-                                item: {
-                                  ...property,
-                                  collectionName: item.name,
-                                },
+                    <SchemaComponent
+                      scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
+                      schema={{
+                        type: 'object',
+                        properties: {
+                          update: {
+                            type: 'void',
+                            'x-action': 'update',
+                            'x-component': EditFieldAction,
+                            'x-component-props': {
+                              item: {
+                                ...property,
+                                collectionName: item.name,
                               },
                             },
                           },
-                        }}
-                      />
+                        },
+                      }}
+                    />
                     <SchemaComponent
                       schema={{
                         type: 'void',
@@ -222,25 +224,25 @@ const CollectionNode: React.FC<{
                         },
                       }}
                     />
-                      <SchemaComponent
+                    <SchemaComponent
                       scope={useCancelAction}
-                        schema={{
-                          type: 'object',
-                          properties: {
-                            create: {
-                              type: 'void',
-                              'x-action': 'create',
-                              'x-component': AddFieldAction,
-                              'x-component-props': {
-                                item: {
-                                  ...property,
-                                  collectionName: item.name,
-                                },
+                      schema={{
+                        type: 'object',
+                        properties: {
+                          create: {
+                            type: 'void',
+                            'x-action': 'create',
+                            'x-component': AddFieldAction,
+                            'x-component-props': {
+                              item: {
+                                ...property,
+                                collectionName: item.name,
                               },
                             },
                           },
-                        }}
-                      />
+                        },
+                      }}
+                    />
                   </CollectionNodeProvder>
                 </SchemaComponentProvider>
               </div>
