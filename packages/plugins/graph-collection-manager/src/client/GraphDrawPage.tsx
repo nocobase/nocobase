@@ -4,7 +4,7 @@ import dagre from 'dagre';
 import '@antv/x6-react-shape';
 import { useAPIClient, APIClientProvider, CollectionManagerProvider, useCollectionManager } from '@nocobase/client';
 import { formatData } from './utils';
-import CollectionNode from './components/CollectionNode';
+import Entity from './components/Entity';
 
 const LINE_HEIGHT = 25;
 const NODE_WIDTH = 200;
@@ -146,7 +146,7 @@ export const Editor = () => {
                getCollectionData(data.data,myGraph)
               }}
             >
-              <CollectionNode graph={myGraph}  node={node} />
+              <Entity graph={myGraph}  node={node} />
             </CollectionManagerProvider>
           </APIClientProvider>
         ),

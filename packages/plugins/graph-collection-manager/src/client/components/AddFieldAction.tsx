@@ -98,7 +98,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
 const useCreateCollectionField = (record) => {
   const form = useForm();
   const title = record.collectionName;
-  const { run } = useCreateAction(title);
+  const { run } = useCreateAction(title,record.key);
   const { refreshCM } = useCollectionManager();
   return {
     async run() {

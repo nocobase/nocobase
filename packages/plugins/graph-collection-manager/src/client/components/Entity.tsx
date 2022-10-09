@@ -38,7 +38,7 @@ import { EditFieldAction } from './EditFieldAction';
 import { AddFieldAction } from './AddFieldAction';
 import { FieldSummary } from './FieldSummary';
 
-const CollectionNode: React.FC<{
+const Entity: React.FC<{
   node?: Node | any;
   graph: Graph | any;
 }> = (props) => {
@@ -232,7 +232,7 @@ const CollectionNode: React.FC<{
                           create: {
                             type: 'void',
                             'x-action': 'create',
-                            'x-component': AddFieldAction,
+                            'x-component': 'AddFieldAction',
                             'x-component-props': {
                               item: {
                                 ...property,
@@ -256,4 +256,4 @@ const CollectionNode: React.FC<{
   );
 };
 
-export default CollectionNode;
+export default Entity;

@@ -3,7 +3,7 @@ import { action } from '@formily/reactive';
 import { useTranslation } from 'react-i18next';
 import omit from 'lodash/omit';
 import { message, Select } from 'antd';
-import { useActionContext, useRequest, useAPIClient, useCompile, useCollectionManager } from '@nocobase/client';
+import { useActionContext, useRequest, useAPIClient, useCompile, useCollectionManager} from '@nocobase/client';
 import { observer, useForm } from '@formily/react';
 import { GraphCollectionContext } from './components/CollectionNodeProvder';
 
@@ -42,34 +42,40 @@ export const useCancelAction = () => {
   };
 };
 
-
-
-  export const useCreateActionAndRefreshCM = () => {
-    const form = useForm();
-    const ctx = useActionContext();
-    const api = useAPIClient();
-    const { refreshCM } = useCollectionManager();
-    return {
-      async run() {
-        await form.submit();
-        await api.resource('collections').create({ values: form.values });
-        ctx.setVisible(false);
-        await form.reset();
-        await refreshCM();
-      },
-    };
+export const useCreateActionAndRefreshCM = () => {
+  const form = useForm();
+  const ctx = useActionContext();
+  const api = useAPIClient();
+  const { refreshCM } = useCollectionManager();
+  return {
+    async run() {
+      await form.submit();
+      await api.resource('collections').create({ values: form.values });
+      ctx.setVisible(false);
+      await form.reset();
+      await refreshCM();
+    },
   };
+};
 
-export const useCreateAction = (collectionName) => {
+export const useCreateAction = (collectionName, targetId) => {
   const form = useForm();
   const ctx = useActionContext();
   const { refreshCM } = useCollectionManager();
   const api = useAPIClient();
-
   return {
     async run() {
       await form.submit();
-      await api.resource('collections.fields', collectionName).create({ values: form.values });
+      const {
+        data: { data },
+      } = await api.resource('collections.fields', collectionName).create({ values: form.values });
+      await api.resource('fields').move({
+        sourceId:data.key,
+        targetId ,
+        targetScope:collectionName,
+        method: 'insertAfter',
+
+      });
       ctx.setVisible(false);
       await form.reset();
       await refreshCM();
@@ -170,7 +176,6 @@ export const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
   service(field).then(
     action.bound((data: any) => {
-      console.log(data);
       field.dataSource = data;
       field.loading = false;
     }),
