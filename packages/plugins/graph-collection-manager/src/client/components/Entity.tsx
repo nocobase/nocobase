@@ -37,6 +37,7 @@ import {
 import { EditFieldAction } from './EditFieldAction';
 import { AddFieldAction } from './AddFieldAction';
 import { FieldSummary } from './FieldSummary';
+import { Title } from 'packages/core/client/src/schema-component/antd/calendar/Title';
 
 const Entity: React.FC<{
   node?: Node | any;
@@ -45,7 +46,7 @@ const Entity: React.FC<{
   const { node, graph } = props;
   const {
     store: {
-      data: { title, name, item },
+      data: { title, name, item ,ports},
     },
     id,
   } = node;
@@ -157,9 +158,9 @@ const Entity: React.FC<{
         </div>
       </div>
       <div className="body">
-        {item.fields.map((property) => {
+        {ports.items.map((property) => {
           return (
-            <div className="body-item" key={property.key} id={property.key}>
+            <div className="body-item" key={property.id} id={property.id}>
               <div className="field-operator">
                 <SchemaComponentProvider
                   components={{
@@ -195,7 +196,7 @@ const Entity: React.FC<{
                             'x-component-props': {
                               item: {
                                 ...property,
-                                collectionName: item.name,
+                                collectionName: title,
                               },
                             },
                           },
@@ -218,7 +219,7 @@ const Entity: React.FC<{
                                 content: "{{t('Are you sure you want to delete it?')}}",
                               },
                               useAction: () =>
-                                useDestroyFieldActionAndRefreshCM({ name: property.name, collection: item.name }),
+                                useDestroyFieldActionAndRefreshCM({ name: property.name,portId:property.id, collection: title ,node}),
                             },
                           },
                         },
@@ -236,8 +237,9 @@ const Entity: React.FC<{
                             'x-component-props': {
                               item: {
                                 ...property,
-                                collectionName: item.name,
+                                collectionName: title,
                               },
+                              node,
                             },
                           },
                         },

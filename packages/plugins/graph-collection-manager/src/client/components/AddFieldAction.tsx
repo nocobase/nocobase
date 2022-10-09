@@ -95,11 +95,10 @@ const getSchema = (schema, record: any, compile): ISchema => {
   };
 };
 
-const useCreateCollectionField = (record) => {
+const useCreateCollectionField = (record,node) => {
   const form = useForm();
   const title = record.collectionName;
-  const { run } = useCreateAction(title,record.key);
-  const { refreshCM } = useCollectionManager();
+  const { run } = useCreateAction(title,record.key,node);
   return {
     async run() {
       await form.submit();
@@ -108,12 +107,11 @@ const useCreateCollectionField = (record) => {
       }
 
       await run();
-      await refreshCM();
     },
   };
 };
 
-export const AddFieldAction = ({ item :record}) => {
+export const AddFieldAction = ({ item :record,node}) => {
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -162,7 +160,7 @@ export const AddFieldAction = ({ item :record}) => {
           ArrayTable,
           SourceCollection
         }}
-        scope={{ createOnly: true, createCollectionField: () => useCreateCollectionField(record) ,useCancelAction}}
+        scope={{ createOnly: true, createCollectionField: () => useCreateCollectionField(record,node) ,useCancelAction}}
       />
     </ActionContext.Provider>
   );

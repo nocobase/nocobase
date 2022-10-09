@@ -1,6 +1,7 @@
 import React, { useEffect, useContext } from 'react';
 import { action } from '@formily/reactive';
 import { useTranslation } from 'react-i18next';
+import { uid } from '@formily/shared';
 import omit from 'lodash/omit';
 import { message, Select } from 'antd';
 import { useActionContext, useRequest, useAPIClient, useCompile, useCollectionManager} from '@nocobase/client';
@@ -58,11 +59,17 @@ export const useCreateActionAndRefreshCM = () => {
   };
 };
 
-export const useCreateAction = (collectionName, targetId) => {
+export const useCreateAction = (collectionName, targetId,node) => {
   const form = useForm();
   const ctx = useActionContext();
   const { refreshCM } = useCollectionManager();
   const api = useAPIClient();
+  const newPort={
+    id:uid(),
+    ...form.values
+  }
+  const ports=node.getPorts();
+  const index=ports.findIndex((v)=>v.id===targetId);
   return {
     async run() {
       await form.submit();
@@ -78,7 +85,8 @@ export const useCreateAction = (collectionName, targetId) => {
       });
       ctx.setVisible(false);
       await form.reset();
-      await refreshCM();
+      node.insertPort(index+1,newPort)
+    //   await refreshCM();
     },
   };
 };
@@ -121,7 +129,7 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
       ctx.setVisible(false);
       message.success(t('Saved successfully'));
       await form.reset();
-      await refreshCM();
+      refreshCM()
     },
   };
 };
@@ -160,14 +168,12 @@ const useDestroyFieldAction = (collectionName, name) => {
 };
 
 export const useDestroyFieldActionAndRefreshCM = (props) => {
-  const { collection, name } = props;
+  const { collection, name,portId,node } = props;
   const { run } = useDestroyFieldAction(collection, name);
-  const { refreshCM } = useCollectionManager();
-
   return {
     async run() {
       await run();
-      await refreshCM();
+      node.removePort(node.getPort(portId))
     },
   };
 };

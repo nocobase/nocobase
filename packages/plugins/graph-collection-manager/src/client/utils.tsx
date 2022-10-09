@@ -17,6 +17,7 @@ export const formatData = (data) => {
         id: field.key,
         name: field.name,
         group: 'list',
+        ...field
       };
     });
     targetTablekeys.push(item.name);
