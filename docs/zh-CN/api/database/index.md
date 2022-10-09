@@ -510,22 +510,6 @@ asset(post1.authorId === author1.id); // true
 
 监听数据库事件。
 
-Database 除了对 sequelize 原生的事件封装以外，还提供以下可监听事件类型：
-
-| 事件名称 | 是否异步 | 描述 |
-| --- | --- | --- |
-| `'beforeDefineCollection'` | 否 | 定义 collection 之前触发 |
-| `'afterDefineCollection'` | 否 | 定义 collection 之后触发 |
-| `'beforeRemoveCollection'` | 否 | 移除 collection 之前触发 |
-| `'afterRemoveCollection'` | 否 | 移除 collection 之后触发 |
-| `<sequelize_model_global_event>` | - | 所有 sequelize 的全局事件均可通过此方式监听，详见示例部分，是否异步根据具体事件 |
-| `<model_name>.<sequelize_model_event>` | 是 | 所有 sequelize model 的事件均可通过此方式监听，详见示例部分 |
-| `<model_name>.afterCreateWithAssociations` | 是 | NocoBase 扩展的当连同关联数据一并创建记录成功后触发的事件（使用 Repository 的 create 方法会触发） |
-| `<model_name>.afterUpdateWithAssociations` | 是 | NocoBase 扩展的当连同关联数据一并更新记录成功后触发的事件（使用 Repository 的 update 方法会触发） |
-| `<model_name>.afterSaveWithAssociations` | 是 | NocoBase 扩展的当连同关联数据一并创建或更新记录成功后触发的事件（使用 Repository 的 create/update 方法都会触发） |
-
-其中 `<model_name>.afterXXXWithAssociations` 事件只有在使用 Repository 的实例方法时才会被触发，所以建议大部分时候都使用 Repository 来进行数据操作。
-
 **签名**
 
 * `on(event: string, listener: (...args: any[]) => void | Promise<void>): void`
@@ -536,6 +520,38 @@ Database 除了对 sequelize 原生的事件封装以外，还提供以下可监
 | --- | --- | --- | --- |
 | event | string | - | 事件名称 |
 | listener | Function | - | 事件监听器 |
+
+事件名称默认支持 Sequelize 的 Model 事件。针对全局事件，通过 `<sequelize_model_global_event>` 的名称方式监听，针对单 Model 事件，通过 `<model_name>.<sequelize_model_event>` 的名称方式监听：
+
+| 事件名称 | 是否异步 | 描述 |
+| --- | --- | --- |
+| `'beforeValidate'` | 是 | 数据验证之前 |
+| `'afterValidate'` | 是 | 数据验证之后 |
+| `'validationFailed'` | 是 | 数据验证失败之后 |
+| `'beforeCreate'` | 是 | 数据创建之前 |
+| `'beforeUpdate'` | 是 | 数据更新之前 |
+| `'beforeUpsert'` | 是 | 数据更新或创建之前 |
+| `'beforeSave'` | 是 | 数据保存之前 |
+| `'beforeDestroy'` | 是 | 数据删除之前 |
+| `'afterCreate'` | 是 | 数据创建之后 |
+| `'afterUpdate'` | 是 | 数据更新之后 |
+| `'afterUpsert'` | 是 | 数据更新或创建之后 |
+| `'afterSave'` | 是 | 数据保存之后 |
+| `'afterDestroy'` | 是 | 数据删除之后 |
+
+NocoBase 扩展的事件类型：
+
+| 事件名称 | 是否异步 | 描述 |
+| --- | --- | --- |
+| `'beforeDefineCollection'` | 否 | 定义 collection 之前触发 |
+| `'afterDefineCollection'` | 否 | 定义 collection 之后触发 |
+| `'beforeRemoveCollection'` | 否 | 移除 collection 之前触发 |
+| `'afterRemoveCollection'` | 否 | 移除 collection 之后触发 |
+| `<model_name>.afterCreateWithAssociations` | 是 | 当连同关联数据一并创建记录成功后触发的事件（使用 Repository 的 create 方法会触发） |
+| `<model_name>.afterUpdateWithAssociations` | 是 | 当连同关联数据一并更新记录成功后触发的事件（使用 Repository 的 update 方法会触发） |
+| `<model_name>.afterSaveWithAssociations` | 是 | 当连同关联数据一并创建或更新记录成功后触发的事件（使用 Repository 的 create/update 方法都会触发） |
+
+其中 `<model_name>.afterXxxWithAssociations` 事件只有在使用 Repository 的实例方法时才会被触发，所以建议大部分时候都使用 Repository 来进行数据操作。
 
 **示例**
 
