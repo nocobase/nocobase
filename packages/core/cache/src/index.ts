@@ -15,8 +15,8 @@ export type ICacheConfig = StoreConfig &
  */
 export function createDefaultCacheConfig(): ICacheConfig {
   return {
-    ttl: 3600, // seconds
-    max: 100,
+    ttl: 86400, // seconds
+    max: 1000,
     store: 'memory',
   };
 }
@@ -63,7 +63,7 @@ export function createCache(cacheConfig: ICacheConfig | ICacheConfig[] = createD
 
 function createCacheByICacheConfig(cacheConfig: ICacheConfig): Cache {
   // if storePackage exist then load storePackage and instead store
-  if (!!cacheConfig.storePackage) {
+  if (cacheConfig.storePackage) {
     cacheConfig.store = require(cacheConfig.storePackage);
   }
   return caching(cacheConfig);
