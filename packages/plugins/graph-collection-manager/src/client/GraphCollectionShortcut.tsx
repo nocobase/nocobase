@@ -1,6 +1,6 @@
 import { PartitionOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { useActionContext, useRequest, PluginManager, SchemaComponent, useCollectionManager } from '@nocobase/client';
+import { useActionContext, useRequest, PluginManager, SchemaComponent } from '@nocobase/client';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
 import React, { useEffect } from 'react';
@@ -200,15 +200,6 @@ export const GraphCollectionPane = () => {
                         },
                       },
                     },
-                    reload: {
-                      type: 'void',
-                      title: '{{ t("Reload Collections") }}',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'primary',
-                        useAction: useReloadCollections,
-                      },
-                    },
                   },
                 },
               },
@@ -223,19 +214,10 @@ export const GraphCollectionPane = () => {
           Editor,
           DeleteOutlined,
         }}
-        scope={{ useCollectionValues, useCreateActionAndRefreshCM, useReloadCollections }}
+        scope={{ useCollectionValues, useCreateActionAndRefreshCM }}
       />
     </Card>
   );
-};
-
-const useReloadCollections = () => {
-  const { refreshCM } = useCollectionManager();
-  return {
-    async run() {
-      await refreshCM();
-    },
-  };
 };
 
 export const GraphCollectionShortcut = () => {

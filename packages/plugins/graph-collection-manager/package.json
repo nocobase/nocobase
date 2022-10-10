@@ -4,7 +4,8 @@
   "main": "lib/server/index.js",
   "dependencies": {
     "@antv/x6": "^1.34.2",
-    "@antv/x6-react-shape": "^1.6.2"
+    "@antv/x6-react-shape": "^1.6.2",
+    "dagre": "^0.8.5"
   },
   "peerDependencies": {
     "@nocobase/server": "*",
