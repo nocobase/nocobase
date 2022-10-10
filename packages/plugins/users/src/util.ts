@@ -4,19 +4,19 @@ import { CachingConfig } from 'cache-manager';
 export enum TokenStatus {
   /**
    * token in valid date
-   * @type {TokenStatus.LOGIN}
+   * @type {TokenStatus.LOGGED_IN}
    */
-  LOGIN = 1,
+  LOGGED_IN = 1,
   /**
    * token not in valid date
-   * @type {TokenStatus.LOGOUT}
+   * @type {TokenStatus.LOGGED_OUT}
    */
-  LOGOUT = -1,
+  LOGGED_OUT = -1,
   /**
    * token's data is not last
-   * @type {TokenStatus.EXPIRE}
+   * @type {TokenStatus.EXPIRED}
    */
-  EXPIRE = -2,
+  EXPIRED = -2,
 }
 
 /**

@@ -114,7 +114,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       }
       if (rolesChanged) {
         if (!lodash.isUndefined(await getTokenStatus(this.app.cache, userId))) {
-          await setTokenStatus(this.app.cache, userId, TokenStatus.EXPIRE);
+          await setTokenStatus(this.app.cache, userId, TokenStatus.EXPIRED);
         }
       }
     });

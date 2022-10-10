@@ -13,12 +13,12 @@ export async function parseToken(ctx: Context, next: Next) {
     const { userId, roleNames } = await jwtService.decode(token);
     const tokenStatus = await getTokenStatus(ctx.cache, userId);
     switch (tokenStatus) {
-      case TokenStatus.LOGIN:
+      case TokenStatus.LOGGED_IN:
         ctx.state.currentUserId = userId;
         ctx.state.roleNames = roleNames;
         break;
-      case TokenStatus.LOGOUT:
-      case TokenStatus.EXPIRE:
+      case TokenStatus.LOGGED_OUT:
+      case TokenStatus.EXPIRED:
       default:
     }
     return next();

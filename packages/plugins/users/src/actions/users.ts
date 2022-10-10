@@ -5,20 +5,19 @@ import crypto from 'crypto';
 import { namespace } from '../';
 import { setTokenStatus, TokenStatus } from '../util';
 import ms from 'ms';
+import { merge } from '@nocobase/utils';
 
 async function getUserInfo(ctx: Context, userId: string = ctx.state.currentUserId) {
   if (!userId) {
     return;
   }
   const collection = ctx.db.getCollection('users');
-  const appends = [];
+  const appends = ctx.state.currentUserAppends || [];
   for (const [, field] of collection.fields) {
     if (field.type === 'belongsTo') {
       appends.push(field.name);
     }
   }
-  // add roles to result
-  appends.push('roles');
 
   return await ctx.db.getRepository('users').findOne({
     appends: appends,
@@ -26,21 +25,6 @@ async function getUserInfo(ctx: Context, userId: string = ctx.state.currentUserI
       id: userId,
     },
   });
-}
-
-async function getRoleNames(ctx: Context, userId: string): Promise<string[]> {
-  const roles = await ctx.db.getRepository('rolesUsers').find({
-    filter: {
-      userId: userId,
-    },
-    order: [['default', 'DESC']],
-  });
-
-  const roleNames: string[] = [];
-  roles.forEach((role) => {
-    roleNames.push(role.get('roleName') as string);
-  });
-  return roleNames;
 }
 
 export async function check(ctx: Context, next: Next) {
@@ -62,9 +46,14 @@ export async function signin(ctx: Context, next: Next) {
 
   return branch(branches, (context) => context.action.params.authenticator ?? 'password')(ctx, async () => {
     const user = ctx.state.currentUser.toJSON();
-    const roleNames = await getRoleNames(ctx, user.id);
-    const token = jwtService.sign({ userId: user.id, roleNames });
-    await setTokenStatus(ctx.cache, user.id, TokenStatus.LOGIN, { ttl: ms(jwtService.expiresIn()) / 1000 });
+    let tokenData = { userId: user.id } as any;
+    const tokenInitDataFuncArr = (ctx.state.tokenInitDataFuncArr || []) as Array<Function>;
+    for (const func of tokenInitDataFuncArr) {
+      const data = await func(ctx);
+      tokenData = merge(tokenData, data);
+    }
+    const token = jwtService.sign(tokenData);
+    await setTokenStatus(ctx.cache, user.id, TokenStatus.LOGGED_IN, { ttl: ms(jwtService.expiresIn()) / 1000 });
     ctx.body = {
       user,
       token,
@@ -75,7 +64,7 @@ export async function signin(ctx: Context, next: Next) {
 }
 
 export async function signout(ctx: Context, next: Next) {
-  await setTokenStatus(ctx.cache, ctx.state.currentUserId, TokenStatus.LOGOUT);
+  await setTokenStatus(ctx.cache, ctx.state.currentUserId, TokenStatus.LOGGED_OUT);
   ctx.body = ctx.state.currentUserId;
   await next();
 }
