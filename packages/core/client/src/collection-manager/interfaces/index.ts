@@ -7,6 +7,7 @@ export * from './createdBy';
 export * from './datetime';
 export * from './email';
 export * from './formula';
+export * from './sequence';
 export * from './icon';
 export * from './id';
 export * from './input';
@@ -30,4 +31,3 @@ export * from './textarea';
 export * from './time';
 export * from './updatedAt';
 export * from './updatedBy';
-
