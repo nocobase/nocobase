@@ -1,4 +1,5 @@
 import { css } from '@emotion/css';
+import './style.less';
 import { ISchema, observer } from '@formily/react';
 import { Button, Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
@@ -9,7 +10,7 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps
+  SchemaInitializerItemProps,
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -158,6 +159,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
               eventKey={item.key || `item-group-${indexA}`}
               key={item.key || `item-group-${indexA}`}
               title={compile(item.title)}
+              className="menu-item-group"
             >
               {renderMenuItem(item.children)}
             </Menu.ItemGroup>
