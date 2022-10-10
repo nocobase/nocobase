@@ -14,7 +14,6 @@ export const addButtonClass = css`
 export const entityContainer = css`
   width: 200px;
   height: 100%;
-  // min-height:150px;
   border-radius: 2px;
   background-color: #fff;
   &:hover {
@@ -131,13 +130,15 @@ export const tableBtnClass = css`
 `;
 
 export const collectiionPopoverClass = css`
-  span.field-content {
+  div.field-content {
     font-size: 14px;
     color: rgb(134 144 156);
     opacity: .8;
-    display:block
-    span{
-      float:right
+    display:block;
+    .field-type{
+      color:#333;
+      float: right;
+
     }
   }
 `;

@@ -8,7 +8,7 @@ import { useAPIClient, APIClientProvider, CollectionManagerProvider, useCollecti
 import { formatData } from './utils';
 import Entity from './components/Entity';
 
-const LINE_HEIGHT = 25;
+const LINE_HEIGHT = 30;
 const NODE_WIDTH = 200;
 
 let dir = 'TB'; // LR RL TB BT 横排
@@ -17,7 +17,7 @@ function layout(graph) {
   const nodes = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: dir, nodesep: 60, ranksep:80 });
+  g.setGraph({ rankdir: dir, nodesep: 60, ranksep:80 ,align: 'DL', controlPoints: true,});
   g.setDefaultEdgeLabel(() => ({}));
   let width = 0;
   let height = 0;

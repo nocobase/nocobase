@@ -129,11 +129,14 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
 
 const useDestroyAction = (name) => {
   const api = useAPIClient();
+  const { refreshCM } = useCollectionManager();
+
   return {
     async run() {
       await api.resource('collections').destroy({
         filterByTk: name,
       });
+      await refreshCM()
     },
   };
 };
@@ -161,8 +164,8 @@ const useDestroyFieldAction = (collectionName, name) => {
 };
 
 export const useDestroyFieldActionAndRefreshCM = (props) => {
-  const { collection, name, portId, node } = props;
-  const { run } = useDestroyFieldAction(collection, name);
+  const { collectionName, name, portId, node } = props;
+  const { run } = useDestroyFieldAction(collectionName, name);
   const { refreshCM } = useCollectionManager();
 
   return {

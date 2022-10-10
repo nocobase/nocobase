@@ -1,15 +1,14 @@
 import { PartitionOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { useActionContext, useRequest,PluginManager, SchemaComponent} from '@nocobase/client';
+import { useActionContext, useRequest, PluginManager, SchemaComponent, useCollectionManager } from '@nocobase/client';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { Editor } from './GraphDrawPage';
-import {collection} from './schemas/collection'
-import {useCreateActionAndRefreshCM} from './action-hooks';
-
+import { collection } from './schemas/collection';
+import { useCreateActionAndRefreshCM } from './action-hooks';
 
 const useCollectionValues = (options) => {
   const { visible } = useActionContext();
@@ -114,9 +113,7 @@ const useCollectionValues = (options) => {
   return result;
 };
 
-
 export const GraphCollectionPane = () => {
-  const { t } = useTranslation();
   return (
     <Card bordered={false}>
       <SchemaComponent
@@ -203,6 +200,15 @@ export const GraphCollectionPane = () => {
                         },
                       },
                     },
+                    reload: {
+                      type: 'void',
+                      title: '{{ t("Reload Collections") }}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'primary',
+                        useAction: useReloadCollections,
+                      },
+                    },
                   },
                 },
               },
@@ -215,12 +221,21 @@ export const GraphCollectionPane = () => {
         }}
         components={{
           Editor,
-          DeleteOutlined
+          DeleteOutlined,
         }}
-        scope={{useCollectionValues,useCreateActionAndRefreshCM}}
+        scope={{ useCollectionValues, useCreateActionAndRefreshCM, useReloadCollections }}
       />
     </Card>
   );
+};
+
+const useReloadCollections = () => {
+  const { refreshCM } = useCollectionManager();
+  return {
+    async run() {
+      await refreshCM();
+    },
+  };
 };
 
 export const GraphCollectionShortcut = () => {

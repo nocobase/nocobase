@@ -140,7 +140,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
         ],
       };
       const anchor = {
-        anchor: 'midSide',
+        anchor: 'center',
         direction:'v'
       };
       if (data[i].interface === 'm2m') {
