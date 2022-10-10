@@ -25,7 +25,6 @@ export const formatData = (data) => {
       name: item.name,
       title: item.title,
       width: 200,
-      height: 24,
       ports,
       item: item,
     };
@@ -46,7 +45,6 @@ const formatEdgeData = (data, targetTables, tableData) => {
       const commonAttrs = {
         attrs: {
           line: {
-            stroke: '#A2B1C3',
             strokeWidth: 1,
             textAnchor: 'middle',
             textVerticalAnchor: 'middle',
@@ -63,10 +61,6 @@ const formatEdgeData = (data, targetTables, tableData) => {
               }
             : {
                 name: 'metro',
-                //   args: {
-                //     startDirections: ['left'],
-                //     endDirections: ['left'],
-                //   },
               },
         labels: [
           {

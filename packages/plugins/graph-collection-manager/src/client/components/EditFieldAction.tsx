@@ -17,7 +17,7 @@ import {
   SourceKey,
   TargetKey,
 } from '@nocobase/client';
-import { useUpdateFieldAction,SourceCollection } from '../action-hooks';
+import { useUpdateFieldAction, SourceCollection } from '../action-hooks';
 
 const getSchema = (schema, collectionName: string, compile, name: string): ISchema => {
   if (!schema) {
@@ -135,7 +135,8 @@ export const EditFieldAction = ({ item }) => {
   const api = useAPIClient();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
-      <a
+      <EditOutlined
+        className="btn-del"
         onClick={async () => {
           const { data } = await api.resource('collections.fields', collectionName).get({
             filterByTk: name,
@@ -153,9 +154,7 @@ export const EditFieldAction = ({ item }) => {
           setSchema(schema);
           setVisible(true);
         }}
-      >
-        <EditOutlined />
-      </a>
+      />
       <SchemaComponent
         schema={schema}
         components={{
@@ -165,7 +164,7 @@ export const EditFieldAction = ({ item }) => {
           SourceKey,
           TargetKey,
           ArrayTable,
-          SourceCollection
+          SourceCollection,
         }}
         scope={{ useUpdateCollectionField }}
       />

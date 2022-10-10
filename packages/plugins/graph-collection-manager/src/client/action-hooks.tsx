@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { uid } from '@formily/shared';
 import omit from 'lodash/omit';
 import { message, Select } from 'antd';
-import { useActionContext, useRequest, useAPIClient, useCompile, useCollectionManager} from '@nocobase/client';
+import { useActionContext, useRequest, useAPIClient, useCompile, useCollectionManager } from '@nocobase/client';
 import { observer, useForm } from '@formily/react';
 import { GraphCollectionContext } from './components/CollectionNodeProvder';
 
@@ -71,11 +71,10 @@ export const useCreateAction = (collectionName, targetId) => {
         data: { data },
       } = await api.resource('collections.fields', collectionName).create({ values: form.values });
       await api.resource('fields').move({
-        sourceId:data.key,
-        targetId ,
-        targetScope:collectionName,
+        sourceId: data.key,
+        targetId,
+        targetScope: collectionName,
         method: 'insertAfter',
-
       });
       ctx.setVisible(false);
       await form.reset();
@@ -85,6 +84,7 @@ export const useCreateAction = (collectionName, targetId) => {
 };
 
 export const useUpdateFieldAction = ({ collectionName, name }) => {
+  const { refreshCM } = useCollectionManager();
   const { t } = useTranslation();
   const form = useForm();
   const ctx = useActionContext();
@@ -99,6 +99,7 @@ export const useUpdateFieldAction = ({ collectionName, name }) => {
       ctx.setVisible(false);
       await form.reset();
       message.success(t('Saved successfully'));
+      refreshCM();
     },
   };
 };
@@ -108,7 +109,6 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
   const form = useForm();
   const ctx = useActionContext();
   const { refreshCM } = useCollectionManager();
-
   const { name } = form.values;
   const api = useAPIClient();
 
@@ -122,7 +122,7 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
       ctx.setVisible(false);
       message.success(t('Saved successfully'));
       await form.reset();
-      refreshCM()
+      refreshCM();
     },
   };
 };
@@ -161,15 +161,15 @@ const useDestroyFieldAction = (collectionName, name) => {
 };
 
 export const useDestroyFieldActionAndRefreshCM = (props) => {
-  const { collection, name,portId,node } = props;
+  const { collection, name, portId, node } = props;
   const { run } = useDestroyFieldAction(collection, name);
   const { refreshCM } = useCollectionManager();
 
   return {
     async run() {
       await run();
-      node.removePort(node.getPort(portId))
-      await refreshCM()
+      node.removePort(node.getPort(portId));
+      await refreshCM();
     },
   };
 };

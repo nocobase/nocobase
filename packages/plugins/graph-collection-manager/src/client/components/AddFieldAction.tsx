@@ -95,10 +95,10 @@ const getSchema = (schema, record: any, compile): ISchema => {
   };
 };
 
-const useCreateCollectionField = (record,node) => {
+const useCreateCollectionField = (record) => {
   const form = useForm();
   const title = record.collectionName;
-  const { run } = useCreateAction(title,record.key,node);
+  const { run } = useCreateAction(title,record.key);
   return {
     async run() {
       await form.submit();
@@ -147,7 +147,7 @@ export const AddFieldAction = ({ item :record,node}) => {
           </Menu>
         }
       >
-        <PlusOutlined />
+         <PlusOutlined className='btn-add'/>
       </Dropdown>
       <SchemaComponent
         schema={schema}
@@ -160,7 +160,7 @@ export const AddFieldAction = ({ item :record,node}) => {
           ArrayTable,
           SourceCollection
         }}
-        scope={{ createOnly: true, createCollectionField: () => useCreateCollectionField(record,node) ,useCancelAction}}
+        scope={{ createOnly: true, createCollectionField: () => useCreateCollectionField(record) ,useCancelAction}}
       />
     </ActionContext.Provider>
   );

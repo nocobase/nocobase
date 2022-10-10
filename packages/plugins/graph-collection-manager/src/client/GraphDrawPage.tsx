@@ -4,7 +4,7 @@ import dagre from 'dagre';
 import '@antv/x6-react-shape';
 import {  SchemaOptionsContext } from '@formily/react';
 
-import { useAPIClient, APIClientProvider, CollectionManagerProvider, useCollectionManager,useCompile,SchemaComponentOptions } from '@nocobase/client';
+import { useAPIClient, APIClientProvider, CollectionManagerProvider, useCollectionManager,SchemaComponentOptions } from '@nocobase/client';
 import { formatData } from './utils';
 import Entity from './components/Entity';
 
@@ -83,8 +83,6 @@ export const Editor = () => {
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components};
-  const compile=useCompile()
-  console.log(compile('{{ t("Edit field") }}'))
   const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
@@ -154,7 +152,7 @@ export const Editor = () => {
                getCollectionData(data.data,myGraph)
               }}
             >
-              <Entity graph={myGraph}  node={node} />
+              <div style={{height:'auto'}}><Entity graph={myGraph}  node={node} /></div>
             </CollectionManagerProvider>
             </SchemaComponentOptions>
           </APIClientProvider>
@@ -198,5 +196,5 @@ export const Editor = () => {
     graph.current && getCollectionData(data, graph.current);
   }, []);
 
-  return <div id="container" style={{ width: '100%' }}></div>;
+  return <div id="container" style={{ width: '100%',height:'auto' }}></div>;
 };

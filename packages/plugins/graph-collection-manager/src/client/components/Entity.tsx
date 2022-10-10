@@ -1,6 +1,7 @@
 import React from 'react';
 import { Graph } from '@antv/x6';
 import { uid } from '@formily/shared';
+import { css } from '@emotion/css';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import {
   SchemaComponent,
@@ -22,8 +23,8 @@ import {
 } from '@nocobase/client';
 import '@antv/x6-react-shape';
 import { cx } from '@emotion/css';
-import { Dropdown } from 'antd';
-import { headClass, tableNameClass, tableBtnClass, entityContainer } from '../style';
+import { Dropdown, Popover, Tag } from 'antd';
+import { headClass, tableNameClass, tableBtnClass, entityContainer,collectiionPopoverClass } from '../style';
 import { collection } from '../schemas/collection';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
 import {
@@ -37,7 +38,6 @@ import {
 import { EditFieldAction } from './EditFieldAction';
 import { AddFieldAction } from './AddFieldAction';
 import { FieldSummary } from './FieldSummary';
-import { Title } from 'packages/core/client/src/schema-component/antd/calendar/Title';
 
 const Entity: React.FC<{
   node?: Node | any;
@@ -62,6 +62,23 @@ const Entity: React.FC<{
     }));
   };
 
+  const CollectionConten = (data) => {
+    const { type, name, primaryKey, allowNull, autoIncrement } = data;
+    return (
+      <div className={cx(collectiionPopoverClass)}>
+        <p>
+          <div><span className='field-content'>name</span>: <span>{name}</span></div>
+          <div><span className='field-content'>type</span>: <span>{type}</span></div>
+        </p>
+        <p>
+          {primaryKey && <Tag color="green">PRIMARY</Tag>}
+          {allowNull && <Tag color="geekblue">ALLOWNULL</Tag>}
+          {autoIncrement && <Tag color="purple">AUTOINCREMENT</Tag>}
+        </p>
+      </div>
+    );
+  };
+
   return (
     <div className={cx(entityContainer)}>
       <div className={headClass}>
@@ -82,6 +99,15 @@ const Entity: React.FC<{
                         'x-component': 'Action',
                         'x-component-props': {
                           component: EditOutlined,
+                          className: css`
+                            border-color: transparent;
+                            color: rgb(78 89 105);
+                            height: 20px;
+                            padding: 5px;
+                            &:hover {
+                              background-color: rgb(229 230 235);
+                            }
+                          `,
                         },
                         properties: {
                           drawer: {
@@ -143,9 +169,19 @@ const Entity: React.FC<{
                       'x-component-props': {
                         component: DeleteOutlined,
                         icon: 'DeleteOutlined',
+                        className: css`
+                          background-color: rgb(255 236 232);
+                          border-color: transparent;
+                          color: #e31c1c;
+                          height: 20px;
+                          padding: 5px;
+                          &:hover {
+                            background-color: rgb(253 205 197);
+                          }
+                        `,
                         confirm: {
                           title: "{{t('Delete record')}}",
-                          content: "{{t('Are you sure you want to delete it?')}}",
+                          collectionConten: "{{t('Are you sure you want to delete it?')}}",
                         },
                         useAction: () => useDestroyActionAndRefreshCM({ name, id, graph }),
                       },
@@ -160,100 +196,123 @@ const Entity: React.FC<{
       <div className="body">
         {ports.items.map((property) => {
           return (
-            <div className="body-item" key={property.id} id={property.id}>
-              <div className="field-operator">
-                <SchemaComponentProvider
-                  components={{
-                    FormItem,
-                    CollectionField,
-                    Input,
-                    Form,
-                    ResourceActionProvider,
-                    Select,
-                    Checkbox,
-                    Radio,
-                    InputNumber,
-                    Grid,
-                    FieldSummary,
-                    Action,
-                    EditOutlined,
-                    DeleteOutlined,
-                    AddFieldAction,
-                    Dropdown,
-                  }}
-                  scope={{ useAsyncDataSource, loadCollections, useCancelAction, useNewId }}
-                >
-                  <CollectionNodeProvder record={item}>
-                    <SchemaComponent
-                      scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
-                      schema={{
-                        type: 'object',
-                        properties: {
-                          update: {
-                            type: 'void',
-                            'x-action': 'update',
-                            'x-component': EditFieldAction,
-                            'x-component-props': {
-                              item: {
-                                ...property,
+            <Popover
+              content={CollectionConten(property)}
+              title={
+                <div>
+                  {compile(property.uiSchema?.title)}{' '}
+                  <span style={{ color: '#ffa940', float: 'right' }}>{property.interface}</span>
+                </div>
+              }
+              key={property.id}
+              placement="right"
+            >
+              <div className="body-item" key={property.id} id={property.id}>
+                <div className="field-operator">
+                  <SchemaComponentProvider
+                    components={{
+                      FormItem,
+                      CollectionField,
+                      Input,
+                      Form,
+                      ResourceActionProvider,
+                      Select,
+                      Checkbox,
+                      Radio,
+                      InputNumber,
+                      Grid,
+                      FieldSummary,
+                      Action,
+                      EditOutlined,
+                      DeleteOutlined,
+                      AddFieldAction,
+                      Dropdown,
+                    }}
+                    scope={{ useAsyncDataSource, loadCollections, useCancelAction, useNewId }}
+                  >
+                    <CollectionNodeProvder record={item}>
+                      <SchemaComponent
+                        scope={useCancelAction}
+                        schema={{
+                          type: 'object',
+                          properties: {
+                            create: {
+                              type: 'void',
+                              'x-action': 'create',
+                              'x-component': 'AddFieldAction',
+                              'x-component-props': {
+                                item: {
+                                  ...property,
+                                },
+                                node,
                               },
                             },
                           },
-                        },
-                      }}
-                    />
-                    <SchemaComponent
-                      schema={{
-                        type: 'void',
-                        properties: {
-                          action: {
-                            type: 'void',
-                            'x-action': 'destroy',
-                            'x-component': 'Action',
-                            'x-component-props': {
-                              component: DeleteOutlined,
-                              icon: 'DeleteOutlined',
-                              confirm: {
-                                title: "{{t('Delete record')}}",
-                                content: "{{t('Are you sure you want to delete it?')}}",
+                        }}
+                      />
+                      <SchemaComponent
+                        schema={{
+                          type: 'void',
+                          properties: {
+                            action: {
+                              type: 'void',
+                              'x-action': 'destroy',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                component: DeleteOutlined,
+                                icon: 'DeleteOutlined',
+                                className: css`
+                                  background-color: rgb(255 236 232);
+                                  border-color: transparent;
+                                  color: #e31c1c;
+                                  height: 20px;
+                                  width: 20px;
+                                  padding: 5px;
+                                  &:hover {
+                                    background-color: rgb(253 205 197);
+                                  }
+                                `,
+                                confirm: {
+                                  title: "{{t('Delete record')}}",
+                                  collectionConten: "{{t('Are you sure you want to delete it?')}}",
+                                },
+                                useAction: () =>
+                                  useDestroyFieldActionAndRefreshCM({
+                                    name: property.name,
+                                    portId: property.id,
+                                    collection: title,
+                                    node,
+                                  }),
                               },
-                              useAction: () =>
-                                useDestroyFieldActionAndRefreshCM({
-                                  name: property.name,
-                                  portId: property.id,
-                                  collection: title,
-                                  node,
-                                }),
                             },
                           },
-                        },
-                      }}
-                    />
-                    <SchemaComponent
-                      scope={useCancelAction}
-                      schema={{
-                        type: 'object',
-                        properties: {
-                          create: {
-                            type: 'void',
-                            'x-action': 'create',
-                            'x-component': 'AddFieldAction',
-                            'x-component-props': {
-                              item: {
-                                ...property,
+                        }}
+                      />
+                      <SchemaComponent
+                        scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
+                        schema={{
+                          type: 'object',
+                          properties: {
+                            update: {
+                              type: 'void',
+                              'x-action': 'update',
+                              'x-component': EditFieldAction,
+                              'x-component-props': {
+                                item: {
+                                  ...property,
+                                },
                               },
-                              node,
                             },
                           },
-                        },
-                      }}
-                    />
-                  </CollectionNodeProvder>
-                </SchemaComponentProvider>
+                        }}
+                      />
+                    </CollectionNodeProvder>
+                  </SchemaComponentProvider>
+                </div>
+                <div className="name">{compile(property.uiSchema?.title)}</div>
+                <div className="type">{property.interface}</div>
               </div>
-              <div className="name">{compile(property.uiSchema?.title)}</div>
-              <div className="type">{property.interface}</div>
-            </div>
+            </Popover>
           );
         })}
       </div>
