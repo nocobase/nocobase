@@ -13,6 +13,7 @@ import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
+import { md5 } from './utils';
 
 export type RepositoryType = typeof Repository;
 
@@ -283,7 +284,7 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
-  addIndex(index: string | string[] | { fields: string[], unique?: boolean,[key: string]: any }) {
+  addIndex(index: string | string[] | { fields: string[]; unique?: boolean; [key: string]: any }) {
     if (!index) {
       return;
     }
@@ -329,7 +330,13 @@ export class Collection<
     // @ts-ignore
     this.model._indexes = this.model.options.indexes
       // @ts-ignore
-      .map((index) => Utils.nameIndex(this.model._conformIndex(index), tableName));
+      .map((index) => Utils.nameIndex(this.model._conformIndex(index), tableName))
+      .map((item) => {
+        if (item.name && item.name.length > 63) {
+          item.name = 'i_' + md5(item.name);
+        }
+        return item;
+      });
   }
 
   removeIndex(fields: any) {
