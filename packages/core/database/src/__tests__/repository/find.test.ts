@@ -10,6 +10,9 @@ describe('repository find', () => {
   let Comment: Collection;
   let Tag: Collection;
 
+  let A1: Collection;
+  let A2: Collection;
+
   afterEach(async () => {
     await db.close();
   });
@@ -23,7 +26,19 @@ describe('repository find', () => {
         { type: 'string', name: 'name' },
         { type: 'integer', name: 'age' },
         { type: 'hasMany', name: 'posts' },
+        { type: 'belongsToMany', name: 'a1' },
+        { type: 'belongsToMany', name: 'a2' },
       ],
+    });
+
+    A1 = db.collection({
+      name: 'a1',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    A2 = db.collection({
+      name: 'a2',
+      fields: [{ type: 'string', name: 'name' }],
     });
 
     Post = db.collection({
@@ -73,11 +88,15 @@ describe('repository find', () => {
           name: 'u1',
           age: 10,
           posts: [{ title: 'u1t1', comments: [{ content: 'u1t1c1' }], abc1: [{ name: 't1' }] }],
+          a1: [{ name: 'u1a11' }, { name: 'u1a12' }],
+          a2: [{ name: 'u1a21' }, { name: 'u1a22' }],
         },
         {
           name: 'u2',
           age: 20,
           posts: [{ title: 'u2t1', comments: [{ content: 'u2t1c1' }] }],
+          a1: [{ name: 'u2a11' }, { name: 'u2a12' }],
+          a2: [{ name: 'u2a21' }, { name: 'u2a22' }],
         },
         {
           name: 'u3',
@@ -161,6 +180,18 @@ describe('repository find', () => {
     });
 
     describe('find with appends', () => {
+      test('toJSON', async () => {
+        const user = await User.repository.findOne({
+          filter: {
+            name: 'u1',
+          },
+          appends: ['a1', 'a2'],
+        });
+
+        expect(user['a1']).toBeDefined();
+        expect(user['a2']).toBeDefined();
+      });
+
       test('filter attribute', async () => {
         const user = await User.repository.findOne({
           filter: {

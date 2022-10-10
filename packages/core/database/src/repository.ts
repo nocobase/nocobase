@@ -26,6 +26,7 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
+import { handleAppendsQuery } from './utils';
 
 const debug = require('debug')('noco-database');
 
@@ -225,18 +226,34 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           group: `${model.name}.${primaryKeyField}`,
           transaction,
         })
-      ).map((row) => row.get(primaryKeyField));
+      ).map((row) => {
+        return { row, pk: row.get(primaryKeyField) };
+      });
+
+      if (ids.length == 0) {
+        return [];
+      }
 
       const where = {
         [primaryKeyField]: {
-          [Op.in]: ids,
+          [Op.in]: ids.map((id) => id['pk']),
         },
       };
 
-      return await model.findAll({
-        ...omit(opts, ['limit', 'offset']),
-        where,
-        transaction,
+      return await handleAppendsQuery({
+        queryPromises: opts.include.map((include) => {
+          return model
+            .findAll({
+              ...omit(opts, ['limit', 'offset']),
+              include: include,
+              where,
+              transaction,
+            })
+            .then((rows) => {
+              return { rows, include };
+            });
+        }),
+        templateModel: ids[0].row,
       });
     }
 
