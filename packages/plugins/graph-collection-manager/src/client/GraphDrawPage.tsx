@@ -1,8 +1,10 @@
-import React, { useLayoutEffect, useRef, useEffect } from 'react';
+import React, { useLayoutEffect, useRef, useEffect,useContext } from 'react';
 import { Graph, Cell } from '@antv/x6';
 import dagre from 'dagre';
 import '@antv/x6-react-shape';
-import { useAPIClient, APIClientProvider, CollectionManagerProvider, useCollectionManager } from '@nocobase/client';
+import {  SchemaOptionsContext } from '@formily/react';
+
+import { useAPIClient, APIClientProvider, CollectionManagerProvider, useCollectionManager,useCompile,SchemaComponentOptions } from '@nocobase/client';
 import { formatData } from './utils';
 import Entity from './components/Entity';
 
@@ -78,6 +80,11 @@ export const Editor = () => {
   const graph = useRef(null);
   graph.current = null;
   const { collections: data, refreshCM ,service} = useCollectionManager();
+  let options = useContext(SchemaOptionsContext);
+  const scope = { ...options?.scope };
+  const components = { ...options?.components};
+  const compile=useCompile()
+  console.log(compile('{{ t("Edit field") }}'))
   const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
@@ -136,6 +143,7 @@ export const Editor = () => {
         inherit: 'react-shape',
         component: (node) => (
           <APIClientProvider apiClient={api}>
+            <SchemaComponentOptions inherit scope={scope} components={components}>
             <CollectionManagerProvider
               collections={data}
               refreshCM= {async()=>{
@@ -148,6 +156,7 @@ export const Editor = () => {
             >
               <Entity graph={myGraph}  node={node} />
             </CollectionManagerProvider>
+            </SchemaComponentOptions>
           </APIClientProvider>
         ),
         ports: {

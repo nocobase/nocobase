@@ -59,17 +59,11 @@ export const useCreateActionAndRefreshCM = () => {
   };
 };
 
-export const useCreateAction = (collectionName, targetId,node) => {
+export const useCreateAction = (collectionName, targetId) => {
   const form = useForm();
   const ctx = useActionContext();
   const { refreshCM } = useCollectionManager();
   const api = useAPIClient();
-  const newPort={
-    id:uid(),
-    ...form.values
-  }
-  const ports=node.getPorts();
-  const index=ports.findIndex((v)=>v.id===targetId);
   return {
     async run() {
       await form.submit();
@@ -85,8 +79,7 @@ export const useCreateAction = (collectionName, targetId,node) => {
       });
       ctx.setVisible(false);
       await form.reset();
-      node.insertPort(index+1,newPort)
-    //   await refreshCM();
+      await refreshCM();
     },
   };
 };
@@ -170,10 +163,13 @@ const useDestroyFieldAction = (collectionName, name) => {
 export const useDestroyFieldActionAndRefreshCM = (props) => {
   const { collection, name,portId,node } = props;
   const { run } = useDestroyFieldAction(collection, name);
+  const { refreshCM } = useCollectionManager();
+
   return {
     async run() {
       await run();
       node.removePort(node.getPort(portId))
+      await refreshCM()
     },
   };
 };

@@ -46,7 +46,7 @@ const Entity: React.FC<{
   const { node, graph } = props;
   const {
     store: {
-      data: { title, name, item ,ports},
+      data: { title, name, item, ports },
     },
     id,
   } = node;
@@ -65,7 +65,7 @@ const Entity: React.FC<{
   return (
     <div className={cx(entityContainer)}>
       <div className={headClass}>
-        <span className={tableNameClass}>{title}</span>
+        <span className={tableNameClass}>{compile(title)}</span>
         <div className={tableBtnClass}>
           <SchemaComponentProvider>
             <CollectionNodeProvder>
@@ -181,7 +181,7 @@ const Entity: React.FC<{
                     AddFieldAction,
                     Dropdown,
                   }}
-                  scope={{ useAsyncDataSource, loadCollections, useCancelAction ,useNewId}}
+                  scope={{ useAsyncDataSource, loadCollections, useCancelAction, useNewId }}
                 >
                   <CollectionNodeProvder record={item}>
                     <SchemaComponent
@@ -218,7 +218,12 @@ const Entity: React.FC<{
                                 content: "{{t('Are you sure you want to delete it?')}}",
                               },
                               useAction: () =>
-                                useDestroyFieldActionAndRefreshCM({ name: property.name,portId:property.id, collection: title ,node}),
+                                useDestroyFieldActionAndRefreshCM({
+                                  name: property.name,
+                                  portId: property.id,
+                                  collection: title,
+                                  node,
+                                }),
                             },
                           },
                         },
@@ -246,8 +251,8 @@ const Entity: React.FC<{
                   </CollectionNodeProvder>
                 </SchemaComponentProvider>
               </div>
-              <div className="name">{property.name}</div>
-              <div className="type">{property.type || property.interface}</div>
+              <div className="name">{compile(property.uiSchema?.title)}</div>
+              <div className="type">{property.interface}</div>
             </div>
           );
         })}

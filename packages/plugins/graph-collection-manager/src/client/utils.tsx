@@ -1,7 +1,5 @@
 import { uid } from '@formily/shared';
 
-
-
 const shape = {
   ER: 'er-rect',
   EDGE: 'edge',
@@ -17,7 +15,7 @@ export const formatData = (data) => {
         id: field.key,
         name: field.name,
         group: 'list',
-        ...field
+        ...field,
       };
     });
     targetTablekeys.push(item.name);
@@ -45,6 +43,112 @@ const formatEdgeData = (data, targetTables, tableData) => {
     ) {
       const targetTable = tableData.find((v) => v.name === data[i].target);
       const sourceTable = tableData.find((v) => v.name === data[i].collectionName);
+      const commonAttrs = {
+        attrs: {
+          line: {
+            stroke: '#A2B1C3',
+            strokeWidth: 1,
+            textAnchor: 'middle',
+            textVerticalAnchor: 'middle',
+          },
+        },
+        connector: { name: 'smooth' },
+        router:
+          sourceTable.id === targetTable.id
+            ? {
+                name: 'oneSide',
+                args: {
+                  side: 'left',
+                },
+              }
+            : {
+                name: 'metro',
+                //   args: {
+                //     startDirections: ['left'],
+                //     endDirections: ['left'],
+                //   },
+              },
+        labels: [
+          {
+            markup: [
+              {
+                tagName: 'ellipse',
+                selector: 'labelBody',
+              },
+              {
+                tagName: 'text',
+                selector: 'labelText',
+              },
+            ],
+            attrs: {
+              labelText: {
+                text: getRelationship(data[i].interface)[0],
+                fill: '#ffa940',
+                textAnchor: 'middle',
+                textVerticalAnchor: 'middle',
+              },
+              labelBody: {
+                ref: 'labelText',
+                refWidth: '100%',
+                refHeight: '100%',
+                stroke: '#ffa940',
+                fill: '#fff',
+                strokeWidth: 1,
+                rx: 12,
+                ry: 12,
+              },
+            },
+            position: {
+              distance: 0.3,
+              args: {
+                keepGradient: true,
+                ensureLegibility: true,
+              },
+            },
+          },
+          {
+            markup: [
+              {
+                tagName: 'ellipse',
+                selector: 'labelBody',
+              },
+              {
+                tagName: 'text',
+                selector: 'labelText',
+              },
+            ],
+            attrs: {
+              labelText: {
+                text: getRelationship(data[i].interface)[1],
+                fill: '#ffa940',
+                textAnchor: 'middle',
+                textVerticalAnchor: 'middle',
+              },
+              labelBody: {
+                ref: 'labelText',
+                refWidth: '100%',
+                refHeight: '100%',
+                stroke: '#ffa940',
+                fill: '#fff',
+                rx: 12,
+                ry: 12,
+                strokeWidth: 1,
+              },
+            },
+            position: {
+              distance: 0.7,
+              args: {
+                keepGradient: true,
+                ensureLegibility: true,
+              },
+            },
+          },
+        ],
+      };
+      const anchor = {
+        anchor: 'midSide',
+        direction:'v'
+      };
       if (data[i].interface === 'm2m') {
         const throughTable = tableData.find((v) => v.name === data[i].through);
         throughTable &&
@@ -53,99 +157,14 @@ const formatEdgeData = (data, targetTables, tableData) => {
             source: {
               cell: sourceTable.id,
               port: sourceTable.ports.find((v) => v.name === data[i].sourceKey).id,
-              anchor: 'center',
+              ...anchor,
             },
             target: {
               cell: throughTable.id,
               port: throughTable.ports.find((v) => v.name === data[i].foreignKey).id,
-              anchor: 'center', 
+              ...anchor,
             },
-            attrs: {
-              line: {
-                stroke: '#A2B1C3',
-                strokeWidth: 1,
-                textAnchor: 'middle',
-                textVerticalAnchor: 'middle',
-              },
-            },
-            connector: 'rounded',
-            router: 'manhattan',
-            labels: [
-              {
-                markup: [
-                  {
-                    tagName: 'ellipse',
-                    selector: 'labelBody',
-                  },
-                  {
-                    tagName: 'text',
-                    selector: 'labelText',
-                  },
-                ],
-                attrs: {
-                  labelText: {
-                    text: '1',
-                    fill: '#ffa940',
-                    textAnchor: 'middle',
-                    textVerticalAnchor: 'middle',
-                  },
-                  labelBody: {
-                    ref: 'labelText',
-                    refWidth: '100%',
-                    refHeight: '100%',
-                    stroke: '#ffa940',
-                    fill: '#fff',
-                    strokeWidth: 1,
-                    rx: 15,
-                    ry: 15,
-                  },
-                },
-                position: {
-                  distance: 0.3,
-                  args: {
-                    keepGradient: true,
-                    ensureLegibility: true,
-                  },
-                },
-              },
-              {
-                markup: [
-                  {
-                    tagName: 'ellipse',
-                    selector: 'labelBody',
-                  },
-                  {
-                    tagName: 'text',
-                    selector: 'labelText',
-                  },
-                ],
-                attrs: {
-                  labelText: {
-                    text: 'N',
-                    fill: '#ffa940',
-                    textAnchor: 'middle',
-                    textVerticalAnchor: 'middle',
-                  },
-                  labelBody: {
-                    ref: 'labelText',
-                    refWidth: '100%',
-                    refHeight: '100%',
-                    stroke: '#ffa940',
-                    fill: '#fff',
-                    rx: 15,
-                    ry: 15,
-                    strokeWidth: 1,
-                  },
-                },
-                position: {
-                  distance: 0.7,
-                  args: {
-                    keepGradient: true,
-                    ensureLegibility: true,
-                  },
-                },
-              },
-            ],
+            ...commonAttrs,
           });
       } else {
         const legalEdge = tableData
@@ -157,107 +176,14 @@ const formatEdgeData = (data, targetTables, tableData) => {
             source: {
               cell: sourceTable.id,
               port: legalEdge.id,
-              anchor: 'center',
+              ...anchor,
             },
             target: {
               cell: targetTable.id,
-              port: targetTable.ports.find((v) => v.name === data[i].targetKey).id,
-              anchor: 'center',
+              port: targetTable.ports.find((v) => v.name === data[i].targetKey)?.id,
+              ...anchor,
             },
-            attrs: {
-              line: {
-                stroke: '#A2B1C3',
-                strokeWidth: 1,
-                textAnchor: 'middle',
-                textVerticalAnchor: 'middle',
-              },
-            },
-            connector: 'rounded',
-            router:
-              sourceTable.id === targetTable.id
-                ? {
-                    name: 'oneSide',
-                    args: {
-                      side: 'left',
-                    },
-                  }
-                : 'manhattan',
-            labels: [
-              {
-                markup: [
-                  {
-                    tagName: 'ellipse',
-                    selector: 'labelBody',
-                  },
-                  {
-                    tagName: 'text',
-                    selector: 'labelText',
-                  },
-                ],
-                attrs: {
-                  labelText: {
-                    text: getRelationship(data[i].interface)[0],
-                    fill: '#ffa940',
-                    textAnchor: 'middle',
-                    textVerticalAnchor: 'middle',
-                  },
-                  labelBody: {
-                    ref: 'labelText',
-                    refWidth: '100%',
-                    refHeight: '100%',
-                    stroke: '#ffa940',
-                    fill: '#fff',
-                    strokeWidth: 1,
-                    rx: 15,
-                    ry: 15,
-                  },
-                },
-                position: {
-                  distance: 0.3,
-                  args: {
-                    keepGradient: true,
-                    ensureLegibility: true,
-                  },
-                },
-              },
-              {
-                markup: [
-                  {
-                    tagName: 'ellipse',
-                    selector: 'labelBody',
-                  },
-                  {
-                    tagName: 'text',
-                    selector: 'labelText',
-                  },
-                ],
-                attrs: {
-                  labelText: {
-                    text: getRelationship(data[i].interface)[1],
-                    fill: '#ffa940',
-                    textAnchor: 'middle',
-                    textVerticalAnchor: 'middle',
-                  },
-                  labelBody: {
-                    ref: 'labelText',
-                    refWidth: '100%',
-                    refHeight: '100%',
-                    stroke: '#ffa940',
-                    fill: '#fff',
-                    rx: 15,
-                    ry: 15,
-                    strokeWidth: 1,
-                  },
-                },
-                position: {
-                  distance: 0.7,
-                  args: {
-                    keepGradient: true,
-                    ensureLegibility: true,
-                  },
-                },
-              },
-            ],
+            ...commonAttrs,
           });
       }
     }
@@ -281,10 +207,3 @@ const getRelationship = (relatioship) => {
       return [];
   }
 };
-
-
-
- 
-
-
-  

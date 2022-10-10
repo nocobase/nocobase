@@ -53,7 +53,7 @@ export const  entityContainer=css`
               height: 25px;
               line-height: 25px;
               left: 0px;
-              background: rgba(59, 60, 61, 0.5);
+              // background: rgba(59, 60, 61, 0.5);
               z-index: 999;
               cursor: pointer;
               text-align: right;
