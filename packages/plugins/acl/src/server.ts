@@ -416,10 +416,12 @@ export class PluginACL extends Plugin {
     }
 
     const User = this.db.getCollection('users');
+
     await User.repository.update({
       values: {
         roles: ['root', 'admin', 'member'],
       },
+      forceUpdate: true,
     });
 
     const RolesUsers = this.db.getCollection('rolesUsers');
