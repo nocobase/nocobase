@@ -51,6 +51,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
       return ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
     };
     ctx.db = app.db;
+    ctx.cache = app.cache;
     ctx.resourcer = app.resourcer;
     const i18n = app.i18n.cloneInstance({ initImmediate: false });
     ctx.i18n = i18n;
