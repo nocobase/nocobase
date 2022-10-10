@@ -11,7 +11,7 @@ import {
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
 
@@ -67,7 +67,7 @@ export class CollectionManagerPlugin extends Plugin {
       if (context) {
         await model.migrate({
           isNew: true,
-          transaction
+          transaction,
         });
       }
     });
@@ -76,7 +76,7 @@ export class CollectionManagerPlugin extends Plugin {
       if (context) {
         await model.migrate({
           isNew: true,
-          transaction
+          transaction,
         });
       }
     });

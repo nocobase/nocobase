@@ -57,4 +57,39 @@ describe('update', () => {
 
     expect(p1.toJSON()['tags']).toEqual([]);
   });
+
+  it('should not update items without filter or filterByPk', async () => {
+    await db.getRepository('posts').create({
+      values: {
+        title: 'p1',
+      },
+    });
+
+    let error;
+
+    try {
+      await db.getRepository('posts').update({
+        values: {
+          title: 'p3',
+        },
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).not.toBeUndefined();
+
+    const p1 = await db.getRepository('posts').findOne();
+    expect(p1.toJSON()['title']).toEqual('p1');
+
+    await db.getRepository('posts').update({
+      values: {
+        title: 'p3',
+      },
+      filterByTk: p1.get('id') as number,
+    });
+
+    await p1.reload();
+    expect(p1.toJSON()['title']).toEqual('p3');
+  });
 });

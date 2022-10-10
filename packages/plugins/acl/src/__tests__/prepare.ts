@@ -17,7 +17,6 @@ export async function prepareApp() {
   app.plugin(PluginUiSchema);
   app.plugin(PluginErrorHandler);
   app.plugin(PluginCollectionManager);
-
   app.plugin(PluginACL);
   await app.loadAndInstall();
 

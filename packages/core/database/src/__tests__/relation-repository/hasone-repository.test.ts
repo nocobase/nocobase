@@ -87,6 +87,7 @@ describe('has one repository', () => {
         avatar: 'new_updated_avatar',
       },
     });
+
     expect((await UserProfileRepository.find())['avatar']).toEqual('new_updated_avatar');
     await UserProfileRepository.destroy();
     expect(await UserProfileRepository.find()).toBeNull();
