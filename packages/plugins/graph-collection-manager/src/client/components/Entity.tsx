@@ -196,7 +196,6 @@ const Entity: React.FC<{
                             'x-component-props': {
                               item: {
                                 ...property,
-                                collectionName: title,
                               },
                             },
                           },
@@ -237,7 +236,6 @@ const Entity: React.FC<{
                             'x-component-props': {
                               item: {
                                 ...property,
-                                collectionName: title,
                               },
                               node,
                             },

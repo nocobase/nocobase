@@ -15,7 +15,7 @@ function layout(graph) {
   const nodes = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: dir, nodesep: 60, ranksep: 60 });
+  g.setGraph({ rankdir: dir, nodesep: 60, ranksep:80 });
   g.setDefaultEdgeLabel(() => ({}));
   let width = 0;
   let height = 0;
