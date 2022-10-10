@@ -47,9 +47,9 @@ export async function signin(ctx: Context, next: Next) {
   return branch(branches, (context) => context.action.params.authenticator ?? 'password')(ctx, async () => {
     const user = ctx.state.currentUser.toJSON();
     let tokenData = { userId: user.id } as any;
-    const tokenInitDataFuncArr = (ctx.state.tokenInitDataFuncArr || []) as Array<Function>;
-    for (const func of tokenInitDataFuncArr) {
-      const data = await func(ctx);
+
+    for (const [name, plugin] of ctx.app.pm.getPlugins()) {
+      const data = await plugin.addTokenSign(ctx);
       tokenData = merge(tokenData, data);
     }
     const token = jwtService.sign(tokenData);

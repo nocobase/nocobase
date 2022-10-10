@@ -44,6 +44,21 @@ export class PluginACL extends Plugin {
     return this.app.acl;
   }
 
+  async addTokenSign(ctx: Context): Promise<any> {
+    const roles = await ctx.db.getRepository('rolesUsers').find({
+      filter: {
+        userId: ctx.state.currentUserId,
+      },
+      order: [['default', 'DESC']],
+    });
+
+    const roleNames: string[] = [];
+    roles.forEach((role) => {
+      roleNames.push(role.get('roleName') as string);
+    });
+    return { roleNames: roleNames };
+  }
+
   registerAssociationFieldAction(associationType: string, value: AssociationFieldActions) {
     this.associationFieldsActions[associationType] = value;
   }

@@ -1,26 +1,6 @@
 import { getRoleNameObj } from '../util';
 
-const getRoleNames = async (ctx) => {
-  const roles = await ctx.db.getRepository('rolesUsers').find({
-    filter: {
-      userId: ctx.state.currentUserId,
-    },
-    order: [['default', 'DESC']],
-  });
-
-  const roleNames: string[] = [];
-  roles.forEach((role) => {
-    roleNames.push(role.get('roleName') as string);
-  });
-  return { roleNames: roleNames };
-};
-
 export async function setCurrentRole(ctx, next) {
-  // 
-  const tokenInitDataFuncArr = (ctx.state.tokenInitDataFuncArr || []) as Array<Function>;
-  tokenInitDataFuncArr.push(getRoleNames);
-  ctx.state.tokenInitDataFuncArr = tokenInitDataFuncArr;
-
   let currentRole = ctx.get('X-Role');
 
   if (currentRole === 'anonymous') {

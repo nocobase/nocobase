@@ -2,12 +2,21 @@ import { Database } from '@nocobase/database';
 import finder from 'find-package-json';
 import { Application } from './application';
 import { InstallOptions } from './plugin-manager';
-
+import { Context } from '@nocobase/actions';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
+
   load();
+
   getName(): string;
+
+  /**
+   * when generate token sign ,will merge return value into sign data
+   * @param {Context} ctx
+   * @returns {any} should return json object
+   */
+  addTokenSign?: (ctx: Context) => Promise<any>;
 }
 
 export interface PluginOptions {
@@ -18,6 +27,7 @@ export interface PluginOptions {
   install?: (this: Plugin) => void;
   load?: (this: Plugin) => void;
   plugin?: typeof Plugin;
+
   [key: string]: any;
 }
 
@@ -41,6 +51,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
   public abstract getName(): string;
 
   beforeLoad() {}
+
+  async addTokenSign(ctx: Context): Promise<any> {
+    return {};
+  }
 
   async install(options?: InstallOptions) {}
 
