@@ -50,7 +50,7 @@ export const useSchemaTemplate = () => {
   const fieldSchema = useFieldSchema();
   const schemaId = fieldSchema['x-uid'];
   const templateKey = fieldSchema['x-template-key'];
-  console.log('templateKey', { schemaId, templateKey })
+  // console.log('templateKey', { schemaId, templateKey })
   return useMemo(() => getTemplateBySchema(fieldSchema), [schemaId, templateKey]);
 };
 

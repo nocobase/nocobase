@@ -4,6 +4,7 @@ export * from './calendar';
 export * from './card-item';
 export * from './cascader';
 export * from './checkbox';
+export * from './cron';
 export * from './color-select';
 export * from './date-picker';
 export * from './filter';
