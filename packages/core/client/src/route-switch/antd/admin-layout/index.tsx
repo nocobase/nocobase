@@ -80,12 +80,22 @@ const MenuEditor = (props) => {
           const s = findByUid(schema, defaultSelectedUid);
           if (s) {
             setTitle(s.title);
+          } else {
+            const s = findMenuItem(schema);
+            if (s) {
+              history.push(`/admin/${s['x-uid']}`);
+              setTitle(s.title);
+            } else {
+              history.push(`/admin/`);
+            }
           }
         } else {
           const s = findMenuItem(schema);
           if (s) {
             history.push(`/admin/${s['x-uid']}`);
             setTitle(s.title);
+          } else {
+            history.push(`/admin/`);
           }
         }
       },

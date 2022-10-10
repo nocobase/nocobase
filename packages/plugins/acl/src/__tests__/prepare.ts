@@ -5,8 +5,6 @@ import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
 import { mockServer } from '@nocobase/test';
 import PluginACL from '../server';
 
-
-
 export async function prepareApp() {
   const app = mockServer({
     registerActions: true,
@@ -18,7 +16,6 @@ export async function prepareApp() {
   app.plugin(PluginUiSchema);
   app.plugin(PluginErrorHandler);
   app.plugin(PluginCollectionManager);
-
   app.plugin(PluginACL);
   await app.loadAndInstall();
 

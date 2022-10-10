@@ -418,21 +418,23 @@ export class PluginACL extends Plugin {
     }
 
     const User = this.db.getCollection('users');
+
     await User.repository.update({
       values: {
-        roles: ['root', 'admin', 'member']
-      }
+        roles: ['root', 'admin', 'member'],
+      },
+      forceUpdate: true,
     });
 
     const RolesUsers = this.db.getCollection('rolesUsers');
     await RolesUsers.repository.update({
       filter: {
         userId: 1,
-        roleName: 'root'
+        roleName: 'root',
       },
       values: {
-        default: true
-      }
+        default: true,
+      },
     });
   }
 
