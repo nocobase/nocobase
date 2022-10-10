@@ -9,7 +9,7 @@ import {
   FindOptions,
   TargetKey,
   TK,
-  UpdateOptions
+  UpdateOptions,
 } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
