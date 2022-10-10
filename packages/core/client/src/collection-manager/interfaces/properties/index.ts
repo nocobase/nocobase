@@ -112,6 +112,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
       },
       'reverseField.type': {
         ...relationshipType,
+        title: '{{t("Inverse relationship type")}}',
       },
       'reverseField.uiSchema.title': {
         type: 'string',
