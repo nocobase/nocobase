@@ -1,14 +1,20 @@
-import React, { useLayoutEffect, useRef, useEffect,useContext } from 'react';
+import React, { useLayoutEffect, useRef, useEffect, useContext } from 'react';
 import { Graph, Cell } from '@antv/x6';
 import dagre from 'dagre';
 import '@antv/x6-react-shape';
-import {  SchemaOptionsContext } from '@formily/react';
+import { SchemaOptionsContext } from '@formily/react';
 
-import { useAPIClient, APIClientProvider, CollectionManagerProvider, useCollectionManager,SchemaComponentOptions } from '@nocobase/client';
+import {
+  useAPIClient,
+  APIClientProvider,
+  CollectionManagerProvider,
+  useCollectionManager,
+  SchemaComponentOptions,
+} from '@nocobase/client';
 import { formatData } from './utils';
 import Entity from './components/Entity';
 
-const LINE_HEIGHT = 30;
+const LINE_HEIGHT = 25;
 const NODE_WIDTH = 200;
 
 let dir = 'TB'; // LR RL TB BT 横排
@@ -17,16 +23,14 @@ function layout(graph) {
   const nodes = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: dir, nodesep: 60, ranksep:80 ,align: 'DL', controlPoints: true,});
+  g.setGraph({ rankdir: dir, nodesep: 100, edgesep: 20, ranksep: 120, align: 'DL', controlPoints: true });
   g.setDefaultEdgeLabel(() => ({}));
   let width = 0;
   let height = 0;
   nodes.forEach((node, i) => {
-    if (node.id !== 'parent') {
-      width = 200;
-      height = 300;
-      g.setNode(node.id, { width, height });
-    }
+    width = 200;
+    height = 300;
+    g.setNode(node.id, { width, height });
   });
   edges.forEach((edge) => {
     const source = edge.getSource();
@@ -35,7 +39,7 @@ function layout(graph) {
   });
   dagre.layout(g);
   graph.freeze();
-  g.nodes().forEach((id) => {
+  g.nodes().forEach((id, index) => {
     const node = graph.getCell(id);
     if (node) {
       const pos: any = g.node(id);
@@ -79,10 +83,10 @@ export const Editor = () => {
   const api = useAPIClient();
   const graph = useRef(null);
   graph.current = null;
-  const { collections: data, refreshCM ,service} = useCollectionManager();
+  const { collections: data, refreshCM } = useCollectionManager();
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
-  const components = { ...options?.components};
+  const components = { ...options?.components };
   const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
@@ -142,18 +146,11 @@ export const Editor = () => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-            <CollectionManagerProvider
-              collections={data}
-              refreshCM= {async()=>{
-              const {data}=  await api.resource('collections').list({
-                paginate: false,
-                appends: ['fields', 'fields.uiSchema'],
-              })
-               getCollectionData(data.data,myGraph)
-              }}
-            >
-              <div style={{height:'auto'}}><Entity graph={myGraph}  node={node} /></div>
-            </CollectionManagerProvider>
+              <CollectionManagerProvider collections={data} refreshCM={refreshCM}>
+                <div style={{ height: 'auto' }}>
+                  <Entity graph={myGraph} node={node} />
+                </div>
+              </CollectionManagerProvider>
             </SchemaComponentOptions>
           </APIClientProvider>
         ),
@@ -191,10 +188,9 @@ export const Editor = () => {
     };
   }, []);
 
-
   useEffect(() => {
     graph.current && getCollectionData(data, graph.current);
   }, []);
 
-  return <div id="container" style={{ width: '100%',height:'auto' }}></div>;
+  return <div id="container" style={{ width: '100%', height: 'auto' }}></div>;
 };

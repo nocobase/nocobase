@@ -202,6 +202,8 @@ const Entity: React.FC<{
             property.uiSchema && (
               <Popover
                 content={CollectionConten(property)}
+                mouseLeaveDelay={0}
+                zIndex={100}
                 title={
                   <div>
                     {compile(property.uiSchema?.title)}{' '}
