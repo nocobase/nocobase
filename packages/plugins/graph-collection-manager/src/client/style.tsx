@@ -52,7 +52,6 @@ export const entityContainer = css`
           display: inline-block;
           flex-direction: row-reverse;
           position: absolute;
-          width: 40%;
           height: 32px;
           line-height: 32px;
           right: 1px;
@@ -60,9 +59,9 @@ export const entityContainer = css`
           cursor: pointer;
           text-align: right;
           background: #fff;
+          padding-right: 3px;
           span {
             margin: 3px;
-            font-size: 13px;
             margin-left: 4px;
             padding: 3px;
             height: 20px;
@@ -115,7 +114,7 @@ export const headClass = css`
   align-items: center;
   background: rgb(242 243 245);
   color: rgb(29 33 41);
-  padding: 0 8px;
+  padding: 0 5px;
   border-radius: 3px;
 `;
 
@@ -130,7 +129,6 @@ export const tableNameClass = css`
 export const tableBtnClass = css`
   display: flex;
   span {
-    margin-right: 5px;
     cursor: pointer;
   }
 `;

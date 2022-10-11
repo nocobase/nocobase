@@ -256,6 +256,24 @@ const Entity: React.FC<{
                             },
                           }}
                         />
+                         <SchemaComponent
+                          scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
+                          schema={{
+                            type: 'object',
+                            properties: {
+                              update: {
+                                type: 'void',
+                                'x-action': 'update',
+                                'x-component': EditFieldAction,
+                                'x-component-props': {
+                                  item: {
+                                    ...property,
+                                  },
+                                },
+                              },
+                            },
+                          }}
+                        />
                         <SchemaComponent
                           schema={{
                             type: 'void',
@@ -294,24 +312,7 @@ const Entity: React.FC<{
                             },
                           }}
                         />
-                        <SchemaComponent
-                          scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
-                          schema={{
-                            type: 'object',
-                            properties: {
-                              update: {
-                                type: 'void',
-                                'x-action': 'update',
-                                'x-component': EditFieldAction,
-                                'x-component-props': {
-                                  item: {
-                                    ...property,
-                                  },
-                                },
-                              },
-                            },
-                          }}
-                        />
+                       
                       </CollectionNodeProvder>
                     </SchemaComponentProvider>
                   </div>
