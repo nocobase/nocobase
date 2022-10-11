@@ -14,7 +14,7 @@ import {
 import { formatData } from './utils';
 import Entity from './components/Entity';
 
-const LINE_HEIGHT = 25;
+const LINE_HEIGHT = 32;
 const NODE_WIDTH = 210;
 
 let dir = 'TB'; // LR RL TB BT 横排
@@ -28,7 +28,7 @@ function layout(graph) {
 
   nodes.forEach((node, i) => {
    const width = 210;
-   const  height = node.getPorts().length * 25 + 30;
+   const  height = node.getPorts().length * 32 + 30;
     g.setNode(node.id, { width, height });
   });
   edges.forEach((edge) => {

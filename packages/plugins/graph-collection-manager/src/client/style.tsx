@@ -16,9 +16,8 @@ export const entityContainer = css`
   height: 100%;
   border-radius: 3px;
   background-color: #fff;
-  border:1px solid rgb(201 205 212);
+  border: 1px solid rgb(237 237 237);
   box-shadow: 0 0 6px rgb(0 0 0 / 12%);
-  
   &:hover {
     border: 1px solid #165dff;
     box-shadow: 0 0 6px rgb(0 0 0 / 12%);
@@ -33,11 +32,11 @@ export const entityContainer = css`
     // border: 1px solid #5F95FF;
     .body-item {
       width: 100%;
-      max-width: 198px;
+      max-width: 208px;
       height: 28px;
       font-size: 12px;
       color: #595959;
-      height: 25px;
+      height: 32px;
       border-top: 1px solid rgb(229 230 235);
       text-overflow: ellipsis;
       display: flex;
@@ -50,12 +49,12 @@ export const entityContainer = css`
       }
       &:hover {
         .field-operator {
-          display: flex;
+          display: inline-block;
           flex-direction: row-reverse;
           position: absolute;
           width: 40%;
-          height: 25px;
-          line-height: 25px;
+          height: 32px;
+          line-height: 32px;
           right: 1px;
           z-index: 999;
           cursor: pointer;
@@ -87,17 +86,21 @@ export const entityContainer = css`
             background: rgb(175 240 181);
           }
         }
+        .type {
+          display: none;
+        }
       }
 
       .name {
         text-overflow: ellipsis;
         white-space: nowrap;
         overflow: hidden;
-        margin-left: 6px;
+        margin-left: 5px;
       }
 
       .type {
         color: #bfbfbf;
+        margin-right: 5px;
       }
     }
   }
@@ -113,6 +116,7 @@ export const headClass = css`
   background: rgb(242 243 245);
   color: rgb(29 33 41);
   padding: 0 8px;
+  border-radius: 3px;
 `;
 
 export const tableNameClass = css`
@@ -120,7 +124,7 @@ export const tableNameClass = css`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight:700;
+  font-weight: 700;
 `;
 
 export const tableBtnClass = css`
@@ -135,12 +139,11 @@ export const collectiionPopoverClass = css`
   div.field-content {
     font-size: 14px;
     color: rgb(134 144 156);
-    opacity: .8;
-    display:block;
-    .field-type{
-      color:#333;
+    opacity: 0.8;
+    display: block;
+    .field-type {
+      color: #333;
       float: right;
-
     }
   }
 `;
