@@ -7,6 +7,12 @@ import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_d
 
 export interface GetJsonSchemaOptions {
   includeAsyncNode?: boolean;
+  readFromCache?: boolean;
+  transaction?: Transaction;
+}
+
+export interface GetPropertiesOptions {
+  readFromCache?: boolean;
   transaction?: Transaction;
 }
 
@@ -186,7 +192,16 @@ export class UiSchemaRepository extends Repository {
     return carry;
   }
 
-  async getProperties(uid: string, options: Transactionable = {}) {
+  async getProperties(uid: string, options: GetPropertiesOptions = {}) {
+    if (options?.readFromCache && this.cache) {
+      return this.cache.wrap(uid, () => {
+        return this.doGetProperties(uid, options);
+      });
+    }
+    return this.doGetProperties(uid, options);
+  }
+
+  private async doGetProperties(uid: string, options: GetPropertiesOptions = {}) {
     const { transaction } = options;
 
     const db = this.database;
@@ -216,7 +231,7 @@ export class UiSchemaRepository extends Repository {
     return lodash.pick(schema, ['type', 'properties']);
   }
 
-  async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {
+  private async doGetJsonSchema(uid: string, options?: GetJsonSchemaOptions) {
     const db = this.database;
 
     const treeTable = this.uiSchemaTreePathTableName;
@@ -243,8 +258,16 @@ export class UiSchemaRepository extends Repository {
       return {};
     }
 
-    const schema = this.nodesToSchema(nodes[0], uid);
-    return schema;
+    return this.nodesToSchema(nodes[0], uid);
+  }
+
+  async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {
+    if (options?.readFromCache && this.cache ) {
+      return this.cache.wrap(uid, () => {
+        return this.doGetJsonSchema(uid, options);
+      });
+    }
+    return this.doGetJsonSchema(uid, options);
   }
 
   private ignoreSchemaProperties(schemaProperties) {

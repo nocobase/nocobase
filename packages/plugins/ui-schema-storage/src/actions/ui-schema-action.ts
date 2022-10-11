@@ -1,7 +1,7 @@
 import { Context } from '@nocobase/actions';
 import { ActionParams } from '@nocobase/resourcer';
 import lodash from 'lodash';
-import UiSchemaRepository, { GetJsonSchemaOptions } from '../repository';
+import UiSchemaRepository, { GetJsonSchemaOptions, GetPropertiesOptions } from '../repository';
 
 const getRepositoryFromCtx = (ctx: Context) => {
   const repo = ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;
@@ -9,33 +9,13 @@ const getRepositoryFromCtx = (ctx: Context) => {
   return repo;
 };
 
-const cacheMethods = {
-  getJsonSchema: async (ctx: Context, params, options: GetJsonSchemaOptions, func) => {
-    if (options?.includeAsyncNode) {
-      return func(params, options);
-    }
-    return ctx.cache.wrap(params, func);
-  },
-  getProperties: async (ctx: Context, params, options, func) => {
-    return ctx.cache.wrap(params, func);
-  },
-};
-
 const callRepositoryMethod = (method, paramsKey: 'resourceIndex' | 'values', optionsBuilder?) => {
   return async (ctx, next) => {
     const params = lodash.get(ctx.action.params, paramsKey);
     const options = optionsBuilder ? optionsBuilder(ctx.action.params) : {};
 
-    let returnValue;
-    if (!!cacheMethods[method]) {
-      returnValue = await cacheMethods[method](ctx, params, options, () => {
-        const repository = getRepositoryFromCtx(ctx);
-        return repository[method](params, options);
-      });
-    } else {
-      const repository = getRepositoryFromCtx(ctx);
-      returnValue = await repository[method](params, options);
-    }
+    const repository = getRepositoryFromCtx(ctx);
+    const returnValue = await repository[method](params, options);
 
     ctx.body = returnValue || {
       result: 'ok',
@@ -55,12 +35,21 @@ function parseInsertAdjacentValues(values) {
 
 export const uiSchemaActions = {
   getJsonSchema: callRepositoryMethod('getJsonSchema', 'resourceIndex', (params: ActionParams) => {
+    const includeAsyncNode = params?.includeAsyncNode;
     return {
-      includeAsyncNode: params?.includeAsyncNode,
-    };
+      readFromCache: !includeAsyncNode,
+      includeAsyncNode,
+    } as GetJsonSchemaOptions;
   }),
 
-  getProperties: callRepositoryMethod('getProperties', 'resourceIndex'),
+  getProperties: callRepositoryMethod(
+    'getProperties',
+    'resourceIndex',
+    () =>
+      ({
+        readFromCache: true,
+      } as GetPropertiesOptions),
+  ),
   insert: callRepositoryMethod('insert', 'values'),
   insertNewSchema: callRepositoryMethod('insertNewSchema', 'values'),
   remove: callRepositoryMethod('remove', 'resourceIndex'),
