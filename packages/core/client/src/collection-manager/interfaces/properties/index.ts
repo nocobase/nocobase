@@ -117,22 +117,22 @@ export const reverseFieldProperties: Record<string, ISchema> = {
       'reverseField.uiSchema.title': {
         type: 'string',
         title: '{{t("Inverse field display name")}}',
-        // required: true,
         default: '{{record.title}}',
+        required: true,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
       },
       'reverseField.name': {
         type: 'string',
         title: '{{t("Inverse field name")}}',
-        // required: true,
+        required: true,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         'x-validator': 'uid',
         description:
           "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
       },
-    }
+    },
   },
 };
 

@@ -662,6 +662,6 @@ export default {
   "Print": "打印",
   'Sign up successfully, and automatically jump to the sign in page': '注册成功，即将跳转到登录页面',
   'Create inverse field in the target collection': '在目标数据表里创建反向关系字段',
-  'Inverse field name': '反向关系字段名称',
-  'Inverse field display name': '反向关系字段标识',
+  'Inverse field name': '反向关系字段标识',
+  'Inverse field display name': '反向关系字段名称',
 }
