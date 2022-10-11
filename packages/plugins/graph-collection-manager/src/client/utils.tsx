@@ -43,6 +43,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
     ) {
       const targetTable = tableData.find((v) => v.name === data[i].target);
       const sourceTable = tableData.find((v) => v.name === data[i].collectionName);
+      console.log(data[i])
       const commonAttrs = {
         attrs: {
           line: {
@@ -191,7 +192,7 @@ const getRelationship = (relatioship) => {
   switch (relatioship) {
     case 'm2m':
     case 'linkTo':
-      return ['N', 'N'];
+      return ['1', 'N'];
     case 'o2m':
       return ['1', 'N'];
     case 'm2o':
