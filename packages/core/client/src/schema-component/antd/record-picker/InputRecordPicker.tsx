@@ -9,6 +9,7 @@ import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
 import { useFieldNames } from './useFieldNames';
+import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 const RecordPickerContext = createContext(null);
 
@@ -23,15 +24,15 @@ const useTableSelectorProps = () => {
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
       // defaultSelectedRowKeys: rcSelectRows?.map((item) => item[rowKey||'id']),
-      selectedRowKeys: rcSelectRows?.map((item) => item[rowKey||'id']),
+      selectedRowKeys: rcSelectRows?.map((item) => item[rowKey || 'id']),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       if (multiple) {
         const scopeRows = field.value || [];
         const allSelectedRows = rcSelectRows || [];
-        const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey||'id');
-        const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey||'id');
-        const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey||'id'])
+        const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey || 'id');
+        const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey || 'id');
+        const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey || 'id']);
         setSelectedRows?.(unionSelectedRows);
         onRowSelectionChange?.(unionSelectedRowKeys, unionSelectedRows);
       } else {
@@ -74,30 +75,31 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   const fieldSchema = useFieldSchema();
   const collectionField = useAssociation(props);
   const compile = useCompile();
-  
+  const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
+
   const [selectedRows, setSelectedRows] = useState([]);
   const [options, setOptions] = useState([]);
 
   useEffect(() => {
     if (value) {
-      const opts = (Array.isArray(value) ? value : value ? [value] : []).map(option => {
+      const opts = (Array.isArray(value) ? value : value ? [value] : []).map((option) => {
         const label = option[fieldNames.label];
         return {
           ...option,
-          [fieldNames.label]: compile(label),
+          [fieldNames.label]: getLabelFormatValue(labelUiSchema, compile(label)),
         };
       });
       setOptions(opts);
       setSelectedRows(opts);
     }
-  }, [value])
+  }, [value,fieldNames?.label]);
 
   const getValue = () => {
     if (multiple == null) return null;
     // console.log('getValue', multiple, value, Array.isArray(value));
-    
-    return Array.isArray(value) ? value?.map(v => v[fieldNames.value]) : value?.[fieldNames.value];
-  }
+
+    return Array.isArray(value) ? value?.map((v) => v[fieldNames.value]) : value?.[fieldNames.value];
+  };
   return (
     <div>
       <Select
