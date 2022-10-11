@@ -205,8 +205,8 @@ const Entity: React.FC<{
                 zIndex={100}
                 title={
                   <div>
-                    {compile(property.uiSchema?.title)}{' '}
-                    <span style={{ color: '#ffa940', float: 'right' }}>{property.interface}</span>
+                    {compile(property.uiSchema?.title)}
+                    <span style={{ color: '#ffa940', float: 'right' }}>{compile(getInterface(property.interface).title)}</span>
                   </div>
                 }
                 key={property.id}
