@@ -136,7 +136,7 @@ export const EditFieldAction = ({ item }) => {
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <EditOutlined
-        className="btn-del"
+        className="btn-edit"
         onClick={async () => {
           const { data } = await api.resource('collections.fields', collectionName).get({
             filterByTk: name,

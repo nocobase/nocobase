@@ -105,7 +105,9 @@ const Entity: React.FC<{
                             border-color: transparent;
                             color: rgb(78 89 105);
                             height: 20px;
-                            padding: 5px;
+                            width:20px;
+                            padding: 3px;
+                            margin: 3px 3px 4px;
                             &:hover {
                               background-color: rgb(229 230 235);
                             }

@@ -65,6 +65,7 @@ export const entityContainer = css`
             margin-left: 4px;
             padding: 3px;
             height: 20px;
+            width: 20px;
           }
           .btn-del {
             border-color: transparent;
@@ -81,8 +82,8 @@ export const entityContainer = css`
             color: rgb(0, 180, 42);
             width: 20px;
           }
-          .btn-add:hover {
-            background: rgb(175 240 181);
+          .btn-edit:hover {
+            background: rgb(229 230 235);
           }
         }
         .type {
