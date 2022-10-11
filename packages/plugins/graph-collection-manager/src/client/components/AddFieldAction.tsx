@@ -105,13 +105,12 @@ const useCreateCollectionField = (record) => {
       if (['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(form?.values?.interface) && title) {
         form.setValuesIn('reverseField.uiSchema.title', title);
       }
-
       await run();
     },
   };
 };
 
-export const AddFieldAction = ({ item :record,node}) => {
+export const AddFieldAction = ({ item :record}) => {
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});

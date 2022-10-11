@@ -9,14 +9,15 @@ export const formatData = (data) => {
   const edgeData = [];
   const targetTablekeys = [];
   const tableData = data.map((item, index) => {
-    const ports = item.fields.map((field) => {
+    const ports = [];
+    item.fields.forEach((field) => {
       edgeData.push(field);
-      return {
+      field.uiSchema&&ports.push({
         id: field.key,
         name: field.name,
         group: 'list',
         ...field,
-      };
+      });
     });
     targetTablekeys.push(item.name);
     return {
@@ -48,7 +49,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
             strokeWidth: 1,
             textAnchor: 'middle',
             textVerticalAnchor: 'middle',
-            stroke:'rgb(201 205 212)'
+            stroke: 'rgb(201 205 212)',
           },
         },
         connector: { name: 'smooth' },
@@ -142,7 +143,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
       };
       const anchor = {
         anchor: 'center',
-        direction:'v'
+        direction: 'v',
       };
       if (data[i].interface === 'm2m') {
         const throughTable = tableData.find((v) => v.name === data[i].through);

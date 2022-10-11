@@ -52,7 +52,6 @@ const Entity: React.FC<{
   } = node;
   const compile = useCompile();
   const { collections = [] ,getInterface} = useCollectionManager();
-
   const useNewId = (prefix) => {
     return `${prefix || ''}${uid()}`;
   };
@@ -82,7 +81,6 @@ const Entity: React.FC<{
       </div>
     );
   };
-console.log(ports.items)
   return (
     <div className={cx(entityContainer)}>
       <div className={headClass}>
@@ -252,6 +250,7 @@ console.log(ports.items)
                                     ...property,
                                   },
                                   node,
+                                  graph
                                 },
                               },
                             },

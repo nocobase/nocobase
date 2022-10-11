@@ -23,13 +23,12 @@ function layout(graph) {
   const nodes = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: dir, nodesep: 100, edgesep: 20, ranksep: 50, align: 'DL', controlPoints: true });
+  g.setGraph({ rankdir: dir, nodesep: 100, edgesep: 20, rankSep: 50, align: 'DL', controlPoints: true });
   g.setDefaultEdgeLabel(() => ({}));
-  let width = 0;
-  let height = 0;
+
   nodes.forEach((node, i) => {
-    width = 210;
-    height = node.getPorts().length*25+30;
+   const width = 210;
+   const  height = node.getPorts().length * 25 + 30;
     g.setNode(node.id, { width, height });
   });
   edges.forEach((edge) => {
@@ -49,7 +48,6 @@ function layout(graph) {
   graph.unfreeze();
   graph.centerContent();
 }
-
 
 function getNodes(nodes, graph) {
   nodes.forEach((item) => {

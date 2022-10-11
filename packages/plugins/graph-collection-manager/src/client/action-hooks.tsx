@@ -136,7 +136,7 @@ const useDestroyAction = (name) => {
       await api.resource('collections').destroy({
         filterByTk: name,
       });
-      await refreshCM()
+      await refreshCM();
     },
   };
 };
