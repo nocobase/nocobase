@@ -51,7 +51,8 @@ const Entity: React.FC<{
     id,
   } = node;
   const compile = useCompile();
-  const { collections = [] } = useCollectionManager();
+  const { collections = [] ,getInterface} = useCollectionManager();
+
   const useNewId = (prefix) => {
     return `${prefix || ''}${uid()}`;
   };
@@ -81,7 +82,7 @@ const Entity: React.FC<{
       </div>
     );
   };
-
+console.log(ports.items)
   return (
     <div className={cx(entityContainer)}>
       <div className={headClass}>
@@ -316,7 +317,7 @@ const Entity: React.FC<{
                     </SchemaComponentProvider>
                   </div>
                   <div className="name">{compile(property.uiSchema?.title)}</div>
-                  <div className="type">{property.interface}</div>
+                  <div className="type">{compile(getInterface(property.interface).title)}</div>
                 </div>
               </Popover>
             )

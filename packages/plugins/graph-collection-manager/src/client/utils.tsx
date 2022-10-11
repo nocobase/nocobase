@@ -24,7 +24,7 @@ export const formatData = (data) => {
       shape: shape.ER,
       name: item.name,
       title: item.title,
-      width: 200,
+      width: 210,
       ports,
       item: item,
     };
@@ -48,6 +48,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
             strokeWidth: 1,
             textAnchor: 'middle',
             textVerticalAnchor: 'middle',
+            stroke:'rgb(201 205 212)'
           },
         },
         connector: { name: 'smooth' },

@@ -12,10 +12,13 @@ export const addButtonClass = css`
 `;
 
 export const entityContainer = css`
-  width: 200px;
+  width: 210px;
   height: 100%;
-  border-radius: 2px;
+  border-radius: 3px;
   background-color: #fff;
+  border:1px solid rgb(201 205 212);
+  box-shadow: 0 0 6px rgb(0 0 0 / 12%);
+  
   &:hover {
     border: 1px solid #165dff;
     box-shadow: 0 0 6px rgb(0 0 0 / 12%);
@@ -95,8 +98,6 @@ export const entityContainer = css`
 
       .type {
         color: #bfbfbf;
-        font-size: 8px;
-        margin-right: 8px;
       }
     }
   }
@@ -119,6 +120,7 @@ export const tableNameClass = css`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight:700;
 `;
 
 export const tableBtnClass = css`

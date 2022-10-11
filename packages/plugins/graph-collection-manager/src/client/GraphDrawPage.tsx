@@ -15,7 +15,7 @@ import { formatData } from './utils';
 import Entity from './components/Entity';
 
 const LINE_HEIGHT = 25;
-const NODE_WIDTH = 200;
+const NODE_WIDTH = 210;
 
 let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
@@ -23,13 +23,13 @@ function layout(graph) {
   const nodes = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: dir, nodesep: 100, edgesep: 20, ranksep: 120, align: 'DL', controlPoints: true });
+  g.setGraph({ rankdir: dir, nodesep: 100, edgesep: 20, ranksep: 50, align: 'DL', controlPoints: true });
   g.setDefaultEdgeLabel(() => ({}));
   let width = 0;
   let height = 0;
   nodes.forEach((node, i) => {
-    width = 200;
-    height = 300;
+    width = 210;
+    height = node.getPorts().length*25+30;
     g.setNode(node.id, { width, height });
   });
   edges.forEach((edge) => {
@@ -39,7 +39,7 @@ function layout(graph) {
   });
   dagre.layout(g);
   graph.freeze();
-  g.nodes().forEach((id, index) => {
+  g.nodes().forEach((id) => {
     const node = graph.getCell(id);
     if (node) {
       const pos: any = g.node(id);
@@ -49,6 +49,7 @@ function layout(graph) {
   graph.unfreeze();
   graph.centerContent();
 }
+
 
 function getNodes(nodes, graph) {
   nodes.forEach((item) => {
