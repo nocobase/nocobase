@@ -909,3 +909,33 @@ await repository.create({
   },
 });
 ```
+
+### beforeCreate
+
+### beforeUpdate
+
+### beforeSave
+
+### beforeDestroy
+
+### afterCreate
+
+### afterUpdate
+
+### afterSave
+
+### afterDestroy
+
+### afterCreateWithAssociations
+
+### afterUpdateWithAssociations
+
+### afterSaveWithAssociations
+
+### beforeDefineCollection
+
+### afterDefineCollection
+
+### beforeRemoveCollection
+
+### afterRemoveCollection
