@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import './style.less';
+import lessStyle from './style.less';
 import { ISchema, observer } from '@formily/react';
 import { Button, Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
@@ -85,7 +85,11 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       if (item.type === 'subMenu') {
         return (
           !!item.children?.length && (
-            <Menu.SubMenu key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+            <Menu.SubMenu
+              key={item.key || `item-group-${indexA}`}
+              title={compile(item.title)}
+              popupClassName={lessStyle.menuItemGroup}
+            >
               {renderItems(item.children)}
             </Menu.SubMenu>
           )
@@ -159,7 +163,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
               eventKey={item.key || `item-group-${indexA}`}
               key={item.key || `item-group-${indexA}`}
               title={compile(item.title)}
-              className="menu-item-group"
+              className={lessStyle.menuItemGroup}
             >
               {renderMenuItem(item.children)}
             </Menu.ItemGroup>
