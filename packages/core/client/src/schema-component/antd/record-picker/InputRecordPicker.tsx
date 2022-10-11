@@ -92,7 +92,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
       setOptions(opts);
       setSelectedRows(opts);
     }
-  }, [value]);
+  }, [value,fieldNames?.label]);
 
   const getValue = () => {
     if (multiple == null) return null;

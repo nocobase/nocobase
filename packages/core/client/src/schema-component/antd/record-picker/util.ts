@@ -7,7 +7,7 @@ import { ISchema } from '@formily/react';
 export const useLabelUiSchema = (collectionField: CollectionFieldOptions, label: string): ISchema => {
   const { getCollectionJoinField } = useCollectionManager();
   const labelField = getCollectionJoinField(`${collectionField.target}.${label}`) as CollectionFieldOptions;
-  return labelField.uiSchema;
+  return labelField?.uiSchema;
 };
 
 export const getDatePickerLabels = (props): string => {
@@ -18,9 +18,9 @@ export const getDatePickerLabels = (props): string => {
 };
 
 export const getLabelFormatValue = (labelUiSchema: ISchema, value: any): string => {
-  switch (labelUiSchema['x-component']) {
+  switch (labelUiSchema?.['x-component']) {
     case 'DatePicker':
-      return getDatePickerLabels({ ...labelUiSchema['x-component-props'], value });
+      return getDatePickerLabels({ ...labelUiSchema?.['x-component-props'], value });
     default:
       return value;
   }
