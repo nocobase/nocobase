@@ -769,3 +769,137 @@ export default extend({
 以上两个文件如在调用 `import()` 时导入，通过 `extend()` 再次扩展以后，books 表将拥有 `title` 和 `price` 两个字段。
 
 此方法在扩展已有插件已定义的表结构时非常有用。
+
+## 内置事件
+
+### `beforeValidate`
+
+A listener that is run before validation. Fired when `repository.create()` or `repository.update()` are called.
+
+**Signature**
+
+```ts
+on(eventName: `${collectionName}.beforeValidate` | 'beforeValidate', listener: ValidateListener): void;
+```
+
+**Type**
+
+```ts
+type collectionName = string;
+type ValidationOptions = {
+  skip?: string[];
+  fields?: string[];
+  hooks?: boolean;
+};
+type ListenerReturn = Promise<void> | void;
+type ValidateListener = (model: Model, options?: ValidationOptions) => ListenerReturn;
+
+class Database {
+  on(eventName: `${collectionName}.beforeValidate` | 'beforeValidate', listener: ValidateListener): void;
+}
+```
+
+**Examples**
+
+```ts
+db.collection({
+  name: 'tests',
+  fields: [
+    {
+      type: 'string',
+      name: 'email',
+      validate: {
+        isEmail: true,
+      },
+    }
+  ],
+});
+
+// all models
+db.on('beforeValidate', async (model, options) => {
+
+});
+// tests model
+db.on('tests.beforeValidate', async (model, options) => {
+
+});
+
+const repository = db.getRepository('tests');
+await repository.create({
+  values: {
+    email: 'abc', // checks for email format
+  },
+});
+// or 
+await repository.update({
+  filterByTk: 1,
+  values: {
+    email: 'abc', // checks for email format
+  },
+});
+```
+
+### `afterValidate`
+
+A listener that is run after validation. Fired when `repository.create()` or `repository.update()` is called and validation passed.
+
+**Signature**
+
+```ts
+on(eventName: `${collectionName}.afterValidate` | 'afterValidate', listener: ValidateListener): void;
+```
+
+**Type**
+
+```ts
+type collectionName = string;
+type ValidationOptions = {
+  skip?: string[];
+  fields?: string[];
+  hooks?: boolean;
+};
+type ListenerReturn = Promise<void> | void;
+type ValidateListener = (model: Model, options?: ValidationOptions) => ListenerReturn;
+
+class Database {
+  on(eventName: `${collectionName}.afterValidate` | 'afterValidate', listener: ValidateListener): void;
+}
+```
+
+**Examples**
+
+```ts
+db.collection({
+  name: 'tests',
+  fields: [
+    {
+      type: 'string',
+      name: 'email',
+      validate: {
+        isEmail: true,
+      },
+    }
+  ],
+});
+
+// all models
+db.on('afterValidate', async (model, options) => {
+
+});
+// tests model
+db.on('tests.afterValidate', async (model, options) => {
+
+});
+
+const repository = db.getRepository('tests');
+await repository.create({
+  values: {
+    email: 'abc', // 验证不通过，不触发 afterValidate
+  },
+});
+await repository.create({
+  values: {
+    email: 'abc@def.com', // 验证通过，触发 afterValidate
+  },
+});
+```
