@@ -779,23 +779,26 @@ A listener that is run before validation. Fired when `repository.create()` or `r
 **Signature**
 
 ```ts
-on(eventName: `${collectionName}.beforeValidate` | 'beforeValidate', listener: ValidateListener): void;
+on(eventName: `${CollectionNameType}.beforeValidate` | 'beforeValidate', listener: ValidateListener): this
 ```
 
 **Type**
 
 ```ts
-type collectionName = string;
+type CollectionNameType = string;
+
 type ValidationOptions = {
   skip?: string[];
   fields?: string[];
   hooks?: boolean;
 };
+
 type ListenerReturn = Promise<void> | void;
+
 type ValidateListener = (model: Model, options?: ValidationOptions) => ListenerReturn;
 
 class Database {
-  on(eventName: `${collectionName}.beforeValidate` | 'beforeValidate', listener: ValidateListener): void;
+  on(eventName: `${CollectionNameType}.beforeValidate` | 'beforeValidate', listener: ValidateListener): this;
 }
 ```
 
@@ -846,23 +849,26 @@ A listener that is run after validation. Fired when `repository.create()` or `re
 **Signature**
 
 ```ts
-on(eventName: `${collectionName}.afterValidate` | 'afterValidate', listener: ValidateListener): void;
+on(eventName: `${CollectionNameType}.afterValidate` | 'afterValidate', listener: ValidateListener): this
 ```
 
 **Type**
 
 ```ts
-type collectionName = string;
+type CollectionNameType = string;
+
 type ValidationOptions = {
   skip?: string[];
   fields?: string[];
   hooks?: boolean;
 };
+
 type ListenerReturn = Promise<void> | void;
+
 type ValidateListener = (model: Model, options?: ValidationOptions) => ListenerReturn;
 
 class Database {
-  on(eventName: `${collectionName}.afterValidate` | 'afterValidate', listener: ValidateListener): void;
+  on(eventName: `${CollectionNameType}.afterValidate` | 'afterValidate', listener: ValidateListener): this;
 }
 ```
 

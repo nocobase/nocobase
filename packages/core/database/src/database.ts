@@ -27,6 +27,7 @@ import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
+import { CollectionNameType, ValidateListener } from './types';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -446,7 +447,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.close();
   }
 
-  on(event: string | symbol, listener): this {
+  on(eventName: any, listener: any): this;
+  on(eventName: `${CollectionNameType}.beforeValidate` | 'beforeValidate', listener: ValidateListener): this;
+  on(eventName: `${CollectionNameType}.afterValidate` | 'afterValidate', listener: ValidateListener): this;
+  on(event: any, listener: any): this {
     // NOTE: to match if event is a sequelize or model type
     const type = this.modelHook.match(event);
 
