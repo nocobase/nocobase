@@ -175,7 +175,8 @@ export default {
   "Time format": "时间格式",
   "12 hour": "12 小时制",
   "24 hour": "24 小时制",
-  "Relationship type": "关联类型",
+  "Relationship type": "关系类型",
+  "Inverse relationship type": "反向关系类型",
   "Source collection": "源数据表",
   "Source key": "源数据表字段标识",
   "Target collection": "目标数据表",
@@ -683,7 +684,9 @@ export default {
   'Marketplace': '插件市场',
   'Coming soon...': '敬请期待...',
   'Settings center': '配置中心',
-
   'Bookmark': '书签',
   'Manage all settings': '管理所有配置',
+  'Create inverse field in the target collection': '在目标数据表里创建反向关系字段',
+  'Inverse field name': '反向关系字段标识',
+  'Inverse field display name': '反向关系字段名称',
 }
