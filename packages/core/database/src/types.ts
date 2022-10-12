@@ -1,7 +1,7 @@
-import { Model } from './model';
+import type { Model } from './model';
 import type { ValidationOptions } from 'sequelize/types/lib/instance-validator';
 import type { HookReturn } from 'sequelize/types/lib/hooks';
-import { CreateOptions, DestroyOptions, SaveOptions, SyncOptions, UpdateOptions } from 'sequelize/types';
+import type { CreateOptions, DestroyOptions, SaveOptions, SyncOptions, UpdateOptions } from 'sequelize/types';
 import { Collection, CollectionOptions } from './collection';
 
 export type CollectionNameType = string;
@@ -49,7 +49,7 @@ export type EventType = ModelEventTypes | DatabaseEventTypes | string;
 
 export type { HookReturn };
 
-export type SyncListener = (model: Model, options?: SyncOptions) => HookReturn;
+export type SyncListener = (options?: SyncOptions) => HookReturn;
 export type ValidateListener = (model: Model, options?: ValidationOptions) => HookReturn;
 export type CreateListener = (model: Model, options?: CreateOptions) => HookReturn;
 export type UpdateListener = (model: Model, options?: UpdateOptions) => HookReturn;

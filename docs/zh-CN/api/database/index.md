@@ -714,45 +714,64 @@ export default extend({
 
 ### `'beforeSync'` / `'afterSync'`
 
-当新的表结构配置（字段、索引等）被同步到数据库之前（之后）触发，通常在执行 `db.sync()` 或 `collection.sync()` 时会触发，一般用于一些特殊的字段扩展的逻辑处理。
+当新的表结构配置（字段、索引等）被同步到数据库前后触发，通常在执行 `collection.sync()`（内部调用）时会触发，一般用于一些特殊的字段扩展的逻辑处理。
 
 **签名**
 
 ```ts
-on(eventName: `${CollectionNameType}.beforeValidate` | 'beforeValidate', listener: ValidateListener): this
+on(eventName: `${string}.beforeSync` | 'beforeSync' | `${string}.afterSync` | 'afterSync', listener: SyncListener): this
+```
+
+**类型**
+
+```ts
+import type { SyncOptions, HookReturn } from 'sequelize/types';
+
+type SyncListener = (options?: SyncOptions) => HookReturn;
+```
+
+**示例**
+
+```ts
+const users = db.collection({
+  name: 'users',
+  fields: [
+    { type: 'string', name: 'username' }
+  ]
+});
+
+db.on('beforeSync', async (options) => {
+  // do something
+});
+
+db.on('users.afterSync', async (options) => {
+  // do something
+});
+
+await users.sync();
 ```
 
 ### `'beforeValidate'` / `'afterValidate'`
 
-A listener that is run before validation. Fired when `repository.create()` or `repository.update()` are called.
+创建或更新数据前会有基于 collection 定义的规则对数据的验证过程，在验证前后会触发对应事件。当调用 `repository.create()` 或 `repository.update()` 时会触发。
 
-**Signature**
-
-```ts
-on(eventName: `${CollectionNameType}.beforeValidate` | 'beforeValidate', listener: ValidateListener): this
-```
-
-**Type**
+**签名**
 
 ```ts
-type CollectionNameType = string;
-
-type ValidationOptions = {
-  skip?: string[];
-  fields?: string[];
-  hooks?: boolean;
-};
-
-type ListenerReturn = Promise<void> | void;
-
-type ValidateListener = (model: Model, options?: ValidationOptions) => ListenerReturn;
-
-class Database {
-  on(eventName: `${CollectionNameType}.beforeValidate` | 'beforeValidate', listener: ValidateListener): this;
-}
+on(eventName: `${string}.beforeValidate` | 'beforeValidate' | `${string}.afterValidate` | 'afterValidate', listener: ValidateListener): this
 ```
 
-**Examples**
+**类型**
+
+```ts
+import type { ValidationOptions } from 'sequelize/types/lib/instance-validator';
+import type { HookReturn } from 'sequelize/types';
+import type { Model } from '@nocobase/database';
+
+type ValidateListener = (model: Model, options?: ValidationOptions) => HookReturn;
+```
+
+**示例**
 
 ```ts
 db.collection({
@@ -770,11 +789,20 @@ db.collection({
 
 // all models
 db.on('beforeValidate', async (model, options) => {
-
+  // do something
 });
 // tests model
 db.on('tests.beforeValidate', async (model, options) => {
+  // do something
+});
 
+// all models
+db.on('afterValidate', async (model, options) => {
+  // do something
+});
+// tests model
+db.on('tests.afterValidate', async (model, options) => {
+  // do something
 });
 
 const repository = db.getRepository('tests');
@@ -792,110 +820,32 @@ await repository.update({
 });
 ```
 
-### `'afterValidate'`
+### `'beforeCreate'` / `'afterCreate'`
 
-A listener that is run after validation. Fired when `repository.create()` or `repository.update()` is called and validation passed.
+创建一条数据前后会触发对应事件，当调用 `repository.create()` 时会触发。
 
-**Signature**
-
-```ts
-on(eventName: `${CollectionNameType}.afterValidate` | 'afterValidate', listener: ValidateListener): this
-```
-
-**Type**
+**签名**
 
 ```ts
-type CollectionNameType = string;
-
-type ValidationOptions = {
-  skip?: string[];
-  fields?: string[];
-  hooks?: boolean;
-};
-
-type ListenerReturn = Promise<void> | void;
-
-type ValidateListener = (model: Model, options?: ValidationOptions) => ListenerReturn;
-
-class Database {
-  on(eventName: `${CollectionNameType}.afterValidate` | 'afterValidate', listener: ValidateListener): this;
-}
+on(eventName: `${string}.beforeCreate` | 'beforeCreate' | `${string}.afterCreate` | 'afterCreate', listener: CreateListener): this
 ```
 
-**Examples**
+**类型**
 
 ```ts
-db.collection({
-  name: 'tests',
-  fields: [
-    {
-      type: 'string',
-      name: 'email',
-      validate: {
-        isEmail: true,
-      },
-    }
-  ],
-});
+import type { CreateOptions, HookReturn } from 'sequelize/types';
+import type { Model } from '@nocobase/database';
 
-// all models
-db.on('afterValidate', async (model, options) => {
-
-});
-// tests model
-db.on('tests.afterValidate', async (model, options) => {
-
-});
-
-const repository = db.getRepository('tests');
-await repository.create({
-  values: {
-    email: 'abc', // 验证不通过，不触发 afterValidate
-  },
-});
-await repository.create({
-  values: {
-    email: 'abc@def.com', // 验证通过，触发 afterValidate
-  },
-});
+export type CreateListener = (model: Model, options?: CreateOptions) => HookReturn;
 ```
-
-### beforeCreate
-
-### beforeUpdate
-
-### beforeSave
-
-### beforeDestroy
-
-### afterCreate
-
-### afterUpdate
-
-### afterSave
-
-### afterDestroy
-
-### afterCreateWithAssociations
-
-### afterUpdateWithAssociations
-
-### afterSaveWithAssociations
-
-### beforeDefineCollection
-
-### afterDefineCollection
-
-### beforeRemoveCollection
-
-### afterRemoveCollection
-
 
 **示例**
 
-监听 books 表事件，当创建新记录成功后触发：
-
 ```ts
+db.on('beforeCreate', async (model, options) => {
+  // do something
+});
+
 db.on('books.afterCreate', async (model, options) => {
   const { transaction } = options;
   const result = await model.constructor.findByPk(model.id, {
@@ -905,22 +855,276 @@ db.on('books.afterCreate', async (model, options) => {
 });
 ```
 
-监听 books 表，当连同关联数据一并创建成功后触发的事件：
+### `'beforeUpdate'` / `'afterUpdate'`
+
+更新一条数据前后会触发对应事件，当调用 `repository.update()` 时会触发。
+
+**签名**
 
 ```ts
-db.on('books.afterCreateWithAssociations', async (model, options) => {
-  const { transaction } = options;
-  const result = await model.constructor.findByPk(model.id, {
-    transaction
-  });
-  console.log(result);
+on(eventName: `${string}.beforeUpdate` | 'beforeUpdate' | `${string}.afterUpdate` | 'afterUpdate', listener: UpdateListener): this
+```
+
+**类型**
+
+```ts
+import type { UpdateOptions, HookReturn } from 'sequelize/types';
+import type { Model } from '@nocobase/database';
+
+export type UpdateListener = (model: Model, options?: UpdateOptions) => HookReturn;
+```
+
+**示例**
+
+```ts
+db.on('beforeUpdate', async (model, options) => {
+  // do something
+});
+
+db.on('books.afterUpdate', async (model, options) => {
+  // do something
 });
 ```
 
-监听任意表的删除事件：
+### `'beforeSave'` / `'afterSave'`
+
+创建或更新一条数据前后会触发对应事件，当调用 `repository.create()` 或 `repository.update()` 时会触发。
+
+**签名**
 
 ```ts
-db.on('afterDestroy', async (model, options) => {
-  console.log(model);
+on(eventName: `${string}.beforeSave` | 'beforeSave' | `${string}.afterSave` | 'afterSave', listener: SaveListener): this
+```
+
+**类型**
+
+```ts
+import type { SaveOptions, HookReturn } from 'sequelize/types';
+import type { Model } from '@nocobase/database';
+
+export type SaveListener = (model: Model, options?: SaveOptions) => HookReturn;
+```
+
+**示例**
+
+```ts
+db.on('beforeSave', async (model, options) => {
+  // do something
+});
+
+db.on('books.afterSave', async (model, options) => {
+  // do something
+});
+```
+
+### `'beforeDestroy'` / `'afterDestroy'`
+
+删除一条数据前后会触发对应事件，当调用 `repository.destroy()` 时会触发。
+
+**签名**
+
+```ts
+on(eventName: `${string}.beforeDestroy` | 'beforeDestroy' | `${string}.afterDestroy` | 'afterDestroy', listener: DestroyListener): this
+```
+
+**类型**
+
+```ts
+import type { DestroyOptions, HookReturn } from 'sequelize/types';
+import type { Model } from '@nocobase/database';
+
+export type DestroyListener = (model: Model, options?: DestroyOptions) => HookReturn;
+```
+
+**示例**
+
+```ts
+db.on('beforeDestroy', async (model, options) => {
+  // do something
+});
+
+db.on('books.afterDestroy', async (model, options) => {
+  // do something
+});
+```
+
+### `'afterCreateWithAssociations'`
+
+创建一条携带层级关系数据的数据之后会触发对应事件，当调用 `repository.create()` 时会触发。
+
+**签名**
+
+```ts
+on(eventName: `${string}.afterCreateWithAssociations` | 'afterCreateWithAssociations', listener: CreateWithAssociationsListener): this
+```
+
+**类型**
+
+```ts
+import type { CreateOptions, HookReturn } from 'sequelize/types';
+import type { Model } from '@nocobase/database';
+
+export type CreateWithAssociationsListener = (model: Model, options?: CreateOptions) => HookReturn;
+```
+
+**示例**
+
+```ts
+db.on('afterCreateWithAssociations', async (model, options) => {
+  // do something
+});
+
+db.on('books.afterCreateWithAssociations', async (model, options) => {
+  // do something
+});
+```
+
+### `'afterUpdateWithAssociations'`
+
+更新一条携带层级关系数据的数据之后会触发对应事件，当调用 `repository.update()` 时会触发。
+
+**签名**
+
+```ts
+on(eventName: `${string}.afterUpdateWithAssociations` | 'afterUpdateWithAssociations', listener: CreateWithAssociationsListener): this
+```
+
+**类型**
+
+```ts
+import type { UpdateOptions, HookReturn } from 'sequelize/types';
+import type { Model } from '@nocobase/database';
+
+export type UpdateWithAssociationsListener = (model: Model, options?: UpdateOptions) => HookReturn;
+```
+
+**示例**
+
+```ts
+db.on('afterUpdateWithAssociations', async (model, options) => {
+  // do something
+});
+
+db.on('books.afterUpdateWithAssociations', async (model, options) => {
+  // do something
+});
+```
+
+### `'afterSaveWithAssociations'`
+
+创建或更新一条携带层级关系数据的数据之后会触发对应事件，当调用 `repository.create()` 或 `repository.update()` 时会触发。
+
+**签名**
+
+```ts
+on(eventName: `${string}.afterSaveWithAssociations` | 'afterSaveWithAssociations', listener: SaveWithAssociationsListener): this
+```
+
+**类型**
+
+```ts
+import type { SaveOptions, HookReturn } from 'sequelize/types';
+import type { Model } from '@nocobase/database';
+
+export type SaveWithAssociationsListener = (model: Model, options?: SaveOptions) => HookReturn;
+```
+
+**示例**
+
+```ts
+db.on('afterSaveWithAssociations', async (model, options) => {
+  // do something
+});
+
+db.on('books.afterSaveWithAssociations', async (model, options) => {
+  // do something
+});
+```
+
+### `'beforeDefineCollection'`
+
+当定义一个数据表之前触发，如调用 `db.collection()` 时。
+
+注：该事件是同步事件。
+
+**签名**
+
+```ts
+on(eventName: 'beforeDefineCollection', listener: BeforeDefineCollectionListener): this
+```
+
+**类型**
+
+```ts
+import type { CollectionOptions } from '@nocobase/database';
+
+export type BeforeDefineCollectionListener = (options: CollectionOptions) => void;
+```
+
+**示例**
+
+```ts
+db.on('beforeDefineCollection', (options) => {
+  // do something
+});
+```
+
+### `'afterDefineCollection'`
+
+当定义一个数据表之后触发，如调用 `db.collection()` 时。
+
+注：该事件是同步事件。
+
+**签名**
+
+```ts
+on(eventName: 'afterDefineCollection', listener: AfterDefineCollectionListener): this
+```
+
+**类型**
+
+```ts
+import type { Collection } from '@nocobase/database';
+
+export type AfterDefineCollectionListener = (options: Collection) => void;
+```
+
+**示例**
+
+```ts
+db.on('afterDefineCollection', (collection) => {
+  // do something
+});
+```
+
+### `'beforeRemoveCollection'` / `'afterRemoveCollection'`
+
+当从内存中移除一个数据表前后触发，如调用 `db.removeCollection()` 时。
+
+注：该事件是同步事件。
+
+**签名**
+
+```ts
+on(eventName: 'beforeRemoveCollection' | 'afterRemoveCollection', listener: RemoveCollectionListener): this
+```
+
+**类型**
+
+```ts
+import type { Collection } from '@nocobase/database';
+
+export type RemoveCollectionListener = (options: Collection) => void;
+```
+
+**示例**
+
+```ts
+db.on('beforeRemoveCollection', (collection) => {
+  // do something
+});
+
+db.on('afterRemoveCollection', (collection) => {
+  // do something
 });
 ```

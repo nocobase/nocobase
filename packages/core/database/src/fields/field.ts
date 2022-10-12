@@ -9,7 +9,7 @@ import {
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
-import { ModelEventType } from '../types';
+import { ModelEventTypes } from '../types';
 
 export interface FieldContext {
   database: Database;
@@ -69,7 +69,7 @@ export abstract class Field {
     // code
   }
 
-  on(eventName: ModelEventType, listener: (...args: any[]) => void) {
+  on(eventName: ModelEventTypes, listener: (...args: any[]) => void) {
     this.database.on(`${this.collection.name}.${eventName}`, listener);
     return this;
   }
