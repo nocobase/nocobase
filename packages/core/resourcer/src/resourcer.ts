@@ -267,9 +267,8 @@ export class Resourcer {
     this.middlewares.add(middlewares, options);
   }
 
-  restApiMiddleware(options: KoaMiddlewareOptions = {}) {
-    const { prefix, accessors } = options;
-    const restApiMiddleware = async (ctx: ResourcerContext, next: () => Promise<any>) => {
+  restApiMiddleware({ prefix, accessors }: KoaMiddlewareOptions = {}) {
+    return async (ctx: ResourcerContext, next: () => Promise<any>) => {
       ctx.resourcer = this;
       let params = parseRequest(
         {
@@ -332,7 +331,6 @@ export class Resourcer {
         return next();
       }
     };
-    return restApiMiddleware;
   }
 
   middleware(options: KoaMiddlewareOptions = {}) {
