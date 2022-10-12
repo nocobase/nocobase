@@ -521,71 +521,9 @@ asset(post1.authorId === author1.id); // true
 | event | string | - | 事件名称 |
 | listener | Function | - | 事件监听器 |
 
-事件名称默认支持 Sequelize 的 Model 事件。针对全局事件，通过 `<sequelize_model_global_event>` 的名称方式监听，针对单 Model 事件，通过 `<model_name>.<sequelize_model_event>` 的名称方式监听：
+事件名称默认支持 Sequelize 的 Model 事件。针对全局事件，通过 `<sequelize_model_global_event>` 的名称方式监听，针对单 Model 事件，通过 `<model_name>.<sequelize_model_event>` 的名称方式监听。
 
-| 事件名称 | 是否异步 | 描述 |
-| --- | --- | --- |
-| `'beforeValidate'` | 是 | 数据验证之前 |
-| `'afterValidate'` | 是 | 数据验证之后 |
-| `'validationFailed'` | 是 | 数据验证失败之后 |
-| `'beforeCreate'` | 是 | 数据创建之前 |
-| `'beforeUpdate'` | 是 | 数据更新之前 |
-| `'beforeUpsert'` | 是 | 数据更新或创建之前 |
-| `'beforeSave'` | 是 | 数据保存之前 |
-| `'beforeDestroy'` | 是 | 数据删除之前 |
-| `'afterCreate'` | 是 | 数据创建之后 |
-| `'afterUpdate'` | 是 | 数据更新之后 |
-| `'afterUpsert'` | 是 | 数据更新或创建之后 |
-| `'afterSave'` | 是 | 数据保存之后 |
-| `'afterDestroy'` | 是 | 数据删除之后 |
-
-NocoBase 扩展的事件类型：
-
-| 事件名称 | 是否异步 | 描述 |
-| --- | --- | --- |
-| `'beforeDefineCollection'` | 否 | 定义 collection 之前触发 |
-| `'afterDefineCollection'` | 否 | 定义 collection 之后触发 |
-| `'beforeRemoveCollection'` | 否 | 移除 collection 之前触发 |
-| `'afterRemoveCollection'` | 否 | 移除 collection 之后触发 |
-| `<model_name>.afterCreateWithAssociations` | 是 | 当连同关联数据一并创建记录成功后触发的事件（使用 Repository 的 create 方法会触发） |
-| `<model_name>.afterUpdateWithAssociations` | 是 | 当连同关联数据一并更新记录成功后触发的事件（使用 Repository 的 update 方法会触发） |
-| `<model_name>.afterSaveWithAssociations` | 是 | 当连同关联数据一并创建或更新记录成功后触发的事件（使用 Repository 的 create/update 方法都会触发） |
-
-其中 `<model_name>.afterXxxWithAssociations` 事件只有在使用 Repository 的实例方法时才会被触发，所以建议大部分时候都使用 Repository 来进行数据操作。
-
-**示例**
-
-监听 books 表事件，当创建新记录成功后触发：
-
-```ts
-db.on('books.afterCreate', async (model, options) => {
-  const { transaction } = options;
-  const result = await model.constructor.findByPk(model.id, {
-    transaction
-  });
-  console.log(result);
-});
-```
-
-监听 books 表，当连同关联数据一并创建成功后触发的事件：
-
-```ts
-db.on('books.afterCreateWithAssociations', async (model, options) => {
-  const { transaction } = options;
-  const result = await model.constructor.findByPk(model.id, {
-    transaction
-  });
-  console.log(result);
-});
-```
-
-监听任意表的删除事件：
-
-```ts
-db.on('afterDestroy', async (model, options) => {
-  console.log(model);
-});
-```
+所有内置的事件类型的参数说明和详细示例参考 [内置事件](#内置事件) 部分内容。
 
 ### `off()`
 
@@ -772,7 +710,19 @@ export default extend({
 
 ## 内置事件
 
-### `beforeValidate`
+数据库会在相应的生命周期触发以下对应的事件，通过 `on()` 方法订阅后进行特定的处理可满足一些业务需要。
+
+### `'beforeSync'` / `'afterSync'`
+
+当新的表结构配置（字段、索引等）被同步到数据库之前（之后）触发，通常在执行 `db.sync()` 或 `collection.sync()` 时会触发，一般用于一些特殊的字段扩展的逻辑处理。
+
+**签名**
+
+```ts
+on(eventName: `${CollectionNameType}.beforeValidate` | 'beforeValidate', listener: ValidateListener): this
+```
+
+### `'beforeValidate'` / `'afterValidate'`
 
 A listener that is run before validation. Fired when `repository.create()` or `repository.update()` are called.
 
@@ -842,7 +792,7 @@ await repository.update({
 });
 ```
 
-### `afterValidate`
+### `'afterValidate'`
 
 A listener that is run after validation. Fired when `repository.create()` or `repository.update()` is called and validation passed.
 
@@ -939,3 +889,38 @@ await repository.create({
 ### beforeRemoveCollection
 
 ### afterRemoveCollection
+
+
+**示例**
+
+监听 books 表事件，当创建新记录成功后触发：
+
+```ts
+db.on('books.afterCreate', async (model, options) => {
+  const { transaction } = options;
+  const result = await model.constructor.findByPk(model.id, {
+    transaction
+  });
+  console.log(result);
+});
+```
+
+监听 books 表，当连同关联数据一并创建成功后触发的事件：
+
+```ts
+db.on('books.afterCreateWithAssociations', async (model, options) => {
+  const { transaction } = options;
+  const result = await model.constructor.findByPk(model.id, {
+    transaction
+  });
+  console.log(result);
+});
+```
+
+监听任意表的删除事件：
+
+```ts
+db.on('afterDestroy', async (model, options) => {
+  console.log(model);
+});
+```

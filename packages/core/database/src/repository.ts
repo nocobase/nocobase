@@ -256,7 +256,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       transaction,
     };
 
-    return [await this.find(options), await this.count(options)];
+    const count = await this.count(options);
+    const results = count ? await this.find(options) : [];
+
+    return [results, count];
   }
 
   /**

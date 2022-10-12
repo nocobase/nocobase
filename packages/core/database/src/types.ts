@@ -1,14 +1,64 @@
 import { Model } from './model';
+import type { ValidationOptions } from 'sequelize/types/lib/instance-validator';
+import type { HookReturn } from 'sequelize/types/lib/hooks';
+import { CreateOptions, DestroyOptions, SaveOptions, SyncOptions, UpdateOptions } from 'sequelize/types';
+import { Collection, CollectionOptions } from './collection';
 
 export type CollectionNameType = string;
 
-export type ValidationOptions = {
-  skip?: string[];
-  fields?: string[];
-  hooks?: boolean;
-  [key: string]: any;
-};
+export type ModelSyncEventType = 'beforeSync' | 'afterSync';
+export type ModelValidateEventType = 'beforeValidate' | 'afterValidate';
+export type ModelCreateEventType = 'beforeCreate' | 'afterCreate';
+export type ModelUpdateEventType = 'beforeUpdate' | 'afterUpdate';
+export type ModelSaveEventType = 'beforeSave' | 'afterSave';
+export type ModelDestroyEventType = 'beforeDestroy' | 'afterDestroy';
+export type ModelCreateWithAssociationsEventType = 'afterCreateWithAssociations';
+export type ModelUpdateWithAssociationsEventType = 'afterUpdateWithAssociations';
+export type ModelSaveWithAssociationsEventType = 'afterSaveWithAssociations';
 
-export type ListenerReturn = Promise<void> | void;
+export type ModelValidateEventTypes = ModelValidateEventType | `${CollectionNameType}.${ModelValidateEventType}`;
+export type ModelCreateEventTypes = ModelCreateEventType | `${CollectionNameType}.${ModelCreateEventType}`;
+export type ModelUpdateEventTypes = ModelUpdateEventType | `${CollectionNameType}.${ModelUpdateEventType}`;
+export type ModelSaveEventTypes = ModelSaveEventType | `${CollectionNameType}.${ModelSaveEventType}`;
+export type ModelDestroyEventTypes = ModelDestroyEventType | `${CollectionNameType}.${ModelDestroyEventType}`;
+export type ModelCreateWithAssociationsEventTypes = ModelCreateWithAssociationsEventType | `${CollectionNameType}.${ModelCreateWithAssociationsEventType}`;
+export type ModelUpdateWithAssociationsEventTypes = ModelUpdateWithAssociationsEventType | `${CollectionNameType}.${ModelUpdateWithAssociationsEventType}`;
+export type ModelSaveWithAssociationsEventTypes = ModelSaveWithAssociationsEventType | `${CollectionNameType}.${ModelSaveWithAssociationsEventType}`;
 
-export type ValidateListener = (model: Model, options?: ValidationOptions) => ListenerReturn;
+export type ModelEventTypes = ModelSyncEventType
+  | ModelValidateEventTypes
+  | ModelCreateEventTypes
+  | ModelUpdateEventTypes
+  | ModelSaveEventTypes
+  | ModelDestroyEventTypes
+  | ModelCreateWithAssociationsEventTypes
+  | ModelUpdateWithAssociationsEventTypes
+  | ModelSaveWithAssociationsEventTypes;
+
+export type DatabaseBeforeDefineCollectionEventType = 'beforeDefineCollection';
+export type DatabaseAfterDefineCollectionEventType = 'afterDefineCollection';
+export type DatabaseBeforeRemoveCollectionEventType = 'beforeRemoveCollection';
+export type DatabaseAfterRemoveCollectionEventType = 'afterRemoveCollection';
+
+export type DatabaseEventTypes = DatabaseBeforeDefineCollectionEventType
+  | DatabaseAfterDefineCollectionEventType
+  | DatabaseBeforeRemoveCollectionEventType
+  | DatabaseAfterRemoveCollectionEventType;
+
+export type EventType = ModelEventTypes | DatabaseEventTypes | string;
+
+export type { HookReturn };
+
+export type SyncListener = (model: Model, options?: SyncOptions) => HookReturn;
+export type ValidateListener = (model: Model, options?: ValidationOptions) => HookReturn;
+export type CreateListener = (model: Model, options?: CreateOptions) => HookReturn;
+export type UpdateListener = (model: Model, options?: UpdateOptions) => HookReturn;
+export type SaveListener = (model: Model, options?: SaveOptions) => HookReturn;
+export type DestroyListener = (model: Model, options?: DestroyOptions) => HookReturn;
+export type CreateWithAssociationsListener = (model: Model, options?: CreateOptions) => HookReturn;
+export type UpdateWithAssociationsListener = (model: Model, options?: UpdateOptions) => HookReturn;
+export type SaveWithAssociationsListener = (model: Model, options?: SaveOptions) => HookReturn;
+
+export type BeforeDefineCollectionListener = (options: CollectionOptions) => void;
+export type AfterDefineCollectionListener = (collection: Collection) => void;
+export type RemoveCollectionListener = (collection: Collection) => void;
