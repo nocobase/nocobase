@@ -1,3 +1,4 @@
+import { promisify } from 'util';
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
@@ -378,18 +379,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // close http server
     if (this.listenServer) {
-      const closeServer = () =>
-        new Promise((resolve, reject) => {
-          this.listenServer.close((err) => {
-            if (err) {
-              return reject(err);
-            }
-            this.listenServer = null;
-            resolve(true);
-          });
-        });
-
-      await closeServer();
+      await promisify(this.listenServer.close)();
+      this.listenServer = null;
     }
 
     await this.emitAsync('afterStop', this, options);
