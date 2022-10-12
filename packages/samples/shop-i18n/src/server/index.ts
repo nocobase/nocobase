@@ -2,6 +2,10 @@ import path from 'path';
 
 import { InstallOptions, Plugin } from '@nocobase/server';
 
+import zhCN from './locales/zh-CN';
+
+const ns = '@nocobase/plugin-sample-shop-i18n';
+
 export class ShopPlugin extends Plugin {
   getName(): string {
     return this.getPackageName(__dirname);
@@ -16,25 +20,25 @@ export class ShopPlugin extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
+    this.app.i18n.addResources('zh-CN', ns, zhCN);
+
     this.app.resource({
-      name: 'order',
+      name: 'orders',
       actions: {
         async create(ctx, next) {
           const productRepo = ctx.db.getRepository('products');
-          const product = await productRepo.findOne({
-            filterByTk: ctx.action.params.filterByTk
-          });
+          const product = await productRepo.findById(ctx.action.params.values.productId);
 
           if (!product) {
-            return ctx.throw(404, ctx.t('No such product'));
+            return ctx.throw(404, ctx.t('No such product', { ns }));
           }
 
           if (!product.enabled) {
-            return ctx.throw(400, ctx.t('Product not on sale'));
+            return ctx.throw(400, ctx.t('Product not on sale', { ns }));
           }
 
           if (!product.inventory) {
-            return ctx.throw(400, ctx.t('Out of stock'));
+            return ctx.throw(400, ctx.t('Out of stock', { ns }));
           }
 
           const orderRepo = ctx.db.getRepository('orders');
