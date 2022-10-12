@@ -26,18 +26,14 @@ const userProfileRepository = new HasOneRepository(User, 'profile', user.get('id
 
 ## 类方法
 
-### `create(options?: CreateOptions)`
+### `create()`
 创建关联对象
 
 **签名**
 
 * `async create(options?: CreateOptions): Promise<Model>`
 
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `CreateOptions` | - | 参见 repository.create |
+<embed src="../shared/create-options.md"></embed>
 
 **示例**
 
@@ -67,14 +63,20 @@ console.log(profile.toJSON());
 
 * `async find(options?: SingleRelationFindOption): Promise<Model<any> | null>`
 
-**参数**
+**类型**
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options.fields` | `Fields` | - | 参见 repository.find.fields |
-| `options.except` | `Except` | - | 参见 repository.find.except |
-| `options.appends` | `Appends` | - | 参见 repository.find.appends |
-| `options.filter` | `Filter` | - | 参见 repository.find.filter |
+```typescript
+interface SingleRelationFindOption extends Transactionable {
+  fields?: Fields;
+  except?: Except;
+  appends?: Appends;
+  filter?: Filter;
+}
+```
+
+**详细信息**
+
+参数详细信息，请查看[通用查询参数](../query/README.md#通用查询参数)。
 
 **示例**
 
