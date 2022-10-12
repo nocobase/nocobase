@@ -1,20 +1,18 @@
 import lodash from 'lodash';
 import { BelongsToMany, Op, Transaction } from 'sequelize';
 import { Model } from '../model';
-import { CreateOptions, DestroyOptions, FindOptions, TargetKey, UpdateOptions } from '../repository';
+import { CreateOptions, DestroyOptions, FindOneOptions, FindOptions, TargetKey, UpdateOptions } from '../repository';
 import { updateThroughTableValue } from '../update-associations';
-import { FindAndCountOptions, FindOneOptions, MultipleRelationRepository } from './multiple-relation-repository';
+import { FindAndCountOptions, MultipleRelationRepository } from './multiple-relation-repository';
 import { transaction } from './relation-repository';
 import { AssociatedOptions, PrimaryKeyWithThroughValues } from './types';
-
-type CreateBelongsToManyOptions = CreateOptions;
 
 interface IBelongsToManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M[]>;
   findAndCount(options?: FindAndCountOptions): Promise<[M[], number]>;
   findOne(options?: FindOneOptions): Promise<M>;
   // 新增并关联，存在中间表数据
-  create(options?: CreateBelongsToManyOptions): Promise<M>;
+  create(options?: CreateOptions): Promise<M>;
   // 更新，存在中间表数据
   update(options?: UpdateOptions): Promise<M>;
   // 删除
@@ -30,7 +28,7 @@ interface IBelongsToManyRepository<M extends Model> {
 
 export class BelongsToManyRepository extends MultipleRelationRepository implements IBelongsToManyRepository<any> {
   @transaction()
-  async create(options?: CreateBelongsToManyOptions): Promise<any> {
+  async create(options?: CreateOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
 
     const createAccessor = this.accessors().create;

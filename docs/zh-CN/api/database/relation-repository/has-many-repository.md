@@ -1,7 +1,7 @@
 
 # HasManyRepository
 
-`HasManyRepository` 是用于处理 `HasMany` 关系的 `Repository`。
+`HasManyRepository` 是用于处理 `HasMany` 关系的 `Relation Repository`。
 
 ## 类方法
 
