@@ -379,7 +379,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // close http server
     if (this.listenServer) {
-      await promisify(this.listenServer.close)();
+      await promisify(this.listenServer.close).call(this.listenServer);
       this.listenServer = null;
     }
 
