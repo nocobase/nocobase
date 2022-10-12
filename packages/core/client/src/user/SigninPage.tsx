@@ -120,30 +120,42 @@ export function usePhoneSignIn() {
   };
 }
 
-export const SigninPage = () => {
+export interface SigninPageProps {
+  schema?: ISchema;
+  components?: any;
+  scope?: any;
+}
+
+export const SigninPage = (props: SigninPageProps) => {
   const { t } = useTranslation();
   useCurrentDocumentTitle('Signin');
   const ctx = useSystemSettings();
   const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
+  const { schema, components, scope } = props;
   return (
     <div>
       {smsAuthEnabled ? (
         <Tabs defaultActiveKey="password">
           <Tabs.TabPane tab={t('Sign in via account')} key="password">
-            <SchemaComponent scope={{ usePasswordSignIn }} schema={passwordForm} />
+            <SchemaComponent scope={{ usePasswordSignIn }} schema={schema || passwordForm} />
           </Tabs.TabPane>
           <Tabs.TabPane tab={t('Sign in via phone')} key="phone">
             <SchemaComponent
               schema={phoneForm}
-              scope={{ usePhoneSignIn }}
+              scope={{ usePhoneSignIn, ...scope }}
               components={{
                 VerificationCode,
+                ...components,
               }}
             />
           </Tabs.TabPane>
         </Tabs>
       ) : (
-        <SchemaComponent scope={{ usePasswordSignIn }} schema={passwordForm} />
+        <SchemaComponent
+          components={{ ...components }}
+          scope={{ usePasswordSignIn, ...scope }}
+          schema={schema || passwordForm}
+        />
       )}
       {allowSignUp && (
         <div>
