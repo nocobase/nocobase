@@ -13,11 +13,9 @@
 
 * `async find(options?: FindOptions): Promise<M[]>`
 
-**参数**
+**详细信息**
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `FindOptions` | - | 参见 repository.find |
+查询参数与 [`Repository.find()`](../repository.md#find) 一致。
 
 ### `findOne()`
 
@@ -27,11 +25,8 @@
 
 * `async findOne(options?: FindOneOptions): Promise<M>`
 
-**参数**
+<embed src="../shared/find-one.md"></embed>
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `FindOneOptions` | - | 参见 repository.findOne |
 
 ### `count()`
 
@@ -41,26 +36,25 @@
 
 * `async count(options?: CountOptions)`
 
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `CountOptions` | - | 参见 repository.count |
-
+**类型**
+```typescript
+interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'>, Transactionable {
+  filter?: Filter;
+}
+```
 
 ### `findAndCount()`
 
-同时返回符合查询条件的记录集合与记录数
+从数据库查询特定条件的数据集和结果数。
 
 **签名**
 
 * `async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]>`
 
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `FindAndCountOptions` | - | 参见 repository.findAndCount |
+**类型**
+```typescript
+type FindAndCountOptions = CommonFindOptions
+```
 
 
 ### `create()`
@@ -71,12 +65,7 @@
 
 * `async create(options?: CreateOptions): Promise<M>`
 
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `CreateOptions` | - | 参见 repository.create |
-
+<embed src="../shared/create-options.md"></embed>
 
 ### `update()`
 
@@ -86,12 +75,7 @@
 
 * `async update(options?: UpdateOptions): Promise<M>`
 
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `UpdateOptions` | - | 参见 repository.update |
-
+<embed src="../shared/update-options.md"></embed>
 
 ### `destroy()`
 
@@ -101,41 +85,37 @@
 
 * `async destroy(options?: TK | DestroyOptions): Promise<M>`
 
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `TK \|DestroyOptions` | - | 传入删除对象的 `targetKeyId`，或者 `targetKeyId` 数组。需传 `transaction` 时 使用 `DestroyOptions` 类型 |
+<embed src="../shared/destroy-options.md"></embed>
 
 ### `add()`
 
-添加关联对象
+添加对象关联关系
 
 **签名**
 * `async add(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
-**参数**
+**类型**
+```typescript
+interface AssociatedOptions extends Transactionable {
+  tk?: TargetKey | TargetKey[];
+}
+```
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `TargetKey` | - | 关联对象的 `targetKeyId` |
-| `options` | `TargetKey[]` | - | 多个关联对象的 `targetKeyId` 数组 |
-| `options` | `AssociatedOptions` | - | `options.tk`, 为 `targetKeyId` 或者 `targetKeyId` 数组；`options.transaction`，为 `Transaction` 对象 |
+**详细信息**
 
+* `tk` - 关联对象的 targetKey 值，可以是单个值，也可以是数组。
+<embed src="../shared/transaction.md"></embed>
 
 ### `remove()`
 
-移除符合条件的关联对象
+移除与给定对象之间的关联关系
 
 **签名**
 * `async remove(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
-**参数**
+**详细信息**
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `TargetKey \| TargetKey[] \| AssociatedOptions` | - | 同 [add](#add) |
-
+参数同 [`add()`](#add) 方法。
 
 ### `set()`
 
@@ -145,8 +125,8 @@
 
 * `async set(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
-**参数**
+**详细信息**
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `TargetKey \| TargetKey[] \| AssociatedOptions` | - | 同 [add](#add) |
+参数同 [`add()`](#add) 方法。
+
+

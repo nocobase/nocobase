@@ -26,7 +26,6 @@ const userProfileRepository = new HasOneRepository(User, 'profile', user.get('id
 
 ## 类方法
 
-
 ### `find()`
 
 查找关联对象
@@ -117,7 +116,7 @@ profile.get('avatar'); // 'avatar2'
 
 **详细信息**
 
-* transaction: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
+* `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
 
 **示例**
 
@@ -139,7 +138,7 @@ await Profile.repository.count() === 1; // true
 
 **详细信息**
 
-* transaction: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
+* `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
 
 **示例**
 

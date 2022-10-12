@@ -103,7 +103,7 @@ export interface CommonFindOptions extends Transactionable {
   context?: any;
 }
 
-type FindOneOptions = Omit<FindOptions, 'limit'>;
+export type FindOneOptions = Omit<FindOptions, 'limit'>;
 
 export interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: Filter;
