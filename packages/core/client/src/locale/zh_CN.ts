@@ -590,6 +590,7 @@ export default {
   'Calculation result': '运算结果',
   'True': '真',
   'False': '假',
+  'concat': '连接',
 
   'Condition': '条件判断',
   'Mode': '模式',
