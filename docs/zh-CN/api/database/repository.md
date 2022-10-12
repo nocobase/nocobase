@@ -237,28 +237,7 @@ type FindAndCountOptions = Omit<SequelizeAndCountOptions, 'where' | 'include' | 
 
 * `async create<M extends Model>(options: CreateOptions): Promise<M>`
 
-**类型**
-```typescript
-type WhiteList = string[];
-type BlackList = string[];
-type AssociationKeysToBeUpdate = string[];
-
-interface CreateOptions extends SequelizeCreateOptions {
-  values?: Values;
-  whitelist?: WhiteList;
-  blacklist?: BlackList;
-  updateAssociationValues?: AssociationKeysToBeUpdate;
-  context?: any;
-}
-```
-
-**详细信息**
-
-* `values`：要创建的记录的数据对象。
-* `whitelist`：指定要创建的记录的数据对象中，哪些字段**可以被写入**。若不传入此参数，则默认允许所有字段写入。
-* `blacklist`：指定要创建的记录的数据对象中，哪些字段**不允许被写入**。若不传入此参数，则默认允许所有字段写入。
-* `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
-
+<embed src="./shared/create-options.md"></embed>
 
 **示例**
 
@@ -332,30 +311,7 @@ const results = await posts.createMany({
 
 * `async update<M extends Model>(options: UpdateOptions): Promise<M>`
 
-**类型**
-```typescript
-interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
-  values: Values;
-  filter?: Filter;
-  filterByTk?: TargetKey;
-  whitelist?: WhiteList;
-  blacklist?: BlackList;
-  updateAssociationValues?: AssociationKeysToBeUpdate;
-  context?: any;
-}
-```
-
-**详细信息**
-
-
-* `values`：要更新的记录的数据对象。
-* `filter`：指定要更新的记录的过滤条件, Filter 详细用法可参考 [`find()`](#find) 方法。
-* `filterByTk`：按 TargetKey 指定要更新的记录的过滤条件。
-* `whitelist`: `values` 字段的白名单，只有名单内的字段会被写入。
-* `blacklist`: `values` 字段的黑名单，名单内的字段不会被写入。
-* `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
-
-`filterByTk` 与 `filter` 至少要传其一。
+<embed src="./shared/update-options.md"></embed>
 
 **示例**
 
@@ -401,50 +357,3 @@ interface DestroyOptions extends SequelizeDestroyOptions {
 * `filterByTk`：按 TargetKey 指定要删除的记录的过滤条件。
 * `truncate`: 是否清空表数据，在没有传入 `filter` 或 `filterByTk` 参数时有效。
 * `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
-
-
-## 关系数据仓库类
-
-通过 `db.getRepository('<name.associatedField>', <id>)` 方法获取到的关系数据仓库管理实例，在调用方法时，会自动在查询条件中加入当前表的主键值。除此以外，还拥有一些基于不同关系类型特有的成员和关系操作方法。
-
-### `set()`
-
-相当于 Sequelize 的 `record.setXxx()` 方法，用于设置关联数据。对一的关系参数为对应的外键，对多的关系参数为对应的外键数组。如果关系类型为 `BelongsToMany`，则会自动创建中间表数据。
-
-**签名**
-
-* `async set(association: string | number | string[] | number[]): Promise<void>`
-
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `association` | `string \| number \| string[] \| number[]` | - | 关联数据的外键，对多时可用数组 |
-
-### `add()`
-
-相当于 Sequelize 的 `record.addXxx()` 方法，用于附加关联，仅针对对多关系。
-
-**签名**
-
-* `async add(association: string | number | string[] | number[]): Promise<void>`
-
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `association` | `string \| number \| string[] \| number[]` | - | 关联数据的外键 |
-
-### `remove()`
-
-相当于 Sequelize 的 `record.removeXxx()` 方法，用于移除关联，仅针对对多关系。
-
-**签名**
-
-* `async remove(association: string | number | string[] | number[]): Promise<void>`
-
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `association` | `string \| number \| string[] \| number[]` | - | 关联数据的外键 |
