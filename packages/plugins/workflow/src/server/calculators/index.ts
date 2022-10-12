@@ -203,9 +203,11 @@ calculators.register('notStartsWith', notStartsWith);
 calculators.register('endsWith', endsWith);
 calculators.register('notEndsWith', notEndsWith);
 
-function before(a: string, b: string) {
-  return a < b;
+function concat(a: string, b: string) {
+  return a.concat(b);
 }
+
+calculators.register('concat', concat);
 
 calculators.register('now', () => new Date());
 
