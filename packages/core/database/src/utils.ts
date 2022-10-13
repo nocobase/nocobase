@@ -6,10 +6,6 @@ type HandleAppendsQueryOptions = {
   queryPromises: Array<any>;
 };
 
-export function md5(value: string) {
-  return crypto.createHash('md5').update(value).digest('hex');
-}
-
 export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
   const { templateModel, queryPromises } = options;
 
@@ -46,4 +42,8 @@ export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
   }
 
   return rows;
+}
+
+export function md5(value: string) {
+  return crypto.createHash('md5').update(value).digest('hex');
 }
