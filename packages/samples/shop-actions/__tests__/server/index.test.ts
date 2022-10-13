@@ -40,8 +40,8 @@ describe('shop actions', () => {
     expect(order.data.status).toEqual(0);
 
     const { body: deliveredOrder } = await agent.resource('orders').deliver({
+      filterByTk: order.data.id,
       values: {
-        orderId: order.data.id,
         provider: 'SF',
         trackingNumber: '123456789'
       }
