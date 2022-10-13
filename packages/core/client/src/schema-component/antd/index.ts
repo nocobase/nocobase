@@ -7,6 +7,7 @@ export * from './checkbox';
 export * from './cron';
 export * from './color-select';
 export * from './date-picker';
+export * from './excel-function';
 export * from './filter';
 export * from './form';
 export * from './form-item';
