@@ -5,7 +5,7 @@ import {
   ModelIndexesOptions,
   QueryInterfaceOptions,
   SyncOptions,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
@@ -53,7 +53,6 @@ export abstract class Field {
     this.init();
   }
 
-  // TODO
   async sync(syncOptions: SyncOptions) {
     await this.collection.sync({
       ...syncOptions,
