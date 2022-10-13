@@ -253,7 +253,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
               return { rows, include };
             });
         }),
-        templateModel: ids[0].row,
       });
     }
 

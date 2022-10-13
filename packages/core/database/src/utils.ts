@@ -2,42 +2,47 @@ import crypto from 'crypto';
 import { Model } from './model';
 
 type HandleAppendsQueryOptions = {
-  templateModel: any;
+  templateModel?: any;
   queryPromises: Array<any>;
 };
 
 export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
-  const { templateModel, queryPromises } = options;
+  const { queryPromises } = options;
 
-  const results = await Promise.all(queryPromises);
+  const appendedResults = await Promise.all(queryPromises);
 
-  let rows: Array<Model>;
+  const rows: Array<Model> = appendedResults[0].rows;
 
-  for (const appendedResult of results) {
-    if (!rows) {
-      rows = appendedResult.rows;
+  // only one appends query
+  if (appendedResults.length == 1) {
+    return rows;
+  }
 
-      if (rows.length == 0) {
-        return [];
-      }
+  for (let i = 1; i < appendedResults.length; i++) {
+    const appendedResult = appendedResults[i];
 
-      const modelOptions = templateModel['_options'];
-      for (const row of rows) {
-        row['_options'] = {
-          ...row['_options'],
-          include: modelOptions['include'],
-          includeNames: modelOptions['includeNames'],
-          includeMap: modelOptions['includeMap'],
+    for (let j = 0; j < appendedResult.rows.length; j++) {
+      if (j == 0) {
+        // merge sequelize model include options
+        rows[j]['_options'].include = [...rows[j]['_options'].include, ...appendedResult.rows[j]['_options'].include];
+
+        rows[j]['_options'].includeNames = [
+          ...rows[j]['_options'].includeNames,
+          ...appendedResult.rows[j]['_options'].includeNames,
+        ];
+
+        rows[j]['_options'].includeMap = {
+          ...rows[j]['_options'].includeMap,
+          ...appendedResult.rows[j]['_options'].includeMap,
         };
       }
-      continue;
-    }
 
-    for (let i = 0; i < appendedResult.rows.length; i++) {
       const key = appendedResult.include.association;
-      const val = appendedResult.rows[i].get(key);
+      const val = appendedResult.rows[j].get(key);
 
-      rows[i].set(key, val);
+      rows[j].set(key, val, {
+        raw: true,
+      });
     }
   }
 

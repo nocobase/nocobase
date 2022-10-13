@@ -62,7 +62,6 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       }
 
       return await handleAppendsQuery({
-        templateModel: ids[0].row,
         queryPromises: findOptions.include.map((include) => {
           return sourceModel[getAccessor]({
             ...omit(findOptions, ['limit', 'offset']),

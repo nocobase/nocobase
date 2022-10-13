@@ -55,16 +55,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     const sourceModel = await this.getSourceModel(transaction);
 
     if (findOptions?.include?.length > 0) {
-      const templateModel = await sourceModel[getAccessor]({
-        ...findOptions,
-        includeIgnoreAttributes: false,
-        transaction,
-        attributes: [this.targetKey()],
-        group: `${this.targetModel.name}.${this.targetKey()}`,
-      });
-
       const results = await handleAppendsQuery({
-        templateModel,
         queryPromises: findOptions.include.map((include) => {
           return sourceModel[getAccessor]({
             ...findOptions,
