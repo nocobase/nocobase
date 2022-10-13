@@ -12,12 +12,13 @@ export const formatData = (data) => {
     const ports = [];
     item.fields.forEach((field) => {
       edgeData.push(field);
-      field.uiSchema&&ports.push({
-        id: field.key,
-        name: field.name,
-        group: 'list',
-        ...field,
-      });
+      field.uiSchema &&
+        ports.push({
+          id: field.key,
+          name: field.name,
+          group: 'list',
+          ...field,
+        });
     });
     targetTablekeys.push(item.name);
     return {
@@ -43,7 +44,6 @@ const formatEdgeData = (data, targetTables, tableData) => {
     ) {
       const targetTable = tableData.find((v) => v.name === data[i].target);
       const sourceTable = tableData.find((v) => v.name === data[i].collectionName);
-      console.log(data[i])
       const commonAttrs = {
         attrs: {
           line: {
@@ -51,6 +51,8 @@ const formatEdgeData = (data, targetTables, tableData) => {
             textAnchor: 'middle',
             textVerticalAnchor: 'middle',
             stroke: 'rgb(201 205 212)',
+            sourceMarker: null,
+            targetMarker: null,
           },
         },
         connector: { name: 'smooth' },
@@ -153,12 +155,12 @@ const formatEdgeData = (data, targetTables, tableData) => {
             id: uid(),
             source: {
               cell: sourceTable.id,
-              port: sourceTable.ports.find((v) => v.name === data[i].sourceKey).id,
+              port: sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id,
               ...anchor,
             },
             target: {
               cell: throughTable.id,
-              port: throughTable.ports.find((v) => v.name === data[i].foreignKey).id,
+              port: throughTable.ports.find((v) => v.name === data[i].foreignKey)?.id,
               ...anchor,
             },
             ...commonAttrs,
@@ -204,3 +206,5 @@ const getRelationship = (relatioship) => {
       return [];
   }
 };
+
+

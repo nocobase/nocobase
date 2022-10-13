@@ -1,9 +1,10 @@
 import { PartitionOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { useActionContext, useRequest, PluginManager, SchemaComponent } from '@nocobase/client';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
-import React, { useEffect } from 'react';
+import { useFullscreen } from 'ahooks';
+import React, { useEffect, useRef, createContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { Editor } from './GraphDrawPage';
@@ -113,85 +114,107 @@ const useCollectionValues = (options) => {
   return result;
 };
 
-export const GraphCollectionPane = () => {
+export const FullScreenContext = createContext({ isFullscreen: null });
+
+const FullScreenProvider = (props) => {
   return (
-    <Card bordered={false}>
-      <SchemaComponent
-        schema={{
-          type: 'void',
-          properties: {
-            block1: {
-              type: 'void',
-              'x-collection': 'collections',
-              'x-decorator': 'ResourceActionProvider',
-              'x-decorator-props': {
-                collection,
-                request: {
-                  resource: 'collections',
-                  action: 'list',
-                  params: {
-                    pageSize: 50,
-                    filter: {
-                      inherit: false,
+    <FullScreenContext.Provider value={{ isFullscreen: props.isFullscreen }}>
+      {props.children}
+    </FullScreenContext.Provider>
+  );
+};
+
+export const GraphCollectionPane = () => {
+  const ref = useRef(null)||document.getElementById('graph_container');
+  console.log(ref)
+  const [isFullscreen, { toggleFullscreen }] = useFullscreen(ref);
+  return (
+    //@ts-ignore
+    <Card bordered={false} id="graph_container" ref={ref}>
+      <FullScreenProvider isFullscreen={isFullscreen}>
+        <SchemaComponent
+          schema={{
+            type: 'void',
+            'x-component': 'div',
+            properties: {
+              block1: {
+                type: 'void',
+                'x-collection': 'collections',
+                'x-decorator': 'ResourceActionProvider',
+                'x-decorator-props': {
+                  collection,
+                  request: {
+                    resource: 'collections',
+                    action: 'list',
+                    params: {
+                      pageSize: 50,
+                      filter: {
+                        inherit: false,
+                      },
+                      sort: ['sort'],
+                      appends: [],
                     },
-                    sort: ['sort'],
-                    appends: [],
                   },
                 },
-              },
-              properties: {
-                actions: {
-                  type: 'void',
-                  'x-component': 'ActionBar',
-                  'x-component-props': {
-                    style: {
-                      marginBottom: 16,
-                    },
-                  },
-                  properties: {
-                    create: {
-                      type: 'void',
-                      title: '{{ t("Create collection") }}',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'primary',
+                properties: {
+                  actions: {
+                    type: 'void',
+                    'x-component': 'ActionBar',
+                    'x-component-props': {
+                      style: {
+                        marginBottom: 16,
                       },
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          title: '{{ t("Create collection") }}',
-                          'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useValues: '{{ useCollectionValues }}',
-                          },
-                          properties: {
-                            title: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
+                    },
+                    properties: {
+                      create: {
+                        type: 'void',
+                        title: '{{ t("Create collection") }}',
+                        'x-component': 'Action',
+                        'x-component-props': {
+                          type: 'primary',
+                        },
+                        properties: {
+                          drawer: {
+                            type: 'void',
+                            title: '{{ t("Create collection") }}',
+                            'x-component': 'Action.Drawer',
+                            'x-component-props': {
+                              getContainer: () => {
+                                return document.getElementById('graph_container');
+                              },
                             },
-                            name: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                              'x-validator': 'uid',
+                            'x-decorator': 'Form',
+                            'x-decorator-props': {
+                              useValues: '{{ useCollectionValues }}',
                             },
-                            footer: {
-                              type: 'void',
-                              'x-component': 'Action.Drawer.Footer',
-                              properties: {
-                                action1: {
-                                  title: '{{ t("Cancel") }}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
+                            properties: {
+                              title: {
+                                'x-component': 'CollectionField',
+                                'x-decorator': 'FormItem',
+                              },
+                              name: {
+                                'x-component': 'CollectionField',
+                                'x-decorator': 'FormItem',
+                                'x-validator': 'uid',
+                              },
+                              footer: {
+                                type: 'void',
+                                'x-component': 'Action.Drawer.Footer',
+                                properties: {
+                                  action1: {
+                                    title: '{{ t("Cancel") }}',
+                                    'x-component': 'Action',
+                                    'x-component-props': {
+                                      useAction: '{{ cm.useCancelAction }}',
+                                    },
                                   },
-                                },
-                                action2: {
-                                  title: '{{ t("Submit") }}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                    useAction: '{{ useCreateActionAndRefreshCM }}',
+                                  action2: {
+                                    title: '{{ t("Submit") }}',
+                                    'x-component': 'Action',
+                                    'x-component-props': {
+                                      type: 'primary',
+                                      useAction: '{{ useCreateActionAndRefreshCM }}',
+                                    },
                                   },
                                 },
                               },
@@ -199,23 +222,47 @@ export const GraphCollectionPane = () => {
                           },
                         },
                       },
+                      fullScreen: {
+                        type: 'void',
+                        title: '{{ t("fullScreen") }}',
+                        'x-component': 'Action',
+                        'x-designer': 'Action.Designer',
+                        'x-component-props': {
+                          component: (props) => {
+                            const { isFullscreen } = React.useContext(FullScreenContext);
+                            return isFullscreen ? (
+                              <FullscreenExitOutlined {...props} />
+                            ) : (
+                              <FullscreenOutlined {...props} />
+                            );
+                          },
+                          useAction: () => {
+                            return {
+                              run() {
+                                console.log(5)
+                                toggleFullscreen();
+                              },
+                            };
+                          },
+                        },
+                      },
                     },
                   },
                 },
               },
+              editor: {
+                type: 'void',
+                'x-component': 'Editor',
+              },
             },
-            editor: {
-              type: 'void',
-              'x-component': 'Editor',
-            },
-          },
-        }}
-        components={{
-          Editor,
-          DeleteOutlined,
-        }}
-        scope={{ useCollectionValues, useCreateActionAndRefreshCM }}
-      />
+          }}
+          components={{
+            Editor,
+            DeleteOutlined,
+          }}
+          scope={{ useCollectionValues, useCreateActionAndRefreshCM, toggleFullscreen }}
+        />
+      </FullScreenProvider>
     </Card>
   );
 };

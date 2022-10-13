@@ -142,12 +142,14 @@ const useDestroyAction = (name) => {
 };
 
 export const useDestroyActionAndRefreshCM = (props) => {
-  const { graph, name, id } = props;
+  const {  name } = props;
   const { run } = useDestroyAction(name);
+  const { refreshCM } = useCollectionManager();
+
   return {
     async run() {
       await run();
-      graph.removeNode(id);
+      await refreshCM()
     },
   };
 };

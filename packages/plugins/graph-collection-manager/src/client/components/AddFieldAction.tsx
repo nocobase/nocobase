@@ -18,7 +18,7 @@ import {
   SourceKey,
   TargetKey,
 } from '@nocobase/client';
-import { useCreateAction,SourceCollection ,useCancelAction} from '../action-hooks';
+import { useCreateAction, SourceCollection, useCancelAction } from '../action-hooks';
 
 const getSchema = (schema, record: any, compile): ISchema => {
   if (!schema) {
@@ -44,6 +44,11 @@ const getSchema = (schema, record: any, compile): ISchema => {
       [uid()]: {
         type: 'void',
         'x-component': 'Action.Drawer',
+        'x-component-props': {
+          getContainer: () => {
+            return document.getElementById('graph_container');
+          },
+        },
         'x-decorator': 'Form',
         'x-decorator-props': {
           useValues(options) {
@@ -98,7 +103,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
 const useCreateCollectionField = (record) => {
   const form = useForm();
   const title = record.collectionName;
-  const { run } = useCreateAction(title,record.key);
+  const { run } = useCreateAction(title, record.key);
   return {
     async run() {
       await form.submit();
@@ -110,7 +115,7 @@ const useCreateCollectionField = (record) => {
   };
 };
 
-export const AddFieldAction = ({ item :record}) => {
+export const AddFieldAction = ({ item: record }) => {
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -118,6 +123,9 @@ export const AddFieldAction = ({ item :record}) => {
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
+        getPopupContainer={() => {
+          return document.getElementById('graph_container');
+        }}
         overlay={
           <Menu
             style={{
@@ -146,7 +154,7 @@ export const AddFieldAction = ({ item :record}) => {
           </Menu>
         }
       >
-         <PlusOutlined className='btn-add'/>
+        <PlusOutlined className="btn-add" />
       </Dropdown>
       <SchemaComponent
         schema={schema}
@@ -157,9 +165,9 @@ export const AddFieldAction = ({ item :record}) => {
           SourceKey,
           TargetKey,
           ArrayTable,
-          SourceCollection
+          SourceCollection,
         }}
-        scope={{ createOnly: true, createCollectionField: () => useCreateCollectionField(record) ,useCancelAction}}
+        scope={{ createOnly: true, createCollectionField: () => useCreateCollectionField(record), useCancelAction }}
       />
     </ActionContext.Provider>
   );

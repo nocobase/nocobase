@@ -38,6 +38,9 @@ const getSchema = (schema, collectionName: string, compile, name: string): ISche
       [uid()]: {
         type: 'void',
         'x-component': 'Action.Drawer',
+        'x-component-props': {
+          getContainer: ()=>{return document.getElementById('graph_container')},
+        },
         'x-decorator': 'Form',
         'x-decorator-props': {
           useValues(options) {

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Graph } from '@antv/x6';
 import { uid } from '@formily/shared';
 import { css } from '@emotion/css';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
@@ -41,9 +40,8 @@ import { FieldSummary } from './FieldSummary';
 
 const Entity: React.FC<{
   node?: Node | any;
-  graph: Graph | any;
 }> = (props) => {
-  const { node, graph } = props;
+  const { node } = props;
   const {
     store: {
       data: { title, name, item, ports },
@@ -51,7 +49,7 @@ const Entity: React.FC<{
     id,
   } = node;
   const compile = useCompile();
-  const { collections = [] ,getInterface} = useCollectionManager();
+  const { collections = [], getInterface } = useCollectionManager();
   const useNewId = (prefix) => {
     return `${prefix || ''}${uid()}`;
   };
@@ -67,10 +65,10 @@ const Entity: React.FC<{
       <div className={cx(collectiionPopoverClass)}>
         <div className="field-content">
           <div>
-            <span>name</span>: <span className='field-type'>{name}</span>
+            <span>name</span>: <span className="field-type">{name}</span>
           </div>
           <div>
-            <span>type</span>: <span className='field-type'>{type}</span>
+            <span>type</span>: <span className="field-type">{type}</span>
           </div>
         </div>
         <p>
@@ -105,9 +103,9 @@ const Entity: React.FC<{
                             border-color: transparent;
                             color: rgb(78 89 105);
                             height: 20px;
-                            width:20px;
-                            padding: 3px;
-                            margin: 3px 3px 4px;
+                            width: 22px;
+                            margin: 0px 5px 4px;
+                            line-height: 25px;
                             &:hover {
                               background-color: rgb(229 230 235);
                             }
@@ -117,6 +115,11 @@ const Entity: React.FC<{
                           drawer: {
                             type: 'void',
                             'x-component': 'Action.Drawer',
+                            'x-component-props': {
+                              getContainer: () => {
+                                return document.getElementById('graph_container');
+                              },
+                            },
                             'x-decorator': 'Form',
                             'x-decorator-props': {
                               useValues: (arg) => useValuesFromRecord(arg, item),
@@ -183,11 +186,15 @@ const Entity: React.FC<{
                             background-color: rgb(253 205 197);
                           }
                         `,
+
                         confirm: {
                           title: "{{t('Delete record')}}",
+                          getContainer: () => {
+                            return document.getElementById('graph_container');
+                          },
                           collectionConten: "{{t('Are you sure you want to delete it?')}}",
                         },
-                        useAction: () => useDestroyActionAndRefreshCM({ name, id, graph }),
+                        useAction: () => useDestroyActionAndRefreshCM({ name, id }),
                       },
                     },
                   },
@@ -203,12 +210,17 @@ const Entity: React.FC<{
             property.uiSchema && (
               <Popover
                 content={CollectionConten(property)}
+                getPopupContainer={() => {
+                  return document.getElementById('graph_container');
+                }}
                 mouseLeaveDelay={0}
                 zIndex={100}
                 title={
                   <div>
                     {compile(property.uiSchema?.title)}
-                    <span style={{ color: '#ffa940', float: 'right' }}>{compile(getInterface(property.interface).title)}</span>
+                    <span style={{ color: '#ffa940', float: 'right' }}>
+                      {compile(getInterface(property.interface).title)}
+                    </span>
                   </div>
                 }
                 key={property.id}
@@ -252,13 +264,12 @@ const Entity: React.FC<{
                                     ...property,
                                   },
                                   node,
-                                  graph
                                 },
                               },
                             },
                           }}
                         />
-                         <SchemaComponent
+                        <SchemaComponent
                           scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
                           schema={{
                             type: 'object',
@@ -300,11 +311,14 @@ const Entity: React.FC<{
                                   `,
                                   confirm: {
                                     title: "{{t('Delete record')}}",
+                                    getContainer: () => {
+                                      return document.getElementById('graph_container');
+                                    },
                                     collectionConten: "{{t('Are you sure you want to delete it?')}}",
                                   },
                                   useAction: () =>
                                     useDestroyFieldActionAndRefreshCM({
-                                      collectionName:property.collectionName,
+                                      collectionName: property.collectionName,
                                       name: property.name,
                                       portId: property.id,
                                       node,
@@ -314,7 +328,6 @@ const Entity: React.FC<{
                             },
                           }}
                         />
-                       
                       </CollectionNodeProvder>
                     </SchemaComponentProvider>
                   </div>

@@ -146,3 +146,9 @@ export const collectiionPopoverClass = css`
     }
   }
 `;
+
+export const collectionListClass = css`
+  .ant-menu-item  {
+    height: 25px;
+  }
+`;

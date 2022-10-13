@@ -2,8 +2,6 @@ import { PluginManagerContext, RouteSwitchContext, SettingsCenterProvider } from
 import React, { useContext } from 'react';
 import { GraphCollectionPane, GraphCollectionShortcut } from './GraphCollectionShortcut';
 
-
-
 export const GraphCollectionProvider = (props) => {
   const ctx = useContext(PluginManagerContext);
   const { routes, components, ...others } = useContext(RouteSwitchContext);
@@ -11,11 +9,11 @@ export const GraphCollectionProvider = (props) => {
   return (
     <SettingsCenterProvider
       settings={{
-        'graph': {
+        graph: {
           icon: 'ClusterOutlined',
           title: '{{t("Graph Collection")}}',
           tabs: {
-            'collections': {
+            collections: {
               title: '{{t("Graph Collection")}}',
               component: GraphCollectionPane,
             },

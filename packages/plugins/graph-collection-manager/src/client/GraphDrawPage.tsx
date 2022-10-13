@@ -1,18 +1,25 @@
-import React, { useLayoutEffect, useRef, useEffect, useContext } from 'react';
+import React, { useLayoutEffect, useRef, useEffect, useContext, useState } from 'react';
 import { Graph, Cell } from '@antv/x6';
 import dagre from 'dagre';
+import { last } from 'lodash';
 import '@antv/x6-react-shape';
 import { SchemaOptionsContext } from '@formily/react';
-
+import { Layout, Menu, Input } from 'antd';
+import { cx } from '@emotion/css';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import {
   useAPIClient,
   APIClientProvider,
   CollectionManagerProvider,
   useCollectionManager,
   SchemaComponentOptions,
+  useCompile,
 } from '@nocobase/client';
 import { formatData } from './utils';
 import Entity from './components/Entity';
+import { collectionListClass } from './style';
+
+const { Sider, Content } = Layout;
 
 const LINE_HEIGHT = 32;
 const NODE_WIDTH = 210;
@@ -23,12 +30,12 @@ function layout(graph) {
   const nodes = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: dir, nodesep: 100, edgesep: 20, rankSep: 50, align: 'DL', controlPoints: true });
+  g.setGraph({ rankdir: dir, nodesep: 50, edgesep: 50, rankSep: 50, align: 'DL', controlPoints: true });
   g.setDefaultEdgeLabel(() => ({}));
 
   nodes.forEach((node, i) => {
-   const width = 210;
-   const  height = node.getPorts().length * 32 + 30;
+    const width = 210;
+    const height = node.getPorts().length * 32 + 30;
     g.setNode(node.id, { width, height });
   });
   edges.forEach((edge) => {
@@ -46,7 +53,7 @@ function layout(graph) {
     }
   });
   graph.unfreeze();
-  graph.centerContent();
+  graph.positionCell(last(nodes),'center');
 }
 
 function getNodes(nodes, graph) {
@@ -56,7 +63,6 @@ function getNodes(nodes, graph) {
 }
 
 function getEdges(edges, graph) {
-  const nodes = graph.getNodes();
   edges.forEach((item) => {
     if (item.source && item.target) {
       graph.addEdge({
@@ -72,31 +78,40 @@ function getEdges(edges, graph) {
 
 function getCollectionData(rawData, graph) {
   const { nodes, edges } = formatData(rawData);
-  const cells: Cell[] = [];
-  graph.resetCells(cells);
+  graph.clearCells();
   getNodes(nodes, graph);
   getEdges(edges, graph);
   layout(graph);
 }
-export const Editor = () => {
+
+let targetGraph;
+export const Editor = React.memo(() => {
   const api = useAPIClient();
-  const graph = useRef(null);
-  graph.current = null;
-  const { collections: data, refreshCM } = useCollectionManager();
+  const compile = useCompile();
+  const [collapsed, setCollapsed] = useState(false);
+  const { collections: data, refreshCM ,} = useCollectionManager();
+  const [graphCollectionData, setGraphCollectionData] = useState(data);
+  const [collectionList, setCollectionList] = useState<any>([]);
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
+
+  const refreshCollection = async () => {
+    const { data } = await api
+      .resource('collections')
+      .list({ paginate: false, appends: ['fields', 'fields.uiSchema'], sort: ['sort'] });
+    setGraphCollectionData(data.data);
+    setCollectionList(data.data);
+  };
+
   const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
       panning: true,
       height: 800,
       scroller: {
-        enabled: !0,
-        pageVisible: !1,
-        pageBreak: !1,
+        enabled: true,
       },
-      autoResize: true,
       connecting: {
         router: {
           name: 'er',
@@ -121,8 +136,9 @@ export const Editor = () => {
       interacting: {
         magnetConnectable: false,
       },
+      autoResize: document.getElementById('graph_container'),
     });
-    graph.current = myGraph;
+    targetGraph = myGraph;
     Graph.registerPortLayout(
       'erPortPosition',
       (portsPositionArgs) => {
@@ -145,9 +161,9 @@ export const Editor = () => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionManagerProvider collections={data} refreshCM={refreshCM}>
+              <CollectionManagerProvider collections={graphCollectionData} refreshCM={refreshCM}>
                 <div style={{ height: 'auto' }}>
-                  <Entity graph={myGraph} node={node} />
+                  <Entity node={node} />
                 </div>
               </CollectionManagerProvider>
             </SchemaComponentOptions>
@@ -183,13 +199,81 @@ export const Editor = () => {
   useLayoutEffect(() => {
     initGraphCollections();
     return () => {
-      graph.current = null;
+      targetGraph = null;
     };
   }, []);
 
   useEffect(() => {
-    graph.current && getCollectionData(data, graph.current);
+    refreshCollection();
   }, []);
 
-  return <div id="container" style={{ width: '100%', height: 'auto' }}></div>;
-};
+  useEffect(()=>{
+    targetGraph&& getCollectionData(graphCollectionData, targetGraph);
+
+  },[])
+
+  
+
+ 
+
+  const handleSearchCollection = (e) => {
+    const value = e.target.value.toLowerCase();
+    if (value) {
+      const targetCollections = data.filter((v) => {
+        const collectionTitle = compile(v.title).toLowerCase();
+        return collectionTitle.includes(value);
+      });
+      setCollectionList(targetCollections);
+    } else {
+      setCollectionList(data);
+    }
+  };
+
+  const handleSelectCollection = (value) => {
+    const graph = targetGraph;
+    const targetNode = graph.getCellById(value.key);
+    graph.unfreeze();
+    // 定位到目标节点
+    graph.positionCell(targetNode, 'top');
+  };
+
+  return (
+    <Layout>
+      <Sider
+        className={cx(collectionListClass)}
+        collapsed={collapsed}
+        defaultCollapsed={false}
+        theme="light"
+        collapsedWidth={0}
+        width={150}
+      >
+        <Input onChange={handleSearchCollection} style={{ width: '90%' }} placeholder="表搜索" />
+        <Menu style={{ width: 150 }} mode="inline" theme="light">
+          {collectionList.map((v) => {
+            return (
+              <Menu.Item key={v.key} onClick={(e) => handleSelectCollection(e)}>
+                <span>{compile(v.title)}</span>
+              </Menu.Item>
+            );
+          })}
+        </Menu>
+      </Sider>
+      <div className="site-layout-background" style={{ padding: 0 }}>
+        {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
+          className: 'trigger',
+          onClick: () => setCollapsed(!collapsed),
+        })}
+      </div>
+      <Layout className="site-layout">
+        <Content
+          className="site-layout-background"
+          style={{
+            overflow: 'hidden',
+          }}
+        >
+          <div id="container" style={{ width: 'auto', height: 'auto' }}></div>
+        </Content>
+      </Layout>
+    </Layout>
+  );
+});
