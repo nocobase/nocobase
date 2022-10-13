@@ -7,7 +7,7 @@ export const excelFunction: IField = {
   group: 'advanced',
   order: 3,
   title: '{{t("Excel Function")}}',
-  description: '{{t("Formula description")}}',
+  description: '{{t("Excel description")}}',
   sortable: true,
   default: {
     type: 'excelFunction',
@@ -29,7 +29,7 @@ export const excelFunction: IField = {
       type: 'string',
       title: '{{t("Expression")}}',
       required: true,
-      description: '{{t("input @ to open field variables.")}}',
+      description: '{{t("Input @ to open field variables.")}}',
       'x-component': 'ExcelFunction.Expression',
       'x-decorator': 'FormItem',
       'x-component-props': {
