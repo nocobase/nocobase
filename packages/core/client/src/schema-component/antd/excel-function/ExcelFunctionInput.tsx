@@ -5,6 +5,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useTranslation } from 'react-i18next';
 import {Parser, SUPPORTED_FORMULAS}  from 'hot-formula-parser'
+import { getParser } from './helpers';
 
 const AntdExcelFormula = (props) => {
   const { value, onChange, supports, useCurrentFields } = props;
@@ -21,7 +22,13 @@ const AntdExcelFormula = (props) => {
   const scope = {};
   fields.forEach(field => {
     numColumns.set(field.name, field.uiSchema?.title);
-    scope[field.name] = 1;
+    if (["string", "select", "text"].includes(field.type)) {
+      scope[field.name] = "";
+    } else if (["hasOne", "hasMany", "belongsTo", "belongsToMany"].includes(field.type)) {
+      scope[field.name] = {};
+    } else {
+      scope[field.name] = 1;
+    }
   })
   const keys = Array.from(numColumns.keys());
 
@@ -87,14 +94,10 @@ const AntdExcelFormula = (props) => {
   useFormEffects(() => {
     onFormSubmitValidateStart(() => {
       try {
-        let parser = new Parser()
-        let v = field.value || '';
-        Object.keys(scope).forEach(key => {
-          parser.setVariable(key, scope[key])
-        })
-        let data = parser.parse(v)
-        if (data.error) {
-          throw new Error()
+        let parser = getParser(scope);
+        let data = parser.parse(field.value);
+        if (data.error) { //this is made non blocking due to unknown value results.
+          console.warn("Possible error", data.error);
         }
         field.feedbacks = [];
       } catch {

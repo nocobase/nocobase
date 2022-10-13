@@ -2,11 +2,10 @@ import { onFormValuesChange } from '@formily/core';
 import { connect, mapReadPretty, useFieldSchema, useFormEffects } from '@formily/react';
 import { Input  } from 'antd';
 import _ from 'lodash';
-import {Parser}  from 'hot-formula-parser'
 import React from 'react';
 import { useCollection } from '../../../collection-manager/hooks';
 import { ReadPretty } from '../input-number/ReadPretty';
-
+import { getParser } from './helpers';
 
 const AntdCompute = (props) => {
   const { onChange, ...others } = props;
@@ -20,10 +19,7 @@ const AntdCompute = (props) => {
       const scope = _.cloneDeep(form.values);
       let result;
       try {
-        let parser = new Parser();
-        Object.keys(scope).forEach(key => {
-          parser.setVariable(key, scope[key])
-        })
+        let parser = getParser(scope)
         let response = parser.parse(expression)
         if (response?.result) {
           result = response.result
