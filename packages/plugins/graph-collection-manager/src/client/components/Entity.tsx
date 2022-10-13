@@ -44,7 +44,7 @@ const Entity: React.FC<{
   const { node } = props;
   const {
     store: {
-      data: { title, name, item, ports,attrs },
+      data: { title, name, item, ports, attrs },
     },
     id,
   } = node;
@@ -80,7 +80,7 @@ const Entity: React.FC<{
     );
   };
   return (
-    <div className={cx(entityContainer)} style={{borderColor:attrs?.border}}>
+    <div className={cx(entityContainer)} style={{ borderColor: attrs?.border }}>
       <div className={headClass}>
         <span className={tableNameClass}>{compile(title)}</span>
         <div className={tableBtnClass}>
@@ -226,7 +226,17 @@ const Entity: React.FC<{
                 key={property.id}
                 placement="right"
               >
-                <div className="body-item" key={property.id} id={property.id}>
+                <div
+                  className="body-item"
+                  key={property.id}
+                  id={property.id}
+                  style={{
+                    background:
+                      attrs?.targetPort === property.id || attrs?.sourcePort === property.id
+                        ? 'rgb(255, 169, 64'
+                        : null,
+                  }}
+                >
                   <div className="field-operator">
                     <SchemaComponentProvider
                       components={{
@@ -331,8 +341,22 @@ const Entity: React.FC<{
                       </CollectionNodeProvder>
                     </SchemaComponentProvider>
                   </div>
-                  <div className="name">{compile(property.uiSchema?.title)}</div>
-                  <div className="type">{compile(getInterface(property.interface).title)}</div>
+                  <div
+                    className="name"
+                    style={{
+                      color: attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#fff' : null,
+                    }}
+                  >
+                    {compile(property.uiSchema?.title)}
+                  </div>
+                  <div
+                    className="type"
+                    style={{
+                      color: attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#fff' : null,
+                    }}
+                  >
+                    {compile(getInterface(property.interface).title)}
+                  </div>
                 </div>
               </Popover>
             )

@@ -53,7 +53,7 @@ function layout(graph) {
     }
   });
   graph.unfreeze();
-  graph.positionCell(last(nodes),'top');
+  graph.positionCell(last(nodes), 'top');
 }
 
 function getNodes(nodes, graph) {
@@ -90,7 +90,7 @@ export const Editor = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
   const [collapsed, setCollapsed] = useState(false);
-  const { collections: data, refreshCM ,} = useCollectionManager();
+  const { collections: data, refreshCM } = useCollectionManager();
   const [collectionList, setCollectionList] = useState<any>(data);
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
@@ -185,6 +185,20 @@ export const Editor = React.memo(() => {
       },
       true,
     );
+    targetGraph.on('edge:mouseover', ({ e, edge }) => {
+      e.stopPropagation();
+      const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
+      const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
+      targeNode.setAttrs({ targetPort: edge.store.data.target.port });
+      sourceNode.setAttrs({ sourcePort: edge.store.data.source.port });
+    });
+    targetGraph.on('edge:mouseout', ({ e, edge }) => {
+      e.stopPropagation();
+      const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
+      const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
+      targeNode.removeAttrs('targetPort');
+      sourceNode.removeAttrs('sourcePort');
+    });
   };
 
   useLayoutEffect(() => {
@@ -194,11 +208,14 @@ export const Editor = React.memo(() => {
     };
   }, []);
 
-  useEffect(()=>{
-    targetGraph&& getCollectionData(data, targetGraph);
+  useEffect(() => {
+    targetGraph && getCollectionData(data, targetGraph);
+    return()=>{
+      targetGraph.off('edge:mouseover');
+      targetGraph.off('edge:mouseout')
 
-  },[])
-
+    }
+  }, []);
 
   const handleSearchCollection = (e) => {
     const value = e.target.value.toLowerCase();
@@ -214,16 +231,16 @@ export const Editor = React.memo(() => {
   };
 
   const handleSelectCollection = (value) => {
-    if(targetNode){
-      targetNode.removeAttrs()
+    if (targetNode) {
+      targetNode.removeAttrs();
     }
     targetNode = targetGraph.getCellById(value.key);
     targetGraph.unfreeze();
     // 定位到目标节点
     targetGraph.positionCell(targetNode, 'top');
     targetNode.setAttrs({
-      border:'#165dff'
-    })
+      border: '#165dff',
+    });
   };
 
   return (
@@ -237,7 +254,7 @@ export const Editor = React.memo(() => {
         width={150}
       >
         <Input onChange={handleSearchCollection} style={{ width: '90%' }} placeholder="表搜索" />
-        <Menu style={{ width: 150,maxHeight:'900px',overflowY:'auto' }} mode="inline" theme="light">
+        <Menu style={{ width: 150, maxHeight: '900px', overflowY: 'auto' }} mode="inline" theme="light">
           {collectionList.map((v) => {
             return (
               <Menu.Item key={v.key} onClick={(e) => handleSelectCollection(e)}>
