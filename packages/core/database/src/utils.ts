@@ -2,7 +2,6 @@ import crypto from 'crypto';
 import { Model } from './model';
 
 type HandleAppendsQueryOptions = {
-  templateModel?: any;
   queryPromises: Array<any>;
 };
 
