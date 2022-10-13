@@ -5,7 +5,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useTranslation } from 'react-i18next';
 import {Parser, SUPPORTED_FORMULAS}  from 'hot-formula-parser'
-import { getParser } from './helpers';
+import { getHotExcelParser } from '@nocobase/utils';
 
 const AntdExcelFormula = (props) => {
   const { value, onChange, supports, useCurrentFields } = props;
@@ -95,7 +95,7 @@ const AntdExcelFormula = (props) => {
   useFormEffects(() => {
     onFormSubmitValidateStart(() => {
       try {
-        let parser = getParser(scope);
+        let parser = getHotExcelParser(scope);
         let data = parser.parse(field.value);
         if (data.error) { //this is made non blocking due to unknown value results.
           console.warn("Possible error", data.error);

@@ -5,7 +5,7 @@ import _ from 'lodash';
 import React from 'react';
 import { useCollection } from '../../../collection-manager/hooks';
 import { ReadPretty } from '../input-number/ReadPretty';
-import { getParser } from './helpers';
+import { getHotExcelParser } from '@nocobase/utils/client';
 
 const AntdCompute = (props) => {
   const { onChange, ...others } = props;
@@ -19,7 +19,7 @@ const AntdCompute = (props) => {
       const scope = _.cloneDeep(form.values);
       let result;
       try {
-        let parser = getParser(scope)
+        let parser = getHotExcelParser(scope)
         let response = parser.parse(expression)
         if (!response.error) {
           result = response.result

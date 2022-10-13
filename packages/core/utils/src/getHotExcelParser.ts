@@ -5,7 +5,7 @@ import _ from 'lodash';
  * @param scope 
  * @returns 
  */
-export const getParser = (scope: object) => {
+export const getHotExcelParser = (scope: object) => {
   let parser = new Parser();
   Object.keys(scope).forEach((key: string) => {
     parser.setVariable(`${key}`, scope[key]);

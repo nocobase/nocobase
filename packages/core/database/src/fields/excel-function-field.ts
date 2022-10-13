@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
-import { Parser, SUPPORTED_FORMULAS } from 'hot-formula-parser';
-import { getParser } from 'packages/core/client/src/schema-component/antd/excel-function/helpers';
+import { getHotExcelParser } from '@nocobase/utils';
 
 export class ExcelFunctionField extends Field {
   get dataType() {
@@ -10,7 +9,7 @@ export class ExcelFunctionField extends Field {
 
   caculate(expression, scope) {
     let result = null;
-    let parser = getParser(scope)
+    let parser = getHotExcelParser(scope)
     try {
       let response = parser.parse(expression);
       if (!response?.error) {
@@ -50,7 +49,7 @@ export class ExcelFunctionField extends Field {
     const { expression, name } = this.options;
     const scope = instance.toJSON();
     let result;
-    let parser = getParser(scope)
+    let parser = getHotExcelParser(scope)
     try {
       let response = parser.parse(expression);
       if (!response?.error) {
