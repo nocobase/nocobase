@@ -46,6 +46,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
 
   async find(options?: SingleRelationFindOption): Promise<Model<any> | null> {
     const transaction = await this.getTransaction(options);
+
     const findOptions = this.buildQueryOptions({
       ...options,
     });
@@ -56,6 +57,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     if (findOptions?.include?.length > 0) {
       const templateModel = await sourceModel[getAccessor]({
         ...findOptions,
+        includeIgnoreAttributes: false,
         transaction,
         attributes: [this.targetKey()],
         group: `${this.targetModel.name}.${this.targetKey()}`,
