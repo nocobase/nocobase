@@ -53,7 +53,7 @@ function layout(graph) {
     }
   });
   graph.unfreeze();
-  graph.positionCell(last(nodes),'center');
+  graph.positionCell(last(nodes),'top');
 }
 
 function getNodes(nodes, graph) {
@@ -90,19 +90,19 @@ export const Editor = React.memo(() => {
   const compile = useCompile();
   const [collapsed, setCollapsed] = useState(false);
   const { collections: data, refreshCM ,} = useCollectionManager();
-  const [graphCollectionData, setGraphCollectionData] = useState(data);
-  const [collectionList, setCollectionList] = useState<any>([]);
+  // const [graphCollectionData, setGraphCollectionData] = useState(data);
+  const [collectionList, setCollectionList] = useState<any>(data);
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
 
-  const refreshCollection = async () => {
-    const { data } = await api
-      .resource('collections')
-      .list({ paginate: false, appends: ['fields', 'fields.uiSchema'], sort: ['sort'] });
-    setGraphCollectionData(data.data);
-    setCollectionList(data.data);
-  };
+  // const refreshCollection = async () => {
+  //   const { data } = await api
+  //     .resource('collections')
+  //     .list({ paginate: false, appends: ['fields', 'fields.uiSchema'], sort: ['sort'] });
+  //   setGraphCollectionData(data.data);
+  //   setCollectionList(data.data);
+  // };
 
   const initGraphCollections = () => {
     const myGraph = new Graph({
@@ -161,7 +161,7 @@ export const Editor = React.memo(() => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionManagerProvider collections={graphCollectionData} refreshCM={refreshCM}>
+              <CollectionManagerProvider collections={data} refreshCM={refreshCM}>
                 <div style={{ height: 'auto' }}>
                   <Entity node={node} />
                 </div>
@@ -203,18 +203,15 @@ export const Editor = React.memo(() => {
     };
   }, []);
 
-  useEffect(() => {
-    refreshCollection();
-  }, []);
+  // useEffect(() => {
+  //   refreshCollection();
+  // }, []);
 
   useEffect(()=>{
-    targetGraph&& getCollectionData(graphCollectionData, targetGraph);
+    targetGraph&& getCollectionData(data, targetGraph);
 
   },[])
 
-  
-
- 
 
   const handleSearchCollection = (e) => {
     const value = e.target.value.toLowerCase();
