@@ -217,11 +217,11 @@ export default class ShopPlugin extends Plugin {
       name: 'orders',
       actions: {
         async deliver(ctx, next) {
-          const { resourceIndex } = ctx.action.params;
+          const { filterByTk } = ctx.action.params;
           const orderRepo = ctx.db.getRepository('orders');
 
           const [order] = await orderRepo.update({
-            filterByTk: resourceIndex,
+            filterByTk,
             values: {
               status: 2,
               delivery: {
