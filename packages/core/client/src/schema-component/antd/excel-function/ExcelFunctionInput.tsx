@@ -5,7 +5,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useTranslation } from 'react-i18next';
 import {Parser, SUPPORTED_FORMULAS}  from 'hot-formula-parser'
-console.log(SUPPORTED_FORMULAS)
+
 const AntdExcelFormula = (props) => {
   const { value, onChange, supports, useCurrentFields } = props;
   const field = useField<Field>();
