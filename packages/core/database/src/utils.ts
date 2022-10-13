@@ -37,7 +37,9 @@ export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
       const key = appendedResult.include.association;
       const val = appendedResult.rows[i].get(key);
 
-      rows[i].set(key, val);
+      rows[i].set(key, val, {
+        raw: true,
+      });
     }
   }
 
