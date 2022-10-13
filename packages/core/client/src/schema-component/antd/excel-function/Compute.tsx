@@ -21,7 +21,7 @@ const AntdCompute = (props) => {
       try {
         let parser = getParser(scope)
         let response = parser.parse(expression)
-        if (response?.result) {
+        if (!response.error) {
           result = response.result
         }
       } catch{}

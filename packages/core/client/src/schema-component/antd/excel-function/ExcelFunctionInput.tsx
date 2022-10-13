@@ -36,7 +36,7 @@ const AntdExcelFormula = (props) => {
   if (value) {
     initHtml = value;
     numColumns.forEach((value, key) => {
-      initHtml = initHtml.replaceAll(key, `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;">${value}</span>`)
+      initHtml = initHtml.replaceAll(` ${key} `, `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;"><i style="opacity:0">:</i>${value}<i style="opacity:0">:</i></span>`)
     })    
   }
 
@@ -44,9 +44,10 @@ const AntdExcelFormula = (props) => {
     if (onChange && formula) {
       let v = formula || '';
       numColumns.forEach((value, key) => {
-        v = v.replaceAll(value, key);
+        v = v.replaceAll(`:${value}:`, ` ${key} `);
       })
-      if (v != value) {
+      
+      if (v  != value) {
         onChange(v);
       }
     }
@@ -54,8 +55,8 @@ const AntdExcelFormula = (props) => {
 
   const menu = (
     <Menu onClick={async (args) => {
-      const replaceFormula = formula.replace('@', numColumns.get(args.key));
-      const replaceHtml = html.replace('@', `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;">${numColumns.get(args.key)}</span>`);
+      const replaceFormula = formula.replace('@', `:${numColumns.get(args.key)}:`);
+      const replaceHtml = html.replace('@', `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;"><i style="opacity:0">:</i>${numColumns.get(args.key)}<i style="opacity:0">:</i></span>`);
       setFormula(replaceFormula);
       setHtml(replaceHtml);
       setDropdownVisible(false);

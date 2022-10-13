@@ -13,7 +13,7 @@ export class ExcelFunctionField extends Field {
     let parser = getParser(scope)
     try {
       let response = parser.parse(expression);
-      if (response?.result) {
+      if (!response?.error) {
         result = response.result;
       }
     } catch {}
@@ -53,7 +53,7 @@ export class ExcelFunctionField extends Field {
     let parser = getParser(scope)
     try {
       let response = parser.parse(expression);
-      if (response?.result) {
+      if (!response?.error) {
         result = response.result;
       }
     } catch {}
