@@ -44,7 +44,7 @@ const Entity: React.FC<{
   const { node } = props;
   const {
     store: {
-      data: { title, name, item, ports },
+      data: { title, name, item, ports,attrs },
     },
     id,
   } = node;
@@ -80,7 +80,7 @@ const Entity: React.FC<{
     );
   };
   return (
-    <div className={cx(entityContainer)}>
+    <div className={cx(entityContainer)} style={{borderColor:attrs?.border}}>
       <div className={headClass}>
         <span className={tableNameClass}>{compile(title)}</span>
         <div className={tableBtnClass}>

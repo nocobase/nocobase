@@ -85,25 +85,16 @@ function getCollectionData(rawData, graph) {
 }
 
 let targetGraph;
+let targetNode;
 export const Editor = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
   const [collapsed, setCollapsed] = useState(false);
   const { collections: data, refreshCM ,} = useCollectionManager();
-  // const [graphCollectionData, setGraphCollectionData] = useState(data);
   const [collectionList, setCollectionList] = useState<any>(data);
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
-
-  // const refreshCollection = async () => {
-  //   const { data } = await api
-  //     .resource('collections')
-  //     .list({ paginate: false, appends: ['fields', 'fields.uiSchema'], sort: ['sort'] });
-  //   setGraphCollectionData(data.data);
-  //   setCollectionList(data.data);
-  // };
-
   const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
@@ -203,10 +194,6 @@ export const Editor = React.memo(() => {
     };
   }, []);
 
-  // useEffect(() => {
-  //   refreshCollection();
-  // }, []);
-
   useEffect(()=>{
     targetGraph&& getCollectionData(data, targetGraph);
 
@@ -227,11 +214,16 @@ export const Editor = React.memo(() => {
   };
 
   const handleSelectCollection = (value) => {
-    const graph = targetGraph;
-    const targetNode = graph.getCellById(value.key);
-    graph.unfreeze();
+    if(targetNode){
+      targetNode.removeAttrs()
+    }
+    targetNode = targetGraph.getCellById(value.key);
+    targetGraph.unfreeze();
     // 定位到目标节点
-    graph.positionCell(targetNode, 'top');
+    targetGraph.positionCell(targetNode, 'top');
+    targetNode.setAttrs({
+      border:'#165dff'
+    })
   };
 
   return (
@@ -245,7 +237,7 @@ export const Editor = React.memo(() => {
         width={150}
       >
         <Input onChange={handleSearchCollection} style={{ width: '90%' }} placeholder="表搜索" />
-        <Menu style={{ width: 150 }} mode="inline" theme="light">
+        <Menu style={{ width: 150,maxHeight:'900px',overflowY:'auto' }} mode="inline" theme="light">
           {collectionList.map((v) => {
             return (
               <Menu.Item key={v.key} onClick={(e) => handleSelectCollection(e)}>
