@@ -1,5 +1,5 @@
-import React, { useLayoutEffect, useEffect, useContext, useState,useImperativeHandle } from 'react';
-import { Graph, Cell } from '@antv/x6';
+import React, { useLayoutEffect, useEffect, useContext, useState, useImperativeHandle } from 'react';
+import { Graph } from '@antv/x6';
 import dagre from 'dagre';
 import { last } from 'lodash';
 import '@antv/x6-react-shape';
@@ -24,7 +24,8 @@ const { Sider, Content } = Layout;
 
 const LINE_HEIGHT = 32;
 const NODE_WIDTH = 210;
-
+let targetGraph;
+let targetNode;
 let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
 function layout(graph) {
@@ -54,7 +55,7 @@ function layout(graph) {
     }
   });
   graph.unfreeze();
-  graph.positionCell(last(nodes), 'top');
+  graph.positionCell(last(nodes), 'top', { padding: 100 });
 }
 
 function getNodes(nodes, graph) {
@@ -85,8 +86,6 @@ function getCollectionData(rawData, graph) {
   layout(graph);
 }
 
-let targetGraph;
-let targetNode;
 export const Editor = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
@@ -99,16 +98,16 @@ export const Editor = React.memo(() => {
   const scope = { ...options?.scope };
   const components = { ...options?.components };
   useImperativeHandle(GraphRef, () => ({
-    refreshCM
-  }))
+    refreshCM,
+  }));
   const refreshCM = async () => {
     const { data } = await api.resource('collections').list({
       paginate: false,
       appends: ['fields', 'fields.uiSchema'],
       sort: 'sort',
     });
-    setCollectionData(data.data)
-    setCollectionList(data.data)
+    setCollectionData(data.data);
+    setCollectionList(data.data);
     getCollectionData(data.data, targetGraph);
   };
   const initGraphCollections = () => {
@@ -168,7 +167,7 @@ export const Editor = React.memo(() => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionManagerProvider collections={data}  refreshCM={refreshCM}>
+              <CollectionManagerProvider collections={data} refreshCM={refreshCM}>
                 <div style={{ height: 'auto' }}>
                   <Entity node={node} />
                 </div>
@@ -250,13 +249,13 @@ export const Editor = React.memo(() => {
     targetNode = targetGraph.getCellById(value.key);
     targetGraph.unfreeze();
     // 定位到目标节点
-    targetGraph.positionCell(targetNode, 'top');
+    targetGraph.positionCell(targetNode, 'top', { padding: 100 });
     targetNode.setAttrs({
       border: '#165dff',
     });
   };
   return (
-    <Layout >
+    <Layout>
       <Sider
         className={cx(collectionListClass)}
         collapsed={collapsed}

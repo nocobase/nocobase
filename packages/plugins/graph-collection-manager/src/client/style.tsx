@@ -17,7 +17,7 @@ export const entityContainer = css`
   border-radius: 3px;
   background-color: #fff;
   border: 1px solid rgb(237 237 237);
-  box-shadow: 0 0 6px rgb(0 0 0 / 12%);
+  // box-shadow: 0 0 6px rgb(0 0 0 / 12%);
   &:hover {
     border: 1px solid #165dff;
     box-shadow: 0 0 6px rgb(0 0 0 / 12%);
