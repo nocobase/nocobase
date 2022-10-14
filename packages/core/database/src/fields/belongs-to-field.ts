@@ -1,6 +1,7 @@
 import { omit } from 'lodash';
 import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { checkIdentifier } from '../utils';
 
 export class BelongsToField extends RelationField {
   static type = 'belongsTo';
@@ -42,10 +43,13 @@ export class BelongsToField extends RelationField {
       this.options.foreignKey = association.foreignKey;
     }
 
+    checkIdentifier(this.options.foreignKey);
+
     if (!this.options.sourceKey) {
       // @ts-ignore
       this.options.sourceKey = association.sourceKey;
     }
+
     this.collection.addIndex([this.options.foreignKey]);
     return true;
   }

@@ -2,6 +2,7 @@ import { omit } from 'lodash';
 import { BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
 import { Collection } from '../collection';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
+import { checkIdentifier } from '../utils';
 
 export class BelongsToManyField extends RelationField {
   get through() {
@@ -23,6 +24,7 @@ export class BelongsToManyField extends RelationField {
       database.addPendingField(this);
       return false;
     }
+
     const through = this.through;
 
     let Through: Collection;
@@ -33,6 +35,7 @@ export class BelongsToManyField extends RelationField {
       Through = database.collection({
         name: through,
       });
+
       Object.defineProperty(Through.model, 'isThrough', { value: true });
     }
 
@@ -49,15 +52,23 @@ export class BelongsToManyField extends RelationField {
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
     }
+
+    checkIdentifier(this.options.foreignKey);
+
     if (!this.options.sourceKey) {
       this.options.sourceKey = association.sourceKey;
     }
+
     if (!this.options.otherKey) {
       this.options.otherKey = association.otherKey;
     }
+
+    checkIdentifier(this.options.otherKey);
+
     if (!this.options.through) {
       this.options.through = this.through;
     }
+
     Through.addIndex([this.options.foreignKey]);
     Through.addIndex([this.options.otherKey]);
     return true;

@@ -5,10 +5,11 @@ import {
   ForeignKeyOptions,
   HasOneOptions,
   HasOneOptions as SequelizeHasOneOptions,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { checkIdentifier } from '../utils';
 
 export interface HasOneFieldOptions extends HasOneOptions {
   /**
@@ -92,21 +93,28 @@ export class HasOneField extends RelationField {
       database.addPendingField(this);
       return false;
     }
+
     const association = collection.model.hasOne(Target, {
       constraints: false,
       ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
       foreignKey: this.foreignKey,
     });
+
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);
+
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
     }
+
+    checkIdentifier(this.options.foreignKey);
+
     if (!this.options.sourceKey) {
       // @ts-ignore
       this.options.sourceKey = association.sourceKey;
     }
+
     let tcoll: Collection;
     if (this.target === collection.name) {
       tcoll = collection;
