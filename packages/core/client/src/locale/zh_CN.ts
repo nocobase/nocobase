@@ -497,11 +497,14 @@ export default {
   'Add storage': '添加文件存储',
   'Edit storage': '编辑文件存储',
   'Storage base URL': 'Base URL',
-  'Destination': '文件路径',
+  'Destination': '存储路径（绝对）',
   'Use the built-in static file server': '使用内置静态文件服务',
   'Local storage': '本地存储',
   'Aliyun OSS': '阿里云 OSS',
   'Amazon S3': '亚马逊 S3',
+  'Region': '区域',
+  'Bucket': '存储桶',
+  'Path': '路径（相对）',
 
   // plugins/workflow
   'Workflow': '工作流',

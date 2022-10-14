@@ -1,7 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useRequest } from '../../api-client';
-import { useActionContext } from '../../schema-component';
+import { useRequest, useActionContext } from '@nocobase/client';
 
 const collection = {
   name: 'storages',
