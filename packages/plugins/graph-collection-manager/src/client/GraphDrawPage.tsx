@@ -93,6 +93,7 @@ export const Editor = React.memo(() => {
   const [collapsed, setCollapsed] = useState(false);
   const { collections: data } = useCollectionManager();
   const { GraphRef } = useContext(FullScreenContext);
+  const [collectionData, setCollectionData] = useState<any>(data);
   const [collectionList, setCollectionList] = useState<any>(data);
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
@@ -106,6 +107,8 @@ export const Editor = React.memo(() => {
       appends: ['fields', 'fields.uiSchema'],
       sort: 'sort',
     });
+    setCollectionData(data.data)
+    setCollectionList(data.data)
     getCollectionData(data.data, targetGraph);
   };
   const initGraphCollections = () => {
@@ -230,13 +233,13 @@ export const Editor = React.memo(() => {
   const handleSearchCollection = (e) => {
     const value = e.target.value.toLowerCase();
     if (value) {
-      const targetCollections = data.filter((v) => {
+      const targetCollections = collectionData.filter((v) => {
         const collectionTitle = compile(v.title).toLowerCase();
         return collectionTitle.includes(value);
       });
       setCollectionList(targetCollections);
     } else {
-      setCollectionList(data);
+      setCollectionList(collectionData);
     }
   };
 
