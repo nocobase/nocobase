@@ -54,11 +54,18 @@ export abstract class RelationRepository {
 
   @transaction()
   async create(options?: CreateOptions): Promise<any> {
+    if (Array.isArray(options.values)) {
+      return Promise.all(options.values.map((record) => this.create({ ...options, values: record })));
+    }
+
     const createAccessor = this.accessors().create;
 
     const guard = UpdateGuard.fromOptions(this.targetModel, options);
     const values = options.values;
     const transaction = await this.getTransaction(options);
+
+    // @ts-ignore
+    console.log(transaction.finished);
 
     const sourceModel = await this.getSourceModel(transaction);
 
@@ -75,7 +82,7 @@ export abstract class RelationRepository {
       await this.db.emitAsync(eventName, instance, { ...options, transaction });
     }
 
-    return instance;
+    return null;
   }
 
   async getSourceModel(transaction?: Transaction) {

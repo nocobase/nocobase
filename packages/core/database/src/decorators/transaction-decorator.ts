@@ -37,13 +37,12 @@ export function transactionWrapperBuilder(transactionGenerator) {
               throw new Error(`please provide transactionInjector for ${name} call`);
             }
 
-            const results = await oldValue.apply(this, [callArguments]);
+            const results = await oldValue.call(this, callArguments);
 
             await transaction.commit();
 
             return results;
           } catch (err) {
-            // console.error({ err });
             await transaction.rollback();
             throw err;
           }
