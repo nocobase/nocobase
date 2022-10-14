@@ -8,14 +8,22 @@ import { Plugin } from '@nocobase/server';
 
 import { CollectionRepository } from '.';
 import {
+  afterCreateForRelateField,
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
+import { ForeignKeyField } from './fields/foreign-key-field';
 
 export class CollectionManagerPlugin extends Plugin {
+  initialize() {
+    this.db.registerFieldTypes({
+      foreignKey: ForeignKeyField,
+    });
+  }
+
   async beforeLoad() {
     this.app.db.registerModels({
       CollectionModel,
@@ -62,12 +70,13 @@ export class CollectionManagerPlugin extends Plugin {
       }
     }
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
+    this.app.db.on('fields.afterCreate', afterCreateForRelateField(this.app.db));
 
     this.app.db.on('collections.afterCreateWithAssociations', async (model, { context, transaction }) => {
       if (context) {
         await model.migrate({
           isNew: true,
-          transaction
+          transaction,
         });
       }
     });
@@ -76,7 +85,7 @@ export class CollectionManagerPlugin extends Plugin {
       if (context) {
         await model.migrate({
           isNew: true,
-          transaction
+          transaction,
         });
       }
     });
