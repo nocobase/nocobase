@@ -4,7 +4,7 @@ import { useActionContext, useRequest, PluginManager, SchemaComponent } from '@n
 import { DeleteOutlined, FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
 import { useFullscreen } from 'ahooks';
-import React, { useEffect, useRef, createContext } from 'react';
+import React, { useEffect, useRef, createContext ,Ref} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { Editor } from './GraphDrawPage';
@@ -114,11 +114,11 @@ const useCollectionValues = (options) => {
   return result;
 };
 
-export const FullScreenContext = createContext({ isFullscreen: null });
+export const FullScreenContext = createContext<{isFullscreen:boolean,GraphRef:Ref<unknown>}>({ isFullscreen: null ,GraphRef:null});
 
 const FullScreenProvider = (props) => {
   return (
-    <FullScreenContext.Provider value={{ isFullscreen: props.isFullscreen }}>
+    <FullScreenContext.Provider value={{ isFullscreen: props.isFullscreen,...props }}>
       {props.children}
     </FullScreenContext.Provider>
   );
@@ -127,10 +127,11 @@ const FullScreenProvider = (props) => {
 export const GraphCollectionPane = () => {
   const ref = useRef(null);
   const [isFullscreen, { toggleFullscreen }] = useFullscreen(ref);
+  const GraphRef = useRef(null);
   return (
     //@ts-ignore
     <Card bordered={false} id="graph_container" ref={ref}>
-      <FullScreenProvider isFullscreen={isFullscreen}>
+      <FullScreenProvider isFullscreen={isFullscreen} GraphRef={GraphRef}>
         <SchemaComponent
           schema={{
             type: 'void',
@@ -250,7 +251,7 @@ export const GraphCollectionPane = () => {
               },
               editor: {
                 type: 'void',
-                'x-component': 'Editor',
+                'x-component':'Editor',
               },
             },
           }}
@@ -258,7 +259,7 @@ export const GraphCollectionPane = () => {
             Editor,
             DeleteOutlined,
           }}
-          scope={{ useCollectionValues, useCreateActionAndRefreshCM, toggleFullscreen }}
+          scope={{ useCollectionValues,useCreateActionAndRefreshCM:()=>useCreateActionAndRefreshCM(GraphRef) }}
         />
       </FullScreenProvider>
     </Card>

@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useEffect, useContext, useState } from 'react';
+import React, { useLayoutEffect, useEffect, useContext, useState,useImperativeHandle } from 'react';
 import { Graph, Cell } from '@antv/x6';
 import dagre from 'dagre';
 import { last } from 'lodash';
@@ -18,6 +18,7 @@ import {
 import { formatData } from './utils';
 import Entity from './components/Entity';
 import { collectionListClass } from './style';
+import { FullScreenContext } from './GraphCollectionShortcut';
 
 const { Sider, Content } = Layout;
 
@@ -90,11 +91,23 @@ export const Editor = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
   const [collapsed, setCollapsed] = useState(false);
-  const { collections: data, refreshCM } = useCollectionManager();
+  const { collections: data } = useCollectionManager();
+  const { GraphRef } = useContext(FullScreenContext);
   const [collectionList, setCollectionList] = useState<any>(data);
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
+  useImperativeHandle(GraphRef, () => ({
+    refreshCM
+  }))
+  const refreshCM = async () => {
+    const { data } = await api.resource('collections').list({
+      paginate: false,
+      appends: ['fields', 'fields.uiSchema'],
+      sort: 'sort',
+    });
+    getCollectionData(data.data, targetGraph);
+  };
   const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
@@ -152,15 +165,7 @@ export const Editor = React.memo(() => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionManagerProvider collections={data} refreshCM={async ()=>{
-               const {data}=await api.resource('collections').list({
-                  paginate:false,
-                  appends:['fields','fields.uiSchema'],
-                  sort:'sort'
-                })
-                console.log(data)
-                getCollectionData(data.data,targetGraph)
-              }}>
+              <CollectionManagerProvider collections={data}  refreshCM={refreshCM}>
                 <div style={{ height: 'auto' }}>
                   <Entity node={node} />
                 </div>
@@ -247,9 +252,8 @@ export const Editor = React.memo(() => {
       border: '#165dff',
     });
   };
-
   return (
-    <Layout>
+    <Layout >
       <Sider
         className={cx(collectionListClass)}
         collapsed={collapsed}
