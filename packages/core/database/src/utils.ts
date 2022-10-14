@@ -43,7 +43,6 @@ export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
 
       const rowKey = appendingRow.get(primaryKey);
 
-      console.log({ rowKey, primaryKey });
       const targetIndex = rows.findIndex((row) => row.get(primaryKey) === rowKey);
 
       if (targetIndex === -1) {
