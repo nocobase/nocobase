@@ -79,7 +79,7 @@ export abstract class RelationRepository {
       await this.db.emitAsync(eventName, instance, { ...options, transaction });
     }
 
-    return null;
+    return instance;
   }
 
   async getSourceModel(transaction?: Transaction) {
