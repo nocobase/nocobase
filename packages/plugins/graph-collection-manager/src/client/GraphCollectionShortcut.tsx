@@ -125,8 +125,7 @@ const FullScreenProvider = (props) => {
 };
 
 export const GraphCollectionPane = () => {
-  const ref = useRef(null)||document.getElementById('graph_container');
-  console.log(ref)
+  const ref = useRef(null);
   const [isFullscreen, { toggleFullscreen }] = useFullscreen(ref);
   return (
     //@ts-ignore
@@ -239,7 +238,6 @@ export const GraphCollectionPane = () => {
                           useAction: () => {
                             return {
                               run() {
-                                console.log(5)
                                 toggleFullscreen();
                               },
                             };
