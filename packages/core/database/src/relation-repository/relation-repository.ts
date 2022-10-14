@@ -64,9 +64,6 @@ export abstract class RelationRepository {
     const values = options.values;
     const transaction = await this.getTransaction(options);
 
-    // @ts-ignore
-    console.log(transaction.finished);
-
     const sourceModel = await this.getSourceModel(transaction);
 
     const instance = await sourceModel[createAccessor](guard.sanitize(options.values), { ...options, transaction });
