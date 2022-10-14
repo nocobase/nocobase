@@ -60,12 +60,14 @@ export class CollectionManagerPlugin extends Plugin {
         database: this.app.db,
       });
     });
+
     for (const key in beforeInitOptions) {
       if (Object.prototype.hasOwnProperty.call(beforeInitOptions, key)) {
         const fn = beforeInitOptions[key];
         this.app.db.on(`fields.${key}.beforeInitOptions`, fn);
       }
     }
+
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
     this.app.db.on('collections.afterCreateWithAssociations', async (model, { context, transaction }) => {
@@ -87,12 +89,23 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
+      const prevOptions = model.previous('options');
+      const currentOptions = model.get('options');
+
       if (context) {
-        const { unique: prev } = model.previous('options');
-        const { unique: next } = model.get('options');
+        const prev = prevOptions['unique'];
+        const next = currentOptions['unique'];
+
         if (Boolean(prev) !== Boolean(next)) {
           await model.migrate({ transaction });
         }
+      }
+
+      const prevDefaultValue = prevOptions['defaultValue'];
+      const currentDefaultValue = currentOptions['defaultValue'];
+
+      if (prevDefaultValue != currentDefaultValue) {
+        await model.syncDefaultValue({ transaction, defaultValue: currentDefaultValue });
       }
     });
 

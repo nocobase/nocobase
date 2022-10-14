@@ -1,5 +1,5 @@
-import Database, { Field, MagicAttributeModel } from '@nocobase/database';
-import { SyncOptions, Transactionable, UniqueConstraintError, Utils } from 'sequelize';
+import Database, { Collection, Field, MagicAttributeModel } from '@nocobase/database';
+import { SyncOptions, Transactionable, UniqueConstraintError } from 'sequelize';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -13,16 +13,23 @@ interface MigrateOptions extends SyncOptions, Transactionable {
 async function migrate(field: Field, options: MigrateOptions): Promise<void> {
   const { unique } = field.options;
   const { model } = field.collection;
+
   const ukName = `${model.tableName}_${field.name}_uk`;
   const queryInterface = model.sequelize.getQueryInterface();
   const fieldAttribute = model.rawAttributes[field.name];
+
   // @ts-ignore
-  const existedConstraints = await queryInterface.showConstraint(model.tableName, ukName, { transaction: options.transaction }) as any[];
-  const constraintBefore = existedConstraints.find(item => item.constraintName === ukName);
+  const existedConstraints = (await queryInterface.showConstraint(model.tableName, ukName, {
+    transaction: options.transaction,
+  })) as any[];
+
+  const constraintBefore = existedConstraints.find((item) => item.constraintName === ukName);
+
   if (typeof fieldAttribute?.unique !== 'undefined') {
     if (constraintBefore && !unique) {
       await queryInterface.removeConstraint(model.tableName, ukName, { transaction: options.transaction });
     }
+
     fieldAttribute.unique = Boolean(constraintBefore);
   }
 
@@ -33,19 +40,24 @@ async function migrate(field: Field, options: MigrateOptions): Promise<void> {
       type: 'unique',
       fields: [field.name],
       name: ukName,
-      transaction: options.transaction
+      transaction: options.transaction,
     });
   }
+
   if (typeof fieldAttribute?.unique !== 'undefined') {
     fieldAttribute.unique = unique;
   }
 
   // @ts-ignore
-  const updatedConstraints = await queryInterface.showConstraint(model.tableName, ukName, { transaction: options.transaction }) as any[];
-  const indexAfter = updatedConstraints.find(item => item.constraintName === ukName);
+  const updatedConstraints = (await queryInterface.showConstraint(model.tableName, ukName, {
+    transaction: options.transaction,
+  })) as any[];
+
+  const indexAfter = updatedConstraints.find((item) => item.constraintName === ukName);
+
   if (unique && !indexAfter) {
     throw new UniqueConstraintError({
-      fields: { [field.name]: undefined }
+      fields: { [field.name]: undefined },
     });
   }
 }
@@ -61,12 +73,15 @@ export class FieldModel extends MagicAttributeModel {
     if (!this.db.hasCollection(collectionName)) {
       return;
     }
+
     const collection = this.db.getCollection(collectionName);
     const name = this.get('name');
     if (skipExist && collection.hasField(name)) {
       return collection.getField(name);
     }
+
     const options = this.get();
+
     if (options.uiSchemaUid) {
       const UISchema = this.db.getModel('uiSchemas');
       const uiSchema = await UISchema.findByPk(options.uiSchemaUid, {
@@ -74,6 +89,7 @@ export class FieldModel extends MagicAttributeModel {
       });
       Object.assign(options, { uiSchema: uiSchema.get() });
     }
+
     return collection.setField(name, options);
   }
 
@@ -81,6 +97,7 @@ export class FieldModel extends MagicAttributeModel {
     const field = await this.load({
       transaction: options.transaction,
     });
+
     if (!field) {
       return;
     }
@@ -98,11 +115,11 @@ export class FieldModel extends MagicAttributeModel {
   }
 
   async remove(options?: any) {
-    const collectionName = this.get('collectionName');
-    if (!this.db.hasCollection(collectionName)) {
+    const collection = this.getFieldCollection();
+    if (!collection) {
       return;
     }
-    const collection = this.db.getCollection(collectionName);
+
     const field = collection.getField(this.get('name'));
     if (!field) {
       return;
@@ -110,5 +127,43 @@ export class FieldModel extends MagicAttributeModel {
     return field.removeFromDb({
       transaction: options.transaction,
     });
+  }
+
+  async syncDefaultValue(
+    options: Transactionable & {
+      defaultValue: any;
+    },
+  ) {
+    const collection = this.getFieldCollection();
+
+    if (!collection) {
+      return;
+    }
+
+    const field = collection.getField(this.get('name'));
+
+    const queryInterface = collection.db.sequelize.getQueryInterface();
+
+    await queryInterface.changeColumn(
+      collection.model.tableName,
+      this.get('name'),
+      {
+        type: field.dataType,
+        defaultValue: options.defaultValue,
+      },
+      {
+        transaction: options.transaction,
+      },
+    );
+  }
+
+  protected getFieldCollection(): Collection | null {
+    const collectionName = this.get('collectionName');
+
+    if (!this.db.hasCollection(collectionName)) {
+      return;
+    }
+
+    return this.db.getCollection(collectionName);
   }
 }
