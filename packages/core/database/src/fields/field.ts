@@ -9,6 +9,7 @@ import {
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
+import { checkIdentifier } from '../utils';
 
 export interface FieldContext {
   database: Database;
