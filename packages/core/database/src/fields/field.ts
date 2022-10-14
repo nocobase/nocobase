@@ -51,12 +51,9 @@ export abstract class Field {
     this.database = context.database;
     this.collection = context.collection;
     this.options = options || {};
-    this.checkOptions(this.options);
     this.init();
   }
 
-  protected checkOptions(options: any) {}
-  // TODO
   async sync(syncOptions: SyncOptions) {
     await this.collection.sync({
       ...syncOptions,
