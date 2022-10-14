@@ -1,7 +1,6 @@
 import React, { useEffect, useContext } from 'react';
 import { action } from '@formily/reactive';
 import { useTranslation } from 'react-i18next';
-import { uid } from '@formily/shared';
 import omit from 'lodash/omit';
 import { message, Select } from 'antd';
 import { useActionContext, useRequest, useAPIClient, useCompile, useCollectionManager } from '@nocobase/client';
@@ -45,8 +44,8 @@ export const useCancelAction = () => {
 
 export const useCreateActionAndRefreshCM = (GraphRef) => {
   const form = useForm();
-  const ctx = useActionContext();
   const api = useAPIClient();
+  const ctx = useActionContext();
   return {
     async run() {
       await form.submit();
@@ -60,9 +59,11 @@ export const useCreateActionAndRefreshCM = (GraphRef) => {
 
 export const useCreateAction = (collectionName, targetId) => {
   const form = useForm();
+  const api = useAPIClient();
   const ctx = useActionContext();
   const { refreshCM } = useCollectionManager();
-  const api = useAPIClient();
+  const { positionTargetNode } = useContext(GraphCollectionContext);
+
   return {
     async run() {
       await form.submit();
@@ -77,6 +78,7 @@ export const useCreateAction = (collectionName, targetId) => {
       });
       ctx.setVisible(false);
       await form.reset();
+      positionTargetNode();
       await refreshCM();
     },
   };
@@ -88,6 +90,7 @@ export const useUpdateFieldAction = ({ collectionName, name }) => {
   const form = useForm();
   const ctx = useActionContext();
   const api = useAPIClient();
+  const { positionTargetNode } = useContext(GraphCollectionContext);
   return {
     async run() {
       await form.submit();
@@ -98,6 +101,7 @@ export const useUpdateFieldAction = ({ collectionName, name }) => {
       ctx.setVisible(false);
       await form.reset();
       message.success(t('Saved successfully'));
+      positionTargetNode();
       refreshCM();
     },
   };
@@ -107,10 +111,10 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
   const { t } = useTranslation();
   const form = useForm();
   const ctx = useActionContext();
-  const { refreshCM } = useCollectionManager();
   const { name } = form.values;
   const api = useAPIClient();
-
+  const { refreshCM } = useCollectionManager();
+  const { positionTargetNode } = useContext(GraphCollectionContext);
   return {
     async run() {
       await form.submit();
@@ -121,6 +125,7 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
       ctx.setVisible(false);
       message.success(t('Saved successfully'));
       await form.reset();
+      positionTargetNode();
       refreshCM();
     },
   };
@@ -128,51 +133,49 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
 
 const useDestroyAction = (name) => {
   const api = useAPIClient();
-  const { refreshCM } = useCollectionManager();
-
   return {
     async run() {
       await api.resource('collections').destroy({
         filterByTk: name,
       });
-      await refreshCM();
     },
   };
 };
 
 export const useDestroyActionAndRefreshCM = (props) => {
-  const {  name } = props;
+  const { name } = props;
   const { run } = useDestroyAction(name);
   const { refreshCM } = useCollectionManager();
 
   return {
     async run() {
       await run();
-      await refreshCM()
+      await refreshCM();
     },
   };
 };
 
 const useDestroyFieldAction = (collectionName, name) => {
   const api = useAPIClient();
+  const { positionTargetNode } = useContext(GraphCollectionContext);
+
   return {
     async run() {
       await api.resource('collections.fields', collectionName).destroy({
         filterByTk: name,
       });
+      positionTargetNode()
     },
   };
 };
 
 export const useDestroyFieldActionAndRefreshCM = (props) => {
-  const { collectionName, name, portId, node } = props;
-  const { run } = useDestroyFieldAction(collectionName, name);
+  const { collectionName, name } = props;
   const { refreshCM } = useCollectionManager();
-
+  const { run } = useDestroyFieldAction(collectionName, name);
   return {
     async run() {
       await run();
-      node.removePort(node.getPort(portId));
       await refreshCM();
     },
   };

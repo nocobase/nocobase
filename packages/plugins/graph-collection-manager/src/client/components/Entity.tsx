@@ -40,8 +40,9 @@ import { FieldSummary } from './FieldSummary';
 
 const Entity: React.FC<{
   node?: Node | any;
+  setTargetNode: Function | any;
 }> = (props) => {
-  const { node } = props;
+  const { node, setTargetNode } = props;
   const {
     store: {
       data: { title, name, item, ports, attrs },
@@ -85,7 +86,7 @@ const Entity: React.FC<{
         <span className={tableNameClass}>{compile(title)}</span>
         <div className={tableBtnClass}>
           <SchemaComponentProvider>
-            <CollectionNodeProvder>
+            <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
               <CollectionProvider collection={collection}>
                 <SchemaComponent
                   scope={{ useValuesFromRecord, useUpdateCollectionActionAndRefreshCM, useCancelAction }}
@@ -259,7 +260,7 @@ const Entity: React.FC<{
                       }}
                       scope={{ useAsyncDataSource, loadCollections, useCancelAction, useNewId }}
                     >
-                      <CollectionNodeProvder record={item}>
+                      <CollectionNodeProvder record={item} setTargetNode={setTargetNode} node={node}>
                         <SchemaComponent
                           scope={useCancelAction}
                           schema={{
@@ -272,8 +273,8 @@ const Entity: React.FC<{
                                 'x-component-props': {
                                   item: {
                                     ...property,
+                                    title
                                   },
-                                  node,
                                 },
                               },
                             },
@@ -291,6 +292,7 @@ const Entity: React.FC<{
                                 'x-component-props': {
                                   item: {
                                     ...property,
+                                    title
                                   },
                                 },
                               },
@@ -330,8 +332,6 @@ const Entity: React.FC<{
                                     useDestroyFieldActionAndRefreshCM({
                                       collectionName: property.collectionName,
                                       name: property.name,
-                                      portId: property.id,
-                                      node,
                                     }),
                                 },
                               },

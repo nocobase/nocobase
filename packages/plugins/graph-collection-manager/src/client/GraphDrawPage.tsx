@@ -55,7 +55,7 @@ function layout(graph) {
     }
   });
   graph.unfreeze();
-  graph.positionCell(last(nodes), 'top', { padding: 100 });
+  targetNode?graph.positionCell(targetNode, 'top', { padding: 100 }):graph.positionCell(last(nodes), 'top', { padding: 100 });
 }
 
 function getNodes(nodes, graph) {
@@ -100,6 +100,9 @@ export const Editor = React.memo(() => {
   useImperativeHandle(GraphRef, () => ({
     refreshCM,
   }));
+  const setTargetNode=(node)=>{
+    targetNode=node
+  }
   const refreshCM = async () => {
     const { data } = await api.resource('collections').list({
       paginate: false,
@@ -169,7 +172,7 @@ export const Editor = React.memo(() => {
             <SchemaComponentOptions inherit scope={scope} components={components}>
               <CollectionManagerProvider collections={data} refreshCM={refreshCM}>
                 <div style={{ height: 'auto' }}>
-                  <Entity node={node} />
+                  <Entity node={node} setTargetNode={setTargetNode}/>
                 </div>
               </CollectionManagerProvider>
             </SchemaComponentOptions>
@@ -222,6 +225,7 @@ export const Editor = React.memo(() => {
       targetGraph.off('edge:mouseover');
       targetGraph.off('edge:mouseout');
       targetGraph = null;
+      targetNode=null
     };
   }, []);
 

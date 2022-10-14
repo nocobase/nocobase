@@ -19,7 +19,7 @@ import {
 } from '@nocobase/client';
 import { useUpdateFieldAction, SourceCollection } from '../action-hooks';
 
-const getSchema = (schema, collectionName: string, compile, name: string): ISchema => {
+const getSchema = (schema, record: any, compile, name: string): ISchema => {
   if (!schema) {
     return;
   }
@@ -53,7 +53,7 @@ const getSchema = (schema, collectionName: string, compile, name: string): ISche
             );
           },
         },
-        title: `${compile(collectionName)} - ${compile('{{ t("Edit field") }}')}`,
+        title: `${compile(record.title)} - ${compile('{{ t("Edit field") }}')}`,
         properties: {
           summary: {
             type: 'void',
@@ -80,7 +80,7 @@ const getSchema = (schema, collectionName: string, compile, name: string): ISche
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: () => useUpdateCollectionField({ collectionName, name }),
+                  useAction: () => useUpdateCollectionField({ collectionName:record.collectionName, name }),
                 },
               },
             },
@@ -150,7 +150,7 @@ export const EditFieldAction = ({ item }) => {
               ...getInterface(type),
               default: data?.data,
             },
-            collectionName,
+            item,
             compile,
             name,
           );

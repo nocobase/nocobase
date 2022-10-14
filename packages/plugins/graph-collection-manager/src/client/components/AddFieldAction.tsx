@@ -24,15 +24,12 @@ const getSchema = (schema, record: any, compile): ISchema => {
   if (!schema) {
     return;
   }
-
   const properties = cloneDeep(schema.properties) as any;
-
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
-
   const initialValue = {
     name: `f_${uid()}`,
     ...cloneDeep(schema.default),
@@ -61,7 +58,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
             );
           },
         },
-        title: `${compile(record.collectionName)} - ${compile('{{ t("Add field") }}')}`,
+        title: `${compile(record.title)} - ${compile('{{ t("Add field") }}')}`,
         properties: {
           summary: {
             type: 'void',
