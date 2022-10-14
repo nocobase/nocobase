@@ -51,21 +51,31 @@ export function afterCreateForRelateField(db: Database) {
 
         // create through collections record
         const Collections = db.getCollection('collections');
-        const sourceCollectionName = reverse.get('collectionName') as string
-        const targetCollectionName = options?.target as string
-        await Collections.model.create(
-          {
+        const throughRecord = await Collections.model.findOne({
+          transaction,
+          where: {
             name: through,
-            title: `${db.getCollection(sourceCollectionName).options?.title}_${db.getCollection(targetCollectionName).options?.title}`,
-            options: {
-              logging: true,
+          },
+        });
+        if (!throughRecord) {
+          const sourceCollectionName = reverse.get('collectionName') as string;
+          const targetCollectionName = options?.target as string;
+          await Collections.model.create(
+            {
+              name: through,
+              title: `${db.getCollection(sourceCollectionName).options?.title}_${
+                db.getCollection(targetCollectionName).options?.title
+              }`,
+              options: {
+                logging: true,
+              },
             },
-          },
-          {
-            hooks: true,
-            transaction,
-          },
-        );
+            {
+              hooks: true,
+              transaction,
+            },
+          );
+        }
 
         // create foreign key field and default fields
         await Field.model.bulkCreate(
@@ -75,14 +85,14 @@ export function afterCreateForRelateField(db: Database) {
               name: options?.foreignKey,
               collectionName: through,
               type: 'foreignKey',
-              sort: 1
+              sort: 1,
             },
             {
               key: uid(),
               name: options?.otherKey,
               collectionName: through,
               type: 'foreignKey',
-              sort: 2
+              sort: 2,
             },
             {
               key: uid(),
@@ -91,7 +101,7 @@ export function afterCreateForRelateField(db: Database) {
               type: 'date',
               interface: 'createdAt',
               options: { field: 'createdAt' },
-              sort: 3
+              sort: 3,
             },
             {
               key: uid(),
@@ -100,7 +110,7 @@ export function afterCreateForRelateField(db: Database) {
               type: 'date',
               interface: 'updatedAt',
               options: { field: 'updatedAt' },
-              sort: 4
+              sort: 4,
             },
           ],
           { hooks: true, transaction },

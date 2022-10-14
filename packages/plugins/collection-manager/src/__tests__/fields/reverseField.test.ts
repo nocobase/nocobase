@@ -72,7 +72,7 @@ describe('reverseField options', () => {
           collectionName: 'targets',
         },
       }),
-    ).toEqual(1);
+    ).toEqual(2);
 
     let reverseField = await Field.repository.findOne({
       filter: {
@@ -117,7 +117,7 @@ describe('reverseField options', () => {
           collectionName: 'targets',
         },
       }),
-    ).toEqual(1);
+    ).toEqual(2);
 
     reverseField = await db.getRepository('fields').findOne({
       filter: {
