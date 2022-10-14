@@ -10,6 +10,8 @@ type HandleAppendsQueryOptions = {
 export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
   const { templateModel, queryPromises } = options;
 
+  const primaryKey = templateModel.constructor.primaryKeyAttribute;
+
   const results = await Promise.all(queryPromises);
 
   let rows: Array<Model>;
@@ -35,10 +37,20 @@ export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
     }
 
     for (let i = 0; i < appendedResult.rows.length; i++) {
+      const appendingRow = appendedResult.rows[i];
       const key = appendedResult.include.association;
-      const val = appendedResult.rows[i].get(key);
+      const val = appendingRow.get(key);
 
-      rows[i].set(key, val, {
+      const rowKey = appendingRow.get(primaryKey);
+
+      console.log({ rowKey, primaryKey });
+      const targetIndex = rows.findIndex((row) => row.get(primaryKey) === rowKey);
+
+      if (targetIndex === -1) {
+        throw new Error('target row not found');
+      }
+
+      rows[targetIndex].set(key, val, {
         raw: true,
       });
     }
