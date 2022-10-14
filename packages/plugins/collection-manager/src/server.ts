@@ -55,19 +55,12 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('fields.beforeCreate', beforeCreateForChildrenCollection(this.app.db));
     this.app.db.on('fields.beforeCreate', async (model, options) => {
       const type = model.get('type');
-      await this.app.db.emitAsync(`fields.${type}.beforeInitOptions`, model, {
-        ...options,
-        database: this.app.db,
-      });
-    });
-
-    for (const key in beforeInitOptions) {
-      if (Object.prototype.hasOwnProperty.call(beforeInitOptions, key)) {
-        const fn = beforeInitOptions[key];
-        this.app.db.on(`fields.${key}.beforeInitOptions`, fn);
+      const fn = beforeInitOptions[type];
+      if (fn) {
+        await fn(model, { database: this.app.db });
       }
-    }
-
+    });
+ 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
     this.app.db.on('collections.afterCreateWithAssociations', async (model, { context, transaction }) => {
