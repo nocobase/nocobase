@@ -7,13 +7,13 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
-import { md5 } from './utils';
+import { checkIdentifier, md5 } from './utils';
 
 export type RepositoryType = typeof Repository;
 
@@ -67,13 +67,20 @@ export class Collection<
 
   constructor(options: CollectionOptions, context?: CollectionContext) {
     super();
+    this.checkOptions(options);
+
     this.context = context;
     this.options = options;
+
     this.bindFieldEventListener();
     this.modelInit();
     this.setFields(options.fields);
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
+  }
+
+  private checkOptions(options: CollectionOptions) {
+    checkIdentifier(options.name);
   }
 
   private sequelizeModelOptions() {
@@ -160,6 +167,8 @@ export class Collection<
   }
 
   setField(name: string, options: FieldOptions): Field {
+    checkIdentifier(name);
+
     const { database } = this.context;
 
     const field = database.buildField(
@@ -169,6 +178,7 @@ export class Collection<
         collection: this,
       },
     );
+
     this.removeField(name);
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);

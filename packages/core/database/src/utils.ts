@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { Model } from './model';
+import { IdentifierError } from './errors/identifier-error';
 
 type HandleAppendsQueryOptions = {
   templateModel: any;
@@ -48,4 +49,12 @@ export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
 
 export function md5(value: string) {
   return crypto.createHash('md5').update(value).digest('hex');
+}
+
+const MAX_IDENTIFIER_LENGTH = 63;
+
+export function checkIdentifier(value: string) {
+  if (value.length > MAX_IDENTIFIER_LENGTH) {
+    throw new IdentifierError(`Identifier ${value} is too long`);
+  }
 }
