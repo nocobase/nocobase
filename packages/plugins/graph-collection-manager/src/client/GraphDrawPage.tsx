@@ -152,7 +152,15 @@ export const Editor = React.memo(() => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionManagerProvider collections={data} refreshCM={refreshCM}>
+              <CollectionManagerProvider collections={data} refreshCM={async ()=>{
+               const {data}=await api.resource('collections').list({
+                  paginate:false,
+                  appends:['fields','fields.uiSchema'],
+                  sort:'sort'
+                })
+                console.log(data)
+                getCollectionData(data.data,targetGraph)
+              }}>
                 <div style={{ height: 'auto' }}>
                   <Entity node={node} />
                 </div>
@@ -204,17 +212,14 @@ export const Editor = React.memo(() => {
   useLayoutEffect(() => {
     initGraphCollections();
     return () => {
+      targetGraph.off('edge:mouseover');
+      targetGraph.off('edge:mouseout');
       targetGraph = null;
     };
   }, []);
 
   useEffect(() => {
     targetGraph && getCollectionData(data, targetGraph);
-    return()=>{
-      targetGraph.off('edge:mouseover');
-      targetGraph.off('edge:mouseout')
-
-    }
   }, []);
 
   const handleSearchCollection = (e) => {
@@ -253,7 +258,7 @@ export const Editor = React.memo(() => {
         collapsedWidth={0}
         width={150}
       >
-        <Input onChange={handleSearchCollection} style={{ width: '90%' }} placeholder="表搜索" />
+        <Input type="search" onChange={handleSearchCollection} style={{ width: '90%' }} placeholder="表搜索" />
         <Menu style={{ width: 150, maxHeight: '900px', overflowY: 'auto' }} mode="inline" theme="light">
           {collectionList.map((v) => {
             return (
