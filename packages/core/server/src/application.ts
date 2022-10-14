@@ -1,5 +1,6 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
+import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
@@ -10,12 +11,14 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import { isBoolean } from 'lodash';
 import semver from 'semver';
+import { promisify } from 'util';
 import { createACL } from './acl';
 import { AppManager } from './app-manager';
 import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+
 const packageJson = require('../package.json');
 
 export type PluginConfiguration = string | [string, any];
@@ -26,6 +29,7 @@ export interface ResourcerOptions {
 
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
+  cache?: ICacheConfig | ICacheConfig[];
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;
@@ -38,11 +42,13 @@ export interface ApplicationOptions {
 
 export interface DefaultState extends KoaDefaultState {
   currentUser?: any;
+
   [key: string]: any;
 }
 
 export interface DefaultContext extends KoaDefaultContext {
   db: Database;
+  cache: Cache;
   resourcer: Resourcer;
   i18n: any;
   [key: string]: any;
@@ -133,6 +139,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _resourcer: Resourcer;
 
+  protected _cache: Cache;
+
   protected _cli: Command;
 
   protected _i18n: i18n;
@@ -158,6 +166,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get db() {
     return this._db;
+  }
+
+  get cache() {
+    return this._cache;
   }
 
   get resourcer() {
@@ -202,8 +214,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._resourcer = createResourcer(options);
     this._cli = new Command('nocobase').usage('[command] [options]');
     this._i18n = createI18n(options);
+    this._cache = createCache(options.cache);
     this.context.db = this._db;
     this.context.resourcer = this._resourcer;
+    this.context.cache = this._cache;
 
     this._pm = new PluginManager({
       app: this,
@@ -378,18 +392,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // close http server
     if (this.listenServer) {
-      const closeServer = () =>
-        new Promise((resolve, reject) => {
-          this.listenServer.close((err) => {
-            if (err) {
-              return reject(err);
-            }
-            this.listenServer = null;
-            resolve(true);
-          });
-        });
-
-      await closeServer();
+      await promisify(this.listenServer.close).call(this.listenServer);
+      this.listenServer = null;
     }
 
     await this.emitAsync('afterStop', this, options);

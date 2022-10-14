@@ -5,11 +5,12 @@ import {
   ModelIndexesOptions,
   QueryInterfaceOptions,
   SyncOptions,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { ModelEventTypes } from '../types';
+import { checkIdentifier } from '../utils';
 
 export interface FieldContext {
   database: Database;
@@ -54,7 +55,6 @@ export abstract class Field {
     this.init();
   }
 
-  // TODO
   async sync(syncOptions: SyncOptions) {
     await this.collection.sync({
       ...syncOptions,

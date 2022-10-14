@@ -1,5 +1,6 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
+import { IdentifierError } from '../../errors/identifier-error';
 
 describe('has many field', () => {
   let db: Database;
@@ -63,5 +64,25 @@ describe('has many field', () => {
     expect(Profile.model.rawAttributes.userId).toBeDefined();
     Profile.removeField('user');
     expect(Profile.model.rawAttributes.userId).toBeUndefined();
+  });
+
+  it('should throw error when foreignKey is too long', async () => {
+    const longForeignKey = 'a'.repeat(128);
+
+    const User = db.collection({
+      name: 'users',
+      fields: [{ type: 'hasOne', name: 'profile', foreignKey: longForeignKey }],
+    });
+
+    let error;
+    try {
+      const Profile = db.collection({
+        name: 'profiles',
+        fields: [{ type: 'belongsTo', name: 'user' }],
+      });
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeInstanceOf(IdentifierError);
   });
 });

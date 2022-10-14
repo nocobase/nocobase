@@ -13,6 +13,8 @@ import {
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
+import mustHaveFilter from './decorators/must-have-filter-decorator';
+import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
@@ -22,9 +24,9 @@ import { BelongsToRepository } from './relation-repository/belongs-to-repository
 import { HasManyRepository } from './relation-repository/hasmany-repository';
 import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
-import { transactionWrapperBuilder } from './transaction-decorator';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
+import { handleAppendsQuery } from './utils';
 
 const debug = require('debug')('noco-database');
 
@@ -224,18 +226,34 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           group: `${model.name}.${primaryKeyField}`,
           transaction,
         })
-      ).map((row) => row.get(primaryKeyField));
+      ).map((row) => {
+        return { row, pk: row.get(primaryKeyField) };
+      });
+
+      if (ids.length == 0) {
+        return [];
+      }
 
       const where = {
         [primaryKeyField]: {
-          [Op.in]: ids,
+          [Op.in]: ids.map((id) => id['pk']),
         },
       };
 
-      return await model.findAll({
-        ...omit(opts, ['limit', 'offset']),
-        where,
-        transaction,
+      return await handleAppendsQuery({
+        queryPromises: opts.include.map((include) => {
+          return model
+            .findAll({
+              ...omit(opts, ['limit', 'offset']),
+              include: include,
+              where,
+              transaction,
+            })
+            .then((rows) => {
+              return { rows, include };
+            });
+        }),
+        templateModel: ids[0].row,
       });
     }
 
@@ -348,7 +366,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   @transaction()
-  async update(options: UpdateOptions) {
+  @mustHaveFilter()
+  async update(options: UpdateOptions & { forceUpdate?: boolean }) {
     const transaction = await this.getTransaction(options);
     const guard = UpdateGuard.fromOptions(this.model, options);
 

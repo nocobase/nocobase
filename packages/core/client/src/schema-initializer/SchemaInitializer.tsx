@@ -18,6 +18,13 @@ export const SchemaInitializerItemContext = createContext(null);
 
 export const SchemaInitializer = () => null;
 
+const menuItemGroupCss = css`
+  .menuItemGroup {
+    max-height: 60vh;
+    overflow: auto;
+  }
+`;
+
 SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
   const {
     title,
@@ -84,7 +91,11 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       if (item.type === 'subMenu') {
         return (
           !!item.children?.length && (
-            <Menu.SubMenu key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+            <Menu.SubMenu
+              key={item.key || `item-group-${indexA}`}
+              title={compile(item.title)}
+              popupClassName={menuItemGroupCss}
+            >
               {renderItems(item.children)}
             </Menu.SubMenu>
           )
@@ -158,6 +169,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
               eventKey={item.key || `item-group-${indexA}`}
               key={item.key || `item-group-${indexA}`}
               title={compile(item.title)}
+              className={menuItemGroupCss}
             >
               {renderMenuItem(item.children)}
             </Menu.ItemGroup>
