@@ -14,7 +14,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -371,9 +371,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
   buildField(options, context: FieldContext) {
     const { type } = options;
     const Field = this.fieldTypes.get(type);
+
     if (!Field) {
       throw Error(`unsupported field type ${type}`);
     }
+
     return new Field(options, context);
   }
 

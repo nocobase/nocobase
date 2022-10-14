@@ -1,14 +1,11 @@
 import crypto from 'crypto';
 import { Model } from './model';
+import { IdentifierError } from './errors/identifier-error';
 
 type HandleAppendsQueryOptions = {
   templateModel: any;
   queryPromises: Array<any>;
 };
-
-export function md5(value: string) {
-  return crypto.createHash('md5').update(value).digest('hex');
-}
 
 export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
   const { templateModel, queryPromises } = options;
@@ -41,9 +38,23 @@ export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
       const key = appendedResult.include.association;
       const val = appendedResult.rows[i].get(key);
 
-      rows[i].set(key, val);
+      rows[i].set(key, val, {
+        raw: true,
+      });
     }
   }
 
   return rows;
+}
+
+export function md5(value: string) {
+  return crypto.createHash('md5').update(value).digest('hex');
+}
+
+const MAX_IDENTIFIER_LENGTH = 63;
+
+export function checkIdentifier(value: string) {
+  if (value.length > MAX_IDENTIFIER_LENGTH) {
+    throw new IdentifierError(`Identifier ${value} is too long`);
+  }
 }

@@ -5,10 +5,11 @@ import {
   ForeignKeyOptions,
   HasManyOptions,
   HasManyOptions as SequelizeHasManyOptions,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
+import { checkIdentifier } from '../utils';
 
 export interface HasManyFieldOptions extends HasManyOptions {
   /**
@@ -98,6 +99,7 @@ export class HasManyField extends RelationField {
       as: this.name,
       foreignKey: this.foreignKey,
     });
+
     // inverse relation
     // this.TargetModel.belongsTo(collection.model);
 
@@ -107,6 +109,9 @@ export class HasManyField extends RelationField {
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
     }
+
+    checkIdentifier(this.options.foreignKey);
+
     if (!this.options.sourceKey) {
       // @ts-ignore
       this.options.sourceKey = association.sourceKey;

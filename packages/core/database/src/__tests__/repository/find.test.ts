@@ -188,8 +188,12 @@ describe('repository find', () => {
           appends: ['a1', 'a2'],
         });
 
+        const data = user.toJSON();
+
         expect(user['a1']).toBeDefined();
         expect(user['a2']).toBeDefined();
+        expect(data['a1'][0].createdAt).toBeDefined();
+        expect(data['a2'][0].createdAt).toBeDefined();
       });
 
       test('filter attribute', async () => {

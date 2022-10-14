@@ -1,5 +1,6 @@
 import { mockDatabase } from '../';
 import { Database } from '../../database';
+import { IdentifierError } from '../../errors/identifier-error';
 
 describe('belongs to many field', () => {
   let db: Database;
@@ -57,5 +58,49 @@ describe('belongs to many field', () => {
 
     expect(PostTag.model.rawAttributes['postId']).toBeDefined();
     expect(PostTag.model.rawAttributes['tagId']).toBeDefined();
+  });
+
+  it('should throw error when foreignKey is too long', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'tags', foreignKey: 'a'.repeat(128) },
+      ],
+    });
+
+    let error;
+    try {
+      const Tag = db.collection({
+        name: 'tags',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeInstanceOf(IdentifierError);
+  });
+
+  it('should throw error when through is too long', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'tags', through: 'a'.repeat(128) },
+      ],
+    });
+
+    let error;
+    try {
+      const Tag = db.collection({
+        name: 'tags',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeInstanceOf(IdentifierError);
   });
 });

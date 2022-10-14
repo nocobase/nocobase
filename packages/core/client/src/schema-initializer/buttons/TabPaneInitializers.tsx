@@ -1,8 +1,8 @@
 import { useForm } from '@formily/react';
 import React from 'react';
-import { SchemaComponent, useActionContext, useDesignable } from '../..';
+import { SchemaComponent, useActionContext, useDesignable, useRecordIndex } from '../..';
 
-export const TabPaneInitializers = () => {
+export const TabPaneInitializers = (props?: any) => {
   const { designable, insertBeforeEnd } = useDesignable();
   if (!designable) {
     return null;
@@ -10,6 +10,7 @@ export const TabPaneInitializers = () => {
   const useSubmitAction = () => {
     const form = useForm();
     const ctx = useActionContext();
+    const index = useRecordIndex();
     return {
       async run() {
         await form.submit();
@@ -26,7 +27,8 @@ export const TabPaneInitializers = () => {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'RecordBlockInitializers',
+              'x-initializer':
+                props.isCreate || index === null ? 'CreateFormBlockInitializers' : 'RecordBlockInitializers',
               properties: {},
             },
           },
@@ -110,4 +112,8 @@ export const TabPaneInitializers = () => {
       }}
     />
   );
+};
+
+export const TabPaneInitializersForCreateFormBlock = () => {
+  return <TabPaneInitializers isCreate />;
 };
