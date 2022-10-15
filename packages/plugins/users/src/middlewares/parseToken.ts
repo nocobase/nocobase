@@ -6,7 +6,7 @@ export async function parseToken(ctx: Context, next: Next) {
     ctx.state.currentUser = user;
   }
   return next();
-};
+}
 
 async function findUserByToken(ctx: Context) {
   const token = ctx.getBearerToken();
@@ -23,13 +23,15 @@ async function findUserByToken(ctx: Context) {
         ctx.state.currentUserAppends.push(field.name);
       }
     }
-    return await ctx.db.getRepository('users').findOne({
+    const user = await ctx.db.getRepository('users').findOne({
       appends: ctx.state.currentUserAppends,
       filter: {
         id: userId,
       },
     });
+    return user;
   } catch (error) {
+    console.log(error);
     return null;
   }
 }
