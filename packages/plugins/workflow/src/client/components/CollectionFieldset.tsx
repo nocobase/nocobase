@@ -22,15 +22,6 @@ export default observer(({ value, onChange }: any) => {
       && (!['linkTo', 'hasMany', 'hasOne', 'belongsToMany'].includes(field.type))
     ));
 
-  const VTypes = {
-    ...VariableTypes,
-    constant: {
-      title: '{{t("Constant")}}',
-      value: 'constant',
-      options: undefined
-    }
-  };
-
   return (
     <fieldset className={css`
       margin-top: .5em;
@@ -49,9 +40,30 @@ export default observer(({ value, onChange }: any) => {
             {fields
               .filter(field => field.name in value)
               .map(field => {
-                const operand = typeof value[field.name] === 'string'
+                const VTypes = {
+                  ...VariableTypes,
+                };
+
+                let operand;
+
+                // TODO: should refactor to support all types
+                if (field.type !== 'belongsTo') {
+                  Object.assign(VTypes, {
+                    constant: {
+                      title: '{{t("Constant")}}',
+                      value: 'constant',
+                      options: undefined
+                    }
+                  });
+                  operand = typeof value[field.name] === 'string'
+                    ? parseStringValue(value[field.name], VTypes)
+                    : { type: 'constant', value: value[field.name] };
+                } else {
+                  delete VTypes.constant;
+                  operand = typeof value[field.name] === 'string'
                   ? parseStringValue(value[field.name], VTypes)
-                  : { type: 'constant', value: value[field.name] };
+                  : { type: '$context', value: value[field.name] };
+                }
 
                 // TODO: try to use <ObjectField> to replace this map
                 return (
