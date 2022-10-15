@@ -77,6 +77,9 @@ const MenuEditor = (props) => {
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
         if (defaultSelectedUid) {
+          if (defaultSelectedUid.includes('/')) {
+            return;
+          }
           const s = findByUid(schema, defaultSelectedUid);
           if (s) {
             setTitle(s.title);
