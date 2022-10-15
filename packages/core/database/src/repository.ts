@@ -9,10 +9,12 @@ import {
   ModelCtor,
   Op,
   Transactionable,
-  UpdateOptions as SequelizeUpdateOptions,
+  UpdateOptions as SequelizeUpdateOptions
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
+import mustHaveFilter from './decorators/must-have-filter-decorator';
+import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
@@ -22,11 +24,9 @@ import { BelongsToRepository } from './relation-repository/belongs-to-repository
 import { HasManyRepository } from './relation-repository/hasmany-repository';
 import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
-import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { handleAppendsQuery } from './utils';
-import mustHaveFilter from './decorators/must-have-filter-decorator';
 
 const debug = require('debug')('noco-database');
 
