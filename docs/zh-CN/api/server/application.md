@@ -57,6 +57,10 @@ const app = new Application({
 
 ## 实例成员
 
+### `cli`
+
+命令行工具实例，参考 npm 包 [Commander](https://www.npmjs.com/package/commander)。
+
 ### `db`
 
 数据库实例，相关 API 参考 [Database](/api/database)。
@@ -105,6 +109,7 @@ NocoBase 默认对 context 注入了以下成员，可以在请求处理函数�
 | `ctx.resourcer` | `Resourcer` | 资源路由管理器实例 |
 | `ctx.action` | `Action` | 资源操作相关对象实例 |
 | `ctx.i18n` | `I18n` | 国际化实例 |
+| `ctx.t` | `i18n.t` | 国际化翻译函数快捷方式 |
 | `ctx.getBearerToken()` | `Function` | 获取请求头中的 bearer token |
 
 ## 实例方法
@@ -119,7 +124,11 @@ NocoBase 默认对 context 注入了以下成员，可以在请求处理函数�
 
 ### `command()`
 
+自定义 command
+
 ### `findCommand()`
+
+查找已定义 command
 
 ### `runAsCLI()`
 

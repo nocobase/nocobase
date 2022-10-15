@@ -11,6 +11,7 @@
     }
   ],
   "dependencies": {
+    "@hapi/topo": "^6.0.0",
     "@koa/cors": "^3.1.0",
     "@koa/router": "^9.4.0",
     "@nocobase/acl": "0.7.4-alpha.7",

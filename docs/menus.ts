@@ -1,26 +1,47 @@
 export default {
-  '/introduction': [
-    '/introduction/index',
-    '/introduction/features',
-    '/introduction/when',
-    '/introduction/quickstart',
-    '/introduction/roadmap',
-    '/introduction/thanks',
-  ],
-  '/getting-started': [
+  '/welcome': [
     {
-      title: 'Installation',
-      'title.zh-CN': '安装',
-      type: 'subMenu',
+      title: 'Welcome',
+      'title.zh-CN': '欢迎',
+      type: 'group',
       children: [
-        '/getting-started/installation/index',
-        '/getting-started/installation/docker-compose',
-        '/getting-started/installation/create-nocobase-app',
-        '/getting-started/installation/git-clone',
+        '/welcome/introduction/index',
+        '/welcome/introduction/features',
+        '/welcome/introduction/when',
+        '/welcome/introduction/learning-guide',
       ],
     },
-    '/getting-started/upgrading',
-    '/getting-started/deployment',
+    {
+      title: 'Getting started',
+      'title.zh-CN': '快速开始',
+      type: 'group',
+      children: [
+        {
+          title: 'Installation',
+          'title.zh-CN': '安装',
+          type: 'subMenu',
+          children: [
+            '/welcome/getting-started/installation/index',
+            '/welcome/getting-started/installation/docker-compose',
+            '/welcome/getting-started/installation/create-nocobase-app',
+            '/welcome/getting-started/installation/git-clone',
+          ],
+        },
+        '/welcome/getting-started/upgrading',
+        '/welcome/getting-started/deployment',
+      ],
+    },
+    {
+      title: 'Community',
+      'title.zh-CN': '社区',
+      type: 'group',
+      children: [
+        '/welcome/community/contributing',
+        '/welcome/community/faq',
+        '/welcome/community/translations',
+        '/welcome/community/thanks',
+      ],
+    },
   ],
   '/manual': [
     '/manual/functional-zoning',
@@ -39,7 +60,10 @@ export default {
       title: 'Getting started',
       'title.zh-CN': '快速开始',
       type: 'group',
-      children: ['/development/index', '/development/your-fisrt-plugin'],
+      children: [
+        '/development/index', 
+        '/development/your-fisrt-plugin',
+      ],
     },
     {
       title: 'Extension Guides',
@@ -51,11 +75,11 @@ export default {
         '/development/guide/resources-actions',
         '/development/guide/middleware',
         '/development/guide/commands',
-        '/development/guide/hooks',
+        '/development/guide/events',
         '/development/guide/i18n',
         '/development/guide/migration',
         {
-          title: 'UI Schema Designer',
+          title: 'UI 设计器',
           type: 'subMenu',
           children: [
             // '/development/guide/ui-schema-designer/index',
@@ -64,23 +88,29 @@ export default {
             // '/development/guide/ui-schema-designer/insert-adjacent',
             '/development/guide/ui-schema-designer/designable',
             '/development/guide/ui-schema-designer/component-library',
-            '/development/guide/ui-schema-designer/collection-manager',
-            '/development/guide/ui-schema-designer/acl',
+            // '/development/guide/ui-schema-designer/collection-manager',
+            // '/development/guide/ui-schema-designer/acl',
+            '/development/guide/ui-schema-designer/x-designer',
+            '/development/guide/ui-schema-designer/x-initializer',
           ],
         },
         '/development/guide/ui-router',
+        '/development/guide/settings-center',
       ],
-    },
-    {
-      title: 'Test & Build',
-      'title.zh-CN': '测试与构建',
-      type: 'group',
-      children: ['/development/pre-release/test', '/development/pre-release/build'],
     },
     {
       title: 'HTTP API',
       type: 'group',
-      children: ['/api/http-api/index', '/api/http-api/rest-api'],
+      children: ['/development/http-api/index', '/development/http-api/rest-api'],
+    },
+    {
+      title: 'Others',
+      'title.zh-CN': '其他',
+      type: 'group',
+      children: [
+        '/development/others/testing',
+        // '/development/pre-release/build',
+      ],
     },
   ],
   // {
@@ -160,7 +190,11 @@ export default {
     {
       title: '@nocobase/server',
       type: 'subMenu',
-      children: ['/api/server/application', '/api/server/plugin-manager', '/api/server/plugin'],
+      children: [
+        '/api/server/application',
+        //'/api/server/plugin-manager',
+        '/api/server/plugin',
+      ],
     },
     {
       title: '@nocobase/database',
@@ -170,7 +204,10 @@ export default {
         '/api/database/collection',
         '/api/database/field',
         '/api/database/repository',
-        '/api/database/relation-repository',
+        '/api/database/relation-repository/has-one-repository',
+        '/api/database/relation-repository/has-many-repository',
+        '/api/database/relation-repository/belongs-to-repository',
+        '/api/database/relation-repository/belongs-to-many-repository',
         '/api/database/operators',
       ],
     },
@@ -186,13 +223,22 @@ export default {
     },
     {
       title: '@nocobase/acl',
-      path: '/api/acl',
+      type: 'subMenu',
+      children: [
+        '/api/acl/index',
+        '/api/acl/acl',
+        '/api/acl/acl-role',
+        '/api/acl/acl-resource',
+        '/api/acl/acl-available-action',
+        '/api/acl/acl-available-strategy',
+        '/api/acl/allow-manager',
+      ],
     },
     {
       title: '@nocobase/client',
       type: 'subMenu',
       children: [
-        '/api/client/index',
+        // '/api/client/index',
         '/api/client/application',
         '/api/client/route-switch',
         {
@@ -210,7 +256,7 @@ export default {
           'title.zh-CN': 'Extensions',
           type: 'subMenu',
           children: [
-            '/api/client/extensions/schema-component',
+            // '/api/client/extensions/schema-component',
             '/api/client/extensions/collection-manager',
             '/api/client/extensions/block-provider',
             '/api/client/extensions/acl',

@@ -19,7 +19,7 @@ yarn pm enable sample-shop-modeling
 yarn dev
 
 # for production
-yarn build samples/shop-modeling
+yarn build
 yarn start
 ```
 
@@ -29,7 +29,7 @@ yarn start
 
 ```bash
 # create a product
-curl -X POST -d '{"title": "iPhone 14 Pro", "price": "7999", "enabled": true, "inventory": 10}' "http://localhost:13000/api/products"
+curl -X POST -H "Content-Type: application/json" -d '{"title": "iPhone 14 Pro", "price": "7999", "enabled": true, "inventory": 10}' "http://localhost:13000/api/products"
 
 # list products
 curl "http://localhost:13000/api/products"
@@ -42,7 +42,7 @@ curl "http://localhost:13000/api/products?filterByTk=1"
 
 ```bash
 # create a order
-curl -X POST -d '{"productId": 1, "quantity": 1, "totalPrice": "7999", "userId": 1}' 'http://localhost:13000/api/orders'
+curl -X POST -H "Content-Type: application/json" -d '{"productId": 1, "quantity": 1, "totalPrice": "7999", "userId": 1}' 'http://localhost:13000/api/orders'
 
 # list orders which userId=1 with product
 curl 'http://localhost:13000/api/orders?filter={"userId":1}&appends=product'

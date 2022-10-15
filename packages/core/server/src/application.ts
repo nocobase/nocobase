@@ -1,14 +1,17 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
+import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
+import compose from 'koa-compose';
 import { isBoolean } from 'lodash';
 import semver from 'semver';
+import { promisify } from 'util';
 import { createACL } from './acl';
 import { AppManager } from './app-manager';
 import { registerCli } from './commands';
@@ -26,6 +29,7 @@ export interface ResourcerOptions {
 
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
+  cache?: ICacheConfig | ICacheConfig[];
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;
@@ -33,15 +37,18 @@ export interface ApplicationOptions {
   registerActions?: boolean;
   i18n?: i18n | InitOptions;
   plugins?: PluginConfiguration[];
+  acl?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
   currentUser?: any;
+
   [key: string]: any;
 }
 
 export interface DefaultContext extends KoaDefaultContext {
   db: Database;
+  cache: Cache;
   resourcer: Resourcer;
   i18n: any;
   [key: string]: any;
@@ -132,6 +139,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _resourcer: Resourcer;
 
+  protected _cache: Cache;
+
   protected _cli: Command;
 
   protected _i18n: i18n;
@@ -148,6 +157,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public listenServer: Server;
 
+  declare middleware: any;
+
   constructor(public options: ApplicationOptions) {
     super();
     this.init();
@@ -155,6 +166,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get db() {
     return this._db;
+  }
+
+  get cache() {
+    return this._cache;
   }
 
   get resourcer() {
@@ -191,7 +206,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._events = [];
     // @ts-ignore
     this._eventsCount = [];
-    this.middleware = [];
+    this.middleware = new Toposort<any>();
     // this.context = Object.create(context);
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
@@ -199,14 +214,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._resourcer = createResourcer(options);
     this._cli = new Command('nocobase').usage('[command] [options]');
     this._i18n = createI18n(options);
+    this._cache = createCache(options.cache);
     this.context.db = this._db;
     this.context.resourcer = this._resourcer;
+    this.context.cache = this._cache;
 
     this._pm = new PluginManager({
       app: this,
     });
 
     this._appManager = new AppManager(this);
+
+    if (this.options.acl !== false) {
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
+    }
 
     registerMiddlewares(this, options);
 
@@ -255,12 +276,27 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
+  // @ts-ignore
   use<NewStateT = {}, NewContextT = {}>(
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
-    options?: MiddlewareOptions,
+    options?: ToposortOptions,
   ) {
-    // @ts-ignore
-    return super.use(middleware);
+    this.middleware.add(middleware, options);
+    return this;
+  }
+
+  callback() {
+    const fn = compose(this.middleware.nodes);
+
+    if (!this.listenerCount('error')) this.on('error', this.onerror);
+
+    const handleRequest = (req, res) => {
+      const ctx = this.createContext(req, res);
+      // @ts-ignore
+      return this.handleRequest(ctx, fn);
+    };
+
+    return handleRequest;
   }
 
   collection(options: CollectionOptions) {
@@ -356,18 +392,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // close http server
     if (this.listenServer) {
-      const closeServer = () =>
-        new Promise((resolve, reject) => {
-          this.listenServer.close((err) => {
-            if (err) {
-              return reject(err);
-            }
-            this.listenServer = null;
-            resolve(true);
-          });
-        });
-
-      await closeServer();
+      await promisify(this.listenServer.close).call(this.listenServer);
+      this.listenServer = null;
     }
 
     await this.emitAsync('afterStop', this, options);

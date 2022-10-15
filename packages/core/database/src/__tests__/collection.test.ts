@@ -1,6 +1,7 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './index';
+import { IdentifierError } from '../errors/identifier-error';
 
 describe('collection', () => {
   let db: Database;
@@ -257,5 +258,51 @@ describe('collection sync', () => {
     const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}postsTags`);
     expect(tableFields['postId']).toBeDefined();
     expect(tableFields['tagId']).toBeDefined();
+  });
+
+  test('limit table name length', async () => {
+    const longName =
+      'this_is_a_very_long_table_name_that_should_be_truncated_this_is_a_very_long_table_name_that_should_be_truncated';
+
+    let error;
+
+    try {
+      const collection = new Collection(
+        {
+          name: longName,
+          fields: [{ type: 'string', name: 'test' }],
+        },
+        {
+          database: db,
+        },
+      );
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeInstanceOf(IdentifierError);
+  });
+
+  test('limit field name length', async () => {
+    const longFieldName =
+      'this_is_a_very_long_field_name_that_should_be_truncated_this_is_a_very_long_field_name_that_should_be_truncated';
+
+    let error;
+
+    try {
+      const collection = new Collection(
+        {
+          name: 'test',
+          fields: [{ type: 'string', name: longFieldName }],
+        },
+        {
+          database: db,
+        },
+      );
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeInstanceOf(IdentifierError);
   });
 });

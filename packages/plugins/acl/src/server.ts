@@ -1,6 +1,5 @@
 import { Context } from '@nocobase/actions';
 import { Collection } from '@nocobase/database';
-import UsersPlugin from '@nocobase/plugin-users';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
@@ -320,8 +319,7 @@ export class PluginACL extends Plugin {
       });
     });
 
-    const usersPlugin = this.app.pm.get('@nocobase/plugin-users') as UsersPlugin;
-    usersPlugin.tokenMiddleware.use(setCurrentRole);
+    this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'parseToken' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
 
@@ -418,21 +416,23 @@ export class PluginACL extends Plugin {
     }
 
     const User = this.db.getCollection('users');
+
     await User.repository.update({
       values: {
-        roles: ['root', 'admin', 'member']
-      }
+        roles: ['root', 'admin', 'member'],
+      },
+      forceUpdate: true,
     });
 
     const RolesUsers = this.db.getCollection('rolesUsers');
     await RolesUsers.repository.update({
       filter: {
         userId: 1,
-        roleName: 'root'
+        roleName: 'root',
       },
       values: {
-        default: true
-      }
+        default: true,
+      },
     });
   }
 
@@ -440,8 +440,6 @@ export class PluginACL extends Plugin {
     await this.app.db.import({
       directory: resolve(__dirname, 'collections'),
     });
-
-    this.app.resourcer.use(this.acl.middleware());
   }
 
   getName(): string {

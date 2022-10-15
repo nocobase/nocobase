@@ -1,8 +1,8 @@
+import { requireModule, Toposort, ToposortOptions } from '@nocobase/utils';
 import glob from 'glob';
 import compose from 'koa-compose';
 import _ from 'lodash';
 import { pathToRegexp } from 'path-to-regexp';
-import { requireModule } from '@nocobase/utils';
 import Action, { ActionName } from './action';
 import Resource, { ResourceOptions } from './resource';
 import { getNameByParams, ParsedParams, parseQuery, parseRequest } from './utils';
@@ -159,12 +159,13 @@ export class Resourcer {
 
   protected middlewareHandlers = new Map<string, any>();
 
-  protected middlewares = [];
+  protected middlewares: Toposort<any>;
 
   public readonly options: ResourcerOptions;
 
   constructor(options: ResourcerOptions = {}) {
     this.options = options;
+    this.middlewares = new Toposort<any>();
   }
 
   /**
@@ -259,20 +260,15 @@ export class Resourcer {
   }
 
   getMiddlewares() {
-    return this.middlewares;
+    return this.middlewares.nodes;
   }
 
-  use(middlewares: HandlerType | HandlerType[]) {
-    if (typeof middlewares === 'function') {
-      this.middlewares.push(middlewares);
-    } else if (Array.isArray(middlewares)) {
-      this.middlewares.push(...middlewares);
-    }
+  use(middlewares: HandlerType | HandlerType[], options: ToposortOptions = {}) {
+    this.middlewares.add(middlewares, options);
   }
 
-  restApiMiddleware(options: KoaMiddlewareOptions = {}) {
-    const { prefix, accessors } = options;
-    const restApiMiddleware = async (ctx: ResourcerContext, next: () => Promise<any>) => {
+  restApiMiddleware({ prefix, accessors }: KoaMiddlewareOptions = {}) {
+    return async (ctx: ResourcerContext, next: () => Promise<any>) => {
       ctx.resourcer = this;
       let params = parseRequest(
         {
@@ -335,7 +331,6 @@ export class Resourcer {
         return next();
       }
     };
-    return restApiMiddleware;
   }
 
   middleware(options: KoaMiddlewareOptions = {}) {

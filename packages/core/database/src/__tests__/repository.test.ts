@@ -234,6 +234,21 @@ describe('repository.create', () => {
     const comments = await Comment.model.findAll();
     expect(comments.map((m) => m.get('postId'))).toEqual([post.get('id'), post.get('id'), post.get('id')]);
   });
+
+  it('can create with array of values', async () => {
+    const users = await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+        },
+        {
+          name: 'u2',
+        },
+      ],
+    });
+
+    expect(users.length).toEqual(2);
+  });
 });
 
 describe('repository.update', () => {

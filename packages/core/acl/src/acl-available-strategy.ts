@@ -9,22 +9,6 @@ export interface AvailableStrategyOptions {
   resource?: '*';
 }
 
-export function strategyValueMatched(strategy: StrategyValue, value: string) {
-  if (strategy === '*') {
-    return true;
-  }
-
-  if (lodash.isString(strategy) && strategy === value) {
-    return true;
-  }
-
-  if (lodash.isArray(strategy) && strategy.includes(value)) {
-    return true;
-  }
-
-  return false;
-}
-
 export const predicate = {
   own: {
     filter: {

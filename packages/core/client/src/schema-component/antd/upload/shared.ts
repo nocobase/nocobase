@@ -1,5 +1,5 @@
 import { Field } from '@formily/core';
-import { useField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadChangeParam } from 'antd/lib/upload';
@@ -167,6 +167,8 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
     props.onChange?.(normalizeFileList([...param.fileList]));
   };
 
+  const form = useForm();
+
   const api = useAPIClient();
 
   return {
@@ -179,6 +181,7 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
         });
       }
       formData.append(filename, file);
+      form.disabled = true;
       api.axios
         .post(action, formData, {
           withCredentials,
@@ -190,7 +193,10 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
         .then(({ data }) => {
           onSuccess(data, file);
         })
-        .catch(onError);
+        .catch(onError)
+        .finally(() => {
+          form.disabled = false;
+        });
 
       return {
         abort() {

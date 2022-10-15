@@ -19,7 +19,7 @@ yarn pm enable sample-hello
 yarn dev
 
 # for production
-yarn build samples/hello
+yarn build
 yarn start
 ```
 

@@ -1,22 +1,13 @@
 # SchemaComponent
 
-## Core
+## 核心组件
 
-- SchemaComponentProvider
-- SchemaComponent
-- createDesignable
-- useDesignable
-- useCompile
+### `<SchemaComponentProvider />`
+### `<SchemaComponentOptions>`
+### `<SchemaComponent>`
 
-## Common
+## 核心方法
 
-- DndContext
-- SortableItem
-
-## And Design
-
-- Action
-- BlockItem
-- Calendar
-- CardItem
-- Cascader
+### `createDesignable()`
+### `useDesignable()`
+### `useCompile()`

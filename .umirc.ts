@@ -115,25 +115,29 @@ export default defineConfig({
     ],
     'zh-CN': [
       {
-        title: '介绍',
-        path: '/introduction'
+        title: '欢迎',
+        path: '/welcome'
       },
-      {
-        title: '快速开始',
-        path: '/getting-started'
-      },
+      // {
+      //   title: '快速开始',
+      //   path: '/getting-started'
+      // },
       {
         title: '使用手册',
         path: '/manual'
       },
       {
-        title: '开发教程',
+        title: '插件开发',
         path: '/development'
       },
       {
         title: 'API 参考',
         path: '/api'
       },
+      // {
+      //   title: '社区',
+      //   path: '/community'
+      // },
       {
         title: 'GitHub',
         path: 'https://github.com/nocobase/nocobase',

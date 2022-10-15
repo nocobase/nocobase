@@ -49,7 +49,12 @@ export class CollectionManagerPlugin extends Plugin {
         lodash.get(newValue, 'reverseField') &&
         !lodash.get(newValue, 'reverseField.key')
       ) {
-        throw new Error('cant update field without a reverseField key');
+        const field = await this.app.db
+          .getModel('fields')
+          .findByPk(model.get('reverseKey'), { transaction: options.transaction });
+        if (field) {
+          throw new Error('cant update field without a reverseField key');
+        }
       }
     });
 
@@ -58,17 +63,12 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('fields.beforeCreate', beforeCreateForChildrenCollection(this.app.db));
     this.app.db.on('fields.beforeCreate', async (model, options) => {
       const type = model.get('type');
-      await this.app.db.emitAsync(`fields.${type}.beforeInitOptions`, model, {
-        ...options,
-        database: this.app.db,
-      });
-    });
-    for (const key in beforeInitOptions) {
-      if (Object.prototype.hasOwnProperty.call(beforeInitOptions, key)) {
-        const fn = beforeInitOptions[key];
-        this.app.db.on(`fields.${key}.beforeInitOptions`, fn);
+      const fn = beforeInitOptions[type];
+      if (fn) {
+        await fn(model, { database: this.app.db });
       }
-    }
+    });
+ 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
     this.app.db.on('fields.afterCreate', afterCreateForRelateField(this.app.db));
 
@@ -91,12 +91,23 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
+      const prevOptions = model.previous('options');
+      const currentOptions = model.get('options');
+
       if (context) {
-        const { unique: prev } = model.previous('options');
-        const { unique: next } = model.get('options');
+        const prev = prevOptions['unique'];
+        const next = currentOptions['unique'];
+
         if (Boolean(prev) !== Boolean(next)) {
           await model.migrate({ transaction });
         }
+      }
+
+      const prevDefaultValue = prevOptions['defaultValue'];
+      const currentDefaultValue = currentOptions['defaultValue'];
+
+      if (prevDefaultValue != currentDefaultValue) {
+        await model.syncDefaultValue({ transaction, defaultValue: currentDefaultValue });
       }
     });
 

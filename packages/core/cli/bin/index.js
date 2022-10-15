@@ -15,6 +15,7 @@ const env = {
   DB_TIMEZONE: '+00:00',
   DEFAULT_STORAGE_TYPE: 'local',
   LOCAL_STORAGE_DEST: 'storage/uploads',
+  MFSU_AD: 'none',
 };
 
 if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') {
