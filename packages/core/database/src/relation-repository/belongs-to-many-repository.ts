@@ -31,6 +31,10 @@ interface IBelongsToManyRepository<M extends Model> {
 export class BelongsToManyRepository extends MultipleRelationRepository implements IBelongsToManyRepository<any> {
   @transaction()
   async create(options?: CreateBelongsToManyOptions): Promise<any> {
+    if (Array.isArray(options.values)) {
+      return Promise.all(options.values.map((record) => this.create({ ...options, values: record })));
+    }
+
     const transaction = await this.getTransaction(options);
 
     const createAccessor = this.accessors().create;

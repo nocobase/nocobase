@@ -100,7 +100,7 @@ interface FindAndCountOptions extends Omit<SequelizeAndCountOptions, 'where' | '
 }
 
 export interface CreateOptions extends SequelizeCreateOptions {
-  values?: Values;
+  values?: Values | Values[];
   whitelist?: WhiteList;
   blacklist?: BlackList;
   updateAssociationValues?: AssociationKeysToBeUpdate;
@@ -307,7 +307,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   @transaction()
-  async create<M extends Model>(options: CreateOptions): Promise<M> {
+  async create(options: CreateOptions) {
+    if (Array.isArray(options.values)) {
+      return this.createMany({
+        ...options,
+        records: options.values,
+      });
+    }
+
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, action: 'create' });
@@ -356,6 +363,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       const instance = await this.create({ values, transaction });
       instances.push(instance);
     }
+
     return instances;
   }
 
