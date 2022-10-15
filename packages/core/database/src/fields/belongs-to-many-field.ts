@@ -1,8 +1,8 @@
 import { omit } from 'lodash';
 import { BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
 import { Collection } from '../collection';
-import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 import { checkIdentifier } from '../utils';
+import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 
 export class BelongsToManyField extends RelationField {
   get through() {
@@ -53,8 +53,6 @@ export class BelongsToManyField extends RelationField {
       this.options.foreignKey = association.foreignKey;
     }
 
-    checkIdentifier(this.options.foreignKey);
-
     if (!this.options.sourceKey) {
       this.options.sourceKey = association.sourceKey;
     }
@@ -63,7 +61,13 @@ export class BelongsToManyField extends RelationField {
       this.options.otherKey = association.otherKey;
     }
 
-    checkIdentifier(this.options.otherKey);
+    try {
+      checkIdentifier(this.options.foreignKey);
+      checkIdentifier(this.options.otherKey);
+    } catch (error) {
+      this.unbind();
+      throw error;
+    }
 
     if (!this.options.through) {
       this.options.through = this.through;
