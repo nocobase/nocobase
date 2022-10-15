@@ -1,5 +1,5 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-
+import path from 'path'
 export class GraphCollectionManagerPlugin extends Plugin {
   getName(): string {
     return this.getPackageName(__dirname);
@@ -10,18 +10,9 @@ export class GraphCollectionManagerPlugin extends Plugin {
   }
 
   async load() {
-    // TODO
-    // Visit: http://localhost:13000/api/testGraphCollectionManager:getInfo
-    this.app.resource({
-      name: 'testGraphCollectionManager',
-      actions: {
-        async getInfo(ctx, next) {
-          ctx.body = `Hello graph-collection-manager!`;
-          next();
-        },
-      },
-    });
-    this.app.acl.allow('testGraphCollectionManager', 'getInfo');
+   await this.db.import({
+    directory: path.resolve(__dirname,'collections')
+   })  
   }
 
   async install(options: InstallOptions) {
