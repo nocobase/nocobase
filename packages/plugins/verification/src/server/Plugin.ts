@@ -133,5 +133,6 @@ export default class VerificationPlugin extends Plugin {
     });
 
     app.acl.allow('verifications', 'create');
+    app.acl.allow('verifications_providers', '*', 'allowConfigure');
   }
 }
