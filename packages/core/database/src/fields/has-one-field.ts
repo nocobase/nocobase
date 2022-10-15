@@ -5,11 +5,11 @@ import {
   ForeignKeyOptions,
   HasOneOptions,
   HasOneOptions as SequelizeHasOneOptions,
-  Utils,
+  Utils
 } from 'sequelize';
 import { Collection } from '../collection';
-import { BaseRelationFieldOptions, RelationField } from './relation-field';
 import { checkIdentifier } from '../utils';
+import { BaseRelationFieldOptions, RelationField } from './relation-field';
 
 export interface HasOneFieldOptions extends HasOneOptions {
   /**
@@ -108,7 +108,12 @@ export class HasOneField extends RelationField {
       this.options.foreignKey = association.foreignKey;
     }
 
-    checkIdentifier(this.options.foreignKey);
+    try {
+      checkIdentifier(this.options.foreignKey);
+    } catch (error) {
+      this.unbind();
+      throw error;
+    }
 
     if (!this.options.sourceKey) {
       // @ts-ignore
