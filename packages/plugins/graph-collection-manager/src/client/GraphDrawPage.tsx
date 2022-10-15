@@ -97,6 +97,7 @@ export const Editor = React.memo(() => {
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
+
   useImperativeHandle(GraphRef, () => ({
     refreshCM,
   }));
@@ -112,6 +113,7 @@ export const Editor = React.memo(() => {
     setCollectionData(data.data);
     setCollectionList(data.data);
     getCollectionData(data.data, targetGraph);
+    targetGraph.collections=data.data;
   };
   const initGraphCollections = () => {
     const myGraph = new Graph({
@@ -148,6 +150,7 @@ export const Editor = React.memo(() => {
       autoResize: document.getElementById('graph_container'),
     });
     targetGraph = myGraph;
+    targetGraph.collections=collectionData;
     Graph.registerPortLayout(
       'erPortPosition',
       (portsPositionArgs) => {
@@ -170,7 +173,7 @@ export const Editor = React.memo(() => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionManagerProvider collections={data} refreshCM={refreshCM}>
+              <CollectionManagerProvider collections={targetGraph.collections} refreshCM={refreshCM}>
                 <div style={{ height: 'auto' }}>
                   <Entity node={node} setTargetNode={setTargetNode}/>
                 </div>
