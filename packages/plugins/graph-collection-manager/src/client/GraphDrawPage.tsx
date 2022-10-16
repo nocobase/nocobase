@@ -36,7 +36,6 @@ function layout(graph, positions, createPositions) {
   const g: any = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: dir, nodesep: 50, edgesep: 50, rankSep: 50, align: 'DL', controlPoints: true });
   g.setDefaultEdgeLabel(() => ({}));
-
   nodes.forEach((node, i) => {
     const width = 210;
     const height = node.getPorts().length * 32 + 30;
@@ -112,7 +111,6 @@ export const Editor = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
   const { positions, createPositions, updatePosition } = useGraphPosions();
-  console.log(positions);
   const [collapsed, setCollapsed] = useState(false);
   const { collections: data } = useCollectionManager();
   const { GraphRef } = useContext(FullScreenContext);

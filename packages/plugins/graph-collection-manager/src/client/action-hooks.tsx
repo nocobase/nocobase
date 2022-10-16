@@ -6,7 +6,7 @@ import { message, Select } from 'antd';
 import { useActionContext, useRequest, useAPIClient, useCompile, useCollectionManager } from '@nocobase/client';
 import { observer, useForm } from '@formily/react';
 import { GraphCollectionContext } from './components/CollectionNodeProvder';
-
+import {useGraphPosions} from './GraphPositionProvider';
 export const useValuesFromRecord = (options, data) => {
   const result = useRequest(() => Promise.resolve({ data }), {
     ...options,
@@ -138,6 +138,9 @@ const useDestroyAction = (name) => {
       await api.resource('collections').destroy({
         filterByTk: name,
       });
+     await api.resource('graphPositions').destroy({
+      filter: { collectionName: name }
+    });
     },
   };
 };
