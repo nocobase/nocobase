@@ -29,7 +29,7 @@ let targetGraph;
 let targetNode;
 let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
-function layout(graph, positions, createPositions) {
+async function  layout(graph, positions, createPositions,refreshPositions) {
   const graphPositions = [];
   const nodes: any[] = graph.getNodes();
   const edges = graph.getEdges();
@@ -48,16 +48,18 @@ function layout(graph, positions, createPositions) {
   });
   dagre.layout(g);
   graph.freeze();
-   g.nodes().forEach((id) => {
+  g.nodes().forEach((id) => {
     const node = graph.getCell(id);
     if (node) {
       const pos: any = g.node(id);
-      const targetPosition = positions&&positions.find((v) => {
-        return v.collectionName === node.store.data.name;
-      })||{};
+      const targetPosition =
+        (positions &&
+          positions.find((v) => {
+            return v.collectionName === node.store.data.name;
+          })) ||
+        {};
       node.position(targetPosition.x || pos.x, targetPosition.y || pos.y);
-      // 首次渲染,批量存入
-      if (positions&&positions.length===0) {
+      if (positions && positions.length === 0) {
         graphPositions.push({
           collectionName: node.store.data.name,
           x: pos.x,
@@ -67,9 +69,13 @@ function layout(graph, positions, createPositions) {
     }
   });
   graph.unfreeze();
+  targetNode
+    ? graph.positionCell(targetNode, 'top', { padding: 100 })
+    : graph.positionCell(last(nodes), 'top', { padding: 100 });
   // 保存新增的节点位置
   if (
-    positions&&positions.length > 0 &&
+    positions &&
+    positions.length > 0 &&
     !positions.find((v) => {
       return v.collectionName === last(nodes)?.store.data.name;
     })
@@ -81,10 +87,11 @@ function layout(graph, positions, createPositions) {
       y: pos.y,
     });
   }
-  targetNode
-    ? graph.positionCell(targetNode, 'top', { padding: 100 })
-    : graph.positionCell(last(nodes), 'top', { padding: 100 });
-  graphPositions.length > 0 && createPositions(graphPositions);
+  // 首次渲染,批量存入
+  if (graphPositions.length > 0) {
+   await createPositions(graphPositions);
+   await refreshPositions()
+  }
 }
 
 function getNodes(nodes, graph) {
@@ -110,7 +117,7 @@ function getEdges(edges, graph) {
 export const Editor = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
-  const { positions, createPositions, updatePosition } = useGraphPosions();
+  const { positions, createPositions, updatePosition, refreshPositions } = useGraphPosions();
   const [collapsed, setCollapsed] = useState(false);
   const { collections: data } = useCollectionManager();
   const { GraphRef } = useContext(FullScreenContext);
@@ -255,7 +262,7 @@ export const Editor = React.memo(() => {
     graph.clearCells();
     getNodes(nodes, graph);
     getEdges(edges, graph);
-    layout(graph, positions, createPositions);
+    layout(graph, positions, createPositions,refreshPositions);
   };
 
   useLayoutEffect(() => {
@@ -270,7 +277,7 @@ export const Editor = React.memo(() => {
   }, []);
 
   useEffect(() => {
-    targetGraph&& getCollectionData(data, targetGraph);
+    targetGraph && getCollectionData(data, targetGraph);
   }, [positions]);
 
   const handleSearchCollection = (e) => {

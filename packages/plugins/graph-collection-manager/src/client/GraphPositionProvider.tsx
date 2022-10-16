@@ -30,7 +30,7 @@ export const GraphPositionProvider: React.FC<CollectionNodeOptions> = (props: an
     <GraphPositionContext.Provider
       value={{
         positions: service?.data?.data,
-        refresh: async () => {
+        refreshPositions: async () => {
           const { data } = await api.request(options);
           service.mutate(data);
         },
