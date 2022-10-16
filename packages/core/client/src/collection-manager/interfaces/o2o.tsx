@@ -436,7 +436,7 @@ export const obo: IField = {
         'x-component': 'RecordPicker',
         'x-component-props': {
           // mode: 'tags',
-          multiple: true,
+          multiple: false,
           fieldNames: {
             label: 'id',
             value: 'id',
