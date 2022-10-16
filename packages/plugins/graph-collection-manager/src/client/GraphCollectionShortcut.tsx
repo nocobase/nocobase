@@ -10,6 +10,7 @@ import { useHistory } from 'react-router-dom';
 import { Editor } from './GraphDrawPage';
 import { collection } from './schemas/collection';
 import { useCreateActionAndRefreshCM } from './action-hooks';
+import {GraphPositionProvider} from './GraphPositionProvider'
 
 const useCollectionValues = (options) => {
   const { visible } = useActionContext();
@@ -251,6 +252,7 @@ export const GraphCollectionPane = () => {
               },
               editor: {
                 type: 'void',
+                'x-decorator':'GraphPositionProvider',
                 'x-component':'Editor',
               },
             },
@@ -258,6 +260,7 @@ export const GraphCollectionPane = () => {
           components={{
             Editor,
             DeleteOutlined,
+            GraphPositionProvider
           }}
           scope={{ useCollectionValues,useCreateActionAndRefreshCM:()=>useCreateActionAndRefreshCM(GraphRef) }}
         />

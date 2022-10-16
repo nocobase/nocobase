@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useEffect, useContext, useState, useImperativeHandle } from 'react';
 import { Graph } from '@antv/x6';
 import dagre from 'dagre';
-import { last } from 'lodash';
+import { last, throttle } from 'lodash';
 import '@antv/x6-react-shape';
 import { SchemaOptionsContext } from '@formily/react';
 import { Layout, Menu, Input } from 'antd';
@@ -19,6 +19,7 @@ import { formatData } from './utils';
 import Entity from './components/Entity';
 import { collectionListClass } from './style';
 import { FullScreenContext } from './GraphCollectionShortcut';
+import { useGraphPosions } from './GraphPositionProvider';
 
 const { Sider, Content } = Layout;
 
@@ -28,8 +29,9 @@ let targetGraph;
 let targetNode;
 let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
-function layout(graph) {
-  const nodes = graph.getNodes();
+function layout(graph, positions, createPositions) {
+  const graphPositions = [];
+  const nodes: any[] = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: dir, nodesep: 50, edgesep: 50, rankSep: 50, align: 'DL', controlPoints: true });
@@ -47,15 +49,45 @@ function layout(graph) {
   });
   dagre.layout(g);
   graph.freeze();
-  g.nodes().forEach((id) => {
+   g.nodes().forEach((id) => {
+    console.log(positions)
     const node = graph.getCell(id);
     if (node) {
       const pos: any = g.node(id);
-      node.position(pos.x, pos.y);
+      const targetPosition = positions&&positions.find((v) => {
+        return v.collectionName === node.store.data.name;
+      })||{};
+      console.log(positions,targetPosition)
+      node.position(targetPosition.x || pos.x, targetPosition.y || pos.y);
+      // 首次渲染,批量存入
+      if (positions&&positions.length===0) {
+        graphPositions.push({
+          collectionName: node.store.data.name,
+          x: pos.x,
+          y: pos.y,
+        });
+      }
     }
   });
   graph.unfreeze();
-  targetNode?graph.positionCell(targetNode, 'top', { padding: 100 }):graph.positionCell(last(nodes), 'top', { padding: 100 });
+  // 保存新增的节点位置
+  if (
+    positions&&positions.length > 0 &&
+    !positions.find((v) => {
+      return v.collectionName === last(nodes)?.store.data.name;
+    })
+  ) {
+    const pos = g.node(last(g.nodes()));
+    createPositions({
+      collectionName: last(nodes).store.data.name,
+      x: pos.x,
+      y: pos.y,
+    });
+  }
+  targetNode
+    ? graph.positionCell(targetNode, 'top', { padding: 100 })
+    : graph.positionCell(last(nodes), 'top', { padding: 100 });
+  graphPositions.length > 0 && createPositions(graphPositions);
 }
 
 function getNodes(nodes, graph) {
@@ -78,17 +110,11 @@ function getEdges(edges, graph) {
   });
 }
 
-function getCollectionData(rawData, graph) {
-  const { nodes, edges } = formatData(rawData);
-  graph.clearCells();
-  getNodes(nodes, graph);
-  getEdges(edges, graph);
-  layout(graph);
-}
-
 export const Editor = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
+  const { positions, createPositions, updatePosition } = useGraphPosions();
+  console.log(positions);
   const [collapsed, setCollapsed] = useState(false);
   const { collections: data } = useCollectionManager();
   const { GraphRef } = useContext(FullScreenContext);
@@ -97,13 +123,12 @@ export const Editor = React.memo(() => {
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
-
   useImperativeHandle(GraphRef, () => ({
     refreshCM,
   }));
-  const setTargetNode=(node)=>{
-    targetNode=node
-  }
+  const setTargetNode = (node) => {
+    targetNode = node;
+  };
   const refreshCM = async () => {
     const { data } = await api.resource('collections').list({
       paginate: false,
@@ -113,12 +138,13 @@ export const Editor = React.memo(() => {
     setCollectionData(data.data);
     setCollectionList(data.data);
     getCollectionData(data.data, targetGraph);
-    targetGraph.collections=data.data;
+    targetGraph.collections = data.data;
   };
   const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
       panning: true,
+      moveThreshold: 3,
       height: 800,
       scroller: {
         enabled: true,
@@ -150,7 +176,7 @@ export const Editor = React.memo(() => {
       autoResize: document.getElementById('graph_container'),
     });
     targetGraph = myGraph;
-    targetGraph.collections=collectionData;
+    targetGraph.collections = collectionData;
     Graph.registerPortLayout(
       'erPortPosition',
       (portsPositionArgs) => {
@@ -175,7 +201,7 @@ export const Editor = React.memo(() => {
             <SchemaComponentOptions inherit scope={scope} components={components}>
               <CollectionManagerProvider collections={targetGraph.collections} refreshCM={refreshCM}>
                 <div style={{ height: 'auto' }}>
-                  <Entity node={node} setTargetNode={setTargetNode}/>
+                  <Entity node={node} setTargetNode={setTargetNode} />
                 </div>
               </CollectionManagerProvider>
             </SchemaComponentOptions>
@@ -220,6 +246,20 @@ export const Editor = React.memo(() => {
       targeNode.removeAttrs('targetPort');
       sourceNode.removeAttrs('sourcePort');
     });
+    targetGraph.on('node:mouseup', ({ e, node }) => {
+      e.stopPropagation();
+      updatePosition({
+        collectionName: node.store.data.name,
+        ...node.position(),
+      });
+    });
+  };
+  const getCollectionData = (rawData, graph) => {
+    const { nodes, edges } = formatData(rawData);
+    graph.clearCells();
+    getNodes(nodes, graph);
+    getEdges(edges, graph);
+    layout(graph, positions, createPositions);
   };
 
   useLayoutEffect(() => {
@@ -227,14 +267,15 @@ export const Editor = React.memo(() => {
     return () => {
       targetGraph.off('edge:mouseover');
       targetGraph.off('edge:mouseout');
+      targetGraph.on('node:mouseup');
       targetGraph = null;
-      targetNode=null
+      targetNode = null;
     };
   }, []);
 
   useEffect(() => {
-    targetGraph && getCollectionData(data, targetGraph);
-  }, []);
+    targetGraph&& getCollectionData(data, targetGraph);
+  }, [positions]);
 
   const handleSearchCollection = (e) => {
     const value = e.target.value.toLowerCase();

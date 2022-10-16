@@ -164,7 +164,7 @@ const useDestroyFieldAction = (collectionName, name) => {
       await api.resource('collections.fields', collectionName).destroy({
         filterByTk: name,
       });
-      positionTargetNode()
+      positionTargetNode();
     },
   };
 };
@@ -189,4 +189,13 @@ export const useAsyncDataSource = (service: any) => (field: any) => {
       field.loading = false;
     }),
   );
+};
+
+const useSaveGraphPositionAction = async (data) => {
+  const options = {
+    resource: 'graphPositions',
+    action: 'create',
+    data: { values: data },
+  };
+  await useRequest(options);
 };
