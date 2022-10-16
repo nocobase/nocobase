@@ -8,10 +8,11 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useCompile } from '../../schema-component';
+import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCreateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { options } from './interfaces';
 
@@ -27,12 +28,15 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
-  
-  const initialValue = {
+
+  const initialValue: any = {
     name: `f_${uid()}`,
     ...cloneDeep(schema.default),
     interface: schema.name,
   };
+  if (initialValue.reverseField) {
+    initialValue.reverseField.name = `f_${uid()}`;
+  }
   // initialValue.uiSchema.title = schema.title;
   return {
     type: 'object',
@@ -95,44 +99,22 @@ const useCreateCollectionField = () => {
   const { run } = useCreateAction();
   const { refreshCM } = useCollectionManager();
   const { title } = useRecord();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
   return {
     async run() {
       await form.submit();
-      // const options = form?.values?.uiSchema?.enum?.slice() || [];
-      // if (options?.length) {
-      //   form.setValuesIn(
-      //     'uiSchema.enum',
-      //     options.map((option) => {
-      //       return {
-      //         value: uid(),
-      //         ...option,
-      //       };
-      //     }),
-      //   );
-      // }
-      // function recursiveChildren(children = [], prefix = 'children') {
-      //   children.forEach((item, index) => {
-      //     const itemOptions = item.uiSchema?.enum?.slice() || [];
-      //     form.setValuesIn(
-      //       `${prefix}[${index}].uiSchema.enum`,
-      //       itemOptions.map((option) => {
-      //         return {
-      //           value: uid(),
-      //           ...option,
-      //         };
-      //       }),
-      //     );
-      //     recursiveChildren(item.children, `${prefix}[${index}].children`);
-      //   });
-      // }
-
-      // recursiveChildren(form?.values?.children);
-
-      if (['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(form?.values?.interface) && title) {
-        form.setValuesIn('reverseField.uiSchema.title', title);
+      const values = cloneDeep(form.values);
+      if (values.autoCreateReverseField) {
+      } else {
+        delete values.reverseField;
       }
-
-      await run();
+      delete values.autoCreateReverseField;
+      await resource.create({ values });
+      ctx.setVisible(false);
+      await form.reset();
+      refresh();
       await refreshCM();
     },
   };
@@ -183,7 +165,7 @@ export const AddFieldAction = () => {
       <SchemaComponent
         schema={schema}
         components={{ ...components, ArrayTable }}
-        scope={{ createOnly: true, useCreateCollectionField }}
+        scope={{ createOnly: true, useCreateCollectionField, record, showReverseFieldConfig: true }}
       />
     </ActionContext.Provider>
   );

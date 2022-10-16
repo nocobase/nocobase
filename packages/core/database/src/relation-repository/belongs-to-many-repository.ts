@@ -7,6 +7,8 @@ import { FindAndCountOptions, MultipleRelationRepository } from './multiple-rela
 import { transaction } from './relation-repository';
 import { AssociatedOptions, PrimaryKeyWithThroughValues } from './types';
 
+type CreateBelongsToManyOptions = CreateOptions;
+
 interface IBelongsToManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M[]>;
   findAndCount(options?: FindAndCountOptions): Promise<[M[], number]>;
@@ -28,7 +30,11 @@ interface IBelongsToManyRepository<M extends Model> {
 
 export class BelongsToManyRepository extends MultipleRelationRepository implements IBelongsToManyRepository<any> {
   @transaction()
-  async create(options?: CreateOptions): Promise<any> {
+  async create(options?: CreateBelongsToManyOptions): Promise<any> {
+    if (Array.isArray(options.values)) {
+      return Promise.all(options.values.map((record) => this.create({ ...options, values: record })));
+    }
+
     const transaction = await this.getTransaction(options);
 
     const createAccessor = this.accessors().create;

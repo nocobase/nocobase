@@ -1,6 +1,7 @@
 import Koa from 'koa';
 import { Database } from '@nocobase/database';
 import { Action } from '@nocobase/resourcer';
+import { Cache } from '@nocobase/cache';
 import lodash from 'lodash';
 import * as actions from './actions';
 
@@ -10,9 +11,11 @@ export type Next = () => Promise<any>;
 
 export interface Context extends Koa.Context {
   db: Database;
+  cache: Cache;
   action: Action;
   body: any;
   app: any;
+
   [key: string]: any;
 }
 

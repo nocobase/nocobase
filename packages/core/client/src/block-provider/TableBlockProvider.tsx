@@ -145,8 +145,7 @@ export const useTableBlockProps = () => {
         ? sorter.order === `ascend`
           ? [sorter.field]
           : [`-${sorter.field}`]
-        : globalSort || null;
-
+        : globalSort || ctx.service.params?.[0]?.sort;
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
   };

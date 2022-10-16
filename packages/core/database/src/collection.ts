@@ -7,12 +7,13 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
+import { checkIdentifier, md5 } from './utils';
 
 export type RepositoryType = typeof Repository;
 
@@ -64,15 +65,22 @@ export class Collection<
     return this.context.database;
   }
 
-  constructor(options: CollectionOptions, context?: CollectionContext) {
+  constructor(options: CollectionOptions, context: CollectionContext) {
     super();
+    this.checkOptions(options);
+
     this.context = context;
     this.options = options;
+
     this.bindFieldEventListener();
     this.modelInit();
     this.setFields(options.fields);
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
+  }
+
+  private checkOptions(options: CollectionOptions) {
+    checkIdentifier(options.name);
   }
 
   private sequelizeModelOptions() {
@@ -159,6 +167,8 @@ export class Collection<
   }
 
   setField(name: string, options: FieldOptions): Field {
+    checkIdentifier(name);
+
     const { database } = this.context;
 
     const field = database.buildField(
@@ -168,6 +178,7 @@ export class Collection<
         collection: this,
       },
     );
+
     this.removeField(name);
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
@@ -283,7 +294,7 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
-  addIndex(index: string | string[] | { fields: string[], unique?: boolean,[key: string]: any }) {
+  addIndex(index: string | string[] | { fields: string[]; unique?: boolean; [key: string]: any }) {
     if (!index) {
       return;
     }
@@ -329,7 +340,13 @@ export class Collection<
     // @ts-ignore
     this.model._indexes = this.model.options.indexes
       // @ts-ignore
-      .map((index) => Utils.nameIndex(this.model._conformIndex(index), tableName));
+      .map((index) => Utils.nameIndex(this.model._conformIndex(index), tableName))
+      .map((item) => {
+        if (item.name && item.name.length > 63) {
+          item.name = 'i_' + md5(item.name);
+        }
+        return item;
+      });
   }
 
   removeIndex(fields: any) {

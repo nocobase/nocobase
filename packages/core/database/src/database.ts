@@ -14,7 +14,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -27,6 +27,33 @@ import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
+import {
+  AfterDefineCollectionListener,
+  BeforeDefineCollectionListener,
+  CreateListener,
+  CreateWithAssociationsListener,
+  DatabaseAfterDefineCollectionEventType,
+  DatabaseAfterRemoveCollectionEventType,
+  DatabaseBeforeDefineCollectionEventType,
+  DatabaseBeforeRemoveCollectionEventType,
+  DestroyListener,
+  EventType,
+  ModelCreateEventTypes,
+  ModelCreateWithAssociationsEventTypes,
+  ModelDestroyEventTypes,
+  ModelSaveEventTypes,
+  ModelSaveWithAssociationsEventTypes,
+  ModelUpdateEventTypes,
+  ModelUpdateWithAssociationsEventTypes,
+  ModelValidateEventTypes,
+  RemoveCollectionListener,
+  SaveListener,
+  SaveWithAssociationsListener,
+  SyncListener,
+  UpdateListener,
+  UpdateWithAssociationsListener,
+  ValidateListener
+} from './types';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -361,9 +388,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
   buildField(options, context: FieldContext) {
     const { type } = options;
     const Field = this.fieldTypes.get(type);
+
     if (!Field) {
       throw Error(`unsupported field type ${type}`);
     }
+
     return new Field(options, context);
   }
 
@@ -446,7 +475,20 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.close();
   }
 
-  on(event: string | symbol, listener): this {
+  on(event: EventType, listener: any): this;
+  on(event: ModelValidateEventTypes, listener: SyncListener): this;
+  on(event: ModelValidateEventTypes, listener: ValidateListener): this;
+  on(event: ModelCreateEventTypes, listener: CreateListener): this;
+  on(event: ModelUpdateEventTypes, listener: UpdateListener): this;
+  on(event: ModelSaveEventTypes, listener: SaveListener): this;
+  on(event: ModelDestroyEventTypes, listener: DestroyListener): this;
+  on(event: ModelCreateWithAssociationsEventTypes, listener: CreateWithAssociationsListener): this;
+  on(event: ModelUpdateWithAssociationsEventTypes, listener: UpdateWithAssociationsListener): this;
+  on(event: ModelSaveWithAssociationsEventTypes, listener: SaveWithAssociationsListener): this;
+  on(event: DatabaseBeforeDefineCollectionEventType, listener: BeforeDefineCollectionListener): this;
+  on(event: DatabaseAfterDefineCollectionEventType, listener: AfterDefineCollectionListener): this;
+  on(event: DatabaseBeforeRemoveCollectionEventType | DatabaseAfterRemoveCollectionEventType, listener: RemoveCollectionListener): this;
+  on(event: EventType, listener: any): this {
     // NOTE: to match if event is a sequelize or model type
     const type = this.modelHook.match(event);
 

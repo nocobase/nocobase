@@ -2,32 +2,34 @@ import lodash, { omit } from 'lodash';
 import {
   Association,
   BulkCreateOptions,
+  CountOptions as SequelizeCountOptions,
   CreateOptions as SequelizeCreateOptions,
   DestroyOptions as SequelizeDestroyOptions,
   FindAndCountOptions as SequelizeAndCountOptions,
   FindOptions as SequelizeFindOptions,
-  CountOptions as SequelizeCountOptions,
   ModelCtor,
   Op,
   Transactionable,
-  UpdateOptions as SequelizeUpdateOptions,
+  UpdateOptions as SequelizeUpdateOptions
 } from 'sequelize';
+import { WhereOperators } from 'sequelize/types/lib/model';
 import { Collection } from './collection';
 import { Database } from './database';
+import mustHaveFilter from './decorators/must-have-filter-decorator';
+import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
+import operators from './operators';
 import { OptionsParser } from './options-parser';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
 import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
-import { transactionWrapperBuilder } from './transaction-decorator';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import operators from './operators';
-import { WhereOperators } from 'sequelize/types/lib/model';
+import { handleAppendsQuery } from './utils';
 
 const debug = require('debug')('noco-database');
 
@@ -115,7 +117,7 @@ export interface DestroyOptions extends SequelizeDestroyOptions {
 type FindAndCountOptions = Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> & CommonFindOptions;
 
 export interface CreateOptions extends SequelizeCreateOptions {
-  values?: Values;
+  values?: Values | Values[];
   whitelist?: WhiteList;
   blacklist?: BlackList;
   updateAssociationValues?: AssociationKeysToBeUpdate;
@@ -241,18 +243,34 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           group: `${model.name}.${primaryKeyField}`,
           transaction,
         })
-      ).map((row) => row.get(primaryKeyField));
+      ).map((row) => {
+        return { row, pk: row.get(primaryKeyField) };
+      });
+
+      if (ids.length == 0) {
+        return [];
+      }
 
       const where = {
         [primaryKeyField]: {
-          [Op.in]: ids,
+          [Op.in]: ids.map((id) => id['pk']),
         },
       };
 
-      return await model.findAll({
-        ...omit(opts, ['limit', 'offset']),
-        where,
-        transaction,
+      return await handleAppendsQuery({
+        queryPromises: opts.include.map((include) => {
+          return model
+            .findAll({
+              ...omit(opts, ['limit', 'offset']),
+              include: include,
+              where,
+              transaction,
+            })
+            .then((rows) => {
+              return { rows, include };
+            });
+        }),
+        templateModel: ids[0].row,
       });
     }
 
@@ -273,7 +291,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       transaction,
     };
 
-    return [await this.find(options), await this.count(options)];
+    const count = await this.count(options);
+    const results = count ? await this.find(options) : [];
+
+    return [results, count];
   }
 
   /**
@@ -303,7 +324,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   @transaction()
-  async create<M extends Model>(options: CreateOptions): Promise<M> {
+  async create(options: CreateOptions) {
+    if (Array.isArray(options.values)) {
+      return this.createMany({
+        ...options,
+        records: options.values,
+      });
+    }
+
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, action: 'create' });
@@ -353,6 +381,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       const instance = await this.create({ values, transaction });
       instances.push(instance);
     }
+
     return instances;
   }
 
@@ -363,7 +392,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   @transaction()
-  async update(options: UpdateOptions) {
+  @mustHaveFilter()
+  async update(options: UpdateOptions & { forceUpdate?: boolean }) {
     const transaction = await this.getTransaction(options);
     const guard = UpdateGuard.fromOptions(this.model, options);
 

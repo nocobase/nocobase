@@ -18,6 +18,7 @@ function NullRender() {
 
 interface Calculator {
   name: string;
+  type: 'boolean' | 'number' | 'string' | 'date' | 'unknown' | 'null' | 'array';
   group: string;
 }
 
@@ -25,72 +26,94 @@ export const calculators = new Registry<Calculator>();
 
 calculators.register('equal', {
   name: '=',
+  type: 'boolean',
   group: 'boolean',
 });
 calculators.register('notEqual', {
   name: '≠',
+  type: 'boolean',
   group: 'boolean',
 });
 calculators.register('gt', {
   name: '>',
+  type: 'boolean',
   group: 'boolean',
 });
 calculators.register('gte', {
   name: '≥',
+  type: 'boolean',
   group: 'boolean',
 });
 calculators.register('lt', {
   name: '<',
+  type: 'boolean',
   group: 'boolean',
 });
 calculators.register('lte', {
   name: '≤',
+  type: 'boolean',
   group: 'boolean',
 });
 
 calculators.register('add', {
   name: '+',
+  type: 'number',
   group: 'number',
 });
 calculators.register('minus', {
   name: '-',
+  type: 'number',
   group: 'number',
 });
 calculators.register('multiple', {
   name: '*',
+  type: 'number',
   group: 'number',
 });
 calculators.register('divide', {
   name: '/',
+  type: 'number',
   group: 'number',
 });
 calculators.register('mod', {
   name: '%',
+  type: 'number',
   group: 'number',
 });
 
 calculators.register('includes', {
   name: '{{t("contains")}}',
+  type: 'boolean',
   group: 'string'
 });
 calculators.register('notIncludes', {
   name: '{{t("does not contain")}}',
+  type: 'boolean',
   group: 'string'
 });
 calculators.register('startsWith', {
   name: '{{t("starts with")}}',
+  type: 'boolean',
   group: 'string'
 });
 calculators.register('notStartsWith', {
   name: '{{t("not starts with")}}',
+  type: 'boolean',
   group: 'string'
 });
 calculators.register('endsWith', {
   name: '{{t("ends with")}}',
+  type: 'boolean',
   group: 'string'
 });
 calculators.register('notEndsWith', {
   name: '{{t("not ends with")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('concat', {
+  name: '{{t("concat")}}',
+  type: 'string',
   group: 'string'
 });
 

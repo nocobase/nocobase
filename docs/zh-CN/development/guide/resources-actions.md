@@ -4,9 +4,143 @@
 
 ## 基础概念
 
-### Resource
+与 RESTful 中资源的概念相同，是系统中对外提供的可操作的对象，可以是数据表、文件、和其他自定义的对象。
 
-目前的资源主要针对数据库表中的数据，数据库中的数据表在默认情况下都会被自动映射为资源，同时也提供了服务端的数据接口。所以在默认情况下，只要使用了 `db.collection()` 定义了数据表，就可以通过 NocoBase 的 HTTP API 访问到这个数据表的数据资源了。自动生成的资源的名称与数据库表定义的表名相同，比如 `db.collection({ name: 'users' })` 定义的数据表，对应的资源名称就是 `users`。
+操作主要指对资源的读取和写入，通常用于查阅数据、创建数据、更新数据、删除数据等。NocoBase 通过定义操作来实现对资源的访问，操作的核心其实是一个用于处理请求且兼容 Koa 的中间件函数。
+
+### 数据表自动映射为资源
+
+目前的资源主要针对数据库表中的数据，NocoBase 在默认情况下都会将数据库中的数据表自动映射为资源，同时也提供了服务端的数据接口。所以在默认情况下，只要使用了 `db.collection()` 定义了数据表，就可以通过 NocoBase 的 HTTP API 访问到这个数据表的数据资源了。自动生成的资源的名称与数据库表定义的表名相同，比如 `db.collection({ name: 'users' })` 定义的数据表，对应的资源名称就是 `users`。
+
+同时，还为这些数据资源内置了常用的 CRUD 操作，对关系型数据资源也内置了关联数据从操作方法。
+
+对简单数据资源的默认操作：
+
+* [`list`](/api/actions#list)：查询数据表中的数据列表
+* [`get`](/api/actions#get)：查询数据表中的单条数据
+* [`create`](/api/actions#create)：对数据表创建单条数据
+* [`update`](/api/actions#update)：对数据表更新单条数据
+* [`destroy`](/api/actions#destroy)：对数据表删除单条数据
+
+对关系资源除了简单的 CRUD 操作，还有默认的关系操作：
+
+* [`add`](/api/actions#add)：对数据添加关联
+* [`remove`](/api/actions#remove)：对数据移除关联
+* [`set`](/api/actions#set)：对数据设置关联
+* [`toggle`](/api/actions#toggle)：对数据添加或移除关联
+
+比如定义一个文章数据表并同步到数据：
+
+```ts
+app.db.collection({
+  name: 'posts',
+  fields: [
+    { type: 'string', name: 'title' }
+  ]
+});
+
+await app.db.sync();
+```
+
+之后针对 `posts` 数据资源的所有 CRUD 方法就可以直接通过 HTTP API 被调用了：
+
+```bash
+# create
+curl -X POST -H "Content-Type: application/json" -d '{"title":"first"}' http://localhost:13000/api/posts:create
+# list
+curl http://localhost:13000/api/posts:list
+# update
+curl -X PUT -H "Content-Type: application/json" -d '{"title":"second"}' http://localhost:13000/api/posts:update
+# destroy
+curl -X DELETE http://localhost:13000/api/posts:destroy?filterByTk=1
+```
+
+### 自定义 Action
+
+当默认提供的 CRUD 等操作不满足业务场景的情况下，也可以对特定资源扩展更多的操作。比如是对内置操作额外的处理需求，或者需要设置默认参数的情况。
+
+针对特定资源的自定义操作，如覆盖定义文章表的创建操作：
+
+```ts
+// 等同于 app.resourcer.registerActions()
+// 注册针对文章资源的 create 操作方法
+app.actions({
+  async ['posts:create'](ctx, next) {
+    const postRepo = ctx.db.getRepository('posts');
+    await postRepo.create({
+      values: {
+        ...ctx.action.params.values,
+        // 限定当前用户是文章的创建者
+        userId: ctx.state.currentUserId
+      }
+    });
+
+    await next();
+  }
+});
+```
+
+这样在业务中就增加了合理的限制，用户不能以其他用户身份创建文章。
+
+针对全局所有资源的自定义操作，如对所有数据表都增加导出的操作：
+
+```ts
+app.actions({
+  // 对所有资源都增加了 export 方法，用于导出数据
+  async export(ctx, next) {
+    const repo = ctx.db.getRepository(ctx.action.resource);
+    const results = await repo.find({
+      filter: ctx.action.params.filter
+    });
+    ctx.type = 'text/csv';
+    // 拼接为 CSV 格式
+    ctx.body = results
+      .map(row => Object.keys(row)
+        .reduce((arr, col) => [...arr, row[col]], []).join(',')
+      ).join('\n');
+
+    next();
+  }
+});
+```
+
+则可以按以下 HTTP API 的方式进行 CSV 格式的数据导出：
+
+```bash
+curl http://localhost:13000/api/<any_table>:export
+```
+
+### Action 参数
+
+客户端的请求到达服务端后，相关的请求参数会被按规则解析并放在请求的 `ctx.action.params` 对象上。Action 参数主要有三个来源：
+
+1. Action 定义时默认参数
+2. 客户端请求携带
+3. 其他中间件预处理
+
+在真正操作处理函数处理之前，上面这三个部分的参数会按此顺序被合并到一起，最终传入操作的执行函数中。在多个中间件中也是如此，上一个中间件处理完的参数会被继续随 `ctx` 传递到下一个中间件中。
+
+针对内置的操作可使用的参数，可以参考 [@nocobase/actions](/api/actions) 包的内容。除自定义操作以外，客户端请求主要使用这些参数，自定义的操作可以根据业务需求扩展需要的参数。
+
+中间件预处理主要使用 `ctx.action.mergeParams()` 方法，且根据不同的参数类型有不同的合并策略，具体也可以参考 [mergeParams()](/api/resourcer/action#mergeparams) 方法的内容。
+
+内置 Action 的默认参数在合并时只能以 `mergeParams()` 方法针对各个参数的默认策略执行，以达到服务端进行一定操作限制的目的。例如：
+
+```ts
+app.resource({
+  name: 'posts',
+  actions: {
+    create: {
+      whitelist: ['title', 'content'],
+      blacklist: ['createdAt', 'createdById'],
+    }
+  }
+});
+```
+
+如上定义了针对 `posts` 资源的 `create` 操作，其中 `whitelist` 和 `blacklist` 分别是针对 `values` 参数的白名单和黑名单，即只允许 `values` 参数中的 `title` 和 `content` 字段，且禁止 `values` 参数中的 `createdAt` 和 `createdById` 字段。
+
+### 自定义资源
 
 数据型的资源还分为独立资源和关系资源：
 
@@ -54,74 +188,12 @@ app.resource({
 curl -X POST -d '{"title": "Hello", "to": "hello@nocobase.com"}' 'http://localhost:13000/api/notifications:send'
 ```
 
-### Action
-
-操作主要指对资源的读取和写入，通常用于查阅数据、创建数据、更新数据、删除数据等。NocoBase 通过定义操作来实现对资源的访问，操作的核心其实是一个用于处理请求且兼容 Koa 的中间件函数。
-
-```ts
-// 等同于 app.resourcer.registerActions()
-// 注册针对 posts 资源的 create 操作方法
-app.actions({
-  async ['posts:create'](ctx, next) {
-    const postRepo = ctx.db.getRepository('posts');
-    await postRepo.create({
-      values: ctx.action.params.values
-    });
-
-    await next();
-  }
-});
-```
-
-NocoBase 也内置了针对数据资源通常的 CRUD 操作，当默认提供的 CRUD 操作不满足业务场景的情况下，也可以对特定资源扩展更多的操作。比如是对内置操作额外的处理需求，或者需要设置默认参数的情况。
-
-### Action 参数
-
-客户端的请求到达服务端后，相关的请求参数会被按规则解析并放在请求的 `ctx.action.params` 对象上。Action 参数主要有三个来源：
-
-1. Action 定义时默认参数
-2. 客户端请求携带
-3. 其他中间件预处理
-
-在真正操作处理函数处理之前，上面这三个部分的参数会按此顺序被合并到一起，最终传入操作的执行函数中。在多个中间件中也是如此，上一个中间件处理完的参数会被继续随 `ctx` 传递到下一个中间件中。
-
-针对内置的操作可使用的参数，可以参考 [@nocobase/actions](/api/actions) 包的内容。除自定义操作以外，客户端请求主要使用这些参数，自定义的操作可以根据业务需求扩展需要的参数。
-
-中间件预处理主要使用 `ctx.action.mergeParams()` 方法，且根据不同的参数类型有不同的合并策略，具体也可以参考 [mergeParams()](/api/resourcer/action#mergeparams) 方法的内容。
-
-内置 Action 的默认参数在合并时只能以 `mergeParams()` 方法针对各个参数的默认策略执行，以达到服务端进行一定操作限制的目的。例如：
-
-```ts
-app.resource({
-  name: 'posts',
-  actions: {
-    create: {
-      whitelist: ['title', 'content'],
-      blacklist: ['createdAt', 'createdById'],
-    }
-  }
-});
-```
-
-如上定义了针对 `posts` 资源的 `create` 操作，其中 `whitelist` 和 `blacklist` 分别是针对 `values` 参数的白名单和黑名单，即只允许 `values` 参数中的 `title` 和 `content` 字段，且禁止 `values` 参数中的 `createdAt` 和 `createdById` 字段。
-
 ## 示例
 
 我们继续之前 [数据表与字段示例](/development/guide/collections-fields#示例) 中的简单店铺场景，进一步理解资源与操作相关的概念。这里假设我们的在基于之前数据表的示例进行进一步资源和操作的定义，所以这里不再重复定义数据表的内容。
 
-### 内置默认操作
-
-在 [数据表与字段示例](/development/guide/collections-fields#示例) 中我们提到，只要是通过 `db.collection()` 定义的数据表，都会被自动注册为一个数据表资源，且会自动注册一些默认的操作。
-
-对简单数据资源的默认操作：
-
-* [`list`](/api/actions#list)：查询数据表中的数据列表
-* [`get`](/api/actions#get)：查询数据表中的单条数据
-* [`create`](/api/actions#create)：对数据表创建单条数据
-* [`update`](/api/actions#update)：对数据表更新单条数据
-* [`destroy`](/api/actions#destroy)：对数据表删除单条数据
-
-所以，只要定义了对应的数据表，我们对商品、订单等数据资源就可以直接使用这些默认操作以完成最场景的 CRUD 场景。
+另外，只要定义了对应的数据表，我们对商品、订单等数据资源就可以直接使用这些默认操作以完成最场景的 CRUD 场景。
+### 覆盖默认操作
 
 某些情况下，不只是简单的针对单条数据的操作时，或者默认操作的参数需要有一定控制时，我们也可以覆盖默认的操作行为。比如我们创建订单时，不应该由客户端提交 `userId` 来代表订单的归属，而是应该由服务端根据当前登录用户来确定订单归属，这时我们就可以覆盖默认的 `create` 操作。对于简单的扩展，我们直接在插件的主类中编写：
 
@@ -217,11 +289,11 @@ export default class ShopPlugin extends Plugin {
       name: 'orders',
       actions: {
         async deliver(ctx, next) {
-          const { resourceIndex } = ctx.action.params;
+          const { filterByTk } = ctx.action.params;
           const orderRepo = ctx.db.getRepository('orders');
 
           const [order] = await orderRepo.update({
-            filterByTk: resourceIndex,
+            filterByTk,
             values: {
               status: 2,
               delivery: {

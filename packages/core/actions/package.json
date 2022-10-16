@@ -13,7 +13,8 @@
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@nocobase/database": "0.7.4-alpha.7",
-    "@nocobase/resourcer": "0.7.4-alpha.7"
+    "@nocobase/resourcer": "0.7.4-alpha.7",
+    "@nocobase/cache": "0.7.4-alpha.7"
   },
   "repository": {
     "type": "git",
