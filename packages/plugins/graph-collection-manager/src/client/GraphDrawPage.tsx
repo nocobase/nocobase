@@ -11,7 +11,6 @@ import {
   useAPIClient,
   APIClientProvider,
   CollectionManagerProvider,
-  useCollectionManager,
   SchemaComponentOptions,
   useCompile,
 } from '@nocobase/client';
@@ -29,8 +28,8 @@ let targetGraph;
 let targetNode;
 let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
-async function  layout(graph, positions, createPositions,refreshPositions) {
-  const graphPositions = [];
+async function layout(graph, positions, createPositions, refreshPositions) {
+  let graphPositions = [];
   const nodes: any[] = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
@@ -59,7 +58,8 @@ async function  layout(graph, positions, createPositions,refreshPositions) {
           })) ||
         {};
       node.position(targetPosition.x || pos.x, targetPosition.y || pos.y);
-      if (positions && positions.length === 0) {
+      if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
+        // 位置表中没有的表都自动保存
         graphPositions.push({
           collectionName: node.store.data.name,
           x: pos.x,
@@ -72,25 +72,9 @@ async function  layout(graph, positions, createPositions,refreshPositions) {
   targetNode
     ? graph.positionCell(targetNode, 'top', { padding: 100 })
     : graph.positionCell(last(nodes), 'top', { padding: 100 });
-  // 保存新增的节点位置
-  if (
-    positions &&
-    positions.length > 0 &&
-    !positions.find((v) => {
-      return v.collectionName === last(nodes)?.store.data.name;
-    })
-  ) {
-    const pos = g.node(last(g.nodes()));
-    createPositions({
-      collectionName: last(nodes).store.data.name,
-      x: pos.x,
-      y: pos.y,
-    });
-  }
-  // 首次渲染,批量存入
   if (graphPositions.length > 0) {
-   await createPositions(graphPositions);
-   await refreshPositions()
+    await createPositions(graphPositions);
+    await refreshPositions();
   }
 }
 
@@ -119,10 +103,9 @@ export const Editor = React.memo(() => {
   const compile = useCompile();
   const { positions, createPositions, updatePosition, refreshPositions } = useGraphPosions();
   const [collapsed, setCollapsed] = useState(false);
-  const { collections: data } = useCollectionManager();
   const { GraphRef } = useContext(FullScreenContext);
-  const [collectionData, setCollectionData] = useState<any>(data);
-  const [collectionList, setCollectionList] = useState<any>(data);
+  const [collectionData, setCollectionData] = useState<any>([]);
+  const [collectionList, setCollectionList] = useState<any>([]);
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
@@ -179,7 +162,6 @@ export const Editor = React.memo(() => {
       autoResize: document.getElementById('graph_container'),
     });
     targetGraph = myGraph;
-    targetGraph.collections = collectionData;
     Graph.registerPortLayout(
       'erPortPosition',
       (portsPositionArgs) => {
@@ -202,7 +184,7 @@ export const Editor = React.memo(() => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionManagerProvider collections={targetGraph.collections} refreshCM={refreshCM}>
+              <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshCM}>
                 <div style={{ height: 'auto' }}>
                   <Entity node={node} setTargetNode={setTargetNode} />
                 </div>
@@ -235,6 +217,7 @@ export const Editor = React.memo(() => {
       },
       true,
     );
+    console.log(targetGraph.positions)
     targetGraph.on('edge:mouseover', ({ e, edge }) => {
       e.stopPropagation();
       const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
@@ -251,18 +234,27 @@ export const Editor = React.memo(() => {
     });
     targetGraph.on('node:mouseup', ({ e, node }) => {
       e.stopPropagation();
-      updatePosition({
-        collectionName: node.store.data.name,
-        ...node.position(),
-      });
+      console.log(targetGraph.positions)
+      if (targetGraph.positions.find((v) => v.collectionName === node.store.data.name)) {
+        updatePosition({
+          collectionName: node.store.data.name,
+          ...node.position(),
+        });
+      } else {
+        createPositions({
+          collectionName: node.store.data.name,
+          ...node.position(),
+        });
+      }
     });
   };
   const getCollectionData = (rawData, graph) => {
+    console.log(rawData);
     const { nodes, edges } = formatData(rawData);
     graph.clearCells();
     getNodes(nodes, graph);
     getEdges(edges, graph);
-    layout(graph, positions, createPositions,refreshPositions);
+    layout(graph, positions, createPositions, refreshPositions);
   };
 
   useLayoutEffect(() => {
@@ -277,7 +269,21 @@ export const Editor = React.memo(() => {
   }, []);
 
   useEffect(() => {
-    targetGraph && getCollectionData(data, targetGraph);
+    api
+      .resource('collections')
+      .list({
+        paginate: false,
+        appends: ['fields', 'fields.uiSchema'],
+        sort: 'sort',
+      })
+      .then((v) => {
+        const { data } = v;
+        targetGraph.collections = data.data;
+        targetGraph.positions=positions;
+        setCollectionData(data.data);
+        setCollectionList(data.data);
+        targetGraph && getCollectionData(data.data, targetGraph);
+      });
   }, [positions]);
 
   const handleSearchCollection = (e) => {
