@@ -292,6 +292,58 @@ app.actions({
 });
 ```
 
+### `move()`
+对应的 URL 为 `POST /api/<resource>:move`。
+
+此方法用于移动数据，调整数据的排序。例如在页面中，拖拽一个元素到另一个元素的上方或下方，可调用此方法实现顺序调整。
+
+**参数**
+
+| 参数名      | 类型          | 默认值 | 描述            |
+|----------|-------------| -- |---------------|
+| `sourceId` | `targetKey` | - | 移动的元素ID       |
+| `targetId` | `targetKey` | - | 与移动元素交换位置的元素ID |
+| `sortField` | `string`    | `sort` | 排序存储的字段名      |
+| `targetScope` | `string`    | - |   排序的scope，一个 resource 可以按照不同的 scope 排序  |
+| `sticky` | `boolean` | - | 是否置顶移动的元素 |
+| `method` | `insertAfter` \| `prepend` | - | 插入类型，插入目标元素之前还是之后 |
+
 ## 关系资源资源操作
 
-TODO
+### `add()`
+
+添加与对象的关联关系，对应的 URL 为 `POST /api/<resource.assocition>:add`。适用于 `hasMany` 和 `belongsToMany` 关联。
+
+**参数**
+
+| 参数名      | 类型          | 默认值 | 描述 |
+|----------|-------------| --- | --- |
+| `values` | `TargetKey \| TargetKey[]` | - | 添加的关联对象ID |
+
+### `remove()`
+移除与对象的关联关系，对应的 URL 为 `POST /api/<resource.assocition>:remove`。
+
+**参数**
+
+| 参数名      | 类型          | 默认值 | 描述 |
+|----------|-------------| --- | --- |
+| `values` | `TargetKey \| TargetKey[]` | - | 移除的关联对象ID |
+
+### `set()`
+设置关联的关联对象，对应的 URL 为 `POST /api/<resource.assocition>:set`。
+
+**参数**
+
+| 参数名      | 类型          | 默认值 | 描述 |
+|----------|-------------| --- | --- |
+| `values` | `TargetKey \| TargetKey[]` | - | 设置的关联对象的ID |
+
+### `toggle()`
+
+切换关联的关联对象，对应的 URL 为 `POST /api/<resource.assocition>:toggle`。`toggle` 在内部判断关联对象是否已经存在，如果存在则移除，如果不存在则添加。
+
+**参数**
+
+| 参数名      | 类型          | 默认值 | 描述 |
+|----------|-------------| -- | --- |
+| `values` | `TargetKey` | - | 切换的关联对象的ID |

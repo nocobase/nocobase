@@ -5,7 +5,7 @@ import {
   CountOptions,
   DestroyOptions,
   Filter,
-  FilterByTk,
+  FindOneOptions,
   FindOptions,
   TargetKey,
   TK,
@@ -16,9 +16,7 @@ import { UpdateGuard } from '../update-guard';
 import { RelationRepository, transaction } from './relation-repository';
 import { handleAppendsQuery } from '../utils';
 
-export interface FindAndCountOptions extends CommonFindOptions {}
-
-export interface FindOneOptions extends CommonFindOptions, FilterByTk {}
+export type FindAndCountOptions = CommonFindOptions;
 
 export interface AssociatedOptions extends Transactionable {
   tk?: TK;
@@ -88,6 +86,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
   async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]> {
     const transaction = await this.getTransaction(options, false);
+
     return [
       await this.find({
         ...options,

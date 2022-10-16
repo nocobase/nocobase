@@ -2,6 +2,7 @@ import lodash, { omit } from 'lodash';
 import {
   Association,
   BulkCreateOptions,
+  CountOptions as SequelizeCountOptions,
   CreateOptions as SequelizeCreateOptions,
   DestroyOptions as SequelizeDestroyOptions,
   FindAndCountOptions as SequelizeAndCountOptions,
@@ -11,6 +12,7 @@ import {
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions
 } from 'sequelize';
+import { WhereOperators } from 'sequelize/types/lib/model';
 import { Collection } from './collection';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
@@ -18,6 +20,7 @@ import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
+import operators from './operators';
 import { OptionsParser } from './options-parser';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
@@ -45,7 +48,32 @@ export interface FilterAble {
 export type TargetKey = string | number;
 export type TK = TargetKey | TargetKey[];
 
-export type Filter = any;
+type FieldValue = string | number | bigint | boolean | Date | Buffer | null | FieldValue[] | FilterWithOperator;
+
+type Operators = keyof typeof operators & keyof WhereOperators;
+
+export type FilterWithOperator = {
+  [key: string]:
+    | {
+        [K in Operators]: FieldValue;
+      }
+    | FieldValue;
+};
+
+export type FilterWithValue = {
+  [key: string]: FieldValue;
+};
+
+type FilterAnd = {
+  $and: Filter[];
+};
+
+type FilterOr = {
+  $or: Filter[];
+};
+
+export type Filter = FilterWithOperator | FilterWithValue | FilterAnd | FilterOr;
+
 export type Appends = string[];
 export type Except = string[];
 export type Fields = string[];
@@ -53,12 +81,12 @@ export type Sort = string[] | string;
 
 export type WhiteList = string[];
 export type BlackList = string[];
+
 export type AssociationKeysToBeUpdate = string[];
 
 export type Values = any;
 
-export interface CountOptions extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'>, Transactionable {
-  fields?: Fields;
+export interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'>, Transactionable {
   filter?: Filter;
 }
 
@@ -66,7 +94,7 @@ export interface FilterByTk {
   filterByTk?: TargetKey;
 }
 
-export interface FindOptions extends SequelizeFindOptions, CommonFindOptions, FilterByTk {}
+export type FindOptions = SequelizeFindOptions & CommonFindOptions & FilterByTk;
 
 export interface CommonFindOptions extends Transactionable {
   filter?: Filter;
@@ -77,7 +105,7 @@ export interface CommonFindOptions extends Transactionable {
   context?: any;
 }
 
-interface FindOneOptions extends FindOptions {}
+export type FindOneOptions = Omit<FindOptions, 'limit'>;
 
 export interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: Filter;
@@ -86,18 +114,7 @@ export interface DestroyOptions extends SequelizeDestroyOptions {
   context?: any;
 }
 
-interface FindAndCountOptions extends Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> {
-  // 数据过滤
-  filter?: Filter;
-  // 输出结果显示哪些字段
-  fields?: Fields;
-  // 输出结果不显示哪些字段
-  except?: Except;
-  // 附加字段，用于控制关系字段的输出
-  appends?: Appends;
-  // 排序，字段前面加上 “-” 表示降序
-  sort?: Sort;
-}
+type FindAndCountOptions = Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> & CommonFindOptions;
 
 export interface CreateOptions extends SequelizeCreateOptions {
   values?: Values | Values[];
@@ -359,6 +376,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const transaction = await this.getTransaction(options);
     const { records } = options;
     const instances = [];
+
     for (const values of records) {
       const instance = await this.create({ values, transaction });
       instances.push(instance);
