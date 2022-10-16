@@ -15,14 +15,8 @@ import {
   beforeInitOptions,
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
-import { ForeignKeyField } from './fields/foreign-key-field';
 
 export class CollectionManagerPlugin extends Plugin {
-  initialize() {
-    this.db.registerFieldTypes({
-      foreignKey: ForeignKeyField,
-    });
-  }
 
   async beforeLoad() {
     this.app.db.registerModels({
@@ -68,10 +62,10 @@ export class CollectionManagerPlugin extends Plugin {
         await fn(model, { database: this.app.db });
       }
     });
- 
-    this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
-    this.app.db.on('fields.afterCreate', afterCreateForRelateField(this.app.db));
 
+    this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
+
+    this.app.db.on('fields.afterCreate', afterCreateForRelateField(this.app.db));
     this.app.db.on('collections.afterCreateWithAssociations', async (model, { context, transaction }) => {
       if (context) {
         await model.migrate({
