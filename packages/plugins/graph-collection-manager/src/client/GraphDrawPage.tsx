@@ -50,14 +50,12 @@ function layout(graph, positions, createPositions) {
   dagre.layout(g);
   graph.freeze();
    g.nodes().forEach((id) => {
-    console.log(positions)
     const node = graph.getCell(id);
     if (node) {
       const pos: any = g.node(id);
       const targetPosition = positions&&positions.find((v) => {
         return v.collectionName === node.store.data.name;
       })||{};
-      console.log(positions,targetPosition)
       node.position(targetPosition.x || pos.x, targetPosition.y || pos.y);
       // 首次渲染,批量存入
       if (positions&&positions.length===0) {

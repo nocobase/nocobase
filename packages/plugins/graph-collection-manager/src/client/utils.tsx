@@ -42,6 +42,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
       targetTables.includes(data[i].target) &&
       ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(data[i].interface)
     ) {
+      console.log(data[i])
       const targetTable = tableData.find((v) => v.name === data[i].target);
       const sourceTable = tableData.find((v) => v.name === data[i].collectionName);
       const commonAttrs = {
@@ -148,7 +149,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
         anchor: 'center',
         direction: 'v',
       };
-      if (data[i].interface === 'm2m') {
+      if (['m2m','linkTo'].includes(data[i].interface)) {
         const throughTable = tableData.find((v) => v.name === data[i].through);
         throughTable &&
           edges.push({
