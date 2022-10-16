@@ -1,5 +1,73 @@
 # Release Notes
 
+## 2022/10/16 ~ v0.7.5-alpha.1
+
+- Optimized query performance for relational fields
+- Added support for mobile phone number registration and login
+- Sequence field type
+- Added Japanese and Russian translations
+- The page layout supports drag and drop to adjust the column width
+- Fixed several bugs
+
+### Details
+
+- feat: plugin workflow collection field ([#919](https://github.com/nocobase/nocobase/issues/919))
+- fix(client/route-switch): skip sub routes
+- feat: create with array of values ([#912](https://github.com/nocobase/nocobase/issues/912))
+- fix: unbind on error throwing ([#914](https://github.com/nocobase/nocobase/issues/914))
+- fix: appends merge now using primary key ([#911](https://github.com/nocobase/nocobase/issues/911))
+- fix: cannot read properties of undefined (reading 'target')
+- feat: limit database identifier ([#908](https://github.com/nocobase/nocobase/issues/908))
+- fix: sync collection field default value ([#907](https://github.com/nocobase/nocobase/issues/907))
+- fix: version judgment is not accurate
+- fix(client): tab pane initializers for create form block
+- fix: build error
+- fix: appends merge includes ([#905](https://github.com/nocobase/nocobase/issues/905))
+- fix: single relation repository appends query issue ([#901](https://github.com/nocobase/nocobase/issues/901))
+- feat(plugin-workflow): add concat calculator (#894)
+- feat: improve signin and signup page components
+- fix(client/record-picker): support record-picker show format DataPicker (#888)
+- fix(client/block-select-collection): fix select collection menu view error (#889)
+- fix: unable to submit form during file upload (#892)
+- feat(collection-manager): inverse fields can be configured (#883)
+- fix(database): fix the index name too long error
+- fix(formula): support integer and fix NaN error (#879)
+- fix: sort parameter is missing (#849)
+- fix: slow join query issued by appends field in find method of repository (#845)
+- feat(core/cache): support cache (#876)
+- feat: update option must have filter or filterByTk (#847)
+- added Russian translation (#840)
+- feat(database): add sequence field type (#779)
+- fix: can't access pages without permission via url (#826)
+- fix(collection-manger): incorrect scope key parameter
+- fix: missing RefreshActionInitializer
+- fix(collection-manager): o2m is array type
+- fix(plugin-system-settings): convert array to json
+- fix: transaction cannot be rolled back because it has been finished with state: rollback
+- fix(plugin-export): filter non-existent fields
+- refactor(resourcer): combine middleware class ([#825](https://github.com/nocobase/nocobase/issues/825))
+- refactor(database): fix some fields and types ([#820](https://github.com/nocobase/nocobase/issues/820))
+- feat: language settings support Japanese
+- feat(locale): added Japanese translation ([#813](https://github.com/nocobase/nocobase/issues/813))
+- fix(plugin-workflow): fix value type for DatePicker to moment ([#815](https://github.com/nocobase/nocobase/issues/815)) ([#819](https://github.com/nocobase/nocobase/issues/819))
+- refactor(plugin-workflow): export client calculators registry ([#816](https://github.com/nocobase/nocobase/issues/816))
+- fix: number storage type changed to double ([#810](https://github.com/nocobase/nocobase/issues/810))
+- refactor(server) ([#795](https://github.com/nocobase/nocobase/issues/795))
+- fix(plugin-verification): change provider rate limit error to 429 ([#788](https://github.com/nocobase/nocobase/issues/788))
+- fix(plugin-cm): fix field disappear after failed to update ([#773](https://github.com/nocobase/nocobase/issues/773))
+- fix: fix uiSchema undefined ([#770](https://github.com/nocobase/nocobase/issues/770))
+- fix: translation
+- fix(plugin-cm): fix unique option default value to update ([#768](https://github.com/nocobase/nocobase/issues/768))
+- fix(plugin-users): fix update profile 500 ([#766](https://github.com/nocobase/nocobase/issues/766)) ([#767](https://github.com/nocobase/nocobase/issues/767))
+- fix: mysql column in where clause is ambiguous ([#756](https://github.com/nocobase/nocobase/issues/756))
+- feat(plugin-cm): add unique option for base fields ([#745](https://github.com/nocobase/nocobase/issues/745))
+- feat(plugin-verification): add plugin-verification and phone for users ([#722](https://github.com/nocobase/nocobase/issues/722))
+- feat: resize grid columns with drag and drop ([#748](https://github.com/nocobase/nocobase/issues/748))
+- refactor(client): split schema-initializer items into multiple files ([#744](https://github.com/nocobase/nocobase/issues/744))
+- refactor(plugin-workflow): change files mode to 644 ([#755](https://github.com/nocobase/nocobase/issues/755))
+- fix: db version check ([#749](https://github.com/nocobase/nocobase/issues/749))
+- feat: add examples ([#718](https://github.com/nocobase/nocobase/issues/718))
+
 ## 2022/08/15 ~ v0.7.4-alpha.7
 
 ### Details
