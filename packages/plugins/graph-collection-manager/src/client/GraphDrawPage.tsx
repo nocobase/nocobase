@@ -68,10 +68,14 @@ async function layout(graph, positions, createPositions) {
     }
   });
   graph.unfreeze();
-  targetNode
-    ? graph.positionCell(targetNode, 'top', { padding: 100 })
-    : graph.positionCell(last(nodes), 'top', { padding: 100 });
-  if (graphPositions.length > 0) {
+  if(targetNode){
+    targetNode==='last'
+    ? graph.positionCell(last(nodes), 'top', { padding: 100 })
+    :graph.positionCell(targetNode, 'top', { padding: 100 });  
+  }else{
+    graph.centerContent()
+  }
+    if (graphPositions.length > 0) {
     await createPositions(graphPositions);
   }
 }
@@ -103,7 +107,6 @@ export const Editor = React.memo(() => {
   const { GraphRef } = useContext(FullScreenContext);
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
-  const [positionData, setPositionData] = useState<any>(null);
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
@@ -122,10 +125,10 @@ export const Editor = React.memo(() => {
   const refreshPositions = async () => {
     const { data } = await api.resource('graphPositions').list();
     targetGraph.positions = data.data;
-    setPositionData(data.data);
     return Promise.resolve();
   };
   const setTargetNode = (node) => {
+    console.log(node)
     targetNode = node;
   };
   const refreshGM = async () => {
@@ -273,6 +276,7 @@ export const Editor = React.memo(() => {
   };
   useImperativeHandle(GraphRef, () => ({
     refreshGM,
+    setTargetNode
   }));
   useLayoutEffect(() => {
     initGraphCollections();

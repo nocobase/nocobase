@@ -17,7 +17,7 @@ export const  CollectionNodeProvder: React.FC <CollectionNodeOptions>= (props:an
     <GraphCollectionContext.Provider
       value={{
         record,
-        positionTargetNode:()=>{setTargetNode(node)}
+        positionTargetNode:(target)=>{setTargetNode(target||node)}
       }}
     >
       {props.children}

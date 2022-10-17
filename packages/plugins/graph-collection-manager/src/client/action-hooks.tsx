@@ -45,12 +45,14 @@ export const useCreateActionAndRefreshCM = (GraphRef) => {
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
+
   return {
     async run() {
       await form.submit();
       await api.resource('collections').create({ values: form.values });
       ctx.setVisible(false);
       await form.reset();
+      GraphRef.current.setTargetNode('last');
       await GraphRef.current.refreshGM();
     },
   };
@@ -148,10 +150,11 @@ export const useDestroyActionAndRefreshCM = (props) => {
   const { name } = props;
   const { run } = useDestroyAction(name);
   const { refreshCM } = useCollectionManager();
-
+  const { positionTargetNode } = useContext(GraphCollectionContext);
   return {
     async run() {
       await run();
+      positionTargetNode('last')
       await refreshCM();
     },
   };
@@ -160,7 +163,6 @@ export const useDestroyActionAndRefreshCM = (props) => {
 const useDestroyFieldAction = (collectionName, name) => {
   const api = useAPIClient();
   const { positionTargetNode } = useContext(GraphCollectionContext);
-
   return {
     async run() {
       await api.resource('collections.fields', collectionName).destroy({
