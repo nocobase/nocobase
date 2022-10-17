@@ -168,7 +168,7 @@ export const GraphDrawPage = React.memo(() => {
       container: document.getElementById('container')!,
       panning: true,
       moveThreshold: 3,
-      height: 800,
+      height: 1000,
       scroller: {
         enabled: true,
       },
