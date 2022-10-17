@@ -1,10 +1,8 @@
 import React from "react";
-import { observer, useForm } from "@formily/react";
-import { Button, Cascader, Dropdown, Input, InputNumber, Menu, Select, Form } from "antd";
+import { Cascader, Input, InputNumber, Select } from "antd";
 import { css } from "@emotion/css";
-import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
-import { SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
+import { useCompile } from "@nocobase/client";
 
 import { instructions, useNodeContext } from "./nodes";
 import { useFlowContext } from "./WorkflowCanvas";
@@ -451,109 +449,3 @@ export function VariableComponent({ value, onChange, renderSchemaComponent }) {
     </VariableTypesContext.Provider>
   );
 }
-
-// NOTE: observer for watching useProps
-export const CollectionFieldset = observer(({ value, onChange }: any) => {
-  const { t } = useTranslation();
-  const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
-  const { values: data } = useForm();
-  const fields = getCollectionFields(data?.config?.collection)
-    .filter(field => (
-      !field.hidden
-      && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false)
-    ));
-
-  const VTypes = {
-    ...VariableTypes,
-    constant: {
-      title: '{{t("Constant")}}',
-      value: 'constant',
-      options: undefined
-    }
-  };
-
-  return (
-    <fieldset className={css`
-      margin-top: .5em;
-
-      > .ant-formily-item{
-        flex-direction: column;
-
-        > .ant-formily-item-label{
-          line-height: 32px;
-        }
-      }
-    `}>
-      {fields.length
-        ? (
-          <>
-          {fields
-            .filter(field => field.name in value)
-            .map(field => {
-              const operand = typeof value[field.name] === 'string'
-                ? parseStringValue(value[field.name], VTypes)
-                : { type: 'constant', value: value[field.name] };
-
-              // TODO: try to use <ObjectField> to replace this map
-              return (
-                <Form.Item key={field.name} label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left" className={css`
-                  .ant-form-item-control-input-content{
-                    display: flex;
-                  }
-                `}>
-                  <VariableTypesContext.Provider value={VTypes}>
-                    <Operand
-                      value={operand}
-                      onChange={(next) => {
-                        if (next.type !== operand.type && next.type === 'constant') {
-                          onChange({ ...value, [field.name]: null });
-                        } else {
-                          const { stringify } = VTypes[next.type];
-                          onChange({ ...value, [field.name]: stringify(next) });
-                        }
-                      }}
-                    >
-                      {operand.type === 'constant'
-                        ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
-                        : null
-                      }
-                    </Operand>
-                    <Button
-                      type="link"
-                      icon={<CloseCircleOutlined />}
-                      onClick={() => {
-                        const { [field.name]: _, ...rest } = value;
-                        onChange(rest);
-                      }}
-                    />
-                  </VariableTypesContext.Provider>
-                </Form.Item>
-              );
-            })}
-            {Object.keys(value).length < fields.length
-              ? (
-                <Dropdown overlay={
-                  <Menu onClick={({ key }) => onChange({ ...value, [key]: null })} className={css`
-                    max-height: 300px;
-                    overflow-y: auto;
-                  `}>
-                    {fields
-                      .filter(field => !(field.name in value))
-                      .map(field => (
-                        <Menu.Item key={field.name}>{compile(field.uiSchema?.title ?? field.name)}</Menu.Item>
-                      ))}
-                  </Menu>
-                }>
-                  <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
-                </Dropdown>
-              )
-              : null
-            }
-          </>
-        )
-        : <p>{t('Please select collection first')}</p>
-      }
-    </fieldset>
-  );
-});

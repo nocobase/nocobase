@@ -9,10 +9,12 @@ import {
   ModelCtor,
   Op,
   Transactionable,
-  UpdateOptions as SequelizeUpdateOptions,
+  UpdateOptions as SequelizeUpdateOptions
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
+import mustHaveFilter from './decorators/must-have-filter-decorator';
+import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
@@ -22,11 +24,9 @@ import { BelongsToRepository } from './relation-repository/belongs-to-repository
 import { HasManyRepository } from './relation-repository/hasmany-repository';
 import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
-import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { handleAppendsQuery } from './utils';
-import mustHaveFilter from './decorators/must-have-filter-decorator';
 
 const debug = require('debug')('noco-database');
 
@@ -100,7 +100,7 @@ interface FindAndCountOptions extends Omit<SequelizeAndCountOptions, 'where' | '
 }
 
 export interface CreateOptions extends SequelizeCreateOptions {
-  values?: Values;
+  values?: Values | Values[];
   whitelist?: WhiteList;
   blacklist?: BlackList;
   updateAssociationValues?: AssociationKeysToBeUpdate;
@@ -304,7 +304,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   @transaction()
-  async create<M extends Model>(options: CreateOptions): Promise<M> {
+  async create(options: CreateOptions) {
+    if (Array.isArray(options.values)) {
+      return this.createMany({
+        ...options,
+        records: options.values,
+      });
+    }
+
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, action: 'create' });
@@ -353,6 +360,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       const instance = await this.create({ values, transaction });
       instances.push(instance);
     }
+
     return instances;
   }
 

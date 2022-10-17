@@ -94,19 +94,18 @@ export class FieldModel extends MagicAttributeModel {
   }
 
   async migrate({ isNew, ...options }: MigrateOptions = {}) {
-    const field = await this.load({
-      transaction: options.transaction,
-    });
-
-    if (!field) {
-      return;
-    }
-
+    let field;
     try {
+      field = await this.load({
+        transaction: options.transaction,
+      });
+      if (!field) {
+        return;
+      }
       await migrate(field, options);
     } catch (error) {
       // field sync failed, delete from memory
-      if (isNew) {
+      if (isNew && field) {
         // update field should not remove field from memory
         field.remove();
       }

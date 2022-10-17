@@ -54,6 +54,10 @@ export abstract class RelationRepository {
 
   @transaction()
   async create(options?: CreateOptions): Promise<any> {
+    if (Array.isArray(options.values)) {
+      return Promise.all(options.values.map((record) => this.create({ ...options, values: record })));
+    }
+
     const createAccessor = this.accessors().create;
 
     const guard = UpdateGuard.fromOptions(this.targetModel, options);
