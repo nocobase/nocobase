@@ -26,7 +26,7 @@ export const formatData = (data) => {
       shape: shape.ER,
       name: item.name,
       title: item.title,
-      width: 210,
+      width: 250,
       ports,
       item: item,
     };

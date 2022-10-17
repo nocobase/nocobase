@@ -1,40 +1,33 @@
-import React, { useLayoutEffect, useEffect, useContext, useState, useRef } from 'react';
 import { Graph } from '@antv/x6';
+import '@antv/x6-react-shape';
+import { cx } from '@emotion/css';
+import { SchemaOptionsContext } from '@formily/react';
+import { useFullscreen } from 'ahooks';
+import { Input, Layout, Menu, Tooltip } from 'antd';
 import dagre from 'dagre';
 import { last } from 'lodash';
-import '@antv/x6-react-shape';
+import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaOptionsContext } from '@formily/react';
-import { Layout, Menu, Input, Tooltip } from 'antd';
-import { cx } from '@emotion/css';
-import { useFullscreen } from 'ahooks';
 
 import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  FullscreenOutlined,
-  FullscreenExitOutlined,
-  PlusSquareOutlined,
+  FullscreenExitOutlined, FullscreenOutlined, MenuFoldOutlined,
+  MenuUnfoldOutlined, PlusSquareOutlined
 } from '@ant-design/icons';
 import { collection } from './schemas/collection';
 
 import {
-  useAPIClient,
   APIClientProvider,
-  CollectionManagerProvider,
-  SchemaComponentOptions,
-  useCompile,
-  SchemaComponent,
+  CollectionManagerProvider, SchemaComponent, SchemaComponentOptions, useAPIClient, useCompile
 } from '@nocobase/client';
-import { formatData } from './utils';
+import { useCreateActionAndRefreshCM } from './action-hooks';
 import Entity from './components/Entity';
 import { collectionListClass, graphCollectionContainerClass } from './style';
-import { useCreateActionAndRefreshCM } from './action-hooks';
+import { formatData } from './utils';
 
 const { Sider } = Layout;
 
-const LINE_HEIGHT = 32;
-const NODE_WIDTH = 210;
+const LINE_HEIGHT = 40;
+const NODE_WIDTH = 250;
 let targetGraph;
 let targetNode;
 let dir = 'TB'; // LR RL TB BT 横排
@@ -47,7 +40,7 @@ async function layout(graph, positions, createPositions) {
   g.setGraph({ rankdir: dir, nodesep: 50, edgesep: 50, rankSep: 50, align: 'DL', controlPoints: true });
   g.setDefaultEdgeLabel(() => ({}));
   nodes.forEach((node, i) => {
-    const width = 210;
+    const width = 250;
     const height = node.getPorts().length * 32 + 30;
     g.setNode(node.id, { width, height });
   });

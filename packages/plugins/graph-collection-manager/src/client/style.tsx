@@ -12,15 +12,16 @@ export const addButtonClass = css`
 `;
 
 export const entityContainer = css`
-  width: 210px;
+  width: 250px;
   height: 100%;
-  border-radius: 3px;
+  border-radius: 2px;
   background-color: #fff;
-  border: 1px solid rgb(237 237 237);
+  border: 0;
   // box-shadow: 0 0 6px rgb(0 0 0 / 12%);
   &:hover {
-    border: 1px solid #165dff;
-    box-shadow: 0 0 6px rgb(0 0 0 / 12%);
+    /* border: 1px solid #165dff; */
+    /* box-shadow: 0 0 6px rgb(0 0 0 / 12%); */
+    box-shadow: 0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)
   }
   .body {
     width: 100%;
@@ -32,12 +33,12 @@ export const entityContainer = css`
     // border: 1px solid #5F95FF;
     .body-item {
       width: 100%;
-      max-width: 208px;
-      height: 28px;
-      font-size: 12px;
+      max-width: 250px;
+      height: 40px;
+      font-size: 14px;
       color: #595959;
-      height: 32px;
-      border-top: 1px solid rgb(229 230 235);
+      height: 40px;
+      border-top: 1px solid #f0f0f0;
       text-overflow: ellipsis;
       display: flex;
       flex-direction: row;
@@ -95,27 +96,28 @@ export const entityContainer = css`
         text-overflow: ellipsis;
         white-space: nowrap;
         overflow: hidden;
-        margin-left: 5px;
+        margin-left: 8px;
       }
 
       .type {
         color: #bfbfbf;
-        margin-right: 5px;
+        margin-right: 8px;
       }
     }
   }
 `;
 
 export const headClass = css`
-  height: 30px;
-  font-size: 12px;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 500;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  background: rgb(242 243 245);
+  background: #fafafa;
   color: rgb(29 33 41);
-  padding: 0 5px;
+  padding: 0 8px;
   border-radius: 3px;
 `;
 
@@ -124,7 +126,7 @@ export const tableNameClass = css`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 700;
+  font-weight: 500;
 `;
 
 export const tableBtnClass = css`
@@ -150,6 +152,7 @@ export const collectiionPopoverClass = css`
 export const collectionListClass = css`
   float: right;
   position: absolute;
+  top: 24px;
   right: 24px;
   height: 100%;
   z-index: 1000;
