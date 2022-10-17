@@ -1,4 +1,5 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
+import {zhCN,enUS,jaJP} from './locale'
 import path from 'path'
 export class GraphCollectionManagerPlugin extends Plugin {
   getName(): string {
@@ -6,7 +7,10 @@ export class GraphCollectionManagerPlugin extends Plugin {
   }
 
   beforeLoad() {
-    // TODO
+    console.log(zhCN)
+    this.app.i18n.addResources('zh-CN', 'graphPositions', zhCN);
+   this.app.i18n.addResources('en-US', 'graphPositions', enUS);
+   this.app.i18n.addResources('ja-JP', 'graphPositions', jaJP);
   }
 
   async load() {
@@ -14,11 +18,10 @@ export class GraphCollectionManagerPlugin extends Plugin {
     directory: path.resolve(__dirname,'collections')
    });  
    this.app.acl.allow('graphPositions', '*');
-
+ 
   }
 
   async install(options: InstallOptions) {
-    // TODO
   }
 }
 

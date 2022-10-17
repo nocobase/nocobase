@@ -34,6 +34,7 @@ let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
 async function layout(graph, positions, createPositions) {
   let graphPositions = [];
+  console.log(graphPositions)
   const nodes: any[] = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
@@ -51,6 +52,7 @@ async function layout(graph, positions, createPositions) {
   });
   dagre.layout(g);
   graph.freeze();
+  console.log(positions)
   g.nodes().forEach((id) => {
     const node = graph.getCell(id);
     if (node) {
@@ -81,7 +83,9 @@ async function layout(graph, positions, createPositions) {
     graph.centerContent();
   }
   if (graphPositions.length > 0) {
+    console.log(graphPositions)
     await createPositions(graphPositions);
+    graphPositions=[]
   }
 }
 
@@ -133,7 +137,7 @@ export const GraphDrawPage = React.memo(() => {
     await refreshPositions();
   };
   const refreshPositions = async () => {
-    const { data } = await api.resource('graphPositions').list();
+    const { data } = await api.resource('graphPositions').list({paginate: false});
     targetGraph.positions = data.data;
     return Promise.resolve();
   };
@@ -315,7 +319,7 @@ export const GraphDrawPage = React.memo(() => {
   };
 
   const handleSelectCollection = (value) => {
-    if (targetNode) {
+    if (targetNode&&targetNode!=='last') {
       targetNode.removeAttrs();
     }
     targetNode = targetGraph.getCellById(value.key);
@@ -478,7 +482,7 @@ export const GraphDrawPage = React.memo(() => {
               }}
             />
             <Sider collapsed={collapsed} theme="light" collapsedWidth={0} width={150}>
-              <Input type="search" onChange={handleSearchCollection} allowClear placeholder="表搜索" />
+              <Input type="search" onChange={handleSearchCollection} allowClear placeholder={t('Collection Search')} />
               <Menu style={{ width: 150, maxHeight: '900px', overflowY: 'auto' }} mode="inline" theme="light">
                 {collectionList.map((v) => {
                   return (
