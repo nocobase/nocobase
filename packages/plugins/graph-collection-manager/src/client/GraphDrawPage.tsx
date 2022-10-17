@@ -323,7 +323,7 @@ export const GraphDrawPage = React.memo(() => {
     // 定位到目标节点
     targetGraph.positionCell(targetNode, 'top', { padding: 100 });
     targetNode.setAttrs({
-      border: '#165dff',
+      border: '0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)',
     });
   };
   return (
