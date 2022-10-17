@@ -152,9 +152,9 @@ export const collectionListClass = css`
   position: absolute;
   right: 24px;
   height: 100%;
-  z-index:1000;
-  .trigger{
-    float:right;
+  z-index: 1000;
+  .trigger {
+    float: right;
     margin: 2px 4px;
     font-size: 16px;
   }
@@ -163,8 +163,9 @@ export const collectionListClass = css`
   }
 `;
 
-export const graphCollectionContainerClass=css`
-.x6-graph-scroller{
-  width:100% !important;
-}
-`
+export const graphCollectionContainerClass = css`
+  overflow: hidden;
+  .x6-graph-scroller {
+    width: 100% !important;
+  }
+`;

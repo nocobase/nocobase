@@ -1,10 +1,11 @@
-import React, { useLayoutEffect, useEffect, useContext, useState, useImperativeHandle, useRef } from 'react';
+import React, { useLayoutEffect, useEffect, useContext, useState, useRef } from 'react';
 import { Graph } from '@antv/x6';
 import dagre from 'dagre';
 import { last } from 'lodash';
 import '@antv/x6-react-shape';
+import { useTranslation } from 'react-i18next';
 import { SchemaOptionsContext } from '@formily/react';
-import { Layout, Menu, Input } from 'antd';
+import { Layout, Menu, Input, Tooltip } from 'antd';
 import { cx } from '@emotion/css';
 import { useFullscreen } from 'ahooks';
 
@@ -27,10 +28,10 @@ import {
 } from '@nocobase/client';
 import { formatData } from './utils';
 import Entity from './components/Entity';
-import { collectionListClass,graphCollectionContainerClass } from './style';
+import { collectionListClass, graphCollectionContainerClass } from './style';
 import { useCreateActionAndRefreshCM } from './action-hooks';
 
-const { Sider, Content } = Layout;
+const { Sider } = Layout;
 
 const LINE_HEIGHT = 32;
 const NODE_WIDTH = 210;
@@ -111,10 +112,14 @@ function getEdges(edges, graph) {
   });
 }
 
-export const Editor = React.memo(() => {
+const getPopupContainer = () => {
+  return document.getElementById('graph_container');
+};
+
+export const GraphDrawPage = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
-  const ref = useRef(null);
+  const { t } = useTranslation();
   const [isFullscreen, { toggleFullscreen }] = useFullscreen(document.getElementById('graph_container'));
   const [collapsed, setCollapsed] = useState(true);
   const [collectionData, setCollectionData] = useState<any>([]);
@@ -330,20 +335,20 @@ export const Editor = React.memo(() => {
   };
   return (
     <Layout>
-      <div
-        className={cx(graphCollectionContainerClass)}
-        style={{
-          overflow: 'hidden',
-        }}
-      >
+      <div className={cx(graphCollectionContainerClass)}>
         <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
           <div className={cx(collectionListClass)}>
-            <div className="trigger">
-              {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
-                className: 'trigger',
-                onClick: () => setCollapsed(!collapsed),
-              })}
-            </div>
+            <Tooltip
+              title={t('Collection List')}
+              getPopupContainer={getPopupContainer}
+            >
+              <div className="trigger">
+                {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
+                  className: 'trigger',
+                  onClick: () => setCollapsed(!collapsed),
+                })}
+              </div>
+            </Tooltip>
             <SchemaComponent
               schema={{
                 type: 'void',
@@ -382,7 +387,14 @@ export const Editor = React.memo(() => {
                             'x-component': 'Action',
                             'x-component-props': {
                               type: 'primary',
-                              component: PlusSquareOutlined,
+                              component: (props) => (
+                                <Tooltip
+                                  title={t('Create collection')}
+                                  getPopupContainer={getPopupContainer}
+                                >
+                                  <PlusSquareOutlined {...props} />
+                                </Tooltip>
+                              ),
                             },
                             properties: {
                               drawer: {
@@ -435,15 +447,22 @@ export const Editor = React.memo(() => {
                           },
                           fullScreen: {
                             type: 'void',
-                            title: '{{ t("fullScreen") }}',
+                            title: '{{ t("Full Screen") }}',
                             'x-component': 'Action',
                             'x-designer': 'Action.Designer',
                             'x-component-props': {
                               component: (props) => {
-                                return isFullscreen ? (
-                                  <FullscreenExitOutlined {...props} />
-                                ) : (
-                                  <FullscreenOutlined {...props} />
+                                return (
+                                  <Tooltip
+                                    title={t('Full Screen')}
+                                    getPopupContainer={getPopupContainer}
+                                  >
+                                    {isFullscreen ? (
+                                      <FullscreenExitOutlined {...props} />
+                                    ) : (
+                                      <FullscreenOutlined {...props} />
+                                    )}
+                                  </Tooltip>
                                 );
                               },
                               useAction: () => {
@@ -465,7 +484,7 @@ export const Editor = React.memo(() => {
                 useCreateActionAndRefreshCM: () => useCreateActionAndRefreshCM(setTargetNode),
               }}
             />
-            <Sider collapsed={collapsed}  theme="light" collapsedWidth={0} width={150}>
+            <Sider collapsed={collapsed} theme="light" collapsedWidth={0} width={150}>
               <Input type="search" onChange={handleSearchCollection} allowClear placeholder="表搜索" />
               <Menu style={{ width: 150, maxHeight: '900px', overflowY: 'auto' }} mode="inline" theme="light">
                 {collectionList.map((v) => {

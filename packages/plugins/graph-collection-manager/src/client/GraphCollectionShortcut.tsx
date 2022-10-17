@@ -1,12 +1,11 @@
 import { PartitionOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { useActionContext, useRequest, PluginManager, SchemaComponent } from '@nocobase/client';
-import { DeleteOutlined  } from '@ant-design/icons';
-import { Card } from 'antd';
-import React, { useEffect} from 'react';
+import { DeleteOutlined } from '@ant-design/icons';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { Editor } from './GraphDrawPage';
+import { GraphDrawPage } from './GraphDrawPage';
 import { useCreateActionAndRefreshCM } from './action-hooks';
 
 const useCollectionValues = (options) => {
@@ -112,30 +111,27 @@ const useCollectionValues = (options) => {
   return result;
 };
 
-
 export const GraphCollectionPane = () => {
-
   return (
-    <Card bordered={false} id="graph_container" >
-        <SchemaComponent
-          schema={{
-            type: 'void',
-            'x-component': 'div',
-            properties: {
-            
-              editor: {
-                type: 'void',
-                'x-component':'Editor',
-              },
+    <div id="graph_container">
+      <SchemaComponent
+        schema={{
+          type: 'void',
+          'x-component': 'div',
+          properties: {
+            editor: {
+              type: 'void',
+              'x-component': 'GraphDrawPage',
             },
-          }}
-          components={{
-            Editor,
-            DeleteOutlined,
-          }}
-          scope={{ useCollectionValues,useCreateActionAndRefreshCM }}
-        />
-    </Card>
+          },
+        }}
+        components={{
+          GraphDrawPage,
+          DeleteOutlined,
+        }}
+        scope={{ useCollectionValues, useCreateActionAndRefreshCM }}
+      />
+    </div>
   );
 };
 
