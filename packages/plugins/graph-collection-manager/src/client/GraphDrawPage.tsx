@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useEffect, useContext, useState, useImperativeHandle } from 'react';
+import React, { useLayoutEffect, useEffect, useContext, useState, useImperativeHandle, useRef } from 'react';
 import { Graph } from '@antv/x6';
 import dagre from 'dagre';
 import { last } from 'lodash';
@@ -6,18 +6,29 @@ import '@antv/x6-react-shape';
 import { SchemaOptionsContext } from '@formily/react';
 import { Layout, Menu, Input } from 'antd';
 import { cx } from '@emotion/css';
-import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { useFullscreen } from 'ahooks';
+
+import {
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  FullscreenOutlined,
+  FullscreenExitOutlined,
+  PlusSquareOutlined,
+} from '@ant-design/icons';
+import { collection } from './schemas/collection';
+
 import {
   useAPIClient,
   APIClientProvider,
   CollectionManagerProvider,
   SchemaComponentOptions,
   useCompile,
+  SchemaComponent,
 } from '@nocobase/client';
 import { formatData } from './utils';
 import Entity from './components/Entity';
-import { collectionListClass } from './style';
-import { FullScreenContext } from './GraphCollectionShortcut';
+import { collectionListClass,graphCollectionContainerClass } from './style';
+import { useCreateActionAndRefreshCM } from './action-hooks';
 
 const { Sider, Content } = Layout;
 
@@ -68,14 +79,14 @@ async function layout(graph, positions, createPositions) {
     }
   });
   graph.unfreeze();
-  if(targetNode){
-    targetNode==='last'
-    ? graph.positionCell(last(nodes), 'top', { padding: 100 })
-    :graph.positionCell(targetNode, 'top', { padding: 100 });  
-  }else{
-    graph.centerContent()
+  if (targetNode) {
+    targetNode === 'last'
+      ? graph.positionCell(last(nodes), 'top', { padding: 100 })
+      : graph.positionCell(targetNode, 'top', { padding: 100 });
+  } else {
+    graph.centerContent();
   }
-    if (graphPositions.length > 0) {
+  if (graphPositions.length > 0) {
     await createPositions(graphPositions);
   }
 }
@@ -103,8 +114,9 @@ function getEdges(edges, graph) {
 export const Editor = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
-  const [collapsed, setCollapsed] = useState(false);
-  const { GraphRef } = useContext(FullScreenContext);
+  const ref = useRef(null);
+  const [isFullscreen, { toggleFullscreen }] = useFullscreen(document.getElementById('graph_container'));
+  const [collapsed, setCollapsed] = useState(true);
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
   let options = useContext(SchemaOptionsContext);
@@ -113,14 +125,14 @@ export const Editor = React.memo(() => {
 
   const useSaveGraphPositionAction = async (data) => {
     await api.resource('graphPositions').create({ values: data });
-    await refreshPositions()
+    await refreshPositions();
   };
   const useUpdatePositionAction = async (position) => {
     await api.resource('graphPositions').update({
       filter: { collectionName: position.collectionName },
       values: { ...position },
     });
-    await refreshPositions()
+    await refreshPositions();
   };
   const refreshPositions = async () => {
     const { data } = await api.resource('graphPositions').list();
@@ -128,7 +140,6 @@ export const Editor = React.memo(() => {
     return Promise.resolve();
   };
   const setTargetNode = (node) => {
-    console.log(node)
     targetNode = node;
   };
   const refreshGM = async () => {
@@ -274,10 +285,7 @@ export const Editor = React.memo(() => {
     getEdges(edges, graph);
     layout(graph, targetGraph.positions, useSaveGraphPositionAction);
   };
-  useImperativeHandle(GraphRef, () => ({
-    refreshGM,
-    setTargetNode
-  }));
+
   useLayoutEffect(() => {
     initGraphCollections();
     return () => {
@@ -322,41 +330,157 @@ export const Editor = React.memo(() => {
   };
   return (
     <Layout>
-      <Sider
-        className={cx(collectionListClass)}
-        collapsed={collapsed}
-        defaultCollapsed={false}
-        theme="light"
-        collapsedWidth={0}
-        width={150}
+      <div
+        className={cx(graphCollectionContainerClass)}
+        style={{
+          overflow: 'hidden',
+        }}
       >
-        <Input type="search" onChange={handleSearchCollection} style={{ width: '90%' }} placeholder="表搜索" />
-        <Menu style={{ width: 150, maxHeight: '900px', overflowY: 'auto' }} mode="inline" theme="light">
-          {collectionList.map((v) => {
-            return (
-              <Menu.Item key={v.key} onClick={(e) => handleSelectCollection(e)}>
-                <span>{compile(v.title)}</span>
-              </Menu.Item>
-            );
-          })}
-        </Menu>
-      </Sider>
-      <div className="site-layout-background" style={{ padding: 0 }}>
-        {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
-          className: 'trigger',
-          onClick: () => setCollapsed(!collapsed),
-        })}
-      </div>
-      <Layout className="site-layout">
-        <Content
-          className="site-layout-background"
-          style={{
-            overflow: 'hidden',
-          }}
-        >
+        <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
+          <div className={cx(collectionListClass)}>
+            <div className="trigger">
+              {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
+                className: 'trigger',
+                onClick: () => setCollapsed(!collapsed),
+              })}
+            </div>
+            <SchemaComponent
+              schema={{
+                type: 'void',
+                properties: {
+                  block1: {
+                    type: 'void',
+                    'x-collection': 'collections',
+                    'x-decorator': 'ResourceActionProvider',
+                    'x-decorator-props': {
+                      collection,
+                      request: {
+                        resource: 'collections',
+                        action: 'list',
+                        params: {
+                          pageSize: 50,
+                          filter: {
+                            inherit: false,
+                          },
+                          sort: ['sort'],
+                          appends: [],
+                        },
+                      },
+                    },
+                    properties: {
+                      actions: {
+                        type: 'void',
+                        'x-component': 'ActionBar',
+                        'x-component-props': {
+                          style: {
+                            fontSize: 16,
+                          },
+                        },
+                        properties: {
+                          create: {
+                            type: 'void',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              type: 'primary',
+                              component: PlusSquareOutlined,
+                            },
+                            properties: {
+                              drawer: {
+                                type: 'void',
+                                title: '{{ t("Create collection") }}',
+                                'x-component': 'Action.Drawer',
+                                'x-component-props': {
+                                  getContainer: () => {
+                                    return document.getElementById('graph_container');
+                                  },
+                                },
+                                'x-decorator': 'Form',
+                                'x-decorator-props': {
+                                  useValues: '{{ useCollectionValues }}',
+                                },
+                                properties: {
+                                  title: {
+                                    'x-component': 'CollectionField',
+                                    'x-decorator': 'FormItem',
+                                  },
+                                  name: {
+                                    'x-component': 'CollectionField',
+                                    'x-decorator': 'FormItem',
+                                    'x-validator': 'uid',
+                                  },
+                                  footer: {
+                                    type: 'void',
+                                    'x-component': 'Action.Drawer.Footer',
+                                    properties: {
+                                      action1: {
+                                        title: '{{ t("Cancel") }}',
+                                        'x-component': 'Action',
+                                        'x-component-props': {
+                                          useAction: '{{ cm.useCancelAction }}',
+                                        },
+                                      },
+                                      action2: {
+                                        title: '{{ t("Submit") }}',
+                                        'x-component': 'Action',
+                                        'x-component-props': {
+                                          type: 'primary',
+                                          useAction: '{{ useCreateActionAndRefreshCM }}',
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                          fullScreen: {
+                            type: 'void',
+                            title: '{{ t("fullScreen") }}',
+                            'x-component': 'Action',
+                            'x-designer': 'Action.Designer',
+                            'x-component-props': {
+                              component: (props) => {
+                                return isFullscreen ? (
+                                  <FullscreenExitOutlined {...props} />
+                                ) : (
+                                  <FullscreenOutlined {...props} />
+                                );
+                              },
+                              useAction: () => {
+                                return {
+                                  run() {
+                                    toggleFullscreen();
+                                  },
+                                };
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              }}
+              scope={{
+                useCreateActionAndRefreshCM: () => useCreateActionAndRefreshCM(setTargetNode),
+              }}
+            />
+            <Sider collapsed={collapsed}  theme="light" collapsedWidth={0} width={150}>
+              <Input type="search" onChange={handleSearchCollection} allowClear placeholder="表搜索" />
+              <Menu style={{ width: 150, maxHeight: '900px', overflowY: 'auto' }} mode="inline" theme="light">
+                {collectionList.map((v) => {
+                  return (
+                    <Menu.Item key={v.key} onClick={(e) => handleSelectCollection(e)}>
+                      <span>{compile(v.title)}</span>
+                    </Menu.Item>
+                  );
+                })}
+              </Menu>
+            </Sider>
+          </div>
           <div id="container" style={{ width: 'auto', height: 'auto' }}></div>
-        </Content>
-      </Layout>
+        </CollectionManagerProvider>
+      </div>
     </Layout>
   );
 });

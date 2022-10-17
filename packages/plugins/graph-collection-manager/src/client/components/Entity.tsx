@@ -246,7 +246,14 @@ const Entity: React.FC<{
                         Input,
                         Form,
                         ResourceActionProvider,
-                        Select,
+                        Select: (props) => (
+                          <Select
+                            {...props}
+                            getPopupContainer={() => {
+                              return document.getElementById('graph_container');
+                            }}
+                          />
+                        ),
                         Checkbox,
                         Radio,
                         InputNumber,
@@ -273,7 +280,7 @@ const Entity: React.FC<{
                                 'x-component-props': {
                                   item: {
                                     ...property,
-                                    title
+                                    title,
                                   },
                                 },
                               },
@@ -292,7 +299,7 @@ const Entity: React.FC<{
                                 'x-component-props': {
                                   item: {
                                     ...property,
-                                    title
+                                    title,
                                   },
                                 },
                               },

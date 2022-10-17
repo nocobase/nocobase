@@ -148,7 +148,23 @@ export const collectiionPopoverClass = css`
 `;
 
 export const collectionListClass = css`
-  .ant-menu-item  {
+  float: right;
+  position: absolute;
+  right: 24px;
+  height: 100%;
+  z-index:1000;
+  .trigger{
+    float:right;
+    margin: 2px 4px;
+    font-size: 16px;
+  }
+  .ant-menu-item {
     height: 25px;
   }
 `;
+
+export const graphCollectionContainerClass=css`
+.x6-graph-scroller{
+  width:100% !important;
+}
+`

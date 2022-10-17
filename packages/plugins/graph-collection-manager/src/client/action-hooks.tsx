@@ -41,10 +41,11 @@ export const useCancelAction = () => {
   };
 };
 
-export const useCreateActionAndRefreshCM = (GraphRef) => {
+export const useCreateActionAndRefreshCM = (setTargetNode) => {
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
+  const { refreshCM } = useCollectionManager();
 
   return {
     async run() {
@@ -52,8 +53,8 @@ export const useCreateActionAndRefreshCM = (GraphRef) => {
       await api.resource('collections').create({ values: form.values });
       ctx.setVisible(false);
       await form.reset();
-      GraphRef.current.setTargetNode('last');
-      await GraphRef.current.refreshGM();
+      setTargetNode('last');
+      await refreshCM();
     },
   };
 };
