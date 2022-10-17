@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useEffect, useContext, useState, useImperativeHandle } from 'react';
 import { Graph } from '@antv/x6';
 import dagre from 'dagre';
-import { last, throttle } from 'lodash';
+import { last } from 'lodash';
 import '@antv/x6-react-shape';
 import { SchemaOptionsContext } from '@formily/react';
 import { Layout, Menu, Input } from 'antd';
@@ -18,7 +18,6 @@ import { formatData } from './utils';
 import Entity from './components/Entity';
 import { collectionListClass } from './style';
 import { FullScreenContext } from './GraphCollectionShortcut';
-import { useGraphPosions } from './GraphPositionProvider';
 
 const { Sider, Content } = Layout;
 
@@ -28,7 +27,7 @@ let targetGraph;
 let targetNode;
 let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
-async function layout(graph, positions, createPositions, refreshPositions) {
+async function layout(graph, positions, createPositions) {
   let graphPositions = [];
   const nodes: any[] = graph.getNodes();
   const edges = graph.getEdges();
@@ -74,7 +73,6 @@ async function layout(graph, positions, createPositions, refreshPositions) {
     : graph.positionCell(last(nodes), 'top', { padding: 100 });
   if (graphPositions.length > 0) {
     await createPositions(graphPositions);
-    await refreshPositions();
   }
 }
 
@@ -101,30 +99,50 @@ function getEdges(edges, graph) {
 export const Editor = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
-  const { positions, createPositions, updatePosition, refreshPositions } = useGraphPosions();
   const [collapsed, setCollapsed] = useState(false);
   const { GraphRef } = useContext(FullScreenContext);
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
+  const [positionData, setPositionData] = useState<any>(null);
   let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
-  useImperativeHandle(GraphRef, () => ({
-    refreshCM,
-  }));
+
+  const useSaveGraphPositionAction = async (data) => {
+    await api.resource('graphPositions').create({ values: data });
+    await refreshPositions()
+  };
+  const useUpdatePositionAction = async (position) => {
+    await api.resource('graphPositions').update({
+      filter: { collectionName: position.collectionName },
+      values: { ...position },
+    });
+    await refreshPositions()
+  };
+  const refreshPositions = async () => {
+    const { data } = await api.resource('graphPositions').list();
+    targetGraph.positions = data.data;
+    setPositionData(data.data);
+    return Promise.resolve();
+  };
   const setTargetNode = (node) => {
     targetNode = node;
   };
-  const refreshCM = async () => {
-    const { data } = await api.resource('collections').list({
-      paginate: false,
-      appends: ['fields', 'fields.uiSchema'],
-      sort: 'sort',
-    });
-    setCollectionData(data.data);
-    setCollectionList(data.data);
-    getCollectionData(data.data, targetGraph);
-    targetGraph.collections = data.data;
+  const refreshGM = async () => {
+    api
+      .resource('collections')
+      .list({
+        paginate: false,
+        appends: ['fields', 'fields.uiSchema'],
+        sort: 'sort',
+      })
+      .then((v) => {
+        const { data } = v;
+        targetGraph.collections = data.data;
+        setCollectionData(data.data);
+        setCollectionList(data.data);
+        targetGraph && getCollectionData(data.data, targetGraph);
+      });
   };
   const initGraphCollections = () => {
     const myGraph = new Graph({
@@ -184,7 +202,7 @@ export const Editor = React.memo(() => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshCM}>
+              <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
                 <div style={{ height: 'auto' }}>
                   <Entity node={node} setTargetNode={setTargetNode} />
                 </div>
@@ -217,7 +235,6 @@ export const Editor = React.memo(() => {
       },
       true,
     );
-    console.log(targetGraph.positions)
     targetGraph.on('edge:mouseover', ({ e, edge }) => {
       e.stopPropagation();
       const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
@@ -234,14 +251,13 @@ export const Editor = React.memo(() => {
     });
     targetGraph.on('node:mouseup', ({ e, node }) => {
       e.stopPropagation();
-      console.log(targetGraph.positions)
       if (targetGraph.positions.find((v) => v.collectionName === node.store.data.name)) {
-        updatePosition({
+        useUpdatePositionAction({
           collectionName: node.store.data.name,
           ...node.position(),
         });
       } else {
-        createPositions({
+        useSaveGraphPositionAction({
           collectionName: node.store.data.name,
           ...node.position(),
         });
@@ -249,14 +265,15 @@ export const Editor = React.memo(() => {
     });
   };
   const getCollectionData = (rawData, graph) => {
-    console.log(rawData);
     const { nodes, edges } = formatData(rawData);
     graph.clearCells();
     getNodes(nodes, graph);
     getEdges(edges, graph);
-    layout(graph, positions, createPositions, refreshPositions);
+    layout(graph, targetGraph.positions, useSaveGraphPositionAction);
   };
-
+  useImperativeHandle(GraphRef, () => ({
+    refreshGM,
+  }));
   useLayoutEffect(() => {
     initGraphCollections();
     return () => {
@@ -269,22 +286,10 @@ export const Editor = React.memo(() => {
   }, []);
 
   useEffect(() => {
-    api
-      .resource('collections')
-      .list({
-        paginate: false,
-        appends: ['fields', 'fields.uiSchema'],
-        sort: 'sort',
-      })
-      .then((v) => {
-        const { data } = v;
-        targetGraph.collections = data.data;
-        targetGraph.positions=positions;
-        setCollectionData(data.data);
-        setCollectionList(data.data);
-        targetGraph && getCollectionData(data.data, targetGraph);
-      });
-  }, [positions]);
+    refreshPositions().then(() => {
+      refreshGM();
+    });
+  }, []);
 
   const handleSearchCollection = (e) => {
     const value = e.target.value.toLowerCase();

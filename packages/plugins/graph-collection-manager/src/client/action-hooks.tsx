@@ -51,7 +51,7 @@ export const useCreateActionAndRefreshCM = (GraphRef) => {
       await api.resource('collections').create({ values: form.values });
       ctx.setVisible(false);
       await form.reset();
-      await GraphRef.current.refreshCM();
+      await GraphRef.current.refreshGM();
     },
   };
 };

@@ -252,7 +252,7 @@ export const GraphCollectionPane = () => {
               },
               editor: {
                 type: 'void',
-                'x-decorator':'GraphPositionProvider',
+                // 'x-decorator':'GraphPositionProvider',
                 'x-component':'Editor',
               },
             },
