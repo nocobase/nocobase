@@ -50,7 +50,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
             strokeWidth: 1,
             textAnchor: 'middle',
             textVerticalAnchor: 'middle',
-            stroke: 'rgb(201 205 212)',
+            stroke: '#ddd',
             sourceMarker: null,
             targetMarker: null,
           },
@@ -82,7 +82,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
             attrs: {
               labelText: {
                 text: getRelationship(data[i].interface)[0],
-                fill: '#ffa940',
+                fill: 'rgba(0, 0, 0, 0.3)',
                 textAnchor: 'middle',
                 textVerticalAnchor: 'middle',
               },
@@ -90,8 +90,8 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 ref: 'labelText',
                 refWidth: '100%',
                 refHeight: '100%',
-                stroke: '#ffa940',
-                fill: '#fff',
+                stroke: '#ddd',
+                fill: '#f0f2f5',
                 strokeWidth: 1,
                 rx: 10,
                 ry: 10,
@@ -119,7 +119,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
             attrs: {
               labelText: {
                 text: getRelationship(data[i].interface)[1],
-                fill: '#ffa940',
+                fill: 'rgba(0, 0, 0, 0.3)',
                 textAnchor: 'middle',
                 textVerticalAnchor: 'middle',
               },
@@ -127,8 +127,8 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 ref: 'labelText',
                 refWidth: '100%',
                 refHeight: '100%',
-                stroke: '#ffa940',
-                fill: '#fff',
+                stroke: '#ddd',
+                fill: '#f0f2f5',
                 rx: 10,
                 ry: 10,
                 strokeWidth: 1,
@@ -148,7 +148,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
         anchor: 'center',
         direction: 'v',
       };
-      if (['m2m','linkTo'].includes(data[i].interface)) {
+      if (['m2m', 'linkTo'].includes(data[i].interface)) {
         const throughTable = tableData.find((v) => v.name === data[i].through);
         throughTable &&
           edges.push({
@@ -206,5 +206,3 @@ const getRelationship = (relatioship) => {
       return [];
   }
 };
-
-

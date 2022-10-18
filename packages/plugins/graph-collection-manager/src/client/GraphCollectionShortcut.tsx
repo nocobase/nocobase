@@ -1,12 +1,11 @@
-import { PartitionOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PartitionOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { useActionContext, useRequest, PluginManager, SchemaComponent } from '@nocobase/client';
-import { DeleteOutlined } from '@ant-design/icons';
+import { PluginManager, SchemaComponent, useActionContext, useRequest } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { GraphDrawPage } from './GraphDrawPage';
 import { useCreateActionAndRefreshCM } from './action-hooks';
+import { GraphDrawPage } from './GraphDrawPage';
 
 const useCollectionValues = (options) => {
   const { visible } = useActionContext();
@@ -113,7 +112,7 @@ const useCollectionValues = (options) => {
 
 export const GraphCollectionPane = () => {
   return (
-    <div id="graph_container">
+    <div style={{ margin: -24, position: 'relative' }} id="graph_container">
       <SchemaComponent
         schema={{
           type: 'void',

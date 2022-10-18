@@ -1,41 +1,24 @@
-import React from 'react';
-import { uid } from '@formily/shared';
-import { css } from '@emotion/css';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import {
-  SchemaComponent,
-  SchemaComponentProvider,
-  Action,
-  FormItem,
-  CollectionField,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Checkbox,
-  Radio,
-  Grid,
-  useCompile,
-  CollectionProvider,
-  ResourceActionProvider,
-  useCollectionManager,
-} from '@nocobase/client';
 import '@antv/x6-react-shape';
-import { cx } from '@emotion/css';
-import { Dropdown, Popover, Tag } from 'antd';
-import { headClass, tableNameClass, tableBtnClass, entityContainer, collectiionPopoverClass } from '../style';
-import { collection } from '../schemas/collection';
-import { CollectionNodeProvder } from './CollectionNodeProvder';
+import { css, cx } from '@emotion/css';
+import { uid } from '@formily/shared';
 import {
-  useValuesFromRecord,
-  useUpdateCollectionActionAndRefreshCM,
-  useCancelAction,
+  Action, Checkbox, CollectionField, CollectionProvider, Form, FormItem, Grid, Input,
+  InputNumber, Radio, ResourceActionProvider, SchemaComponent,
+  SchemaComponentProvider, Select, useCollectionManager, useCompile
+} from '@nocobase/client';
+import { Dropdown, Popover, Tag } from 'antd';
+import React from 'react';
+import {
+  useAsyncDataSource, useCancelAction,
   useDestroyActionAndRefreshCM,
-  useDestroyFieldActionAndRefreshCM,
-  useAsyncDataSource,
+  useDestroyFieldActionAndRefreshCM, useUpdateCollectionActionAndRefreshCM, useValuesFromRecord
 } from '../action-hooks';
-import { EditFieldAction } from './EditFieldAction';
+import { collection } from '../schemas/collection';
+import { collectiionPopoverClass, entityContainer, headClass, tableBtnClass, tableNameClass } from '../style';
 import { AddFieldAction } from './AddFieldAction';
+import { CollectionNodeProvder } from './CollectionNodeProvder';
+import { EditFieldAction } from './EditFieldAction';
 import { FieldSummary } from './FieldSummary';
 
 const Entity: React.FC<{
@@ -234,7 +217,7 @@ const Entity: React.FC<{
                   style={{
                     background:
                       attrs?.targetPort === property.id || attrs?.sourcePort === property.id
-                        ? 'rgb(255, 169, 64'
+                        ? '#e6f7ff'
                         : null,
                   }}
                 >
@@ -351,7 +334,7 @@ const Entity: React.FC<{
                   <div
                     className="name"
                     style={{
-                      color: attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#fff' : null,
+                      // color: attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#fff' : null,
                     }}
                   >
                     {compile(property.uiSchema?.title)}
@@ -359,7 +342,7 @@ const Entity: React.FC<{
                   <div
                     className="type"
                     style={{
-                      color: attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#fff' : null,
+                      // color: attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#fff' : null,
                     }}
                   >
                     {compile(getInterface(property.interface).title)}

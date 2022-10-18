@@ -36,7 +36,7 @@ export const entityContainer = css`
       max-width: 250px;
       height: 40px;
       font-size: 14px;
-      color: #595959;
+      color: rgba(0, 0, 0, 0.85);
       height: 40px;
       border-top: 1px solid #f0f0f0;
       text-overflow: ellipsis;
@@ -100,7 +100,7 @@ export const entityContainer = css`
       }
 
       .type {
-        color: #bfbfbf;
+        color: rgba(0, 0, 0, 0.45);
         margin-right: 8px;
       }
     }
@@ -161,8 +161,20 @@ export const collectionListClass = css`
     margin: 2px 4px;
     font-size: 16px;
   }
+  .ant-input {
+    margin: 4px;
+  }
+  .ant-menu-inline {
+    border-top: 1px solid #f0f0f0;
+  }
+  .ant-layout-sider {
+    margin-top: 24px;
+  }
   .ant-menu-item {
-    height: 25px;
+    height: 32px;
+  }
+  .ant-btn {
+    border: 0;
   }
 `;
 
