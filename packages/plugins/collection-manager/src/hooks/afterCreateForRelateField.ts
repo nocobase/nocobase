@@ -41,7 +41,9 @@ async function createForeignKeyField(
       interface: sourceField.get('interface'),
       type: sourceField.get('type'),
       uiSchema: uiSchema,
-      // collectionName: foreignCollectionName,
+      options: {
+        isForeignKey: true,
+      },
     },
     transaction,
   });
@@ -49,14 +51,8 @@ async function createForeignKeyField(
 
 export function afterCreateForRelateField(db: Database) {
   return async (model, { transaction }) => {
-    const reverseKey = model.get('reverseKey');
-    if (!reverseKey) {
-      return;
-    }
-    const Field = db.getCollection('fields');
-    const reverse = await Field.model.findByPk(reverseKey, { transaction });
-    const interfaceType = reverse.get('interface') as any;
-    const options = reverse.get('options') as any;
+    const interfaceType = model.get('interface') as any;
+    const options = model.get('options') as any;
     switch (interfaceType) {
       case 'oho':
       case 'o2m':
@@ -65,7 +61,7 @@ export function afterCreateForRelateField(db: Database) {
           transaction,
           db,
           options?.sourceKey,
-          reverse.get('collectionName'),
+          model.get('collectionName'),
           options?.foreignKey,
           options?.target,
         );
@@ -79,7 +75,7 @@ export function afterCreateForRelateField(db: Database) {
           options?.targetKey,
           options?.target,
           options?.foreignKey,
-          reverse.get('collectionName'),
+          model.get('collectionName'),
         );
         break;
       case 'linkTo':
@@ -95,7 +91,7 @@ export function afterCreateForRelateField(db: Database) {
         } as FindOneOptions);
         if (!collectionsRecord) {
           // create through collections record
-          const sourceCollectionName = reverse.get('collectionName') as string;
+          const sourceCollectionName = model.get('collectionName') as string;
           const targetCollectionName = options?.target as string;
           await collectionsRepo.create({
             values: {
@@ -104,6 +100,11 @@ export function afterCreateForRelateField(db: Database) {
                 db.getCollection(targetCollectionName).options?.title
               }`,
               logging: true,
+              timestamps: false,
+              options: {
+                autoCreate: true,
+                isThrough: true,
+              },
             },
             transaction,
           });
@@ -113,7 +114,7 @@ export function afterCreateForRelateField(db: Database) {
           transaction,
           db,
           options?.sourceKey,
-          reverse.get('collectionName'),
+          model.get('collectionName'),
           options?.foreignKey,
           through,
         );
