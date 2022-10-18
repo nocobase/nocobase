@@ -36,6 +36,9 @@ const getSchema = (schema, record: any, compile): ISchema => {
     ...cloneDeep(schema.default),
     interface: schema.name,
   };
+  if (initialValue.reverseField) {
+    initialValue.reverseField.name = `f_${uid()}`;
+  }
   return {
     type: 'object',
     properties: {
@@ -113,6 +116,8 @@ const useCreateCollectionField = (record) => {
   };
 };
 
+
+
 export const AddFieldAction = ({ item: record }) => {
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
@@ -165,7 +170,7 @@ export const AddFieldAction = ({ item: record }) => {
           ArrayTable,
           SourceCollection,
         }}
-        scope={{ createOnly: true, createCollectionField: () => useCreateCollectionField(record), useCancelAction }}
+        scope={{ createOnly: true, createCollectionField: () => useCreateCollectionField(record), useCancelAction ,showReverseFieldConfig: true }}
       />
     </ActionContext.Provider>
   );

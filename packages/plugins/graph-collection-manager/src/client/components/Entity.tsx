@@ -297,6 +297,7 @@ const Entity: React.FC<{
                                   item: {
                                     ...property,
                                     title,
+                                    __parent:item
                                   },
                                 },
                               },
