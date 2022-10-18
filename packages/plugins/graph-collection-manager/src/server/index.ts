@@ -1,5 +1,5 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import path from 'path'
+import path from 'path';
 export class GraphCollectionManagerPlugin extends Plugin {
   getName(): string {
     return this.getPackageName(__dirname);
@@ -14,7 +14,6 @@ export class GraphCollectionManagerPlugin extends Plugin {
     directory: path.resolve(__dirname,'collections')
    });  
    this.app.acl.allow('graphPositions', '*');
- 
   }
 
   async install(options: InstallOptions) {
