@@ -333,17 +333,6 @@ export const GraphDrawPage = React.memo(() => {
         <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
           <CollapsedContext.Provider value={{ collapsed, setCollapsed }}>
             <div className={cx(collectionListClass)}>
-              {/* <Tooltip
-              title={t('Collection List')}
-              getPopupContainer={getPopupContainer}
-            >
-              <div className="trigger">
-                {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
-                  className: 'trigger',
-                  onClick: () => setCollapsed(!collapsed),
-                })}
-              </div>
-            </Tooltip> */}
               <SchemaComponent
                 schema={{
                   type: 'void',
@@ -379,19 +368,10 @@ export const GraphDrawPage = React.memo(() => {
                           properties: {
                             create: {
                               type: 'void',
-                              // title: 'Create collection',
                               'x-component': 'Action',
                               'x-component-props': {
                                 type: 'primary',
                                 icon: 'PlusOutlined',
-                                // component: (props) => (
-                                //   <Tooltip
-                                //     title={t('Create collection')}
-                                //     getPopupContainer={getPopupContainer}
-                                //   >
-                                //     <PlusSquareOutlined {...props} />
-                                //   </Tooltip>
-                                // ),
                               },
                               properties: {
                                 drawer: {
@@ -444,11 +424,8 @@ export const GraphDrawPage = React.memo(() => {
                             },
                             fullScreen: {
                               type: 'void',
-                              // title: '{{ t("Full Screen") }}',
                               'x-component': 'Action',
-                              // 'x-designer': 'Action.Designer',
                               'x-component-props': {
-                                // icon: 'FullscreenOutlined',
                                 component: (props) => {
                                   const [isFullscreen, { toggleFullscreen }] = useFullscreen(
                                     document.getElementById('graph_container'),
@@ -474,7 +451,6 @@ export const GraphDrawPage = React.memo(() => {
                             },
                             collectionList: {
                               type: 'void',
-                              // title: '{{ t("Collection list") }}',
                               'x-component': () => {
                                 const { collapsed, setCollapsed } = useContext(CollapsedContext);
                                 return (
@@ -487,23 +463,8 @@ export const GraphDrawPage = React.memo(() => {
                                   </Button>
                                 );
                               },
-                              // 'x-designer': 'Action.Designer',
                               'x-component-props': {
                                 icon: 'MenuOutlined',
-                                // component: (props) => {
-                                //   return (
-                                //     <Tooltip
-                                //       title={t('Full Screen')}
-                                //       getPopupContainer={getPopupContainer}
-                                //     >
-                                //       {isFullscreen ? (
-                                //         <FullscreenExitOutlined {...props} />
-                                //       ) : (
-                                //         <FullscreenOutlined {...props} />
-                                //       )}
-                                //     </Tooltip>
-                                //   );
-                                // },
                                 useAction: () => {
                                   return {
                                     run() {},
