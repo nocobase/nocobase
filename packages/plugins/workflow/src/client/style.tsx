@@ -38,8 +38,20 @@ export const workflowPageClass = css`
 export const workflowVersionDropdownClass = css`
   .ant-dropdown-menu-item{
 
+    strong{
+      font-weight: normal;
+    }
+
+    &.enabled{
+      strong{
+        font-weight: bold;
+      }
+    }
+
     &.unexecuted{
-      font-style: italic;
+      strong{
+        font-style: italic;
+      }
     }
 
     .ant-dropdown-menu-title-content{

@@ -522,6 +522,7 @@ export default {
   'Load failed': '加载失败',
 
   'Trigger': '触发器',
+  'Triggered at': '触发时间',
   'Collection event': '数据表事件',
   'Trigger on': '触发时机',
   'After record added': '新增数据后',

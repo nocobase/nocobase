@@ -1,4 +1,7 @@
+import React from 'react';
 import { ISchema } from '@formily/react';
+import { Link } from 'react-router-dom';
+import { useActionContext } from '@nocobase/client';
 
 const collection = {
   name: 'executions',
@@ -10,7 +13,7 @@ const collection = {
       name: 'createdAt',
       uiSchema: {
         type: 'datetime',
-        title: '{{t("Created at")}}',
+        title: '{{t("Triggered at")}}',
         'x-component': 'DatePicker',
         'x-component-props': {},
         'x-read-pretty': true,
@@ -23,8 +26,10 @@ const collection = {
       uiSchema: {
         type: 'number',
         title: '{{t("Version")}}',
-        'x-component': 'InputNumber',
-        'x-read-pretty': true,
+        ['x-component']({ value }) {
+          const { setVisible } = useActionContext();
+          return <Link to={`/admin/plugins/workflows/${value}`} onClick={() => setVisible(false)}>{`#${value}`}</Link>;
+        }
       } as ISchema,
     },
     {

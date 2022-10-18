@@ -4,6 +4,7 @@ import { Dropdown, Menu, Button, Tag, Switch, message } from 'antd';
 import { PlusOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
+import classnames from 'classnames';
 
 import {
   useAPIClient,
@@ -110,13 +111,17 @@ export function WorkflowCanvas() {
                   defaultSelectedKeys={[workflow.id]}
                   className={cx(workflowVersionDropdownClass)}
                 >
-                  {revisions.sort((a, b) => b.id - a.id).map(item => (
+                  {revisions.sort((a, b) => b.id - a.id).map((item, index) => (
                     <Menu.Item
                       key={item.id}
                       icon={item.current ? <RightOutlined /> : null}
-                      className={item.executed ? 'executed' : 'unexecuted'}
+                      className={classnames({
+                        executed: item.executed,
+                        unexecuted: !item.executed,
+                        enabled: item.enabled,
+                      })}
                     >
-                      <strong>{`#${item.id}`}</strong>
+                      <strong>{`${revisions.length - index} (#${item.id})`}</strong>
                       <time>{(new Date(item.createdAt)).toLocaleString()}</time>
                     </Menu.Item>
                   ))}
