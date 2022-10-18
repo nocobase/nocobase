@@ -45,6 +45,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
       const targetTable = tableData.find((v) => v.name === data[i].target);
       const sourceTable = tableData.find((v) => v.name === data[i].collectionName);
       const commonAttrs = {
+        "shape": "edge",
         attrs: {
           line: {
             strokeWidth: 1,
@@ -55,7 +56,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
             targetMarker: null,
           },
         },
-        connector: { name: 'smooth' },
+        connector: { name: 'normal' },
         router:
           sourceTable.id === targetTable.id
             ? {
@@ -65,7 +66,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 },
               }
             : {
-                name: 'metro',
+                name: 'er',
               },
         labels: [
           {
