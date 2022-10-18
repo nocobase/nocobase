@@ -80,7 +80,7 @@ const Entity: React.FC<{
     );
   };
   return (
-    <div className={cx(entityContainer)} style={{ boxShadow: attrs?.border }}>
+    <div className={cx(entityContainer)} style={{ boxShadow: attrs?.boxShadow }}>
       <div className={headClass}>
         <span className={tableNameClass}>{compile(title)}</span>
         <div className={tableBtnClass}>
