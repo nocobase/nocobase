@@ -12,7 +12,7 @@ import {
   useCompile,
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
-import { Button, Input, Layout, Menu, Tooltip, Dropdown, Popover } from 'antd';
+import { Button, Input, Layout, Menu, Tooltip, Popover } from 'antd';
 import dagre from 'dagre';
 import { last } from 'lodash';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
@@ -22,8 +22,6 @@ import Entity from './components/Entity';
 import { collection } from './schemas/collection';
 import { collectionListClass, graphCollectionContainerClass } from './style';
 import { formatData } from './utils';
-
-const { Sider } = Layout;
 
 const LINE_HEIGHT = 40;
 const NODE_WIDTH = 250;
@@ -39,7 +37,7 @@ async function layout(graph, positions, createPositions) {
   g.setGraph({ rankdir: dir, nodesep: 50, edgesep: 50, rankSep: 50, align: 'DL', controlPoints: true });
   g.setDefaultEdgeLabel(() => ({}));
   nodes.forEach((node, i) => {
-    const width = 250;
+    const width = NODE_WIDTH;
     const height = node.getPorts().length * 32 + 30;
     g.setNode(node.id, { width, height });
   });

@@ -154,7 +154,6 @@ export const collectionListClass = css`
   position: absolute;
   top: 24px;
   right: 24px;
-  height: 100%;
   z-index: 1000;
   .trigger {
     float: right;
