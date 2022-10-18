@@ -30,6 +30,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
+
   const initialValue = {
     name: `f_${uid()}`,
     ...cloneDeep(schema.default),

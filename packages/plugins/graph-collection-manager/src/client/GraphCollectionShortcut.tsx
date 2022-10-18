@@ -136,7 +136,7 @@ export const GraphCollectionPane = () => {
 };
 
 export const GraphCollectionShortcut = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('graphPositions');
   const history = useHistory();
   return (
     <PluginManager.Toolbar.Item

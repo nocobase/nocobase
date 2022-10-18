@@ -116,7 +116,7 @@ const getPopupContainer = () => {
 export const GraphDrawPage = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
-  const { t } = useTranslation();
+  const { t } = useTranslation('graphPositions');
   const [isFullscreen, { toggleFullscreen }] = useFullscreen(document.getElementById('graph_container'));
   const [collapsed, setCollapsed] = useState(true);
   const [collectionData, setCollectionData] = useState<any>([]);
@@ -386,7 +386,7 @@ export const GraphDrawPage = React.memo(() => {
                               type: 'primary',
                               component: (props) => (
                                 <Tooltip
-                                  title={t('Create collection')}
+                                  title={t('Create Collection')}
                                   getPopupContainer={getPopupContainer}
                                 >
                                   <PlusSquareOutlined {...props} />
@@ -396,7 +396,7 @@ export const GraphDrawPage = React.memo(() => {
                             properties: {
                               drawer: {
                                 type: 'void',
-                                title: '{{ t("Create collection") }}',
+                                title: '{{ t("Create Collection") }}',
                                 'x-component': 'Action.Drawer',
                                 'x-component-props': {
                                   getContainer: () => {
