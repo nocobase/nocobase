@@ -12,7 +12,7 @@ import {
   useCompile,
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
-import { Button, Input, Layout, Menu, Tooltip } from 'antd';
+import { Button, Input, Layout, Menu, Tooltip, Dropdown, Popover } from 'antd';
 import dagre from 'dagre';
 import { last } from 'lodash';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
@@ -269,12 +269,6 @@ export const GraphDrawPage = React.memo(() => {
       if (targetNode && targetNode !== 'last') {
         targetNode.removeAttrs();
       }
-      targetNode = node;
-      targetGraph.unfreeze();
-      // 定位到目标节点
-      node.setAttrs({
-        boxShadow: '0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)',
-      });
       if (oldPosition) {
         (oldPosition.x !== currentPosition.x || oldPosition.y !== currentPosition.y) &&
           useUpdatePositionAction({
@@ -343,7 +337,7 @@ export const GraphDrawPage = React.memo(() => {
     <Layout>
       <div className={cx(graphCollectionContainerClass)}>
         <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
-          <CollapsedContext.Provider value={{ collapsed, setCollapsed }}>
+          <CollapsedContext.Provider value={{ collectionList, handleSearchCollection }}>
             <div className={cx(collectionListClass)}>
               <SchemaComponent
                 schema={{
@@ -464,15 +458,37 @@ export const GraphDrawPage = React.memo(() => {
                             collectionList: {
                               type: 'void',
                               'x-component': () => {
-                                const { collapsed, setCollapsed } = useContext(CollapsedContext);
+                                const { handleSearchCollection, collectionList } = useContext(CollapsedContext);
+                                const content = (
+                                  <div>
+                                    <Input
+                                      bordered={false}
+                                      placeholder={t('Collection Search')}
+                                      onChange={handleSearchCollection}
+                                    />
+                                    <Menu style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}>
+                                      {collectionList.map((v) => {
+                                        return (
+                                          <Menu.Item key={v.key} onClick={(e) => handleSelectCollection(e)}>
+                                            <span>{compile(v.title)}</span>
+                                          </Menu.Item>
+                                        );
+                                      })}
+                                    </Menu>
+                                  </div>
+                                );
                                 return (
-                                  <Button
-                                    onClick={() => {
-                                      setCollapsed(!collapsed);
-                                    }}
+                                  <Popover
+                                    content={content}
+                                    placement="bottomRight"
+                                    trigger={['click']}
+                                    getPopupContainer={getPopupContainer}
+                                    destroyTooltipOnHide
                                   >
-                                    <MenuOutlined />
-                                  </Button>
+                                    <Button>
+                                      <MenuOutlined />
+                                    </Button>
+                                  </Popover>
                                 );
                               },
                               'x-component-props': {
@@ -494,24 +510,6 @@ export const GraphDrawPage = React.memo(() => {
                   useCreateActionAndRefreshCM: () => useCreateActionAndRefreshCM(setTargetNode),
                 }}
               />
-              <Sider style={{ marginRight: -24 }} collapsed={collapsed} theme="light" collapsedWidth={0} width={200}>
-                <Input
-                  bordered={false}
-                  type="search"
-                  onChange={handleSearchCollection}
-                  allowClear
-                  placeholder={t('Collection Search')}
-                />
-                <Menu mode="inline" theme="light">
-                  {collectionList.map((v) => {
-                    return (
-                      <Menu.Item key={v.key} onClick={(e) => handleSelectCollection(e)}>
-                        <span>{compile(v.title)}</span>
-                      </Menu.Item>
-                    );
-                  })}
-                </Menu>
-              </Sider>
             </div>
           </CollapsedContext.Provider>
           <div id="container" style={{ width: 'auto', height: 'auto' }}></div>
