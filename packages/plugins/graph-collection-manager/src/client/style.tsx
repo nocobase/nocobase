@@ -182,5 +182,6 @@ export const graphCollectionContainerClass = css`
   overflow: hidden;
   .x6-graph-scroller {
     width: 100% !important;
+    height:calc(100vh) !important
   }
 `;

@@ -9,7 +9,7 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Tooltip } from 'antd';
@@ -263,16 +263,28 @@ export const GraphDrawPage = React.memo(() => {
       sourceNode.removeAttrs('sourcePort');
     });
     targetGraph.on('node:mouseup', ({ e, node }) => {
+      const currentPosition = node.position();
+      const oldPosition = targetGraph.positions.find((v) => v.collectionName === node.store.data.name);
       e.stopPropagation();
-      if (targetGraph.positions.find((v) => v.collectionName === node.store.data.name)) {
-        useUpdatePositionAction({
-          collectionName: node.store.data.name,
-          ...node.position(),
-        });
+      if (targetNode && targetNode !== 'last') {
+        targetNode.removeAttrs();
+      }
+      targetNode = node;
+      targetGraph.unfreeze();
+      // 定位到目标节点
+      node.setAttrs({
+        boxShadow: '0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)',
+      });
+      if (oldPosition) {
+        (oldPosition.x !== currentPosition.x || oldPosition.y !== currentPosition.y) &&
+          useUpdatePositionAction({
+            collectionName: node.store.data.name,
+            ...currentPosition,
+          });
       } else {
         useSaveGraphPositionAction({
           collectionName: node.store.data.name,
-          ...node.position(),
+          ...currentPosition,
         });
       }
     });
@@ -333,17 +345,6 @@ export const GraphDrawPage = React.memo(() => {
         <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
           <CollapsedContext.Provider value={{ collapsed, setCollapsed }}>
             <div className={cx(collectionListClass)}>
-              {/* <Tooltip
-              title={t('Collection List')}
-              getPopupContainer={getPopupContainer}
-            >
-              <div className="trigger">
-                {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
-                  className: 'trigger',
-                  onClick: () => setCollapsed(!collapsed),
-                })}
-              </div>
-            </Tooltip> */}
               <SchemaComponent
                 schema={{
                   type: 'void',
@@ -379,19 +380,10 @@ export const GraphDrawPage = React.memo(() => {
                           properties: {
                             create: {
                               type: 'void',
-                              // title: 'Create collection',
                               'x-component': 'Action',
                               'x-component-props': {
                                 type: 'primary',
                                 icon: 'PlusOutlined',
-                                // component: (props) => (
-                                //   <Tooltip
-                                //     title={t('Create collection')}
-                                //     getPopupContainer={getPopupContainer}
-                                //   >
-                                //     <PlusSquareOutlined {...props} />
-                                //   </Tooltip>
-                                // ),
                               },
                               properties: {
                                 drawer: {
@@ -444,11 +436,8 @@ export const GraphDrawPage = React.memo(() => {
                             },
                             fullScreen: {
                               type: 'void',
-                              // title: '{{ t("Full Screen") }}',
                               'x-component': 'Action',
-                              // 'x-designer': 'Action.Designer',
                               'x-component-props': {
-                                // icon: 'FullscreenOutlined',
                                 component: (props) => {
                                   const [isFullscreen, { toggleFullscreen }] = useFullscreen(
                                     document.getElementById('graph_container'),
@@ -474,7 +463,6 @@ export const GraphDrawPage = React.memo(() => {
                             },
                             collectionList: {
                               type: 'void',
-                              // title: '{{ t("Collection list") }}',
                               'x-component': () => {
                                 const { collapsed, setCollapsed } = useContext(CollapsedContext);
                                 return (
@@ -487,23 +475,8 @@ export const GraphDrawPage = React.memo(() => {
                                   </Button>
                                 );
                               },
-                              // 'x-designer': 'Action.Designer',
                               'x-component-props': {
                                 icon: 'MenuOutlined',
-                                // component: (props) => {
-                                //   return (
-                                //     <Tooltip
-                                //       title={t('Full Screen')}
-                                //       getPopupContainer={getPopupContainer}
-                                //     >
-                                //       {isFullscreen ? (
-                                //         <FullscreenExitOutlined {...props} />
-                                //       ) : (
-                                //         <FullscreenOutlined {...props} />
-                                //       )}
-                                //     </Tooltip>
-                                //   );
-                                // },
                                 useAction: () => {
                                   return {
                                     run() {},

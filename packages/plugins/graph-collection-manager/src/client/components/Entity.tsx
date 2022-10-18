@@ -3,16 +3,32 @@ import '@antv/x6-react-shape';
 import { css, cx } from '@emotion/css';
 import { uid } from '@formily/shared';
 import {
-  Action, Checkbox, CollectionField, CollectionProvider, Form, FormItem, Grid, Input,
-  InputNumber, Radio, ResourceActionProvider, SchemaComponent,
-  SchemaComponentProvider, Select, useCollectionManager, useCompile
+  Action,
+  Checkbox,
+  CollectionField,
+  CollectionProvider,
+  Form,
+  FormItem,
+  Grid,
+  Input,
+  InputNumber,
+  Radio,
+  ResourceActionProvider,
+  SchemaComponent,
+  SchemaComponentProvider,
+  Select,
+  useCollectionManager,
+  useCompile,
 } from '@nocobase/client';
 import { Dropdown, Popover, Tag } from 'antd';
 import React from 'react';
 import {
-  useAsyncDataSource, useCancelAction,
+  useAsyncDataSource,
+  useCancelAction,
   useDestroyActionAndRefreshCM,
-  useDestroyFieldActionAndRefreshCM, useUpdateCollectionActionAndRefreshCM, useValuesFromRecord
+  useDestroyFieldActionAndRefreshCM,
+  useUpdateCollectionActionAndRefreshCM,
+  useValuesFromRecord,
 } from '../action-hooks';
 import { collection } from '../schemas/collection';
 import { collectiionPopoverClass, entityContainer, headClass, tableBtnClass, tableNameClass } from '../style';
@@ -64,7 +80,7 @@ const Entity: React.FC<{
     );
   };
   return (
-    <div className={cx(entityContainer)} style={{ boxShadow: attrs?.border }}>
+    <div className={cx(entityContainer)} style={{ boxShadow: attrs?.boxShadow }}>
       <div className={headClass}>
         <span className={tableNameClass}>{compile(title)}</span>
         <div className={tableBtnClass}>
@@ -216,9 +232,7 @@ const Entity: React.FC<{
                   id={property.id}
                   style={{
                     background:
-                      attrs?.targetPort === property.id || attrs?.sourcePort === property.id
-                        ? '#e6f7ff'
-                        : null,
+                      attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#e6f7ff' : null,
                   }}
                 >
                   <div className="field-operator">
@@ -283,6 +297,7 @@ const Entity: React.FC<{
                                   item: {
                                     ...property,
                                     title,
+                                    __parent:item
                                   },
                                 },
                               },
@@ -331,22 +346,8 @@ const Entity: React.FC<{
                       </CollectionNodeProvder>
                     </SchemaComponentProvider>
                   </div>
-                  <div
-                    className="name"
-                    style={{
-                      // color: attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#fff' : null,
-                    }}
-                  >
-                    {compile(property.uiSchema?.title)}
-                  </div>
-                  <div
-                    className="type"
-                    style={{
-                      // color: attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#fff' : null,
-                    }}
-                  >
-                    {compile(getInterface(property.interface).title)}
-                  </div>
+                  <div className="name">{compile(property.uiSchema?.title)}</div>
+                  <div className="type">{compile(getInterface(property.interface).title)}</div>
                 </div>
               </Popover>
             )

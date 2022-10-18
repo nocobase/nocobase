@@ -140,7 +140,7 @@ export const GraphCollectionShortcut = () => {
   return (
     <PluginManager.Toolbar.Item
       icon={<PartitionOutlined />}
-      title={t('Graph collection')}
+      title={t('Graph Collection')}
       onClick={() => {
         history.push('/admin/settings/graph/collections');
       }}
