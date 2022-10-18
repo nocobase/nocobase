@@ -45,7 +45,6 @@ const formatEdgeData = (data, targetTables, tableData) => {
       const targetTable = tableData.find((v) => v.name === data[i].target);
       const sourceTable = tableData.find((v) => v.name === data[i].collectionName);
       const commonAttrs = {
-        "shape": "edge",
         attrs: {
           line: {
             strokeWidth: 1,
@@ -56,7 +55,6 @@ const formatEdgeData = (data, targetTables, tableData) => {
             targetMarker: null,
           },
         },
-        connector: { name: 'normal' },
         router:
           sourceTable.id === targetTable.id
             ? {
@@ -67,6 +65,9 @@ const formatEdgeData = (data, targetTables, tableData) => {
               }
             : {
                 name: 'er',
+                args: {
+                  direction: 'H',
+                },
               },
         labels: [
           {
@@ -145,10 +146,6 @@ const formatEdgeData = (data, targetTables, tableData) => {
           },
         ],
       };
-      const anchor = {
-        anchor: 'center',
-        direction: 'v',
-      };
       if (['m2m', 'linkTo'].includes(data[i].interface)) {
         const throughTable = tableData.find((v) => v.name === data[i].through);
         throughTable &&
@@ -157,12 +154,24 @@ const formatEdgeData = (data, targetTables, tableData) => {
             source: {
               cell: sourceTable.id,
               port: sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id,
-              ...anchor,
+              connectionPoint:'anchor',
+              anchor: { 
+                name: 'midSide',
+                args: {
+                  dx: 10,
+                },
+              },
             },
             target: {
               cell: throughTable.id,
               port: throughTable.ports.find((v) => v.name === data[i].foreignKey)?.id,
-              ...anchor,
+              connectionPoint:'anchor',
+              anchor: { 
+                name: 'midSide',
+                args: {
+                  dx: 10,
+                },
+              },
             },
             ...commonAttrs,
           });
@@ -176,12 +185,22 @@ const formatEdgeData = (data, targetTables, tableData) => {
             source: {
               cell: sourceTable.id,
               port: legalEdge.id,
-              ...anchor,
+              anchor: { 
+                name: 'midSide',
+                args: {
+                  dx: 10,
+                },
+              },
             },
             target: {
               cell: targetTable.id,
               port: targetTable.ports.find((v) => v.name === data[i].targetKey)?.id,
-              ...anchor,
+              anchor: { 
+                name: 'midSide',
+                args: {
+                  dx: 10,
+                },
+              },
             },
             ...commonAttrs,
           });

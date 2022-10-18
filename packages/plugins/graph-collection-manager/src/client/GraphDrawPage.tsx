@@ -91,11 +91,12 @@ function getNodes(nodes, graph) {
 
 function getEdges(edges, graph) {
   edges.forEach((item) => {
+    console.log(item);
     if (item.source && item.target) {
       graph.addEdge({
         ...item,
         connector: {
-          name: 'rounded',
+          name: 'normal',
           zIndex: 10000,
         },
       });
@@ -113,7 +114,6 @@ export const GraphDrawPage = React.memo(() => {
   const api = useAPIClient();
   const compile = useCompile();
   const { t } = useTranslation('graphPositions');
-  const [collapsed, setCollapsed] = useState(true);
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
   let options = useContext(SchemaOptionsContext);
@@ -165,10 +165,10 @@ export const GraphDrawPage = React.memo(() => {
         enabled: true,
       },
       connecting: {
-        router: {
-          name: 'er',
+        anchor: {
+          name: 'midSide',
           args: {
-            direction: 'H',
+            dx: 10,
           },
         },
       },
@@ -235,7 +235,7 @@ export const GraphDrawPage = React.memo(() => {
                   width: NODE_WIDTH,
                   height: LINE_HEIGHT,
                   strokeWidth: 1,
-                  magnet: true,
+                  // magnet: true,
                   visibility: 'hidden',
                 },
               },
