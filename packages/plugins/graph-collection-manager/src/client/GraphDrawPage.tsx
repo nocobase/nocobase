@@ -9,7 +9,7 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Tooltip } from 'antd';
@@ -263,16 +263,28 @@ export const GraphDrawPage = React.memo(() => {
       sourceNode.removeAttrs('sourcePort');
     });
     targetGraph.on('node:mouseup', ({ e, node }) => {
+      const currentPosition = node.position();
+      const oldPosition = targetGraph.positions.find((v) => v.collectionName === node.store.data.name);
       e.stopPropagation();
-      if (targetGraph.positions.find((v) => v.collectionName === node.store.data.name)) {
-        useUpdatePositionAction({
-          collectionName: node.store.data.name,
-          ...node.position(),
-        });
+      if (targetNode && targetNode !== 'last') {
+        targetNode.removeAttrs();
+      }
+      targetNode = node;
+      targetGraph.unfreeze();
+      // 定位到目标节点
+      node.setAttrs({
+        boxShadow: '0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)',
+      });
+      if (oldPosition) {
+        (oldPosition.x !== currentPosition.x || oldPosition.y !== currentPosition.y) &&
+          useUpdatePositionAction({
+            collectionName: node.store.data.name,
+            ...currentPosition,
+          });
       } else {
         useSaveGraphPositionAction({
           collectionName: node.store.data.name,
-          ...node.position(),
+          ...currentPosition,
         });
       }
     });
