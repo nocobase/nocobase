@@ -10,14 +10,21 @@ import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
-  FullscreenExitOutlined, FullscreenOutlined, MenuFoldOutlined,
-  MenuUnfoldOutlined, PlusSquareOutlined
+  FullscreenExitOutlined,
+  FullscreenOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  PlusSquareOutlined,
 } from '@ant-design/icons';
 import { collection } from './schemas/collection';
 
 import {
   APIClientProvider,
-  CollectionManagerProvider, SchemaComponent, SchemaComponentOptions, useAPIClient, useCompile
+  CollectionManagerProvider,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useAPIClient,
+  useCompile,
 } from '@nocobase/client';
 import { useCreateActionAndRefreshCM } from './action-hooks';
 import Entity from './components/Entity';
@@ -34,7 +41,7 @@ let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
 async function layout(graph, positions, createPositions) {
   let graphPositions = [];
-  console.log(graphPositions)
+  console.log(graphPositions);
   const nodes: any[] = graph.getNodes();
   const edges = graph.getEdges();
   const g: any = new dagre.graphlib.Graph();
@@ -52,7 +59,7 @@ async function layout(graph, positions, createPositions) {
   });
   dagre.layout(g);
   graph.freeze();
-  console.log(positions)
+  console.log(positions);
   g.nodes().forEach((id) => {
     const node = graph.getCell(id);
     if (node) {
@@ -83,9 +90,9 @@ async function layout(graph, positions, createPositions) {
     graph.centerContent();
   }
   if (graphPositions.length > 0) {
-    console.log(graphPositions)
+    console.log(graphPositions);
     await createPositions(graphPositions);
-    graphPositions=[]
+    graphPositions = [];
   }
 }
 
@@ -137,7 +144,7 @@ export const GraphDrawPage = React.memo(() => {
     await refreshPositions();
   };
   const refreshPositions = async () => {
-    const { data } = await api.resource('graphPositions').list({paginate: false});
+    const { data } = await api.resource('graphPositions').list({ paginate: false });
     targetGraph.positions = data.data;
     return Promise.resolve();
   };
@@ -319,7 +326,7 @@ export const GraphDrawPage = React.memo(() => {
   };
 
   const handleSelectCollection = (value) => {
-    if (targetNode&&targetNode!=='last') {
+    if (targetNode && targetNode !== 'last') {
       targetNode.removeAttrs();
     }
     targetNode = targetGraph.getCellById(value.key);
@@ -335,10 +342,7 @@ export const GraphDrawPage = React.memo(() => {
       <div className={cx(graphCollectionContainerClass)}>
         <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
           <div className={cx(collectionListClass)}>
-            <Tooltip
-              title={t('Collection List')}
-              getPopupContainer={getPopupContainer}
-            >
+            <Tooltip title={t('Collection List')} getPopupContainer={getPopupContainer}>
               <div className="trigger">
                 {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
                   className: 'trigger',
@@ -385,10 +389,7 @@ export const GraphDrawPage = React.memo(() => {
                             'x-component-props': {
                               type: 'primary',
                               component: (props) => (
-                                <Tooltip
-                                  title={t('Create Collection')}
-                                  getPopupContainer={getPopupContainer}
-                                >
+                                <Tooltip title={t('Create Collection')} getPopupContainer={getPopupContainer}>
                                   <PlusSquareOutlined {...props} />
                                 </Tooltip>
                               ),
@@ -396,7 +397,7 @@ export const GraphDrawPage = React.memo(() => {
                             properties: {
                               drawer: {
                                 type: 'void',
-                                title: '{{ t("Create Collection") }}',
+                                title: t('Create Collection'),
                                 'x-component': 'Action.Drawer',
                                 'x-component-props': {
                                   getContainer: () => {
@@ -450,10 +451,7 @@ export const GraphDrawPage = React.memo(() => {
                             'x-component-props': {
                               component: (props) => {
                                 return (
-                                  <Tooltip
-                                    title={t('Full Screen')}
-                                    getPopupContainer={getPopupContainer}
-                                  >
+                                  <Tooltip title={t('Full Screen')} getPopupContainer={getPopupContainer}>
                                     {isFullscreen ? (
                                       <FullscreenExitOutlined {...props} />
                                     ) : (
