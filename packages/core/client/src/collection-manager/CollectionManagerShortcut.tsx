@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { PluginManager } from '../plugin-manager';
 import { ActionContext, SchemaComponent } from '../schema-component';
-import { AddFieldAction, ConfigurationTable, EditFieldAction } from './Configuration';
+import { AddCollectionField, AddFieldAction, ConfigurationTable, EditFieldAction } from './Configuration';
 
 const schema: ISchema = {
   type: 'object',
@@ -37,7 +37,7 @@ const schema2: ISchema = {
 export const CollectionManagerPane = () => {
   return (
     <Card bordered={false}>
-      <SchemaComponent schema={schema2} components={{ ConfigurationTable, AddFieldAction, EditFieldAction }} />
+      <SchemaComponent schema={schema2} components={{ ConfigurationTable, AddFieldAction, AddCollectionField, EditFieldAction }} />
     </Card>
   );
 };

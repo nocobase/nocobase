@@ -53,9 +53,9 @@ async function layout(graph, positions: any, createPositions) {
             return v.collectionName === node.store.data.name;
           })) ||
         {};
-        const pos: any = g.node(id);
+      const pos: any = g.node(id);
       //@ts-ignore
-      const calculatedPosition = positions?{ x: maxBy(positions, 'x').x + 350, y: minBy(positions, 'y').y }:pos;
+      const calculatedPosition = positions&&positions.length>0 ? { x: maxBy(positions, 'x').x + 350, y: minBy(positions, 'y').y } : pos;
       node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
       if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
         // 位置表中没有的表都自动保存

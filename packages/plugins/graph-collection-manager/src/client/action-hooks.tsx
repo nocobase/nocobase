@@ -1,10 +1,10 @@
-import React, { useEffect, useContext } from 'react';
-import { action } from '@formily/reactive';
-import { useTranslation } from 'react-i18next';
-import omit from 'lodash/omit';
-import { message, Select } from 'antd';
-import { useActionContext, useRequest, useAPIClient, useCompile, useCollectionManager } from '@nocobase/client';
 import { observer, useForm } from '@formily/react';
+import { action } from '@formily/reactive';
+import { useActionContext, useAPIClient, useCollectionFieldFormValues, useCollectionManager, useCompile, useRequest } from '@nocobase/client';
+import { message, Select } from 'antd';
+import omit from 'lodash/omit';
+import React, { useContext, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GraphCollectionContext } from './components/CollectionNodeProvder';
 export const useValuesFromRecord = (options, data) => {
   const result = useRequest(() => Promise.resolve({ data }), {
@@ -65,13 +65,15 @@ export const useCreateAction = (collectionName, targetId) => {
   const ctx = useActionContext();
   const { refreshCM } = useCollectionManager();
   const { positionTargetNode } = useContext(GraphCollectionContext);
+  const { getValues } = useCollectionFieldFormValues();
 
   return {
     async run() {
       await form.submit();
+      const values = getValues();
       const {
         data: { data },
-      } = await api.resource('collections.fields', collectionName).create({ values: form.values });
+      } = await api.resource('collections.fields', collectionName).create({ values });
       await api.resource('fields').move({
         sourceId: data.key,
         targetId,

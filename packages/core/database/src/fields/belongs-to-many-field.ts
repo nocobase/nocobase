@@ -38,7 +38,7 @@ export class BelongsToManyField extends RelationField {
     } else {
       Through = database.collection({
         name: through,
-        timestamps: false,
+        // timestamps: false,
       });
 
       Object.defineProperty(Through.model, 'isThrough', { value: true });
