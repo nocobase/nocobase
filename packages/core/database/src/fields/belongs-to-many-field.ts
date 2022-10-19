@@ -17,6 +17,10 @@ export class BelongsToManyField extends RelationField {
     );
   }
 
+  get otherKey() {
+    return this.options.otherKey;
+  }
+
   bind() {
     const { database, collection } = this.context;
     const Target = this.TargetModel;
@@ -81,6 +85,9 @@ export class BelongsToManyField extends RelationField {
 
   unbind() {
     const { database, collection } = this.context;
+    const Through = database.getCollection(this.through);
+    Through.removeIndex([this.options.foreignKey]);
+    Through.removeIndex([this.options.otherKey]);
     // 如果关系字段还没建立就删除了，也同步删除待建立关联的关系字段
     database.removePendingField(this);
     // 删掉 model 的关联字段

@@ -12,13 +12,12 @@ import {
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
+  beforeDestroyForeignKey,
   beforeInitOptions
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
-import {afterDestroyForForeignKeyField} from "./hooks/afterDestroyForForeignKeyField";
 
 export class CollectionManagerPlugin extends Plugin {
-
   async beforeLoad() {
     this.app.db.registerModels({
       CollectionModel,
@@ -113,10 +112,11 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
+    // before field remove
+    this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
     this.app.db.on('fields.beforeDestroy', async (model, options) => {
       await model.remove(options);
     });
-    this.app.db.on('fields.afterDestroy',afterDestroyForForeignKeyField(this.app.db));
 
     this.app.db.on('collections.beforeDestroy', async (model, options) => {
       await model.remove(options);
