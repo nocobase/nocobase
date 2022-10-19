@@ -39,6 +39,9 @@ export function afterCreateForForeignKeyField(db: Database) {
 
   async function createFieldIfNotExists({ values, transaction }) {
     const { collectionName, name } = values;
+    if (!collectionName || !name) {
+      throw new Error(`field options invalid`);
+    }
     const r = db.getRepository('fields');
     const instance = await r.findOne({
       filter: {
@@ -69,7 +72,7 @@ export function afterCreateForForeignKeyField(db: Database) {
     if (!context) {
       return;
     }
-    const { interface: interfaceType, collectionName, target, through, foreignKey, otherKey } = model.get();
+    const { type, interface: interfaceType, collectionName, target, through, foreignKey, otherKey } = model.get();
     // foreign key in target collection
     if (['oho', 'o2m'].includes(interfaceType)) {
       const values = generateFkOptions(target, foreignKey);
@@ -91,6 +94,9 @@ export function afterCreateForForeignKeyField(db: Database) {
     }
     // foreign key in through collection
     else if (['linkTo', 'm2m'].includes(interfaceType)) {
+      if (type !== 'belongsToMany') {
+        return;
+      }
       const r = db.getRepository('collections');
       const instance = await r.findOne({
         filter: {
