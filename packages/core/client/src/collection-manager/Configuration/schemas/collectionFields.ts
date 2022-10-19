@@ -113,7 +113,7 @@ export const collectionFieldSchema: ISchema = {
         create: {
           type: 'void',
           title: '{{ t("Add new") }}',
-          'x-component': 'AddFieldAction',
+          'x-component': 'AddCollectionField',
           'x-component-props': {
             type: 'primary',
           },

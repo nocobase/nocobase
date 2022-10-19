@@ -18,7 +18,7 @@ import {
   SchemaComponentProvider,
   Select,
   useCollectionManager,
-  useCompile,
+  useCompile
 } from '@nocobase/client';
 import { Dropdown, Popover, Tag } from 'antd';
 import React from 'react';
@@ -28,7 +28,7 @@ import {
   useDestroyActionAndRefreshCM,
   useDestroyFieldActionAndRefreshCM,
   useUpdateCollectionActionAndRefreshCM,
-  useValuesFromRecord,
+  useValuesFromRecord
 } from '../action-hooks';
 import { collection } from '../schemas/collection';
 import { collectiionPopoverClass, entityContainer, headClass, tableBtnClass, tableNameClass } from '../style';
