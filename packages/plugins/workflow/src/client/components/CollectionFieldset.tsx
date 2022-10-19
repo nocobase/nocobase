@@ -72,26 +72,7 @@ export default observer(({ value, onChange }: any) => {
                   : { type: 'constant', value: value[field.name] };
 
                 // constant for associations to use Input, others to use CollectionField
-                // dynamic values only support belongsTo association, other association type should disable
-
-                // TODO: should refactor to support all types
-                // if (field.type !== 'belongsTo') {
-                //   Object.assign(VTypes, {
-                //     constant: {
-                //       title: '{{t("Constant")}}',
-                //       value: 'constant',
-                //       options: undefined
-                //     }
-                //   });
-                //   operand = typeof value[field.name] === 'string'
-                //     ? parseStringValue(value[field.name], VTypes)
-                //     : { type: 'constant', value: value[field.name] };
-                // } else {
-                //   delete VTypes.constant;
-                //   operand = typeof value[field.name] === 'string'
-                //     ? parseStringValue(value[field.name], VTypes)
-                //     : { type: '$context', value: value[field.name] };
-                // }
+                // dynamic values only support belongsTo/hasOne association, other association type should disable
 
                 // TODO: try to use <ObjectField> to replace this map
                 return (
