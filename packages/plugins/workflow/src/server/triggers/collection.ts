@@ -39,7 +39,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     // TODO: change to map filter format to calculation format
     // const calculation = toCalculation(condition);
     const { repository, model } = (<typeof Model>data.constructor).database.getCollection(collection);
-    const { transaction } = options;
+    const { transaction, context } = options;
     const count = await repository.count({
       filter: {
         $and: [
@@ -47,6 +47,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
           { [model.primaryKeyAttribute]: data[model.primaryKeyAttribute] }
         ]
       },
+      context,
       transaction
     });
 
@@ -56,6 +57,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
   }
 
   return this.plugin.trigger(workflow, { data: data.get() }, {
+    context: options.context,
     transaction: options.transaction
   });
 }

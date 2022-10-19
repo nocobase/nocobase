@@ -60,6 +60,7 @@ export type Values = any;
 export interface CountOptions extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'>, Transactionable {
   fields?: Fields;
   filter?: Filter;
+  context?: any;
 }
 
 export interface FilterByTk {
