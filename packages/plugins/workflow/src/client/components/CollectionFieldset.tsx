@@ -1,12 +1,30 @@
 import React from "react";
-import { observer, useForm } from "@formily/react";
-import { Button, Dropdown, Menu, Form } from "antd";
+import { observer, useForm, useField } from "@formily/react";
+import { Input, Button, Dropdown, Menu, Form } from "antd";
 import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from "react-i18next";
 import { css } from "@emotion/css";
 
 import { CollectionField, CollectionProvider, SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
 import { Operand, parseStringValue, VariableTypes, VariableTypesContext } from "../calculators";
+
+function AssociationInput(props) {
+  const { getCollectionFields } = useCollectionManager();
+  const { path } = useField();
+  const fieldName = path.segments[path.segments.length - 1] as string;
+  const { values: data } = useForm();
+  const fields = getCollectionFields(data?.config?.collection);
+  const { type } = fields.find(item => item.name === fieldName);
+
+  const value = Array.isArray(props.value) ? props.value.join(',') : props.value;
+  function onChange(ev) {
+    const trimed = ev.target.value.trim();
+    props.onChange(['belongsTo', 'hasOne'].includes(type) ? trimed : trimed.split(/[,\s]+/));
+  }
+  return (
+    <Input {...props} value={value} onChange={onChange} />
+  );
+}
 
 // NOTE: observer for watching useProps
 export default observer(({ value, onChange }: any) => {
@@ -15,11 +33,11 @@ export default observer(({ value, onChange }: any) => {
   const { getCollection, getCollectionFields } = useCollectionManager();
   const { values: data } = useForm();
   const collectionName = data?.config?.collection;
-  const fields = getCollectionFields(data?.config?.collection)
+  const fields = getCollectionFields(collectionName)
     .filter(field => (
       !field.hidden
       && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false)
-      && (!['linkTo', 'hasMany', 'hasOne', 'belongsToMany'].includes(field.type))
+      // && (!['linkTo', 'hasMany', 'hasOne', 'belongsToMany'].includes(field.type))
     ));
 
   return (
@@ -41,29 +59,20 @@ export default observer(({ value, onChange }: any) => {
               .filter(field => field.name in value)
               .map(field => {
                 const VTypes = {
-                  ...VariableTypes,
+                  ...(['linkTo', 'hasMany', 'belongsToMany'].includes(field.type) ? {} : VariableTypes),
+                  constant: {
+                    title: '{{t("Constant")}}',
+                    value: 'constant',
+                    options: undefined
+                  }
                 };
 
-                let operand;
-
-                // TODO: should refactor to support all types
-                if (field.type !== 'belongsTo') {
-                  Object.assign(VTypes, {
-                    constant: {
-                      title: '{{t("Constant")}}',
-                      value: 'constant',
-                      options: undefined
-                    }
-                  });
-                  operand = typeof value[field.name] === 'string'
-                    ? parseStringValue(value[field.name], VTypes)
-                    : { type: 'constant', value: value[field.name] };
-                } else {
-                  delete VTypes.constant;
-                  operand = typeof value[field.name] === 'string'
+                const operand = typeof value[field.name] === 'string'
                   ? parseStringValue(value[field.name], VTypes)
-                  : { type: '$context', value: value[field.name] };
-                }
+                  : { type: 'constant', value: value[field.name] };
+
+                // constant for associations to use Input, others to use CollectionField
+                // dynamic values only support belongsTo/hasOne association, other association type should disable
 
                 // TODO: try to use <ObjectField> to replace this map
                 return (
@@ -91,12 +100,15 @@ export default observer(({ value, onChange }: any) => {
                                 type: 'void',
                                 properties: {
                                   [field.name]: {
-                                    'x-component': 'CollectionField'
+                                    'x-component': ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+                                      ? 'AssociationInput'
+                                      : 'CollectionField'
                                   }
                                 }
                               }}
                               components={{
-                                CollectionField
+                                CollectionField,
+                                AssociationInput
                               }}
                             />
                           )
