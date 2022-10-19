@@ -16,6 +16,7 @@
     "@nocobase/plugin-china-region": "0.7.4-alpha.7",
     "@nocobase/plugin-client": "0.7.4-alpha.7",
     "@nocobase/plugin-collection-manager": "0.7.4-alpha.7",
+    "@nocobase/plugin-graph-collection-manager": "0.7.4-alpha.7",
     "@nocobase/plugin-error-handler": "0.7.4-alpha.7",
     "@nocobase/plugin-export": "0.7.4-alpha.7",
     "@nocobase/plugin-file-manager": "0.7.4-alpha.7",
