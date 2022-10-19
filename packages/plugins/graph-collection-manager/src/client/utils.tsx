@@ -167,16 +167,35 @@ const formatEdgeData = (data, targetTables, tableData) => {
             },
             ...commonAttrs,
           });
+        throughTable &&
+          edges.push({
+            id: uid(),
+            source: {
+              cell: targetTable.id,
+              port: targetTable.ports.find((v) => v.name === data[i].targetKey)?.id,
+              anchor: {
+                name: 'right',
+              },
+            },
+            target: {
+              cell: throughTable.id,
+              port: throughTable.ports.find((v) => v.name === data[i].otherKey)?.id,
+              anchor: {
+                name: 'left',
+              },
+            },
+            ...commonAttrs,
+          });
       } else {
-        const legalEdge = tableData
+        const isLegalEdge = tableData
           .find((v) => v.name == data[i].collectionName)
           .ports.find((v) => v.name === data[i].foreignKey);
-        legalEdge &&
+        isLegalEdge &&
           edges.push({
             id: uid(),
             source: {
               cell: sourceTable.id,
-              port: legalEdge.id,
+              port: isLegalEdge.id,
               anchor: {
                 name: 'right',
               },
@@ -184,6 +203,26 @@ const formatEdgeData = (data, targetTables, tableData) => {
             target: {
               cell: targetTable.id,
               port: targetTable.ports.find((v) => v.name === data[i].targetKey)?.id,
+              anchor: {
+                name: 'left',
+              },
+            },
+            ...commonAttrs,
+          });
+        sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id &&
+          targetTable.ports.find((v) => v.name === data[i].foreignKey)?.id &&
+          edges.push({
+            id: uid(),
+            source: {
+              cell: sourceTable.id,
+              port: sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id,
+              anchor: {
+                name: 'right',
+              },
+            },
+            target: {
+              cell: targetTable.id,
+              port: targetTable.ports.find((v) => v.name === data[i].foreignKey)?.id,
               anchor: {
                 name: 'left',
               },
