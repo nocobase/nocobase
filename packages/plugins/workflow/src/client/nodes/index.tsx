@@ -60,7 +60,8 @@ function useUpdateAction() {
         message.error(t('Node in executed workflow cannot be modified'));
         return;
       }
-      await form.submit();
+      // TODO: how to do validation separately for each field? especially disabled for dynamic fields?
+      // await form.submit();
       await api.resource('flow_nodes', data.id).update({
         filterByTk: data.id,
         values: {
