@@ -74,12 +74,14 @@ async function layout(graph, positions: any, createPositions) {
     if (sorceNodeX > targeNodeX) {
       edge.setSource({
         cell: source.cell,
+        port: source.port,
         anchor: {
           name: 'left',
         },
       });
       edge.setTarget({
         cell: target.cell,
+        port: target.port,
         anchor: {
           name: 'right',
         },
