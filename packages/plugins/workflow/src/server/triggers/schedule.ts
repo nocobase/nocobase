@@ -61,10 +61,12 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
   },
   trigger(workflow, date) {
     const { startsOn, endsOn, repeat } = workflow.config;
-    if (startsOn && typeof repeat === 'number') {
+    if (startsOn) {
       const startTime = Math.floor(Date.parse(startsOn) / 1000) * 1000;
-      if (Math.round(date.getTime() - startTime) % repeat) {
-        return;
+      if (typeof repeat === 'number') {
+        if (Math.round(date.getTime() - startTime) % repeat) {
+          return;
+        }
       }
     }
     return this.plugin.trigger(workflow, { date });
@@ -327,8 +329,8 @@ function nextInCycle(this: ScheduleTrigger, workflow, now: Date): boolean {
 }
 export default class ScheduleTrigger extends Trigger {
   static CacheRules = [
-    // ({ enabled }) => enabled,
     ({ config, allExecuted }) => config.limit ? allExecuted < config.limit : true,
+    ({ config, executed }) => !executed || config.repeat != null,
     ({ config }) => ['repeat', 'startsOn'].some(key => config[key]),
     nextInCycle,
     function(workflow, now) {
@@ -340,6 +342,7 @@ export default class ScheduleTrigger extends Trigger {
 
   static TriggerRules = [
     ({ config, allExecuted }) => config.limit ? allExecuted < config.limit : true,
+    ({ config, executed }) => !executed || config.repeat != null,
     ({ config }) => ['repeat', 'startsOn'].some(key => config[key]),
     function (workflow, now) {
       const { repeat } = workflow.config;
