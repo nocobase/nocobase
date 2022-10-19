@@ -15,6 +15,7 @@ import {
   beforeInitOptions
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
+import {afterDestroyForForeignKeyField} from "./hooks/afterDestroyForForeignKeyField";
 
 export class CollectionManagerPlugin extends Plugin {
 
@@ -115,6 +116,7 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('fields.beforeDestroy', async (model, options) => {
       await model.remove(options);
     });
+    this.app.db.on('fields.afterDestroy',afterDestroyForForeignKeyField(this.app.db));
 
     this.app.db.on('collections.beforeDestroy', async (model, options) => {
       await model.remove(options);

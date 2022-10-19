@@ -1,4 +1,4 @@
-import Database from '@nocobase/database';
+import Database, { UpdateOptions } from '@nocobase/database';
 
 export function afterCreateForForeignKeyField(db: Database) {
   function generateFkOptions(collectionName: string, foreignKey: string) {
@@ -104,6 +104,15 @@ export function afterCreateForForeignKeyField(db: Database) {
           },
           transaction,
         });
+      } else {
+        const options = instance.get('options');
+        if (!options?.isThrough) {
+          options.isThrough = true;
+          instance.set('options', options);
+          await instance.save({
+            transaction,
+          });
+        }
       }
       const opts1 = generateFkOptions(through, foreignKey);
       const opts2 = generateFkOptions(through, otherKey);
