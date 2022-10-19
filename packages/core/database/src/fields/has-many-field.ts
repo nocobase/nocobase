@@ -139,9 +139,6 @@ export class HasManyField extends RelationField {
     database.removePendingField(this);
     // 如果关系表内没有显式的创建外键字段，删除关系时，外键也删除掉
     const tcoll = database.getCollection(this.target);
-    if (tcoll) {
-      tcoll.removeIndex([this.options.foreignKey]);
-    }
     const foreignKey = this.options.foreignKey;
     const field = tcoll.findField((field) => {
       if (field.name === foreignKey) {

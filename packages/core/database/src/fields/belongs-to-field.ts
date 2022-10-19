@@ -61,7 +61,6 @@ export class BelongsToField extends RelationField {
 
   unbind() {
     const { database, collection } = this.context;
-    this.collection.removeIndex([this.options.foreignKey]);
     // 如果关系字段还没建立就删除了，也同步删除待建立关联的关系字段
     database.removePendingField(this);
     // 如果外键没有显式的创建，关系表也无反向关联字段，删除关系时，外键也删除掉
