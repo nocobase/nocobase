@@ -14,7 +14,7 @@ import {
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Tooltip, Popover } from 'antd';
 import dagre from 'dagre';
-import { last } from 'lodash';
+import { last, maxBy, minBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateActionAndRefreshCM } from './action-hooks';
@@ -29,7 +29,7 @@ let targetGraph;
 let targetNode;
 let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
-async function layout(graph, positions, createPositions) {
+async function layout(graph, positions: any, createPositions) {
   let graphPositions = [];
   const nodes: any[] = graph.getNodes();
   const edges = graph.getEdges();
@@ -51,20 +51,21 @@ async function layout(graph, positions, createPositions) {
   g.nodes().forEach((id) => {
     const node = graph.getCell(id);
     if (node) {
-      const pos: any = g.node(id);
       const targetPosition =
         (positions &&
           positions.find((v) => {
             return v.collectionName === node.store.data.name;
           })) ||
         {};
-      node.position(targetPosition.x || pos.x, targetPosition.y || pos.y);
+      //@ts-ignore
+      const calculatedPosition = { x: maxBy(positions, 'x').x + 300, y: minBy(positions, 'y').y };
+      node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
       if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
         // 位置表中没有的表都自动保存
         graphPositions.push({
           collectionName: node.store.data.name,
-          x: pos.x,
-          y: pos.y,
+          x: calculatedPosition.x,
+          y: calculatedPosition.y,
         });
       }
     }
@@ -91,7 +92,6 @@ function getNodes(nodes, graph) {
 
 function getEdges(edges, graph) {
   edges.forEach((item) => {
-    console.log(item);
     if (item.source && item.target) {
       graph.addEdge({
         ...item,
@@ -167,9 +167,9 @@ export const GraphDrawPage = React.memo(() => {
       connecting: {
         anchor: {
           name: 'midSide',
-          args: {
-            dx: 10,
-          },
+          // args: {
+          //   dx: 10,
+          // },
         },
       },
       mousewheel: {
