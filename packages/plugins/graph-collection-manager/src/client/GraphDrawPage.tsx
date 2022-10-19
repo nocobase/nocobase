@@ -41,11 +41,7 @@ async function layout(graph, positions: any, createPositions) {
     const height = node.getPorts().length * 32 + 30;
     g.setNode(node.id, { width, height });
   });
-  edges.forEach((edge) => {
-    const source = edge.getSource();
-    const target = edge.getTarget();
-    g.setEdge(source.cell, target.cell);
-  });
+
   dagre.layout(g);
   graph.freeze();
   g.nodes().forEach((id) => {
@@ -58,7 +54,7 @@ async function layout(graph, positions: any, createPositions) {
           })) ||
         {};
       //@ts-ignore
-      const calculatedPosition = { x: maxBy(positions, 'x').x + 300, y: minBy(positions, 'y').y };
+      const calculatedPosition = { x: maxBy(positions, 'x').x + 350, y: minBy(positions, 'y').y };
       node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
       if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
         // 位置表中没有的表都自动保存
@@ -68,6 +64,26 @@ async function layout(graph, positions: any, createPositions) {
           y: calculatedPosition.y,
         });
       }
+    }
+  });
+  edges.forEach((edge) => {
+    const source = edge.getSource();
+    const target = edge.getTarget();
+    const sorceNodeX = graph.getCell(source.cell).position().x;
+    const targeNodeX = graph.getCell(target.cell).position().x;
+    if (sorceNodeX > targeNodeX) {
+      edge.setSource({
+        cell: source.cell,
+        anchor: {
+          name: 'left',
+        },
+      });
+      edge.setTarget({
+        cell: target.cell,
+        anchor: {
+          name: 'right',
+        },
+      });
     }
   });
   graph.unfreeze();

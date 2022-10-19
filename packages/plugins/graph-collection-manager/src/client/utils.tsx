@@ -154,16 +154,14 @@ const formatEdgeData = (data, targetTables, tableData) => {
             source: {
               cell: sourceTable.id,
               port: sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id,
-              connectionPoint:'anchor',
-              anchor: { 
+              anchor: {
                 name: 'right',
               },
             },
             target: {
               cell: throughTable.id,
               port: throughTable.ports.find((v) => v.name === data[i].foreignKey)?.id,
-              connectionPoint:'anchor',
-              anchor: { 
+              anchor: {
                 name: 'left',
               },
             },
@@ -179,16 +177,14 @@ const formatEdgeData = (data, targetTables, tableData) => {
             source: {
               cell: sourceTable.id,
               port: legalEdge.id,
-              connectionPoint:'anchor',
-              anchor: { 
+              anchor: {
                 name: 'right',
               },
             },
             target: {
               cell: targetTable.id,
               port: targetTable.ports.find((v) => v.name === data[i].targetKey)?.id,
-              connectionPoint:'anchor',
-              anchor: { 
+              anchor: {
                 name: 'left',
               },
             },
