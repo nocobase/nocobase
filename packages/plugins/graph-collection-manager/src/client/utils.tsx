@@ -190,7 +190,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
         const isLegalEdge = tableData
           .find((v) => v.name == data[i].collectionName)
           .ports.find((v) => v.name === data[i].foreignKey);
-        isLegalEdge &&
+        isLegalEdge &&targetTable.ports.find((v) => v.name === data[i].targetKey)?.id&&
           edges.push({
             id: uid(),
             source: {
