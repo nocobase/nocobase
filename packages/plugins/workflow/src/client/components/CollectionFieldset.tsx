@@ -40,6 +40,8 @@ export default observer(({ value, onChange }: any) => {
       // && (!['linkTo', 'hasMany', 'hasOne', 'belongsToMany'].includes(field.type))
     ));
 
+  const fieldsSet = new Set(fields.map(field => field.name));
+
   return (
     <fieldset className={css`
       margin-top: .5em;
@@ -129,7 +131,7 @@ export default observer(({ value, onChange }: any) => {
                 );
               })
             }
-            {Object.keys(value).length < fields.length
+            {Object.keys(value).filter(key => fieldsSet.has(key)).length < fields.length
               ? (
                 <Dropdown overlay={
                   <Menu onClick={({ key }) => onChange({ ...value, [key]: null })} className={css`
