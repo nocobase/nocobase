@@ -178,11 +178,14 @@ export const GraphDrawPage = React.memo(() => {
   const initGraphCollections = () => {
     const myGraph = new Graph({
       container: document.getElementById('container')!,
-      panning: true,
       moveThreshold: 3,
       height: 1000,
       scroller: {
         enabled: true,
+        pannable:true,
+        // padding:0,
+
+        padding:{top:0,left:0,right:-200,bottom:-300},
       },
       connecting: {
         anchor: {
