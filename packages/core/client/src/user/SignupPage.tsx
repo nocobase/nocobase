@@ -7,7 +7,7 @@ import { Redirect, useHistory } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 import VerificationCode from './VerificationCode';
 
-const schema: ISchema = {
+const signupPageSchema: ISchema = {
   type: 'object',
   name: uid(),
   'x-component': 'FormV2',
@@ -126,20 +126,28 @@ export const useSignup = () => {
   };
 };
 
-export const SignupPage = () => {
+export interface SignupPageProps {
+  schema?: ISchema;
+  components?: any;
+  scope?: any;
+}
+
+export const SignupPage = (props: SignupPageProps) => {
   useCurrentDocumentTitle('Signup');
   const ctx = useSystemSettings();
   const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   if (!allowSignUp) {
     return <Redirect to={'/signin'} />;
   }
+  const { schema, components, scope } = props;
   return (
     <SchemaComponent
-      schema={schema}
+      schema={schema || signupPageSchema}
       components={{
         VerificationCode,
+        ...components,
       }}
-      scope={{ useSignup, smsAuthEnabled }}
+      scope={{ useSignup, smsAuthEnabled, ...scope }}
     />
   );
 };

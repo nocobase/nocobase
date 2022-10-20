@@ -8629,6 +8629,11 @@ croner@~4.1.92:
   resolved "https://registry.npmjs.org/croner/-/croner-4.1.97.tgz#6e373dc7bb3026fab2deb0d82685feef20796766"
   integrity sha512-/f6gpQuxDaqXu+1kwQYSckUglPaOrHdbIlBAu0YuW8/Cdb45XwXYNUBXg3r/9Mo6n540Kn/smKcZWko5x99KrQ==
 
+cronstrue@^2.11.0:
+  version "2.11.0"
+  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-2.11.0.tgz#18ff1b95a836b9b4e06854f796db2dc8fa98ce41"
+  integrity sha512-iIBCSis5yqtFYWtJAmNOiwDveFWWIn+8uV5UYuPHYu/Aeu5CSSJepSbaHMyfc+pPFgnsCcGzfPQEo7LSGmWbTg==
+
 cross-env@^7.0.3:
   version "7.0.3"
   resolved "https://registry.npmmirror.com/cross-env/-/cross-env-7.0.3.tgz#865264b29677dc015ba8418918965dd232fc54cf"
@@ -15542,6 +15547,11 @@ moment-timezone@^0.5.31:
   integrity sha512-3zAEHh2hKUs3EXLESx/wsgw6IQdusOT8Bxm3D9UrHPQR7zlMmzwybC8zHEM1tQ4LJwP7fcxrWr8tuBg05fFCbg==
   dependencies:
     moment ">= 2.9.0"
+
+moment@2.x:
+  version "2.29.4"
+  resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.4.tgz#3dbe052889fe7c1b2ed966fcb3a77328964ef108"
+  integrity sha512-5LC9SOxjSc2HF6vO2CyuTDNivEdoz2IvyJJGj6X8DJ0eFyfszE0QiEd+iXmBvUP3WHxSjFH/vIsA0EN00cgr8w==
 
 "moment@>= 2.9.0", moment@^2.24.0, moment@^2.25.3, moment@^2.26.0:
   version "2.29.1"

@@ -46,7 +46,6 @@ export const useValues = () => {
     field.data.operator = operator;
     field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(field.value, `${fieldPath}.$${operatorValue}`);
-    console.log('option', operator, field.data.value);
   };
   useEffect(() => {
     value2data();

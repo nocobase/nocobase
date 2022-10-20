@@ -258,6 +258,10 @@ export async function updateSingleAssociation(
     return false;
   }
 
+  if (Array.isArray(value)) {
+    throw new Error(`The value of '${key}' cannot be in array format`);
+  }
+
   const { context, updateAssociationValues = [], transaction } = options;
   const keys = getKeysByPrefix(updateAssociationValues, key);
 

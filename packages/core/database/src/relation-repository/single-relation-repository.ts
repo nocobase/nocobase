@@ -1,9 +1,10 @@
-import lodash from 'lodash';
+import lodash, { omit } from 'lodash';
 import { SingleAssociationAccessors, Transactionable } from 'sequelize';
 import { Model } from '../model';
 import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import { RelationRepository, transaction } from './relation-repository';
+import { handleAppendsQuery } from '../utils';
 
 export interface SingleRelationFindOption extends Transactionable {
   fields?: Fields;
@@ -45,12 +46,37 @@ export abstract class SingleRelationRepository extends RelationRepository {
 
   async find(options?: SingleRelationFindOption): Promise<Model<any>> {
     const transaction = await this.getTransaction(options);
+
     const findOptions = this.buildQueryOptions({
       ...options,
     });
 
     const getAccessor = this.accessors().get;
     const sourceModel = await this.getSourceModel(transaction);
+
+    if (findOptions?.include?.length > 0) {
+      const templateModel = await sourceModel[getAccessor]({
+        ...findOptions,
+        includeIgnoreAttributes: false,
+        transaction,
+        attributes: [this.targetKey()],
+        group: `${this.targetModel.name}.${this.targetKey()}`,
+      });
+
+      const results = await handleAppendsQuery({
+        templateModel,
+        queryPromises: findOptions.include.map((include) => {
+          return sourceModel[getAccessor]({
+            ...findOptions,
+            include: [include],
+          }).then((row) => {
+            return { rows: [row], include };
+          });
+        }),
+      });
+
+      return results[0];
+    }
 
     return await sourceModel[getAccessor]({
       ...findOptions,
