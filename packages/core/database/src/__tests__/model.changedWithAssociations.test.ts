@@ -1,0 +1,37 @@
+import { mockDatabase } from '../mock-database';
+
+describe('changedWithAssociations', () => {
+  test('changedWithAssociations', async () => {
+    const db = mockDatabase();
+    await db.clean({ drop: true });
+    db.collection({
+      name: 'test',
+      fields: [
+        {
+          type: 'string',
+          name: 'n1',
+        },
+        {
+          type: 'string',
+          name: 'n2',
+        },
+      ],
+    });
+    let changed = [];
+    db.on('test.afterCreateWithAssociations', (model, options) => {
+      changed = model.changedWithAssociations();
+    });
+    db.on('test.afterUpdateWithAssociations', (model, options) => {
+      changed = model.changedWithAssociations();
+    });
+    await db.sync();
+    const r = db.getRepository('test');
+    const m = await r.create({ values: { n1: 'a' } });
+    expect(changed).toEqual(['n1']);
+    expect(m.changedWithAssociations()).toBeFalsy();
+    await r.update({ filterByTk: m.id, values: { n1: 'b', n2: 'c' } });
+    expect(changed).toEqual(['n1', 'n2']);
+    expect(m.changedWithAssociations()).toBeFalsy();
+    await db.close();
+  });
+});

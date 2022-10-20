@@ -14,7 +14,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -204,6 +204,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
       if (this.options.tablePrefix) {
         opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
       }
+    });
+
+    this.on('afterCreate', async (instance) => {
+      instance?.toChangedWithAssociations?.();
+    });
+
+    this.on('afterUpdate', async (instance) => {
+      instance?.toChangedWithAssociations?.();
     });
   }
 

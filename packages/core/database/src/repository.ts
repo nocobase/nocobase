@@ -341,6 +341,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         ...options,
         transaction,
       });
+      instance.clearChangedWithAssociations();
     }
 
     return instance;
@@ -404,6 +405,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           ...options,
           transaction,
         });
+        instance.clearChangedWithAssociations();
       }
     }
 
