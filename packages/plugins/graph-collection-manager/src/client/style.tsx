@@ -83,6 +83,10 @@ export const entityContainer = css`
             color: rgb(0, 180, 42);
             width: 20px;
           }
+          .btn-edit{
+            color: rgba(0, 0, 0, 0.85);
+            display: flex;
+          }
           .btn-edit:hover {
             background: rgb(229 230 235);
           }

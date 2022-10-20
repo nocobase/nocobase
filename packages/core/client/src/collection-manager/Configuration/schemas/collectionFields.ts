@@ -181,7 +181,7 @@ export const collectionFieldSchema: ISchema = {
                 update: {
                   type: 'void',
                   title: '{{ t("Edit") }}',
-                  'x-component': 'EditFieldAction',
+                  'x-component': 'EditCollectionField',
                   'x-component-props': {
                     type: 'primary',
                   },
