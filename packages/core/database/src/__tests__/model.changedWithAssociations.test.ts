@@ -27,7 +27,7 @@ describe('changedWithAssociations', () => {
     await db.sync();
     const r = db.getRepository('test');
     const m = await r.create({ values: { n1: 'a' } });
-    expect(changed).toEqual(['n1']);
+    expect(changed).toMatchObject(['n1']);
     expect(m.changedWithAssociations()).toBeFalsy();
     await r.update({ filterByTk: m.id, values: { n1: 'b', n2: 'c' } });
     expect(changed).toEqual(['n1', 'n2']);
