@@ -2,6 +2,7 @@ import { DeleteOutlined, PartitionOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { PluginManager, SchemaComponent, useActionContext, useRequest } from '@nocobase/client';
 import React, { useEffect } from 'react';
+import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useCreateActionAndRefreshCM } from './action-hooks';
@@ -112,7 +113,15 @@ const useCollectionValues = (options) => {
 
 export const GraphCollectionPane = () => {
   return (
-    <div style={{ margin: -24, position: 'relative' }} id="graph_container">
+    <div
+      className={css`
+        height: calc(100vh - 160px);
+        overflow: hidden;
+        margin: -24px;
+        position: relative;
+      `}
+      id="graph_container"
+    >
       <SchemaComponent
         schema={{
           type: 'void',
