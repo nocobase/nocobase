@@ -285,5 +285,43 @@ describe('workflow > Plugin', () => {
       const [echo, calculation] = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(calculation.result).toBe(2);
     });
+
+    it('revision with using of deleted nodes', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      const n2 = await w1.createNode({
+        type: 'calculation',
+        config: {
+          calculation: {
+            calculator: 'add',
+            operands: [
+              {
+                type: '$jobsMapByNodeId',
+                options: {
+                  nodeId: 0,
+                  path: 'data.read'
+                }
+              },
+              {
+                value: `{{$jobsMapByNodeId.0.data.read}}`
+              }
+            ]
+          }
+        },
+      });
+
+      const { status } = await agent.resource(`workflows`).revision({
+        filterByTk: w1.id
+      });
+
+      expect(status).toBe(400);
+    });
   });
 });
