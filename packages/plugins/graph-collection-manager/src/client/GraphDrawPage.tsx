@@ -1,7 +1,7 @@
 import { FullscreenExitOutlined, FullscreenOutlined, MenuOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import '@antv/x6-react-shape';
-import { cx } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
@@ -9,10 +9,10 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
-  useCompile,
+  useCompile
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
-import { Button, Input, Layout, Menu, Tooltip, Popover } from 'antd';
+import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
 import dagre from 'dagre';
 import { last, maxBy, minBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
@@ -55,7 +55,8 @@ async function layout(graph, positions: any, createPositions) {
         {};
       const pos: any = g.node(id);
       //@ts-ignore
-      const calculatedPosition = positions&&positions.length>0 ? { x: maxBy(positions, 'x').x + 350, y: minBy(positions, 'y').y } : pos;
+      const calculatedPosition =
+        positions && positions.length > 0 ? { x: maxBy(positions, 'x').x + 350, y: minBy(positions, 'y').y } : pos;
       node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
       if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
         // 位置表中没有的表都自动保存
@@ -526,11 +527,22 @@ export const GraphDrawPage = React.memo(() => {
                                 const content = (
                                   <div>
                                     <Input
+                                      style={{ margin: '4px 0' }}
                                       bordered={false}
                                       placeholder={t('Collection Search')}
                                       onChange={handleSearchCollection}
                                     />
-                                    <Menu style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}>
+                                    <Menu
+                                      selectable={false}
+                                      className={css`
+                                        .ant-menu-item {
+                                          height: 32px;
+                                          line-height: 32px;
+                                        }
+                                      `}
+                                      style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
+                                    >
+                                      <Menu.Divider />
                                       {collectionList.map((v) => {
                                         return (
                                           <Menu.Item key={v.key} onClick={(e) => handleSelectCollection(e)}>
@@ -548,6 +560,11 @@ export const GraphDrawPage = React.memo(() => {
                                     trigger={['click']}
                                     getPopupContainer={getPopupContainer}
                                     destroyTooltipOnHide
+                                    overlayClassName={css`
+                                      .ant-popover-inner-content {
+                                        padding: 0;
+                                      }
+                                    `}
                                   >
                                     <Button>
                                       <MenuOutlined />
