@@ -205,7 +205,6 @@ export const GraphDrawPage = React.memo(() => {
       interacting: {
         magnetConnectable: false,
       },
-      autoResize: document.getElementById('graph_container'),
     });
     targetGraph = myGraph;
     Graph.registerPortLayout(
