@@ -96,7 +96,8 @@ export class UiSchemaRepository extends Repository {
       transaction: transaction,
     });
     for (const uiSchemaNode of uiSchemaNodes) {
-      await this.cache.del(uiSchemaNode['ancestor']);
+      await this.cache.del(`p_${uiSchemaNode['ancestor']}`);
+      await this.cache.del(`s_${uiSchemaNode['ancestor']}`);
     }
   }
 
@@ -109,7 +110,8 @@ export class UiSchemaRepository extends Repository {
     if (!this.cache || !xUid) {
       return;
     }
-    await this.cache.del(xUid);
+    await this.cache.del(`p_${xUid}`);
+    await this.cache.del(`s_${xUid}`);
   }
 
   tableNameAdapter(tableName) {
@@ -194,7 +196,7 @@ export class UiSchemaRepository extends Repository {
 
   async getProperties(uid: string, options: GetPropertiesOptions = {}) {
     if (options?.readFromCache && this.cache) {
-      return this.cache.wrap(uid, () => {
+      return this.cache.wrap(`p_${uid}`, () => {
         return this.doGetProperties(uid, options);
       });
     }
@@ -263,7 +265,7 @@ export class UiSchemaRepository extends Repository {
 
   async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {
     if (options?.readFromCache && this.cache ) {
-      return this.cache.wrap(uid, () => {
+      return this.cache.wrap(`s_${uid}`, () => {
         return this.doGetJsonSchema(uid, options);
       });
     }
