@@ -164,14 +164,14 @@ const useCurrentFields = () => {
   const { getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(record.collectionName || record.name) as any[];
   return fields;
-}
+};
 
 const useNewId = (prefix) => {
   return `${prefix || ''}${uid()}`;
-}
+};
 
 export const ConfigurationTable = () => {
-  const { collections = [] } = useCollectionManager();
+  const { collections = [],getCollectionFields } = useCollectionManager();
   const compile = useCompile();
   const loadCollections = async (field: any) => {
     return collections?.map((item: any) => ({
@@ -179,26 +179,27 @@ export const ConfigurationTable = () => {
       value: item.name,
     }));
   };
+
   return (
     <div>
-      <SchemaComponent
-        schema={collectionSchema}
-        components={{
-          AddSubFieldAction,
-          EditSubFieldAction,
-          FieldSummary,
-        }}
-        scope={{
-          useDestroySubField,
-          useBulkDestroySubField,
-          useSelectedRowKeys,
-          useCollectionValues,
-          useAsyncDataSource,
-          loadCollections,
-          useCurrentFields,
-          useNewId,
-        }}
-      />
+        <SchemaComponent
+          schema={collectionSchema}
+          components={{
+            AddSubFieldAction,
+            EditSubFieldAction,
+            FieldSummary,
+          }}
+          scope={{
+            useDestroySubField,
+            useBulkDestroySubField,
+            useSelectedRowKeys,
+            useCollectionValues,
+            useAsyncDataSource,
+            loadCollections,
+            useCurrentFields,
+            useNewId,
+          }}
+        />
     </div>
   );
 };

@@ -5,9 +5,9 @@ import { collectionFieldSchema } from './collectionFields';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
-}
+};
 
-const collection: CollectionOptions = {
+export const collection: CollectionOptions = {
   name: 'collections',
   filterTargetKey: 'name',
   targetKey: 'name',
@@ -31,7 +31,8 @@ const collection: CollectionOptions = {
         title: '{{ t("Collection name") }}',
         type: 'string',
         'x-component': 'Input',
-        description: '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+        description:
+          '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
       },
     },
     {
@@ -82,6 +83,17 @@ export const collectionSchema: ISchema = {
             },
           },
           properties: {
+            filter: {
+              type: 'void',
+              title: '{{ t("Filter") }}',
+              'x-action': 'filter',
+              'x-component': 'Filter.Action',
+              'x-component-props': {
+                icon: 'FilterOutlined',
+                useProps: '{{ cm.useFilterActionProps }}',
+              },
+              'x-align': 'left',
+            },
             delete: {
               type: 'void',
               title: '{{ t("Delete") }}',
