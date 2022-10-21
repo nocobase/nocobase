@@ -1,17 +1,19 @@
 FROM node:16 as builder
-#RUN yarn global add verdaccio
-#RUN verdaccio &
-RUN yarn config set registry http://localhost:4873/
+ARG VERDACCIO_URL
+
 WORKDIR /tmp
 COPY . /tmp
+RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
+
 RUN cd /tmp && yarn install && yarn build
 RUN git checkout -b release \
     && yarn version:alpha -y  \
     && git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
     && git commit -m "chore(versions): test publish packages xxx" \
-    && yarn release:force --registry http://localhost:4873
+    && yarn release:force --registry $VERDACCIO_URL
 
+RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
 RUN cd /app \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production \
