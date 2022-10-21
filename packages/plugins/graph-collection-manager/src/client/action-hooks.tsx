@@ -157,7 +157,7 @@ export const useDestroyActionAndRefreshCM = (props) => {
   return {
     async run() {
       await run();
-      positionTargetNode('last')
+      positionTargetNode('destory')
       await refreshCM();
     },
   };

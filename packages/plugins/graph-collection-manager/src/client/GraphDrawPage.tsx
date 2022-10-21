@@ -9,7 +9,7 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
@@ -29,10 +29,11 @@ let targetGraph;
 let targetNode;
 let dir = 'TB'; // LR RL TB BT 横排
 //计算布局
-async function layout(graph, positions: any, createPositions) {
+async function layout(createPositions) {
+  const { positions } = targetGraph;
   let graphPositions = [];
-  const nodes: any[] = graph.getNodes();
-  const edges = graph.getEdges();
+  const nodes: any[] = targetGraph.getNodes();
+  const edges = targetGraph.getEdges();
   const g: any = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: dir, nodesep: 50, edgesep: 50, rankSep: 50, align: 'DL', controlPoints: true });
   g.setDefaultEdgeLabel(() => ({}));
@@ -43,9 +44,9 @@ async function layout(graph, positions: any, createPositions) {
   });
 
   dagre.layout(g);
-  graph.freeze();
+  targetGraph.freeze();
   g.nodes().forEach((id) => {
-    const node = graph.getCell(id);
+    const node = targetGraph.getCell(id);
     if (node) {
       const targetPosition =
         (positions &&
@@ -54,8 +55,8 @@ async function layout(graph, positions: any, createPositions) {
           })) ||
         {};
       const pos: any = g.node(id);
-      //@ts-ignore
       const calculatedPosition =
+        //@ts-ignore
         positions && positions.length > 0 ? { x: maxBy(positions, 'x').x + 350, y: minBy(positions, 'y').y } : pos;
       node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
       if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
@@ -71,8 +72,8 @@ async function layout(graph, positions: any, createPositions) {
   edges.forEach((edge) => {
     const source = edge.getSource();
     const target = edge.getTarget();
-    const sorceNodeX = graph.getCell(source.cell).position().x;
-    const targeNodeX = graph.getCell(target.cell).position().x;
+    const sorceNodeX = targetGraph.getCell(source.cell).position().x;
+    const targeNodeX = targetGraph.getCell(target.cell).position().x;
     if (sorceNodeX > targeNodeX) {
       edge.setSource({
         cell: source.cell,
@@ -90,13 +91,13 @@ async function layout(graph, positions: any, createPositions) {
       });
     }
   });
-  graph.unfreeze();
+  targetGraph.unfreeze();
   if (targetNode) {
-    targetNode === 'last'
-      ? graph.positionCell(last(nodes), 'top', { padding: 100 })
-      : graph.positionCell(targetNode, 'top', { padding: 100 });
+     typeof targetNode==='string'
+      ? targetGraph.positionCell(last(nodes), 'top', { padding: 100 })
+      : targetGraph.positionCell(targetNode, 'top', { padding: 100 });
   } else {
-    graph.centerContent();
+    targetGraph.centerContent();
   }
   if (graphPositions.length > 0) {
     await createPositions(graphPositions);
@@ -104,16 +105,16 @@ async function layout(graph, positions: any, createPositions) {
   }
 }
 
-function getNodes(nodes, graph) {
+function getNodes(nodes) {
   nodes.forEach((item) => {
-    graph.addNode(item);
+    targetGraph.addNode(item);
   });
 }
 
-function getEdges(edges, graph) {
+function getEdges(edges) {
   edges.forEach((item) => {
     if (item.source && item.target) {
-      graph.addEdge({
+      targetGraph.addEdge({
         ...item,
         connector: {
           name: 'normal',
@@ -131,12 +132,12 @@ const getPopupContainer = () => {
 const CollapsedContext = createContext<any>({});
 
 export const GraphDrawPage = React.memo(() => {
+  let options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   const compile = useCompile();
   const { t } = useTranslation('graphPositions');
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
-  let options = useContext(SchemaOptionsContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
 
@@ -158,6 +159,9 @@ export const GraphDrawPage = React.memo(() => {
   };
   const setTargetNode = (node) => {
     targetNode = node;
+    if(node==='destory'){
+      refreshPositions()
+    }
   };
   const refreshGM = async () => {
     api
@@ -172,18 +176,18 @@ export const GraphDrawPage = React.memo(() => {
         targetGraph.collections = data.data;
         setCollectionData(data.data);
         setCollectionList(data.data);
-        targetGraph && getCollectionData(data.data, targetGraph);
+        getCollectionData(data.data);
       });
   };
   const initGraphCollections = () => {
-    const myGraph = new Graph({
+    targetGraph = new Graph({
       container: document.getElementById('container')!,
+      autoResize: true,
       moveThreshold: 3,
-      height: 1000,
       scroller: {
         enabled: true,
-        pannable:true,
-        padding:0,
+        pannable: true,
+        padding: 0,
       },
       connecting: {
         anchor: {
@@ -207,7 +211,6 @@ export const GraphDrawPage = React.memo(() => {
         magnetConnectable: false,
       },
     });
-    targetGraph = myGraph;
     Graph.registerPortLayout(
       'erPortPosition',
       (portsPositionArgs) => {
@@ -230,9 +233,12 @@ export const GraphDrawPage = React.memo(() => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
+              <CollectionManagerProvider
+                collections={targetGraph?.collections}
+                refreshCM={refreshGM}
+              >
                 <div style={{ height: 'auto' }}>
-                  <Entity node={node} setTargetNode={setTargetNode} />
+                  <Entity node={node} setTargetNode={setTargetNode}  />
                 </div>
               </CollectionManagerProvider>
             </SchemaComponentOptions>
@@ -331,7 +337,7 @@ export const GraphDrawPage = React.memo(() => {
       const currentPosition = node.position();
       const oldPosition = targetGraph.positions.find((v) => v.collectionName === node.store.data.name);
       e.stopPropagation();
-      if (targetNode && targetNode !== 'last') {
+      if (targetNode && typeof targetNode!=='string') {
         targetNode.removeAttrs();
       }
       if (oldPosition) {
@@ -346,14 +352,15 @@ export const GraphDrawPage = React.memo(() => {
           ...currentPosition,
         });
       }
+      targetGraph.resize()
     });
   };
-  const getCollectionData = (rawData, graph) => {
+  const getCollectionData = (rawData) => {
     const { nodes, edges } = formatData(rawData);
-    graph.clearCells();
-    getNodes(nodes, graph);
-    getEdges(edges, graph);
-    layout(graph, targetGraph.positions, useSaveGraphPositionAction);
+    targetGraph.clearCells();
+    getNodes(nodes);
+    getEdges(edges);
+    layout(useSaveGraphPositionAction);
   };
 
   useLayoutEffect(() => {
@@ -387,7 +394,7 @@ export const GraphDrawPage = React.memo(() => {
   };
 
   const handleSelectCollection = (value) => {
-    if (targetNode && targetNode !== 'last') {
+    if (targetNode && typeof targetNode!=='string') {
       targetNode.removeAttrs();
     }
     targetNode = targetGraph.getCellById(value.key);
@@ -593,7 +600,7 @@ export const GraphDrawPage = React.memo(() => {
               />
             </div>
           </CollapsedContext.Provider>
-          <div id="container" style={{ width: 'auto', height: 'auto' }}></div>
+          <div id="container" style={{ width: '100vw', height: '100vh' }}></div>
         </CollectionManagerProvider>
       </div>
     </Layout>

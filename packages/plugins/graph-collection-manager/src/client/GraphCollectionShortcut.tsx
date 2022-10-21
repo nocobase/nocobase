@@ -116,7 +116,7 @@ export const GraphCollectionPane = () => {
     <div
       className={css`
         height: calc(100vh - 160px);
-        overflow: hidden;
+        overflow: auto;
         margin: -24px;
         position: relative;
       `}

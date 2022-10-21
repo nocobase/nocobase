@@ -155,8 +155,8 @@ export const collectiionPopoverClass = css`
 
 export const collectionListClass = css`
   float: right;
-  position: absolute;
-  top: 24px;
+  position: fixed;
+  margin-top: 24px;
   right: 24px;
   z-index: 1000;
   .trigger {
@@ -184,7 +184,6 @@ export const collectionListClass = css`
 export const graphCollectionContainerClass = css`
   overflow: hidden;
   .x6-graph-scroller {
-    width: 100% !important;
     height:calc(100vh) !important
   }
 `;
