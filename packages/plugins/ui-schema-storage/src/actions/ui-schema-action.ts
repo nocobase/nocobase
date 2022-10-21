@@ -89,7 +89,7 @@ export const uiSchemaActions = {
         },
         transaction,
       });
-      await db.getRepository<UiSchemaRepository>('uiSchemas').clearAncestor(filterByTk, { transaction });
+      await getRepositoryFromCtx(ctx).clearAncestor(filterByTk, { transaction });
       ctx.body = {
         result: 'ok',
       };
