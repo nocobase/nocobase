@@ -93,7 +93,7 @@ async function layout(createPositions) {
   });
   targetGraph.unfreeze();
   if (targetNode) {
-     typeof targetNode==='string'
+    typeof targetNode === 'string'
       ? targetGraph.positionCell(last(nodes), 'top', { padding: 100 })
       : targetGraph.positionCell(targetNode, 'top', { padding: 100 });
   } else {
@@ -159,8 +159,8 @@ export const GraphDrawPage = React.memo(() => {
   };
   const setTargetNode = (node) => {
     targetNode = node;
-    if(node==='destory'){
-      refreshPositions()
+    if (node === 'destory') {
+      refreshPositions();
     }
   };
   const refreshGM = async () => {
@@ -182,7 +182,6 @@ export const GraphDrawPage = React.memo(() => {
   const initGraphCollections = () => {
     targetGraph = new Graph({
       container: document.getElementById('container')!,
-      autoResize: true,
       moveThreshold: 3,
       scroller: {
         enabled: true,
@@ -233,12 +232,9 @@ export const GraphDrawPage = React.memo(() => {
         component: (node) => (
           <APIClientProvider apiClient={api}>
             <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionManagerProvider
-                collections={targetGraph?.collections}
-                refreshCM={refreshGM}
-              >
+              <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
                 <div style={{ height: 'auto' }}>
-                  <Entity node={node} setTargetNode={setTargetNode}  />
+                  <Entity node={node} setTargetNode={setTargetNode} />
                 </div>
               </CollectionManagerProvider>
             </SchemaComponentOptions>
@@ -337,7 +333,7 @@ export const GraphDrawPage = React.memo(() => {
       const currentPosition = node.position();
       const oldPosition = targetGraph.positions.find((v) => v.collectionName === node.store.data.name);
       e.stopPropagation();
-      if (targetNode && typeof targetNode!=='string') {
+      if (targetNode && typeof targetNode !== 'string') {
         targetNode.removeAttrs();
       }
       if (oldPosition) {
@@ -352,7 +348,7 @@ export const GraphDrawPage = React.memo(() => {
           ...currentPosition,
         });
       }
-      targetGraph.resize()
+      targetGraph.resize();
     });
   };
   const getCollectionData = (rawData) => {
@@ -394,7 +390,7 @@ export const GraphDrawPage = React.memo(() => {
   };
 
   const handleSelectCollection = (value) => {
-    if (targetNode && typeof targetNode!=='string') {
+    if (targetNode && typeof targetNode !== 'string') {
       targetNode.removeAttrs();
     }
     targetNode = targetGraph.getCellById(value.key);
