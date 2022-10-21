@@ -1,9 +1,19 @@
+import Database from '../database';
 import { mockDatabase } from '../mock-database';
 
 describe('changedWithAssociations', () => {
-  test('changedWithAssociations', async () => {
-    const db = mockDatabase();
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase();
     await db.clean({ drop: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  test('changedWithAssociations', async () => {
     db.collection({
       name: 'test',
       fields: [
@@ -32,6 +42,5 @@ describe('changedWithAssociations', () => {
     await r.update({ filterByTk: m.id, values: { n1: 'b', n2: 'c' } });
     expect(changed).toEqual(['n1', 'n2']);
     expect(m.changedWithAssociations()).toBeFalsy();
-    await db.close();
   });
 });
