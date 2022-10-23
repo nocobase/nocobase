@@ -47,13 +47,17 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   }
   return (
     <CollectionManagerProvider
-      service={{...service, contentLoading, setContentLoading}}
+      service={{ ...service, contentLoading, setContentLoading }}
       collections={service?.data?.data}
-      refreshCM={async () => {
-        setContentLoading(true);
+      refreshCM={async (opts) => {
+        if (opts?.reload) {
+          setContentLoading(true);
+        }
         const { data } = await api.request(options);
         service.mutate(data);
-        setContentLoading(false);
+        if (opts?.reload) {
+          setContentLoading(false);
+        }
       }}
       {...props}
     />
