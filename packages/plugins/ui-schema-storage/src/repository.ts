@@ -101,19 +101,6 @@ export class UiSchemaRepository extends Repository {
     }
   }
 
-  /**
-   * clear xUid's cache
-   * @param {string} xUid
-   * @returns {Promise<void>}
-   */
-  async clearXUidCache(xUid: string) {
-    if (!this.cache || !xUid) {
-      return;
-    }
-    await this.cache.del(`p_${xUid}`);
-    await this.cache.del(`s_${xUid}`);
-  }
-
   tableNameAdapter(tableName) {
     if (this.database.sequelize.getDialect() === 'postgres') {
       return `"${tableName}"`;
@@ -264,7 +251,7 @@ export class UiSchemaRepository extends Repository {
   }
 
   async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {
-    if (options?.readFromCache && this.cache ) {
+    if (options?.readFromCache && this.cache) {
       return this.cache.wrap(`s_${uid}`, () => {
         return this.doGetJsonSchema(uid, options);
       });
@@ -351,7 +338,7 @@ export class UiSchemaRepository extends Repository {
     const { transaction } = options;
 
     const rootUid = newSchema['x-uid'];
-    await this.clearXUidCache(rootUid);
+    await this.clearXUidPathCache(rootUid, transaction);
     const oldTree = await this.getJsonSchema(rootUid);
 
     const traverSchemaTree = async (schema, path = []) => {
@@ -669,6 +656,9 @@ export class UiSchemaRepository extends Repository {
   ) {
     const { transaction } = options;
 
+    // if schema is existed then clear origin path schema cache
+    await this.clearXUidPathCache(schema['x-uid'], transaction);
+
     if (options.wrap) {
       // insert wrap schema using insertNewSchema
       const wrapSchemaNodes = await this.insertNewSchema(options.wrap, {
@@ -700,6 +690,7 @@ export class UiSchemaRepository extends Repository {
     }
 
     const result = await this[`insert${lodash.upperFirst(position)}`](target, schema, options);
+    // clear target schema path cache
     await this.clearXUidPathCache(result['x-uid'], transaction);
     return result;
   }
