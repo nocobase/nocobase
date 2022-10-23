@@ -94,6 +94,17 @@ describe('ui_schema repository with cache', () => {
     expect(secondResult).toMatchObject(result);
   });
 
+  it('should not cache when getJsonSchema with readFromCache false', async () => {
+    const xUid = schema['x-uid'];
+    // xUid not in cache
+    expect(await cache.get(xUid)).toBeUndefined();
+    await repository.insert(schema);
+    const result = await repository.getJsonSchema(xUid, { readFromCache: false } as GetJsonSchemaOptions);
+    expect(result).toBeDefined();
+    // xUid's schema is not cached
+    expect(await cache.get(`s_${xUid}`)).toBeUndefined();
+  });
+
   it('should cache when getProperties with readFromCache', async () => {
     const xUid = schema['x-uid'];
     // xUid not in cache
@@ -101,7 +112,7 @@ describe('ui_schema repository with cache', () => {
     await repository.insert(schema);
     const result = await repository.getProperties(xUid, { readFromCache: true } as GetPropertiesOptions);
 
-    // xUid's schema is cached
+    // xUid's properties is cached
     expect(await cache.get(`p_${xUid}`)).toMatchObject(result);
 
     // delete from database
@@ -114,6 +125,18 @@ describe('ui_schema repository with cache', () => {
     // also getProperties from cache
     const secondResult = await repository.getProperties(xUid, { readFromCache: true } as GetPropertiesOptions);
     expect(secondResult).toMatchObject(result);
+  });
+
+  it('should not cache when getProperties with readFromCache false', async () => {
+    const xUid = schema['x-uid'];
+    // xUid not in cache
+    expect(await cache.get(xUid)).toBeUndefined();
+    await repository.insert(schema);
+    const result = await repository.getProperties(xUid, { readFromCache: false } as GetPropertiesOptions);
+
+    expect(result).toBeDefined();
+    // xUid's properties is not cached
+    expect(await cache.get(`p_${xUid}`)).toBeUndefined();
   });
 
   it('should clear cache when remove', async () => {
@@ -161,7 +184,7 @@ describe('ui_schema repository with cache', () => {
           'x-component': 'Input',
         },
       },
-    }
+    };
     await repository.patch(newSchema);
 
     expect(await cache.get(`s_${xUid}`)).toBeUndefined();
@@ -215,12 +238,12 @@ describe('ui_schema repository with cache', () => {
 
     expect(sResult.title).toEqual(schema.title);
     expect(pResult.properties.a1.title).toEqual(schema.properties.a1.title);
-    await repository.insertAdjacent('beforeBegin',sResult.properties.a1['x-uid'],{
+    await repository.insertAdjacent('beforeBegin', sResult.properties.a1['x-uid'], {
       name: 'a0',
       type: 'string',
       title: 'a0 title',
       'x-component': 'Input',
-    })
+    });
 
     expect(await cache.get(`s_${xUid}`)).toBeUndefined();
     expect(await cache.get(`p_${xUid}`)).toBeUndefined();
@@ -231,7 +254,7 @@ describe('ui_schema repository with cache', () => {
     pResult = (await repository.getProperties(xUid, { readFromCache: true } as GetPropertiesOptions)) as any;
     expect(await cache.get(`p_${xUid}`)).toMatchObject(pResult);
 
-    expect(sResult.properties?.a0).toBeDefined()
-    expect(pResult.properties?.a0).toBeDefined()
+    expect(sResult.properties?.a0).toBeDefined();
+    expect(pResult.properties?.a0).toBeDefined();
   });
 });
