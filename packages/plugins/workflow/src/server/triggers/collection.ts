@@ -38,7 +38,7 @@ function getFieldRawName(collection: Collection, name: string) {
 async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: Model, options) {
   const { collection: collectionName, condition, changed } = workflow.config;
   const collection = (<typeof Model>data.constructor).database.getCollection(collectionName);
-  console.log(data.changedWithAssociations(), changed, changed.map(key => getFieldRawName(collection, key)));
+
   // NOTE: if no configured fields changed, do not trigger
   if (changed
       && changed.length
