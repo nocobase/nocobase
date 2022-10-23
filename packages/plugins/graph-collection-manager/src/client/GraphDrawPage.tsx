@@ -9,7 +9,8 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
-  useCompile,
+  useCollectionManager,
+  useCompile
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
@@ -55,10 +56,12 @@ async function layout(createPositions) {
           })) ||
         {};
       const pos: any = g.node(id);
-      const index=graphPositions.length+1;
+      const index = graphPositions.length + 1;
       const calculatedPosition =
         //@ts-ignore
-        positions && positions.length > 0 ? { x: maxBy(positions, 'x').x + 350*index, y: minBy(positions, 'y').y } : pos;
+        positions && positions.length > 0
+          ? { x: maxBy(positions, 'x').x + 350 * index, y: minBy(positions, 'y').y }
+          : pos;
       node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
       if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
         // 位置表中没有的表都自动保存
@@ -139,6 +142,7 @@ export const GraphDrawPage = React.memo(() => {
   const { t } = useTranslation('graphPositions');
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
+  const { refreshCM } = useCollectionManager();
   const scope = { ...options?.scope };
   const components = { ...options?.components };
 
@@ -165,20 +169,11 @@ export const GraphDrawPage = React.memo(() => {
     }
   };
   const refreshGM = async () => {
-    api
-      .resource('collections')
-      .list({
-        paginate: false,
-        appends: ['fields', 'fields.uiSchema'],
-        sort: 'sort',
-      })
-      .then((v) => {
-        const { data } = v;
-        targetGraph.collections = data.data;
-        setCollectionData(data.data);
-        setCollectionList(data.data);
-        getCollectionData(data.data);
-      });
+    const data = await refreshCM();
+    targetGraph.collections = data;
+    setCollectionData(data);
+    setCollectionList(data);
+    getCollectionData(data);
   };
   const initGraphCollections = () => {
     targetGraph = new Graph({
