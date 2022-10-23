@@ -156,7 +156,8 @@ export class ACL extends EventEmitter {
     this.addListener('beforeGrantAction', listener);
   }
 
-  can({ role, resource, action }: CanArgs): CanResult | null {
+  can(options: CanArgs): CanResult | null {
+    const { role, resource, action } = options;
     const aclRole = this.roles.get(role);
 
     if (!aclRole) {

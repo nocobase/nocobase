@@ -26,18 +26,44 @@ const userProfileRepository = new HasOneRepository(User, 'profile', user.get('id
 
 ## 类方法
 
-### `create(options?: CreateOptions)`
+### `find()`
+
+查找关联对象
+
+**签名**
+
+* `async find(options?: SingleRelationFindOption): Promise<Model<any> | null>`
+
+**类型**
+
+```typescript
+interface SingleRelationFindOption extends Transactionable {
+  fields?: Fields;
+  except?: Except;
+  appends?: Appends;
+  filter?: Filter;
+}
+```
+
+**详细信息**
+
+查询参数与 [`Repository.find()`](../repository.md#find) 一致。
+
+**示例**
+
+```typescript
+const profile = await UserProfileRepository.find();
+// 关联对象不存在时，返回 null
+```
+
+### `create()`
 创建关联对象
 
 **签名**
 
 * `async create(options?: CreateOptions): Promise<Model>`
 
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `CreateOptions` | - | 参见 repository.create |
+<embed src="../shared/create-options.md"></embed>
 
 **示例**
 
@@ -59,30 +85,6 @@ console.log(profile.toJSON());
 
 ```
 
-### `find()`
-
-查找关联对象
-
-**签名**
-
-* `async find(options?: SingleRelationFindOption): Promise<Model<any> | null>`
-
-**参数**
-
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options.fields` | `Fields` | - | 参见 repository.find.fields |
-| `options.except` | `Except` | - | 参见 repository.find.except |
-| `options.appends` | `Appends` | - | 参见 repository.find.appends |
-| `options.filter` | `Filter` | - | 参见 repository.find.filter |
-
-**示例**
-
-```typescript
-const profile = await UserProfileRepository.find();
-// 关联对象不存在时，返回 null
-```
-
 ### `update()`
 
 更新关联对象
@@ -91,11 +93,8 @@ const profile = await UserProfileRepository.find();
 
 * `async update(options: UpdateOptions): Promise<Model>`
 
-**参数**
+<embed src="../shared/update-options.md"></embed>
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | `UpdateOptions` | - | 参见 repository.update |
 
 **示例**
 
@@ -115,11 +114,9 @@ profile.get('avatar'); // 'avatar2'
 
 * `async remove(options?: Transactionable): Promise<void>`
 
-**参数**
+**详细信息**
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options.transaction` | `Transaction` | - | Transaction |
+* `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
 
 **示例**
 
@@ -139,11 +136,9 @@ await Profile.repository.count() === 1; // true
 * `async destroy(options?: Transactionable): Promise<Boolean>`
 
 
-**参数**
+**详细信息**
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options.transaction` | `Transaction` | - | Transaction |
+* `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
 
 **示例**
 
@@ -161,11 +156,17 @@ await Profile.repository.count() === 0; // true
 
 * `async set(options: TargetKey | SetOption): Promise<void>`
 
-**参数**
+**类型**
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| `options` | ` TargetKey \| SetOption` | - | 需要 set 的对象的 targetKey，如果需要一同传入 transaction 则修改为 object 类型参数 |
+```typescript
+interface SetOption extends Transactionable {
+  tk?: TargetKey;
+}
+````
+**详细信息**
+
+* tk: 设置关联对象的 targetKey
+* transaction: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
 
 **示例**
 

@@ -2,56 +2,56 @@
 
 ACLResource，ACL 系统中的资源类。在 ACL 系统中，为用户授予权限时会自动创建对应的资源。
 
-## 基础数据结构
-
-
-
-### `ResourceActions`
-
-Action 集合对象：
-
-* key 表示 action 的名称
-* value 表示 action 的配置参数，见 [`RoleActionParams`](#RoleActionParams)。
-
-**定义**
-```typescript
-type ResourceActions = { [key: string]: RoleActionParams };
-```
 
 ## 类方法
 
-### `constructor(options: AclResourceOptions)`
+### `constructor()`
+构造函数
 
-创建 `ACLResource` 实例
+**签名**
+* `constructor(options: AclResourceOptions)`
 
-**AclResourceOptions 参数**
+**类型**
+```typescript
+type ResourceActions = { [key: string]: RoleActionParams };
 
-* options - 资源配置参数
-  * name - 资源名称
-  * role - 资源所属角色
-  * actions - ResourceActions 对象，定义资源的 Action
+interface AclResourceOptions {
+  name: string; // 资源名称
+  role: ACLRole; // 资源所属角色
+  actions?: ResourceActions;
+}
+```
+
+**详细信息**
+
+`RoleActionParams`详见 [`aclRole.grantAction`](./acl-role.md#grantaction)
 
 ### `getActions()`
 
 获取资源的所有 Action，返回结果为 `ResourceActions` 对象。
 
-### `getAction(name: string)`
-
+### `getAction()`
 根据名称返回 Action 的参数配置，返回结果为 `RoleActionParams` 对象。
 
-## `setAction(name: string, params: RoleActionParams)`
+**详细信息**
+
+`RoleActionParams`详见 [`aclRole.grantAction`](./acl-role.md#grantaction)
+
+### `setAction()`
 
 在资源内部设置一个 Action 的参数配置，返回结果为 `RoleActionParams` 对象。
 
-**参数**
+**签名**
+* `setAction(name: string, params: RoleActionParams)`
+
+**详细信息**
 
 * name - 要设置的 action 名称
-* params - [`RoleActionParams`](#RoleActionParams)
+* `RoleActionParams`详见 [`aclRole.grantAction`](./acl-role.md#grantaction)
 
-## `setActions(actions: ResourceActions)`
+### `setActions()`
+
+**签名**
+* `setActions(actions: ResourceActions)`
 
 批量调用 `setAction` 的便捷方法
-
-**参数**
-
-* actions: [RoleActionParams](#RoleActionParams)

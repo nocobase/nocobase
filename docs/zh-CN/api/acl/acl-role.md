@@ -4,22 +4,38 @@ ACLRole，ACL 系统中的用户角色类。在 ACL 系统中，通常使用 `ac
 
 ## 类方法
 
-### `constructor(public acl: ACL, public name: string)`
+### `constructor()`
+构造函数
 
+**签名**
+* `constructor(public acl: ACL, public name: string)`
+
+**详细信息**
 * acl - ACL 实例
 * name - 角色名称
 
-### `grantAction(path: string, options?: RoleActionParams)`
+### `grantAction()`
 
 为角色授予 Action 权限
 
+**签名**
+* `grantAction(path: string, options?: RoleActionParams)`
+
+**类型**
+```typescript
+interface RoleActionParams {
+  fields?: string[];
+  filter?: any;
+  own?: boolean;
+  whitelist?: string[];
+  blacklist?: string[];
+  [key: string]: any;
+}
+```
+
+**详细信息**
+
 * path - 资源Action路径，如 `posts:edit`，表示 `posts` 资源的 `edit` Action, 资源名称和 Action 之间使用 `:` 冒号分隔。
-* options? - 配置参数，见 [`RoleActionParams`](#RoleActionParams)。
-
-
-## 参数
-
-### `RoleActionParams`
 
 RoleActionParams 为授权时，对应 action 的可配置参数，用以实现更细粒度的权限控制。
 
@@ -68,3 +84,4 @@ RoleActionParams 为授权时，对应 action 的可配置参数，用以实现�
   ```
 * whitelist - 白名单，只有在白名单中的字段才能被访问
 * blacklist - 黑名单，黑名单中的字段不能被访问
+
