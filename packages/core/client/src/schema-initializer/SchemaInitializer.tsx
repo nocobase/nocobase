@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
 import { Icon } from '../icon';
 import { useCompile, useDesignable } from '../schema-component/hooks';
+import './style.less';
 import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
@@ -18,12 +19,7 @@ export const SchemaInitializerItemContext = createContext(null);
 
 export const SchemaInitializer = () => null;
 
-const menuItemGroupCss = css`
-  .menuItemGroup {
-    max-height: 60vh;
-    overflow: auto;
-  }
-`;
+const menuItemGroupCss = 'nb-menu-item-group';
 
 SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
   const {
