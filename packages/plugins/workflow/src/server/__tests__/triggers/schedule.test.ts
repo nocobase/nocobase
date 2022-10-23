@@ -4,7 +4,7 @@ import { getApp, sleep } from '..';
 
 
 
-describe.skip('workflow > triggers > schedule', () => {
+describe('workflow > triggers > schedule', () => {
   let app: Application;
   let db: Database;
   let PostRepo;
@@ -24,7 +24,7 @@ describe.skip('workflow > triggers > schedule', () => {
   afterEach(() => app.destroy());
 
   describe('constant mode', () => {
-    it('no repeat configurated', async () => {
+    it('neither startsOn nor repeat configurated', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'schedule',
@@ -49,6 +49,7 @@ describe.skip('workflow > triggers > schedule', () => {
         type: 'schedule',
         config: {
           mode: 0,
+          startsOn: now.toISOString(),
           repeat: '*/2 * * * * *',
         }
       });
@@ -71,6 +72,7 @@ describe.skip('workflow > triggers > schedule', () => {
         type: 'schedule',
         config: {
           mode: 0,
+          startsOn: now.toISOString(),
           repeat: '*/2 * * * * *',
           limit: 1
         }
@@ -92,6 +94,7 @@ describe.skip('workflow > triggers > schedule', () => {
         type: 'schedule',
         config: {
           mode: 0,
+          startsOn: now.toISOString(),
           repeat: 2000,
           limit: 1
         }
@@ -105,6 +108,7 @@ describe.skip('workflow > triggers > schedule', () => {
 
     it('on certain second', async () => {
       const now = new Date();
+      const startsOn = now.toISOString();
       now.setSeconds(now.getSeconds() + 3);
       now.setMilliseconds(0);
 
@@ -113,6 +117,7 @@ describe.skip('workflow > triggers > schedule', () => {
         type: 'schedule',
         config: {
           mode: 0,
+          startsOn,
           repeat: `${now.getSeconds()} * * * * *`,
         }
       });
@@ -126,6 +131,7 @@ describe.skip('workflow > triggers > schedule', () => {
 
     it('multiple workflows trigger at same time', async () => {
       const now = new Date();
+      const startsOn = now.toISOString();
       now.setSeconds(now.getSeconds() + 2);
       now.setMilliseconds(0);
 
@@ -137,6 +143,7 @@ describe.skip('workflow > triggers > schedule', () => {
             type: 'schedule',
             config: {
               mode: 0,
+              startsOn,
               repeat: `${now.getSeconds()} * * * * *`,
             }
           },
@@ -151,6 +158,7 @@ describe.skip('workflow > triggers > schedule', () => {
             type: 'schedule',
             config: {
               mode: 0,
+              startsOn,
               repeat: `${now.getSeconds()} * * * * *`,
             }
           },
@@ -205,7 +213,7 @@ describe.skip('workflow > triggers > schedule', () => {
       expect(execution.context.date).toBe(triggerTime.toISOString());
     });
 
-    it('starts on post.createdAt and repeat', async () => {
+    it('starts on post.createdAt and repeat by cron', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'schedule',
@@ -223,6 +231,7 @@ describe.skip('workflow > triggers > schedule', () => {
       await sleep((2.5 - now.getSeconds() % 2) * 1000 - now.getMilliseconds());
       const startTime = new Date();
       startTime.setMilliseconds(500);
+      console.log(startTime);
 
       const post = await PostRepo.create({ values: { title: 't1' }});
 
@@ -230,7 +239,7 @@ describe.skip('workflow > triggers > schedule', () => {
       // sleep 1.5s at 2s trigger 1st time
       // sleep 3.5s at 4s trigger 2nd time
 
-      const executions = await workflow.getExecutions();
+      const executions = await workflow.getExecutions({ order: [['createdAt', 'ASC']] });
       expect(executions.length).toBe(2);
       const d1 = Date.parse(executions[0].context.date);
       expect(d1 - 1500).toBe(startTime.getTime());
