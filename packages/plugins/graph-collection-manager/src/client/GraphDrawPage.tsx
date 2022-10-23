@@ -10,7 +10,7 @@ import {
   SchemaComponentOptions,
   useAPIClient,
   useCollectionManager,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
@@ -58,9 +58,9 @@ async function layout(createPositions) {
       const pos: any = g.node(id);
       const index = graphPositions.length + 1;
       const calculatedPosition =
-        //@ts-ignore
         positions && positions.length > 0
-          ? { x: maxBy(positions, 'x').x + 350 * index, y: minBy(positions, 'y').y }
+          ? //@ts-ignore
+            { x: maxBy(positions, 'x').x + 350 * index, y: minBy(positions, 'y').y }
           : pos;
       node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
       if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {

@@ -18,7 +18,9 @@ import {
   SchemaComponentProvider,
   Select,
   useCollectionManager,
-  useCompile
+  useCompile,
+  Formula,
+  useRecord,
 } from '@nocobase/client';
 import { Dropdown, Popover, Tag } from 'antd';
 import React from 'react';
@@ -50,6 +52,13 @@ const Entity: React.FC<{
   } = node;
   const compile = useCompile();
   const { collections = [], getInterface } = useCollectionManager();
+  // 获取当前字段列表
+const useCurrentFields = () => {
+  const record = useRecord();
+  const { getCollectionFields } = useCollectionManager();
+  const fields = getCollectionFields(record.collectionName || record.name) as any[];
+  return fields;
+}
   const useNewId = (prefix) => {
     return `${prefix || ''}${uid()}`;
   };
@@ -261,8 +270,9 @@ const Entity: React.FC<{
                         DeleteOutlined,
                         AddFieldAction,
                         Dropdown,
+                        Formula
                       }}
-                      scope={{ useAsyncDataSource, loadCollections, useCancelAction, useNewId }}
+                      scope={{ useAsyncDataSource, loadCollections, useCancelAction, useNewId,useCurrentFields }}
                     >
                       <CollectionNodeProvder record={item} setTargetNode={setTargetNode} node={node}>
                         <SchemaComponent
