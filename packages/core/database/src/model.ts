@@ -29,7 +29,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   // TODO
   public toChangedWithAssociations() {
     // @ts-ignore
-    this._changedWithAssociations = new Set([...this._changed]);
+    this._changedWithAssociations = new Set([...this._changedWithAssociations, ...this._changed]);
     // @ts-ignore
     this._previousDataValuesWithAssociations = this._previousDataValues;
   }
