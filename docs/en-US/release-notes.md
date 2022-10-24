@@ -1,5 +1,24 @@
 # Release Notes
 
+## 2022/10/24 ~ v0.7.6-alpha.2
+
+- Turkish language ([#939](https://github.com/nocobase/nocobase/issues/939))
+- refactor(plugin-file-manager): move client code into plugin folder and enable path config ([#913](https://github.com/nocobase/nocobase/issues/913))
+- feat: add filter action to collection table ([#953](https://github.com/nocobase/nocobase/issues/953))
+- feat: ui schema cache ([#877](https://github.com/nocobase/nocobase/issues/877))
+- feat: docker optimizing ([#948](https://github.com/nocobase/nocobase/issues/948))
+- fix(plugin-workflow): test changedWithAssociations() ([#950](https://github.com/nocobase/nocobase/issues/950))
+- fix(plugin-workflow): skip time based test ([#951](https://github.com/nocobase/nocobase/issues/951))
+- fix(plugin-workflow): fix schedule trigger bug ([#949](https://github.com/nocobase/nocobase/issues/949))
+- feat: changed with associations ([#943](https://github.com/nocobase/nocobase/issues/943))
+- feat(useSignup): customize success message
+- fix(plugin-workflow): fix collection fieldset component ([#942](https://github.com/nocobase/nocobase/issues/942))
+- fix(plugin-workflow): avoid revision with ghost nodes ([#941](https://github.com/nocobase/nocobase/issues/941))
+- fix(plugin-workflow): add req context to processor ([#936](https://github.com/nocobase/nocobase/issues/936))
+- Feat/plugin workflow collection field ([#934](https://github.com/nocobase/nocobase/issues/934))
+- fix(plugin-workflow): fix schedule infinitely trigger when repeat not set ([#926](https://github.com/nocobase/nocobase/issues/926))
+- fix(plugin-workflow): temp disable validation of collection field in node ([#928](https://github.com/nocobase/nocobase/issues/928))
+
 ## 2022/10/16 ~ v0.7.5-alpha.1
 
 - Optimized query performance for relational fields
