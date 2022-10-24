@@ -86,6 +86,11 @@ export const collectionSchema: ISchema = {
             filter: {
               type: 'void',
               title: '{{ t("Filter") }}',
+              default:{
+                $and:[
+                  {title:{$includes:''}}
+                ]
+              },
               'x-action': 'filter',
               'x-component': 'Filter.Action',
               'x-component-props': {
