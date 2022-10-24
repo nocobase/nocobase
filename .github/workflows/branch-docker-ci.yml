@@ -53,7 +53,8 @@ jobs:
         with:
           context: .
           file: Dockerfile
+          network: host
           build-args: |
-            VERDACCIO_URL=http://verdaccio:10104/
+            VERDACCIO_URL=http://localhost:10104/
           push: true
           tags: ${{ steps.meta.outputs.tags }}
