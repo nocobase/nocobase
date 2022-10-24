@@ -9,7 +9,6 @@ import { APIClient, APIClientProvider } from '../api-client';
 import { BlockSchemaComponentProvider } from '../block-provider';
 import { CollectionManagerShortcut } from '../collection-manager';
 import { RemoteDocumentTitleProvider } from '../document-title';
-import { FileStorageShortcut } from '../file-manager';
 import { i18n } from '../i18n';
 import { PluginManagerProvider } from '../plugin-manager';
 import PMProvider, { PluginManagerLink, SettingsCenterDropdown } from '../pm';
@@ -101,7 +100,6 @@ export class Application {
         CollectionManagerShortcut,
         SystemSettingsShortcut,
         SchemaTemplateShortcut,
-        FileStorageShortcut,
         PluginManagerLink,
         SettingsCenterDropdown,
       },

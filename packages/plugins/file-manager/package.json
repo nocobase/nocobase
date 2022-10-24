@@ -12,6 +12,7 @@
   "dependencies": {
     "@koa/multer": "^3.0.0",
     "@nocobase/server": "0.8.0-alpha.1",
+    "@nocobase/client": "0.8.0-alpha.1",
     "aws-sdk": "^2.2.32",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",
