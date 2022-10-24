@@ -4,15 +4,13 @@ import { uid } from '@formily/shared';
 import React, { useContext, useEffect, useState } from 'react';
 import { useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
-import { SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { SchemaComponent, SchemaComponentContext, useActionContext, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
-import { SchemaComponentContext } from '../../schema-component/context';
-
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
@@ -181,10 +179,10 @@ export const ConfigurationTable = () => {
       value: item.name,
     }));
   };
-const ctx=useContext(SchemaComponentContext);
+  const ctx = useContext(SchemaComponentContext);
   return (
     <div>
-      <SchemaComponentContext.Provider value={{...ctx,designable: false }}>
+      <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
         <SchemaComponent
           schema={collectionSchema}
           components={{
@@ -203,7 +201,7 @@ const ctx=useContext(SchemaComponentContext);
             useNewId,
           }}
         />
-        </SchemaComponentContext.Provider>
+      </SchemaComponentContext.Provider>
     </div>
   );
 };
