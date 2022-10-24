@@ -1,14 +1,33 @@
-name: ci
+name: release-ci
 
 on:
   push:
-    branches:
-      - '**'
     tags:
       - 'v*'
 
 jobs:
-  docker:
+  publish-npm:
+    strategy:
+      matrix:
+        node_version: ['16']
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: yarn install and build
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn build
+      -
+        name: publish npmjs.org
+        run: |
+          npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+          yarn release:force --registry https://registry.npmjs.org/
+  push-docker:
     runs-on: ubuntu-latest
     steps:
       -
