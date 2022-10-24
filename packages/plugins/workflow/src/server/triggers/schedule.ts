@@ -35,12 +35,17 @@ interface ScheduleMode {
 
 const ScheduleModes = new Map<number, ScheduleMode>();
 
+function parseDateWithoutMs(date: string) {
+  return Math.floor(Date.parse(date) / 1000) * 1000;
+}
+
 ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
   shouldCache(workflow, now) {
     const { startsOn, endsOn, repeat } = workflow.config;
     const timestamp = now.getTime();
 
-    const startTime = Date.parse(startsOn);
+    // NOTE: align to second start
+    const startTime = parseDateWithoutMs(startsOn);
     if (!startTime || (startTime > timestamp + this.cacheCycle)) {
       return false;
     }
@@ -54,13 +59,13 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
       }
 
       if (endsOn) {
-        const endTime = Date.parse(endsOn);
+        const endTime = parseDateWithoutMs(endsOn);
         if (!endTime || endTime <= timestamp) {
           return false;
         }
       }
     } else {
-      if (startTime < timestamp) {
+      if (startTime <= timestamp) {
         return false;
       }
     }
@@ -70,7 +75,13 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
   trigger(workflow, now) {
     const { startsOn, endsOn, repeat } = workflow.config;
     const timestamp = now.getTime();
-    const startTime = Math.floor(Date.parse(startsOn) / 1000) * 1000;
+    // NOTE: align to second start
+    const startTime = parseDateWithoutMs(startsOn);
+
+    if (!startTime || startTime > timestamp) {
+      return;
+    }
+
     if (repeat) {
       if (typeof repeat === 'number') {
         if (Math.round(timestamp - startTime) % repeat) {
@@ -79,9 +90,9 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
       }
 
       if (endsOn) {
-        const endTime = Date.parse(endsOn);
+        const endTime = parseDateWithoutMs(endsOn);
         if (!endTime || endTime < timestamp) {
-          return false;
+          return;
         }
       }
     } else {
@@ -97,7 +108,7 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
 function getOnTimestampWithOffset(on, now: Date) {
   switch (typeof on) {
     case 'string':
-      return Date.parse(on);
+      return parseDateWithoutMs(on);
     case 'object':
       const { field, offset = 0, unit = 1000 } = on;
       if (!field) {
@@ -115,7 +126,7 @@ function getOnTimestampWithOffset(on, now: Date) {
 function getDataOptionTime(data, on, dir = 1) {
   switch (typeof on) {
     case 'string':
-      const time = Date.parse(on);
+      const time = parseDateWithoutMs(on);
       return time ? time : null;
     case 'object':
       const { field, offset = 0, unit = 1000 } = on;
@@ -327,10 +338,6 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
       }
     });
 
-    if (instances.length) {
-      console.log(instances.length, 'rows trigger at', now);
-    }
-
     instances.forEach(item => {
       this.plugin.trigger(workflow, {
         date: now,
@@ -485,6 +492,10 @@ export default class ScheduleTrigger extends Trigger {
 
     workflows.forEach(async (workflow) => {
       const should = await this.shouldCache(workflow, now);
+
+      if (should) {
+        console.log('caching schedule workflow:', workflow.id);
+      }
 
       this.setCache(workflow, !should);
     });
