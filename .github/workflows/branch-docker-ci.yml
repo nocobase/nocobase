@@ -50,6 +50,6 @@ jobs:
           file: Dockerfile
           network: host
           build-args: |
-            VERDACCIO_URL=https://pkgs.nocobase.com/
+            VERDACCIO_URL=http://verdaccio:10104/
           push: true
           tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}
