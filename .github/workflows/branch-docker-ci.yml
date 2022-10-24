@@ -48,7 +48,6 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          network: host
           build-args: |
             VERDACCIO_URL=http://verdaccio:10104/
           push: true
