@@ -159,6 +159,8 @@ export default class WorkflowPlugin extends Plugin {
       transaction: transaction.id
     }, { transaction });
 
+    console.log('workflow triggered:', new Date(), workflow.id, execution.id);
+
     const executed = await workflow.countExecutions({ transaction });
 
     // NOTE: not to trigger afterUpdate hook here
