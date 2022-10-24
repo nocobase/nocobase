@@ -11,8 +11,6 @@ jobs:
     services:
       verdaccio:
         image: verdaccio/verdaccio
-        ports:
-          - "0.0.0.0:10104:4873"
     steps:
       -
         name: Checkout
@@ -49,6 +47,6 @@ jobs:
           context: .
           file: Dockerfile
           build-args: | 
-            VERDACCIO_URL=http://127.0.0.1:10104/
+            VERDACCIO_URL=http:/verdaccio:4873/
           push: true
           tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}
