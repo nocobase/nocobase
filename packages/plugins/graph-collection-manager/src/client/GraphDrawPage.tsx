@@ -101,7 +101,7 @@ async function layout(createPositions) {
       ? targetGraph.positionCell(last(nodes), 'top', { padding: 100 })
       : targetGraph.positionCell(targetNode, 'top', { padding: 100 });
   } else {
-    targetGraph.centerContent();
+    targetGraph.positionCell(nodes[0],'top-left',{padding:100});
   }
   if (graphPositions.length > 0) {
     await createPositions(graphPositions);
