@@ -1,11 +1,18 @@
 import { Repository, Transactionable } from '@nocobase/database';
+import { Cache } from '@nocobase/cache';
 import { uid } from '@nocobase/utils';
 import lodash from 'lodash';
 import { Transaction } from 'sequelize';
 import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
 
-interface GetJsonSchemaOptions {
+export interface GetJsonSchemaOptions {
   includeAsyncNode?: boolean;
+  readFromCache?: boolean;
+  transaction?: Transaction;
+}
+
+export interface GetPropertiesOptions {
+  readFromCache?: boolean;
   transaction?: Transaction;
 }
 
@@ -64,6 +71,36 @@ function transaction(transactionAbleArgPosition?: number) {
 }
 
 export class UiSchemaRepository extends Repository {
+  cache: Cache;
+
+  // if you need to handle cache in repo method, so you must set cache first
+  setCache(cache: Cache) {
+    this.cache = cache;
+  }
+
+  /**
+   * clear cache with xUid which in uiSchemaTreePath's Path
+   * @param {string} xUid
+   * @param {Transaction} transaction
+   * @returns {Promise<void>}
+   */
+  async clearXUidPathCache(xUid: string, transaction: Transaction) {
+    if (!this.cache || !xUid) {
+      return;
+    }
+    // find all xUid node's parent nodes
+    const uiSchemaNodes = await this.database.getRepository('uiSchemaTreePath').find({
+      filter: {
+        descendant: xUid,
+      },
+      transaction: transaction,
+    });
+    for (const uiSchemaNode of uiSchemaNodes) {
+      await this.cache.del(`p_${uiSchemaNode['ancestor']}`);
+      await this.cache.del(`s_${uiSchemaNode['ancestor']}`);
+    }
+  }
+
   tableNameAdapter(tableName) {
     if (this.database.sequelize.getDialect() === 'postgres') {
       return `"${tableName}"`;
@@ -144,7 +181,16 @@ export class UiSchemaRepository extends Repository {
     return carry;
   }
 
-  async getProperties(uid: string, options: Transactionable = {}) {
+  async getProperties(uid: string, options: GetPropertiesOptions = {}) {
+    if (options?.readFromCache && this.cache) {
+      return this.cache.wrap(`p_${uid}`, () => {
+        return this.doGetProperties(uid, options);
+      });
+    }
+    return this.doGetProperties(uid, options);
+  }
+
+  private async doGetProperties(uid: string, options: GetPropertiesOptions = {}) {
     const { transaction } = options;
 
     const db = this.database;
@@ -174,7 +220,7 @@ export class UiSchemaRepository extends Repository {
     return lodash.pick(schema, ['type', 'properties']);
   }
 
-  async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {
+  private async doGetJsonSchema(uid: string, options?: GetJsonSchemaOptions) {
     const db = this.database;
 
     const treeTable = this.uiSchemaTreePathTableName;
@@ -201,8 +247,16 @@ export class UiSchemaRepository extends Repository {
       return {};
     }
 
-    const schema = this.nodesToSchema(nodes[0], uid);
-    return schema;
+    return this.nodesToSchema(nodes[0], uid);
+  }
+
+  async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {
+    if (options?.readFromCache && this.cache) {
+      return this.cache.wrap(`s_${uid}`, () => {
+        return this.doGetJsonSchema(uid, options);
+      });
+    }
+    return this.doGetJsonSchema(uid, options);
   }
 
   private ignoreSchemaProperties(schemaProperties) {
@@ -257,6 +311,7 @@ export class UiSchemaRepository extends Repository {
 
   @transaction()
   async clearAncestor(uid: string, options?: Transactionable) {
+    await this.clearXUidPathCache(uid, options?.transaction);
     const db = this.database;
     const treeTable = this.uiSchemaTreePathTableName;
 
@@ -283,6 +338,7 @@ export class UiSchemaRepository extends Repository {
     const { transaction } = options;
 
     const rootUid = newSchema['x-uid'];
+    await this.clearXUidPathCache(rootUid, transaction);
     const oldTree = await this.getJsonSchema(rootUid);
 
     const traverSchemaTree = async (schema, path = []) => {
@@ -311,7 +367,7 @@ export class UiSchemaRepository extends Repository {
     }
   }
 
-  async updateNode(uid: string, schema: any, transaction?: Transaction) {
+  protected async updateNode(uid: string, schema: any, transaction?: Transaction) {
     const nodeModel = await this.findOne({
       filter: {
         'x-uid': uid,
@@ -354,7 +410,7 @@ export class UiSchemaRepository extends Repository {
     return childrenCount === 0;
   }
 
-  async findParentUid(uid, transaction?) {
+  protected async findParentUid(uid, transaction?) {
     const parent = await this.database.getRepository('uiSchemaTreePath').findOne({
       filter: {
         descendant: uid,
@@ -408,6 +464,8 @@ export class UiSchemaRepository extends Repository {
   async removeEmptyParents(options: Transactionable & { uid: string; breakRemoveOn?: BreakRemoveOnType }) {
     const { transaction, uid, breakRemoveOn } = options;
 
+    await this.clearXUidPathCache(uid, transaction);
+
     const removeParent = async (nodeUid: string) => {
       const parent = await this.isSingleChild(nodeUid, transaction);
 
@@ -440,6 +498,8 @@ export class UiSchemaRepository extends Repository {
   async recursivelyRemoveIfNoChildren(options: Transactionable & { uid: string; breakRemoveOn?: BreakRemoveOnType }) {
     const { uid, transaction, breakRemoveOn } = options;
 
+    await this.clearXUidPathCache(uid, transaction);
+
     const removeLeafNode = async (nodeUid: string) => {
       const isLeafNode = await this.isLeafNode(nodeUid, transaction);
 
@@ -467,6 +527,7 @@ export class UiSchemaRepository extends Repository {
   async remove(uid: string, options?: Transactionable & removeParentOptions) {
     let { transaction } = options;
 
+    await this.clearXUidPathCache(uid, transaction);
     if (options?.removeParentsIfNoChildren) {
       await this.removeEmptyParents({ transaction, uid, breakRemoveOn: options.breakRemoveOn });
       return;
@@ -501,7 +562,12 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
-  async insertBeside(targetUid: string, schema: any, side: 'before' | 'after', options?: InsertAdjacentOptions) {
+  protected async insertBeside(
+    targetUid: string,
+    schema: any,
+    side: 'before' | 'after',
+    options?: InsertAdjacentOptions,
+  ) {
     const { transaction } = options;
     const targetParent = await this.findParentUid(targetUid, transaction);
 
@@ -537,7 +603,12 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
-  async insertInner(targetUid: string, schema: any, position: 'first' | 'last', options?: InsertAdjacentOptions) {
+  protected async insertInner(
+    targetUid: string,
+    schema: any,
+    position: 'first' | 'last',
+    options?: InsertAdjacentOptions,
+  ) {
     const { transaction } = options;
 
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
@@ -585,6 +656,9 @@ export class UiSchemaRepository extends Repository {
   ) {
     const { transaction } = options;
 
+    // if schema is existed then clear origin path schema cache
+    await this.clearXUidPathCache(schema['x-uid'], transaction);
+
     if (options.wrap) {
       // insert wrap schema using insertNewSchema
       const wrapSchemaNodes = await this.insertNewSchema(options.wrap, {
@@ -615,7 +689,10 @@ export class UiSchemaRepository extends Repository {
       }
     }
 
-    return await this[`insert${lodash.upperFirst(position)}`](target, schema, options);
+    const result = await this[`insert${lodash.upperFirst(position)}`](target, schema, options);
+    // clear target schema path cache
+    await this.clearXUidPathCache(result['x-uid'], transaction);
+    return result;
   }
 
   @transaction()
@@ -639,7 +716,7 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
-  async insertNodes(nodes: SchemaNode[], options?: Transactionable) {
+  protected async insertNodes(nodes: SchemaNode[], options?: Transactionable) {
     const { transaction } = options;
 
     const insertedNodes = [];
@@ -660,9 +737,11 @@ export class UiSchemaRepository extends Repository {
   async insert(schema: any, options?: Transactionable) {
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
     const insertedNodes = await this.insertNodes(nodes, options);
-    return this.getJsonSchema(insertedNodes[0].get('x-uid'), {
+    const result = await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
       transaction: options?.transaction,
     });
+    await this.clearXUidPathCache(result['x-uid'], options?.transaction);
+    return result;
   }
 
   @transaction()
@@ -730,9 +809,11 @@ export class UiSchemaRepository extends Repository {
       return nodes;
     }
 
-    return this.getJsonSchema(nodes[0]['x-uid'], {
+    const result = await this.getJsonSchema(nodes[0]['x-uid'], {
       transaction,
     });
+    await this.clearXUidPathCache(result['x-uid'], transaction);
+    return result;
   }
 
   private async insertSchemaRecord(name, uid, schema, transaction) {
@@ -1026,7 +1107,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         },
       );
     }
-
+    await this.clearXUidPathCache(uid, transaction);
     return savedNode;
   }
 }
