@@ -45,9 +45,9 @@ jobs:
       -
         name: Build and push
         uses: docker/build-push-action@v3
+        env:
+          VERDACCIO_URL: http://localhost:10104/
         with:
-          add-hosts: |
-            host.docker.internal:host-gateway
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
