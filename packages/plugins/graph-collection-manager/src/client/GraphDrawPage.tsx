@@ -22,7 +22,7 @@ import { useCreateActionAndRefreshCM } from './action-hooks';
 import Entity from './components/Entity';
 import { collection } from './schemas/collection';
 import { collectionListClass, graphCollectionContainerClass } from './style';
-import { formatData } from './utils';
+import { formatData, getDiffNode } from './utils';
 
 const LINE_HEIGHT = 40;
 const NODE_WIDTH = 250;
@@ -171,9 +171,14 @@ export const GraphDrawPage = React.memo(() => {
   const refreshGM = async () => {
     const data = await refreshCM();
     targetGraph.collections = data;
+    const currentNodes = targetGraph.getNodes();
     setCollectionData(data);
     setCollectionList(data);
-    getCollectionData(data);
+    if (!currentNodes.length) {
+      renderInitGraphCollection(data);
+    } else {
+      renderDiffGraphCollection(data);
+    }
   };
   const initGraphCollections = () => {
     targetGraph = new Graph({
@@ -182,7 +187,7 @@ export const GraphDrawPage = React.memo(() => {
       scroller: {
         enabled: true,
         pannable: true,
-        padding: 0,
+        padding: { top: 0, left: 500, right: 300 },
       },
       connecting: {
         anchor: {
@@ -230,7 +235,7 @@ export const GraphDrawPage = React.memo(() => {
             <SchemaComponentOptions inherit scope={scope} components={components}>
               <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
                 <div style={{ height: 'auto' }}>
-                  <Entity node={node} setTargetNode={setTargetNode} />
+                  <Entity node={node} setTargetNode={setTargetNode} targetGraph={targetGraph} />
                 </div>
               </CollectionManagerProvider>
             </SchemaComponentOptions>
@@ -347,14 +352,43 @@ export const GraphDrawPage = React.memo(() => {
       targetGraph.resize();
     });
   };
-  const getCollectionData = (rawData) => {
-    const { nodes, edges } = formatData(rawData);
+  // 首次渲染
+  const renderInitGraphCollection = (rawData) => {
+    const { nodesData, edgesData } = formatData(rawData);
     targetGraph.clearCells();
-    getNodes(nodes);
-    getEdges(edges);
+    getNodes(nodesData);
+    getEdges(edgesData);
     layout(useSaveGraphPositionAction);
   };
 
+  // 增量渲染
+  const renderDiffGraphCollection = (rawData) => {
+    const { nodesData, edgesData } = formatData(rawData);
+    const currentNodes = targetGraph.getNodes().map((v) => v.store.data);
+    const diffNodes = getDiffNode(nodesData, currentNodes,targetNode);
+    diffNodes.forEach(({ status, node }) => {
+      const updateNode = targetGraph.getCellById(node.id);
+      switch (status) {
+        case 'add':
+          targetGraph.addNode(node);
+          break;
+        case 'updatePorts':
+          updateNode.removePorts();
+          updateNode.addPorts(node.ports);
+          break;
+        case 'updateNode':
+          updateNode.setData({ title: node.title });
+          break;
+        case 'delete':
+          targetGraph.removeCell(node.id);
+        default:
+          return null;
+      }
+    });
+    getNodes(nodesData);
+    getEdges(edgesData);
+    layout(useSaveGraphPositionAction);
+  };
   useLayoutEffect(() => {
     initGraphCollections();
     return () => {
@@ -392,7 +426,7 @@ export const GraphDrawPage = React.memo(() => {
     targetNode = targetGraph.getCellById(value.key);
     targetGraph.unfreeze();
     // 定位到目标节点
-    targetGraph.positionCell(targetNode, 'top', { padding: 100 });
+    targetGraph.positionCell(targetNode, 'top', { padding: 50 });
     targetNode.setAttrs({
       boxShadow: '0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)',
     });

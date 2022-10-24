@@ -42,11 +42,12 @@ import { FieldSummary } from './FieldSummary';
 const Entity: React.FC<{
   node?: Node | any;
   setTargetNode: Function | any;
+  targetGraph:any
 }> = (props) => {
-  const { node, setTargetNode } = props;
+  const { node, setTargetNode,targetGraph } = props;
   const {
     store: {
-      data: { title, name, item, ports, attrs },
+      data: { title, name, item, ports, attrs,data},
     },
     id,
   } = node;
@@ -63,7 +64,7 @@ const useCurrentFields = () => {
     return `${prefix || ''}${uid()}`;
   };
   const loadCollections = async (field: any) => {
-    return collections?.map((item: any) => ({
+    return targetGraph.collections?.map((item: any) => ({
       label: compile(item.title),
       value: item.name,
     }));
@@ -91,7 +92,7 @@ const useCurrentFields = () => {
   return (
     <div className={cx(entityContainer)} style={{ boxShadow: attrs?.boxShadow }}>
       <div className={headClass}>
-        <span className={tableNameClass}>{compile(title)}</span>
+        <span className={tableNameClass}>{compile(data?.title||title)}</span>
         <div className={tableBtnClass}>
           <SchemaComponentProvider>
             <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>

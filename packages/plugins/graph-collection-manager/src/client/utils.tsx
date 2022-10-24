@@ -32,7 +32,7 @@ export const formatData = (data) => {
     };
   });
   const edges = formatEdgeData(edgeData, targetTablekeys, tableData);
-  return { nodes: tableData, edges };
+  return { nodesData: tableData, edgesData: edges };
 };
 
 const formatEdgeData = (data, targetTables, tableData) => {
@@ -190,7 +190,8 @@ const formatEdgeData = (data, targetTables, tableData) => {
         const isLegalEdge = tableData
           .find((v) => v.name == data[i].collectionName)
           .ports.find((v) => v.name === data[i].foreignKey);
-        isLegalEdge &&targetTable.ports.find((v) => v.name === data[i].targetKey)?.id&&
+        isLegalEdge &&
+          targetTable.ports.find((v) => v.name === data[i].targetKey)?.id &&
           edges.push({
             id: uid(),
             source: {
@@ -251,3 +252,40 @@ const getRelationship = (relatioship) => {
       return [];
   }
 };
+
+export const getDiffNode = (arr1, arr2,targetNode) => {
+  let arr = [];
+  for (let i = 0; i < arr1.length; i++) {
+    if (!arr2.find((v) => v.id === arr1[i].id)) {
+      arr.push({
+        status: 'add',
+        node: arr1[i],
+      });
+    } else {
+      const oldNode = arr2.find((v) => v.id === arr1[i].id);
+      if (oldNode.id===targetNode?.id||oldNode.ports.items.join() !== arr1[i].ports.join()) {
+        arr.push({
+          status: 'updatePorts',
+          node: arr1[i],
+        });
+      }
+      if (oldNode.title !== arr1[i].title) {
+        arr.push({
+          status: 'updateNode',
+          node: arr1[i],
+        });
+      }
+    }
+  }
+  for (let i = 0; i < arr2.length; i++) {
+    if (!arr1.find((v) => v.id === arr2[i].id)) {
+      arr.push({
+        status: 'delete',
+        node: arr2[i],
+      });
+    }
+  }
+  return arr;
+};
+
+
