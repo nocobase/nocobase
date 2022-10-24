@@ -4,7 +4,7 @@ import { uid } from '@formily/shared';
 import React, { useContext, useEffect, useState } from 'react';
 import { useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
-import { SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { SchemaComponent, SchemaComponentContext, useActionContext, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
@@ -164,11 +164,11 @@ const useCurrentFields = () => {
   const { getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(record.collectionName || record.name) as any[];
   return fields;
-}
+};
 
 const useNewId = (prefix) => {
   return `${prefix || ''}${uid()}`;
-}
+};
 
 export const ConfigurationTable = () => {
   const { collections = [] } = useCollectionManager();
@@ -179,26 +179,29 @@ export const ConfigurationTable = () => {
       value: item.name,
     }));
   };
+  const ctx = useContext(SchemaComponentContext);
   return (
     <div>
-      <SchemaComponent
-        schema={collectionSchema}
-        components={{
-          AddSubFieldAction,
-          EditSubFieldAction,
-          FieldSummary,
-        }}
-        scope={{
-          useDestroySubField,
-          useBulkDestroySubField,
-          useSelectedRowKeys,
-          useCollectionValues,
-          useAsyncDataSource,
-          loadCollections,
-          useCurrentFields,
-          useNewId,
-        }}
-      />
+      <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+        <SchemaComponent
+          schema={collectionSchema}
+          components={{
+            AddSubFieldAction,
+            EditSubFieldAction,
+            FieldSummary,
+          }}
+          scope={{
+            useDestroySubField,
+            useBulkDestroySubField,
+            useSelectedRowKeys,
+            useCollectionValues,
+            useAsyncDataSource,
+            loadCollections,
+            useCurrentFields,
+            useNewId,
+          }}
+        />
+      </SchemaComponentContext.Provider>
     </div>
   );
 };
