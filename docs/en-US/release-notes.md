@@ -1,6 +1,6 @@
 # Release Notes
 
-## 2022/10/24 ~ v0.7.6-alpha.1
+## 2022/10/24 ~ v0.7.6-alpha.2
 
 - Turkish language ([#939](https://github.com/nocobase/nocobase/issues/939))
 - refactor(plugin-file-manager): move client code into plugin folder and enable path config ([#913](https://github.com/nocobase/nocobase/issues/913))
