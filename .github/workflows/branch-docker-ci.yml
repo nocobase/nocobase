@@ -19,6 +19,8 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v3
+      - name: VERDACCIO_URL
+        run: echo "VERDACCIO_URL=http://localhost:10104/" > .env && ls -a
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v2
