@@ -13,6 +13,12 @@ const schema = {
         'x-component': 'Input',
         default: 'uploads',
       },
+      path: {
+        title: '{{t("Path")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
       serve: {
         type: 'string',
         'x-decorator': 'FormItem',
@@ -52,6 +58,12 @@ const schema = {
         'x-component': 'Input',
         required: true,
       },
+      path: {
+        title: '{{t("Path")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
     },
   },
   s3: {
@@ -83,6 +95,12 @@ const schema = {
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
+      },
+      path: {
+        title: '{{t("Path")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
       },
     },
   },
