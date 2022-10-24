@@ -5,6 +5,9 @@ on:
     branches:
       - '**'
 
+env:
+  VERDACCIO_URL: http://localhost:10104/
+
 jobs:
   push-docker:
     runs-on: ubuntu-latest
@@ -13,8 +16,6 @@ jobs:
         image: verdaccio/verdaccio
         ports:
           - 10104:4873
-    env:
-      VERDACCIO_URL: http://localhost:10104/
     steps:
       -
         name: Checkout
