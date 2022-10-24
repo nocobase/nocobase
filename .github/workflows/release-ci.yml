@@ -7,11 +7,8 @@ on:
 
 jobs:
   publish-npm:
-    strategy:
-      matrix:
-        node_version: ['16']
     runs-on: ubuntu-latest
-    container: node:${{ matrix.node_version }}
+    container: node:16
     steps:
       -
         name: Checkout
@@ -29,6 +26,7 @@ jobs:
           yarn release:force --registry https://registry.npmjs.org/
   push-docker:
     runs-on: ubuntu-latest
+    needs: publish-npm
     steps:
       -
         name: Checkout
