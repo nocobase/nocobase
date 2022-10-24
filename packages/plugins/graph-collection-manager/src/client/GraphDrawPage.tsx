@@ -385,7 +385,6 @@ export const GraphDrawPage = React.memo(() => {
           return null;
       }
     });
-    getNodes(nodesData);
     getEdges(edgesData);
     layout(useSaveGraphPositionAction);
   };
