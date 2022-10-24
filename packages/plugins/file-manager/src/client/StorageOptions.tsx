@@ -13,6 +13,12 @@ const schema = {
         'x-component': 'Input',
         default: 'uploads',
       },
+      path: {
+        title: '{{t("Path")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
       serve: {
         type: 'string',
         'x-decorator': 'FormItem',
@@ -52,6 +58,44 @@ const schema = {
         'x-component': 'Input',
         required: true,
       },
+      path: {
+        title: '{{t("Path")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+    },
+  },
+  'tx-cos': {
+    properties: {
+      Region: {
+        title: '{{t("Region")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        required: true,
+      },
+      SecretId: {
+        title: '{{t("SecretId")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        required: true,
+      },
+      SecretKey: {
+        title: '{{t("SecretKey")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Password',
+        required: true,
+      },
+      Bucket: {
+        title: '{{t("Bucket")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        required: true,
+      },
     },
   },
   s3: {
@@ -83,6 +127,12 @@ const schema = {
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
+      },
+      path: {
+        title: '{{t("Path")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
       },
     },
   },
