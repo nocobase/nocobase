@@ -48,7 +48,8 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          build-args: |
-            VERDACCIO_URL=http://verdaccio:10104/
+          network: host
+          build-args: | 
+            VERDACCIO_URL=http://127.0.0.1:10104/
           push: true
           tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}
