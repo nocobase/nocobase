@@ -13,6 +13,8 @@ jobs:
         image: verdaccio/verdaccio
         ports:
           - 10104:4873
+    env:
+      VERDACCIO_URL: http://localhost:10104/
     steps:
       -
         name: Checkout
@@ -45,8 +47,6 @@ jobs:
       -
         name: Build and push
         uses: docker/build-push-action@v3
-        env:
-          VERDACCIO_URL: http://localhost:10104/
         with:
           context: .
           push: true
