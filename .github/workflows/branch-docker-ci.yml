@@ -11,6 +11,8 @@ jobs:
     services:
       verdaccio:
         image: verdaccio/verdaccio
+        ports:
+          - 4873:4873
     steps:
       -
         name: Checkout
@@ -21,6 +23,8 @@ jobs:
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
       -
         name: Docker meta
         id: meta
@@ -47,6 +51,6 @@ jobs:
           context: .
           file: Dockerfile
           build-args: | 
-            VERDACCIO_URL=http://verdaccio:4873/
+            VERDACCIO_URL=http://localhost:4873/
           push: true
           tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}
