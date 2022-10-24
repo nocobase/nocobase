@@ -1,13 +1,13 @@
 import antdEnUS from 'antd/lib/locale/en_US';
 import antdJaJP from 'antd/lib/locale/ja_JP';
-import antdZhCN from 'antd/lib/locale/zh_CN';
 import antdRuRU from 'antd/lib/locale/ru_RU';
-import antdtrTR from 'antd/lib/locale/tr_TR';
+import antdTrTR from 'antd/lib/locale/tr_TR';
+import antdZhCN from 'antd/lib/locale/zh_CN';
 import enUS from './en_US';
 import jaJP from './ja_JP';
-import zhCN from './zh_CN';
 import ruRU from './ru_RU';
 import trTR from './tr_TR';
+import zhCN from './zh_CN';
 
 export type LocaleOptions = {
   label: string;
