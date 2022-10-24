@@ -11,6 +11,8 @@ import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
+import { SchemaComponentContext } from '../../schema-component/context';
+
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
@@ -171,7 +173,7 @@ const useNewId = (prefix) => {
 };
 
 export const ConfigurationTable = () => {
-  const { collections = [],getCollectionFields } = useCollectionManager();
+  const { collections = [] } = useCollectionManager();
   const compile = useCompile();
   const loadCollections = async (field: any) => {
     return collections?.map((item: any) => ({
@@ -179,9 +181,10 @@ export const ConfigurationTable = () => {
       value: item.name,
     }));
   };
-
+const ctx=useContext(SchemaComponentContext);
   return (
     <div>
+      <SchemaComponentContext.Provider value={{...ctx,designable: false }}>
         <SchemaComponent
           schema={collectionSchema}
           components={{
@@ -200,6 +203,7 @@ export const ConfigurationTable = () => {
             useNewId,
           }}
         />
+        </SchemaComponentContext.Provider>
     </div>
   );
 };
