@@ -12,7 +12,7 @@ jobs:
       verdaccio:
         image: verdaccio/verdaccio
         ports:
-          - 10104:4873
+          - "0.0.0.0:10104:4873"
     steps:
       -
         name: Checkout
@@ -48,8 +48,9 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          network: host
+          add-hosts: |
+            host.docker.internal:host-gateway
           build-args: | 
-            VERDACCIO_URL=http://127.0.0.1:10104/
+            VERDACCIO_URL=http://host.docker.internal:10104/
           push: true
           tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}
