@@ -52,6 +52,8 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile.official
+          file: Dockerfile
+          build-args: |
+            VERDACCIO_URL=http://verdaccio:10104/
           push: true
           tags: ${{ steps.meta.outputs.tags }}
