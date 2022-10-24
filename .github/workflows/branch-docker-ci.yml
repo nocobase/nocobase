@@ -5,9 +5,6 @@ on:
     branches:
       - '**'
 
-env:
-  VERDACCIO_URL: http://localhost:10104/
-
 jobs:
   push-docker:
     runs-on: ubuntu-latest
@@ -20,8 +17,6 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v3
-      - name: VERDACCIO_URL
-        run: echo "VERDACCIO_URL=http://localhost:10104/" > .env && ls -a
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -55,6 +50,6 @@ jobs:
           file: Dockerfile
           network: host
           build-args: |
-            VERDACCIO_URL=http://localhost:10104/
+            VERDACCIO_URL=https://pkgs.nocobase.com/
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}
