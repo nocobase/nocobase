@@ -1,5 +1,5 @@
 FROM node:16 as builder
-ARG VERDACCIO_URL
+ARG VERDACCIO_URL=http://localhost:10104/
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
