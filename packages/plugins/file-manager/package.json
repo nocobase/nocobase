@@ -11,6 +11,9 @@
   ],
   "dependencies": {
     "@koa/multer": "^3.0.0",
+    "@nocobase/actions": "0.7.5-alpha.1",
+    "@nocobase/client": "0.7.5-alpha.1",
+    "@nocobase/database": "0.7.5-alpha.1",
     "@nocobase/server": "0.7.5-alpha.1",
     "aws-sdk": "^2.2.32",
     "koa-static": "^5.0.0",

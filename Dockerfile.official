@@ -1,5 +1,5 @@
 FROM node:16 as builder
-ARG VERDACCIO_URL=http://host.docker.internal:10104/
+ARG VERDACCIO_URL=https://pkgs.nocobase.com/
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
@@ -45,4 +45,3 @@ WORKDIR /app/nocobase
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 
 CMD ["/app/docker-entrypoint.sh"]
-

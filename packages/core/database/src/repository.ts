@@ -60,6 +60,7 @@ export type Values = any;
 export interface CountOptions extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'>, Transactionable {
   fields?: Fields;
   filter?: Filter;
+  context?: any;
 }
 
 export interface FilterByTk {
@@ -340,6 +341,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         ...options,
         transaction,
       });
+      instance.clearChangedWithAssociations();
     }
 
     return instance;
@@ -403,6 +405,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           ...options,
           transaction,
         });
+        instance.clearChangedWithAssociations();
       }
     }
 

@@ -40,6 +40,8 @@ export default observer(({ value, onChange }: any) => {
       // && (!['linkTo', 'hasMany', 'hasOne', 'belongsToMany'].includes(field.type))
     ));
 
+  const unassignedFields = fields.filter(field => !(field.name in value));
+
   return (
     <fieldset className={css`
       margin-top: .5em;
@@ -129,18 +131,16 @@ export default observer(({ value, onChange }: any) => {
                 );
               })
             }
-            {Object.keys(value).length < fields.length
+            {unassignedFields.length
               ? (
                 <Dropdown overlay={
                   <Menu onClick={({ key }) => onChange({ ...value, [key]: null })} className={css`
                     max-height: 300px;
                     overflow-y: auto;
                   `}>
-                    {fields
-                      .filter(field => !(field.name in value))
-                      .map(field => (
-                        <Menu.Item key={field.name}>{compile(field.uiSchema?.title ?? field.name)}</Menu.Item>
-                      ))}
+                    {unassignedFields.map(field => (
+                      <Menu.Item key={field.name}>{compile(field.uiSchema?.title ?? field.name)}</Menu.Item>
+                    ))}
                   </Menu>
                 }>
                   <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
