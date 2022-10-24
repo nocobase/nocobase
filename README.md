@@ -1,4 +1,4 @@
-English | [中文](./README.zh-CN.md)
+English | [中文](./README.zh-CN.md)  | (Türkçe)(./README.tr-TR.md)
 
 ![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
 
