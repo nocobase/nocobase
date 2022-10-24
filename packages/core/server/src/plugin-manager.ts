@@ -23,6 +23,18 @@ class PluginManagerRepository extends Repository {
   async upgrade(name: string | string[], options) {}
 }
 
+const collectionOptions = {
+  name: 'applicationPlugins',
+  fields: [
+    { type: 'string', name: 'name', unique: true },
+    { type: 'string', name: 'version' },
+    { type: 'boolean', name: 'enabled' },
+    { type: 'boolean', name: 'installed' },
+    { type: 'boolean', name: 'builtIn' },
+    { type: 'json', name: 'options' },
+  ],
+};
+
 export class PluginManager {
   app: Application;
   collection: Collection;
@@ -31,17 +43,7 @@ export class PluginManager {
 
   constructor(options: PluginManagerOptions) {
     this.app = options.app;
-    this.collection = this.app.db.collection({
-      name: 'applicationPlugins',
-      fields: [
-        { type: 'string', name: 'name', unique: true },
-        { type: 'string', name: 'version' },
-        { type: 'boolean', name: 'enabled' },
-        { type: 'boolean', name: 'installed' },
-        { type: 'boolean', name: 'builtIn' },
-        { type: 'json', name: 'options' },
-      ],
-    });
+    this.collection = this.app.db.collection(collectionOptions);
     const app = this.app;
     const pm = this;
     this.repository = this.collection.repository as PluginManagerRepository;
@@ -138,11 +140,10 @@ export class PluginManager {
       }
       await next();
     });
-    this.app.on('beforeInstall', async () => {
-      await this.collection.sync();
-    });
-    this.app.on('beforeLoadAll', async (options) => {
-      await this.collection.sync();
+    this.app.on('beforeLoadAll', async (app, options) => {
+      if (options.method && ['install', 'upgrade'].includes(options.method)) {
+        await this.collection.sync();
+      }
       const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
       if (!exists) {
         return;
@@ -250,8 +251,8 @@ export class PluginManager {
     return instance;
   }
 
-  async load() {
-    await this.app.emitAsync('beforeLoadAll');
+  async load(options: any = {}) {
+    await this.app.emitAsync('beforeLoadAll', this.app, options);
 
     for (const [name, plugin] of this.plugins) {
       if (!plugin.enabled) {
@@ -264,12 +265,12 @@ export class PluginManager {
       if (!plugin.enabled) {
         continue;
       }
-      await this.app.emitAsync('beforeLoadPlugin', plugin);
+      await this.app.emitAsync('beforeLoadPlugin', plugin, options);
       await plugin.load();
-      await this.app.emitAsync('afterLoadPlugin', plugin);
+      await this.app.emitAsync('afterLoadPlugin', plugin, options);
     }
 
-    await this.app.emitAsync('afterLoadAll');
+    await this.app.emitAsync('afterLoadAll', this.app, options);
   }
 
   async install(options: InstallOptions = {}) {

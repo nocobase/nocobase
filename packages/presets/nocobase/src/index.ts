@@ -6,7 +6,7 @@ export class PresetNocoBase<O = any> extends Plugin {
   }
 
   initialize() {
-    this.app.on('beforeInstall', async () => {
+    this.app.on('beforeInstall', async (app, options) => {
       const plugins = [
         'error-handler',
         'collection-manager',
@@ -25,13 +25,14 @@ export class PresetNocoBase<O = any> extends Plugin {
       ];
       for (const plugin of plugins) {
         const instance = await this.app.pm.add(plugin);
-        if (instance.model && plugin !== 'hello') {
+        if (instance.model) {
           instance.model.enabled = true;
           instance.model.builtIn = true;
           instance.model.installed = true;
           await instance.model.save();
         }
       }
+      await this.app.reload();
     });
   }
 }

@@ -319,13 +319,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (<any>this.cli)._findCommand(name);
   }
 
-  async load() {
-    await this.pm.load();
+  async load(options?: any) {
+    if (options?.reload) {
+      this.init();
+    }
+    await this.pm.load(options);
   }
 
-  async reload() {
-    this.init();
-    await this.pm.load();
+  async reload(options?: any) {
+    await this.load({
+      ...options,
+      reload: true,
+    });
   }
 
   getPlugin<P extends Plugin>(name: string) {
@@ -337,9 +342,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async runAsCLI(argv = process.argv, options?: ParseOptions) {
-    if (argv?.[2] !== 'install') {
-      await this.load();
-    }
+    await this.load({
+      method: argv?.[2],
+    });
     return this.cli.parseAsync(argv, options);
   }
 
@@ -419,11 +424,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.clean) {
       await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
+      await this.reload({ method: 'install' });
     }
 
     await this.emitAsync('beforeInstall', this, options);
 
-    await this.load();
     await this.db.sync(options?.sync);
     await this.pm.install(options);
     await this.version.update();
