@@ -15,11 +15,12 @@ export default {
       title: '腾讯云对象存储',
       type: STORAGE_TYPE_TX_COS,
       name: 'tx-cos-1',
+      baseUrl: process.env.TX_COS_STORAGE_BASE_URL,
       options: {
         region: process.env.TX_COS_REGION,
         secretId: process.env.TX_COS_SECRET_ID,
         secretKey: process.env.TX_COS_SECRET_KEY,
-        bucket: process.env.ALI_OSS_BUCKET,
+        bucket: process.env.TX_COS_BUCKET,
       },
     };
   },
