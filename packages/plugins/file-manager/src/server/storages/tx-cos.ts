@@ -1,4 +1,4 @@
-import { STORAGE_TYPE_TX_COS  } from '../constants';
+import { STORAGE_TYPE_TX_COS } from '../constants';
 import { cloudFilenameGetter } from '../utils';
 
 export default {
@@ -16,10 +16,10 @@ export default {
       type: STORAGE_TYPE_TX_COS,
       name: 'tx-cos-1',
       options: {
-        Region: process.env.TX_COS_REGION,
-        SecretId: process.env.TX_COS_SECRET_ID,
-        SecretKey: process.env.TX_COS_SECRET_KEY,
-        Bucket: process.env.ALI_OSS_BUCKET,
+        region: process.env.TX_COS_REGION,
+        secretId: process.env.TX_COS_SECRET_ID,
+        secretKey: process.env.TX_COS_SECRET_KEY,
+        bucket: process.env.ALI_OSS_BUCKET,
       },
     };
   },

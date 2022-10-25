@@ -68,28 +68,28 @@ const schema = {
   },
   'tx-cos': {
     properties: {
-      Region: {
+      region: {
         title: '{{t("Region")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
       },
-      SecretId: {
+      secretId: {
         title: '{{t("SecretId")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
       },
-      SecretKey: {
+      secretKey: {
         title: '{{t("SecretKey")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Password',
         required: true,
       },
-      Bucket: {
+      bucket: {
         title: '{{t("Bucket")}}',
         type: 'string',
         'x-decorator': 'FormItem',
