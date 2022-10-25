@@ -39,21 +39,23 @@ const useAssociationNames = (collection) => {
 };
 
 const recursiveParent = (schema: Schema, component) => {
-  return schema['x-component'] === component 
-    ? schema 
-    : (schema.parent ? recursiveParent(schema.parent, component) : null);
-}
+  return schema['x-component'] === component
+    ? schema
+    : schema.parent
+    ? recursiveParent(schema.parent, component)
+    : null;
+};
 
 export const TableSelectorProvider = (props) => {
   const fieldSchema = useFieldSchema();
-  const ctx = useFormBlockContext()
+  const ctx = useFormBlockContext();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const record = useRecord();
 
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   // const value = ctx.form.query(collectionFieldSchema?.name).value();
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
-  
+
   console.log('TableSelectorProvider', collectionFieldSchema, collectionField, record);
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
@@ -63,52 +65,69 @@ export const TableSelectorProvider = (props) => {
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
+  let extraFilter;
   if (collectionField) {
     if (['oho', 'o2m'].includes(collectionField.interface)) {
       if (record?.[collectionField.sourceKey]) {
-        params['filter'] = {
-          $or: [{
-            [collectionField.foreignKey]: {
-              $is: null,
-            }
-          }, {
-            [collectionField.foreignKey]: {
-              $eq: record?.[collectionField.sourceKey],
-            }
-          }]
-        }
+        extraFilter = {
+          $or: [
+            {
+              [collectionField.foreignKey]: {
+                $is: null,
+              },
+            },
+            {
+              [collectionField.foreignKey]: {
+                $eq: record?.[collectionField.sourceKey],
+              },
+            },
+          ],
+        };
       } else {
-        params['filter'] = {
+        extraFilter = {
           [collectionField.foreignKey]: {
             $is: null,
-          }
-        }
+          },
+        };
       }
     }
     if (['obo'].includes(collectionField.interface)) {
       const fields = getCollectionFields(collectionField.target);
-      const targetField = fields.find(f => f.foreignKey && f.foreignKey === collectionField.foreignKey);
+      const targetField = fields.find((f) => f.foreignKey && f.foreignKey === collectionField.foreignKey);
       if (targetField) {
         if (record?.[collectionField.foreignKey]) {
-          params['filter'] = {
-            $or: [{
-              [`${targetField.name}.${targetField.foreignKey}`]: {
-                $is: null,
-              }
-            }, {
-              [`${targetField.name}.${targetField.foreignKey}`]: {
-                $eq: record?.[collectionField.foreignKey],
-              }
-            }]
-          }
+          extraFilter = {
+            $or: [
+              {
+                [`${targetField.name}.${targetField.foreignKey}`]: {
+                  $is: null,
+                },
+              },
+              {
+                [`${targetField.name}.${targetField.foreignKey}`]: {
+                  $eq: record?.[collectionField.foreignKey],
+                },
+              },
+            ],
+          };
         } else {
-          params['filter'] = {
+          extraFilter = {
             [`${targetField.name}.${targetField.foreignKey}`]: {
               $is: null,
-            }
-          }
+            },
+          };
         }
       }
+    }
+  }
+
+  if (extraFilter) {
+    if (params?.filter) {
+      params['filter'] = {
+        $and: [extraFilter, params['filter']],
+      };
+    } else {
+      params['filter'] = extraFilter;
     }
   }
   return (
