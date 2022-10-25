@@ -502,7 +502,7 @@ export default {
   'Local storage': '本地存储',
   'Aliyun OSS': '阿里云 OSS',
   'Amazon S3': '亚马逊 S3',
-  'Tengxun COS': '腾讯云 COS',
+  'Tencent COS': '腾讯云 COS',
   'Region': '区域',
   'Bucket': '存储桶',
   'Path': '路径（相对）',

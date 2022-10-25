@@ -413,7 +413,7 @@ export default {
   "Use the built-in static file server": "Использовать встроенный статический файл-сервер",
   "Local storage": "Локальное хранилище",
   "Aliyun OSS": "Aliyun OSS",
-  "Tengxun COS": "Tengxun COS",
+  "Tencent COS": "Tencent COS",
   "Amazon S3": "Amazon S3",
   "Workflow": "Workflow",
   "Execution History": "История запусков",
