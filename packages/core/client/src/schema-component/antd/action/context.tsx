@@ -1,3 +1,4 @@
+import { Schema } from '@formily/react';
 import { createContext } from 'react';
 
 export const ActionContext = createContext<ActionContextProps>({});
@@ -10,4 +11,5 @@ export interface ActionContextProps {
   containerRefKey?: string;
   formValueChanged?: boolean;
   setFormValueChanged?: (v: boolean) => void;
+  fieldSchema?: Schema;
 }

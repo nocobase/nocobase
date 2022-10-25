@@ -95,29 +95,12 @@ export const TableActionInitializers = {
         {
           type: 'item',
           title: '{{t("Bulk edit")}}',
-          component: 'CustomizeActionInitializer',
+          component: 'CustomizeBulkEditActionInitializer',
           schema: {
-            type: 'void',
-            title: '{{ t("Bulk edit") }}',
-            'x-component': 'Action',
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action-props': {
               skipScopeCheck: true,
-            },
-            'x-action': 'customize:bulkEdit',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              assignedValues: {},
-              updateMode: 'selected',
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Updated successfully")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
         },

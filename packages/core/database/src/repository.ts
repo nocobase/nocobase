@@ -9,7 +9,7 @@ import {
   ModelCtor,
   Op,
   Transactionable,
-  UpdateOptions as SequelizeUpdateOptions
+  UpdateOptions as SequelizeUpdateOptions,
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';

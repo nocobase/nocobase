@@ -686,5 +686,10 @@ export default {
   "Selected": "选中",
   "All": "所有",
   "Update selected data?": "更新选中的数据吗？",
-  "Update all data?": "更新全部数据吗？"
+  "Update all data?": "更新全部数据吗？",
+  "Remains the same": "不更新",
+  "Changed to": "修改为",
+  "Clear":"清空",
+  "Add attach":"增加关联",
+  "Please select the records to be updated": "请选择要更新的记录"
 }
