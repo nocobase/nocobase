@@ -1,4 +1,4 @@
-name: branch-docker-ci
+name: push-acr
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - '**'
 
 jobs:
-  push-docker:
+  push-acr:
     runs-on: ubuntu-latest
     services:
       verdaccio:
