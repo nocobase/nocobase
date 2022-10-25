@@ -260,7 +260,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   plugin<O = any>(pluginClass: any, options?: O): Plugin<O> {
-    return this.pm.add(pluginClass, options);
+    return this.pm.addStatic(pluginClass, options);
   }
 
   loadPluginConfig(pluginsConfigurations: PluginConfiguration[]) {
