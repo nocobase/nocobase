@@ -16,7 +16,7 @@ import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
 import dagre from 'dagre';
 import { last, maxBy, minBy } from 'lodash';
-import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateActionAndRefreshCM } from './action-hooks';
 import Entity from './components/Entity';
@@ -101,7 +101,7 @@ async function layout(createPositions) {
       ? targetGraph.positionCell(last(nodes), 'top', { padding: 100 })
       : targetGraph.positionCell(targetNode, 'top', { padding: 100 });
   } else {
-    targetGraph.positionCell(nodes[0],'top-left',{padding:100});
+    targetGraph.positionCell(nodes[0], 'top-left', { padding: 100 });
   }
   if (graphPositions.length > 0) {
     await createPositions(graphPositions);
@@ -365,7 +365,7 @@ export const GraphDrawPage = React.memo(() => {
   const renderDiffGraphCollection = (rawData) => {
     const { nodesData, edgesData } = formatData(rawData);
     const currentNodes = targetGraph.getNodes().map((v) => v.store.data);
-    const diffNodes = getDiffNode(nodesData, currentNodes,targetNode);
+    const diffNodes = getDiffNode(nodesData, currentNodes, targetNode);
     diffNodes.forEach(({ status, node }) => {
       const updateNode = targetGraph.getCellById(node.id);
       switch (status) {
@@ -529,7 +529,7 @@ export const GraphDrawPage = React.memo(() => {
                               type: 'void',
                               'x-component': 'Action',
                               'x-component-props': {
-                                component: (props) => {
+                                component: forwardRef(() => {
                                   const [isFullscreen, { toggleFullscreen }] = useFullscreen(
                                     document.getElementById('graph_container'),
                                   );
@@ -544,7 +544,7 @@ export const GraphDrawPage = React.memo(() => {
                                       </Button>
                                     </Tooltip>
                                   );
-                                },
+                                }),
                                 useAction: () => {
                                   return {
                                     run() {},
