@@ -365,6 +365,7 @@ export const GraphDrawPage = React.memo(() => {
   const renderDiffGraphCollection = (rawData) => {
     const { nodesData, edgesData } = formatData(rawData);
     const currentNodes = targetGraph.getNodes().map((v) => v.store.data);
+    const currentEdges = targetGraph.getEdges();
     const diffNodes = getDiffNode(nodesData, currentNodes, targetNode);
     diffNodes.forEach(({ status, node }) => {
       const updateNode = targetGraph.getCellById(node.id);
@@ -385,6 +386,7 @@ export const GraphDrawPage = React.memo(() => {
           return null;
       }
     });
+    targetGraph.removeCells(currentEdges);
     getEdges(edgesData);
     layout(useSaveGraphPositionAction);
   };
