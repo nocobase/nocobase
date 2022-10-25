@@ -253,37 +253,39 @@ const getRelationship = (relatioship) => {
   }
 };
 
-export const getDiffNode = (arr1, arr2, targetNode) => {
+export const getDiffNode = (newNodes, oldNodes, targetNode) => {
   let arr = [];
-  for (let i = 0; i < arr1.length; i++) {
-    if (!arr2.find((v) => v.id === arr1[i].id)) {
+  const length1 = newNodes.length;
+  const length2 = oldNodes.length;
+  for (let i = 0; i < length1; i++) {
+    if (!oldNodes.find((v) => v.id === newNodes[i].id)) {
       arr.push({
         status: 'add',
-        node: arr1[i],
+        node: newNodes[i],
       });
     } else {
-      const oldNode = arr2.find((v) => v.id === arr1[i].id);
+      const oldNode = oldNodes.find((v) => v.id === newNodes[i].id);
       if (oldNode) {
-        if (oldNode?.id === targetNode?.id || oldNode?.ports.items.length !== arr1[i].ports.length) {
+        if (oldNode?.id === targetNode?.id || oldNode?.ports.items.length !== newNodes[i].ports.length) {
           arr.push({
             status: 'updatePorts',
-            node: arr1[i],
+            node: newNodes[i],
           });
         }
-        if (oldNode.title !== arr1[i].title) {
+        if (oldNode.title !== newNodes[i].title) {
           arr.push({
             status: 'updateNode',
-            node: arr1[i],
+            node: newNodes[i],
           });
         }
       }
     }
   }
-  for (let i = 0; i < arr2.length; i++) {
-    if (!arr1.find((v) => v.id === arr2[i].id)) {
+  for (let i = 0; i < length2; i++) {
+    if (!newNodes.find((v) => v.id === oldNodes[i].id)) {
       arr.push({
         status: 'delete',
-        node: arr2[i],
+        node: oldNodes[i],
       });
     }
   }
