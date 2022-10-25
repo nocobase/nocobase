@@ -10,10 +10,6 @@ export class APIClient extends APIClientSDK {
     return this.services[uid];
   }
 
-  service(uid: string) {
-    return this.service[uid];
-  }
-
   interceptors() {
     super.interceptors();
     this.notification();
