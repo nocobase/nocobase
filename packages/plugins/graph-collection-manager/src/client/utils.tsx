@@ -253,27 +253,29 @@ const getRelationship = (relatioship) => {
   }
 };
 
-export const getDiffNode = (arr1, arr2,targetNode) => {
+export const getDiffNode = (arr1, arr2, targetNode) => {
   let arr = [];
   for (let i = 0; i < arr1.length; i++) {
-    if (!targetNode?.id&&!arr2.find((v) => v.id === arr1[i].id)) {
+    if (!arr2.find((v) => v.id === arr1[i].id)) {
       arr.push({
         status: 'add',
         node: arr1[i],
       });
     } else {
       const oldNode = arr2.find((v) => v.id === arr1[i].id);
-      if (oldNode.id===targetNode?.id||oldNode.ports.items.length !== arr1[i].ports.length) {
-        arr.push({
-          status: 'updatePorts',
-          node: arr1[i],
-        });
-      }
-      if (oldNode.title !== arr1[i].title) {
-        arr.push({
-          status: 'updateNode',
-          node: arr1[i],
-        });
+      if (oldNode) {
+        if (oldNode?.id === targetNode?.id || oldNode?.ports.items.length !== arr1[i].ports.length) {
+          arr.push({
+            status: 'updatePorts',
+            node: arr1[i],
+          });
+        }
+        if (oldNode.title !== arr1[i].title) {
+          arr.push({
+            status: 'updateNode',
+            node: arr1[i],
+          });
+        }
       }
     }
   }
@@ -287,5 +289,3 @@ export const getDiffNode = (arr1, arr2,targetNode) => {
   }
   return arr;
 };
-
-
