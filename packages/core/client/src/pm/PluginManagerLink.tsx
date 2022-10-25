@@ -83,6 +83,7 @@ export const SettingsCenterDropdown = () => {
                     onClick={() => {
                       history.push('/admin/settings/' + item.path);
                     }}
+                    key={item.path}
                   >
                     {item.title}
                   </Menu.Item>
