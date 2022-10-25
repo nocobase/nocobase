@@ -39,6 +39,7 @@ const collection = {
           { label: '{{t("Local storage")}}', value: 'local' },
           { label: '{{t("Aliyun OSS")}}', value: 'ali-oss' },
           { label: '{{t("Amazon S3")}}', value: 's3' },
+          { label: '{{t("Tencent COS")}}', value: 'tx-cos' },
         ],
       } as ISchema,
     },
