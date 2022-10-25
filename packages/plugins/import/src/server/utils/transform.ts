@@ -1,8 +1,17 @@
 import { str2moment } from '@nocobase/utils';
 import * as math from 'mathjs';
+import moment from 'moment';
 import { namespace } from '../../';
 
 export async function _({ value, field }) {
+  return value;
+}
+
+export async function email({ value, field, ctx }) {
+  const emailReg = /^([a-zA-Z0-9._-])+@([a-zA-Z0-9_-])+(\.[a-zA-Z0-9_-])+/;
+  if (!emailReg.test(value)) {
+    throw new Error(ctx.t('Incorrect email format', { ns: namespace }));
+  }
   return value;
 }
 
@@ -85,10 +94,22 @@ export async function datetime({ value, field, ctx }) {
   const utcOffset = ctx.get('X-Timezone');
   const props = field.options?.uiSchema?.['x-component-props'] ?? {};
   const m = str2moment(value, { ...props, utcOffset });
-  console.log(m);
+  if (!m.isValid()) {
+    throw new Error(ctx.t('Incorrect date format', { ns: namespace }));
+  }
   return m.toDate();
 }
-export const time = datetime;
+export async function time({ value, field, ctx }) {
+  const { format } = field.options?.uiSchema?.['x-component-props'] ?? {};
+  if (format) {
+    const m = moment(value, format);
+    if (!m.isValid()) {
+      throw new Error(ctx.t('Incorrect time format', { ns: namespace }));
+    }
+    return m.format(format);
+  }
+  return value;
+}
 export async function percent({ value, field }) {
   if (value) {
     const numberValue = Number(value.split('%')[0]);
@@ -97,7 +118,7 @@ export async function percent({ value, field }) {
   return 0;
 }
 export async function checkbox({ value, column, field, ctx }) {
-  return value === ctx.t('Yes', { ns: namespace }) ? 1 : null;
+  return value === ctx.t('Yes', { ns: namespace }) ? 1 : 0;
 }
 
 export const boolean = checkbox;
@@ -105,9 +126,6 @@ export const boolean = checkbox;
 export async function select({ value, column, field, ctx }) {
   const { enum: enumData } = column;
   const item = enumData.find((item) => item.label === value);
-  if (item === undefined || item === null) {
-    throw new Error(ctx.t('can not find value', { ns: namespace }) + `(${value})`);
-  }
   return item?.value;
 }
 export const radio = select;
@@ -119,12 +137,9 @@ export async function multipleSelect({ value, column, field, ctx }) {
   const { enum: enumData } = column;
   const results = values.map((val) => {
     const item = enumData.find((item) => item.label === val);
-    if (item === undefined || item === null) {
-      throw new Error(ctx.t('can not find value', { ns: namespace }) + `(${value})`);
-    }
     return item;
   });
-  return results.map((result) => result.value);
+  return results.map((result) => result?.value);
 }
 
 export const checkboxes = multipleSelect;
