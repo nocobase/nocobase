@@ -19,18 +19,23 @@ const AntdFormulaInput = (props) => {
 
   const numColumns = new Map<string, string>();
   const scope = {};
-  fields.filter(field => supports.includes(field.interface)).forEach(field => {
-    numColumns.set(field.name, field.uiSchema.title);
-    scope[field.name] = 1;
-  })
+  fields
+    .filter((field) => supports.includes(field.interface))
+    .forEach((field) => {
+      numColumns.set(field.name, field.uiSchema.title);
+      scope[field.name] = 1;
+    });
   const keys = Array.from(numColumns.keys());
 
   let initHtml;
   if (value) {
     initHtml = value;
     numColumns.forEach((value, key) => {
-      initHtml = initHtml.replaceAll(key, `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;">${value}</span>`)
-    })    
+      initHtml = initHtml.replaceAll(
+        key,
+        `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;">${value}</span><span></span>`, // // set extra span for cursor focus on last position
+      );
+    });
   }
 
   useEffect(() => {
@@ -38,38 +43,50 @@ const AntdFormulaInput = (props) => {
       let v = formula || '';
       numColumns.forEach((value, key) => {
         v = v.replaceAll(value, key);
-      })
+      });
       if (v != value) {
         onChange(v);
       }
     }
-  }, [formula])
+  }, [formula]);
 
   const menu = (
-    <Menu onClick={async (args) => {
-      const replaceFormula = formula.replace('@', numColumns.get(args.key));
-      const replaceHtml = html.replace('@', `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;">${numColumns.get(args.key)}</span>`);
-      setFormula(replaceFormula);
-      setHtml(replaceHtml);
-      setDropdownVisible(false);
-    }}>
-      {
-        keys.map(key => (<Menu.Item key={key}>{numColumns.get(key)}</Menu.Item>))
-      }
+    <Menu
+      onClick={async (args) => {
+        const replaceFormula = formula.replace('@', numColumns.get(args.key));
+        const replaceHtml = html.replace(
+          '@',
+          `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;">${numColumns.get(
+            args.key,
+          )}</span><span></span>`, // set extra span for cursor focus on last position
+        );
+        setFormula(replaceFormula);
+        setHtml(replaceHtml);
+        setDropdownVisible(false);
+        (inputRef.current as any).focus();
+      }}
+    >
+      {keys.map((key) => (
+        <Menu.Item key={key}>{numColumns.get(key)}</Menu.Item>
+      ))}
     </Menu>
   );
 
   const handleChange = (e) => {
     const current = inputRef.current as any;
     setFormula(e.currentTarget.textContent);
-    setHtml(current.innerHTML);
+    if (e.currentTarget.textContent.trim().length === 0) {
+      setHtml('');
+    } else {
+      setHtml(current.innerHTML);
+    }
     if (e.currentTarget.textContent == '' && onChange) {
       onChange(null);
     }
-  }
+  };
 
   const handleKeyDown = (e) => {
-    const {key} = e;
+    const { key } = e;
     switch (key) {
       case 'Enter':
         e.preventDefault();
@@ -82,7 +99,7 @@ const AntdFormulaInput = (props) => {
         setDropdownVisible(false);
         break;
     }
-  }
+  };
 
   useFormEffects(() => {
     onFormSubmitValidateStart(() => {
@@ -96,8 +113,8 @@ const AntdFormulaInput = (props) => {
           messages: [t('Formula error.')],
         });
       }
-    })
-  })
+    });
+  });
 
   return (
     <Dropdown overlay={menu} visible={dropdownVisible}>
@@ -109,13 +126,9 @@ const AntdFormulaInput = (props) => {
         html={html || initHtml || ''}
       />
     </Dropdown>
-  )
-}
+  );
+};
 
-export const FormulaInput = connect(
-  AntdFormulaInput,
-  mapProps({
-  }),
-);
+export const FormulaInput = connect(AntdFormulaInput, mapProps({}));
 
 export default FormulaInput;
