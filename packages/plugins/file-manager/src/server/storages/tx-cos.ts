@@ -17,10 +17,10 @@ export default {
       name: 'tx-cos-1',
       baseUrl: process.env.TX_COS_STORAGE_BASE_URL,
       options: {
-        region: process.env.TX_COS_REGION,
-        secretId: process.env.TX_COS_SECRET_ID,
-        secretKey: process.env.TX_COS_SECRET_KEY,
-        bucket: process.env.TX_COS_BUCKET,
+        Region: process.env.TX_COS_REGION,
+        SecretId: process.env.TX_COS_SECRET_ID,
+        SecretKey: process.env.TX_COS_SECRET_KEY,
+        Bucket: process.env.TX_COS_BUCKET,
       },
     };
   },
