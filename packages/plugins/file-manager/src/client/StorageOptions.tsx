@@ -66,6 +66,38 @@ const schema = {
       },
     },
   },
+  'tx-cos': {
+    properties: {
+      Region: {
+        title: '{{t("Region")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        required: true,
+      },
+      SecretId: {
+        title: '{{t("SecretId")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        required: true,
+      },
+      SecretKey: {
+        title: '{{t("SecretKey")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Password',
+        required: true,
+      },
+      Bucket: {
+        title: '{{t("Bucket")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        required: true,
+      },
+    },
+  },
   s3: {
     properties: {
       region: {
