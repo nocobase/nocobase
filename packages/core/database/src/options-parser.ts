@@ -70,6 +70,7 @@ export class OptionsParser {
     if (typeof sort === 'string') {
       sort = sort.split(',');
     }
+
     const orderParams = [];
     for (const sortKey of sort) {
       let direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
