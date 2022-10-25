@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useRequest, useActionContext } from '@nocobase/client';
+import { useActionContext, useRequest } from '@nocobase/client';
 
 const collection = {
   name: 'storages',
@@ -39,6 +39,7 @@ const collection = {
           { label: '{{t("Local storage")}}', value: 'local' },
           { label: '{{t("Aliyun OSS")}}', value: 'ali-oss' },
           { label: '{{t("Amazon S3")}}', value: 's3' },
+          { label: '{{t("Tengxun COS")}}', value: 'tx-cos' },
         ],
       } as ISchema,
     },
