@@ -25,7 +25,6 @@ class MyPlugin extends Plugin {
 
 ### `beforeLoad()`
 
-插件安装逻辑
 
 
 ### `load()`
