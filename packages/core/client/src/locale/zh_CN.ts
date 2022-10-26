@@ -314,6 +314,7 @@ export default {
 
   "Configure calendar": "配置日历",
   "Title field": "标题字段",
+  "Show lunar": "展示农历",
   "Start date field": "开始日期字段",
   "End date field": "结束日期字段",
   "Navigate": "分页",
