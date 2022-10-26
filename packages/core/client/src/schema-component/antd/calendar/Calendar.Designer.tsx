@@ -12,19 +12,21 @@ const useOptions = (type = 'string') => {
   const compile = useCompile();
   const { fields } = useCollection();
   const options = fields
-  ?.filter((field) => field.type === type)
-  ?.map((field) => {
-    return {
-      value: field.name,
-      label: compile(field?.uiSchema?.title),
-    };
-  });
+    ?.filter((field) => field.type === type)
+    ?.map((field) => {
+      return {
+        value: field.name,
+        label: compile(field?.uiSchema?.title),
+      };
+    });
   return options;
-}
+};
 
 export const CalendarDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const calendarSchema = Object.values(fieldSchema.properties)[0]
+  const calendarComponentsProps = calendarSchema['x-component-props']
   const { name, title, fields } = useCollection();
   const dataSource = useCollectionFilterOptions(name);
   const { service } = useCalendarBlockContext();
@@ -54,6 +56,20 @@ export const CalendarDesigner = () => {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
               'x-decorator-props': field.decoratorProps,
+            },
+          });
+          dn.refresh();
+        }}
+      />
+      <SchemaSettings.SwitchItem
+        title={t('Show lunar')}
+        checked={calendarComponentsProps.showLunar}
+        onChange={(v) => {
+          calendarComponentsProps.showLunar = v;
+          dn.emit('patch', {
+            schema: {
+              'x-uid': calendarSchema['x-uid'],
+              'x-component-props': {...calendarComponentsProps}
             },
           });
           dn.refresh();

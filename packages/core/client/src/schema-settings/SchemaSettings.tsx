@@ -60,6 +60,7 @@ type SchemaSettingsNested = {
   Item?: React.FC<MenuItemProps>;
   Divider?: React.FC;
   Popup?: React.FC<MenuItemProps & { schema?: ISchema }>;
+  SwitchItem?: React.FC<SwitchItemProps>
   [key: string]: any;
 };
 
@@ -422,6 +423,12 @@ SchemaSettings.SelectItem = (props) => {
     </SchemaSettings.Item>
   );
 };
+
+interface SwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
+  title: string
+  checked?: boolean
+  onChange?: (v: boolean) => void
+}
 
 SchemaSettings.SwitchItem = (props) => {
   const { title, onChange, ...others } = props;
