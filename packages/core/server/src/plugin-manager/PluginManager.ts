@@ -2,6 +2,7 @@ import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { requireModule } from '@nocobase/utils';
 import execa from 'execa';
 import fs from 'fs';
+import net from 'net';
 import { resolve } from 'path';
 import Application from '../application';
 import { Plugin } from '../plugin';
@@ -24,9 +25,13 @@ export class PluginManager {
   collection: Collection;
   repository: PluginManagerRepository;
   plugins = new Map<string, Plugin>();
+  server: net.Server;
+  pmSock: string;
 
   constructor(options: PluginManagerOptions) {
     this.app = options.app;
+    const f = resolve(process.cwd(), 'storage', 'pm.sock');
+    this.pmSock = this.app.options.pmSock || f;
     this.app.db.registerRepositories({
       PluginManagerRepository,
     });
@@ -41,6 +46,18 @@ export class PluginManager {
         };
       }
       await next();
+    });
+    this.server = net.createServer((socket) => {
+      socket.on('data', async (data) => {
+        const { method, plugins } = JSON.parse(data.toString());
+        try {
+          console.log(method, plugins);
+          await this[method](plugins);
+        } catch (error) {
+          console.error(error.message);
+        }
+      });
+      socket.pipe(socket);
     });
     this.app.on('beforeLoad', async (app, options) => {
       if (options.method && ['install', 'upgrade'].includes(options.method)) {
@@ -62,6 +79,31 @@ export class PluginManager {
 
   get(name: string) {
     return this.plugins.get(name);
+  }
+
+  clientWrite(data: any) {
+    const { method, plugins } = data;
+    const client = new net.Socket();
+    client.connect(this.pmSock, () => {
+      client.write(JSON.stringify(data));
+    });
+    client.on('error', async () => {
+      try {
+        console.log(method, plugins);
+        await this[method](plugins);
+      } catch (error) {
+        console.error(error.message);
+      }
+    });
+  }
+
+  async listen(): Promise<net.Server> {
+    await fs.promises.unlink(this.pmSock);
+    return new Promise((resolve) => {
+      this.server.listen(this.pmSock, () => {
+        resolve(this.server);
+      });
+    });
   }
 
   async create(name: string) {

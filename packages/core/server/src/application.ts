@@ -38,6 +38,7 @@ export interface ApplicationOptions {
   i18n?: i18n | InitOptions;
   plugins?: PluginConfiguration[];
   acl?: boolean;
+  pmSock?: string;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -356,6 +357,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('beforeStart', this, options);
 
     if (options?.listen?.port) {
+      const pmServer = await this.pm.listen();
       const listen = () =>
         new Promise((resolve, reject) => {
           const Server = this.listen(options?.listen, () => {
@@ -364,6 +366,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
           Server.on('error', (err) => {
             reject(err);
+          });
+
+          Server.on('close', () => {
+            pmServer.close();
           });
         });
 
