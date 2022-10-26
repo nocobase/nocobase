@@ -8,6 +8,11 @@ on:
 jobs:
   push-docker:
     runs-on: ubuntu-latest
+    services:
+      verdaccio:
+        image: verdaccio/verdaccio
+        ports:
+          - 4873:4873
     steps:
       -
         name: Checkout
