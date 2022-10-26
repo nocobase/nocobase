@@ -1,5 +1,4 @@
-import { uid } from '@formily/shared';
-
+import { uniqBy } from 'lodash';
 const shape = {
   ER: 'er-rect',
   EDGE: 'edge',
@@ -11,7 +10,7 @@ export const formatData = (data) => {
   const tableData = data.map((item, index) => {
     const ports = [];
     item.fields.forEach((field) => {
-      edgeData.push(field);
+      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(field.interface) && edgeData.push(field);
       field.uiSchema &&
         ports.push({
           id: field.key,
@@ -38,10 +37,7 @@ export const formatData = (data) => {
 const formatEdgeData = (data, targetTables, tableData) => {
   const edges = [];
   for (let i = 0; i < data.length; i++) {
-    if (
-      targetTables.includes(data[i].target) &&
-      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(data[i].interface)
-    ) {
+    if (targetTables.includes(data[i].target)) {
       const targetTable = tableData.find((v) => v.name === data[i].target);
       const sourceTable = tableData.find((v) => v.name === data[i].collectionName);
       const commonAttrs = {
@@ -146,84 +142,109 @@ const formatEdgeData = (data, targetTables, tableData) => {
           },
         ],
       };
+      const isuniq = (id) => {
+        return !edges.find((v) => v.id === id);
+      };
       if (['m2m', 'linkTo'].includes(data[i].interface)) {
         const throughTable = tableData.find((v) => v.name === data[i].through);
-        throughTable &&
+        if (throughTable) {
+          const sCellId1 = sourceTable.id;
+          const tCellId1 = throughTable.id;
+          const sPortId1 = sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id;
+          const tPortId1 = throughTable.ports.find((v) => v.name === data[i].foreignKey)?.id;
+          const sCellId2 = targetTable.id;
+          const tCellId2 = throughTable.id;
+          const sPortId2 = targetTable.ports.find((v) => v.name === data[i].targetKey)?.id;
+          const tPortId2 = throughTable.ports.find((v) => v.name === data[i].otherKey)?.id;
+          const id1 = sCellId1 + sPortId1 + tCellId1 + tPortId1;
+          const id2 = sCellId2 + sPortId2 + tCellId2 + tPortId2;
           edges.push({
-            id: uid(),
+            id: id1,
             source: {
-              cell: sourceTable.id,
-              port: sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id,
+              cell: sCellId1,
+              port: sPortId1,
               anchor: {
                 name: 'right',
               },
             },
             target: {
-              cell: throughTable.id,
-              port: throughTable.ports.find((v) => v.name === data[i].foreignKey)?.id,
+              cell: tCellId1,
+              port: tPortId1,
               anchor: {
                 name: 'left',
               },
             },
             ...commonAttrs,
           });
-        throughTable &&
           edges.push({
-            id: uid(),
+            id: id2,
             source: {
-              cell: targetTable.id,
-              port: targetTable.ports.find((v) => v.name === data[i].targetKey)?.id,
+              cell: sCellId2,
+              port: sPortId2,
               anchor: {
                 name: 'right',
               },
             },
             target: {
-              cell: throughTable.id,
-              port: throughTable.ports.find((v) => v.name === data[i].otherKey)?.id,
+              cell: tCellId2,
+              port: tPortId2,
               anchor: {
                 name: 'left',
               },
             },
             ...commonAttrs,
           });
+        }
       } else {
         const isLegalEdge = tableData
           .find((v) => v.name == data[i].collectionName)
           .ports.find((v) => v.name === data[i].foreignKey);
-        isLegalEdge &&
-          targetTable.ports.find((v) => v.name === data[i].targetKey)?.id &&
+        const sCellId1 = sourceTable.id;
+        const tCellId1 = targetTable.id;
+        const sPortId1 = isLegalEdge?.id;
+        const tPortId1 = targetTable.ports.find((v) => v.name === data[i].targetKey)?.id;
+        const sCellId2 = sourceTable.id;
+        const tCellId2 = targetTable.id;
+        const sPortId2 = sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id;
+        const tPortId2 = targetTable.ports.find((v) => v.name === data[i].foreignKey)?.id;
+        const id1 = sCellId1 + sPortId1 + tCellId1 + tPortId1;
+        const id2 = sCellId2 + sPortId2 + tCellId2 + tPortId2;
+        isuniq(tCellId1 + tPortId1 + sCellId1 + sPortId1) &&
+          isLegalEdge &&
+          tPortId1 &&
           edges.push({
-            id: uid(),
+            id: id1,
             source: {
-              cell: sourceTable.id,
-              port: isLegalEdge.id,
+              cell: sCellId1,
+              port: sPortId1,
               anchor: {
                 name: 'right',
               },
             },
             target: {
-              cell: targetTable.id,
-              port: targetTable.ports.find((v) => v.name === data[i].targetKey)?.id,
+              cell: tCellId1,
+              port: tPortId1,
               anchor: {
                 name: 'left',
               },
             },
             ...commonAttrs,
           });
-        sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id &&
-          targetTable.ports.find((v) => v.name === data[i].foreignKey)?.id &&
+        isuniq(tCellId2 + tPortId2 + sCellId2 + sPortId2) &&
+          sPortId2 &&
+          tPortId2 &&
           edges.push({
-            id: uid(),
+            id: id2,
             source: {
-              cell: sourceTable.id,
-              port: sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id,
+              cell: sCellId2,
+              port: sPortId2,
               anchor: {
                 name: 'right',
               },
             },
             target: {
-              cell: targetTable.id,
-              port: targetTable.ports.find((v) => v.name === data[i].foreignKey)?.id,
+              cell: tCellId2,
+              port: tPortId2,
               anchor: {
                 name: 'left',
               },
@@ -233,7 +254,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
       }
     }
   }
-  return edges;
+  return uniqBy(edges, 'id');
 };
 
 const getRelationship = (relatioship) => {
@@ -265,13 +286,28 @@ export const getDiffNode = (newNodes, oldNodes, targetNode) => {
       });
     } else {
       const oldNode = oldNodes.find((v) => v.id === newNodes[i].id);
+      const oldPorts = oldNode?.ports.items;
+      const newPorts = newNodes[i].ports;
       if (oldNode) {
-        if (oldNode?.id === targetNode?.id || oldNode?.ports.items.length !== newNodes[i].ports.length) {
-          arr.push({
-            status: 'updatePorts',
-            node: newNodes[i],
-          });
+        for (let h = 0; h < newPorts.length; h++) {
+          if (!oldPorts.find((v) => v.id === newPorts[h].id)) {
+            arr.push({
+              status: 'insertPort',
+              node: newNodes[i],
+              port: { index: h, port: newPorts[h] },
+            });
+          }
         }
+        for (let k = 0; k < oldPorts.length; k++) {
+          if (!newPorts.find((v) => v.id === oldPorts[k].id)) {
+            arr.push({
+              status: 'deletePort',
+              node: newNodes[i],
+              port: oldPorts[k],
+            });
+          }
+        }
+
         if (oldNode.title !== newNodes[i].title) {
           arr.push({
             status: 'updateNode',
@@ -290,4 +326,27 @@ export const getDiffNode = (newNodes, oldNodes, targetNode) => {
     }
   }
   return arr;
+};
+
+export const getDiffEdge = (newEdges, oldEdges) => {
+  const length1 = newEdges.length;
+  const length2 = oldEdges.length;
+  const edges = [];
+  for (let i = 0; i < length1; i++) {
+    if (!oldEdges.find((v) => v.id === newEdges[i].id)) {
+      edges.push({
+        status: 'add',
+        edge: newEdges[i],
+      });
+    }
+  }
+  for (let i = 0; i < length2; i++) {
+    if (!newEdges.find((v) => v.id === oldEdges[i].id)) {
+      edges.push({
+        status: 'delete',
+        edge: oldEdges[i],
+      });
+    }
+  }
+  return edges;
 };

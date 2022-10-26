@@ -51,6 +51,7 @@ const Entity: React.FC<{
     },
     id,
   } = node;
+  console.log(ports)
   const collectionData = useRef();
   collectionData.current = { ...item, title };
   const compile = useCompile();

@@ -1,13 +1,11 @@
 import { EditOutlined } from '@ant-design/icons';
-import { useForm } from '@formily/react';
 import { EditFieldAction as EditCollectionFieldAction } from '@nocobase/client';
 import React from 'react';
 import { useCancelAction, useUpdateFieldAction } from '../action-hooks';
 
 const useUpdateCollectionField = (record) => {
-  const form = useForm();
   const collectionName = record.collectionName;
-  const { run } = useUpdateFieldAction({collectionName, name:record.name});
+  const { run } = useUpdateFieldAction({collectionName, name:record.name,key:record.key});
   return {
     async run() {
       await run();

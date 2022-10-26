@@ -1,6 +1,13 @@
 import { observer, useForm } from '@formily/react';
 import { action } from '@formily/reactive';
-import { useActionContext, useAPIClient, useCollectionFieldFormValues, useCollectionManager, useCompile, useRequest } from '@nocobase/client';
+import {
+  useActionContext,
+  useAPIClient,
+  useCollectionFieldFormValues,
+  useCollectionManager,
+  useCompile,
+  useRequest,
+} from '@nocobase/client';
 import { message, Select } from 'antd';
 import omit from 'lodash/omit';
 import React, { useContext, useEffect } from 'react';
@@ -88,13 +95,13 @@ export const useCreateAction = (collectionName, targetId) => {
   };
 };
 
-export const useUpdateFieldAction = ({ collectionName, name }) => {
+export const useUpdateFieldAction = ({ collectionName, name, key }) => {
   const { refreshCM } = useCollectionManager();
   const { t } = useTranslation();
   const form = useForm();
   const ctx = useActionContext();
   const api = useAPIClient();
-  const { positionTargetNode } = useContext(GraphCollectionContext);
+  const { positionTargetNode, node } = useContext(GraphCollectionContext);
   return {
     async run() {
       await form.submit();
@@ -103,10 +110,11 @@ export const useUpdateFieldAction = ({ collectionName, name }) => {
         values: form.values,
       });
       ctx.setVisible(false);
-      await form.reset();
       message.success(t('Saved successfully'));
       positionTargetNode();
       refreshCM();
+      node.setPortProp(key, 'uiSchema', { title: form.values?.uiSchema.title });
+      await form.reset();
     },
   };
 };
@@ -157,7 +165,7 @@ export const useDestroyActionAndRefreshCM = (props) => {
   return {
     async run() {
       await run();
-      positionTargetNode('destory')
+      positionTargetNode('destory');
       await refreshCM();
     },
   };
@@ -197,4 +205,3 @@ export const useAsyncDataSource = (service: any) => (field: any) => {
     }),
   );
 };
-

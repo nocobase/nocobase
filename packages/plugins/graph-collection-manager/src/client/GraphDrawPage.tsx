@@ -23,7 +23,7 @@ import { useCreateActionAndRefreshCM } from './action-hooks';
 import Entity from './components/Entity';
 import { collection } from './schemas/collection';
 import { collectionListClass, graphCollectionContainerClass } from './style';
-import { formatData, getDiffNode } from './utils';
+import { formatData, getDiffNode, getDiffEdge } from './utils';
 
 const LINE_HEIGHT = 40;
 const NODE_WIDTH = 250;
@@ -368,9 +368,10 @@ export const GraphDrawPage = React.memo(() => {
     const { positions } = targetGraph;
     const { nodesData, edgesData } = formatData(rawData);
     const currentNodes = targetGraph.getNodes().map((v) => v.store.data);
-    const currentEdges = targetGraph.getEdges();
+    const currentEdges = targetGraph.getEdges().map((v) => v.store.data);
     const diffNodes = getDiffNode(nodesData, currentNodes, targetNode);
-    diffNodes.forEach(({ status, node }) => {
+    const diffEdges = getDiffEdge(edgesData, currentEdges);
+    diffNodes.forEach(({ status, node, port }) => {
       const updateNode = targetGraph.getCellById(node.id);
       switch (status) {
         case 'add':
@@ -386,9 +387,11 @@ export const GraphDrawPage = React.memo(() => {
           });
           targetGraph && targetGraph.positionCell(targetNode, 'top', { padding: 50 });
           break;
-        case 'updatePorts':
-          updateNode.removePorts();
-          updateNode.addPorts(node.ports);
+        case 'insertPort':
+          updateNode.insertPort(port.index, port.port);
+          break;
+        case 'deletePort':
+          updateNode.removePort(port.id);
           break;
         case 'updateNode':
           updateNode.setProp({ title: node.title });
@@ -399,9 +402,48 @@ export const GraphDrawPage = React.memo(() => {
           return null;
       }
     });
-    targetGraph.removeCells(currentEdges);
+    const renderDiffEdges = (data) => {
+      data.forEach(({ status, edge }) => {
+        switch (status) {
+          case 'add':
+            const source = edge.source;
+            const target = edge.target;
+            const sorceNodeX = targetGraph.getCell(source.cell).position().x;
+            const targeNodeX = targetGraph.getCell(target.cell).position().x;
+            let newEdge = edge;
+            if (sorceNodeX > targeNodeX) {
+              newEdge = {
+                ...edge,
+                source: {
+                  cell: source.cell,
+                  port: source.port,
+                  anchor: {
+                    name: 'left',
+                  },
+                },
+                target: {
+                  cell: target.cell,
+                  port: target.port,
+                  anchor: {
+                    name: 'right',
+                  },
+                },
+              };
+            }
+            targetNode = targetGraph.addEdge({
+              ...newEdge,
+            });
+            break;
+          case 'delete':
+            targetGraph.removeCell(edge.id);
+            break;
+          default:
+            return null;
+        }
+      });
+    };
     setTimeout(() => {
-      getEdges(edgesData);
+      renderDiffEdges(diffEdges);
     });
   };
   useLayoutEffect(() => {
