@@ -1,6 +1,6 @@
 # Application
 
-## 介绍
+## 概览
 
 ### Web服务 
 Nocobase Application 是基于 [Koa](https://koajs.com/) 实现的 WEB 框架，兼容 Koa 的 API。
@@ -30,7 +30,7 @@ app.runAsCLI();
 
 ```bash
 $> curl localhost:3000
-Hello World⏎
+Hello World
 ```
 
 ### 命令行工具
@@ -93,6 +93,46 @@ app.plugin(HelloWordPlugin);
 
 app.runAsCLI()
 ```
+
+### 更多示例
+
+更加详细的插件开发文档请参考 [插件开发](./plugin.md)。
+Application 类的更多示例可参考 [examples](https://github.com/nocobase/nocobase/blob/main/examples/index.md)
+
+## 生命周期
+
+### 安装
+使用 `cli` 中的 `install` 命令调用安装。
+一般来说，插件在使用之前若需要在数据库中写入新表或者数据，都需要在安装时执行。在初次使用 Nocobase 时也需要调用安装。
+
+* 触发 `beforeInstall`。
+* 调用 `load` 方法，载入已注册的插件。
+* 调用 `db.sync` 方法，同步数据库。
+* 调用 `pm.install` 方法，执行已注册插件的 `install` 方法。
+* 写入 `nocobase` 版本。
+* 触发 `afterInstall`。
+* 调用 `stop` 方法，结束安装。
+
+### 启动
+使用 `cli` 中的 `start` 命令来启动 Nocobase Web 服务。
+
+* 调用 `load` 方法，载入已注册的插件。
+* 调用 `start` 方法
+  * 触发 `beforeStart`
+  * 启动端口监听
+  * 触发 `afterStart`
+
+### 更新
+
+当需要更新 Nocobase 时，可使用 `cli` 中的 `upgrade` 命令。
+
+* 调用 `load` 方法，载入已注册的插件。
+* 触发 `beforeUpgrade`。
+* 调用 `db.migrator.up` 方法，执行数据库迁移。
+* 调用 `db.sync` 方法，同步数据库。
+* 调用 `version.update` 方法，更新 `nocobase` 版本。
+* 触发 `afterUpgrade`。
+* 调用 `stop` 方法，结束更新。
 
 ## 构造函数
 
