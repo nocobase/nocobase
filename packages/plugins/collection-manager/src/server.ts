@@ -11,7 +11,7 @@ import {
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
-  beforeInitOptions,
+  beforeInitOptions
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
 
@@ -195,7 +195,7 @@ export class CollectionManagerPlugin extends Plugin {
       directory: path.resolve(__dirname, './collections'),
     });
 
-    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('@nocobase/plugin-error-handler');
+    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('error-handler');
     errorHandlerPlugin.errorHandler.register(
       (err) => {
         return err instanceof UniqueConstraintError;
@@ -206,9 +206,6 @@ export class CollectionManagerPlugin extends Plugin {
     );
   }
 
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 }
 
 export default CollectionManagerPlugin;

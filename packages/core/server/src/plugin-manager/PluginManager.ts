@@ -39,7 +39,7 @@ export class PluginManager {
       }
       await next();
     });
-    this.app.on('beforeLoadAll', async (app, options) => {
+    this.app.on('beforeLoad', async (app, options) => {
       if (options.method && ['install', 'upgrade'].includes(options.method)) {
         await this.collection.sync();
       }
@@ -47,18 +47,10 @@ export class PluginManager {
       if (!exists) {
         return;
       }
-      await this.repository.register();
+      if (options.method !== 'install' || options.reload) {
+        await this.repository.register();
+      }
     });
-  }
-
-  getPackageName(name: string) {
-    if (name.includes('@nocobase/plugin-')) {
-      return name;
-    }
-    if (name.includes('/')) {
-      return `@${name}`;
-    }
-    return `@nocobase/plugin-${name}`;
   }
 
   getPlugins() {
@@ -73,18 +65,17 @@ export class PluginManager {
     return this.plugins.delete(name);
   }
 
-  addStatic(pluginClass?: any, options?: any) {
-    if (typeof pluginClass === 'string') {
-      const packageName = this.getPackageName(pluginClass);
-      try {
-        require.resolve(packageName);
-      } catch (error) {
-        throw new Error(`${pluginClass} plugin does not exist`);
-      }
-      pluginClass = requireModule(packageName);
+  addStatic(plugin?: any, options?: any) {
+    let name: string;
+    if (typeof plugin === 'string') {
+      name = plugin;
+      plugin = PluginManager.resolvePlugin(plugin);
+    } else {
+      name = plugin.constructor.name;
     }
-    const instance = new pluginClass(this.app, {
+    const instance = new plugin(this.app, {
       ...options,
+      name,
       enabled: true,
     });
     const pluginName = instance.getName();
@@ -95,31 +86,28 @@ export class PluginManager {
     return instance;
   }
 
-  async add(pluginClass: any, options: any = {}) {
-    if (Array.isArray(pluginClass)) {
+  async add(plugin: any, options: any = {}) {
+    if (Array.isArray(plugin)) {
       const addMultiple = async () => {
-        for (const plugin of pluginClass) {
-          await this.add(plugin, options);
+        for (const p of plugin) {
+          await this.add(p, options);
         }
       };
       return addMultiple();
     }
-    const packageName = this.getPackageName(pluginClass);
+    const packageName = PluginManager.getPackageName(plugin);
     const packageJson = require(`${packageName}/package.json`);
-    const instance = this.addStatic(pluginClass, options);
-    if (this.plugins.has(instance.getName())) {
-      throw new Error(`${pluginClass} plugin already exists`);
-    }
+    const instance = this.addStatic(plugin, options);
     let model = await this.repository.findOne({
-      filter: { name: pluginClass },
+      filter: { name: plugin },
     });
     if (model) {
-      throw new Error(`${pluginClass} plugin already exists`);
+      throw new Error(`${plugin} plugin already exists`);
     }
     const { enabled, builtIn, installed, ...others } = options;
     model = await this.repository.create({
       values: {
-        name: pluginClass,
+        name: plugin,
         version: packageJson.version,
         enabled: !!enabled,
         builtIn: !!builtIn,
@@ -133,8 +121,6 @@ export class PluginManager {
   }
 
   async load(options: any = {}) {
-    await this.app.emitAsync('beforeLoadAll', this.app, options);
-
     for (const [name, plugin] of this.plugins) {
       if (!plugin.enabled) {
         continue;
@@ -150,8 +136,6 @@ export class PluginManager {
       await plugin.load();
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
     }
-
-    await this.app.emitAsync('afterLoadAll', this.app, options);
   }
 
   async install(options: InstallOptions = {}) {
@@ -165,7 +149,23 @@ export class PluginManager {
     }
   }
 
+  static getPackageName(name: string) {
+    const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
+    for (const prefix of prefixes) {
+      try {
+        require.resolve(`${prefix}${name}`);
+        return `${prefix}${name}`;
+      } catch (error) {
+        continue;
+      }
+    }
+    throw new Error(`${name} plugin does not exist`);
+  }
+
   static resolvePlugin(pluginName: string) {
-    return require(pluginName).default;
+    const packageName = this.getPackageName(pluginName);
+    return requireModule(packageName);
   }
 }
+
+export default PluginManager;

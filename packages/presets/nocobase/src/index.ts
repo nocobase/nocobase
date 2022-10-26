@@ -1,9 +1,6 @@
 import { Plugin } from '@nocobase/server';
 
 export class PresetNocoBase<O = any> extends Plugin {
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 
   initialize() {
     this.app.on('beforeInstall', async (app, options) => {

@@ -117,7 +117,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     initAuthenticators(this);
 
     // TODO(module): should move to preset
-    const verificationPlugin = this.app.getPlugin('@nocobase/plugin-verification') as any;
+    const verificationPlugin = this.app.getPlugin('verification') as any;
     if (verificationPlugin && process.env.DEFAULT_SMS_VERIFY_CODE_PROVIDER) {
       verificationPlugin.interceptors.register('users:signin', {
         manual: true,
@@ -219,9 +219,5 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     if (repo) {
       await repo.db2cm('users');
     }
-  }
-
-  getName(): string {
-    return this.getPackageName(__dirname);
   }
 }

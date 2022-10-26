@@ -1,5 +1,5 @@
-import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
+import { MockServer } from '@nocobase/test';
 
 import Plugin, { Provider } from '..';
 
@@ -21,7 +21,7 @@ describe('verification > Plugin', () => {
     app = await getApp();
     agent = app.agent();
     db = app.db;
-    plugin = <Plugin>app.getPlugin('@nocobase/plugin-verification');
+    plugin = <Plugin>app.getPlugin('verification');
     VerificationModel = db.getCollection('verifications').model;
     AuthorModel = db.getCollection('authors').model;
     AuthorRepo = db.getCollection('authors').repository;

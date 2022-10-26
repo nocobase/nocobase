@@ -1,9 +1,9 @@
 import { BelongsToManyRepository, Database } from '@nocobase/database';
-import PluginUsers from '@nocobase/plugin-users';
 import PluginACL from '@nocobase/plugin-acl';
-import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import PluginUsers from '@nocobase/plugin-users';
 import { mockServer, MockServer } from '@nocobase/test';
 
 describe('server hooks', () => {
@@ -34,7 +34,7 @@ describe('server hooks', () => {
 
     uiSchemaRepository = db.getRepository('uiSchemas');
 
-    uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('@nocobase/plugin-ui-schema-storage');
+    uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('ui-schema-storage');
   });
 
   it('should clean row struct', async () => {

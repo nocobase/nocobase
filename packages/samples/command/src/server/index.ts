@@ -1,12 +1,9 @@
-import path from 'path';
 import * as fs from 'fs/promises';
+import path from 'path';
 
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class CommandPlugin extends Plugin {
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 
   beforeLoad() {
     // TODO

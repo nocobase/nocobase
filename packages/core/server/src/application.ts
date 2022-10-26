@@ -266,13 +266,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   loadPluginConfig(pluginsConfigurations: PluginConfiguration[]) {
     for (let pluginConfiguration of pluginsConfigurations) {
       if (typeof pluginConfiguration == 'string') {
-        pluginConfiguration = [pluginConfiguration, {}];
+        this.plugin(pluginConfiguration);
+      } else {
+        this.plugin(...pluginConfiguration);
       }
-
-      const plugin = PluginManager.resolvePlugin(pluginConfiguration[0]);
-      const pluginOptions = pluginConfiguration[1];
-
-      this.plugin(plugin, pluginOptions);
     }
   }
 
@@ -323,7 +320,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (options?.reload) {
       this.init();
     }
+    await this.emitAsync('beforeLoad', this, options);
     await this.pm.load(options);
+    await this.emitAsync('afterLoad', this, options);
   }
 
   async reload(options?: any) {

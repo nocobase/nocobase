@@ -17,7 +17,7 @@ describe('role', () => {
     await api.loadAndInstall();
 
     db = api.db;
-    usersPlugin = api.getPlugin('@nocobase/plugin-users');
+    usersPlugin = api.getPlugin('users');
   });
 
   afterEach(async () => {

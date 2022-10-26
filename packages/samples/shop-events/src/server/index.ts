@@ -40,10 +40,6 @@ export class ShopPlugin extends Plugin {
     console.log('%d orders expired', updated);
   };
 
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
-
   beforeLoad() {
     // TODO
   }
