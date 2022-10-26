@@ -395,7 +395,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     try {
       // close database connection
       // silent if database already closed
-      await this.db.close();
+      if (!this.db.closed()) {
+        await this.db.close();
+      }
     } catch (e) {
       console.log(e);
     }

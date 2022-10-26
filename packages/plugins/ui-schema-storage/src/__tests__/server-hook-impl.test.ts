@@ -24,11 +24,11 @@ describe('server hooks', () => {
     await app.cleanDb();
     db = app.db;
 
-    app.plugin(UiSchemaStoragePlugin);
-    app.plugin(PluginErrorHandler);
-    app.plugin(PluginCollectionManager);
-    app.plugin(PluginUsers);
-    app.plugin(PluginACL);
+    app.plugin(UiSchemaStoragePlugin, { name: 'ui-schema-storage' });
+    app.plugin(PluginErrorHandler, { name: 'error-handler' });
+    app.plugin(PluginCollectionManager, { name: 'collection-manager' });
+    app.plugin(PluginUsers, { name: 'users' });
+    app.plugin(PluginACL, { name: 'acl' });
 
     await app.loadAndInstall();
 

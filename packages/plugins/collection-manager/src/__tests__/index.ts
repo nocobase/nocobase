@@ -13,12 +13,11 @@ export async function createApp(options = {}) {
     await app.cleanDb();
   }
 
-  app.plugin(PluginErrorHandler);
-  app.plugin(Plugin);
-  app.plugin(PluginUiSchema);
+  app.plugin(PluginErrorHandler, { name: 'error-handler' });
+  app.plugin(Plugin, { name: 'collection-manager' });
+  app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
-  // await app.load();
-  await app.install({ clean: true });
+  await app.loadAndInstall({ clean: true });
   await app.start();
   return app;
 }

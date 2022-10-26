@@ -10,10 +10,9 @@ describe('collections repository', () => {
       },
       acl: false,
     });
-    await app1.cleanDb();
-    app1.plugin(PluginErrorHandler);
-    app1.plugin(Plugin);
-    await app1.install({ clean: true });
+    app1.plugin(PluginErrorHandler, { name: 'error-handler' });
+    app1.plugin(Plugin, { name: 'collection-manager' });
+    await app1.loadAndInstall({ clean: true });
     await app1.start();
     await app1
       .agent()
@@ -121,8 +120,8 @@ describe('collections repository', () => {
         tablePrefix: 'through_',
       },
     });
-    app2.plugin(PluginErrorHandler);
-    app2.plugin(Plugin);
+    app2.plugin(PluginErrorHandler, { name: 'error-handler' });
+    app2.plugin(Plugin, { name: 'collection-manager' });
     await app2.load();
     await app2.start();
 

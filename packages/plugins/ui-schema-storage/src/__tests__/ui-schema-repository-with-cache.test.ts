@@ -1,5 +1,5 @@
-import { Database } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
+import { Database } from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
 import UiSchemaRepository, { GetJsonSchemaOptions, GetPropertiesOptions } from '../repository';
 import PluginUiSchema from '../server';
@@ -25,7 +25,7 @@ describe('ui_schema repository with cache', () => {
 
     await db.sequelize.getQueryInterface().dropAllTables();
 
-    app.plugin(PluginUiSchema);
+    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
     await app.load();
     await db.sync({

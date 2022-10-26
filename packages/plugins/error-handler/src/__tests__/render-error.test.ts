@@ -9,14 +9,14 @@ describe('create with exception', () => {
       acl: false,
     });
     await app.cleanDb();
-    app.plugin(PluginErrorHandler);
+    app.plugin(PluginErrorHandler, { name: 'error-handler' });
   });
 
   afterEach(async () => {
     await app.destroy();
   });
 
-  it.only('should handle not null error', async () => {
+  it('should handle not null error', async () => {
     app.collection({
       name: 'users',
       fields: [

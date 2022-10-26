@@ -60,14 +60,14 @@ export class PluginManager {
       socket.pipe(socket);
     });
     this.app.on('beforeLoad', async (app, options) => {
-      if (options.method && ['install', 'upgrade'].includes(options.method)) {
+      if (options?.method && ['install', 'upgrade'].includes(options.method)) {
         await this.collection.sync();
       }
       const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
       if (!exists) {
         return;
       }
-      if (options.method !== 'install' || options.reload) {
+      if (options?.method !== 'install' || options.reload) {
         await this.repository.register();
       }
     });
@@ -98,7 +98,9 @@ export class PluginManager {
   }
 
   async listen(): Promise<net.Server> {
-    await fs.promises.unlink(this.pmSock);
+    if (fs.existsSync(this.pmSock)) {
+      await fs.promises.unlink(this.pmSock);
+    }
     return new Promise((resolve) => {
       this.server.listen(this.pmSock, () => {
         resolve(this.server);
@@ -126,12 +128,15 @@ export class PluginManager {
       name = plugin;
       plugin = PluginManager.resolvePlugin(plugin);
     } else {
-      name = plugin.constructor.name;
+      name = plugin.name;
+      if (!name) {
+        throw new Error(`plugin name invalid`);
+      }
     }
     const instance = new plugin(this.app, {
-      ...options,
       name,
       enabled: true,
+      ...options,
     });
     const pluginName = instance.getName();
     if (this.plugins.has(pluginName)) {

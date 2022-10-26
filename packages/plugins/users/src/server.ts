@@ -14,6 +14,7 @@ import { enUS, zhCN } from './locale';
 import { parseToken } from './middlewares';
 
 export interface UserPluginConfig {
+  name?: string;
   jwt: JwtOptions;
 }
 

@@ -17,10 +17,9 @@ export class ApplicationModel extends Model {
   }
 
   static async handleAppStart(app: Application, options: registerAppOptions) {
+    await app.load();
     if (!options?.skipInstall) {
       await app.install();
-    } else {
-      await app.load();
     }
     await app.start();
   }
