@@ -1,5 +1,8 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { requireModule } from '@nocobase/utils';
+import execa from 'execa';
+import fs from 'fs';
+import { resolve } from 'path';
 import Application from '../application';
 import { Plugin } from '../plugin';
 import collectionOptions from './options/collection';
@@ -61,8 +64,18 @@ export class PluginManager {
     return this.plugins.get(name);
   }
 
-  remove(name: string) {
-    return this.plugins.delete(name);
+  async create(name: string) {
+    const { run } = require('@nocobase/cli/src/util');
+    const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
+    const generator = new PluginGenerator({
+      cwd: resolve(process.cwd(), name),
+      args: {},
+      context: {
+        name,
+      },
+    });
+    await generator.run();
+    await run('yarn', ['install']);
   }
 
   addStatic(plugin?: any, options?: any) {
@@ -88,14 +101,10 @@ export class PluginManager {
 
   async add(plugin: any, options: any = {}) {
     if (Array.isArray(plugin)) {
-      const addMultiple = async () => {
-        for (const p of plugin) {
-          await this.add(p, options);
-        }
-      };
-      return addMultiple();
+      return Promise.all(plugin.map((p) => this.add(p, options)));
     }
-    const packageName = PluginManager.getPackageName(plugin);
+    // console.log(`adding ${plugin} plugin`);
+    const packageName = await PluginManager.findPackage(plugin);
     const packageJson = require(`${packageName}/package.json`);
     const instance = this.addStatic(plugin, options);
     let model = await this.repository.findOne({
@@ -105,7 +114,7 @@ export class PluginManager {
       throw new Error(`${plugin} plugin already exists`);
     }
     const { enabled, builtIn, installed, ...others } = options;
-    model = await this.repository.create({
+    await this.repository.create({
       values: {
         name: plugin,
         version: packageJson.version,
@@ -117,6 +126,21 @@ export class PluginManager {
         },
       },
     });
+    const file = resolve(
+      process.cwd(),
+      'packages',
+      process.env.APP_PACKAGE_ROOT || 'app',
+      'client/src/plugins',
+      `${plugin}.ts`,
+    );
+    if (!fs.existsSync(file)) {
+      try {
+        require.resolve(`${packageName}/client`);
+        await fs.promises.writeFile(file, `export { default } from '${packageName}/client';`);
+        const { run } = require('@nocobase/cli/src/util');
+        await run('yarn', ['nocobase', 'postinstall']);
+      } catch (error) {}
+    }
     return instance;
   }
 
@@ -149,6 +173,78 @@ export class PluginManager {
     }
   }
 
+  async enable(name: string | string[]) {
+    await this.repository.update({
+      filter: {
+        name,
+      },
+      values: {
+        enabled: true,
+        installed: true,
+      },
+    });
+    try {
+      await this.app.reload();
+      const pluginNames = typeof name === 'string' ? [name] : name;
+      await this.app.db.sync();
+      for (const pluginName of pluginNames) {
+        const plugin = this.app.getPlugin(pluginName);
+        if (!plugin) {
+          throw new Error(`${name} plugin does not exist`);
+        }
+        await plugin.install();
+      }
+      await this.app.start();
+    } catch (error) {
+      await this.repository.update({
+        filter: {
+          name,
+        },
+        values: {
+          enabled: false,
+          installed: false,
+        },
+      });
+      throw error;
+    }
+  }
+
+  async disable(name: string | string[]) {
+    await this.repository.update({
+      filter: {
+        name,
+      },
+      values: {
+        enabled: false,
+        installed: false,
+      },
+    });
+    try {
+      await this.app.reload();
+      const pluginNames = typeof name === 'string' ? [name] : name;
+      await this.app.db.sync();
+      for (const pluginName of pluginNames) {
+        const plugin = this.app.getPlugin(pluginName);
+        if (!plugin) {
+          throw new Error(`${name} plugin does not exist`);
+        }
+        await plugin.disable();
+      }
+      await this.app.start();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async remove(name: string | string[]) {
+    await this.repository.destroy({
+      filter: {
+        name,
+      },
+    });
+    this.app.reload();
+  }
+
   static getPackageName(name: string) {
     const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
     for (const prefix of prefixes) {
@@ -157,6 +253,27 @@ export class PluginManager {
         return `${prefix}${name}`;
       } catch (error) {
         continue;
+      }
+    }
+    throw new Error(`${name} plugin does not exist`);
+  }
+
+  static async findPackage(name: string) {
+    try {
+      const packageName = this.getPackageName(name);
+      return packageName;
+    } catch (error) {
+      const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
+      for (const prefix of prefixes) {
+        try {
+          const packageName = `${prefix}${name}`;
+          await execa('npm', ['v', packageName, 'versions']);
+          console.log(`${packageName} is downloading...`);
+          await execa('yarn', ['add', packageName, '-W']);
+          return packageName;
+        } catch (error) {
+          continue;
+        }
       }
     }
     throw new Error(`${name} plugin does not exist`);
