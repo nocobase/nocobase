@@ -1,6 +1,98 @@
 # Application
 
-基于 [Koa](https://koajs.com/) 实现的 WEB 框架，兼容所有的 Koa 插件。
+## 介绍
+
+### Web服务 
+Nocobase Application 是基于 [Koa](https://koajs.com/) 实现的 WEB 框架，兼容 Koa 的 API。
+
+```javascript
+// index.js
+const { Application } = require('@nocobase/server');
+
+// 创建App实例，并配置数据库连接信息
+const app = new Application({
+    database: {
+        dialect: 'sqlite',
+        storage: ':memory:',
+    }
+});
+
+// 注册中间件 响应请求
+app.use(async ctx => {
+  ctx.body = 'Hello World';
+});
+
+// 以命令行模式启动
+app.runAsCLI();
+```
+
+在命令行中运行 `node index.js start` 启动服务后，使用 `curl` 请求服务。
+
+```bash
+$> curl localhost:3000
+Hello World⏎
+```
+
+### 命令行工具
+Nocobase Application 中也内置了 `cli commander`，可以当作命令行工具运行。
+
+```javascript
+// cmd.js
+const {Application} = require('@nocobase/server');
+const app = new Application({
+  database: {
+    dialect: 'sqlite',
+    storage: ':memory:',
+  }
+});
+
+app.cli.command('hello').action(async () => {
+  console.log("hello world")
+});
+
+app.runAsCLI()
+```
+
+在命令行中运行
+
+```bash
+$> node cmd.js hello
+hello world
+```
+
+### 插件注入
+
+Nocobase Application 被设计为高度可扩展的框架，可以编写插件注入到应用中扩展功能。
+例如上面的 Web 服务可以替换为插件形式。
+
+```javascript
+const {Application, Plugin} = require('@nocobase/server');
+
+// 通过继承 Plugin 类来编写插件
+class HelloWordPlugin extends Plugin {
+  getName() {
+    return "hello-world";
+  }
+
+  load() {
+    this.app.use(async (ctx, next) => {
+      ctx.body = "Hello World";
+    })
+  }
+}
+
+const app = new Application({
+  database: {
+    dialect: 'sqlite',
+    storage: ':memory:',
+  }
+});
+
+// 注入插件
+app.plugin(HelloWordPlugin);
+
+app.runAsCLI()
+```
 
 ## 构造函数
 
@@ -30,29 +122,6 @@ Type
 interface ApplicationOptions {
 
 }
-```
-
-**示例**
-
-```ts
-import Application from '@nocobase/server';
-
-const app = new Application({
-  database: {
-    dialect: 'mysql',
-    host: 'localhost',
-    port: 3306,
-    username: 'root',
-    password: '123456',
-    database: 'test',
-  },
-  resourcer: {
-    prefix: '/api',
-  },
-  cors: {
-    origin: '*',
-  }
-});
 ```
 
 ## 实例成员

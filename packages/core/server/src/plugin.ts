@@ -3,7 +3,6 @@ import finder from 'find-package-json';
 import { Application } from './application';
 import { InstallOptions } from './plugin-manager';
 
-
 export interface PluginInterface {
   beforeLoad?: () => void;
   load();
@@ -66,9 +65,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     }
   }
 
-  async disable() {
-    
-  }
+  async disable() {}
 
   collectionPath() {
     return null;
