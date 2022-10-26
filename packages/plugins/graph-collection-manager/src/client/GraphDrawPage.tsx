@@ -16,7 +16,6 @@ import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
 import dagre from 'dagre';
 import { last, maxBy, minBy } from 'lodash';
-import CollectionFieldSelect from 'packages/plugins/workflow/src/client/components/CollectionFieldSelect';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateActionAndRefreshCM } from './action-hooks';
