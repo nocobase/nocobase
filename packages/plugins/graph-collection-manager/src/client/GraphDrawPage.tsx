@@ -332,13 +332,10 @@ export const GraphDrawPage = React.memo(() => {
         }),
       );
     });
-    targetGraph.on('node:mouseup', ({ e, node }) => {
+    targetGraph.on('node:moved', ({ e, node }) => {
       const currentPosition = node.position();
       const oldPosition = targetGraph.positions.find((v) => v.collectionName === node.store.data.name);
       e.stopPropagation();
-      if (targetNode && typeof targetNode !== 'string') {
-        targetNode.removeAttrs();
-      }
       if (oldPosition) {
         (oldPosition.x !== currentPosition.x || oldPosition.y !== currentPosition.y) &&
           useUpdatePositionAction({
@@ -351,7 +348,6 @@ export const GraphDrawPage = React.memo(() => {
           ...currentPosition,
         });
       }
-      targetGraph.resize();
     });
   };
   // 首次渲染
@@ -451,7 +447,8 @@ export const GraphDrawPage = React.memo(() => {
     return () => {
       targetGraph.off('edge:mouseover');
       targetGraph.off('edge:mouseout');
-      targetGraph.on('node:mouseup');
+      targetGraph.off('node:mouseup');
+      targetGraph.off('node:moved');
       targetGraph = null;
       targetNode = null;
     };
