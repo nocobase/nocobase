@@ -1,6 +1,18 @@
-import { Context, utils } from '@nocobase/actions';
+import actions, { Context, utils } from '@nocobase/actions';
+import { Repository } from '@nocobase/database';
 
-
+export async function update(context: Context, next) {
+  const repository = utils.getRepositoryFromParams(context) as Repository;
+  const { filterByTk, values } = context.action.params;
+  // only enable/disable
+  if (Object.keys(values).sort().join() !== 'enabled,key'){
+    const workflow = await repository.findById(filterByTk);
+    if (workflow.get('executed')) {
+      return context.throw(400, 'executed workflow can not be updated');
+    }
+  }
+  return actions.update(context, next);
+}
 
 function typeOf(value) {
   if (Array.isArray(value)) {
