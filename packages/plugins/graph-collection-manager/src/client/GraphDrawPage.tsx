@@ -16,6 +16,7 @@ import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
 import dagre from 'dagre';
 import { last, maxBy, minBy } from 'lodash';
+import CollectionFieldSelect from 'packages/plugins/workflow/src/client/components/CollectionFieldSelect';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateActionAndRefreshCM } from './action-hooks';
@@ -210,6 +211,7 @@ export const GraphDrawPage = React.memo(() => {
       interacting: {
         magnetConnectable: false,
       },
+      async: true,
     });
     Graph.registerPortLayout(
       'erPortPosition',
@@ -363,6 +365,7 @@ export const GraphDrawPage = React.memo(() => {
 
   // 增量渲染
   const renderDiffGraphCollection = (rawData) => {
+    const { positions } = targetGraph;
     const { nodesData, edgesData } = formatData(rawData);
     const currentNodes = targetGraph.getNodes().map((v) => v.store.data);
     const currentEdges = targetGraph.getEdges();
@@ -371,7 +374,17 @@ export const GraphDrawPage = React.memo(() => {
       const updateNode = targetGraph.getCellById(node.id);
       switch (status) {
         case 'add':
-          targetGraph.addNode(node);
+          //@ts-ignore
+          const position = { x: maxBy(positions, 'x').x + 350, y: minBy(positions, 'y').y };
+          targetNode = targetGraph.addNode({
+            ...node,
+            position,
+          });
+          useSaveGraphPositionAction({
+            collectionName: node.name,
+            ...position,
+          });
+          targetGraph && targetGraph.positionCell(targetNode, 'top', { padding: 50 });
           break;
         case 'updatePorts':
           updateNode.removePorts();
@@ -387,8 +400,9 @@ export const GraphDrawPage = React.memo(() => {
       }
     });
     targetGraph.removeCells(currentEdges);
-    getEdges(edgesData);
-    layout(useSaveGraphPositionAction);
+    setTimeout(() => {
+      getEdges(edgesData);
+    });
   };
   useLayoutEffect(() => {
     initGraphCollections();
