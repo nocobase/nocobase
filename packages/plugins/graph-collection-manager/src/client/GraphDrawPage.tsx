@@ -391,7 +391,7 @@ export const GraphDrawPage = React.memo(() => {
           updateNode.addPorts(node.ports);
           break;
         case 'updateNode':
-          updateNode.setData({ title: node.title });
+          updateNode.setProp({ title: node.title });
           break;
         case 'delete':
           targetGraph.removeCell(node.id);

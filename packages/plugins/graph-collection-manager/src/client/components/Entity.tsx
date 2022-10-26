@@ -23,14 +23,14 @@ import {
   useRecord,
 } from '@nocobase/client';
 import { Dropdown, Popover, Tag } from 'antd';
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   useAsyncDataSource,
   useCancelAction,
   useDestroyActionAndRefreshCM,
   useDestroyFieldActionAndRefreshCM,
   useUpdateCollectionActionAndRefreshCM,
-  useValuesFromRecord
+  useValuesFromRecord,
 } from '../action-hooks';
 import { collection } from '../schemas/collection';
 import { collectiionPopoverClass, entityContainer, headClass, tableBtnClass, tableNameClass } from '../style';
@@ -42,31 +42,33 @@ import { FieldSummary } from './FieldSummary';
 const Entity: React.FC<{
   node?: Node | any;
   setTargetNode: Function | any;
-  targetGraph:any
+  targetGraph: any;
 }> = (props) => {
-  const { node, setTargetNode,targetGraph } = props;
+  const { node, setTargetNode, targetGraph } = props;
   const {
     store: {
-      data: { title, name, item, ports, attrs,data},
+      data: { title, name, item, ports, attrs },
     },
     id,
   } = node;
+  const collectionData = useRef();
+  collectionData.current = { ...item, title };
   const compile = useCompile();
-  const { collections = [], getInterface } = useCollectionManager();
+  const { getInterface } = useCollectionManager();
   // 获取当前字段列表
-const useCurrentFields = () => {
-  const record = useRecord();
-  const { getCollectionFields } = useCollectionManager();
-  const fields = getCollectionFields(record.collectionName || record.name) as any[];
-  return fields;
-}
+  const useCurrentFields = () => {
+    const record = useRecord();
+    const { getCollectionFields } = useCollectionManager();
+    const fields = getCollectionFields(record.collectionName || record.name) as any[];
+    return fields;
+  };
   const useNewId = (prefix) => {
     return `${prefix || ''}${uid()}`;
   };
   const loadCollections = async (field: any) => {
-    return targetGraph.collections?.map((item: any) => ({
-      label: compile(item.title),
-      value: item.name,
+    return targetGraph.collections?.map((collection: any) => ({
+      label: compile(collection.title),
+      value: collection.name,
     }));
   };
   const CollectionConten = (data) => {
@@ -92,7 +94,7 @@ const useCurrentFields = () => {
   return (
     <div className={cx(entityContainer)} style={{ boxShadow: attrs?.boxShadow }}>
       <div className={headClass}>
-        <span className={tableNameClass}>{compile(data?.title||title)}</span>
+        <span className={tableNameClass}>{compile(title)}</span>
         <div className={tableBtnClass}>
           <SchemaComponentProvider>
             <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
@@ -132,7 +134,7 @@ const useCurrentFields = () => {
                             },
                             'x-decorator': 'Form',
                             'x-decorator-props': {
-                              useValues: (arg) => useValuesFromRecord(arg, item),
+                              useValues: (arg) => useValuesFromRecord(arg, collectionData.current),
                             },
                             title: '{{ t("Edit collection") }}',
                             properties: {
@@ -271,11 +273,11 @@ const useCurrentFields = () => {
                         DeleteOutlined,
                         AddFieldAction,
                         Dropdown,
-                        Formula
+                        Formula,
                       }}
-                      scope={{ useAsyncDataSource, loadCollections, useCancelAction, useNewId,useCurrentFields }}
+                      scope={{ useAsyncDataSource, loadCollections, useCancelAction, useNewId, useCurrentFields }}
                     >
-                      <CollectionNodeProvder record={item} setTargetNode={setTargetNode} node={node}>
+                      <CollectionNodeProvder record={collectionData.current} setTargetNode={setTargetNode} node={node}>
                         <SchemaComponent
                           scope={useCancelAction}
                           schema={{
@@ -308,7 +310,7 @@ const useCurrentFields = () => {
                                   item: {
                                     ...property,
                                     title,
-                                    __parent:item
+                                    __parent: collectionData.current,
                                   },
                                 },
                               },
