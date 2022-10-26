@@ -1,5 +1,11 @@
 # Release Notes
 
+## 2022/10/26 ~ v0.7.7-alpha.1
+
+- fix(database/formula-field): when formula's field caculate result is 0 it alse will be save ([#962](https://github.com/nocobase/nocobase/issues/962))
+- feat(file-manager): support tencent cos ([#958](https://github.com/nocobase/nocobase/issues/958))
+- fix(plugin-workflow): fix constant schedule trigger time ([#956](https://github.com/nocobase/nocobase/issues/956))
+
 ## 2022/10/24 ~ v0.7.6-alpha.2
 
 - Turkish language ([#939](https://github.com/nocobase/nocobase/issues/939))
