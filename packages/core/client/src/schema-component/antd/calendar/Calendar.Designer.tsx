@@ -25,8 +25,6 @@ const useOptions = (type = 'string') => {
 export const CalendarDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const calendarSchema = Object.values(fieldSchema.properties)[0]
-  const calendarComponentsProps = calendarSchema['x-component-props']
   const { name, title, fields } = useCollection();
   const dataSource = useCollectionFilterOptions(name);
   const { service } = useCalendarBlockContext();
@@ -63,13 +61,14 @@ export const CalendarDesigner = () => {
       />
       <SchemaSettings.SwitchItem
         title={t('Show lunar')}
-        checked={calendarComponentsProps.showLunar}
+        checked={field.decoratorProps.showLunar}
         onChange={(v) => {
-          calendarComponentsProps.showLunar = v;
+          field.decoratorProps.showLunar = v;
+          fieldSchema['x-decorator-props']['showLunar'] = v;
           dn.emit('patch', {
             schema: {
-              'x-uid': calendarSchema['x-uid'],
-              'x-component-props': {...calendarComponentsProps}
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': field.decoratorProps,
             },
           });
           dn.refresh();
