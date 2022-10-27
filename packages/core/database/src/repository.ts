@@ -10,7 +10,7 @@ import {
   ModelCtor,
   Op,
   Transactionable,
-  UpdateOptions as SequelizeUpdateOptions
+  UpdateOptions as SequelizeUpdateOptions,
 } from 'sequelize';
 import { WhereOperators } from 'sequelize/types/lib/model';
 import { Collection } from './collection';

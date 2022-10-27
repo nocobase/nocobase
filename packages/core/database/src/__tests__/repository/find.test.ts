@@ -163,6 +163,16 @@ describe('repository find', () => {
       expect(users[1]).toEqual(2);
     });
 
+    test('find with empty or', async () => {
+      const usersCount = await User.repository.count({
+        filter: {
+          $or: [],
+        },
+      });
+
+      expect(usersCount).toEqual(await User.repository.count());
+    });
+
     test('find with fields', async () => {
       let user = await User.repository.findOne({
         fields: ['name'],
