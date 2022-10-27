@@ -6,7 +6,7 @@ import SnowflakeField from './fields/SnowflakeField';
 
 export class ShopPlugin extends Plugin {
 
-  initialize() {
+  afterAdd() {
     this.db.registerFieldTypes({
       snowflake: SnowflakeField
     });

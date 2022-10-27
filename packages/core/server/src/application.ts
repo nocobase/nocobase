@@ -260,7 +260,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return packageJson.version;
   }
 
-  plugin<O = any>(pluginClass: any, options?: O): Plugin<O> {
+  plugin<O = any>(pluginClass: any, options?: O): Plugin {
     return this.pm.addStatic(pluginClass, options);
   }
 

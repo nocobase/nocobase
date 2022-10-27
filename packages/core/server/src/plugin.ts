@@ -1,4 +1,4 @@
-import { Database, Model } from '@nocobase/database';
+import { Database } from '@nocobase/database';
 import { Application } from './application';
 import { InstallOptions } from './plugin-manager';
 
@@ -23,43 +23,46 @@ export interface PluginOptions {
 export type PluginType = typeof Plugin;
 
 export abstract class Plugin<O = any> implements PluginInterface {
-  options: O;
+  options: any;
   app: Application;
   db: Database;
-  model: Model;
 
-  constructor(app: Application, options?: O) {
+  constructor(app: Application, options?: any) {
     this.app = app;
     this.db = app.db;
     this.setOptions(options);
-    this.initialize();
-  }
-
-  setOptions(options: O) {
-    this.options = options || ({} as any);
-  }
-
-  setModel(model) {
-    this.model = model;
+    this.afterAdd();
   }
 
   get enabled() {
-    return (this.options as any).enabled;
+    return this.options.enabled;
   }
 
-  public getName() {
+  set enabled(value) {
+    this.options.enabled = value;
+  }
+
+  setOptions(options: any) {
+    this.options = options || {};
+  }
+
+  getName() {
     return (this.options as any).name;
   }
 
-  initialize() {}
+  afterAdd() {}
 
   beforeLoad() {}
 
-  async install(options?: InstallOptions) {}
-
   async load() {}
 
-  async disable() {}
+  async install(options?: InstallOptions) {}
+
+  async afterEnable() {}
+
+  async afterDisable() {}
+
+  async remove() {}
 }
 
 export default Plugin;

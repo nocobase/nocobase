@@ -1,6 +1,6 @@
 import { Plugin } from '@nocobase/server';
 
-export class PresetNocoBase<O = any> extends Plugin {
+export class PresetNocoBase extends Plugin {
   async addBuiltInPlugins() {
     const plugins = [
       'error-handler',
@@ -26,7 +26,7 @@ export class PresetNocoBase<O = any> extends Plugin {
     await this.app.reload();
   }
 
-  initialize() {
+  afterAdd() {
     this.app.on('beforeUpgrade', async () => {
       const result = await this.app.version.satisfies('<0.8.0-alpha.1');
       if (result) {

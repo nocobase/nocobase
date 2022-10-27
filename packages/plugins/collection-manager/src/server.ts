@@ -60,7 +60,7 @@ export class CollectionManagerPlugin extends Plugin {
         await fn(model, { database: this.app.db });
       }
     });
- 
+
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
     this.app.db.on('collections.afterCreateWithAssociations', async (model, { context, transaction }) => {
@@ -116,22 +116,10 @@ export class CollectionManagerPlugin extends Plugin {
       await model.remove(options);
     });
 
-    this.app.on('beforeStart', async () => {
-      await this.app.db.getRepository<CollectionRepository>('collections').load();
-    });
-
-    this.app.on('beforeUpgrade', async () => {
-      await this.app.db.getRepository<CollectionRepository>('collections').load();
-    });
-
-    this.app.on('cli.beforeMigrator', async () => {
-      const exists = await this.app.db.collectionExistsInDb('collections');
-      if (exists) {
-        await this.app.db.getRepository<CollectionRepository>('collections').load();
+    this.app.on('beforeLoad', async (app, options) => {
+      if (options?.method === 'install') {
+        return;
       }
-    });
-
-    this.app.on('cli.beforeDbSync', async () => {
       const exists = await this.app.db.collectionExistsInDb('collections');
       if (exists) {
         await this.app.db.getRepository<CollectionRepository>('collections').load();
@@ -205,7 +193,6 @@ export class CollectionManagerPlugin extends Plugin {
       },
     );
   }
-
 }
 
 export default CollectionManagerPlugin;

@@ -68,7 +68,7 @@ export class PluginManager {
         return;
       }
       if (options?.method !== 'install' || options.reload) {
-        await this.repository.register();
+        await this.repository.load();
       }
     });
   }
@@ -221,18 +221,9 @@ export class PluginManager {
   }
 
   async enable(name: string | string[]) {
-    await this.repository.update({
-      filter: {
-        name,
-      },
-      values: {
-        enabled: true,
-        installed: true,
-      },
-    });
     try {
+      const pluginNames = await this.repository.enable(name);
       await this.app.reload();
-      const pluginNames = typeof name === 'string' ? [name] : name;
       await this.app.db.sync();
       for (const pluginName of pluginNames) {
         const plugin = this.app.getPlugin(pluginName);
@@ -240,55 +231,39 @@ export class PluginManager {
           throw new Error(`${name} plugin does not exist`);
         }
         await plugin.install();
+        await plugin.afterEnable();
       }
-      await this.app.start();
     } catch (error) {
-      await this.repository.update({
-        filter: {
-          name,
-        },
-        values: {
-          enabled: false,
-          installed: false,
-        },
-      });
       throw error;
     }
   }
 
   async disable(name: string | string[]) {
-    await this.repository.update({
-      filter: {
-        name,
-      },
-      values: {
-        enabled: false,
-        installed: false,
-      },
-    });
     try {
+      const pluginNames = await this.repository.disable(name);
       await this.app.reload();
-      const pluginNames = typeof name === 'string' ? [name] : name;
-      await this.app.db.sync();
       for (const pluginName of pluginNames) {
         const plugin = this.app.getPlugin(pluginName);
         if (!plugin) {
           throw new Error(`${name} plugin does not exist`);
         }
-        await plugin.disable();
+        await plugin.afterDisable();
       }
-      await this.app.start();
     } catch (error) {
       throw error;
     }
   }
 
   async remove(name: string | string[]) {
-    await this.repository.destroy({
-      filter: {
-        name,
-      },
-    });
+    const pluginNames = typeof name === 'string' ? [name] : name;
+    for (const pluginName of pluginNames) {
+      const plugin = this.app.getPlugin(pluginName);
+      if (!plugin) {
+        throw new Error(`${name} plugin does not exist`);
+      }
+      await plugin.remove();
+    }
+    await this.repository.remove(name);
     this.app.reload();
   }
 

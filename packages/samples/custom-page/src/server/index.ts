@@ -2,11 +2,9 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class CustomPagePlugin extends Plugin {
 
-  initialize() {}
+  afterAdd() {}
 
-  beforeLoad() {
-    // TODO
-  }
+  beforeLoad() {}
 
   async load() {}
 
