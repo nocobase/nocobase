@@ -112,7 +112,7 @@ await userRepository.find({
 });
 ```
 
-### 创建/更新
+### 创建
 
 #### 基础创建
 
@@ -195,9 +195,11 @@ await userRepository.create({
 });
 ```
 
-#### 更新
+### 更新
 
-获取到数据对象后，可直接在对象上修改属性，然后调用 `save` 方法保存修改。
+#### 基础更新
+
+获取到数据对象后，可直接在数据对象(`Model`)上修改属性，然后调用 `save` 方法保存修改。
 
 ```javascript
 const user = await userRepository.findOne({
@@ -212,6 +214,76 @@ await user.save();
 ```
 
 数据对象 `Model` 继承自 Sequelize Model，对 `Model` 的操作可参考 [Sequelize Model](https://sequelize.org/master/manual/model-basics.html)。
+
+也可通过 `Repository` 更新数据：
+
+```javascript
+// 修改满足筛选条件的数据记录
+await userRepository.update({
+  filter: {
+    name: "张三",
+  },
+  values: {
+    age: 20,
+  },
+});
+```
+
+更新时，可以通过 `whitelist` 、`blacklist` 参数控制更新字段，例如：
+
+```javascript
+await userRepository.update({
+  filter: {
+    name: "张三",
+  },
+  values: {
+    age: 20,
+    name: "李四",
+  },
+  whitelist: ["age"], // 仅更新 age 字段
+});
+````
+
+#### 更新关联字段
+
+在更新时，可以设置关联对象，例如：
+
+```javascript
+const tag1 = tagRepository.findOne({
+  filter: {
+    id: 1
+  },
+});
+
+await postRepository.update({
+  filter: {
+    id: 1
+  },
+  values: {
+    title: "new post title",
+    tags: [
+      {
+        id: tag1.id // 与 tag1 建立关联
+      },
+      {
+        name: "tag2", // 创建新的 tag 并建立关联
+      },
+    ],
+  },
+});
+
+
+await postRepository.update({
+  filter: {
+    id: 1
+  },
+  values: {
+    tags: null // 解除 post 与 tags 的关联
+  },
+})
+```
+
+### 删除
 
 ## 构造函数
 
