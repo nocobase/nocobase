@@ -86,6 +86,7 @@ export class PluginManager {
     const client = new net.Socket();
     client.connect(this.pmSock, () => {
       client.write(JSON.stringify(data));
+      client.end();
     });
     client.on('error', async () => {
       try {
