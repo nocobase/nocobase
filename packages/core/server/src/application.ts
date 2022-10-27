@@ -38,6 +38,7 @@ export interface ApplicationOptions {
   i18n?: i18n | InitOptions;
   plugins?: PluginConfiguration[];
   acl?: boolean;
+  pmSock?: string;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -259,20 +260,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return packageJson.version;
   }
 
-  plugin<O = any>(pluginClass: any, options?: O): Plugin<O> {
-    return this.pm.add(pluginClass, options);
+  plugin<O = any>(pluginClass: any, options?: O): Plugin {
+    return this.pm.addStatic(pluginClass, options);
   }
 
   loadPluginConfig(pluginsConfigurations: PluginConfiguration[]) {
     for (let pluginConfiguration of pluginsConfigurations) {
       if (typeof pluginConfiguration == 'string') {
-        pluginConfiguration = [pluginConfiguration, {}];
+        this.plugin(pluginConfiguration);
+      } else {
+        this.plugin(...pluginConfiguration);
       }
-
-      const plugin = PluginManager.resolvePlugin(pluginConfiguration[0]);
-      const pluginOptions = pluginConfiguration[1];
-
-      this.plugin(plugin, pluginOptions);
     }
   }
 
@@ -319,13 +317,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (<any>this.cli)._findCommand(name);
   }
 
-  async load() {
-    await this.pm.load();
+  async load(options?: any) {
+    if (options?.reload) {
+      this.init();
+    }
+    await this.emitAsync('beforeLoad', this, options);
+    await this.pm.load(options);
+    await this.emitAsync('afterLoad', this, options);
   }
 
-  async reload() {
-    this.init();
-    await this.pm.load();
+  async reload(options?: any) {
+    await this.load({
+      ...options,
+      reload: true,
+    });
   }
 
   getPlugin<P extends Plugin>(name: string) {
@@ -337,9 +342,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async runAsCLI(argv = process.argv, options?: ParseOptions) {
-    if (argv?.[2] !== 'install') {
-      await this.load();
-    }
+    await this.load({
+      method: argv?.[2],
+    });
     return this.cli.parseAsync(argv, options);
   }
 
@@ -352,6 +357,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('beforeStart', this, options);
 
     if (options?.listen?.port) {
+      const pmServer = await this.pm.listen();
       const listen = () =>
         new Promise((resolve, reject) => {
           const Server = this.listen(options?.listen, () => {
@@ -360,6 +366,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
           Server.on('error', (err) => {
             reject(err);
+          });
+
+          Server.on('close', () => {
+            pmServer.close();
           });
         });
 
@@ -385,7 +395,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     try {
       // close database connection
       // silent if database already closed
-      await this.db.close();
+      if (!this.db.closed()) {
+        await this.db.close();
+      }
     } catch (e) {
       console.log(e);
     }
@@ -419,11 +431,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.clean) {
       await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
+      await this.reload({ method: 'install' });
     }
 
     await this.emitAsync('beforeInstall', this, options);
 
-    await this.load();
     await this.db.sync(options?.sync);
     await this.pm.install(options);
     await this.version.update();

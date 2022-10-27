@@ -3,9 +3,6 @@ import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
 
 export class PluginMultiAppManager extends Plugin {
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 
   async install(options?: InstallOptions) {
     const repo = this.db.getRepository<any>('collections');

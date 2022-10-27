@@ -1,8 +1,8 @@
-import path from 'path';
 import { MockServer, mockServer } from '@nocobase/test';
+import path from 'path';
 
-import Plugin from '..';
 import { ApplicationOptions } from '@nocobase/server';
+import Plugin from '..';
 
 export function sleep(ms: number) {
   return new Promise(resolve => {
@@ -17,7 +17,7 @@ interface MockAppOptions extends ApplicationOptions {
 export async function getApp({ manual, ...options }: MockAppOptions = {}): Promise<MockServer> {
   const app = mockServer(options);
 
-  app.plugin(Plugin);
+  app.plugin(Plugin, { name: 'verification' });
 
   await app.load();
 

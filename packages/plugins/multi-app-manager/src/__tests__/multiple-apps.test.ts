@@ -57,7 +57,7 @@ describe('multiple apps create', () => {
       values: {
         name,
         options: {
-          plugins: [['@nocobase/plugin-ui-schema-storage', { test: 'B' }]],
+          plugins: [['ui-schema-storage', { test: 'B' }]],
         },
       },
     });
@@ -65,7 +65,7 @@ describe('multiple apps create', () => {
     const miniApp = app.appManager.applications.get(name);
     expect(miniApp).toBeDefined();
 
-    const plugin = miniApp.pm.get('@nocobase/plugin-ui-schema-storage');
+    const plugin = miniApp.pm.get('ui-schema-storage');
 
     expect(plugin).toBeDefined();
     expect(plugin.options).toMatchObject({
@@ -79,7 +79,7 @@ describe('multiple apps create', () => {
       values: {
         name,
         options: {
-          plugins: ['@nocobase/plugin-ui-schema-storage'],
+          plugins: ['ui-schema-storage'],
         },
       },
     });
@@ -106,7 +106,7 @@ describe('multiple apps create', () => {
       values: {
         name,
         options: {
-          plugins: ['@nocobase/plugin-ui-schema-storage'],
+          plugins: ['ui-schema-storage'],
         },
       },
     });

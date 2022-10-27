@@ -1,6 +1,6 @@
 import { Database } from '@nocobase/database';
-import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { mockServer, MockServer } from '@nocobase/test';
 
@@ -62,16 +62,16 @@ describe('server hooks', () => {
     await app.cleanDb();
     db = app.db;
 
-    app.plugin(UiSchemaStoragePlugin);
-    app.plugin(PluginErrorHandler);
-    app.plugin(PluginCollectionManager);
+    app.plugin(UiSchemaStoragePlugin, { name: 'ui-schema-storage' });
+    app.plugin(PluginErrorHandler, { name: 'error-handler' });
+    app.plugin(PluginCollectionManager, { name: 'collection-manager' });
 
     await app.loadAndInstall();
 
     uiSchemaRepository = db.getRepository('uiSchemas');
     await uiSchemaRepository.insert(schema);
 
-    uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('@nocobase/plugin-ui-schema-storage');
+    uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('ui-schema-storage');
   });
 
   it('should call server hooks onFieldDestroy', async () => {

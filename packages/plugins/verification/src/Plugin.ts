@@ -74,10 +74,6 @@ export default class VerificationPlugin extends Plugin {
     });
   };
 
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
-
   async install() {
     const {
       DEFAULT_SMS_VERIFY_CODE_PROVIDER,

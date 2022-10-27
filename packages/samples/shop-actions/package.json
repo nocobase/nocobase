@@ -1,13 +1,11 @@
 {
   "name": "@nocobase/plugin-sample-shop-actions",
-  "version": "0.7.4-alpha.7",
+  "version": "0.8.0-alpha.1",
   "main": "lib/server/index.js",
-  "dependencies": {
-  },
   "devDependencies": {
-    "@nocobase/client": "0.7.4-alpha.7",
-    "@nocobase/server": "0.7.4-alpha.7",
-    "@nocobase/test": "0.7.4-alpha.7"
+    "@nocobase/client": "0.8.0-alpha.1",
+    "@nocobase/server": "0.8.0-alpha.1",
+    "@nocobase/test": "0.8.0-alpha.1"
   },
   "peerDependencies": {
     "@nocobase/client": "*",

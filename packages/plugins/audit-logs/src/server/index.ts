@@ -21,8 +21,4 @@ export default class PluginActionLogs extends Plugin {
       },
     });
   }
-
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 }
