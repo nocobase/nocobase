@@ -92,7 +92,7 @@ await UserRepository.update({
 await UserRepository.destroy(user.id);
 ```
 
-更加详细的 `Repository` 使用方法请参考 [Repository](/api/database/repository.md)。
+更加详细的数据CRUD使用方法请参考 [Repository](/api/database/repository.md)。
 
 
 ## 构造函数
