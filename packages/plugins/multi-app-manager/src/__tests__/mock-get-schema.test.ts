@@ -71,7 +71,7 @@ describe('test with start', () => {
       values: {
         name,
         options: {
-          plugins: ['@nocobase/plugin-ui-schema-storage'],
+          plugins: ['ui-schema-storage'],
         },
       },
     });

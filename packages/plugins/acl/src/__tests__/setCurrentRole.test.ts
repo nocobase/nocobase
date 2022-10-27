@@ -15,7 +15,7 @@ describe('role', () => {
     api = await prepareApp();
 
     db = api.db;
-    usersPlugin = api.getPlugin('@nocobase/plugin-users');
+    usersPlugin = api.getPlugin('users');
 
     ctx = {
       db,

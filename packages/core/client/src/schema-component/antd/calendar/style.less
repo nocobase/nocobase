@@ -74,7 +74,6 @@ button.rbc-input::-moz-focus-inner {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 4px 12px;
-  text-align: right;
   vertical-align: middle;
   // font-weight: 500;
   min-height: 32px;
@@ -338,22 +337,37 @@ button.rbc-input::-moz-focus-inner {
   // cursor: pointer;
   flex: 1 1 0;
   min-width: 0;
-  padding-right: 12px;
+  padding-left: 12px;
   padding-top: 4px;
-  text-align: right;
 }
-.rbc-date-cell.rbc-now a {
+.rbc-date-cell.rbc-now span {
   // font-weight: bold;
   color: #1890ff;
 }
-.rbc-date-cell > a,
-.rbc-date-cell > a:active,
-.rbc-date-cell > a:visited {
+.rbc-date-cell a,
+.rbc-date-cell a:active,
+.rbc-date-cell a:visited {
   color: inherit;
   text-decoration: none;
 }
-.rbc-date-cell > a:hover {
+.rbc-date-cell a:hover {
   color: #1890ff;
+}
+
+.rbc-date-cell .rbc-date-solar {
+  font-weight: 500;
+}
+
+.rbc-date-cell .rbc-date-lunar {
+  padding-left: 12px;
+}
+
+.rbc-date-cell:not(.rbc-off-range) .rbc-date-lunar {
+  color: #aaa
+}
+
+.rbc-date-cell .rbc-date-lunar:hover {
+  color: inherit
 }
 
 .rbc-row-bg {

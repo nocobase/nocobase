@@ -1,5 +1,5 @@
 FROM node:16 as builder
-ARG VERDACCIO_URL
+ARG VERDACCIO_URL=http://host.docker.internal:10104/
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
@@ -21,6 +21,7 @@ RUN git checkout -b release \
 RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
 RUN cd /app \
+  && yarn config set network-timeout 600000 -g \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
   && yarn install --production

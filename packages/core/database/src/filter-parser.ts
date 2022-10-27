@@ -78,7 +78,6 @@ export default class FilterParser {
 
     const include = {};
     const where = {};
-    const filter2 = lodash.cloneDeep(flattenedFilter);
 
     let skipPrefix = null;
     const associations = model.associations;
@@ -88,6 +87,11 @@ export default class FilterParser {
     for (let [key, value] of Object.entries(flattenedFilter)) {
       // 处理 filter 条件
       if (skipPrefix && key.startsWith(skipPrefix)) {
+        continue;
+      }
+
+      // skip empty logic operator value
+      if ((key == '$or' || key == '$and') && Array.isArray(value) && value.length == 0) {
         continue;
       }
 

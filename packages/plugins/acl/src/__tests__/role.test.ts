@@ -1,6 +1,6 @@
-import { MockServer } from '@nocobase/test';
 import { Database, Model } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
+import { MockServer } from '@nocobase/test';
 
 import { prepareApp } from './prepare';
 
@@ -36,7 +36,7 @@ describe('role api', () => {
         },
       });
 
-      const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+      const userPlugin = app.getPlugin('users') as UsersPlugin;
       adminAgent = app.agent().auth(
         userPlugin.jwtService.sign({
           userId: admin.get('id'),

@@ -413,6 +413,7 @@ export default {
   "Use the built-in static file server": "組み込みの静的ファイル サービスを使用する",
   "Local storage": "ローカルストレージ",
   "Aliyun OSS": "Aliyun OSS",
+  "Tencent COS": "Tencent COS",
   "Amazon S3": "Amazon S3",
   "Workflow": "ワークフロー",
   "Execution History": "実行履歴",

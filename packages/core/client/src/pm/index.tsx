@@ -8,7 +8,6 @@ import { ACLPane } from '../acl';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerPane } from '../collection-manager';
 import { useDocumentTitle } from '../document-title';
-import { FileStoragePane } from '../file-manager';
 import { Icon } from '../icon';
 import { RouteSwitchContext } from '../route-switch';
 import { useCompile } from '../schema-component';
@@ -250,20 +249,6 @@ const settings = {
         title: '{{t("Collections & Fields")}}',
         component: CollectionManagerPane,
       },
-    },
-  },
-  'file-manager': {
-    title: '{{t("File manager")}}',
-    icon: 'FileOutlined',
-    tabs: {
-      storages: {
-        title: '{{t("File storages")}}',
-        component: FileStoragePane,
-      },
-      // test: {
-      //   title: 'Test',
-      //   component: FileStoragePane,
-      // },
     },
   },
   'system-settings': {
