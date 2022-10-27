@@ -247,6 +247,8 @@ const Entity: React.FC<{
                       attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#e6f7ff' : null,
                   }}
                 >
+                  <div className="name">{compile(property.uiSchema?.title)}</div>
+                  <div className="type">{compile(getInterface(property.interface).title)}</div>
                   <div className="field-operator">
                     <SchemaComponentProvider
                       components={{
@@ -359,8 +361,6 @@ const Entity: React.FC<{
                       </CollectionNodeProvder>
                     </SchemaComponentProvider>
                   </div>
-                  <div className="name">{compile(property.uiSchema?.title)}</div>
-                  <div className="type">{compile(getInterface(property.interface).title)}</div>
                 </div>
               </Popover>
             )

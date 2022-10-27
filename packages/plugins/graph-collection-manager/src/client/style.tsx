@@ -21,7 +21,7 @@ export const entityContainer = css`
   &:hover {
     /* border: 1px solid #165dff; */
     /* box-shadow: 0 0 6px rgb(0 0 0 / 12%); */
-    box-shadow: 0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)
+    box-shadow: 0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%);
   }
   .body {
     width: 100%;
@@ -29,9 +29,9 @@ export const entityContainer = css`
     background-color: #fff;
     overflow: auto;
     cursor: pointer;
-    display: inline-table;
-    // border: 1px solid #5F95FF;
+    max-height: 400px;
     .body-item {
+      display: inline-table;
       width: 100%;
       max-width: 250px;
       height: 40px;
@@ -52,10 +52,8 @@ export const entityContainer = css`
         .field-operator {
           display: flex;
           flex-direction: row-reverse;
-          position: absolute;
           height: 32px;
           line-height: 32px;
-          right: 1px;
           z-index: 999;
           cursor: pointer;
           text-align: right;
@@ -83,7 +81,7 @@ export const entityContainer = css`
             color: rgb(0, 180, 42);
             width: 20px;
           }
-          .btn-edit{
+          .btn-edit {
             color: rgba(0, 0, 0, 0.85);
             display: flex;
           }
@@ -184,6 +182,6 @@ export const collectionListClass = css`
 export const graphCollectionContainerClass = css`
   overflow: hidden;
   .x6-graph-scroller {
-    height:calc(100vh) !important
+    height: calc(100vh) !important;
   }
 `;
