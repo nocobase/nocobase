@@ -167,12 +167,13 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
     props.onChange?.(normalizeFileList([...param.fileList]));
   };
 
-  const form = useForm();
-
   const api = useAPIClient();
 
   return {
     ...props,
+    // in customRequest method can't modify form's status(e.g: form.disabled=true )
+    // that will be trigger Upload component（actual Underlying is AjaxUploader component ）'s  componentWillUnmount method
+    // which will cause multiple files upload fail
     customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess, withCredentials }) {
       const formData = new FormData();
       if (data) {
@@ -181,7 +182,6 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
         });
       }
       formData.append(filename, file);
-      form.disabled = true;
       api.axios
         .post(action, formData, {
           withCredentials,
@@ -194,9 +194,7 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
           onSuccess(data, file);
         })
         .catch(onError)
-        .finally(() => {
-          form.disabled = false;
-        });
+        .finally(() => {});
 
       return {
         abort() {
