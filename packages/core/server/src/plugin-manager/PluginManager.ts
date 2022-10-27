@@ -4,6 +4,7 @@ import execa from 'execa';
 import fs from 'fs';
 import net from 'net';
 import { resolve } from 'path';
+import xpipe from 'xpipe';
 import Application from '../application';
 import { Plugin } from '../plugin';
 import collectionOptions from './options/collection';
@@ -31,7 +32,7 @@ export class PluginManager {
   constructor(options: PluginManagerOptions) {
     this.app = options.app;
     const f = resolve(process.cwd(), 'storage', 'pm.sock');
-    this.pmSock = this.app.options.pmSock || f;
+    this.pmSock = xpipe.eq(this.app.options.pmSock || f);
     this.app.db.registerRepositories({
       PluginManagerRepository,
     });
