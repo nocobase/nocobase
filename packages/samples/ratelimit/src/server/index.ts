@@ -17,7 +17,7 @@ export class CustomPagePlugin extends Plugin {
           reset: 'Rate-Limit-Reset',
           total: 'Rate-Limit-Total',
         },
-        max: 20,
+        max: 200,
         disableHeader: false,
         whitelist: (ctx) => {
           // some logic that returns a boolean
