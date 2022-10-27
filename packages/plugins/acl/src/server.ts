@@ -269,9 +269,16 @@ export class PluginACL extends Plugin {
 
     // sync database role data to acl
     this.app.on('afterLoad', async (app, options) => {
-      if (options.method === 'install') {
+      if (options?.method === 'install') {
         return;
       }
+      const exists = await this.app.db.collectionExistsInDb('roles');
+      if (exists) {
+        await this.writeRolesToACL();
+      }
+    });
+
+    this.app.on('afterInstall', async (app, options) => {
       const exists = await this.app.db.collectionExistsInDb('roles');
       if (exists) {
         await this.writeRolesToACL();
