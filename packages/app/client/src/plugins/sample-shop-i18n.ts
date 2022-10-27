@@ -1,1 +1,0 @@
-export { default } from '@nocobase/plugin-sample-shop-i18n/client';
