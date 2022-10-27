@@ -74,26 +74,7 @@ async function layout(createPositions) {
     }
   });
   edges.forEach((edge) => {
-    const source = edge.getSource();
-    const target = edge.getTarget();
-    const sorceNodeX = targetGraph.getCell(source.cell).position().x;
-    const targeNodeX = targetGraph.getCell(target.cell).position().x;
-    if (sorceNodeX > targeNodeX) {
-      edge.setSource({
-        cell: source.cell,
-        port: source.port,
-        anchor: {
-          name: 'left',
-        },
-      });
-      edge.setTarget({
-        cell: target.cell,
-        port: target.port,
-        anchor: {
-          name: 'right',
-        },
-      });
-    }
+    optimizeEdge(edge);
   });
   targetGraph.unfreeze();
   if (targetNode) {
@@ -106,6 +87,66 @@ async function layout(createPositions) {
   if (graphPositions.length > 0) {
     await createPositions(graphPositions);
     graphPositions = [];
+  }
+}
+
+function optimizeEdge(edge) {
+  const source = edge.getSource();
+  const target = edge.getTarget();
+  const sorceNodeX = targetGraph.getCell(source.cell).position().x;
+  const targeNodeX = targetGraph.getCell(target.cell).position().x;
+  if (sorceNodeX > targeNodeX) {
+    edge.setSource({
+      cell: source.cell,
+      port: source.port,
+      anchor: {
+        name: 'left',
+      },
+    });
+    edge.setTarget({
+      cell: target.cell,
+      port: target.port,
+      anchor: {
+        name: 'right',
+      },
+    });
+    edge.setRouter('er', {
+      direction: 'H',
+    });
+  } else if (sorceNodeX === targeNodeX) {
+    edge.setSource({
+      cell: source.cell,
+      port: source.port,
+      anchor: {
+        name: 'left',
+      },
+    });
+    edge.setTarget({
+      cell: target.cell,
+      port: target.port,
+      anchor: {
+        name: 'left',
+      },
+    });
+    edge.setRouter('oneSide', { side: 'left' });
+  } else {
+    edge.setSource({
+      cell: source.cell,
+      port: source.port,
+      anchor: {
+        name: 'right',
+      },
+    });
+    edge.setTarget({
+      cell: target.cell,
+      port: target.port,
+      anchor: {
+        name: 'left',
+      },
+    });
+    edge.setRouter('er', {
+      direction: 'H',
+    });
   }
 }
 
@@ -332,6 +373,7 @@ export const GraphDrawPage = React.memo(() => {
       );
     });
     targetGraph.on('node:moved', ({ e, node }) => {
+      const connectEdges = targetGraph.getConnectedEdges(node);
       const currentPosition = node.position();
       const oldPosition = targetGraph.positions.find((v) => v.collectionName === node.store.data.name);
       e.stopPropagation();
@@ -347,6 +389,9 @@ export const GraphDrawPage = React.memo(() => {
           ...currentPosition,
         });
       }
+      connectEdges.forEach((edge) => {
+        optimizeEdge(edge);
+      });
     });
   };
   // 首次渲染
