@@ -54,12 +54,14 @@ export function afterCreateForForeignKeyField(db: Database) {
       if (instance.type !== values.type) {
         throw new Error(`fk type invalid`);
       }
+      instance.set('sort',1);
       instance.set('isForeignKey', true);
       await instance.save({ transaction });
     } else {
       await r.create({
         values: {
           isForeignKey: true,
+          sort:1,
           ...values,
         },
         transaction,
