@@ -18,6 +18,7 @@ import {
 import { CollectionModel, FieldModel } from './models';
 
 export class CollectionManagerPlugin extends Plugin {
+
   async beforeLoad() {
     this.app.db.registerModels({
       CollectionModel,
@@ -122,22 +123,10 @@ export class CollectionManagerPlugin extends Plugin {
       await model.remove(options);
     });
 
-    this.app.on('beforeStart', async () => {
-      await this.app.db.getRepository<CollectionRepository>('collections').load();
-    });
-
-    this.app.on('beforeUpgrade', async () => {
-      await this.app.db.getRepository<CollectionRepository>('collections').load();
-    });
-
-    this.app.on('cli.beforeMigrator', async () => {
-      const exists = await this.app.db.collectionExistsInDb('collections');
-      if (exists) {
-        await this.app.db.getRepository<CollectionRepository>('collections').load();
+    this.app.on('afterLoad', async (app, options) => {
+      if (options?.method === 'install') {
+        return;
       }
-    });
-
-    this.app.on('cli.beforeDbSync', async () => {
       const exists = await this.app.db.collectionExistsInDb('collections');
       if (exists) {
         await this.app.db.getRepository<CollectionRepository>('collections').load();
@@ -201,7 +190,7 @@ export class CollectionManagerPlugin extends Plugin {
       directory: path.resolve(__dirname, './collections'),
     });
 
-    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('@nocobase/plugin-error-handler');
+    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('error-handler');
     errorHandlerPlugin.errorHandler.register(
       (err) => {
         return err instanceof UniqueConstraintError;
@@ -210,10 +199,6 @@ export class CollectionManagerPlugin extends Plugin {
         return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
       },
     );
-  }
-
-  getName(): string {
-    return this.getPackageName(__dirname);
   }
 }
 

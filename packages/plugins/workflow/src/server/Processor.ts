@@ -13,6 +13,8 @@ import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 
 
 export interface ProcessorOptions extends Transactionable {
+  // TODO(temp): pass request context here for $isVar and other operators
+  _context?: any;
   plugin: Plugin
 }
 
@@ -33,7 +35,7 @@ export default class Processor {
   jobsMap = new Map<number, JobModel>();
   jobsMapByNodeId: { [key: number]: any } = {};
 
-  constructor(public execution: ExecutionModel, private options: ProcessorOptions) {
+  constructor(public execution: ExecutionModel, public options: ProcessorOptions) {
   }
 
   // make dual linked nodes list then cache

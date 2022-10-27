@@ -46,7 +46,9 @@ describe('field indexes', () => {
       },
     });
 
-    expect(response3.status).toBe(400);
+    console.log(response3.body);
+
+    expect(response3.status).toBe(500);
 
     const response4 = await agent.resource(tableName).create({
       values: { title: 't1' },
@@ -82,7 +84,7 @@ describe('field indexes', () => {
         title: 't1',
       },
     });
-    expect(response2.status).toBe(400);
+    expect(response2.status).toBe(500);
 
     // update field to remove unique constraint
     await agent.resource('fields').update({
@@ -109,7 +111,7 @@ describe('field indexes', () => {
       },
     });
 
-    expect(response4.status).toBe(400);
+    expect(response4.status).toBe(500);
 
     // remove a duplicated record
     await agent.resource(tableName).destroy({

@@ -1,6 +1,6 @@
 import { Database, Model } from '@nocobase/database';
-import UsersPlugin from '@nocobase/plugin-users';
 import { CollectionRepository } from '@nocobase/plugin-collection-manager';
+import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 
@@ -32,7 +32,7 @@ describe('role resource api', () => {
       }
     });
 
-    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    const userPlugin = app.getPlugin('users') as UsersPlugin;
     adminAgent = app.agent().auth(userPlugin.jwtService.sign({
       userId: admin.get('id'),
     }), { type: 'bearer' });

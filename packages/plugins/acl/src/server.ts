@@ -268,8 +268,14 @@ export class PluginACL extends Plugin {
     });
 
     // sync database role data to acl
-    this.app.on('beforeStart', async () => {
-      await this.writeRolesToACL();
+    this.app.on('afterLoad', async (app, options) => {
+      if (options.method === 'install') {
+        return;
+      }
+      const exists = await this.app.db.collectionExistsInDb('roles');
+      if (exists) {
+        await this.writeRolesToACL();
+      }
     });
 
     this.app.on('beforeInstallPlugin', async (plugin) => {
@@ -440,10 +446,6 @@ export class PluginACL extends Plugin {
     await this.app.db.import({
       directory: resolve(__dirname, 'collections'),
     });
-  }
-
-  getName(): string {
-    return this.getPackageName(__dirname);
   }
 }
 

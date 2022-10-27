@@ -7,9 +7,6 @@ import enUS from './locale/en_US';
 import zhCN from './locale/zh_CN';
 
 export class PluginErrorHandler extends Plugin {
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 
   errorHandler: ErrorHandler = new ErrorHandler();
   i18nNs: string = 'error-handler';

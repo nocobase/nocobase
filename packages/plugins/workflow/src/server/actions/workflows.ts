@@ -1,6 +1,18 @@
-import { Context, utils } from '@nocobase/actions';
+import actions, { Context, utils } from '@nocobase/actions';
+import { Repository } from '@nocobase/database';
 
-
+export async function update(context: Context, next) {
+  const repository = utils.getRepositoryFromParams(context) as Repository;
+  const { filterByTk, values } = context.action.params;
+  // only enable/disable
+  if (Object.keys(values).sort().join() !== 'enabled,key'){
+    const workflow = await repository.findById(filterByTk);
+    if (workflow.get('executed')) {
+      return context.throw(400, 'executed workflow can not be updated');
+    }
+  }
+  return actions.update(context, next);
+}
 
 function typeOf(value) {
   if (Array.isArray(value)) {
@@ -31,11 +43,16 @@ function migrateConfig(config, oldToNew) {
       case 'array':
         return value.map(item => migrate(item));
       case 'string':
-        return value
-          .replace(
-            /(\{\{\$jobsMapByNodeId\.)([\w-]+)/,
-            (_, prefix, id) => `${prefix}${oldToNew.get(Number.parseInt(id, 10)).id}`
-          );
+        const matcher = value.match(/(\{\{\$jobsMapByNodeId\.)([\w-]+)/);
+        if (!matcher) {
+          return value;
+        }
+        const oldNodeId = Number.parseInt(matcher[2], 10);
+        const newNode = oldToNew.get(oldNodeId);
+        if (!newNode) {
+          throw new Error('node configurated for result is not existed');
+        }
+        return value.replace(matcher[0], `{{$jobsMapByNodeId.${newNode.id}`);
       default:
         return value;
     }
@@ -91,11 +108,17 @@ export async function revision(context: Context, next) {
       const oldNode = originalNodesMap.get(oldId);
       const newUpstream = oldNode.upstreamId ? oldToNew.get(oldNode.upstreamId) : null;
       const newDownstream = oldNode.downstreamId ? oldToNew.get(oldNode.downstreamId) : null;
+      let migratedConfig;
+      try {
+        migratedConfig = migrateConfig(oldNode.config, oldToNew);
+      } catch (err) {
+        return context.throw(400, err.message);
+      }
 
       await newNode.update({
         upstreamId: newUpstream?.id ?? null,
         downstreamId: newDownstream?.id ?? null,
-        config: migrateConfig(oldNode.config, oldToNew)
+        config: migratedConfig
       }, { transaction });
     }
 

@@ -1,17 +1,17 @@
-import { promisify } from 'util';
 import { randomInt, randomUUID } from 'crypto';
+import { promisify } from 'util';
 
-import { Op } from '@nocobase/database';
 import actions, { Context, Next } from '@nocobase/actions';
+import { Op } from '@nocobase/database';
 
+import moment from 'moment';
 import Plugin, { namespace } from '..';
 import { CODE_STATUS_UNUSED } from '../constants';
-import moment from 'moment';
 
 const asyncRandomInt = promisify(randomInt);
 
 export async function create(context: Context, next: Next) {
-  const plugin = context.app.getPlugin('@nocobase/plugin-verification') as Plugin;
+  const plugin = context.app.getPlugin('verification') as Plugin;
 
   const { values } = context.action.params;
   const interceptor = plugin.interceptors.get(values?.type);

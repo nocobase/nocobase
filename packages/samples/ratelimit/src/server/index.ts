@@ -2,9 +2,6 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import ratelimit from 'koa-ratelimit';
 
 export class CustomPagePlugin extends Plugin {
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 
   beforeLoad() {
     const db = new Map();
@@ -20,7 +17,7 @@ export class CustomPagePlugin extends Plugin {
           reset: 'Rate-Limit-Reset',
           total: 'Rate-Limit-Total',
         },
-        max: 20,
+        max: 200,
         disableHeader: false,
         whitelist: (ctx) => {
           // some logic that returns a boolean

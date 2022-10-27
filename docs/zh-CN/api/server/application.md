@@ -180,28 +180,9 @@ NocoBase 默认对 context 注入了以下成员，可以在请求处理函数�
 
 ## 事件
 
-
-**示例**
-
-```ts
-app.on('beforeStart', async () => {
-  console.log('app before start');
-});
-```
-
-### beforeLoadAll
-### afterLoadAll
-### beforeLoadPlugin
-### afterLoadPlugin
-### beforeInstallPlugin
-### afterInstallPlugin
-### beforeInstall
-### afterInstall
-### beforeUpgrade
-### afterUpgrade
-### beforeStart
-### afterStart
-### beforeStop
-### afterStop
-### beforeDestroy
-### afterDestroy
+### `'beforeLoad'` / `'afterLoad'`
+### `'beforeInstall'` / `'afterInstall'`
+### `'beforeUpgrade'` / `'afterUpgrade'`
+### `'beforeStart'` / `'afterStart'`
+### `'beforeStop'` / `'afterStop'`
+### `'beforeDestroy'` / `'afterDestroy'`

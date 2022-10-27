@@ -10,7 +10,7 @@ import {
   ModelCtor,
   Op,
   Transactionable,
-  UpdateOptions as SequelizeUpdateOptions
+  UpdateOptions as SequelizeUpdateOptions,
 } from 'sequelize';
 import { WhereOperators } from 'sequelize/types/lib/model';
 import { Collection } from './collection';
@@ -88,6 +88,7 @@ export type Values = any;
 
 export interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'>, Transactionable {
   filter?: Filter;
+  context?: any;
 }
 
 export interface FilterByTk {
@@ -360,6 +361,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         ...options,
         transaction,
       });
+      instance.clearChangedWithAssociations();
     }
 
     return instance;
@@ -424,6 +426,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           ...options,
           transaction,
         });
+        instance.clearChangedWithAssociations();
       }
     }
 
