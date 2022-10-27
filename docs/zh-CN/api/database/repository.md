@@ -285,6 +285,16 @@ await postRepository.update({
 
 ### 删除
 
+可调用 `Repository` 中的 `destroy()`方法进行删除操作。删除时需指定筛选条件：
+
+```javascript
+await userRepository.destroy({
+  filter: {
+    status: "blocked",
+  },
+});
+```
+
 ## 构造函数
 
 通常不会直接由开发者调用，主要通过 `db.registerRepositories()` 注册类型以后，在 `db.colletion()` 的参数中指定对应已注册的仓库类型，并完成实例化。
