@@ -7,7 +7,7 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 export const CalendarBlockContext = createContext<any>({});
 
 const InternalCalendarBlockProvider = (props) => {
-  const { fieldNames } = props;
+  const { fieldNames, showLunar } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   if (service.loading) {
@@ -20,6 +20,7 @@ const InternalCalendarBlockProvider = (props) => {
         service,
         resource,
         fieldNames,
+        showLunar,
       }}
     >
       {props.children}
@@ -49,5 +50,6 @@ export const useCalendarBlockProps = () => {
   }, [ctx?.service?.loading]);
   return {
     fieldNames: ctx.fieldNames,
+    showLunar: ctx.showLunar,
   };
 };
