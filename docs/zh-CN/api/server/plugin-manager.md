@@ -6,16 +6,54 @@
 
 ### `create()`
 
+在本地创建一个插件脚手架
+
+**签名**
+
+```ts
+create(name, options): void;
+```
+
+### `addStatic()`
+
+**签名**
+
+```ts
+addStatic(plugin: any, options?: PluginOptions): Plugin;
+```
+
+**示例**
+
+```ts
+pm.addStatic('nocobase');
+```
+
 ### `add()`
+
+**签名**
+
+```ts
+async add(plugin: any, options?: PluginOptions): Promise<Plugin>;
+async add(plugin: string[], options?: PluginOptions): Promise<Plugin[]>;
+```
+
+**示例**
+
+```ts
+await pm.add(['test'], {
+  builtIn: true,
+  enabled: true,
+});
+```
 
 ### `get()`
 
-### `install()`
-
-### `upgrade()`
+获取插件实例
 
 ### `enable()`
 
 ### `disable()`
 
 ### `remove()`
+
+### `upgrade()`

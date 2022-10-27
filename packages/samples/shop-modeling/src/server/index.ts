@@ -5,11 +5,8 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import SnowflakeField from './fields/SnowflakeField';
 
 export class ShopPlugin extends Plugin {
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 
-  initialize() {
+  afterAdd() {
     this.db.registerFieldTypes({
       snowflake: SnowflakeField
     });

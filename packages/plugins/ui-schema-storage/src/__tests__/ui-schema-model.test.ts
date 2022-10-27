@@ -22,7 +22,7 @@ describe('ui schema model', () => {
     const queryInterface = db.sequelize.getQueryInterface();
     await queryInterface.dropAllTables();
 
-    app.plugin(PluginUiSchema);
+    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
     await app.load();
 

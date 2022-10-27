@@ -56,6 +56,7 @@ interface Resource {
 
 export class MockServer extends Application {
   async loadAndInstall(options: any = {}) {
+    await this.load();
     await this.install({
       ...options,
       sync: {

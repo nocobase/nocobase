@@ -5,9 +5,6 @@ import { resolve } from 'path';
 import { getAccessible } from './actions/getAccessible';
 
 export class UiRoutesStoragePlugin extends Plugin {
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 
   async install() {
     const repository = this.app.db.getRepository('uiRoutes');

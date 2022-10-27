@@ -22,7 +22,7 @@ describe('ui-schema', () => {
 
     await db.sequelize.getQueryInterface().dropAllTables();
 
-    app.plugin(PluginUiSchema);
+    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
     await app.loadAndInstall();
     uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;

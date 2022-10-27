@@ -7,9 +7,6 @@ import zhCN from './locales/zh-CN';
 const ns = '@nocobase/plugin-sample-shop-i18n';
 
 export class ShopPlugin extends Plugin {
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 
   beforeLoad() {
     // TODO
