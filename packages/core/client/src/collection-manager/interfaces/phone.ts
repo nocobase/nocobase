@@ -1,4 +1,4 @@
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 
 export const phone: IField = {
@@ -21,8 +21,10 @@ export const phone: IField = {
       // 'x-validator': 'phone',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    unique,
   },
   filterable: {
     operators: operators.string,

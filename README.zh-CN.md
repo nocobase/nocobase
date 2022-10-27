@@ -1,10 +1,14 @@
-[English](./README.md) | 简体中文
-
+[English](./README.md) | 简体中文 | [Türkçe](./README.tr-TR.md)
+ 
 ![](https://www.nocobase.com/images/demo/11.png)  
 
 **注意:** 📌
 
 NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生产环境。
+
+## 我们在招聘
+
+我们在寻找全职、远程的产品设计、开发、测试的新同事加入团队，如果你对 NocoBase 有强烈的兴趣，欢迎给我们发邮件：hello@nocobase.com
 
 ## NocoBase 是什么
 

@@ -16,6 +16,7 @@ export const time: IField = {
       'x-component': 'TimePicker',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
     'uiSchema.x-component-props.format': {

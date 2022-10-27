@@ -1,11 +1,13 @@
-import { useForm } from '@formily/react';
 import { message } from 'antd';
+import omit from 'lodash/omit';
 import { useEffect } from 'react';
+import { useForm } from '@formily/react';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
 import { useActionContext } from '../schema-component';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
+import { useFilterFieldProps, useFilterFieldOptions } from '../schema-component/antd/filter/useFilterActionProps';
 
 export const useCancelAction = () => {
   const form = useForm();
@@ -110,7 +112,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
     }
     if (nested) {
       const targetFields = getCollectionFields(field.target);
-      const options = getOptions(targetFields, depth+1).filter(Boolean);
+      const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
     }
@@ -257,6 +259,25 @@ export const useBulkDestroyAction = () => {
   };
 };
 
+export const useUpdateCollectionActionAndRefreshCM = (options) => {
+  const { refreshCM } = useCollectionManager();
+  const form = useForm();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource, targetKey } = useResourceContext();
+  const { [targetKey]: filterByTk } = useRecord();
+  return {
+    async run() {
+      await form.submit();
+      await resource.update({ filterByTk, values: omit(form.values, ['fields']) });
+      ctx.setVisible(false);
+      await form.reset();
+      refresh();
+      await refreshCM();
+    },
+  };
+};
+
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
   const result = useRequest(() => Promise.resolve({ data: record }), {
@@ -285,7 +306,7 @@ export const useCreateActionAndRefreshCM = () => {
   const { refreshCM } = useCollectionManager();
   return {
     async run() {
-      await run();      
+      await run();
       await refreshCM();
     },
   };
@@ -317,9 +338,16 @@ export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
   const { refreshCM } = useCollectionManager();
   return {
-    async run() {      
+    async run() {
       await run();
       await refreshCM();
     },
   };
+};
+
+export const useFilterActionProps = () => {
+  const { collection } = useResourceContext();
+  const options = useFilterFieldOptions(collection.fields);
+  const service = useResourceActionContext();
+  return useFilterFieldProps({ options, params: service.params, service });
 };

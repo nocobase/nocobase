@@ -18,6 +18,7 @@ export const textarea: IField = {
       'x-component': 'Input.TextArea',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
   },

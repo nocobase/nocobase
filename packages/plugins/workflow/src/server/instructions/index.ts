@@ -36,9 +36,11 @@ export interface Instruction {
   ): InstructionResult
 }
 
+type InstructionConstructor<T> = { new(p: Plugin): T };
+
 export default function<T extends Instruction>(
   plugin,
-  more: { [key: string]: T | { new(p: Plugin): T } } = {}
+  more: { [key: string]: T | InstructionConstructor<T> } = {}
 ) {
   const { instructions } = plugin;
 
@@ -52,13 +54,14 @@ export default function<T extends Instruction>(
     'create',
     'update',
     'destroy'
-  ].reduce((result, key) => Object.assign(result, { [key]: key }), {});
+  ].reduce((result, key) => Object.assign(result, {
+    [key]: requireModule(path.isAbsolute(key) ? key : path.join(__dirname, key))
+  }), {});
 
-  for (const [name, value] of Object.entries({ ...more, ...natives })) {
-    const instruction = typeof value === 'string'
-      ? requireModule(path.isAbsolute(value) ? value : path.join(__dirname, value))
-      : value;
-
-    instructions.register(name, typeof instruction === 'function' ? new instruction(plugin) : instruction);
+  for (const [name, instruction] of Object.entries({ ...more, ...natives })) {
+    instructions.register(name, typeof instruction === 'function'
+      ? new (instruction as InstructionConstructor<T>)(plugin)
+      : instruction
+    );
   }
 }

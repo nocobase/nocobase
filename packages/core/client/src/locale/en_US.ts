@@ -414,6 +414,7 @@ export default {
   "Use the built-in static file server": "Use the built-in static file server",
   "Local storage": "Local storage",
   "Aliyun OSS": "Aliyun OSS",
+  "Tencent COS": "Tencent COS",
   "Amazon S3": "Amazon S3",
   "Workflow": "Workflow",
   "Execution History": "Execution History",
@@ -556,4 +557,5 @@ export default {
   "View all plugins": "View all plugins",
   "Print": "Print",
   'Single select and radio fields can be used as the grouping field': 'Single select and radio fields can be used as the grouping field',
+  'Sign up successfully, and automatically jump to the sign in page': 'Sign up successfully, and automatically jump to the sign in page',
 }

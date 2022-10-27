@@ -17,13 +17,19 @@ export default defineCollection({
       defaultValue: true,
     },
     {
+      type: 'boolean',
+      name: 'smsAuthEnabled',
+      defaultValue: false,
+    },
+    {
       type: 'belongsTo',
       name: 'logo',
       target: 'attachments',
     },
     {
-      type: 'array',
+      type: 'json',
       name: 'enabledLanguages',
+      defaultValue: [],
     },
     {
       type: 'string',
@@ -31,4 +37,3 @@ export default defineCollection({
     },
   ],
 });
-

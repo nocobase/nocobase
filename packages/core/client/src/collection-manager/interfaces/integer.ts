@@ -1,4 +1,4 @@
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 import { i18n } from '../../i18n';
 import { registerValidateFormats } from '@formily/core';
@@ -30,8 +30,10 @@ export const integer: IField = {
       'x-validator': 'integer',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    unique,
   },
   filterable: {
     operators: operators.number,

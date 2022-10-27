@@ -5,10 +5,11 @@ import {
   ModelIndexesOptions,
   QueryInterfaceOptions,
   SyncOptions,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
+import { checkIdentifier } from '../utils';
 
 export interface FieldContext {
   database: Database;
@@ -53,7 +54,6 @@ export abstract class Field {
     this.init();
   }
 
-  // TODO
   async sync(syncOptions: SyncOptions) {
     await this.collection.sync({
       ...syncOptions,
@@ -179,7 +179,7 @@ export abstract class Field {
   unbind() {
     const { model } = this.context.collection;
     model.removeAttribute(this.name);
-    if (this.options.index) {
+    if (this.options.index || this.options.unique) {
       this.context.collection.removeIndex([this.name]);
     }
   }

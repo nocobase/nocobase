@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 import { i18n } from '../../i18n';
 import { registerValidateFormats, registerValidateRules, registerValidateLocale } from '@formily/core';
@@ -25,7 +25,7 @@ registerValidateRules({
         }
       }
     }
-    
+
     return true;
   },
 
@@ -68,8 +68,10 @@ export const percent: IField = {
       },
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    unique,
     'uiSchema.x-component-props.step': {
       type: 'string',
       title: '{{t("Precision")}}',

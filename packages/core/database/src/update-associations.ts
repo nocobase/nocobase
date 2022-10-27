@@ -6,7 +6,7 @@ import {
   HasOne,
   Hookable,
   ModelCtor,
-  Transactionable,
+  Transactionable
 } from 'sequelize';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
@@ -130,37 +130,44 @@ export async function updateAssociations(instance: Model, values: any, options: 
 
   const keys = Object.keys(values);
 
-  for (const key of Object.keys(modelAssociations(instance))) {
-    if (keys.includes(key)) {
-      await updateAssociation(instance, key, values[key], {
-        ...options,
-        transaction,
-      });
+  try {
+    for (const key of Object.keys(modelAssociations(instance))) {
+      if (keys.includes(key)) {
+        await updateAssociation(instance, key, values[key], {
+          ...options,
+          transaction,
+        });
+      }
     }
-  }
 
-  // update through table values
-  for (const belongsToMany of belongsToManyAssociations(instance)) {
-    // @ts-ignore
-    const throughModel = belongsToMany.through.model;
-    const throughModelName = throughModel.name;
+    // update through table values
+    for (const belongsToMany of belongsToManyAssociations(instance)) {
+      // @ts-ignore
+      const throughModel = belongsToMany.through.model;
+      const throughModelName = throughModel.name;
 
-    if (values[throughModelName] && options.sourceModel) {
-      const where = {
-        [belongsToMany.foreignKey]: instance.get(belongsToMany.sourceKey),
-        [belongsToMany.otherKey]: options.sourceModel.get(belongsToMany.targetKey),
-      };
+      if (values[throughModelName] && options.sourceModel) {
+        const where = {
+          [belongsToMany.foreignKey]: instance.get(belongsToMany.sourceKey),
+          [belongsToMany.otherKey]: options.sourceModel.get(belongsToMany.targetKey),
+        };
 
-      await throughModel.update(values[throughModel.name], {
-        where,
-        context: options.context,
-        transaction,
-      });
+        await throughModel.update(values[throughModel.name], {
+          where,
+          context: options.context,
+          transaction,
+        });
+      }
     }
-  }
 
-  if (newTransaction) {
-    await transaction.commit();
+    if (newTransaction) {
+      await transaction.commit();
+    }
+  } catch (error) {
+    if (newTransaction) {
+      await transaction.rollback();
+    }
+    throw error;
   }
 }
 
@@ -251,7 +258,11 @@ export async function updateSingleAssociation(
     return false;
   }
 
-  const { context, updateAssociationValues = [], transaction = await model.sequelize.transaction() } = options;
+  if (Array.isArray(value)) {
+    throw new Error(`The value of '${key}' cannot be in array format`);
+  }
+
+  const { context, updateAssociationValues = [], transaction } = options;
   const keys = getKeysByPrefix(updateAssociationValues, key);
 
   try {
@@ -261,9 +272,6 @@ export async function updateSingleAssociation(
     const removeAssociation = async () => {
       await model[setAccessor](null, { transaction });
       model.setDataValue(key, null);
-      if (!options.transaction) {
-        await transaction.commit();
-      }
       return true;
     };
 
@@ -273,19 +281,12 @@ export async function updateSingleAssociation(
 
     if (isStringOrNumber(value)) {
       await model[setAccessor](value, { context, transaction });
-      if (!options.transaction) {
-        await transaction.commit();
-      }
       return true;
     }
 
     if (value instanceof Model) {
       await model[setAccessor](value, { context, transaction });
       model.setDataValue(key, value);
-
-      if (!options.transaction) {
-        await transaction.commit();
-      }
       return true;
     }
 
@@ -323,9 +324,6 @@ export async function updateSingleAssociation(
           updateAssociationValues: keys,
         });
         model.setDataValue(key, instance);
-        if (!options.transaction) {
-          await transaction.commit();
-        }
         return true;
       }
     }
@@ -342,13 +340,7 @@ export async function updateSingleAssociation(
     if (association.targetKey) {
       model.setDataValue(association.foreignKey, instance[dataKey]);
     }
-    if (!options.transaction) {
-      await transaction.commit();
-    }
   } catch (error) {
-    if (!options.transaction) {
-      await transaction.rollback();
-    }
     throw error;
   }
 }
@@ -376,7 +368,7 @@ export async function updateMultipleAssociation(
     return false;
   }
 
-  const { context, updateAssociationValues = [], transaction = await model.sequelize.transaction() } = options;
+  const { context, updateAssociationValues = [], transaction } = options;
   const keys = getKeysByPrefix(updateAssociationValues, key);
 
   try {
@@ -467,11 +459,7 @@ export async function updateMultipleAssociation(
     }
 
     model.setDataValue(key, list1.concat(list3));
-    if (!options.transaction) {
-      await transaction.commit();
-    }
   } catch (error) {
-    await transaction.rollback();
     throw error;
   }
 }

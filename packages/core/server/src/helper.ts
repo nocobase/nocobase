@@ -51,11 +51,17 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
       return ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
     };
     ctx.db = app.db;
+    ctx.cache = app.cache;
     ctx.resourcer = app.resourcer;
     const i18n = app.i18n.cloneInstance({ initImmediate: false });
     ctx.i18n = i18n;
     ctx.t = i18n.t.bind(i18n);
-    const lng = ctx.get('X-Locale') || (ctx.request.query.locale as string) || ctx.acceptsLanguages().shift() || 'en-US';
+    const lng =
+      ctx.get('X-Locale') ||
+      (ctx.request.query.locale as string) ||
+      app.i18n.language ||
+      ctx.acceptsLanguages().shift() ||
+      'en-US';
     if (lng !== '*' && lng) {
       i18n.changeLanguage(lng);
     }
@@ -66,6 +72,6 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     app.use(dataWrapping());
   }
 
-  app.use(table2resource());
+  app.use(table2resource);
   app.use(app.resourcer.restApiMiddleware());
 }

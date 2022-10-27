@@ -94,7 +94,7 @@ export class Auth {
     this.api.storage.setItem('NOCOBASE_TOKEN', token || '');
     if (!token) {
       this.setRole(null);
-      this.setLocale(null);
+      // this.setLocale(null);
     }
   }
 
@@ -107,11 +107,14 @@ export class Auth {
     this.api.storage.setItem('NOCOBASE_ROLE', role || '');
   }
 
-  async signIn(values): Promise<AxiosResponse<any>> {
+  async signIn(values, authenticator: string = 'password'): Promise<AxiosResponse<any>> {
     const response = await this.api.request({
       method: 'post',
       url: 'users:signin',
       data: values,
+      params: {
+        authenticator
+      }
     });
     const data = response?.data?.data;
     this.setToken(data?.token);

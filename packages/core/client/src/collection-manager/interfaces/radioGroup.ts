@@ -17,6 +17,7 @@ export const radioGroup: IField = {
       'x-component': 'Radio.Group',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
     'uiSchema.enum': dataSource,

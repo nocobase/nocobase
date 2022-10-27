@@ -1,12 +1,17 @@
-import { Plugin } from '@nocobase/server';
-import lodash from 'lodash';
 import path from 'path';
+
+import lodash from 'lodash';
+import { UniqueConstraintError } from 'sequelize';
+
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
+import { Plugin } from '@nocobase/server';
+
 import { CollectionRepository } from '.';
 import {
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
 
@@ -36,7 +41,12 @@ export class CollectionManagerPlugin extends Plugin {
         lodash.get(newValue, 'reverseField') &&
         !lodash.get(newValue, 'reverseField.key')
       ) {
-        throw new Error('cant update field without a reverseField key');
+        const field = await this.app.db
+          .getModel('fields')
+          .findByPk(model.get('reverseKey'), { transaction: options.transaction });
+        if (field) {
+          throw new Error('cant update field without a reverseField key');
+        }
       }
     });
 
@@ -50,27 +60,56 @@ export class CollectionManagerPlugin extends Plugin {
         database: this.app.db,
       });
     });
+
     for (const key in beforeInitOptions) {
       if (Object.prototype.hasOwnProperty.call(beforeInitOptions, key)) {
         const fn = beforeInitOptions[key];
         this.app.db.on(`fields.${key}.beforeInitOptions`, fn);
       }
     }
+
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
     this.app.db.on('collections.afterCreateWithAssociations', async (model, { context, transaction }) => {
       if (context) {
-        await model.migrate({ transaction });
+        await model.migrate({
+          isNew: true,
+          transaction,
+        });
       }
     });
 
-    this.app.db.on('fields.afterCreate', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
       if (context) {
-        await model.migrate({ transaction });
+        await model.migrate({
+          isNew: true,
+          transaction,
+        });
       }
     });
 
-    this.app.db.on('fields.afterCreateWithAssociations', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
+      const prevOptions = model.previous('options');
+      const currentOptions = model.get('options');
+
+      if (context) {
+        const prev = prevOptions['unique'];
+        const next = currentOptions['unique'];
+
+        if (Boolean(prev) !== Boolean(next)) {
+          await model.migrate({ transaction });
+        }
+      }
+
+      const prevDefaultValue = prevOptions['defaultValue'];
+      const currentDefaultValue = currentOptions['defaultValue'];
+
+      if (prevDefaultValue != currentDefaultValue) {
+        await model.syncDefaultValue({ transaction, defaultValue: currentDefaultValue });
+      }
+    });
+
+    this.app.db.on('fields.afterSaveWithAssociations', async (model, { context, transaction }) => {
       if (context) {
         await model.load({ transaction });
       }
@@ -162,6 +201,16 @@ export class CollectionManagerPlugin extends Plugin {
     await this.app.db.import({
       directory: path.resolve(__dirname, './collections'),
     });
+
+    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('@nocobase/plugin-error-handler');
+    errorHandlerPlugin.errorHandler.register(
+      (err) => {
+        return err instanceof UniqueConstraintError;
+      },
+      (err, ctx) => {
+        return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
+      },
+    );
   }
 
   getName(): string {

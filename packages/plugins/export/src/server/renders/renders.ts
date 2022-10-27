@@ -1,4 +1,4 @@
-import moment from 'moment';
+import { getDefaultFormat, str2moment, toFixedByStep } from '@nocobase/utils';
 
 export async function _(field, row, ctx, column?: any) {
   if (column?.dataIndex.length > 1) {
@@ -33,12 +33,20 @@ export async function _(field, row, ctx, column?: any) {
 
 export async function datetime(field, row, ctx) {
   const value = row.get(field.name);
-  return moment(value).format(field.showTime ? `${field.dateFormat} ${field.timeFormat}` : field.dateFormat);
+  if (!value) {
+    return '';
+  }
+  const utcOffset = ctx.get('X-Timezone');
+  const props = field.options?.uiSchema?.['x-component-props'] ?? {};
+  const format = getDefaultFormat(props);
+  const m = str2moment(value, { ...props, utcOffset });
+  return m ? m.format(format) : '';
 }
 
 export async function percent(field, row, ctx) {
   const value = row.get(field.name);
-  return value && `${value}%`;
+  const step = field.options?.uiSchema?.['x-component-props']?.['step'] ?? 0;
+  return value && `${toFixedByStep(value * 100, step)}%`;
 }
 
 export async function boolean(field, row, ctx, column?: any) {

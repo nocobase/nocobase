@@ -1,62 +1,142 @@
 import React from "react";
-import { observer, useForm } from "@formily/react";
-import { Button, Cascader, Dropdown, Input, InputNumber, Menu, Select, Form } from "antd";
+import { Cascader, Input, InputNumber, Select } from "antd";
 import { css } from "@emotion/css";
-import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
-import { SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
+import { useCompile } from "@nocobase/client";
 
 import { instructions, useNodeContext } from "./nodes";
 import { useFlowContext } from "./WorkflowCanvas";
 import { triggers } from "./triggers";
 import { useTranslation } from "react-i18next";
+import { Registry } from "@nocobase/utils/client";
 
 function NullRender() {
   return null;
 }
 
-export const calculators = [
+interface Calculator {
+  name: string;
+  type: 'boolean' | 'number' | 'string' | 'date' | 'unknown' | 'null' | 'array';
+  group: string;
+}
+
+export const calculators = new Registry<Calculator>();
+
+calculators.register('equal', {
+  name: '=',
+  type: 'boolean',
+  group: 'boolean',
+});
+calculators.register('notEqual', {
+  name: '≠',
+  type: 'boolean',
+  group: 'boolean',
+});
+calculators.register('gt', {
+  name: '>',
+  type: 'boolean',
+  group: 'boolean',
+});
+calculators.register('gte', {
+  name: '≥',
+  type: 'boolean',
+  group: 'boolean',
+});
+calculators.register('lt', {
+  name: '<',
+  type: 'boolean',
+  group: 'boolean',
+});
+calculators.register('lte', {
+  name: '≤',
+  type: 'boolean',
+  group: 'boolean',
+});
+
+calculators.register('add', {
+  name: '+',
+  type: 'number',
+  group: 'number',
+});
+calculators.register('minus', {
+  name: '-',
+  type: 'number',
+  group: 'number',
+});
+calculators.register('multiple', {
+  name: '*',
+  type: 'number',
+  group: 'number',
+});
+calculators.register('divide', {
+  name: '/',
+  type: 'number',
+  group: 'number',
+});
+calculators.register('mod', {
+  name: '%',
+  type: 'number',
+  group: 'number',
+});
+
+calculators.register('includes', {
+  name: '{{t("contains")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('notIncludes', {
+  name: '{{t("does not contain")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('startsWith', {
+  name: '{{t("starts with")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('notStartsWith', {
+  name: '{{t("not starts with")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('endsWith', {
+  name: '{{t("ends with")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('notEndsWith', {
+  name: '{{t("not ends with")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('concat', {
+  name: '{{t("concat")}}',
+  type: 'string',
+  group: 'string'
+});
+
+const calculatorGroups = [
   {
     value: 'boolean',
-    title: '{{t("Comparison")}}',
-    children: [
-      { value: 'equal', name: '=' },
-      { value: 'notEqual', name: '≠' },
-      { value: 'gt', name: '>' },
-      { value: 'gte', name: '≥' },
-      { value: 'lt', name: '<' },
-      { value: 'lte', name: '≤' }
-    ]
+    title: '{{t("Comparison")}}'
   },
   {
     value: 'number',
-    title: '{{t("Arithmetic calculation")}}',
-    children: [
-      { value: 'add', name: '+' },
-      { value: 'minus', name: '-' },
-      { value: 'multiple', name: '*' },
-      { value: 'divide', name: '/' },
-      { value: 'mod', name: '%' },
-    ]
+    title: '{{t("Arithmetic calculation")}}'
   },
   {
     value: 'string',
-    title: '{{t("String operation")}}',
-    children: [
-      { value: 'includes', name: '{{t("contains")}}' },
-      { value: 'notIncludes', name: '{{t("does not contain")}}' },
-      { value: 'startsWith', name: '{{t("starts with")}}' },
-      { value: 'notStartsWith', name: '{{t("not starts with")}}' },
-      { value: 'endsWith', name: '{{t("ends with")}}' },
-      { value: 'notEndsWith', name: '{{t("not ends with")}}' }
-    ]
+    title: '{{t("String operation")}}'
   },
   {
     value: 'date',
-    title: '{{t("Date")}}',
-    children: []
+    title: '{{t("Date")}}'
   }
 ];
+
+function getGroupCalculators(group) {
+  return Array.from(calculators.getEntities()).filter(([key, value]) => value.group  === group);
+}
 
 const JT_VALUE_RE = /^\s*\{\{([\s\S]*)\}\}\s*$/;
 
@@ -320,10 +400,10 @@ export function Calculation({ calculator, operands = [], onChange }) {
                 onChange={v => onChange({ operands, calculator: v })}
                 placeholder={t('Calculator')}
               >
-                {calculators.map(group => (
+                {calculatorGroups.map(group => (
                   <Select.OptGroup key={group.value} label={compile(group.title)}>
-                    {group.children.map(item => (
-                      <Select.Option key={item.value} value={item.value}>{compile(item.name)}</Select.Option>
+                    {getGroupCalculators(group.value).map(([value, { name }]) => (
+                      <Select.Option key={value} value={value}>{compile(name)}</Select.Option>
                     ))}
                   </Select.OptGroup>
                 ))}
@@ -369,109 +449,3 @@ export function VariableComponent({ value, onChange, renderSchemaComponent }) {
     </VariableTypesContext.Provider>
   );
 }
-
-// NOTE: observer for watching useProps
-export const CollectionFieldset = observer(({ value, onChange }: any) => {
-  const { t } = useTranslation();
-  const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
-  const { values: data } = useForm();
-  const fields = getCollectionFields(data?.config?.collection)
-    .filter(field => (
-      !field.hidden
-      && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false)
-    ));
-
-  const VTypes = {
-    ...VariableTypes,
-    constant: {
-      title: '{{t("Constant")}}',
-      value: 'constant',
-      options: undefined
-    }
-  };
-
-  return (
-    <fieldset className={css`
-      margin-top: .5em;
-
-      > .ant-formily-item{
-        flex-direction: column;
-
-        > .ant-formily-item-label{
-          line-height: 32px;
-        }
-      }
-    `}>
-      {fields.length
-        ? (
-          <>
-          {fields
-            .filter(field => field.name in value)
-            .map(field => {
-              const operand = typeof value[field.name] === 'string'
-                ? parseStringValue(value[field.name], VTypes)
-                : { type: 'constant', value: value[field.name] };
-
-              // TODO: try to use <ObjectField> to replace this map
-              return (
-                <Form.Item key={field.name} label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left" className={css`
-                  .ant-form-item-control-input-content{
-                    display: flex;
-                  }
-                `}>
-                  <VariableTypesContext.Provider value={VTypes}>
-                    <Operand
-                      value={operand}
-                      onChange={(next) => {
-                        if (next.type !== operand.type && next.type === 'constant') {
-                          onChange({ ...value, [field.name]: null });
-                        } else {
-                          const { stringify } = VTypes[next.type];
-                          onChange({ ...value, [field.name]: stringify(next) });
-                        }
-                      }}
-                    >
-                      {operand.type === 'constant'
-                        ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
-                        : null
-                      }
-                    </Operand>
-                    <Button
-                      type="link"
-                      icon={<CloseCircleOutlined />}
-                      onClick={() => {
-                        const { [field.name]: _, ...rest } = value;
-                        onChange(rest);
-                      }}
-                    />
-                  </VariableTypesContext.Provider>
-                </Form.Item>
-              );
-            })}
-            {Object.keys(value).length < fields.length
-              ? (
-                <Dropdown overlay={
-                  <Menu onClick={({ key }) => onChange({ ...value, [key]: null })} className={css`
-                    max-height: 300px;
-                    overflow-y: auto;
-                  `}>
-                    {fields
-                      .filter(field => !(field.name in value))
-                      .map(field => (
-                        <Menu.Item key={field.name}>{compile(field.uiSchema?.title ?? field.name)}</Menu.Item>
-                      ))}
-                  </Menu>
-                }>
-                  <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
-                </Dropdown>
-              )
-              : null
-            }
-          </>
-        )
-        : <p>{t('Please select collection first')}</p>
-      }
-    </fieldset>
-  );
-});

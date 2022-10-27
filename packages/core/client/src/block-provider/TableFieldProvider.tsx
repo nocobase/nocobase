@@ -11,13 +11,14 @@ export const TableFieldContext = createContext<any>({});
 const InternalTableFieldProvider = (props) => {
   const { params = {}, showIndex, dragSort, fieldName } = props;
   const field = useField();
+  const fieldSchema = useFieldSchema();
   const { resource, service } = useBlockRequestContext();
 
   const formBlockCtx = useFormBlockContext();
   const formFieldCtx = useFormFieldContext();
 
-  const fullFieldName = formFieldCtx && formFieldCtx.fieldName  ? `${formFieldCtx.fieldName}.${fieldName}` : fieldName;
-  
+  const fullFieldName = formFieldCtx && formFieldCtx.fieldName ? `${formFieldCtx.fieldName}.${fieldName}` : fieldName;
+
   if (!formBlockCtx?.updateAssociationValues?.includes(fullFieldName)) {
     formBlockCtx?.updateAssociationValues?.push(fullFieldName);
   }
@@ -28,6 +29,7 @@ const InternalTableFieldProvider = (props) => {
     <TableFieldContext.Provider
       value={{
         field,
+        fieldSchema,
         service,
         resource,
         params,
@@ -151,6 +153,7 @@ export const useTableFieldProps = () => {
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort,
     pagination: false,
+    required: ctx?.fieldSchema?.parent?.required,
     rowKey: (record: any) => {
       return field.value?.indexOf?.(record);
     },

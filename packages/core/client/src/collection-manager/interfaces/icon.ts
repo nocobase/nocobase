@@ -16,6 +16,7 @@ export const icon: IField = {
       'x-component': 'IconPicker',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
   },

@@ -3,7 +3,7 @@ import { registerActions } from '@nocobase/actions';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
-import { Command, CommandOptions } from 'commander';
+import { Command, CommandOptions, ParseOptions } from 'commander';
 import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa from 'koa';
@@ -15,6 +15,7 @@ import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { createCache, ICacheConfig, Cache } from '@nocobase/cache';
 
 const packageJson = require('../package.json');
 
@@ -27,6 +28,7 @@ export interface ResourcerOptions {
 
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
+  cache?: ICacheConfig | ICacheConfig[];
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;
@@ -38,12 +40,15 @@ export interface ApplicationOptions {
 
 export interface DefaultState {
   currentUser?: any;
+
   [key: string]: any;
 }
 
 export interface DefaultContext {
   db: Database;
+  cache: Cache;
   resourcer: Resourcer;
+
   [key: string]: any;
 }
 
@@ -121,7 +126,7 @@ export class ApplicationVersion {
       if (!version) {
         return true;
       }
-      return semver.satisfies(version, range);
+      return semver.satisfies(version, range, { includePrerelease: true });
     }
     return true;
   }
@@ -129,6 +134,8 @@ export class ApplicationVersion {
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   public readonly db: Database;
+
+  public readonly cache: Cache;
 
   public readonly resourcer: Resourcer;
 
@@ -153,6 +160,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.acl = createACL();
     this.db = this.createDatabase(options);
+    this.cache = createCache(options.cache);
     this.resourcer = createResourcer(options);
     this.cli = new Command('nocobase').usage('[command] [options]');
     this.i18n = createI18n(options);
@@ -247,8 +255,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async parse(argv = process.argv) {
+    return this.runAsCLI(argv);
+  }
+
+  async runAsCLI(argv?: readonly string[], options?: ParseOptions) {
     await this.load();
-    return this.cli.parseAsync(argv);
+    return this.cli.parseAsync(argv, options);
   }
 
   async start(options: StartOptions = {}) {
@@ -327,13 +339,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('beforeInstall', this, options);
 
     const r = await this.db.version.satisfies({
-      mysql: '8.x',
+      mysql: '>=8.0.17',
       sqlite: '3.x',
       postgres: '>=10',
     });
 
     if (!r) {
-      console.log('The database only supports MySQL 8.x, SQLite 3.x and PostgreSQL 10+');
+      console.log('The database only supports MySQL 8.0.17 and above, SQLite 3.x and PostgreSQL 10+');
       return;
     }
 

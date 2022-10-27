@@ -10,9 +10,6 @@ export class MockDatabase extends Database {
       dialect: 'sqlite',
       ...options,
     });
-    this.sequelize.beforeDefine((model, opts) => {
-      opts.tableName = `${this.getTablePrefix()}${opts.tableName || opts.modelName || opts.name.plural}`;
-    });
   }
 }
 
@@ -23,7 +20,7 @@ export function getConfigByEnv() {
     database: process.env.DB_DATABASE,
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
-    dialect: process.env.DB_DIALECT,
+    dialect: process.env.DB_DIALECT || 'sqlite',
     logging: process.env.DB_LOGGING === 'on' ? console.log : false,
     storage:
       process.env.DB_STORAGE && process.env.DB_STORAGE !== ':memory:'

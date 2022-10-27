@@ -7,7 +7,7 @@ import FilterParser from '../filter-parser';
 import { Model } from '../model';
 import { OptionsParser } from '../options-parser';
 import { CreateOptions, Filter, FindOptions } from '../repository';
-import { transactionWrapperBuilder } from '../transaction-decorator';
+import { transactionWrapperBuilder } from '../decorators/transaction-decorator';
 import { updateAssociations } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 
@@ -54,6 +54,10 @@ export abstract class RelationRepository {
 
   @transaction()
   async create(options?: CreateOptions): Promise<any> {
+    if (Array.isArray(options.values)) {
+      return Promise.all(options.values.map((record) => this.create({ ...options, values: record })));
+    }
+
     const createAccessor = this.accessors().create;
 
     const guard = UpdateGuard.fromOptions(this.targetModel, options);

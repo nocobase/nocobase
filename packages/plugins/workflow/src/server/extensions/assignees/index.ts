@@ -201,8 +201,8 @@ export default async function(plugin: Plugin) {
   //   directory: path.join(__dirname, './collections')
   // });
   plugin.db.collection(requireModule(path.join(__dirname, './collections/users_jobs')));
-  plugin.db.collection(requireModule(path.join(__dirname, './collections/users')));
-  plugin.db.collection(requireModule(path.join(__dirname, './collections/jobs')));
+  plugin.db.extendCollection(requireModule(path.join(__dirname, './collections/users')));
+  plugin.db.extendCollection(requireModule(path.join(__dirname, './collections/jobs')));
 
   plugin.app.actions({
     'users_jobs:submit': submit

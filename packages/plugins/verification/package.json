@@ -1,0 +1,25 @@
+{
+  "name": "@nocobase/plugin-verification",
+  "version": "0.7.7-alpha.1",
+  "main": "lib/index.js",
+  "license": "Apache-2.0",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
+  "dependencies": {
+    "@alicloud/dysmsapi20170525": "2.0.17",
+    "@alicloud/openapi-client": "0.4.1",
+    "@alicloud/tea-util": "1.4.4",
+    "@nocobase/actions": "0.7.7-alpha.1",
+    "@nocobase/resourcer": "0.7.7-alpha.1",
+    "@nocobase/server": "0.7.7-alpha.1",
+    "@nocobase/utils": "0.7.7-alpha.1"
+  },
+  "devDependencies": {
+    "@nocobase/test": "0.7.7-alpha.1"
+  },
+  "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
+}

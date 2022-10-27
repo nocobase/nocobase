@@ -1,3 +1,4 @@
+import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import React, { useEffect } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
@@ -8,7 +9,7 @@ import { ActionBar } from '../action';
 export const TableField: any = observer((props) => {
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
-  const field = useField();
+  const field = useField<Field>();
   const collectionField = getField(fieldSchema.name);
   const compile = useCompile();
   const ctx = useFormBlockContext();
@@ -21,6 +22,9 @@ export const TableField: any = observer((props) => {
       ctx.field.added.add(fieldSchema.name);
     }
   }, []);
+  useEffect(() => {
+    field.decoratorProps.asterisk = fieldSchema.required;
+  }, [fieldSchema.required]);
   return <div>{props.children}</div>;
 });
 

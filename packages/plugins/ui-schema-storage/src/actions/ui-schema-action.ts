@@ -1,10 +1,12 @@
 import { Context } from '@nocobase/actions';
 import { ActionParams } from '@nocobase/resourcer';
 import lodash from 'lodash';
-import UiSchemaRepository from '../repository';
+import UiSchemaRepository, { GetJsonSchemaOptions, GetPropertiesOptions } from '../repository';
 
 const getRepositoryFromCtx = (ctx: Context) => {
-  return ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;
+  const repo = ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;
+  repo.setCache(ctx.cache);
+  return repo;
 };
 
 const callRepositoryMethod = (method, paramsKey: 'resourceIndex' | 'values', optionsBuilder?) => {
@@ -33,16 +35,26 @@ function parseInsertAdjacentValues(values) {
 
 export const uiSchemaActions = {
   getJsonSchema: callRepositoryMethod('getJsonSchema', 'resourceIndex', (params: ActionParams) => {
+    const includeAsyncNode = params?.includeAsyncNode;
     return {
-      includeAsyncNode: params?.includeAsyncNode,
-    };
+      readFromCache: !includeAsyncNode,
+      includeAsyncNode,
+    } as GetJsonSchemaOptions;
   }),
 
-  getProperties: callRepositoryMethod('getProperties', 'resourceIndex'),
+  getProperties: callRepositoryMethod(
+    'getProperties',
+    'resourceIndex',
+    () =>
+      ({
+        readFromCache: true,
+      } as GetPropertiesOptions),
+  ),
   insert: callRepositoryMethod('insert', 'values'),
   insertNewSchema: callRepositoryMethod('insertNewSchema', 'values'),
   remove: callRepositoryMethod('remove', 'resourceIndex'),
   patch: callRepositoryMethod('patch', 'values'),
+  batchPatch: callRepositoryMethod('batchPatch', 'values'),
   clearAncestor: callRepositoryMethod('clearAncestor', 'resourceIndex'),
 
   async insertAdjacent(ctx: Context, next) {
@@ -77,7 +89,7 @@ export const uiSchemaActions = {
         },
         transaction,
       });
-      await db.getRepository<UiSchemaRepository>('uiSchemas').clearAncestor(filterByTk, { transaction });
+      await getRepositoryFromCtx(ctx).clearAncestor(filterByTk, { transaction });
       ctx.body = {
         result: 'ok',
       };

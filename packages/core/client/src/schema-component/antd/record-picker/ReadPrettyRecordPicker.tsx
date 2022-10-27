@@ -10,10 +10,12 @@ import { useCompile } from '../../hooks';
 import { ActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { useFieldNames } from './useFieldNames';
+import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
 }
+
 export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const { ellipsis } = props;
   const fieldSchema = useFieldSchema();
@@ -27,10 +29,13 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
   const [record, setRecord] = useState({});
   const compile = useCompile();
+  const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
 
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
   const renderRecords = () =>
     toArr(field.value).map((record, index, arr) => {
+      const val =
+        compile(record?.[fieldNames?.label || 'label']) || record?.[fieldNames?.value || 'value'] || record?.id;
       return (
         <Fragment key={`${record.id}_${index}`}>
           <span>
@@ -43,10 +48,10 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
                 ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
               }}
             >
-              {compile(record?.[fieldNames?.label || 'label']) || record?.[fieldNames?.value || 'value'] || record?.id}
+              {getLabelFormatValue(labelUiSchema, val)}
             </a>
           </span>
-          {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>, </span> : null}
+          {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
         </Fragment>
       );
     });

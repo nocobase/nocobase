@@ -128,7 +128,7 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  async trigger(workflow: WorkflowModel, context: Object, options: Transactionable = {}): Promise<ExecutionModel | null> {
+  async trigger(workflow: WorkflowModel, context: Object, options: Transactionable & { context?: any } = {}): Promise<ExecutionModel | null> {
     // `null` means not to trigger
     if (context === null) {
       return null;
@@ -163,6 +163,8 @@ export default class WorkflowPlugin extends Plugin {
       transaction: transaction.id
     }, { transaction });
 
+    console.log('workflow triggered:', new Date(), workflow.id, execution.id);
+
     const executed = await workflow.countExecutions({ transaction });
 
     // NOTE: not to trigger afterUpdate hook here
@@ -186,7 +188,7 @@ export default class WorkflowPlugin extends Plugin {
 
     execution.workflow = workflow;
 
-    const processor = this.createProcessor(execution, { transaction });
+    const processor = this.createProcessor(execution, { transaction, _context: options.context });
 
     await processor.start();
 

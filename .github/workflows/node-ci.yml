@@ -1,6 +1,6 @@
 name: Nocobase test
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   test:
@@ -40,7 +40,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
-      - run: yarn build
+      # - run: yarn build
       - name: Test with postgres
         run: yarn test
         env:

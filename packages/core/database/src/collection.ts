@@ -7,12 +7,13 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
+import { checkIdentifier, md5 } from './utils';
 
 export type RepositoryType = typeof Repository;
 
@@ -66,13 +67,20 @@ export class Collection<
 
   constructor(options: CollectionOptions, context?: CollectionContext) {
     super();
+    this.checkOptions(options);
+
     this.context = context;
     this.options = options;
+
     this.bindFieldEventListener();
     this.modelInit();
     this.setFields(options.fields);
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
+  }
+
+  private checkOptions(options: CollectionOptions) {
+    checkIdentifier(options.name);
   }
 
   private sequelizeModelOptions() {
@@ -134,10 +142,8 @@ export class Collection<
   }
 
   private bindFieldEventListener() {
-    this.on('field.afterAdd', (field: Field) => {
-      field.bind();
-    });
-    this.on('field.afterRemove', (field) => field.unbind());
+    this.on('field.afterAdd', (field: Field) => field.bind());
+    this.on('field.afterRemove', (field: Field) => field.unbind());
   }
 
   forEachField(callback: (field: Field) => void) {
@@ -161,6 +167,8 @@ export class Collection<
   }
 
   setField(name: string, options: FieldOptions): Field {
+    checkIdentifier(name);
+
     const { database } = this.context;
 
     const field = database.buildField(
@@ -170,6 +178,7 @@ export class Collection<
         collection: this,
       },
     );
+
     this.removeField(name);
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
@@ -217,7 +226,7 @@ export class Collection<
     return this.db.collectionExistsInDb(this.name, options);
   }
 
-  removeField(name) {
+  removeField(name: string): void | Field {
     if (!this.fields.has(name)) {
       return;
     }
@@ -285,7 +294,7 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
-  addIndex(index: any) {
+  addIndex(index: string | string[] | { fields: string[]; unique?: boolean; [key: string]: any }) {
     if (!index) {
       return;
     }
@@ -331,7 +340,13 @@ export class Collection<
     // @ts-ignore
     this.model._indexes = this.model.options.indexes
       // @ts-ignore
-      .map((index) => Utils.nameIndex(this.model._conformIndex(index), tableName));
+      .map((index) => Utils.nameIndex(this.model._conformIndex(index), tableName))
+      .map((item) => {
+        if (item.name && item.name.length > 63) {
+          item.name = 'i_' + md5(item.name);
+        }
+        return item;
+      });
   }
 
   removeIndex(fields: any) {
@@ -347,22 +362,22 @@ export class Collection<
   }
 
   async sync(syncOptions?: SyncOptions) {
-    const modelNames = [this.model.name];
+    const modelNames = new Set([this.model.name]);
 
-    const associations = this.model.associations;
+    const { associations } = this.model;
 
     for (const associationKey in associations) {
       const association = associations[associationKey];
-      modelNames.push(association.target.name);
+      modelNames.add(association.target.name);
       if ((<any>association).through) {
-        modelNames.push((<any>association).through.model.name);
+        modelNames.add((<any>association).through.model.name);
       }
     }
 
     const models: ModelCtor<Model>[] = [];
     // @ts-ignore
     this.context.database.sequelize.modelManager.forEachModel((model) => {
-      if (modelNames.includes(model.name)) {
+      if (modelNames.has(model.name)) {
         models.push(model);
       }
     });

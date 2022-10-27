@@ -203,6 +203,26 @@ describe('has many repository', () => {
     expect(post.userId).toEqual(u1.id);
   });
 
+  test('create with array', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+    const posts = await UserPostRepository.create({
+      values: [
+        {
+          title: 't1',
+        },
+        {
+          title: 't2',
+        },
+      ],
+    });
+
+    expect(posts.length).toEqual(2);
+  });
+
   test('update', async () => {
     const u1 = await User.repository.create({
       values: { name: 'u1' },

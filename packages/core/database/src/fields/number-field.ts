@@ -11,6 +11,16 @@ export interface IntegerFieldOptions extends BaseColumnFieldOptions {
   type: 'integer';
 }
 
+export class BigIntField extends Field {
+  get dataType() {
+    return DataTypes.BIGINT;
+  }
+}
+
+export interface BigIntFieldOptions extends BaseColumnFieldOptions {
+  type: 'bigInt';
+}
+
 export class FloatField extends Field {
   get dataType() {
     return DataTypes.FLOAT;

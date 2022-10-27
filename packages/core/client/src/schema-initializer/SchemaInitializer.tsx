@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
 import { Icon } from '../icon';
 import { useCompile, useDesignable } from '../schema-component/hooks';
+import './style.less';
 import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
@@ -17,6 +18,8 @@ const defaultWrap = (s: ISchema) => s;
 export const SchemaInitializerItemContext = createContext(null);
 
 export const SchemaInitializer = () => null;
+
+const menuItemGroupCss = 'nb-menu-item-group';
 
 SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
   const {
@@ -84,7 +87,11 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       if (item.type === 'subMenu') {
         return (
           !!item.children?.length && (
-            <Menu.SubMenu key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+            <Menu.SubMenu
+              key={item.key || `item-group-${indexA}`}
+              title={compile(item.title)}
+              popupClassName={menuItemGroupCss}
+            >
               {renderItems(item.children)}
             </Menu.SubMenu>
           )
@@ -158,6 +165,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
               eventKey={item.key || `item-group-${indexA}`}
               key={item.key || `item-group-${indexA}`}
               title={compile(item.title)}
+              className={menuItemGroupCss}
             >
               {renderMenuItem(item.children)}
             </Menu.ItemGroup>

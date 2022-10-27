@@ -1,4 +1,4 @@
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 
 export const email: IField = {
@@ -18,8 +18,10 @@ export const email: IField = {
       'x-validator': 'email',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    unique,
   },
   filterable: {
     operators: operators.string,

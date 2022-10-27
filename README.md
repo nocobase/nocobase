@@ -1,10 +1,14 @@
-English | [中文](./README.zh-CN.md)
-
+English | [中文](./README.zh-CN.md) | [Türkçe](./README.tr-TR.md)
+ 
 ![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
 
 **Note:** 📌
 
 NocoBase is in early stage of development and is subject to frequent changes, please use caution in production environments.
+
+## We are hiring
+
+We are looking for full-time, remote product design and development colleagues to join the team. If you have a strong interest in NocoBase, please feel free to email us at hello@nocobase.com.
 
 ## What is NocoBase
 

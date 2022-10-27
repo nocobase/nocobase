@@ -42,6 +42,19 @@ export default {
       },
     },
     {
+      interface: 'phone',
+      type: 'string',
+      name: 'phone',
+      unique: true,
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Phone")}}',
+        'x-component': 'Input',
+        'x-validator': 'phone',
+        require: true,
+      },
+    },
+    {
       interface: 'password',
       type: 'password',
       name: 'password',

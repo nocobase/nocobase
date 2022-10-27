@@ -7,7 +7,7 @@ export default {
   timestamps: false,
   sortable: {
     name: 'sort',
-    scopeKey: 'parentKey',
+    scopeKey: 'collectionName',
   },
   indexes: [
     {

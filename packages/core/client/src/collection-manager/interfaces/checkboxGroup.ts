@@ -17,6 +17,7 @@ export const checkboxGroup: IField = {
       'x-component': 'Checkbox.Group',
     },
   },
+  hasDefaultValue: true,
   properties: {
     ...defaultProps,
     'uiSchema.enum': dataSource,

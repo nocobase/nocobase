@@ -8,7 +8,6 @@ import { APIClient, APIClientProvider } from '../api-client';
 import { BlockSchemaComponentProvider } from '../block-provider';
 import { CollectionManagerShortcut } from '../collection-manager';
 import { RemoteDocumentTitleProvider } from '../document-title';
-import { FileStorageShortcut } from '../file-manager';
 import { i18n } from '../i18n';
 import { PluginManagerProvider } from '../plugin-manager';
 import {
@@ -37,6 +36,12 @@ export interface ApplicationOptions {
   plugins?: any[];
 }
 
+export const getCurrentTimezone = () => {
+  const timezoneOffset = new Date().getTimezoneOffset() / -60;
+  const timezone = String(timezoneOffset).padStart(2, '0') + ':00';
+  return (timezoneOffset > 0 ? '+' : '-') + timezone;
+};
+
 export type PluginCallback = () => Promise<any>;
 
 export class Application {
@@ -51,6 +56,7 @@ export class Application {
       baseURL: process.env.API_BASE_URL,
       headers: {
         'X-Hostname': window?.location?.hostname,
+        'X-Timezone': getCurrentTimezone(),
       },
       ...options.apiClient,
     });
@@ -77,7 +83,6 @@ export class Application {
         CollectionManagerShortcut,
         SystemSettingsShortcut,
         SchemaTemplateShortcut,
-        FileStorageShortcut,
       },
     });
     this.use(SchemaComponentProvider, { components: { Link, NavLink } });
