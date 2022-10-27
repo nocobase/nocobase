@@ -29,6 +29,15 @@ const NODE_WIDTH = 250;
 let targetGraph;
 let targetNode;
 let dir = 'TB'; // LR RL TB BT 横排
+
+const getGridData = (num, arr) => {
+  const newArr = [];
+  while (arr.length > 0) {
+    newArr.push(arr.splice(0, num));
+  }
+  return newArr;
+};
+
 //计算布局
 async function layout(createPositions) {
   const { positions } = targetGraph;
@@ -43,35 +52,32 @@ async function layout(createPositions) {
     const height = node.getPorts().length * 32 + 30;
     g.setNode(node.id, { width, height });
   });
-
   dagre.layout(g);
   targetGraph.freeze();
-  g.nodes().forEach((id) => {
-    const node = targetGraph.getCell(id);
-    if (node) {
-      const targetPosition =
-        (positions &&
-          positions.find((v) => {
-            return v.collectionName === node.store.data.name;
-          })) ||
-        {};
-      const pos: any = g.node(id);
-      const index = graphPositions.length + 1;
-      const calculatedPosition =
-        positions && positions.length > 0
-          ? //@ts-ignore
-            { x: maxBy(positions, 'x').x + 350 * index, y: minBy(positions, 'y').y }
-          : pos;
-      node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
-      if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
-        // 位置表中没有的表都自动保存
-        graphPositions.push({
-          collectionName: node.store.data.name,
-          x: calculatedPosition.x,
-          y: calculatedPosition.y,
-        });
+  const dNodes = getGridData(15, g.nodes());
+  dNodes.forEach((arr, row) => {
+    arr.forEach((id, index) => {
+      const node = targetGraph.getCell(id);
+      const col = index % 15;
+      if (node) {
+        const targetPosition =
+          (positions &&
+            positions.find((v) => {
+              return v.collectionName === node.store.data.name;
+            })) ||
+          {};
+        const calculatedPosition = { x: col * 325 + 50, y: row * 460 + 60 };
+        node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
+        if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
+          // 位置表中没有的表都自动保存
+          graphPositions.push({
+            collectionName: node.store.data.name,
+            x: calculatedPosition.x,
+            y: calculatedPosition.y,
+          });
+        }
       }
-    }
+    });
   });
   edges.forEach((edge) => {
     optimizeEdge(edge);
@@ -405,7 +411,7 @@ export const GraphDrawPage = React.memo(() => {
 
   // 增量渲染
   const renderDiffGraphCollection = (rawData) => {
-    const { positions } = targetGraph;
+    const { positions }: any = targetGraph;
     const { nodesData, edgesData } = formatData(rawData);
     const currentNodes = targetGraph.getNodes().map((v) => v.store.data);
     const currentEdges = targetGraph.getEdges().map((v) => v.store.data);
@@ -416,7 +422,18 @@ export const GraphDrawPage = React.memo(() => {
       switch (status) {
         case 'add':
           //@ts-ignore
-          const position = { x: maxBy(positions, 'x').x + 350, y: minBy(positions, 'y').y };
+          const maxY = maxBy(positions, 'y').y;
+          const yNodes = positions.filter((v) => {
+            return v.y === maxY;
+          });
+          let referenceNode:any = maxBy(yNodes, 'x');
+          let position;
+          if (referenceNode.x > 4500) {
+            referenceNode = minBy(yNodes, 'x');
+            position = { x: referenceNode.x, y: referenceNode.y + 480 };
+          } else {
+            position = { x: referenceNode.x + 350, y: referenceNode.y };
+          }
           targetNode = targetGraph.addNode({
             ...node,
             position,
@@ -425,7 +442,7 @@ export const GraphDrawPage = React.memo(() => {
             collectionName: node.name,
             ...position,
           });
-          targetGraph && targetGraph.positionCell(targetNode, 'top', { padding: 50 });
+          targetGraph && targetGraph.positionCell(targetNode, 'top', { padding: 200 });
           break;
         case 'insertPort':
           updateNode.insertPort(port.index, port.port);
@@ -524,7 +541,7 @@ export const GraphDrawPage = React.memo(() => {
     targetNode = targetGraph.getCellById(value.key);
     targetGraph.unfreeze();
     // 定位到目标节点
-    targetGraph.positionCell(targetNode, 'top', { padding: 50 });
+    targetGraph.positionCell(targetNode, 'top', { padding: 200 });
     targetNode.setAttrs({
       boxShadow: '0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)',
     });
