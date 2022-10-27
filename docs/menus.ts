@@ -187,7 +187,11 @@ export default {
     {
       title: '@nocobase/server',
       type: 'subMenu',
-      children: ['/api/server/application', '/api/server/plugin-manager', '/api/server/plugin'],
+      children: [
+        '/api/server/application', 
+        // '/api/server/plugin-manager', 
+        '/api/server/plugin',
+      ],
     },
     {
       title: '@nocobase/database',

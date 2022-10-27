@@ -16,6 +16,7 @@ import {
 import { CollectionModel, FieldModel } from './models';
 
 export class CollectionManagerPlugin extends Plugin {
+
   async beforeLoad() {
     this.app.db.registerModels({
       CollectionModel,
@@ -116,7 +117,7 @@ export class CollectionManagerPlugin extends Plugin {
       await model.remove(options);
     });
 
-    this.app.on('beforeLoad', async (app, options) => {
+    this.app.on('afterLoad', async (app, options) => {
       if (options?.method === 'install') {
         return;
       }
