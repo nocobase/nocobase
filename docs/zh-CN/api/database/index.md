@@ -38,7 +38,7 @@ const database = new Database({
 
 ### 数据库定义
 
-`Database` 通过 `Collection` 定义数据库结构，`Collection` 代表了数据库中的一张表。
+`Database` 通过 `Collection` 定义数据库结构，一个 `Collection` 对象代表了数据库中的一张表。
 
 ```javascript
 // 定义 Collection 
@@ -56,6 +56,12 @@ const UserCollection = database.collection({
   ],
 });
 
+```
+
+数据库结构定义完成之后，可使用 `sync()` 方法来同步数据库结构。
+
+```javascript
+await database.sync();
 ```
 
 更加详细的 `Collection` 使用方法请参考 [Collection](/api/database/collection.md)。

@@ -24,7 +24,7 @@ db.collection({
     // 关联字段
     {
       name: 'profile',
-      type: 'hasOne'
+      type: 'hasOne' // 'hasMany', 'belongsTo', 'belongsToMany'
     }
   ],
 });
