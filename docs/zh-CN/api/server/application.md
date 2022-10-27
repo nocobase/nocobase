@@ -189,8 +189,8 @@ app.on('beforeStart', async () => {
 });
 ```
 
-### beforeLoadAll
-### afterLoadAll
+### beforeLoad
+### afterLoad
 ### beforeLoadPlugin
 ### afterLoadPlugin
 ### beforeInstallPlugin

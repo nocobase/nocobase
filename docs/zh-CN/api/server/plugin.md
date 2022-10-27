@@ -1,5 +1,15 @@
 # Plugin
 
+```ts
+const app = new Application();
+
+class MyPlugin extends Plugin {
+  
+}
+
+app.plugin(MyPlugin, { name: 'my-plugin' });
+```
+
 ## 属性
 
 ### `options`
