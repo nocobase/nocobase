@@ -7,6 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
+import solarLunar from 'solarlunar-es';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
 import { useProps } from '../../hooks/useProps';
@@ -16,6 +17,29 @@ import './style.less';
 import type { ToolbarProps } from './types';
 
 const localizer = momentLocalizer(moment);
+
+const DateHeader = ({ date, label, drilldownView, onDrillDown, showLunar = false }) => {
+  if (!drilldownView) {
+    return <span>{label}</span>;
+  }
+
+  const lunarElement = useMemo(() => {
+    if (!showLunar) {
+      return;
+    }
+    const md = moment(date);
+    const result = solarLunar.solar2lunar(md.year(), md.month() + 1, md.date());
+    const lunarDay = typeof result !== 'number' ? result.lunarFestival || result.term || result.dayCn : result;
+    return <span className="rbc-date-lunar">{lunarDay}</span>;
+  }, [date, showLunar]);
+
+  return (
+    <a onClick={onDrillDown} role="cell">
+      <span className="rbc-date-solar">{label}</span>
+      {lunarElement}
+    </a>
+  );
+};
 
 function Toolbar(props: ToolbarProps) {
   const fieldSchema = useFieldSchema();
@@ -105,10 +129,11 @@ const CalendarRecordViewer = (props) => {
 };
 
 export const Calendar: any = observer((props: any) => {
-  const { dataSource, fieldNames } = useProps(props);
+  const { dataSource, fieldNames, showLunar } = useProps(props);
   const events = useEvents(dataSource, fieldNames);
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
+
   return (
     <div {...props} style={{ height: 700 }}>
       <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
@@ -148,6 +173,7 @@ export const Calendar: any = observer((props: any) => {
         defaultDate={new Date()}
         components={{
           toolbar: Toolbar,
+          dateHeader: (props) => <DateHeader {...props} showLunar={showLunar}></DateHeader>,
         }}
         localizer={localizer}
       />
