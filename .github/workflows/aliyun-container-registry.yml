@@ -1,4 +1,4 @@
-name: push-acr
+name: Aliyun Container Registry
 
 on:
   push:
