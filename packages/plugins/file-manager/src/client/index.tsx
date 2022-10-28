@@ -1,20 +1,35 @@
-import React from 'react';
-import { PluginManagerContext } from '@nocobase/client';
-import { useContext } from 'react';
+import { PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
+import React, { useContext } from 'react';
+import { FileStoragePane } from './FileStorage';
 import { FileStorageShortcut } from './FileStorageShortcut';
 
-export default function(props) {
+export default function (props) {
   const ctx = useContext(PluginManagerContext);
   return (
-    <PluginManagerContext.Provider
-      value={{
-        components: {
-          ...ctx?.components,
-          FileStorageShortcut,
+    <SettingsCenterProvider
+      settings={{
+        'file-manager': {
+          title: '{{t("File manager")}}',
+          icon: 'FileOutlined',
+          tabs: {
+            storages: {
+              title: '{{t("File storages")}}',
+              component: FileStoragePane,
+            },
+          },
         },
       }}
     >
-      {props.children}
-    </PluginManagerContext.Provider>
+      <PluginManagerContext.Provider
+        value={{
+          components: {
+            ...ctx?.components,
+            FileStorageShortcut,
+          },
+        }}
+      >
+        {props.children}
+      </PluginManagerContext.Provider>
+    </SettingsCenterProvider>
   );
-};
+}

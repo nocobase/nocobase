@@ -37,7 +37,7 @@ class PluginGenerator extends Generator {
     const packageVersion = await getProjectVersion();
     return {
       ...this.context,
-      packageName: `@${packageName}/${name}`,
+      packageName: `@${packageName}/plugin-${name}`,
       packageVersion: packageVersion,
       pascalCaseName: capitalize(camelize(name)),
     };

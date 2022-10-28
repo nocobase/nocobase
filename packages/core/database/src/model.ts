@@ -23,6 +23,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   public static database: Database;
   public static collection: Collection;
 
+  [key: string]: any;
   protected _changedWithAssociations = new Set();
   protected _previousDataValuesWithAssociations = {};
 

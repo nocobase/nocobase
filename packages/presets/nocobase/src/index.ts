@@ -1,28 +1,56 @@
 import { Plugin } from '@nocobase/server';
 
-export class PresetNocoBase<O = any> extends Plugin {
-  getName(): string {
-    return this.getPackageName(__dirname);
+export class PresetNocoBase extends Plugin {
+  async addBuiltInPlugins() {
+    const plugins = [
+      'error-handler',
+      'collection-manager',
+      'ui-schema-storage',
+      'ui-routes-storage',
+      'file-manager',
+      'system-settings',
+      'verification',
+      'users',
+      'acl',
+      'china-region',
+      'workflow',
+      'client',
+      'export',
+      'audit-logs',
+    ];
+    await this.app.pm.add(plugins, {
+      enabled: true,
+      builtIn: true,
+      installed: true,
+    });
+    await this.app.reload();
   }
 
-  beforeLoad(): void {
-    this.app.loadPluginConfig([
-      '@nocobase/plugin-error-handler',
-      '@nocobase/plugin-collection-manager',
-      '@nocobase/plugin-ui-schema-storage',
-      '@nocobase/plugin-ui-routes-storage',
-      '@nocobase/plugin-file-manager',
-      '@nocobase/plugin-system-settings',
-      '@nocobase/plugin-verification',
-      '@nocobase/plugin-users',
-      '@nocobase/plugin-acl',
-      '@nocobase/plugin-china-region',
-      '@nocobase/plugin-workflow',
-      '@nocobase/plugin-client',
-      '@nocobase/plugin-export',
-      '@nocobase/plugin-audit-logs',
-    ]);
+  afterAdd() {
+    this.app.on('beforeLoad', async (app, options) => {
+      if (options?.method !== 'upgrade') {
+        return;
+      }
+      const result = await this.app.version.satisfies('<0.8.0-alpha.1');
+      if (result) {
+        const r = await this.db.collectionExistsInDb('applicationPlugins');
+        if (r) {
+          await this.db.getRepository('applicationPlugins').destroy({ truncate: true });
+          await this.app.reload();
+        }
+      }
+    });
+    this.app.on('beforeUpgrade', async () => {
+      const result = await this.app.version.satisfies('<0.8.0-alpha.1');
+      if (result) {
+        await this.addBuiltInPlugins();
+      }
+    });
+    this.app.on('beforeInstall', async () => {
+      await this.addBuiltInPlugins();
+    });
   }
+  beforeLoad() {}
 }
 
 export default PresetNocoBase;

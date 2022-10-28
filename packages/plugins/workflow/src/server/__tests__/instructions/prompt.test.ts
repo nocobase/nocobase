@@ -1,6 +1,6 @@
-import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import UserPlugin from '@nocobase/plugin-users';
+import { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
@@ -86,7 +86,7 @@ describe.skip('workflow > instructions > prompt', () => {
     beforeEach(async () => {
       app = await getApp({
         plugins: [
-          '@nocobase/plugin-users'
+          'users'
         ]
       });
       agent = app.agent();
@@ -101,7 +101,7 @@ describe.skip('workflow > instructions > prompt', () => {
         { id: 2, nickname: 'b' }
       ]);
 
-      const userPlugin = app.getPlugin('@nocobase/plugin-users') as UserPlugin;
+      const userPlugin = app.getPlugin('users') as UserPlugin;
       userAgents = users.map((user) => app.agent().auth(userPlugin.jwtService.sign({
         userId: user.id,
       }), { type: 'bearer' }));

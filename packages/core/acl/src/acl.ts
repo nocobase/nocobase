@@ -1,12 +1,13 @@
 import { Action } from '@nocobase/resourcer';
+import { Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
 import parse from 'json-templates';
 import compose from 'koa-compose';
 import lodash from 'lodash';
-import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
+import { ACLAvailableAction, AvailableActionOptions } from './acl-available-action';
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
-import { ACLRole, RoleActionParams } from './acl-role';
-import { AllowManager } from './allow-manager';
+import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
+import { AllowManager, ConditionFunc } from './allow-manager';
 
 interface CanResult {
   role: string;
@@ -18,10 +19,8 @@ interface CanResult {
 export interface DefineOptions {
   role: string;
   allowConfigure?: boolean;
-  strategy?: string | Omit<AvailableStrategyOptions, 'acl'>;
-  actions?: {
-    [key: string]: RoleActionParams;
-  };
+  strategy?: string | AvailableStrategyOptions;
+  actions?: ResourceActionsOptions;
   routes?: any;
 }
 
@@ -43,9 +42,9 @@ interface CanArgs {
 }
 
 export class ACL extends EventEmitter {
-  protected availableActions = new Map<string, AclAvailableAction>();
+  protected availableActions = new Map<string, ACLAvailableAction>();
   protected availableStrategy = new Map<string, ACLAvailableStrategy>();
-  protected middlewares = [];
+  protected middlewares: Toposort<any>;
 
   public allowManager = new AllowManager(this);
 
@@ -57,6 +56,8 @@ export class ACL extends EventEmitter {
 
   constructor() {
     super();
+
+    this.middlewares = new Toposort<any>();
 
     this.beforeGrantAction((ctx) => {
       if (lodash.isPlainObject(ctx.params) && ctx.params.own) {
@@ -85,7 +86,7 @@ export class ACL extends EventEmitter {
       }
     });
 
-    this.middlewares.push(this.allowManager.aclMiddleware());
+    this.middlewares.add(this.allowManager.aclMiddleware());
   }
 
   define(options: DefineOptions): ACLRole {
@@ -128,7 +129,7 @@ export class ACL extends EventEmitter {
   }
 
   setAvailableAction(name: string, options: AvailableActionOptions = {}) {
-    this.availableActions.set(name, new AclAvailableAction(name, options));
+    this.availableActions.set(name, new ACLAvailableAction(name, options));
 
     if (options.aliases) {
       const aliases = lodash.isArray(options.aliases) ? options.aliases : [options.aliases];
@@ -147,7 +148,7 @@ export class ACL extends EventEmitter {
     return this.availableActions;
   }
 
-  setAvailableStrategy(name: string, options: Omit<AvailableStrategyOptions, 'acl'>) {
+  setAvailableStrategy(name: string, options: AvailableStrategyOptions) {
     this.availableStrategy.set(name, new ACLAvailableStrategy(this, options));
   }
 
@@ -155,7 +156,8 @@ export class ACL extends EventEmitter {
     this.addListener('beforeGrantAction', listener);
   }
 
-  can({ role, resource, action }: CanArgs): CanResult | null {
+  can(options: CanArgs): CanResult | null {
+    const { role, resource, action } = options;
     const aclRole = this.roles.get(role);
 
     if (!aclRole) {
@@ -215,11 +217,11 @@ export class ACL extends EventEmitter {
     return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
   }
 
-  use(fn: any) {
-    this.middlewares.push(fn);
+  use(fn: any, options?: ToposortOptions) {
+    this.middlewares.add(fn, options);
   }
 
-  allow(resourceName: string, actionNames: string[] | string, condition?: any) {
+  allow(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
     if (!Array.isArray(actionNames)) {
       actionNames = [actionNames];
     }
@@ -265,7 +267,7 @@ export class ACL extends EventEmitter {
         can: ctx.can({ resource: resourceName, action: actionName }),
       };
 
-      return compose(acl.middlewares)(ctx, async () => {
+      return compose(acl.middlewares.nodes)(ctx, async () => {
         const permission = ctx.permission;
 
         if (permission.skip) {

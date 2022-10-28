@@ -65,7 +65,7 @@ export class Collection<
     return this.context.database;
   }
 
-  constructor(options: CollectionOptions, context?: CollectionContext) {
+  constructor(options: CollectionOptions, context: CollectionContext) {
     super();
     this.checkOptions(options);
 

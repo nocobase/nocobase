@@ -1,8 +1,8 @@
 import { FileOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
+import { ActionContext, PluginManager, SchemaComponent } from '@nocobase/client';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PluginManager, ActionContext, SchemaComponent } from '@nocobase/client';
 import { storageSchema } from './schemas/storage';
 import { StorageOptions } from './StorageOptions';
 

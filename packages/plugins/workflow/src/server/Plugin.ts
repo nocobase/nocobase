@@ -1,18 +1,18 @@
 import path from 'path';
 
-import { Plugin } from '@nocobase/server';
 import { Op, Transactionable } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
 import initActions from './actions';
-import initTriggers, { Trigger } from './triggers';
-import initInstructions, { Instruction } from './instructions';
-import Processor from './Processor';
 import calculators from './calculators';
-import extensions from './extensions';
-import WorkflowModel from './models/Workflow';
-import ExecutionModel from './models/Execution';
 import { EXECUTION_STATUS } from './constants';
+import extensions from './extensions';
+import initInstructions, { Instruction } from './instructions';
+import ExecutionModel from './models/Execution';
+import WorkflowModel from './models/Workflow';
+import Processor from './Processor';
+import initTriggers, { Trigger } from './triggers';
 
 
 
@@ -64,10 +64,6 @@ export default class WorkflowPlugin extends Plugin {
       this.toggle(previous, false);
     }
   };
-
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 
   async load() {
     const { db, options } = this;

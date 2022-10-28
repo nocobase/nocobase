@@ -1,16 +1,16 @@
 import path from 'path';
 
-import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
+import { Context } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 import { HandlerType } from '@nocobase/resourcer';
-import { Context } from '@nocobase/actions';
+import { Plugin } from '@nocobase/server';
+import { Registry } from '@nocobase/utils';
 
-import initProviders, { Provider } from './providers';
+import { namespace } from '.';
 import initActions from './actions';
 import { CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
-import { namespace } from '.';
 import { zhCN } from './locale';
+import initProviders, { Provider } from './providers';
 
 export interface Interceptor {
   manual?: boolean;
@@ -19,7 +19,7 @@ export interface Interceptor {
   getReceiver(ctx): string;
   getCode?(ctx): string;
   validate?(ctx: Context, receiver: string): boolean | Promise<boolean>;
-};
+}
 
 export default class VerificationPlugin extends Plugin {
   providers: Registry<typeof Provider> = new Registry();
@@ -49,10 +49,10 @@ export default class VerificationPlugin extends Plugin {
         type: key,
         content,
         expiresAt: {
-          [Op.gt]: new Date()
+          [Op.gt]: new Date(),
         },
-        status: CODE_STATUS_UNUSED
-      }
+        status: CODE_STATUS_UNUSED,
+      },
     });
 
     if (!item) {
@@ -70,14 +70,9 @@ export default class VerificationPlugin extends Plugin {
 
     // or delete
     await item.update({
-      status: CODE_STATUS_USED
+      status: CODE_STATUS_USED,
     });
-  }
-
-
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
+  };
 
   async install() {
     const {
@@ -86,13 +81,14 @@ export default class VerificationPlugin extends Plugin {
       INIT_ALI_SMS_ACCESS_KEY_SECRET,
       INIT_ALI_SMS_ENDPOINT = 'dysmsapi.aliyuncs.com',
       INIT_ALI_SMS_VERIFY_CODE_TEMPLATE,
-      INIT_ALI_SMS_VERIFY_CODE_SIGN
+      INIT_ALI_SMS_VERIFY_CODE_SIGN,
     } = process.env;
 
-    if (INIT_ALI_SMS_ACCESS_KEY
-      && INIT_ALI_SMS_ACCESS_KEY_SECRET
-      && INIT_ALI_SMS_VERIFY_CODE_TEMPLATE
-      && INIT_ALI_SMS_VERIFY_CODE_SIGN
+    if (
+      INIT_ALI_SMS_ACCESS_KEY &&
+      INIT_ALI_SMS_ACCESS_KEY_SECRET &&
+      INIT_ALI_SMS_VERIFY_CODE_TEMPLATE &&
+      INIT_ALI_SMS_VERIFY_CODE_SIGN
     ) {
       const ProviderRepo = this.db.getRepository('verifications_providers');
       await ProviderRepo.create({
@@ -105,9 +101,9 @@ export default class VerificationPlugin extends Plugin {
             accessKeySecret: INIT_ALI_SMS_ACCESS_KEY_SECRET,
             endpoint: INIT_ALI_SMS_ENDPOINT,
             sign: INIT_ALI_SMS_VERIFY_CODE_SIGN,
-            template: INIT_ALI_SMS_VERIFY_CODE_TEMPLATE
-          }
-        }
+            template: INIT_ALI_SMS_VERIFY_CODE_TEMPLATE,
+          },
+        },
       });
     }
   }

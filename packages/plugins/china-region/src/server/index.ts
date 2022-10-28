@@ -64,9 +64,6 @@ export class PluginChinaRegion extends Plugin {
     // console.log(`${count} rows of region data imported in ${(Date.now() - timer) / 1000}s`);
   }
 
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 }
 
 export default PluginChinaRegion;

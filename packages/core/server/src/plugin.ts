@@ -1,8 +1,6 @@
 import { Database } from '@nocobase/database';
-import finder from 'find-package-json';
 import { Application } from './application';
 import { InstallOptions } from './plugin-manager';
-
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -15,6 +13,7 @@ export interface PluginOptions {
   displayName?: string;
   description?: string;
   version?: string;
+  enabled?: boolean;
   install?: (this: Plugin) => void;
   load?: (this: Plugin) => void;
   plugin?: typeof Plugin;
@@ -24,44 +23,46 @@ export interface PluginOptions {
 export type PluginType = typeof Plugin;
 
 export abstract class Plugin<O = any> implements PluginInterface {
-  options: O;
+  options: any;
   app: Application;
   db: Database;
 
-  constructor(app: Application, options?: O) {
+  constructor(app: Application, options?: any) {
     this.app = app;
     this.db = app.db;
     this.setOptions(options);
+    this.afterAdd();
   }
 
-  setOptions(options: O) {
-    this.options = options || ({} as any);
+  get enabled() {
+    return this.options.enabled;
   }
 
-  public abstract getName(): string;
+  set enabled(value) {
+    this.options.enabled = value;
+  }
+
+  setOptions(options: any) {
+    this.options = options || {};
+  }
+
+  getName() {
+    return (this.options as any).name;
+  }
+
+  afterAdd() {}
 
   beforeLoad() {}
 
+  async load() {}
+
   async install(options?: InstallOptions) {}
 
-  async load() {
-    const collectionPath = this.collectionPath();
-    if (collectionPath) {
-      await this.db.import({
-        directory: collectionPath,
-      });
-    }
-  }
+  async afterEnable() {}
 
-  collectionPath() {
-    return null;
-  }
+  async afterDisable() {}
 
-  protected getPackageName(dirname: string) {
-    const f = finder(dirname);
-    const packageObj = f.next().value;
-    return packageObj['name'];
-  }
+  async remove() {}
 }
 
 export default Plugin;

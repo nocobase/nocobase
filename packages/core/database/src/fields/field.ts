@@ -5,11 +5,11 @@ import {
   ModelIndexesOptions,
   QueryInterfaceOptions,
   SyncOptions,
-  Transactionable,
+  Transactionable
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
-import { checkIdentifier } from '../utils';
+import { ModelEventTypes } from '../types';
 
 export interface FieldContext {
   database: Database;
@@ -68,7 +68,7 @@ export abstract class Field {
     // code
   }
 
-  on(eventName: string, listener: (...args: any[]) => void) {
+  on(eventName: ModelEventTypes, listener: (...args: any[]) => void) {
     this.database.on(`${this.collection.name}.${eventName}`, listener);
     return this;
   }
@@ -83,6 +83,7 @@ export abstract class Field {
   }
 
   remove() {
+    this.collection.removeIndex([this.name]);
     return this.collection.removeField(this.name);
   }
 
