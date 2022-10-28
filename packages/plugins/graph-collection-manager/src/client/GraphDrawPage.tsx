@@ -463,33 +463,11 @@ export const GraphDrawPage = React.memo(() => {
       data.forEach(({ status, edge }) => {
         switch (status) {
           case 'add':
-            const source = edge.source;
-            const target = edge.target;
-            const sorceNodeX = targetGraph.getCell(source.cell).position().x;
-            const targeNodeX = targetGraph.getCell(target.cell).position().x;
-            let newEdge = edge;
-            if (sorceNodeX > targeNodeX) {
-              newEdge = {
-                ...edge,
-                source: {
-                  cell: source.cell,
-                  port: source.port,
-                  anchor: {
-                    name: 'left',
-                  },
-                },
-                target: {
-                  cell: target.cell,
-                  port: target.port,
-                  anchor: {
-                    name: 'right',
-                  },
-                },
-              };
-            }
-            targetNode = targetGraph.addEdge({
-              ...newEdge,
+          
+            const newEdge = targetGraph.addEdge({
+              ...edge,
             });
+            optimizeEdge(newEdge);
             break;
           case 'delete':
             targetGraph.removeCell(edge.id);
