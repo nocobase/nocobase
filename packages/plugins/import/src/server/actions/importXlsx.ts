@@ -27,7 +27,9 @@ export async function importXlsx(ctx: Context, next: Next) {
       await Promise.allSettled<any>(
         list.map(async (item) => {
           try {
-            return await transform({ ctx, record: item, columns, fields: collectionFields });
+            return await transform({ ctx, record: item, columns, fields: collectionFields }).catch((error) => {
+              failureData.unshift([...item, error.message]);
+            });
           } catch (error) {
             failureData.unshift([...item, error.message]);
           }

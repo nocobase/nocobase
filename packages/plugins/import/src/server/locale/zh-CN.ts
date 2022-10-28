@@ -6,4 +6,5 @@ export default {
   'Incorrect time format': '时间格式不正确',
   'Incorrect date format': '日期格式不正确',
   'Incorrect email format': '邮箱格式不正确',
+  'Illegal percentage format': '百分比格式有误',
 };

@@ -8,6 +8,9 @@ export async function _({ value, field }) {
 }
 
 export async function email({ value, field, ctx }) {
+  if (!value?.trim()) {
+    return value;
+  }
   const emailReg = /^([a-zA-Z0-9._-])+@([a-zA-Z0-9_-])+(\.[a-zA-Z0-9_-])+/;
   if (!emailReg.test(value)) {
     throw new Error(ctx.t('Incorrect email format', { ns: namespace }));
@@ -110,9 +113,12 @@ export async function time({ value, field, ctx }) {
   }
   return value;
 }
-export async function percent({ value, field }) {
+export async function percent({ value, field, ctx }) {
   if (value) {
-    const numberValue = Number(value.split('%')[0]);
+    const numberValue = Number(value?.split('%')?.[0] ?? value);
+    if (isNaN(numberValue)) {
+      throw new Error(ctx.t('Illegal percentage format', { ns: namespace }));
+    }
     return math.round(numberValue / 100, 9);
   }
   return 0;
@@ -133,13 +139,13 @@ export const radio = select;
 export const radioGroup = select;
 
 export async function multipleSelect({ value, column, field, ctx }) {
-  const values = value.split(';');
+  const values = value?.split(';');
   const { enum: enumData } = column;
-  const results = values.map((val) => {
+  const results = values?.map((val) => {
     const item = enumData.find((item) => item.label === val);
     return item;
   });
-  return results.map((result) => result?.value);
+  return results?.map((result) => result?.value);
 }
 
 export const checkboxes = multipleSelect;
