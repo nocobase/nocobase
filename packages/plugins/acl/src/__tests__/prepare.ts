@@ -8,12 +8,11 @@ export async function prepareApp() {
     plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager'],
   });
 
-  await app.cleanDb();
-
   app.plugin(PluginACL, {
     name: 'acl',
   });
-  await app.loadAndInstall();
+
+  await app.loadAndInstall({ clean: true });
 
   await app.db.sync();
 

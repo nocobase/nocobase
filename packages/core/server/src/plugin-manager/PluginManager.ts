@@ -13,6 +13,7 @@ import { PluginManagerRepository } from './PluginManagerRepository';
 
 export interface PluginManagerOptions {
   app: Application;
+  plugins?: any[];
 }
 
 export interface InstallOptions {
@@ -28,6 +29,7 @@ export class PluginManager {
   plugins = new Map<string, Plugin>();
   server: net.Server;
   pmSock: string;
+  _tmpPluginArgs = [];
 
   constructor(options: PluginManagerOptions) {
     this.app = options.app;
@@ -72,6 +74,17 @@ export class PluginManager {
         await this.repository.load();
       }
     });
+    this.addStaticMultiple(options.plugins);
+  }
+
+  addStaticMultiple(plugins: any) {
+    for (let plugin of plugins || []) {
+      if (typeof plugin == 'string') {
+        this.addStatic(plugin);
+      } else {
+        this.addStatic(...plugin);
+      }
+    }
   }
 
   getPlugins() {
@@ -124,7 +137,20 @@ export class PluginManager {
     await run('yarn', ['install']);
   }
 
+  clone() {
+    const pm = new PluginManager({
+      app: this.app,
+    });
+    for (const arg of this._tmpPluginArgs) {
+      pm.addStatic(...arg);
+    }
+    return pm;
+  }
+
   addStatic(plugin?: any, options?: any) {
+    if (!options?.async) {
+      this._tmpPluginArgs.push([plugin, options]);
+    }
     let name: string;
     if (typeof plugin === 'string') {
       name = plugin;
@@ -155,7 +181,10 @@ export class PluginManager {
     // console.log(`adding ${plugin} plugin`);
     const packageName = await PluginManager.findPackage(plugin);
     const packageJson = require(`${packageName}/package.json`);
-    const instance = this.addStatic(plugin, options);
+    const instance = this.addStatic(plugin, {
+      ...options,
+      async: true,
+    });
     let model = await this.repository.findOne({
       filter: { name: plugin },
     });
