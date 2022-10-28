@@ -16,7 +16,7 @@ on:
     #   - 'packages/**'
 
 jobs:
-  install-deps:
+  sqlite-test:
     strategy:
       matrix:
         node_version: ['16']
@@ -30,15 +30,6 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
-  sqlite-test:
-    needs: install-deps
-    strategy:
-      matrix:
-        node_version: ['16']
-    runs-on: ubuntu-latest
-    container: node:${{ matrix.node_version }}
-    steps:
-      - uses: actions/checkout@v2
       - name: Test with Sqlite
         run: yarn test
         env:
@@ -46,7 +37,6 @@ jobs:
           DB_STORAGE: /tmp/db.sqlite
 
   postgres-test:
-    needs: install-deps
     strategy:
       matrix:
         node_version: ['16']
@@ -70,6 +60,12 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+      - run: yarn install
       - name: Test with postgres
         run: yarn test
         env:
@@ -81,7 +77,6 @@ jobs:
           DB_DATABASE: nocobase
 
   mysql-test:
-    needs: install-deps
     strategy:
       matrix:
         node_version: ['16']
@@ -96,6 +91,12 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
       - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+      - run: yarn install
       - name: Test with MySQL
         run: yarn test
         env:
