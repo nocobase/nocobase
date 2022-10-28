@@ -463,7 +463,6 @@ export const GraphDrawPage = React.memo(() => {
       data.forEach(({ status, edge }) => {
         switch (status) {
           case 'add':
-          
             const newEdge = targetGraph.addEdge({
               ...edge,
             });
@@ -510,7 +509,7 @@ export const GraphDrawPage = React.memo(() => {
         visibleNode.push(v.getTargetCellId());
       });
       // 定位到目标节点
-      targetGraph.positionCell(targetNode, 'top', { padding: 100 });
+      targetGraph.positionCell(targetNode, 'top-left', { padding: 200 });
       targetNode.setAttrs({
         boxShadow: '0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)',
       });
