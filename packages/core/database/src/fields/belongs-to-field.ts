@@ -30,7 +30,7 @@ export class BelongsToField extends RelationField {
     const association = collection.model.belongsTo(Target, {
       as: this.name,
       constraints: false,
-      ...omit(this.options, ['name', 'type', 'target']),
+      ...omit(this.options, ['name', 'type', 'target', 'onDelete']),
     });
 
     // inverse relation

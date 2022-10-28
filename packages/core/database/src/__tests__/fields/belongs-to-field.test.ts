@@ -1,7 +1,6 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
 import { IdentifierError } from '../../errors/identifier-error';
-import { exp } from 'mathjs';
 
 describe('belongs to field', () => {
   let db: Database;
@@ -65,10 +64,6 @@ describe('belongs to field', () => {
   });
 
   it('custom targetKey and foreignKey', async () => {
-    const Post = db.collection({
-      name: 'posts',
-      fields: [{ type: 'string', name: 'key', unique: true }],
-    });
     const Comment = db.collection({
       name: 'comments',
       fields: [
@@ -100,7 +95,7 @@ describe('belongs to field', () => {
     let error;
 
     try {
-      const Comment = db.collection({
+      db.collection({
         name: 'comments1',
         fields: [
           {
