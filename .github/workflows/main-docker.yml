@@ -51,6 +51,6 @@ jobs:
           file: Dockerfile
           build-args: | 
             VERDACCIO_URL=http://localhost:4873/
-          platforms: linux/amd64,linux/arm64
+          # platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
