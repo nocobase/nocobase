@@ -1,6 +1,7 @@
 import { omit } from 'lodash';
 import { BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
 import { Collection } from '../collection';
+import { checkIdentifier } from '../utils';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 
 export class BelongsToManyField extends RelationField {
@@ -16,6 +17,10 @@ export class BelongsToManyField extends RelationField {
     );
   }
 
+  get otherKey() {
+    return this.options.otherKey;
+  }
+
   bind() {
     const { database, collection } = this.context;
     const Target = this.TargetModel;
@@ -23,6 +28,7 @@ export class BelongsToManyField extends RelationField {
       database.addPendingField(this);
       return false;
     }
+
     const through = this.through;
 
     let Through: Collection;
@@ -32,7 +38,9 @@ export class BelongsToManyField extends RelationField {
     } else {
       Through = database.collection({
         name: through,
+        // timestamps: false,
       });
+
       Object.defineProperty(Through.model, 'isThrough', { value: true });
     }
 
@@ -49,15 +57,27 @@ export class BelongsToManyField extends RelationField {
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
     }
+
     if (!this.options.sourceKey) {
       this.options.sourceKey = association.sourceKey;
     }
+
     if (!this.options.otherKey) {
       this.options.otherKey = association.otherKey;
     }
+
+    try {
+      checkIdentifier(this.options.foreignKey);
+      checkIdentifier(this.options.otherKey);
+    } catch (error) {
+      this.unbind();
+      throw error;
+    }
+
     if (!this.options.through) {
       this.options.through = this.through;
     }
+
     Through.addIndex([this.options.foreignKey]);
     Through.addIndex([this.options.otherKey]);
     return true;
@@ -65,6 +85,7 @@ export class BelongsToManyField extends RelationField {
 
   unbind() {
     const { database, collection } = this.context;
+    const Through = database.getCollection(this.through);
     // 如果关系字段还没建立就删除了，也同步删除待建立关联的关系字段
     database.removePendingField(this);
     // 删掉 model 的关联字段

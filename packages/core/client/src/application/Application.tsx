@@ -1,5 +1,6 @@
+import { Spin } from 'antd';
 import { i18n as i18next } from 'i18next';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
 import { ACLProvider, ACLShortcut } from '../acl';
@@ -8,9 +9,9 @@ import { APIClient, APIClientProvider } from '../api-client';
 import { BlockSchemaComponentProvider } from '../block-provider';
 import { CollectionManagerShortcut } from '../collection-manager';
 import { RemoteDocumentTitleProvider } from '../document-title';
-import { FileStorageShortcut } from '../file-manager';
 import { i18n } from '../i18n';
 import { PluginManagerProvider } from '../plugin-manager';
+import PMProvider, { PluginManagerLink, SettingsCenterDropdown } from '../pm';
 import {
   AdminLayout,
   AuthLayout,
@@ -35,6 +36,7 @@ export interface ApplicationOptions {
   apiClient?: any;
   i18n?: any;
   plugins?: any[];
+  dynamicImport?: any;
 }
 
 export const getCurrentTimezone = () => {
@@ -45,14 +47,28 @@ export const getCurrentTimezone = () => {
 
 export type PluginCallback = () => Promise<any>;
 
+const App = React.memo((props: any) => {
+  const C = compose(...props.providers)(() => {
+    const routes = useRoutes();
+    return (
+      <div>
+        <RouteSwitch routes={routes} />
+      </div>
+    );
+  });
+  return <C />;
+});
+
 export class Application {
   providers = [];
   mainComponent = null;
   apiClient: APIClient;
   i18n: i18next;
   plugins: PluginCallback[] = [];
+  options: ApplicationOptions;
 
   constructor(options: ApplicationOptions) {
+    this.options = options;
     this.apiClient = new APIClient({
       baseURL: process.env.API_BASE_URL,
       headers: {
@@ -84,7 +100,8 @@ export class Application {
         CollectionManagerShortcut,
         SystemSettingsShortcut,
         SchemaTemplateShortcut,
-        FileStorageShortcut,
+        PluginManagerLink,
+        SettingsCenterDropdown,
       },
     });
     this.use(SchemaComponentProvider, { components: { Link, NavLink } });
@@ -97,11 +114,7 @@ export class Application {
     this.use(AntdSchemaComponentProvider);
     this.use(ACLProvider);
     this.use(RemoteDocumentTitleProvider);
-
-    for (const plugin of options.plugins) {
-      const [component, props] = Array.isArray(plugin) ? plugin : [plugin];
-      this.use(component, props);
-    }
+    this.use(PMProvider);
   }
 
   use(component, props?: any) {
@@ -120,16 +133,27 @@ export class Application {
   }
 
   render() {
-    return compose(...this.providers)(
-      this.mainComponent ||
-        (() => {
-          const routes = useRoutes();
-          return (
-            <div>
-              <RouteSwitch routes={routes} />
-            </div>
-          );
-        }),
-    );
+    return (props: any) => {
+      const { plugins = [], dynamicImport } = this.options;
+      const [loading, setLoading] = useState(false);
+      useEffect(() => {
+        setLoading(true);
+        (async () => {
+          const res = await this.apiClient.request({ url: 'app:getPlugins' });
+          if (Array.isArray(res.data?.data)) {
+            plugins.push(...res.data.data);
+          }
+          for (const plugin of plugins) {
+            const pluginModule = await dynamicImport(plugin);
+            this.use(pluginModule.default);
+          }
+          setLoading(false);
+        })();
+      }, []);
+      if (loading) {
+        return <Spin />;
+      }
+      return <App providers={this.providers} />;
+    };
   }
 }

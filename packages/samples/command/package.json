@@ -1,0 +1,15 @@
+{
+  "name": "@nocobase/plugin-sample-command",
+  "version": "0.8.0-alpha.1",
+  "main": "lib/server/index.js",
+  "devDependencies": {
+    "@nocobase/client": "0.8.0-alpha.1",
+    "@nocobase/server": "0.8.0-alpha.1",
+    "@nocobase/test": "0.8.0-alpha.1"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "*",
+    "@nocobase/server": "*",
+    "@nocobase/test": "*"
+  }
+}

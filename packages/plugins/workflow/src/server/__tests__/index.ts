@@ -1,10 +1,10 @@
-import path from 'path';
 import { MockServer, mockServer } from '@nocobase/test';
+import path from 'path';
 
-import Plugin from '..';
-import { JOB_STATUS } from '../constants';
-import calculators from '../calculators';
 import { ApplicationOptions } from '@nocobase/server';
+import Plugin from '..';
+import calculators from '../calculators';
+import { JOB_STATUS } from '../constants';
 
 export function sleep(ms: number) {
   return new Promise(resolve => {
@@ -20,6 +20,7 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
   const app = mockServer(options);
 
   app.plugin(Plugin, {
+    name: 'workflow',
     instructions: {
       echo: {
         run(node, { result }, execution) {

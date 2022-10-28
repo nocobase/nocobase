@@ -16,6 +16,7 @@ export const type: ISchema = {
     { label: 'Text', value: 'text' },
     { label: 'Integer', value: 'integer' },
     { label: 'Float', value: 'float' },
+    { label: 'Double', value: 'double' },
     { label: 'Decimal', value: 'decimal' },
     { label: 'Date', value: 'date' },
     { label: 'DateOnly', value: 'dateonly' },
@@ -50,6 +51,89 @@ export const relationshipType: ISchema = {
     { label: "{{t('BelongsTo')}}", value: 'belongsTo' },
     { label: "{{t('BelongsToMany')}}", value: 'belongsToMany' },
   ],
+};
+
+export const reverseFieldProperties: Record<string, ISchema> = {
+  reverse: {
+    type: 'void',
+    'x-component': 'div',
+    'x-hidden': '{{ !showReverseFieldConfig }}',
+    properties: {
+      autoCreateReverseField: {
+        type: 'boolean',
+        default: true,
+        'x-decorator': 'FormItem',
+        'x-component': 'Checkbox',
+        'x-content': '{{t("Create inverse field in the target collection")}}',
+        'x-reactions': [
+          {
+            target: 'reverseField.type',
+            when: '{{!!$self.value}}',
+            fulfill: {
+              state: {
+                hidden: false,
+              },
+            },
+            otherwise: {
+              state: {
+                hidden: true,
+              },
+            },
+          },
+          {
+            target: 'reverseField.uiSchema.title',
+            when: '{{!!$self.value}}',
+            fulfill: {
+              state: {
+                hidden: false,
+              },
+            },
+            otherwise: {
+              state: {
+                hidden: true,
+              },
+            },
+          },
+          {
+            target: 'reverseField.name',
+            when: '{{!!$self.value}}',
+            fulfill: {
+              state: {
+                hidden: false,
+              },
+            },
+            otherwise: {
+              state: {
+                hidden: true,
+              },
+            },
+          },
+        ],
+      },
+      'reverseField.type': {
+        ...relationshipType,
+        title: '{{t("Inverse relationship type")}}',
+      },
+      'reverseField.uiSchema.title': {
+        type: 'string',
+        title: '{{t("Inverse field display name")}}',
+        default: '{{record.title}}',
+        required: true,
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+      'reverseField.name': {
+        type: 'string',
+        title: '{{t("Inverse field name")}}',
+        required: true,
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        'x-validator': 'uid',
+        description:
+          "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+      },
+    },
+  },
 };
 
 export const dateTimeProps: { [key: string]: ISchema } = {

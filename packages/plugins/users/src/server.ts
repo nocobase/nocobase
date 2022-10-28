@@ -1,33 +1,34 @@
-import { resolve } from 'path';
 import parse from 'json-templates';
+import { resolve } from 'path';
 
 import { Collection, Op } from '@nocobase/database';
+import { HandlerType, Middleware } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
-import { HandlerType, MiddlewareManager } from '@nocobase/resourcer';
 
 import { namespace } from './';
 import * as actions from './actions/users';
+import initAuthenticators from './authenticators';
 import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
-import * as middlewares from './middlewares';
-import initAuthenticators from './authenticators';
+import { parseToken } from './middlewares';
 
 export interface UserPluginConfig {
+  name?: string;
   jwt: JwtOptions;
 }
 
 export default class UsersPlugin extends Plugin<UserPluginConfig> {
   public jwtService: JwtService;
 
-  public tokenMiddleware: MiddlewareManager;
+  public tokenMiddleware: Middleware;
 
   public authenticators: Registry<HandlerType> = new Registry();
 
   constructor(app, options) {
     super(app, options);
     this.jwtService = new JwtService(options?.jwt || {});
-    this.tokenMiddleware = middlewares.parseToken({ plugin: this });
+    this.tokenMiddleware = new Middleware(parseToken);
   }
 
   async beforeLoad() {
@@ -92,7 +93,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    this.app.resourcer.use(this.tokenMiddleware.compose());
+    this.app.resourcer.use(parseToken, { tag: 'parseToken' });
 
     const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
     const loggedInActions = ['signout', 'updateProfile', 'changePassword'];
@@ -117,7 +118,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     initAuthenticators(this);
 
     // TODO(module): should move to preset
-    const verificationPlugin = this.app.getPlugin('@nocobase/plugin-verification') as any;
+    const verificationPlugin = this.app.getPlugin('verification') as any;
     if (verificationPlugin && process.env.DEFAULT_SMS_VERIFY_CODE_PROVIDER) {
       verificationPlugin.interceptors.register('users:signin', {
         manual: true,
@@ -141,7 +142,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           }
 
           return true;
-        }
+        },
       });
 
       verificationPlugin.interceptors.register('users:signup', {
@@ -165,26 +166,28 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           }
 
           return true;
-        }
+        },
       });
 
-      this.authenticators.register('sms', (ctx, next) => verificationPlugin.intercept(ctx, async () => {
-        const { values } = ctx.action.params;
+      this.authenticators.register('sms', (ctx, next) =>
+        verificationPlugin.intercept(ctx, async () => {
+          const { values } = ctx.action.params;
 
-        const User = ctx.db.getCollection('users');
-        const user = await User.model.findOne({
-          where: {
-            phone: values.phone,
-          },
-        });
-        if (!user) {
-          return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
-        }
+          const User = ctx.db.getCollection('users');
+          const user = await User.model.findOne({
+            where: {
+              phone: values.phone,
+            },
+          });
+          if (!user) {
+            return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
+          }
 
-        ctx.state.currentUser = user;
+          ctx.state.currentUser = user;
 
-        return next();
-      }));
+          return next();
+        }),
+      );
     }
   }
 
@@ -209,7 +212,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       values: {
         email: rootEmail,
         password: rootPassword,
-        nickname: rootNickname
+        nickname: rootNickname,
       },
     });
 
@@ -217,9 +220,5 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     if (repo) {
       await repo.db2cm('users');
     }
-  }
-
-  getName(): string {
-    return this.getPackageName(__dirname);
   }
 }

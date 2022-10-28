@@ -5,7 +5,7 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
-import table2resource from '../../../server/src/middlewares/table2resource';
+import db2resource from '../../../server/src/middlewares/db2resource';
 
 export function generatePrefixByPath() {
   const { id } = require.main;
@@ -118,7 +118,7 @@ export class MockServer extends Koa {
       await next();
     });
     this.use(bodyParser());
-    this.use(table2resource());
+    this.use(db2resource);
     this.use(
       this.resourcer.restApiMiddleware({
         prefix: '/api',

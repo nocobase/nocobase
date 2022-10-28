@@ -1,5 +1,6 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
+import { IdentifierError } from '../../errors/identifier-error';
 
 describe('belongs to field', () => {
   let db: Database;
@@ -28,12 +29,16 @@ describe('belongs to field', () => {
         { type: 'belongsTo', name: 'post' },
       ],
     });
+
     expect(Comment.model.associations.post).toBeUndefined();
+
     const Post = db.collection({
       name: 'posts',
       fields: [{ type: 'string', name: 'title' }],
     });
+
     const association = Comment.model.associations.post;
+
     expect(Comment.model.associations.post).toBeDefined();
     expect(association.foreignKey).toBe('postId');
     // @ts-ignore
@@ -77,9 +82,39 @@ describe('belongs to field', () => {
     const association = Comment.model.associations.post;
     expect(association).toBeDefined();
     expect(association.foreignKey).toBe('postKey');
+
     // @ts-ignore
     expect(association.targetKey).toBe('key');
     expect(Comment.model.rawAttributes['postKey']).toBeDefined();
+  });
+
+  it('should throw error when foreignKey is too long', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'key', unique: true }],
+    });
+
+    const longForeignKey = 'a'.repeat(128);
+
+    let error;
+
+    try {
+      const Comment = db.collection({
+        name: 'comments1',
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'post',
+            targetKey: 'key',
+            foreignKey: longForeignKey,
+          },
+        ],
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeInstanceOf(IdentifierError);
   });
 
   it('custom name and target', async () => {

@@ -56,11 +56,11 @@ interface Resource {
 
 export class MockServer extends Application {
   async loadAndInstall(options: any = {}) {
-    await this.load();
+    await this.load({ method: 'install' });
     await this.install({
       ...options,
       sync: {
-        force: true,
+        force: false,
         alter: {
           drop: false,
         },
@@ -137,6 +137,7 @@ export function mockServer(options: ApplicationOptions = {}) {
   }
 
   return new MockServer({
+    acl: false,
     ...options,
     database,
   });

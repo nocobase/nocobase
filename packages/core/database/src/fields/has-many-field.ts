@@ -8,6 +8,7 @@ import {
   Utils
 } from 'sequelize';
 import { Collection } from '../collection';
+import { checkIdentifier } from '../utils';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 
 export interface HasManyFieldOptions extends HasManyOptions {
@@ -98,6 +99,7 @@ export class HasManyField extends RelationField {
       as: this.name,
       foreignKey: this.foreignKey,
     });
+
     // inverse relation
     // this.TargetModel.belongsTo(collection.model);
 
@@ -107,6 +109,14 @@ export class HasManyField extends RelationField {
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
     }
+
+    try {
+      checkIdentifier(this.options.foreignKey);
+    } catch (error) {
+      this.unbind();
+      throw error;
+    }
+
     if (!this.options.sourceKey) {
       // @ts-ignore
       this.options.sourceKey = association.sourceKey;

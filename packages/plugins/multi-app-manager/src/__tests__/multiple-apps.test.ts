@@ -1,5 +1,6 @@
 import { Database } from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
+import { uid } from '@nocobase/utils';
 import { ApplicationModel } from '..';
 import { PluginMultiAppManager } from '../server';
 
@@ -21,86 +22,91 @@ describe('multiple apps create', () => {
   });
 
   it('should create application', async () => {
+    const name = `td_${uid()}`;
     const miniApp = await db.getRepository('applications').create({
       values: {
-        name: 'miniApp',
+        name,
       },
     });
 
-    expect(app.appManager.applications.get('miniApp')).toBeDefined();
+    expect(app.appManager.applications.get(name)).toBeDefined();
   });
 
   it('should remove application', async () => {
+    const name = `td_${uid()}`;
     await db.getRepository('applications').create({
       values: {
-        name: 'miniApp',
+        name,
       },
     });
 
-    expect(app.appManager.applications.get('miniApp')).toBeDefined();
+    expect(app.appManager.applications.get(name)).toBeDefined();
 
     await db.getRepository('applications').destroy({
       filter: {
-        name: 'miniApp',
+        name,
       },
     });
 
-    expect(app.appManager.applications.get('miniApp')).toBeUndefined();
+    expect(app.appManager.applications.get(name)).toBeUndefined();
   });
 
   it('should create with plugins', async () => {
+    const name = `td_${uid()}`;
     await db.getRepository('applications').create({
       values: {
-        name: 'miniApp',
+        name,
         options: {
-          plugins: [['@nocobase/plugin-ui-schema-storage', { test: 'B' }]],
+          plugins: [['ui-schema-storage', { test: 'B' }]],
         },
       },
     });
 
-    const miniApp = app.appManager.applications.get('miniApp');
+    const miniApp = app.appManager.applications.get(name);
     expect(miniApp).toBeDefined();
 
-    const plugin = miniApp.pm.get('@nocobase/plugin-ui-schema-storage');
+    const plugin = miniApp.pm.get('ui-schema-storage');
 
     expect(plugin).toBeDefined();
-    expect(plugin.options).toEqual({
+    expect(plugin.options).toMatchObject({
       test: 'B',
     });
   });
 
   it('should lazy load applications', async () => {
+    const name = `td_${uid()}`;
     await db.getRepository('applications').create({
       values: {
-        name: 'miniApp',
+        name,
         options: {
-          plugins: ['@nocobase/plugin-ui-schema-storage'],
+          plugins: ['ui-schema-storage'],
         },
       },
     });
 
-    await app.appManager.removeApplication('miniApp');
+    await app.appManager.removeApplication(name);
 
     app.appManager.setAppSelector(() => {
-      return 'miniApp';
+      return name;
     });
 
-    expect(app.appManager.applications.has('miniApp')).toBeFalsy();
+    expect(app.appManager.applications.has(name)).toBeFalsy();
 
     await app.agent().resource('test').test();
 
-    expect(app.appManager.applications.has('miniApp')).toBeTruthy();
+    expect(app.appManager.applications.has(name)).toBeTruthy();
   });
 
   it('should change handleAppStart', async () => {
     const customHandler = jest.fn();
     ApplicationModel.handleAppStart = customHandler;
+    const name = `td_${uid()}`;
 
     await db.getRepository('applications').create({
       values: {
-        name: 'miniApp',
+        name,
         options: {
-          plugins: ['@nocobase/plugin-ui-schema-storage'],
+          plugins: ['ui-schema-storage'],
         },
       },
     });

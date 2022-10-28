@@ -1,5 +1,5 @@
 import { Field } from '@formily/core';
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
 import template from 'lodash/template';
 import React, { createContext, useContext } from 'react';
@@ -10,7 +10,7 @@ import { useRecordIndex } from '../record-provider';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
-const BlockRequestContext = createContext(null);
+const BlockRequestContext = createContext<any>(null);
 
 export const useBlockResource = () => {
   return useContext(BlockResourceContext);
@@ -80,6 +80,8 @@ export const useResourceAction = (props, opts = {}) => {
   const { fields } = useCollection();
   const appends = fields?.filter((field) => field.target).map((field) => field.name);
   const params = useActionParams(props);
+  const api = useAPIClient();
+  const fieldSchema = useFieldSchema();
   if (!Object.keys(params).includes('appends') && appends?.length) {
     params['appends'] = appends;
   }
@@ -96,6 +98,12 @@ export const useResourceAction = (props, opts = {}) => {
     },
     {
       ...opts,
+      onSuccess(data, params) {
+        opts?.['onSuccess']?.(data, params);
+        if (fieldSchema['x-uid']) {
+          api.services[fieldSchema['x-uid']] = result;
+        }
+      },
       defaultParams: [params],
       refreshDeps: [JSON.stringify(params.appends)],
     },

@@ -5,4 +5,6 @@ export * from './mixin/AsyncEmitter';
 export * from './number';
 export * from './registry';
 export * from './requireModule';
+export * from './toposort';
 export * from './uid';
+

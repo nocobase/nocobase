@@ -38,6 +38,7 @@ describe('acl', () => {
       },
     });
   });
+
   it('should define role with predicate', () => {
     acl.setAvailableAction('edit', {
       type: 'old-data',

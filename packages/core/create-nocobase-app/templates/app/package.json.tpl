@@ -6,6 +6,7 @@
   ],
   "scripts": {
     "nocobase": "nocobase",
+    "pm": "nocobase pm",
     "dev": "nocobase dev",
     "start": "nocobase start",
     "clean": "nocobase clean",

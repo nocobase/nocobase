@@ -10,6 +10,7 @@ export default defineConfig({
   define: {
     ...umiConfig.define,
   },
+  dynamicImportSyntax: {},
   // only proxy when using `umi dev`
   // if the assets are built, will not proxy
   proxy: {

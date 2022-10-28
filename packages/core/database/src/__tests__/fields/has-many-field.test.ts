@@ -1,6 +1,7 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
 import { makeWatchHost } from 'ts-loader/dist/servicesHost';
+import { IdentifierError } from '../../errors/identifier-error';
 
 describe('has many field', () => {
   let db: Database;
@@ -148,5 +149,26 @@ describe('has many field', () => {
     expect(Comment.model.rawAttributes.postId).toBeDefined();
     Comment.removeField('post');
     expect(Comment.model.rawAttributes.postId).toBeUndefined();
+  });
+
+  it('should throw error when foreignKey is too long', async () => {
+    const longForeignKey = 'a'.repeat(64);
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'hasMany', name: 'comments', foreignKey: longForeignKey }],
+    });
+
+    let error;
+    try {
+      const Comment = db.collection({
+        name: 'comments',
+        fields: [{ type: 'belongsTo', name: 'post' }],
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeInstanceOf(IdentifierError);
   });
 });

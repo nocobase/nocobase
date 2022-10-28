@@ -48,7 +48,7 @@ describe('association field acl', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    const userPlugin = app.getPlugin('users') as UsersPlugin;
     userAgent = app.agent().auth(
       userPlugin.jwtService.sign({
         userId: user.get('id'),

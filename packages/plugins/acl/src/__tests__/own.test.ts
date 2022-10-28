@@ -67,7 +67,7 @@ describe('own test', () => {
 
     admin = await db.getRepository('users').findOne();
 
-    pluginUser = app.getPlugin('@nocobase/plugin-users');
+    pluginUser = app.getPlugin('users');
 
     adminToken = pluginUser.jwtService.sign({ userId: admin.get('id') });
 

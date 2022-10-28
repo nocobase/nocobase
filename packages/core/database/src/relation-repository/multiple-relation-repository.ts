@@ -5,19 +5,18 @@ import {
   CountOptions,
   DestroyOptions,
   Filter,
-  FilterByTk,
+  FindOneOptions,
   FindOptions,
   TargetKey,
   TK,
-  UpdateOptions
+  UpdateOptions,
 } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 import { RelationRepository, transaction } from './relation-repository';
+import { handleAppendsQuery } from '../utils';
 
-export interface FindAndCountOptions extends CommonFindOptions {}
-
-export interface FindOneOptions extends CommonFindOptions, FilterByTk {}
+export type FindAndCountOptions = CommonFindOptions;
 
 export interface AssociatedOptions extends Transactionable {
   tk?: TK;
@@ -52,16 +51,30 @@ export abstract class MultipleRelationRepository extends RelationRepository {
           group: `${this.targetModel.name}.${this.targetKey()}`,
           transaction,
         })
-      ).map((row) => row.get(this.targetKey()));
+      ).map((row) => {
+        return { row, pk: row.get(this.targetKey()) };
+      });
 
-      return await sourceModel[getAccessor]({
-        ...omit(findOptions, ['limit', 'offset']),
-        where: {
-          [this.targetKey()]: {
-            [Op.in]: ids,
-          },
-        },
-        transaction,
+      if (ids.length == 0) {
+        return [];
+      }
+
+      return await handleAppendsQuery({
+        templateModel: ids[0].row,
+        queryPromises: findOptions.include.map((include) => {
+          return sourceModel[getAccessor]({
+            ...omit(findOptions, ['limit', 'offset']),
+            include: [include],
+            where: {
+              [this.targetKey()]: {
+                [Op.in]: ids.map((id) => id.pk),
+              },
+            },
+            transaction,
+          }).then((rows) => {
+            return { rows, include };
+          });
+        }),
       });
     }
 
@@ -73,6 +86,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
   async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]> {
     const transaction = await this.getTransaction(options, false);
+
     return [
       await this.find({
         ...options,

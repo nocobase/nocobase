@@ -77,15 +77,28 @@ const MenuEditor = (props) => {
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
         if (defaultSelectedUid) {
+          if (defaultSelectedUid.includes('/')) {
+            return;
+          }
           const s = findByUid(schema, defaultSelectedUid);
           if (s) {
             setTitle(s.title);
+          } else {
+            const s = findMenuItem(schema);
+            if (s) {
+              history.push(`/admin/${s['x-uid']}`);
+              setTitle(s.title);
+            } else {
+              history.push(`/admin/`);
+            }
           }
         } else {
           const s = findMenuItem(schema);
           if (s) {
             history.push(`/admin/${s['x-uid']}`);
             setTitle(s.title);
+          } else {
+            history.push(`/admin/`);
           }
         }
       },
@@ -165,10 +178,10 @@ const InternalAdminLayout = (props: any) => {
           className={css`
             min-height: calc(100vh - 46px);
             position: relative;
-            padding-bottom: 70px;
+            // padding-bottom: 70px;
             > div {
               position: relative;
-              z-index: 1;
+              // z-index: 1;
             }
             .ant-layout-footer {
               position: absolute;
@@ -176,6 +189,7 @@ const InternalAdminLayout = (props: any) => {
               text-align: center;
               width: 100%;
               z-index: 0;
+              padding: 10px 50px;
             }
           `}
         >

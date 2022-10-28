@@ -70,6 +70,7 @@ export class OptionsParser {
     if (typeof sort === 'string') {
       sort = sort.split(',');
     }
+
     const orderParams = [];
     for (const sortKey of sort) {
       let direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
@@ -191,8 +192,9 @@ export class OptionsParser {
 
     /**
      * set include params
-     * @param includeRoot
-     * @param appends
+     * @param model
+     * @param queryParams
+     * @param append
      */
     const setInclude = (model: ModelCtor<any>, queryParams: any, append: string) => {
       const appendFields = append.split('.');

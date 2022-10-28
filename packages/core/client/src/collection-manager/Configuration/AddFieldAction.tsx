@@ -7,11 +7,12 @@ import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useCompile } from '../../schema-component';
-import { useCreateAction } from '../action-hooks';
+import { RecordProvider, useRecord } from '../../record-provider';
+import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useCancelAction, useCreateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { options } from './interfaces';
 
@@ -27,12 +28,15 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
-  
-  const initialValue = {
+
+  const initialValue: any = {
     name: `f_${uid()}`,
     ...cloneDeep(schema.default),
     interface: schema.name,
   };
+  if (initialValue.reverseField) {
+    initialValue.reverseField.name = `f_${uid()}`;
+  }
   // initialValue.uiSchema.title = schema.title;
   return {
     type: 'object',
@@ -40,6 +44,9 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
       [uid()]: {
         type: 'void',
         'x-component': 'Action.Drawer',
+        'x-component-props': {
+          getContainer: '{{ getContainer }}',
+        },
         'x-decorator': 'Form',
         'x-decorator-props': {
           useValues(options) {
@@ -71,7 +78,7 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
                 title: '{{ t("Cancel") }}',
                 'x-component': 'Action',
                 'x-component-props': {
-                  useAction: '{{ cm.useCancelAction }}',
+                  useAction: '{{ useCancelAction }}',
                 },
               },
               action2: {
@@ -90,101 +97,111 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
   };
 };
 
+export const useCollectionFieldFormValues = () => {
+  const form = useForm();
+  return {
+    getValues() {
+      const values = cloneDeep(form.values);
+      if (values.autoCreateReverseField) {
+      } else {
+        delete values.reverseField;
+      }
+      delete values.autoCreateReverseField;
+      return values;
+    }
+  }
+}
+
 const useCreateCollectionField = () => {
   const form = useForm();
   const { run } = useCreateAction();
   const { refreshCM } = useCollectionManager();
-  const { title } = useRecord();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
   return {
     async run() {
       await form.submit();
-      // const options = form?.values?.uiSchema?.enum?.slice() || [];
-      // if (options?.length) {
-      //   form.setValuesIn(
-      //     'uiSchema.enum',
-      //     options.map((option) => {
-      //       return {
-      //         value: uid(),
-      //         ...option,
-      //       };
-      //     }),
-      //   );
-      // }
-      // function recursiveChildren(children = [], prefix = 'children') {
-      //   children.forEach((item, index) => {
-      //     const itemOptions = item.uiSchema?.enum?.slice() || [];
-      //     form.setValuesIn(
-      //       `${prefix}[${index}].uiSchema.enum`,
-      //       itemOptions.map((option) => {
-      //         return {
-      //           value: uid(),
-      //           ...option,
-      //         };
-      //       }),
-      //     );
-      //     recursiveChildren(item.children, `${prefix}[${index}].children`);
-      //   });
-      // }
-
-      // recursiveChildren(form?.values?.children);
-
-      if (['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(form?.values?.interface) && title) {
-        form.setValuesIn('reverseField.uiSchema.title', title);
+      const values = cloneDeep(form.values);
+      if (values.autoCreateReverseField) {
+      } else {
+        delete values.reverseField;
       }
-
-      await run();
+      delete values.autoCreateReverseField;
+      await resource.create({ values });
+      ctx.setVisible(false);
+      await form.reset();
+      refresh();
       await refreshCM();
     },
   };
 };
 
-export const AddFieldAction = () => {
+export const AddCollectionField = (props) => {
+  const record = useRecord();
+  return <AddFieldAction item={record} {...props} />;
+};
+
+export const AddFieldAction = (props) => {
+  const { scope, getContainer, item: record, children } = props;
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const record = useRecord();
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
-      <Dropdown
-        overlay={
-          <Menu
-            style={{
-              maxHeight: '60vh',
-              overflow: 'auto',
-            }}
-            onClick={(info) => {
-              const schema = getSchema(getInterface(info.key), record, compile);
-              setSchema(schema);
-              setVisible(true);
-            }}
-          >
-            {options.map((option) => {
-              return (
-                option.children.length > 0 && (
-                  <Menu.ItemGroup key={option.label} title={compile(option.label)}>
-                    {option.children
-                      .filter((child) => !['o2o', 'subTable'].includes(child.name))
-                      .map((child) => {
-                        return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
-                      })}
-                  </Menu.ItemGroup>
-                )
-              );
-            })}
-          </Menu>
-        }
-      >
-        <Button icon={<PlusOutlined />} type={'primary'}>
-          {t('Add field')}
-        </Button>
-      </Dropdown>
-      <SchemaComponent
-        schema={schema}
-        components={{ ...components, ArrayTable }}
-        scope={{ createOnly: true, useCreateCollectionField }}
-      />
-    </ActionContext.Provider>
+    <RecordProvider record={record}>
+      <ActionContext.Provider value={{ visible, setVisible }}>
+        <Dropdown
+          getPopupContainer={getContainer}
+          overlay={
+            <Menu
+              style={{
+                maxHeight: '60vh',
+                overflow: 'auto',
+              }}
+              onClick={(info) => {
+                const schema = getSchema(getInterface(info.key), record, compile);
+                setSchema(schema);
+                setVisible(true);
+              }}
+            >
+              {options.map((option) => {
+                return (
+                  option.children.length > 0 && (
+                    <Menu.ItemGroup key={option.label} title={compile(option.label)}>
+                      {option.children
+                        .filter((child) => !['o2o', 'subTable'].includes(child.name))
+                        .map((child) => {
+                          return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
+                        })}
+                    </Menu.ItemGroup>
+                  )
+                );
+              })}
+            </Menu>
+          }
+        >
+          {children || (
+            <Button icon={<PlusOutlined />} type={'primary'}>
+              {t('Add field')}
+            </Button>
+          )}
+        </Dropdown>
+        <SchemaComponent
+          schema={schema}
+          components={{ ...components, ArrayTable }}
+          scope={{
+            getContainer,
+            useCancelAction,
+            createOnly: true,
+            useCreateCollectionField,
+            record,
+            showReverseFieldConfig: true,
+            ...scope,
+          }}
+        />
+      </ActionContext.Provider>
+    </RecordProvider>
   );
 };

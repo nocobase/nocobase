@@ -189,7 +189,7 @@ FormItem.Designer = (props) => {
         <SchemaSettings.SwitchItem
           key="required"
           title={t('Required')}
-          checked={fieldSchema.required}
+          checked={fieldSchema.required as boolean}
           onChange={(required) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],

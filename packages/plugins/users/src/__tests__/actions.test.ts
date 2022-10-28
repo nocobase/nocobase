@@ -22,7 +22,7 @@ describe('actions', () => {
     await app.loadAndInstall();
     db = app.db;
 
-    pluginUser = app.getPlugin('@nocobase/plugin-users');
+    pluginUser = app.getPlugin('users');
     adminUser = await db.getRepository('users').findOne({
       filter: {
         email: process.env.INIT_ROOT_EMAIL

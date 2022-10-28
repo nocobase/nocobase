@@ -11,9 +11,11 @@ lerna-debug.log
 *.sqlite
 coverage
 .umi
+.umi-production
 /uploads
 .env.test
 docs-dist/
 .npmrc
 dist/
 docker/**/storage
+cache/diskstore-*

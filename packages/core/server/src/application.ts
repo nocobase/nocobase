@@ -1,14 +1,17 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
+import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
-import Koa from 'koa';
+import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
+import compose from 'koa-compose';
 import { isBoolean } from 'lodash';
 import semver from 'semver';
+import { promisify } from 'util';
 import { createACL } from './acl';
 import { AppManager } from './app-manager';
 import { registerCli } from './commands';
@@ -19,7 +22,6 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 const packageJson = require('../package.json');
 
 export type PluginConfiguration = string | [string, any];
-export type PluginsConfigurations = Array<PluginConfiguration>;
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -27,23 +29,29 @@ export interface ResourcerOptions {
 
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
+  cache?: ICacheConfig | ICacheConfig[];
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;
   dataWrapping?: boolean;
   registerActions?: boolean;
   i18n?: i18n | InitOptions;
-  plugins?: PluginsConfigurations;
+  plugins?: PluginConfiguration[];
+  acl?: boolean;
+  pmSock?: string;
 }
 
-export interface DefaultState {
+export interface DefaultState extends KoaDefaultState {
   currentUser?: any;
+
   [key: string]: any;
 }
 
-export interface DefaultContext {
+export interface DefaultContext extends KoaDefaultContext {
   db: Database;
+  cache: Cache;
   resourcer: Resourcer;
+  i18n: any;
   [key: string]: any;
 }
 
@@ -121,47 +129,116 @@ export class ApplicationVersion {
       if (!version) {
         return true;
       }
-      return semver.satisfies(version, range);
+      return semver.satisfies(version, range, { includePrerelease: true });
     }
     return true;
   }
 }
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
-  public readonly db: Database;
+  protected _db: Database;
 
-  public readonly resourcer: Resourcer;
+  protected _resourcer: Resourcer;
 
-  public readonly cli: Command;
+  protected _cache: Cache;
 
-  public readonly i18n: i18n;
+  protected _cli: Command;
 
-  public readonly pm: PluginManager;
+  protected _i18n: i18n;
 
-  public readonly acl: ACL;
+  protected _pm: PluginManager;
 
-  public readonly appManager: AppManager;
+  protected _acl: ACL;
 
-  public readonly version: ApplicationVersion;
+  protected _appManager: AppManager;
+
+  protected _version: ApplicationVersion;
 
   protected plugins = new Map<string, Plugin>();
 
   public listenServer: Server;
 
+  declare middleware: any;
+
   constructor(public options: ApplicationOptions) {
     super();
+    this.init();
+  }
 
-    this.acl = createACL();
-    this.db = this.createDatabase(options);
-    this.resourcer = createResourcer(options);
-    this.cli = new Command('nocobase').usage('[command] [options]');
-    this.i18n = createI18n(options);
+  get db() {
+    return this._db;
+  }
 
-    this.pm = new PluginManager({
-      app: this,
-    });
+  get cache() {
+    return this._cache;
+  }
 
-    this.appManager = new AppManager(this);
+  get resourcer() {
+    return this._resourcer;
+  }
+
+  get cli() {
+    return this._cli;
+  }
+
+  get acl() {
+    return this._acl;
+  }
+
+  get i18n() {
+    return this._i18n;
+  }
+
+  get pm() {
+    return this._pm;
+  }
+
+  get version() {
+    return this._version;
+  }
+
+  get appManager() {
+    return this._appManager;
+  }
+
+  protected init() {
+    const options = this.options;
+    // @ts-ignore
+    this._events = [];
+    // @ts-ignore
+    this._eventsCount = [];
+    this.removeAllListeners();
+    this.middleware = new Toposort<any>();
+    // this.context = Object.create(context);
+    this.plugins = new Map<string, Plugin>();
+    this._acl = createACL();
+    if (this._db) {
+      // MaxListenersExceededWarning
+      this._db.removeAllListeners();
+    }
+    this._db = this.createDatabase(options);
+    this._resourcer = createResourcer(options);
+    this._cli = new Command('nocobase').usage('[command] [options]');
+    this._i18n = createI18n(options);
+    this._cache = createCache(options.cache);
+    this.context.db = this._db;
+    this.context.resourcer = this._resourcer;
+    this.context.cache = this._cache;
+
+    if (this._pm) {
+      this._pm = this._pm.clone();
+    } else {
+      this._pm = new PluginManager({
+        app: this,
+        plugins: options.plugins,
+      });
+    }
+
+    this._appManager = new AppManager(this);
+
+    if (this.options.acl !== false) {
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
+    }
 
     registerMiddlewares(this, options);
 
@@ -169,11 +246,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       registerActions(this);
     }
 
-    this.loadPluginConfig(options.plugins || []);
-
     registerCli(this);
 
-    this.version = new ApplicationVersion(this);
+    this._version = new ApplicationVersion(this);
   }
 
   private createDatabase(options: ApplicationOptions) {
@@ -193,29 +268,31 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return packageJson.version;
   }
 
-  plugin<O = any>(pluginClass: any, options?: O): Plugin<O> {
-    return this.pm.add(pluginClass, options);
+  plugin<O = any>(pluginClass: any, options?: O): Plugin {
+    return this.pm.addStatic(pluginClass, options);
   }
 
-  loadPluginConfig(pluginsConfigurations: PluginsConfigurations) {
-    for (let pluginConfiguration of pluginsConfigurations) {
-      if (typeof pluginConfiguration == 'string') {
-        pluginConfiguration = [pluginConfiguration, {}];
-      }
-
-      const plugin = PluginManager.resolvePlugin(pluginConfiguration[0]);
-      const pluginOptions = pluginConfiguration[1];
-
-      this.plugin(plugin, pluginOptions);
-    }
-  }
-
+  // @ts-ignore
   use<NewStateT = {}, NewContextT = {}>(
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
-    options?: MiddlewareOptions,
+    options?: ToposortOptions,
   ) {
-    // @ts-ignore
-    return super.use(middleware);
+    this.middleware.add(middleware, options);
+    return this;
+  }
+
+  callback() {
+    const fn = compose(this.middleware.nodes);
+
+    if (!this.listenerCount('error')) this.on('error', this.onerror);
+
+    const handleRequest = (req, res) => {
+      const ctx = this.createContext(req, res);
+      // @ts-ignore
+      return this.handleRequest(ctx, fn);
+    };
+
+    return handleRequest;
   }
 
   collection(options: CollectionOptions) {
@@ -238,8 +315,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (<any>this.cli)._findCommand(name);
   }
 
-  async load() {
-    await this.pm.load();
+  async load(options?: any) {
+    if (options?.reload) {
+      this.init();
+    }
+    await this.emitAsync('beforeLoad', this, options);
+    await this.pm.load(options);
+    await this.emitAsync('afterLoad', this, options);
+  }
+
+  async reload(options?: any) {
+    await this.load({
+      ...options,
+      reload: true,
+    });
   }
 
   getPlugin<P extends Plugin>(name: string) {
@@ -250,8 +339,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.runAsCLI(argv);
   }
 
-  async runAsCLI(argv?: readonly string[], options?: ParseOptions) {
-    await this.load();
+  async runAsCLI(argv = process.argv, options?: ParseOptions) {
+    await this.load({
+      method: argv?.[2],
+    });
     return this.cli.parseAsync(argv, options);
   }
 
@@ -264,6 +355,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('beforeStart', this, options);
 
     if (options?.listen?.port) {
+      const pmServer = await this.pm.listen();
       const listen = () =>
         new Promise((resolve, reject) => {
           const Server = this.listen(options?.listen, () => {
@@ -272,6 +364,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
           Server.on('error', (err) => {
             reject(err);
+          });
+
+          Server.on('close', () => {
+            pmServer.close();
           });
         });
 
@@ -297,25 +393,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     try {
       // close database connection
       // silent if database already closed
-      await this.db.close();
+      if (!this.db.closed()) {
+        await this.db.close();
+      }
     } catch (e) {
       console.log(e);
     }
 
     // close http server
     if (this.listenServer) {
-      const closeServer = () =>
-        new Promise((resolve, reject) => {
-          this.listenServer.close((err) => {
-            if (err) {
-              return reject(err);
-            }
-            this.listenServer = null;
-            resolve(true);
-          });
-        });
-
-      await closeServer();
+      await promisify(this.listenServer.close).call(this.listenServer);
+      this.listenServer = null;
     }
 
     await this.emitAsync('afterStop', this, options);
@@ -328,8 +416,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options: InstallOptions = {}) {
-    await this.emitAsync('beforeInstall', this, options);
-
     const r = await this.db.version.satisfies({
       mysql: '>=8.0.17',
       sqlite: '3.x',
@@ -343,7 +429,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.clean) {
       await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
+      await this.reload({ method: 'install' });
     }
+
+    await this.emitAsync('beforeInstall', this, options);
 
     await this.db.sync(options?.sync);
     await this.pm.install(options);

@@ -235,6 +235,29 @@ describe('belongs to many', () => {
     expect(findFilterResult[0].name).toEqual('t2');
   });
 
+  test('create with array', async () => {
+    const p1 = await Post.repository.create({
+      values: {
+        title: 'p1',
+      },
+    });
+
+    const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
+
+    const results = await PostTagRepository.create({
+      values: [
+        {
+          name: 't1',
+        },
+        {
+          name: 't2',
+        },
+      ],
+    });
+
+    expect(results.length).toEqual(2);
+  });
+
   test('find and count', async () => {
     const p1 = await Post.repository.create({
       values: {

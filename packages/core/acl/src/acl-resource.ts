@@ -53,7 +53,7 @@ export class ACLResource {
     this.actions.set(name, context.params);
   }
 
-  setActions(actions: { [key: string]: RoleActionParams }) {
+  setActions(actions: ResourceActions) {
     for (const actionName of Object.keys(actions)) {
       this.setAction(actionName, actions[actionName]);
     }

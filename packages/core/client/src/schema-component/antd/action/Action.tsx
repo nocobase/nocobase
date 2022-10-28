@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Modal, Popover } from 'antd';
 import classnames from 'classnames';
 import React, { useState } from 'react';
@@ -86,6 +86,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const { run } = useAction();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
+  const form = useForm();
   const designerProps = fieldSchema['x-designer-props'];
   const openMode = fieldSchema?.['x-component-props']?.['openMode'];
   const renderButton = () => (
@@ -93,6 +94,7 @@ export const Action: ComposedAction = observer((props: any) => {
       {...others}
       loading={field?.data?.loading}
       icon={<Icon type={icon} />}
+      disabled={form.disabled}
       onClick={(e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();

@@ -3,9 +3,9 @@ import { getRepositoryFromParams } from '../utils';
 
 export async function update(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
-  const { filterByTk, values, whitelist, blacklist, filter, updateAssociationValues } = ctx.action.params;
+  const { forceUpdate, filterByTk, values, whitelist, blacklist, filter, updateAssociationValues } = ctx.action.params;
 
-  const instance = await repository.update({
+  ctx.body = await repository.update({
     filterByTk,
     values,
     whitelist,
@@ -13,8 +13,8 @@ export async function update(ctx: Context, next) {
     filter,
     updateAssociationValues,
     context: ctx,
+    forceUpdate,
   });
 
-  ctx.body = instance;
   await next();
 }

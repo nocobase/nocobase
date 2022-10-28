@@ -9,4 +9,6 @@ export * from './context';
 export * from './hooks';
 export * from './ResourceActionProvider';
 export * from './types';
+export * from './Configuration';
+
 

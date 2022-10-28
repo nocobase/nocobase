@@ -7,7 +7,7 @@ import { Redirect, useHistory } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 import VerificationCode from './VerificationCode';
 
-const schema: ISchema = {
+const signupPageSchema: ISchema = {
   type: 'object',
   name: uid(),
   'x-component': 'FormV2',
@@ -107,7 +107,13 @@ const schema: ISchema = {
   },
 };
 
-export const useSignup = () => {
+export interface UseSignupProps {
+  message?: {
+    success?: string;
+  };
+}
+
+export const useSignup = (props?: UseSignupProps) => {
   const history = useHistory();
   const form = useForm();
   const api = useAPIClient();
@@ -118,7 +124,7 @@ export const useSignup = () => {
       await api.resource('users').signup({
         values: form.values,
       });
-      message.success('Sign up successfully, and automatically jump to the sign in page');
+      message.success(props?.message?.success || t('Sign up successfully, and automatically jump to the sign in page'));
       setTimeout(() => {
         history.push('/signin');
       }, 2000);
@@ -126,20 +132,28 @@ export const useSignup = () => {
   };
 };
 
-export const SignupPage = () => {
+export interface SignupPageProps {
+  schema?: ISchema;
+  components?: any;
+  scope?: any;
+}
+
+export const SignupPage = (props: SignupPageProps) => {
   useCurrentDocumentTitle('Signup');
   const ctx = useSystemSettings();
   const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   if (!allowSignUp) {
     return <Redirect to={'/signin'} />;
   }
+  const { schema, components, scope } = props;
   return (
     <SchemaComponent
-      schema={schema}
+      schema={schema || signupPageSchema}
       components={{
         VerificationCode,
+        ...components,
       }}
-      scope={{ useSignup, smsAuthEnabled }}
+      scope={{ useSignup, smsAuthEnabled, ...scope }}
     />
   );
 };

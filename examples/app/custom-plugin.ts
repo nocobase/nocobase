@@ -4,12 +4,13 @@
 # 步骤
 
 Step 1: Start app
-yarn run:example plugins/custom-plugin start
+yarn run:example app/custom-plugin start
 
 Step 2: View test list
 http://localhost:13000/api/test:list
 */
 import { Application, Plugin } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 
 const app = new Application({
   database: {
@@ -22,7 +23,7 @@ const app = new Application({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT as any,
     timezone: process.env.DB_TIMEZONE,
-    tablePrefix: process.env.DB_TABLE_PREFIX,
+    tablePrefix: `t_${uid()}_`,
   },
   resourcer: {
     prefix: '/api',
