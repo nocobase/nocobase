@@ -1,7 +1,7 @@
 name: Aliyun Container Registry
 
 on:
-  push:
+  pull_request:
     branches:
       - '**'
 
