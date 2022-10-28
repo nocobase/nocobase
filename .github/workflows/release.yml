@@ -1,18 +1,36 @@
-name: main-docker
+name: Release
 
 on:
   push:
-    branches:
-      - 'main'
+    tags:
+      - 'v*'
 
 jobs:
+  publish-npm:
+    runs-on: ubuntu-latest
+    container: node:16
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: yarn install and build
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn build
+      -
+        name: publish npmjs.org
+        run: |
+          npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+          git checkout -b release
+          git config user.email "test@mail.com"
+          git config user.name "test" && git add .
+          git commit -m "chore(versions): test publish packages xxx"
+          yarn release:force --registry https://registry.npmjs.org/
   push-docker:
     runs-on: ubuntu-latest
-    services:
-      verdaccio:
-        image: verdaccio/verdaccio
-        ports:
-          - 4873:4873
+    needs: publish-npm
     steps:
       -
         name: Checkout
@@ -23,8 +41,6 @@ jobs:
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: network=host
       -
         name: Docker meta
         id: meta
@@ -47,10 +63,7 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v3
         with:
-          context: .
-          file: Dockerfile
-          build-args: | 
-            VERDACCIO_URL=http://localhost:4873/
-          # platforms: linux/amd64,linux/arm64
+          context: ./docker/nocobase
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: nocobase/nocobase:latest,${{ steps.meta.outputs.tags }}

@@ -1,0 +1,108 @@
+name: NocoBase Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'packages/**'
+    # paths-ignore:
+    #   - 'docs/**'
+  pull_request:
+    paths:
+      - 'packages/**'
+    # paths-ignore:
+    #   - 'docs/**'
+
+jobs:
+  sqlite-test:
+    strategy:
+      matrix:
+        node_version: ['16']
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+      - run: yarn install
+      - name: Test with Sqlite
+        run: yarn test
+        env:
+          DB_DIALECT: sqlite
+          DB_STORAGE: /tmp/db.sqlite
+
+  postgres-test:
+    strategy:
+      matrix:
+        node_version: ['16']
+
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:10
+        # Provide the password for postgres
+        env:
+          POSTGRES_USER: nocobase
+          POSTGRES_PASSWORD: password
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+      - run: yarn install
+      - name: Test with postgres
+        run: yarn test
+        env:
+          DB_DIALECT: postgres
+          DB_HOST: postgres
+          DB_PORT: 5432
+          DB_USER: nocobase
+          DB_PASSWORD: password
+          DB_DATABASE: nocobase
+
+  mysql-test:
+    strategy:
+      matrix:
+        node_version: ['16']
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: nocobase
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+      - run: yarn install
+      - name: Test with MySQL
+        run: yarn test
+        env:
+          DB_DIALECT: mysql
+          DB_HOST: mysql
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: password
+          DB_DATABASE: nocobase

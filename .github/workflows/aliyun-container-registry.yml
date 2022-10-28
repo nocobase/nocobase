@@ -1,9 +1,11 @@
-name: push-acr
+name: Aliyun Container Registry
 
 on:
-  push:
+  pull_request:
     branches:
       - '**'
+    paths:
+      - 'packages/**'
 
 jobs:
   push-acr:
