@@ -1,6 +1,7 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
 import { IdentifierError } from '../../errors/identifier-error';
+import { exp } from 'mathjs';
 
 describe('belongs to field', () => {
   let db: Database;
@@ -195,30 +196,36 @@ describe('belongs to field', () => {
     expect(association['comments']).toBeDefined();
   });
 
-
   describe('foreign constraints', () => {
-
     it('should on delete restrict', async () => {
       const Product = db.collection({
         name: 'products',
-        fields: [
-          {type: 'string', name: 'name'},
-        ]
+        fields: [{ type: 'string', name: 'name' }],
       });
 
       const Order = db.collection({
         name: 'order',
-        fields: [
-          {type: 'belongsTo', name: 'product', onDelete: 'RESTRICT'},
-        ]
+        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'RESTRICT' }],
       });
 
+      await db.sync();
 
-      const p = await Product.repository.create({values: {name: 'p1'}});
+      const p = await Product.repository.create({ values: { name: 'p1' } });
+      const o = await Order.repository.create({ values: { product: p.id } });
 
-      const o = await Order.repository.create({values: {product: p.id}});
+      expect(o.productId).toBe(p.id);
 
-      expect(o.product.id).toBe(p.id);
-    })
+      let error = null;
+
+      try {
+        await Product.repository.destroy({
+          filterByTk: p.id,
+        });
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).not.toBeNull();
+    });
   });
 });
