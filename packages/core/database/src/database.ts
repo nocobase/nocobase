@@ -14,7 +14,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -27,6 +27,8 @@ import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
+import { referentialIntegrityCheck } from './features/referential-integrity-check';
+import ReferencesMap from './features/ReferencesMap';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -120,6 +122,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelCtor<any>, Collection>();
 
+  referenceMap = new ReferencesMap();
+
   modelHook: ModelHook;
   version: DatabaseVersion;
 
@@ -212,6 +216,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.on('afterUpdate', async (instance) => {
       instance?.toChangedWithAssociations?.();
+    });
+
+    this.on('beforeDestroy', async (instance, options) => {
+      await referentialIntegrityCheck({
+        db: this,
+        referencedInstance: instance,
+        transaction: options.transaction,
+      });
     });
   }
 
