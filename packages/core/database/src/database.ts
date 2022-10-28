@@ -14,7 +14,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
