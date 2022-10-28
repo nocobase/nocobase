@@ -1,7 +1,7 @@
 import { Field, onFormSubmitValidateStart } from '@formily/core';
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useFormEffects } from '@formily/react';
-import { Button, Input, Popover, Tag, Menu, Dropdown } from 'antd';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import { connect, mapProps, useField, useFormEffects } from '@formily/react';
+import { Menu, Dropdown } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useTranslation } from 'react-i18next';
 import * as math from 'mathjs';
@@ -14,7 +14,6 @@ const AntdFormulaInput = (props) => {
 
   const inputRef = useRef();
   const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [formula, setFormula] = useState(null);
   const [html, setHtml] = useState(null);
 
   const numColumns = new Map<string, string>();
@@ -27,41 +26,31 @@ const AntdFormulaInput = (props) => {
     });
   const keys = Array.from(numColumns.keys());
 
-  let initHtml;
-  if (value) {
-    initHtml = value;
-    numColumns.forEach((value, key) => {
-      initHtml = initHtml.replaceAll(
-        key,
-        `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;">${value}</span><span></span>`, // // set extra span for cursor focus on last position
-      );
-    });
-  }
-
   useEffect(() => {
-    if (onChange && formula) {
-      let v = formula || '';
+    if (value) {
+      let newHtml = value;
       numColumns.forEach((value, key) => {
-        v = v.replaceAll(value, key);
+        newHtml = newHtml.replaceAll(
+          key,
+          `<span contentEditable="false" ><input disabled="disabled" style="width:${
+            18 * value.length
+          }px;max-width: 120px" value="${value}"/><span hidden>${key}</span></span>`,
+        );
       });
-      if (v != value) {
-        onChange(v);
-      }
+      newHtml = `${newHtml}<span style="padding-left: 5px"></span>`; // set extra span for cursor focus on last position
+      setHtml(newHtml);
+    } else {
+      setHtml('');
     }
-  }, [formula]);
+  }, [value]);
 
   const menu = (
     <Menu
       onClick={async (args) => {
-        const replaceFormula = formula.replace('@', numColumns.get(args.key));
-        const replaceHtml = html.replace(
-          '@',
-          `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;">${numColumns.get(
-            args.key,
-          )}</span><span></span>`, // set extra span for cursor focus on last position
-        );
-        setFormula(replaceFormula);
-        setHtml(replaceHtml);
+        const replaceFormula = field.value.replace('@', args.key);
+        if (onChange && replaceFormula != field.value) {
+          onChange(replaceFormula);
+        }
         setDropdownVisible(false);
         (inputRef.current as any).focus();
       }}
@@ -73,15 +62,12 @@ const AntdFormulaInput = (props) => {
   );
 
   const handleChange = (e) => {
-    const current = inputRef.current as any;
-    setFormula(e.currentTarget.textContent);
-    if (e.currentTarget.textContent.trim().length === 0) {
-      setHtml('');
-    } else {
-      setHtml(current.innerHTML);
-    }
-    if (e.currentTarget.textContent == '' && onChange) {
-      onChange(null);
+    if (onChange) {
+      if (e.currentTarget.textContent == '') {
+        onChange(null);
+      } else {
+        onChange(e.currentTarget.textContent);
+      }
     }
   };
 
@@ -106,7 +92,8 @@ const AntdFormulaInput = (props) => {
       try {
         math.evaluate(field.value, scope);
         field.feedbacks = [];
-      } catch {
+      } catch (e) {
+        console.error(field.value, scope, (e as Error).message);
         field.setFeedback({
           type: 'error',
           code: 'FormulaError',
@@ -123,7 +110,7 @@ const AntdFormulaInput = (props) => {
         className="ant-input"
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        html={html || initHtml || ''}
+        html={html || ''}
       />
     </Dropdown>
   );
