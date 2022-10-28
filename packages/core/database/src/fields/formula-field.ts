@@ -40,7 +40,7 @@ export class FormulaField extends Field {
         );
       }
     }
-  }
+  };
 
   caculateField = async (instance) => {
     const { expression, name } = this.options;
@@ -50,10 +50,10 @@ export class FormulaField extends Field {
       result = math.evaluate(expression, scope);
       result = math.round(result, 9);
     } catch {}
-    if (result) {
+    if (result === 0 || result) {
       instance.set(name, result);
     }
-  }
+  };
 
   updateFieldData = async (instance, { transaction }) => {
     if (this.collection.name === instance.collectionName && instance.name === this.options.name) {
@@ -80,7 +80,7 @@ export class FormulaField extends Field {
         );
       }
     }
-  }
+  };
 
   bind() {
     super.bind();

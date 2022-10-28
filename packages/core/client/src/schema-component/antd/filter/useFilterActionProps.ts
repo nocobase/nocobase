@@ -6,10 +6,15 @@ import { useBlockRequestContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 
 export const useFilterOptions = (collectionName: string) => {
+  const { getCollectionFields } = useCollectionManager();
+  const fields = getCollectionFields(collectionName);
+  return useFilterFieldOptions(fields);
+};
+
+export const useFilterFieldOptions = (fields) => {
   const fieldSchema = useFieldSchema();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   const { getCollectionFields, getInterface } = useCollectionManager();
-  const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
     if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
       return;
@@ -44,7 +49,7 @@ export const useFilterOptions = (collectionName: string) => {
     }
     if (nested) {
       const targetFields = getCollectionFields(field.target);
-      const options = getOptions(targetFields, depth+1).filter(Boolean);
+      const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
     }
@@ -67,7 +72,7 @@ const isEmpty = (obj) => {
   return obj && Object.keys(obj).length === 0 && Object.getPrototypeOf(obj) === Object.prototype;
 };
 
-const removeNullCondition = (filter) => {
+export const removeNullCondition = (filter) => {
   const items = flat(filter || {});
   const values = {};
   for (const key in items) {
@@ -96,13 +101,17 @@ export const useFilterActionProps = () => {
   const { name } = useCollection();
   const options = useFilterOptions(name);
   const { service, props } = useBlockRequestContext();
-  const field = useField<Field>();
+  return useFilterFieldProps({ options, service, params: props.params });
+};
+
+export const useFilterFieldProps = ({ options, service, params }) => {
   const { t } = useTranslation();
+  const field = useField<Field>();
   return {
     options,
     onSubmit(values) {
       // filter parameter for the block
-      const defaultFilter = removeNullCondition(props.params.filter);
+      const defaultFilter = removeNullCondition(params.filter);
       // filter parameter for the filter action
       const filter = removeNullCondition(values?.filter);
       service.run({ ...service.params?.[0], page: 1, filter: mergeFilter(defaultFilter, filter) });
@@ -114,7 +123,7 @@ export const useFilterActionProps = () => {
       }
     },
     onReset() {
-      const filter = removeNullCondition(props.params.filter);
+      const filter = removeNullCondition(params.filter);
       service.run({ ...service.params?.[0], filter, page: 1 });
       field.title = t('Filter');
     },

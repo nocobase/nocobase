@@ -12,12 +12,12 @@ describe('role', () => {
   beforeEach(async () => {
     api = mockServer();
     await api.cleanDb();
-    api.plugin(UsersPlugin);
-    api.plugin(PluginACL);
+    api.plugin(UsersPlugin, { name: 'users' });
+    api.plugin(PluginACL, { name: 'acl' });
     await api.loadAndInstall();
 
     db = api.db;
-    usersPlugin = api.getPlugin('@nocobase/plugin-users');
+    usersPlugin = api.getPlugin('users');
   });
 
   afterEach(async () => {

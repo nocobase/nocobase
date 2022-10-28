@@ -1,4 +1,4 @@
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import glob from 'glob';
@@ -27,6 +27,33 @@ import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
+import {
+  AfterDefineCollectionListener,
+  BeforeDefineCollectionListener,
+  CreateListener,
+  CreateWithAssociationsListener,
+  DatabaseAfterDefineCollectionEventType,
+  DatabaseAfterRemoveCollectionEventType,
+  DatabaseBeforeDefineCollectionEventType,
+  DatabaseBeforeRemoveCollectionEventType,
+  DestroyListener,
+  EventType,
+  ModelCreateEventTypes,
+  ModelCreateWithAssociationsEventTypes,
+  ModelDestroyEventTypes,
+  ModelSaveEventTypes,
+  ModelSaveWithAssociationsEventTypes,
+  ModelUpdateEventTypes,
+  ModelUpdateWithAssociationsEventTypes,
+  ModelValidateEventTypes,
+  RemoveCollectionListener,
+  SaveListener,
+  SaveWithAssociationsListener,
+  SyncListener,
+  UpdateListener,
+  UpdateWithAssociationsListener,
+  ValidateListener
+} from './types';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -128,6 +155,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   constructor(options: DatabaseOptions) {
     super();
 
+    // this.setMaxListeners(100);
+
     this.version = new DatabaseVersion(this);
 
     const opts = {
@@ -205,6 +234,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
         opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
       }
     });
+
+    this.on('afterCreate', async (instance) => {
+      instance?.toChangedWithAssociations?.();
+    });
+
+    this.on('afterUpdate', async (instance) => {
+      instance?.toChangedWithAssociations?.();
+    });
   }
 
   addMigration(item: MigrationItem) {
@@ -222,7 +259,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
       this.migrations.add({
         name: namespace ? `${namespace}/${filename}` : filename,
-        migration: this.requireModule(file),
+        migration: requireModule(file),
         context,
       });
     }
@@ -230,16 +267,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   inDialect(...dialect: string[]) {
     return dialect.includes(this.sequelize.getDialect());
-  }
-
-  private requireModule(module: any) {
-    if (typeof module === 'string') {
-      module = require(module);
-    }
-    if (typeof module !== 'object') {
-      return module;
-    }
-    return module.__esModule ? module.default : module;
   }
 
   /**
@@ -458,7 +485,20 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.close();
   }
 
-  on(event: string | symbol, listener): this {
+  on(event: EventType, listener: any): this;
+  on(event: ModelValidateEventTypes, listener: SyncListener): this;
+  on(event: ModelValidateEventTypes, listener: ValidateListener): this;
+  on(event: ModelCreateEventTypes, listener: CreateListener): this;
+  on(event: ModelUpdateEventTypes, listener: UpdateListener): this;
+  on(event: ModelSaveEventTypes, listener: SaveListener): this;
+  on(event: ModelDestroyEventTypes, listener: DestroyListener): this;
+  on(event: ModelCreateWithAssociationsEventTypes, listener: CreateWithAssociationsListener): this;
+  on(event: ModelUpdateWithAssociationsEventTypes, listener: UpdateWithAssociationsListener): this;
+  on(event: ModelSaveWithAssociationsEventTypes, listener: SaveWithAssociationsListener): this;
+  on(event: DatabaseBeforeDefineCollectionEventType, listener: BeforeDefineCollectionListener): this;
+  on(event: DatabaseAfterDefineCollectionEventType, listener: AfterDefineCollectionListener): this;
+  on(event: DatabaseBeforeRemoveCollectionEventType | DatabaseAfterRemoveCollectionEventType, listener: RemoveCollectionListener): this;
+  on(event: EventType, listener: any): this {
     // NOTE: to match if event is a sequelize or model type
     const type = this.modelHook.match(event);
 

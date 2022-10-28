@@ -15,6 +15,7 @@ describe('i18next', () => {
       resourcer: {
         prefix: '/api',
       },
+      acl: false,
       dataWrapping: false,
       registerActions: false,
     });

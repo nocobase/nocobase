@@ -1,8 +1,8 @@
 import { ACL } from '@nocobase/acl';
 import { Database } from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
-import UsersPlugin from '@nocobase/plugin-users';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import UsersPlugin from '@nocobase/plugin-users';
+import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 
 describe('acl', () => {
@@ -30,7 +30,7 @@ describe('acl', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    const userPlugin = app.getPlugin('users') as UsersPlugin;
 
     adminAgent = app.agent().auth(
       userPlugin.jwtService.sign({
@@ -483,7 +483,7 @@ describe('acl', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    const userPlugin = app.getPlugin('users') as UsersPlugin;
     const userAgent = app.agent().auth(
       userPlugin.jwtService.sign({
         userId: user.get('id'),
@@ -507,7 +507,7 @@ describe('acl', () => {
     expect(response.statusCode).toEqual(200);
   });
 
-  it('should sync data to acl before app start', async () => {
+  it('should sync data to acl after app reload', async () => {
     const role = await db.getRepository('roles').create({
       values: {
         name: 'new',
@@ -527,14 +527,14 @@ describe('acl', () => {
       hooks: false,
     });
 
-    expect(acl.getRole('new')).toBeUndefined();
+    expect(app.acl.getRole('new')).toBeUndefined();
 
-    await app.start();
+    await app.reload();
 
-    expect(acl.getRole('new')).toBeDefined();
+    expect(app.acl.getRole('new')).toBeDefined();
 
     expect(
-      acl.can({
+      app.acl.can({
         role: 'new',
         resource: 'posts',
         action: 'view',

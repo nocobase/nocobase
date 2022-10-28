@@ -33,7 +33,8 @@ export const TabPaneInitializers = (props?: any) => {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': initializer,
+              'x-initializer':
+                props.isCreate || index === null ? 'CreateFormBlockInitializers' : 'RecordBlockInitializers',
               properties: {},
             },
           },

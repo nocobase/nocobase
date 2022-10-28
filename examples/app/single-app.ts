@@ -10,6 +10,7 @@ Step 2:
 curl http://localhost:13000/api/test:list
 */
 import { Application } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 
 const app = new Application({
   database: {
@@ -22,7 +23,7 @@ const app = new Application({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT as any,
     timezone: process.env.DB_TIMEZONE,
-    tablePrefix: process.env.DB_TABLE_PREFIX,
+    tablePrefix: `t_${uid()}_`,
   },
   resourcer: {
     prefix: '/api',
@@ -37,6 +38,7 @@ app.resource({
     async list(ctx, next) {
       ctx.body = 'test list';
       await next();
+      process.stdout.write('rs');
     },
   },
 });

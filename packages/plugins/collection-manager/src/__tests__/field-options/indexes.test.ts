@@ -7,8 +7,6 @@ describe('field indexes', () => {
 
   beforeEach(async () => {
     app = await createApp();
-    await app.install({ clean: true });
-    await app.start();
     agent = app.agent();
     await agent.resource('collections').create({
       values: {
@@ -47,6 +45,8 @@ describe('field indexes', () => {
         unique: true,
       },
     });
+
+    console.log(response3.body);
 
     expect(response3.status).toBe(400);
 

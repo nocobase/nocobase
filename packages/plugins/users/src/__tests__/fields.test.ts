@@ -10,9 +10,8 @@ describe('createdBy/updatedBy', () => {
   beforeEach(async () => {
     api = mockServer();
     api.plugin(UsersPlugin, userPluginConfig);
-    api.plugin(PluginACL);
-    await api.cleanDb();
-    await api.loadAndInstall();
+    api.plugin(PluginACL, { name: 'acl' });
+    await api.loadAndInstall({ clean: true });
     db = api.db;
   });
 
@@ -63,7 +62,7 @@ describe('createdBy/updatedBy', () => {
       await db.sync();
       const user1 = await db.getCollection('users').model.create();
       const user2 = await db.getCollection('users').model.create();
-      const p1 = await Post.repository.create<any>({
+      const p1 = await Post.repository.create({
         context: {
           state: {
             currentUser: user1,

@@ -1,7 +1,7 @@
 import { ACL } from '@nocobase/acl';
 import { Database, Model } from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
 import UsersPlugin from '@nocobase/plugin-users';
+import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 
 describe('middleware', () => {
@@ -30,7 +30,7 @@ describe('middleware', () => {
       }
     });
 
-    const userPlugin = app.getPlugin('@nocobase/plugin-users') as UsersPlugin;
+    const userPlugin = app.getPlugin('users') as UsersPlugin;
     adminAgent = app.agent().auth(userPlugin.jwtService.sign({
       userId: admin.get('id'),
     }), { type: 'bearer' });

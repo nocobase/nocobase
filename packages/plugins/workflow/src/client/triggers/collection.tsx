@@ -33,6 +33,7 @@ const FieldsSelect = observer((props) => {
         .filter(field => (
           !field.hidden
           && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true)
+          && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
         ))
         .map(field => (
           <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema?.title)}</Select.Option>

@@ -107,7 +107,13 @@ const signupPageSchema: ISchema = {
   },
 };
 
-export const useSignup = () => {
+export interface UseSignupProps {
+  message?: {
+    success?: string;
+  };
+}
+
+export const useSignup = (props?: UseSignupProps) => {
   const history = useHistory();
   const form = useForm();
   const api = useAPIClient();
@@ -118,7 +124,7 @@ export const useSignup = () => {
       await api.resource('users').signup({
         values: form.values,
       });
-      message.success('Sign up successfully, and automatically jump to the sign in page');
+      message.success(props?.message?.success || t('Sign up successfully, and automatically jump to the sign in page'));
       setTimeout(() => {
         history.push('/signin');
       }, 2000);

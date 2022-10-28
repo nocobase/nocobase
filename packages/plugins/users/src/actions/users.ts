@@ -15,7 +15,7 @@ export async function check(ctx: Context, next: Next) {
 }
 
 export async function signin(ctx: Context, next: Next) {
-  const { authenticators, jwtService } = ctx.app.getPlugin('@nocobase/plugin-users');
+  const { authenticators, jwtService } = ctx.app.getPlugin('users');
   const branches = {};
   for (const [name, authenticator] of authenticators.getEntities()) {
     branches[name] = authenticator;

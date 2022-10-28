@@ -2,12 +2,12 @@ import lodash from 'lodash';
 import { Association, BelongsTo, BelongsToMany, HasMany, HasOne, ModelCtor, Transaction } from 'sequelize';
 import { Collection } from '../collection';
 import Database from '../database';
+import { transactionWrapperBuilder } from '../decorators/transaction-decorator';
 import { RelationField } from '../fields/relation-field';
 import FilterParser from '../filter-parser';
 import { Model } from '../model';
 import { OptionsParser } from '../options-parser';
 import { CreateOptions, Filter, FindOptions } from '../repository';
-import { transactionWrapperBuilder } from '../decorators/transaction-decorator';
 import { updateAssociations } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 

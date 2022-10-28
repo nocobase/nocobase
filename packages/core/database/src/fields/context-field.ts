@@ -9,14 +9,12 @@ export class ContextField extends Field {
     return DataTypes[type.toUpperCase()] || DataTypes.STRING;
   }
 
-  init() {
+  listener = async (model: Model, options) => {
     const { name, dataIndex } = this.options;
-    this.listener = async (model: Model, options) => {
-      const { context } = options;
-      model.set(name, lodash.get(context, dataIndex));
-      model.changed(name, true);
-    };
-  }
+    const { context } = options;
+    model.set(name, lodash.get(context, dataIndex));
+    model.changed(name, true);
+  };
 
   bind() {
     super.bind();

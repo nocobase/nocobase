@@ -8,8 +8,7 @@ describe('hook', () => {
 
   beforeEach(async () => {
     api = mockServer();
-    // api.plugin(require('@nocobase/plugin-users').default);
-    api.plugin(logPlugin);
+    api.plugin(logPlugin, { name: 'audit-logs' });
     await api.load();
     db = api.db;
     db.collection({

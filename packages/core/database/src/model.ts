@@ -1,7 +1,7 @@
+import lodash from 'lodash';
 import { Model as SequelizeModel, ModelCtor } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
-import lodash from 'lodash';
 import { Field } from './fields';
 
 interface IModel {
@@ -22,6 +22,40 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 {
   public static database: Database;
   public static collection: Collection;
+
+  [key: string]: any;
+  protected _changedWithAssociations = new Set();
+  protected _previousDataValuesWithAssociations = {};
+
+  // TODO
+  public toChangedWithAssociations() {
+    // @ts-ignore
+    this._changedWithAssociations = new Set([...this._changedWithAssociations, ...this._changed]);
+    // @ts-ignore
+    this._previousDataValuesWithAssociations = this._previousDataValues;
+  }
+
+  public changedWithAssociations(key?: string, value?: any) {
+    if (key === undefined) {
+      if (this._changedWithAssociations.size > 0) {
+        return Array.from(this._changedWithAssociations);
+      }
+      return false;
+    }
+    if (value === true) {
+      this._changedWithAssociations.add(key);
+      return this;
+    }
+    if (value === false) {
+      this._changedWithAssociations.delete(key);
+      return this;
+    }
+    return this._changedWithAssociations.has(key);
+  }
+
+  public clearChangedWithAssociations() {
+    this._changedWithAssociations = new Set();
+  }
 
   public toJSON<T extends TModelAttributes>(): T {
     const handleObj = (obj, options: JSONTransformerOptions) => {

@@ -12,6 +12,6 @@ export interface AvailableActionOptions {
   allowConfigureFields?: boolean;
 }
 
-export class AclAvailableAction {
+export class ACLAvailableAction {
   constructor(public name: string, public options: AvailableActionOptions) {}
 }

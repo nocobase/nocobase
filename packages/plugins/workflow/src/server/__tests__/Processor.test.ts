@@ -1,5 +1,5 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp } from '.';
 import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
@@ -15,7 +15,7 @@ describe('workflow > Processor', () => {
 
   beforeEach(async () => {
     app = await getApp();
-    plugin = app.pm.get('@nocobase/plugin-workflow');
+    plugin = app.pm.get('workflow');
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;

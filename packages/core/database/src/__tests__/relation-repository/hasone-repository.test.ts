@@ -1,7 +1,7 @@
-import { mockDatabase } from '../index';
-import { HasOneRepository } from '../../relation-repository/hasone-repository';
-import Database from '../../database';
 import { Collection } from '../../collection';
+import Database from '../../database';
+import { HasOneRepository } from '../../relation-repository/hasone-repository';
+import { mockDatabase } from '../index';
 
 describe('has one repository', () => {
   let db: Database;

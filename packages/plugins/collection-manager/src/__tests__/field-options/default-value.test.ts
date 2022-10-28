@@ -9,8 +9,6 @@ describe('field defaultValue', () => {
 
   beforeEach(async () => {
     app = await createApp();
-    await app.install({ clean: true });
-    await app.start();
     await app
       .agent()
       .resource('collections')

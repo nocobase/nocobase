@@ -13,7 +13,7 @@ async function findUserByToken(ctx: Context) {
   if (!token) {
     return null;
   }
-  const { jwtService } = ctx.app.getPlugin('@nocobase/plugin-users');
+  const { jwtService } = ctx.app.getPlugin('users');
   try {
     const { userId } = await jwtService.decode(token);
     const collection = ctx.db.getCollection('users');
