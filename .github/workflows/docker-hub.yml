@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - 'main'
+    paths:
+      - 'packages/**'
 
 jobs:
   push-docker:
