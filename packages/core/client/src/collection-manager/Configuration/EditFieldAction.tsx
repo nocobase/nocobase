@@ -6,15 +6,15 @@ import set from 'lodash/set';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useRecord } from '../../record-provider';
+import { useRecord, RecordProvider } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useUpdateAction } from '../action-hooks';
+import { useCancelAction, useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 
-const getSchema = (schema: IField, record: any, compile): ISchema => {
+const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
   if (!schema) {
     return;
   }
@@ -64,7 +64,7 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
                 title: '{{ t("Cancel") }}',
                 'x-component': 'Action',
                 'x-component-props': {
-                  useAction: '{{ cm.useCancelAction }}',
+                  useAction: '{{ useCancelAction }}',
                 },
               },
               action2: {
@@ -109,8 +109,13 @@ const useUpdateCollectionField = () => {
   };
 };
 
-export const EditFieldAction = (props) => {
+export const EditCollectionField = (props) => {
   const record = useRecord();
+  return <EditFieldAction item={record} {...props} />;
+};
+
+export const EditFieldAction = (props) => {
+  const { scope, getContainer, item: record,children } = props;
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -118,42 +123,52 @@ export const EditFieldAction = (props) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const [data, setData] = useState<any>({});
+
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
-      <a
-        onClick={async () => {
-          const { data } = await api.resource('collections.fields', record.collectionName).get({
-            filterByTk: record.name,
-            appends: ['uiSchema', 'reverseField'],
-          });
-          setData(data?.data);
-          const interfaceConf = getInterface(record.interface);
-          const defaultValues: any = cloneDeep(data?.data) || {};
-          if (!defaultValues?.reverseField) {
-            defaultValues.autoCreateReverseField = false;
-            defaultValues.reverseField = interfaceConf.default?.reverseField;
-            set(defaultValues.reverseField, 'name', `f_${uid()}`);
-            set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
-          }
-          const schema = getSchema(
-            {
-              ...interfaceConf,
-              default: defaultValues,
-            },
-            record,
-            compile,
-          );
-          setSchema(schema);
-          setVisible(true);
-        }}
-      >
-        {t('Edit')}
-      </a>
-      <SchemaComponent
-        schema={schema}
-        components={{ ...components, ArrayTable }}
-        scope={{ useUpdateCollectionField, showReverseFieldConfig: !data?.reverseField }}
-      />
-    </ActionContext.Provider>
+    <RecordProvider record={record}>
+      <ActionContext.Provider value={{ visible, setVisible }}>
+        <a
+          onClick={async () => {
+            const { data } = await api.resource('collections.fields', record.collectionName).get({
+              filterByTk: record.name,
+              appends: ['uiSchema', 'reverseField'],
+            });
+            setData(data?.data);
+            const interfaceConf = getInterface(record.interface);
+            const defaultValues: any = cloneDeep(data?.data) || {};
+            if (!defaultValues?.reverseField) {
+              defaultValues.autoCreateReverseField = false;
+              defaultValues.reverseField = interfaceConf.default?.reverseField;
+              set(defaultValues.reverseField, 'name', `f_${uid()}`);
+              set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
+            }
+            const schema = getSchema(
+              {
+                ...interfaceConf,
+                default: defaultValues,
+              },
+              record,
+              compile,
+              getContainer,
+            );
+            setSchema(schema);
+            setVisible(true);
+          }}
+        >
+          {children||t('Edit')}
+        </a>
+        <SchemaComponent
+          schema={schema}
+          components={{ ...components, ArrayTable }}
+          scope={{
+            getContainer,
+            useUpdateCollectionField,
+            useCancelAction,
+            showReverseFieldConfig: !data?.reverseField,
+            ...scope,
+          }}
+        />
+      </ActionContext.Provider>
+    </RecordProvider>
   );
 };
