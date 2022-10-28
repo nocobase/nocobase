@@ -50,6 +50,17 @@ export class BelongsToField extends RelationField {
       throw error;
     }
 
+    // @ts-ignore
+    const targetKey = association.targetKey;
+
+    this.database.referenceMap.addReference({
+      sourceCollectionName: collection.name,
+      sourceField: association.foreignKey,
+      targetField: targetKey,
+      targetCollectionName: Target.name,
+      onDelete: this.options.onDelete,
+    });
+
     if (!this.options.sourceKey) {
       // @ts-ignore
       this.options.sourceKey = association.sourceKey;
