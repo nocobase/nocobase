@@ -15,7 +15,7 @@ import {
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
 import dagre from 'dagre';
-import { last, maxBy, minBy } from 'lodash';
+import { last, maxBy, minBy, uniq } from 'lodash';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateActionAndRefreshCM } from './action-hooks';
@@ -426,7 +426,7 @@ export const GraphDrawPage = React.memo(() => {
           const yNodes = positions.filter((v) => {
             return v.y === maxY;
           });
-          let referenceNode:any = maxBy(yNodes, 'x');
+          let referenceNode: any = maxBy(yNodes, 'x');
           let position;
           if (referenceNode.x > 4500) {
             referenceNode = minBy(yNodes, 'x');
@@ -503,23 +503,6 @@ export const GraphDrawPage = React.memo(() => {
       renderDiffEdges(diffEdges);
     });
   };
-  useLayoutEffect(() => {
-    initGraphCollections();
-    return () => {
-      targetGraph.off('edge:mouseover');
-      targetGraph.off('edge:mouseout');
-      targetGraph.off('node:mouseup');
-      targetGraph.off('node:moved');
-      targetGraph = null;
-      targetNode = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    refreshPositions().then(() => {
-      refreshGM();
-    });
-  }, []);
 
   const handleSearchCollection = (e) => {
     const value = e.target.value.toLowerCase();
@@ -535,17 +518,50 @@ export const GraphDrawPage = React.memo(() => {
   };
 
   const handleSelectCollection = (value) => {
-    if (targetNode && typeof targetNode !== 'string') {
-      targetNode.removeAttrs();
+    const nodes = targetGraph.getNodes();
+    let visibleNode = [];
+    if (value) {
+      visibleNode.push(value.key);
+      if (targetNode && typeof targetNode !== 'string') {
+        targetNode.removeAttrs();
+      }
+      targetNode = targetGraph.getCellById(value.key);
+      const connectEdges = targetGraph.getConnectedEdges(targetNode);
+      connectEdges.map((v) => {
+        visibleNode.push(v.getSourceCellId());
+        visibleNode.push(v.getTargetCellId());
+      });
+      // 定位到目标节点
+      targetGraph.positionCell(targetNode, 'top', { padding: 100 });
+      targetNode.setAttrs({
+        boxShadow: '0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)',
+      });
     }
-    targetNode = targetGraph.getCellById(value.key);
     targetGraph.unfreeze();
-    // 定位到目标节点
-    targetGraph.positionCell(targetNode, 'top', { padding: 200 });
-    targetNode.setAttrs({
-      boxShadow: '0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)',
+    nodes.map((v) => {
+      if (value && !uniq(visibleNode).includes(v.id)) {
+        v.hide();
+      } else {
+        v.show();
+      }
     });
   };
+  useLayoutEffect(() => {
+    initGraphCollections();
+    return () => {
+      targetGraph.off('edge:mouseover');
+      targetGraph.off('edge:mouseout');
+      targetGraph.off('node:moved');
+      targetGraph = null;
+      targetNode = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    refreshPositions().then(() => {
+      refreshGM();
+    });
+  }, []);
   return (
     <Layout>
       <div className={cx(graphCollectionContainerClass)}>
@@ -681,7 +697,7 @@ export const GraphDrawPage = React.memo(() => {
                                       onChange={handleSearchCollection}
                                     />
                                     <Menu
-                                      selectable={false}
+                                      selectable={true}
                                       className={css`
                                         .ant-menu-item {
                                           height: 32px;
@@ -704,10 +720,14 @@ export const GraphDrawPage = React.memo(() => {
                                 return (
                                   <Popover
                                     content={content}
+                                    autoAdjustOverflow
                                     placement="bottomRight"
                                     trigger={['click']}
                                     getPopupContainer={getPopupContainer}
                                     destroyTooltipOnHide
+                                    onVisibleChange={(visible) => {
+                                      !visible && handleSelectCollection(visible);
+                                    }}
                                     overlayClassName={css`
                                       .ant-popover-inner-content {
                                         padding: 0;
