@@ -60,7 +60,7 @@ export class MockServer extends Application {
     await this.install({
       ...options,
       sync: {
-        force: true,
+        force: false,
         alter: {
           drop: false,
         },
