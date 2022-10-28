@@ -4,7 +4,7 @@ import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { SchemaInitializer, useCollection, useCompile, useDesignable } from '@nocobase/client';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
 
 const findSchema = (schema: Schema, key: string, action: string) => {
@@ -42,7 +42,6 @@ const initImportSettings = (fields) => {
 
 export const ImportActionInitializer = (props) => {
   const { item, insert } = props;
-  const { t } = useTranslation();
   const { exists, remove } = useCurrentSchema('import', 'x-action', item.find, item.remove);
   const compile = useCompile();
   const { name } = useCollection();
@@ -64,7 +63,7 @@ export const ImportActionInitializer = (props) => {
     properties: {
       modal: {
         type: 'void',
-        title: '{{ t("Import Data") }}',
+        title: `{{ t("Import Data", {ns: ${NAMESPACE} }) }}`,
         'x-component': 'Action.Container',
         'x-decorator': 'Form',
         'x-component-props': {

@@ -4,6 +4,7 @@ import { Button, Modal, Space, Spin } from 'antd';
 import { saveAs } from 'file-saver';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { NAMESPACE } from './constants';
 import { useImportContext } from './context';
 
 export const ImportStatus = {
@@ -12,7 +13,7 @@ export const ImportStatus = {
 };
 
 export const ImportModal = (props: any) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(NAMESPACE);
   const { importModalVisible, importStatus, importResult, setImportModalVisible } = useImportContext();
   const { data: fileData, meta } = importResult ?? {};
   const doneHandler = () => {
