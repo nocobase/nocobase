@@ -28,13 +28,22 @@ export class PresetNocoBase extends Plugin {
   }
 
   afterAdd() {
-    this.app.on('beforeUpgrade', async () => {
+    this.app.on('beforeLoad', async (app, options) => {
+      if (options?.method !== 'upgrade') {
+        return;
+      }
       const result = await this.app.version.satisfies('<0.8.0-alpha.1');
       if (result) {
         const r = await this.db.collectionExistsInDb('applicationPlugins');
         if (r) {
           await this.db.getRepository('applicationPlugins').destroy({ truncate: true });
+          await this.app.reload();
         }
+      }
+    });
+    this.app.on('beforeUpgrade', async () => {
+      const result = await this.app.version.satisfies('<0.8.0-alpha.1');
+      if (result) {
         await this.addBuiltInPlugins();
       }
     });
