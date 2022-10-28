@@ -194,4 +194,31 @@ describe('belongs to field', () => {
     const association = Post.model.associations;
     expect(association['comments']).toBeDefined();
   });
+
+
+  describe('foreign constraints', () => {
+
+    it('should on delete restrict', async () => {
+      const Product = db.collection({
+        name: 'products',
+        fields: [
+          {type: 'string', name: 'name'},
+        ]
+      });
+
+      const Order = db.collection({
+        name: 'order',
+        fields: [
+          {type: 'belongsTo', name: 'product', onDelete: 'RESTRICT'},
+        ]
+      });
+
+
+      const p = await Product.repository.create({values: {name: 'p1'}});
+
+      const o = await Order.repository.create({values: {product: p.id}});
+
+      expect(o.product.id).toBe(p.id);
+    })
+  });
 });
