@@ -5,15 +5,15 @@ on:
     branches:
       - main
       - develop
-    # paths:
-    #   - 'packages/**'
-    paths-ignore:
-      - 'docs/**'
+    paths:
+      - 'packages/**'
+    # paths-ignore:
+    #   - 'docs/**'
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-    # paths:
-    #   - 'packages/**'
+    paths:
+      - 'packages/**'
+    # paths-ignore:
+    #   - 'docs/**'
 
 jobs:
   sqlite-test:
