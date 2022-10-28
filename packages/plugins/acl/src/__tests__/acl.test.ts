@@ -507,7 +507,7 @@ describe('acl', () => {
     expect(response.statusCode).toEqual(200);
   });
 
-  it('should sync data to acl before app start', async () => {
+  it('should sync data to acl after app reload', async () => {
     const role = await db.getRepository('roles').create({
       values: {
         name: 'new',
@@ -527,14 +527,14 @@ describe('acl', () => {
       hooks: false,
     });
 
-    expect(acl.getRole('new')).toBeUndefined();
+    expect(app.acl.getRole('new')).toBeUndefined();
 
-    await app.start();
+    await app.reload();
 
-    expect(acl.getRole('new')).toBeDefined();
+    expect(app.acl.getRole('new')).toBeDefined();
 
     expect(
-      acl.can({
+      app.acl.can({
         role: 'new',
         resource: 'posts',
         action: 'view',

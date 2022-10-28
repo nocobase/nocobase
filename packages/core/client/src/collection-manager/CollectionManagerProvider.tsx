@@ -14,11 +14,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
         service,
         interfaces: { ...defaultInterfaces, ...interfaces },
         collections,
-        refreshCM: async () => {
-          if (refreshCM) {
-            await refreshCM();
-          }
-        },
+        refreshCM,
       }}
     >
       <CollectionManagerSchemaComponentProvider>{props.children}</CollectionManagerSchemaComponentProvider>
@@ -47,13 +43,18 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   }
   return (
     <CollectionManagerProvider
-      service={{...service, contentLoading, setContentLoading}}
+      service={{ ...service, contentLoading, setContentLoading }}
       collections={service?.data?.data}
-      refreshCM={async () => {
-        setContentLoading(true);
+      refreshCM={async (opts) => {
+        if (opts?.reload) {
+          setContentLoading(true);
+        }
         const { data } = await api.request(options);
         service.mutate(data);
-        setContentLoading(false);
+        if (opts?.reload) {
+          setContentLoading(false);
+        }
+        return data?.data || [];
       }}
       {...props}
     />

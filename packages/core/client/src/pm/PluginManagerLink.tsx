@@ -66,6 +66,10 @@ export const SettingsCenterDropdown = () => {
       title: t('Workflow'),
       path: 'workflow/workflows',
     },
+    {
+      title: t('Graph Collections'),
+      path: 'graph/collections',
+    },
   ];
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
@@ -79,6 +83,7 @@ export const SettingsCenterDropdown = () => {
                     onClick={() => {
                       history.push('/admin/settings/' + item.path);
                     }}
+                    key={item.path}
                   >
                     {item.title}
                   </Menu.Item>

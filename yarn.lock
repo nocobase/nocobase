@@ -18537,7 +18537,7 @@ rc-cascader@~3.2.1:
     "@babel/runtime" "^7.12.5"
     array-tree-filter "^2.1.0"
     classnames "^2.3.1"
-    rc-select "~14.0.2"
+    rc-select "~14.0.0-alpha.23"
     rc-tree "~5.4.3"
     rc-util "^5.6.1"
 
@@ -18772,6 +18772,19 @@ rc-resize-observer@^1.2.0:
     rc-util "^5.15.0"
     resize-observer-polyfill "^1.5.1"
 
+rc-select@~14.0.0-alpha.23, rc-select@~14.0.0-alpha.8:
+  version "14.0.6"
+  resolved "https://registry.npmjs.org/rc-select/-/rc-select-14.0.6.tgz#93be0b185a9d66dc84795e079121f0f65310d8bf"
+  integrity sha512-HMb2BwfTvBxMmIWTR/afP4bcRJLbVKFSBW/VFfL5Z+kdV2XlrYdlliK2uHY7pRRvW16PPGwmOwGfV+eoulPINw==
+  dependencies:
+    "@babel/runtime" "^7.10.1"
+    classnames "2.x"
+    rc-motion "^2.0.1"
+    rc-overflow "^1.0.0"
+    rc-trigger "^5.0.4"
+    rc-util "^5.16.1"
+    rc-virtual-list "^3.2.0"
+
 rc-select@~14.0.2:
   version "14.0.5"
   resolved "https://registry.npmjs.org/rc-select/-/rc-select-14.0.5.tgz#145c42e7fd66a7fc6c5c56f6b0cf35d8b50f9e23"
@@ -18874,7 +18887,7 @@ rc-tree-select@~5.1.1:
   dependencies:
     "@babel/runtime" "^7.10.1"
     classnames "2.x"
-    rc-select "~14.0.2"
+    rc-select "~14.0.0-alpha.8"
     rc-tree "~5.4.3"
     rc-util "^5.16.1"
 
@@ -23295,6 +23308,11 @@ xmldom-sre@^0.1.31:
   version "0.1.31"
   resolved "https://registry.npmjs.org/xmldom-sre/-/xmldom-sre-0.1.31.tgz#10860d5bab2c603144597d04bf2c4980e98067f4"
   integrity sha512-f9s+fUkX04BxQf+7mMWAp5zk61pciie+fFLC9hX9UVvCeJQfNHRHXpeo5MPcR0EUf57PYLdt+ZO4f3Ipk2oZUw==
+
+xpipe@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.npmjs.org/xpipe/-/xpipe-1.0.5.tgz#8dd8bf45fc3f7f55f0e054b878f43a62614dafdf"
+  integrity sha512-tuqoLk8xPl0o+7ny9iPlEZuzjfy1zC5ZJtAGjDDZWmVTVBK5PJP0arMGVu3Y53zSyeYK+YonMVSUv0DJgGN/ig==
 
 xregexp@2.0.0:
   version "2.0.0"

@@ -8,9 +8,11 @@ import { Plugin } from '@nocobase/server';
 
 import { CollectionRepository } from '.';
 import {
+  afterCreateForForeignKeyField,
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
+  beforeDestroyForeignKey,
   beforeInitOptions
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
@@ -81,6 +83,8 @@ export class CollectionManagerPlugin extends Plugin {
         });
       }
     });
+    // after migrate
+    this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
 
     this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
       const prevOptions = model.previous('options');
@@ -109,6 +113,8 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
+    // before field remove
+    this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
     this.app.db.on('fields.beforeDestroy', async (model, options) => {
       await model.remove(options);
     });

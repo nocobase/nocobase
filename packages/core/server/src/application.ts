@@ -207,10 +207,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._events = [];
     // @ts-ignore
     this._eventsCount = [];
+    this.removeAllListeners();
     this.middleware = new Toposort<any>();
     // this.context = Object.create(context);
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
+    if (this._db) {
+      // MaxListenersExceededWarning
+      this._db.removeAllListeners();
+    }
     this._db = this.createDatabase(options);
     this._resourcer = createResourcer(options);
     this._cli = new Command('nocobase').usage('[command] [options]');
@@ -220,9 +225,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.context.resourcer = this._resourcer;
     this.context.cache = this._cache;
 
-    this._pm = new PluginManager({
-      app: this,
-    });
+    if (this._pm) {
+      this._pm = this._pm.clone();
+    } else {
+      this._pm = new PluginManager({
+        app: this,
+        plugins: options.plugins,
+      });
+    }
 
     this._appManager = new AppManager(this);
 
@@ -235,8 +245,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (options.registerActions !== false) {
       registerActions(this);
     }
-
-    this.loadPluginConfig(options.plugins || []);
 
     registerCli(this);
 
@@ -262,16 +270,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   plugin<O = any>(pluginClass: any, options?: O): Plugin {
     return this.pm.addStatic(pluginClass, options);
-  }
-
-  loadPluginConfig(pluginsConfigurations: PluginConfiguration[]) {
-    for (let pluginConfiguration of pluginsConfigurations) {
-      if (typeof pluginConfiguration == 'string') {
-        this.plugin(pluginConfiguration);
-      } else {
-        this.plugin(...pluginConfiguration);
-      }
-    }
   }
 
   // @ts-ignore
