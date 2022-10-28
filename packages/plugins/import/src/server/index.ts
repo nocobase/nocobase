@@ -3,10 +3,8 @@ import { namespace } from '..';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { enUS, zhCN } from './locale';
 import { importMiddleware } from './middleware';
+
 export class ImportPlugin extends Plugin {
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 
   beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
