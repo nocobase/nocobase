@@ -233,7 +233,7 @@ export const useCustomizeUpdateActionProps = () => {
 };
 
 export const useCustomizeBulkUpdateActionProps = () => {
-  const { resource, __parent, service } = useBlockRequestContext();
+  const { field, resource, __parent, service } = useBlockRequestContext();
   const actionSchema = useFieldSchema();
   const currentRecord = useRecord();
   const tableBlockContext = useTableBlockContext();
@@ -244,6 +244,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const history = useHistory();
   const compile = useCompile();
   const { t } = useTranslation();
+  const actionField = useField();
 
   return {
     async onClick() {
@@ -252,18 +253,36 @@ export const useCustomizeBulkUpdateActionProps = () => {
         onSuccess,
         updateMode,
       } = actionSchema?.['x-action-settings'] ?? {};
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentUser });
       Modal.confirm({
         title: t('Bulk update'),
         content: updateMode === 'selected' ? t('Update selected data?') : t('Update all data?'),
         async onOk() {
-          const updateData: { filter?: any; values: any } = {
+          const { filter } = service.params?.[0] ?? {};
+          const updateData: { filter?: any; values: any; forceUpdate: boolean } = {
             values: { ...assignedValues },
+            filter,
+            forceUpdate: false,
           };
           if (updateMode === 'selected') {
+            if (!selectedRowKeys?.length) {
+              message.error(t('Please select the records to be updated'));
+              actionField.data.loading = false;
+              return;
+            }
             updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRowKeys } }] };
           }
-          await resource.update(updateData);
+          if (!updateData.filter) {
+            updateData.forceUpdate = true;
+          }
+          try {
+            await resource.update(updateData);
+          } catch (error) {
+          } finally {
+            actionField.data.loading = false;
+          }
           service?.refresh?.();
           if (!(resource instanceof TableFieldResource)) {
             __parent?.service?.refresh?.();
@@ -287,6 +306,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
           } else {
             message.success(compile(onSuccess?.successMessage));
           }
+        },
+        async onCancel() {
+          actionField.data.loading = false;
         },
       });
     },
@@ -318,8 +340,6 @@ export const useCustomizeBulkEditActionProps = () => {
       for (const key in values) {
         if (Object.prototype.hasOwnProperty.call(values, key)) {
           const value = values[key];
-          console.log('===', BulkEditFormItemValueType.RemainsTheSame, value[BulkEditFormItemValueType.RemainsTheSame]);
-          debugger;
           if (BulkEditFormItemValueType.Clear in value) {
             values[key] = null;
           } else if (BulkEditFormItemValueType.ChangedTo in value) {
