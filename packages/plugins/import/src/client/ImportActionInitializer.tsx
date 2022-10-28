@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import type { ISchema } from '@formily/react';
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import { SchemaInitializer, useCollection, useCompile, useDesignable } from '@nocobase/client';
+import { SchemaInitializer, useCollection, useDesignable } from '@nocobase/client';
 import React from 'react';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
@@ -43,7 +43,6 @@ const initImportSettings = (fields) => {
 export const ImportActionInitializer = (props) => {
   const { item, insert } = props;
   const { exists, remove } = useCurrentSchema('import', 'x-action', item.find, item.remove);
-  const compile = useCompile();
   const { name } = useCollection();
   const fields = useFields(name);
 
@@ -63,7 +62,7 @@ export const ImportActionInitializer = (props) => {
     properties: {
       modal: {
         type: 'void',
-        title: `{{ t("Import Data", {ns: ${NAMESPACE} }) }}`,
+        title: `{{ t("Import Data", {ns: "${NAMESPACE}" }) }}`,
         'x-component': 'Action.Container',
         'x-decorator': 'Form',
         'x-component-props': {
@@ -81,7 +80,7 @@ export const ImportActionInitializer = (props) => {
             properties: {
               download: {
                 type: 'void',
-                title: '{{ t("Step 1: Download template") }}',
+                title: `{{ t("Step 1: Download template", {ns: "${NAMESPACE}" }) }}`,
                 'x-component': 'FormItem',
                 properties: {
                   tip: {
@@ -98,12 +97,12 @@ export const ImportActionInitializer = (props) => {
                           line-height: 26px;
                         }
                       `,
-                      content: '{{ t("Download tip") }}',
+                      content: `{{ t("Download tip", {ns: "${NAMESPACE}" }) }}`,
                     },
                   },
                   downloadAction: {
                     type: 'void',
-                    title: '{{ t("Download template") }}',
+                    title: `{{ t("Download template", {ns: "${NAMESPACE}" }) }}`,
                     'x-component': 'Action',
                     'x-component-props': {
                       className: css`
@@ -116,14 +115,14 @@ export const ImportActionInitializer = (props) => {
               },
               upload: {
                 type: 'array',
-                title: '{{ t("Step 2: Upload Excel") }}',
+                title: `{{ t("Step 2: Upload Excel", {ns: "${NAMESPACE}" }) }}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Upload.Dragger',
                 'x-validator': '{{ uploadValidator }}',
                 'x-component-props': {
                   action: '',
                   height: '150px',
-                  tipContent: '{{ t("Upload placeholder") }}',
+                  tipContent: `{{ t("Upload placeholder", {ns: "${NAMESPACE}" }) }}`,
                   beforeUpload: '{{ beforeUploadHandler }}',
                 },
               },
@@ -148,7 +147,7 @@ export const ImportActionInitializer = (props) => {
                   },
                   startImport: {
                     type: 'void',
-                    title: '{{ t("Start import") }}',
+                    title: `{{ t("Start import", {ns: "${NAMESPACE}" }) }}`,
                     'x-component': 'Action',
                     'x-component-props': {
                       type: 'primary',

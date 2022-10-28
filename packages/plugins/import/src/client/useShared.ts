@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
 import type { VoidField } from '@formily/core';
 import { useCollection } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
+import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
 
 const INCLUDE_FILE_TYPE = [
@@ -10,7 +11,7 @@ const INCLUDE_FILE_TYPE = [
 ];
 
 export const useShared = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(NAMESPACE);
   const { name } = useCollection();
   const fields = useFields(name);
   return {
@@ -20,7 +21,7 @@ export const useShared = () => {
       properties: {
         explain: {
           type: 'string',
-          title: '{{t("Import explain")}}',
+          title: `{{ t("Import explain", {ns: "${NAMESPACE}"}) }}`,
           'x-decorator': 'FormItem',
           'x-component': 'Input.TextArea',
         },
@@ -76,7 +77,7 @@ export const useShared = () => {
           properties: {
             add: {
               type: 'void',
-              title: '{{ t("Add importable field") }}',
+              title: `{{ t("Add importable field", {ns: "${NAMESPACE}"}) }}`,
               'x-component': 'ArrayItems.Addition',
               'x-component-props': {
                 className: css`

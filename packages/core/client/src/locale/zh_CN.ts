@@ -666,7 +666,6 @@ export default {
   'Request success': '请求成功',
   'Invalid JSON format': '非法JSON格式',
   'After successful request': '请求成功之后',
-  'Add importable field': '添加可导入字段',
   'Add exportable field': '添加可导出字段',
   // 'Custom column title': '自定义列标题',
   "Audit logs": "操作记录",

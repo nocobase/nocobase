@@ -15,4 +15,6 @@ export default {
   'Import done, total success have {{successCount}} , total failure have {{failureCount}}':
     '导入完成，共导入成功{{successCount}}条数据，共导入失败{{failureCount}}条数据',
   'To download the failure data': '下载导入失败的数据',
+  'Add importable field': '添加可导入字段',
+  Done: '完成',
 };
