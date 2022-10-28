@@ -11,6 +11,12 @@ export const TabPaneInitializers = (props?: any) => {
     const form = useForm();
     const ctx = useActionContext();
     const index = useRecordIndex();
+    let initializer = 'RecordBlockInitializers';
+    if (props.isCreate || index === null) {
+      initializer = 'CreateFormBlockInitializers';
+    } else if (props.isBulkEdit) {
+      initializer = 'CreateFormBulkEditBlockInitializers';
+    }
     return {
       async run() {
         await form.submit();
@@ -116,4 +122,8 @@ export const TabPaneInitializers = (props?: any) => {
 
 export const TabPaneInitializersForCreateFormBlock = () => {
   return <TabPaneInitializers isCreate />;
+};
+
+export const TabPaneInitializersForBulkEditFormBlock = () => {
+  return <TabPaneInitializers isBulkEdit />;
 };
