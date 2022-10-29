@@ -34,7 +34,7 @@ export const PluginManagerLink = () => {
         icon={<AppstoreAddOutlined />}
         title={t('Plugin manager')}
         onClick={() => {
-          history.push('/admin/plugins');
+          history.push('/admin/pm/list');
         }}
       />
     </ActionContext.Provider>
