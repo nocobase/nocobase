@@ -8,6 +8,7 @@ import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
 import solarLunar from 'solarlunar-es';
+import { parseExpression } from 'cron-parser';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
 import { useProps } from '../../hooks/useProps';
@@ -15,6 +16,8 @@ import { ActionContext } from '../action';
 import { CalendarToolbarContext } from './context';
 import './style.less';
 import type { ToolbarProps } from './types';
+
+const Weeks = ['month', 'week', 'day'] as const;
 
 const localizer = momentLocalizer(moment);
 
@@ -85,22 +88,56 @@ const messages: any = {
   showMore: (count) => i18n.t('{{count}} more items', { count }),
 };
 
-const useEvents = (dataSource: any, fieldNames: any) => {
+const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof Weeks[number]) => {
   const { t } = useTranslation();
-  return useMemo(
-    () =>
-      Array.isArray(dataSource)
-        ? dataSource?.map((item) => {
-            return {
-              id: get(item, fieldNames.id || 'id'),
-              title: get(item, fieldNames.title) || t('Untitle'),
-              start: new Date(get(item, fieldNames.start)),
-              end: new Date(get(item, fieldNames.end || fieldNames.start)),
-            };
-          })
-        : [],
-    [dataSource, fieldNames],
-  );
+  return useMemo(() => {
+    if (!Array.isArray(dataSource)) return [];
+    const events = [];
+
+    dataSource.forEach((item) => {
+      const { cron } = item;
+      const start = moment(get(item, fieldNames.start));
+      const end = moment(get(item, fieldNames.end) || start);
+      const intervalTime = end.diff(start, 'millisecond', true);
+
+      const startDate = moment(date).startOf('month');
+      const endDate = startDate.endOf('month');
+      if (view === 'month') {
+        startDate.startOf('week');
+        endDate.endOf('week');
+      }
+
+      const push = (fields?: Record<string, any>) => {
+        events.push({
+          id: get(item, fieldNames.id || 'id'),
+          title: get(item, fieldNames.title) || t('Untitle'),
+          start: start.toDate(),
+          end: end.toDate(),
+          ...fields,
+        });
+      };
+
+      push();
+
+      if (!cron) return;
+      const interval = parseExpression(cron, {
+        startDate: startDate.toDate(),
+        endDate: endDate.toDate(),
+        iterator: true,
+        currentDate: start.toDate(),
+        utc: true,
+      });
+
+      while (interval.hasNext()) {
+        const { value } = interval.next();
+        push({
+          start: value.toDate(),
+          end: moment(value.toDate()).add(intervalTime, 'millisecond').toDate(),
+        });
+      }
+    });
+    return events;
+  }, [dataSource, fieldNames, date, view]);
 };
 
 const CalendarRecordViewer = (props) => {
@@ -130,7 +167,9 @@ const CalendarRecordViewer = (props) => {
 
 export const Calendar: any = observer((props: any) => {
   const { dataSource, fieldNames, showLunar } = useProps(props);
-  const events = useEvents(dataSource, fieldNames);
+  const [date, setDate] = useState<Date>(new Date());
+  const [view, setView] = useState<typeof Weeks[number]>('month');
+  const events = useEvents(dataSource, fieldNames, date, view);
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
 
@@ -141,10 +180,14 @@ export const Calendar: any = observer((props: any) => {
         popup
         selectable
         events={events}
-        views={['month', 'week', 'day']}
+        view={view}
+        views={Weeks}
+        date={date}
         step={60}
         showMultiDayTimes
         messages={messages}
+        onNavigate={setDate}
+        onView={setView}
         onSelectSlot={(slotInfo) => {
           console.log('onSelectSlot', slotInfo);
         }}
@@ -170,7 +213,6 @@ export const Calendar: any = observer((props: any) => {
             return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
           },
         }}
-        defaultDate={new Date()}
         components={{
           toolbar: Toolbar,
           dateHeader: (props) => <DateHeader {...props} showLunar={showLunar}></DateHeader>,
