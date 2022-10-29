@@ -285,8 +285,32 @@ export class PluginACL extends Plugin {
       }
     });
 
+    this.app.on('afterInstallPlugin', async (plugin) => {
+      if (plugin.getName() !== 'users') {
+        return;
+      }
+      const User = this.db.getCollection('users');
+      await User.repository.update({
+        values: {
+          roles: ['root', 'admin', 'member'],
+        },
+        forceUpdate: true,
+      });
+
+      const RolesUsers = this.db.getCollection('rolesUsers');
+      await RolesUsers.repository.update({
+        filter: {
+          userId: 1,
+          roleName: 'root',
+        },
+        values: {
+          default: true,
+        },
+      });
+    });
+
     this.app.on('beforeInstallPlugin', async (plugin) => {
-      if (plugin.constructor.name !== 'UsersPlugin') {
+      if (plugin.getName() !== 'users') {
         return;
       }
       const roles = this.app.db.getRepository('roles');
@@ -427,26 +451,6 @@ export class PluginACL extends Plugin {
     if (repo) {
       await repo.db2cm('roles');
     }
-
-    const User = this.db.getCollection('users');
-
-    await User.repository.update({
-      values: {
-        roles: ['root', 'admin', 'member'],
-      },
-      forceUpdate: true,
-    });
-
-    const RolesUsers = this.db.getCollection('rolesUsers');
-    await RolesUsers.repository.update({
-      filter: {
-        userId: 1,
-        roleName: 'root',
-      },
-      values: {
-        default: true,
-      },
-    });
   }
 
   async load() {
