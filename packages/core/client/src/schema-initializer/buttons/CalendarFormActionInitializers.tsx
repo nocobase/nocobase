@@ -34,7 +34,7 @@ export const CalendarFormActionInitializers = {
         {
           type: 'item',
           title: '{{t("Delete Event")}}',
-          component: 'DestroyEventActionInitializer',
+          component: 'DeleteEventActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',

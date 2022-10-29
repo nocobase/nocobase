@@ -9,7 +9,7 @@ export * from './CreateSubmitActionInitializer';
 export * from './CustomizeActionInitializer';
 export * from './DataBlockInitializer';
 export * from './DestroyActionInitializer';
-export * from './DestroyEventActionInitializer';
+export * from './DeleteEventActionInitializer';
 export * from './DetailsBlockInitializer';
 export * from './FilterActionInitializer';
 export * from './FormBlockInitializer';
