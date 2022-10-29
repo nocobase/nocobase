@@ -192,6 +192,33 @@ describe('belongs to field', () => {
   });
 
   describe('foreign constraints', () => {
+    it('should set null on delete', async () => {
+      const Product = db.collection({
+        name: 'products',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      const Order = db.collection({
+        name: 'order',
+        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'SET NULL' }],
+      });
+
+      await db.sync();
+
+      const p = await Product.repository.create({ values: { name: 'p1' } });
+      const o = await Order.repository.create({ values: { product: p.id } });
+
+      expect(o.productId).toBe(p.id);
+
+      await Product.repository.destroy({
+        filterByTk: p.id,
+      });
+
+      const newO = await o.reload();
+
+      expect(newO.productId).toBeNull();
+    });
+
     it('should delete cascade', async () => {
       const Product = db.collection({
         name: 'products',

@@ -46,5 +46,15 @@ export async function referentialIntegrityCheck(options: ReferentialIntegrityChe
         transaction,
       });
     }
+
+    if (onDelete === 'SET NULL') {
+      await sourceRepository.update({
+        filter,
+        values: {
+          [sourceField]: null,
+        },
+        transaction,
+      });
+    }
   }
 }
