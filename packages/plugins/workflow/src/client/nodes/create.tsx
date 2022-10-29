@@ -1,9 +1,10 @@
 import React from 'react';
 import { useCollectionDataSource } from '@nocobase/client';
-import { CollectionFieldset } from '../calculators';
+
 import { collection, values } from '../schemas/collection';
 import { useFlowContext } from '../FlowContext';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
+import CollectionFieldset from '../components/CollectionFieldset';
 
 
 
