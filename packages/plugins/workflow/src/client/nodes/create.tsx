@@ -1,10 +1,8 @@
-import { Select } from 'antd';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
-import { BaseTypeSet, CollectionFieldset } from '../calculators';
+import { useCollectionDataSource } from '@nocobase/client';
+import { CollectionFieldset } from '../calculators';
 import { collection, values } from '../schemas/collection';
-import { useFlowContext } from '../WorkflowCanvas';
+import { useFlowContext } from '../FlowContext';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
 
 

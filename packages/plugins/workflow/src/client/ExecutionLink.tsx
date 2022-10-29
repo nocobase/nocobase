@@ -5,11 +5,11 @@ import { Link } from 'react-router-dom';
 import { useActionContext, useRecord } from '@nocobase/client';
 
 
-export const WorkflowLink = () => {
+export const ExecutionLink = () => {
   const { t } = useTranslation();
   const { id } = useRecord();
   const { setVisible } = useActionContext();
   return (
-    <Link to={`/admin/settings/workflow/workflows/${id}`} onClick={() => setVisible(false)}>{t('View')}</Link>
+    <Link to={`/admin/settings/workflow/executions/${id}`} onClick={() => setVisible(false)}>{t('View')}</Link>
   );
 }

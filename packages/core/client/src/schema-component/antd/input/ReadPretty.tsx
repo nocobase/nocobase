@@ -5,6 +5,7 @@ import React from 'react';
 import { useCompile } from '../..';
 import { EllipsisWithTooltip } from './EllipsisWithTooltip';
 import { HTMLEncode } from './shared';
+import { cx, css } from '@emotion/css';
 
 type Composed = {
   Input: React.FC<InputProps & { ellipsis?: any }>;
@@ -13,6 +14,7 @@ type Composed = {
     TextAreaProps & { ellipsis?: any; text?: any; addonBefore?: any; suffix?: any; addonAfter?: any; autop?: boolean }
   >;
   Html?: any;
+  JSON?: React.FC<TextAreaProps & { space: number }>;
 };
 
 export const ReadPretty: Composed = () => null;
@@ -112,5 +114,19 @@ ReadPretty.URL = (props) => {
       {props.suffix}
       {props.addonAfter}
     </div>
+  );
+};
+
+ReadPretty.JSON = (props) => {
+  const prefixCls = usePrefixCls('json', props);
+  return (
+    <pre
+      className={cx(prefixCls, props.className, css`
+        margin-bottom: 0;
+      `)}
+      style={props.style}
+    >
+      {props.value != null ? JSON.stringify(props.value, null, props.space ?? 2) : ''}
+    </pre>
   );
 };

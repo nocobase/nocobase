@@ -7,7 +7,7 @@ import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
 
 import { instructions, useNodeContext } from "./nodes";
-import { useFlowContext } from "./WorkflowCanvas";
+import { useFlowContext } from "./FlowContext";
 import { triggers } from "./triggers";
 import { useTranslation } from "react-i18next";
 import { Registry } from "@nocobase/utils/client";

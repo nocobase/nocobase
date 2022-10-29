@@ -15,7 +15,13 @@ export const workflowPageClass = css`
     header{
       display: flex;
       align-items: center;
-      gap: .5em;
+
+      > *:not(:last-child) {
+        &:after{
+          content: ">";
+          margin: 0 .5em;
+        }
+      }
     }
 
     aside{
@@ -160,10 +166,14 @@ export const nodeCardClass = css`
   padding: 1em;
   box-shadow: 0 .25em .5em rgba(0, 0, 0, .1);
 
-  .workflow-node-remove-button{
+  .workflow-node-remove-button,
+  .workflow-node-job-button{
     position: absolute;
     right: -.5em;
     top: -.5em;
+  }
+
+  .workflow-node-remove-button{
     color: #999;
     opacity: 0;
     transition: opacity .3s ease;
@@ -174,6 +184,23 @@ export const nodeCardClass = css`
 
     &:hover {
       color: red;
+    }
+  }
+
+  .workflow-node-job-button{
+    display: flex;
+    top: 0;
+    right: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    min-width: 1.25rem;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8em;
+    color: #fff;
+
+    &[type="button"]{
+      border: none;
     }
   }
 
@@ -193,6 +220,8 @@ export const nodeMetaClass = css`
 `;
 
 export const nodeTitleClass = css`
+  display: flex;
+  align-items: center;
   font-weight: normal;
 
   .workflow-node-id{

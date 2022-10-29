@@ -1,46 +1,27 @@
-import { PartitionOutlined } from '@ant-design/icons';
-import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
-import { ActionContext, PluginManager, SchemaComponent } from '@nocobase/client';
+import React from 'react';
 import { Card } from 'antd';
-import React, { useState } from 'react';
+import { PartitionOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { ExecutionResourceProvider } from './ExecutionResourceProvider';
+
+import { PluginManager, SchemaComponent } from '@nocobase/client';
+
 import { workflowSchema } from './schemas/workflows';
 import { WorkflowLink } from './WorkflowLink';
+import { ExecutionResourceProvider } from './ExecutionResourceProvider';
+import { ExecutionLink } from './ExecutionLink';
 
-const schema: ISchema = {
-  type: 'object',
-  properties: {
-    [uid()]: {
-      'x-component': 'Action.Drawer',
-      type: 'void',
-      title: '{{t("Workflow")}}',
-      properties: {
-        table: workflowSchema,
-      },
-    },
-  },
-};
 
-const schema2: ISchema = {
-  type: 'object',
-  properties: {
-    [uid()]: workflowSchema,
-  },
-};
 
 export const WorkflowPane = () => {
-  const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
   return (
     <Card bordered={false}>
       <SchemaComponent
-        schema={schema2}
+        schema={workflowSchema}
         components={{
           WorkflowLink,
           ExecutionResourceProvider,
+          ExecutionLink
         }}
       />
     </Card>
@@ -58,28 +39,5 @@ export const WorkflowShortcut = () => {
         history.push('/admin/settings/workflow/workflows');
       }}
     />
-  );
-};
-
-export const WorkflowShortcut2 = () => {
-  const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
-  return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
-      <PluginManager.Toolbar.Item
-        icon={<PartitionOutlined />}
-        title={t('Workflow')}
-        onClick={() => {
-          setVisible(true);
-        }}
-      />
-      <SchemaComponent
-        schema={schema}
-        components={{
-          WorkflowLink,
-          ExecutionResourceProvider,
-        }}
-      />
-    </ActionContext.Provider>
   );
 };

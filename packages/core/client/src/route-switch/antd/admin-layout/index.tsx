@@ -177,6 +177,7 @@ const InternalAdminLayout = (props: any) => {
         <Layout.Content
           className={css`
             min-height: calc(100vh - 46px);
+            padding-bottom: 42px;
             position: relative;
             // padding-bottom: 70px;
             > div {

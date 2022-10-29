@@ -7,7 +7,8 @@ import { Trans, useTranslation } from "react-i18next";
 import { i18n } from "@nocobase/client";
 
 import { NodeDefaultView } from ".";
-import { Branch, useFlowContext } from "../WorkflowCanvas";
+import { Branch } from "../Branch";
+import { useFlowContext } from '../FlowContext';
 import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { Calculation } from "../calculators";
 
