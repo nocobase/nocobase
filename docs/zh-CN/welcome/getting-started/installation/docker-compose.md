@@ -1,10 +1,3 @@
----
-group:
-  path: /getting-started/installation/docker-compose
-  title: Docker 安装 (👍 推荐)
-  order: 1
----
-
 # Docker 安装
 
 ## 0. 先决条件

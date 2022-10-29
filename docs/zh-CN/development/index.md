@@ -6,7 +6,11 @@ NocoBase 采用微内核架构，各类功能以插件形式扩展，所以微�
 
 ## 插件管理器
 
-NocoBase 提供了强大的插件管理器用于管理插件，开发可以通过 CLI 的方式管理插件，也可以通过界面激活、禁用已添加的插件。如：
+NocoBase 提供了强大的插件管理器用于管理插件，插件管理器的流程如下：
+
+<img src="./pm-flow.svg"/>
+
+开发可以通过 CLI 的方式管理插件：
 
 ```bash
 # 创建插件
@@ -20,6 +24,10 @@ yarn pm disable hello
 # 删除插件
 yarn pm remove hello
 ```
+
+无代码用户也可以通过插件管理器界面激活、禁用、删除已添加的本地插件：
+
+<img src="./pm-ui.jpg"/>
 
 更多插件示例，查看 [packages/samples](https://github.com/nocobase/nocobase/tree/main/packages/samples)。
 

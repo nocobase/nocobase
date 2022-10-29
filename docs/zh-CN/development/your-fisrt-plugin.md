@@ -9,15 +9,13 @@
 
 ## 创建插件
 
-首先，你可以通过 CLI 快速的创建一个初始化的插件，命令如下：
+首先，你可以通过 CLI 快速的创建一个空插件，命令如下：
 
 ```bash
 yarn pm create hello
 ```
 
-新建的插件，会放置在 `packages/plugins/hello` 目录下。
-
-## 插件目录结构
+插件所在目录 `packages/plugins/hello`，插件目录结构为：
 
 ```ts
 |- /hello
@@ -31,43 +29,61 @@ yarn pm create hello
   |- server.js
 ```
 
+package.json 信息
+
+```json
+{
+  "name": "@nocobase/plugin-hello",
+  "version": "0.1.0",
+  "main": "lib/server/index.js",
+  "devDependencies": {
+    "@nocobase/client": "0.8.0-alpha.1",
+    "@nocobase/test": "0.8.0-alpha.1"
+  }
+}
+```
+
+NocoBase 插件也是 NPM 包，插件名和 NPM 包名的对应规则为 `${PLUGIN_PACKAGE_PREFIX}-${pluginName}`。
+
+`PLUGIN_PACKAGE_PREFIX` 为插件包前缀，可以在 .env 里自定义，[点此查看 PLUGIN_PACKAGE_PREFIX 说明](/api/env#plugin_package_prefix)。
+
 ## 编写插件
 
-插件的主体文件在 `packages/plugins/hello/src/server/plugin.ts`，修改为：
+查看 `packages/plugins/hello/src/server/plugin.ts` 文件，并修改为：
 
 ```ts
 import { InstallOptions, Plugin } from '@nocobase/server';
 
-export class Hello extends Plugin {
-  initialize() {
-    // TODO
-  }
+export class HelloPlugin extends Plugin {
+  afterAdd() {}
 
-  beforeLoad() {
-    // TODO
-  }
+  beforeLoad() {}
 
   async load() {
     // TODO
-    // Visit: http://localhost:13000/api/hello:get
+    // Visit: http://localhost:13000/api/testHello:getInfo
     this.app.resource({
-      name: 'hello',
+      name: 'testHello',
       actions: {
-        async get(ctx, next) {
-          ctx.body = `Hello plugin1!`;
+        async getInfo(ctx, next) {
+          ctx.body = `Hello hello!`;
           next();
         },
       },
     });
-    this.app.acl.allow('hello', 'get');
+    this.app.acl.allow('testHello', 'getInfo');
   }
 
-  async install(options: InstallOptions) {
-    // TODO
-  }
+  async install(options?: InstallOptions) {}
+
+  async afterEnable() {}
+
+  async afterDisable() {}
+
+  async remove() {}
 }
 
-export default Hello;
+export default HelloPlugin;
 ```
 
 ## 注册插件
@@ -95,4 +111,4 @@ yarn start
 
 ## 体验插件功能
 
-访问地址 http://localhost:13000/api/hello:get
+访问插件自定义的 Resource Action API：http://localhost:13000/api/testHello:getInfo

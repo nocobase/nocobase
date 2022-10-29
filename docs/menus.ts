@@ -27,8 +27,17 @@ export default {
             '/welcome/getting-started/installation/git-clone',
           ],
         },
-        '/welcome/getting-started/upgrading',
-        '/welcome/getting-started/deployment',
+        {
+          title: 'Upgrading',
+          'title.zh-CN': '升级',
+          type: 'subMenu',
+          children: [
+            '/welcome/getting-started/upgrading/index',
+            '/welcome/getting-started/upgrading/docker-compose',
+            '/welcome/getting-started/upgrading/create-nocobase-app',
+            '/welcome/getting-started/upgrading/git-clone',
+          ],
+        },
       ],
     },
     {
@@ -60,7 +69,11 @@ export default {
       title: 'Getting started',
       'title.zh-CN': '快速开始',
       type: 'group',
-      children: ['/development/index', '/development/your-fisrt-plugin'],
+      children: [
+        '/development/index',
+        '/development/directory-structure',
+        '/development/your-fisrt-plugin',
+      ],
     },
     {
       title: 'Extension Guides',

@@ -47,6 +47,24 @@ NocoBase API 地址前缀，默认值 `/api/`
 API_BASE_PATH=/api/
 ```
 
+### PLUGIN_PACKAGE_PREFIX
+
+插件包前缀，默认值 `@nocobase/plugin-,@nocobase/preset-`
+
+例如，有一名为 `my-nocobase-app` 的项目，新增了 `hello` 插件，包名为 `@my-nocobase-app/plugin-hello`。
+
+PLUGIN_PACKAGE_PREFIX 配置如下：
+
+```bash
+PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@my-nocobase-app/plugin-
+```
+
+插件名和包名的对应关系为：
+
+- `users` 插件包名为 `@nocobase/plugin-users`
+- `nocobase` 插件包名为 `@nocobase/preset-nocobase`
+- `hello` 插件包名为 `@my-nocobase-app/plugin-hello`
+
 ### DB_DIALECT
 
 数据库类型，默认值 `sqlite`，可选项包括：
