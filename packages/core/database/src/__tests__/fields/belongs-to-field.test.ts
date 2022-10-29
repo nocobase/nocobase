@@ -219,6 +219,24 @@ describe('belongs to field', () => {
       expect(newO.productId).toBeNull();
     });
 
+    it('should delete reference map item when field unbind', async () => {
+      const Product = db.collection({
+        name: 'products',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      const Order = db.collection({
+        name: 'order',
+        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'CASCADE' }],
+      });
+
+      await db.sync();
+
+      Order.removeField('product');
+
+      expect(db.referenceMap.getReferences(Product.name)).toHaveLength(0);
+    });
+
     it('should delete cascade', async () => {
       const Product = db.collection({
         name: 'products',
