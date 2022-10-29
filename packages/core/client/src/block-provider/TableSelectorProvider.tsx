@@ -9,7 +9,7 @@ import { useFormBlockContext } from './FormBlockProvider';
 export const TableSelectorContext = createContext<any>({});
 
 const InternalTableSelectorProvider = (props) => {
-  const { params, rowKey } = props;
+  const { params, rowKey, extraFilter } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   // if (service.loading) {
@@ -22,6 +22,7 @@ const InternalTableSelectorProvider = (props) => {
         service,
         resource,
         params,
+        extraFilter,
         rowKey,
       }}
     >
@@ -132,7 +133,7 @@ export const TableSelectorProvider = (props) => {
   }
   return (
     <BlockProvider {...props} params={params}>
-      <InternalTableSelectorProvider {...props} params={params} />
+      <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
     </BlockProvider>
   );
 };
