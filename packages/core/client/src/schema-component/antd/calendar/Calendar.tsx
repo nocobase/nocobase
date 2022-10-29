@@ -72,8 +72,8 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
     const events = [];
 
     dataSource.forEach((item) => {
-      const { cron } = item;
-      const start = moment(get(item, fieldNames.start));
+      const { cron, exclude = [] } = item;
+      const start = moment(get(item, fieldNames.start) || moment());
       const end = moment(get(item, fieldNames.end) || start);
       const intervalTime = end.diff(start, 'millisecond', true);
 
@@ -85,13 +85,28 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
       }
 
       const push = (fields?: Record<string, any>) => {
-        events.push({
+        let out = false;
+
+        const event = {
           id: get(item, fieldNames.id || 'id'),
           title: get(item, fieldNames.title) || t('Untitle'),
-          start: start.toDate(),
-          end: end.toDate(),
+          start,
+          end,
           ...fields,
+        };
+
+        const res = exclude.some((d) => {
+          if (d.endsWith('_after')) {
+            d = d.replace(/_after$/, '');
+            out = true;
+            return event.start.isSameOrAfter(d, 'millisecond');
+          } else {
+            return event.start.isSame(d, 'millisecond');
+          }
         });
+
+        if (res) return out;
+        events.push(event);
       };
 
       push();
@@ -107,10 +122,13 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
 
       while (interval.hasNext()) {
         const { value } = interval.next();
-        push({
-          start: value.toDate(),
-          end: moment(value.toDate()).add(intervalTime, 'millisecond').toDate(),
-        });
+        if (
+          push({
+            start: moment(value.toDate()),
+            end: moment(value.toDate()).add(intervalTime, 'millisecond'),
+          })
+        )
+          break;
       }
     });
     return events;
@@ -176,6 +194,7 @@ export const Calendar: any = observer((props: any) => {
           if (!record) {
             return;
           }
+          record[fieldNames.start] = event.start;
           setRecord(record);
           setVisible(true);
         }}
