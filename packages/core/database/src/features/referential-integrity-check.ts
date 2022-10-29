@@ -15,22 +15,36 @@ export async function referentialIntegrityCheck(options: ReferentialIntegrityChe
   const collectionName = collection.name;
   const references = db.referenceMap.getReferences(collectionName);
 
+  if (!references) {
+    return;
+  }
+
   for (const reference of references) {
     const { sourceCollectionName, sourceField, targetField, onDelete } = reference;
     const sourceCollection = db.collections.get(sourceCollectionName);
     const sourceRepository = sourceCollection.repository;
 
+    const filter = {
+      [sourceField]: referencedInstance[targetField],
+    };
     const referencingExists = await sourceRepository.count({
-      filter: {
-        [sourceField]: referencedInstance[targetField],
-      },
+      filter,
       transaction,
     });
 
-    if (referencingExists) {
-      if (onDelete === 'RESTRICT') {
-        throw new Error('RESTRICT');
-      }
+    if (!referencingExists) {
+      continue;
+    }
+
+    if (onDelete === 'RESTRICT') {
+      throw new Error('RESTRICT');
+    }
+
+    if (onDelete === 'CASCADE') {
+      await sourceRepository.destroy({
+        filter: filter,
+        transaction,
+      });
     }
   }
 }

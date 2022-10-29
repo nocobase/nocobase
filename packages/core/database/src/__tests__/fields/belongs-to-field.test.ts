@@ -192,7 +192,32 @@ describe('belongs to field', () => {
   });
 
   describe('foreign constraints', () => {
-    it('should on delete restrict', async () => {
+    it('should delete cascade', async () => {
+      const Product = db.collection({
+        name: 'products',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      const Order = db.collection({
+        name: 'order',
+        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'CASCADE' }],
+      });
+
+      await db.sync();
+      const p = await Product.repository.create({ values: { name: 'p1' } });
+      await Order.repository.create({ values: { product: p.id } });
+      await Order.repository.create({ values: { product: p.id } });
+
+      expect(await Order.repository.count({ filter: { productId: p.id } })).toBe(2);
+
+      await Product.repository.destroy({
+        filterByTk: p.id,
+      });
+
+      expect(await Order.repository.count({ filter: { productId: p.id } })).toBe(0);
+    });
+
+    it('should delete restrict', async () => {
       const Product = db.collection({
         name: 'products',
         fields: [{ type: 'string', name: 'name' }],
