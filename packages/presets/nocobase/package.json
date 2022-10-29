@@ -25,6 +25,16 @@
     "@nocobase/plugin-users": "0.8.0-alpha.1",
     "@nocobase/plugin-verification": "0.8.0-alpha.1",
     "@nocobase/plugin-workflow": "0.8.0-alpha.1",
+    "@nocobase/plugin-sample-command": "0.8.0-alpha.1",
+    "@nocobase/plugin-sample-custom-block": "0.8.0-alpha.1",
+    "@nocobase/plugin-sample-custom-page": "0.8.0-alpha.1",
+    "@nocobase/plugin-sample-custom-signup-page": "0.8.0-alpha.1",
+    "@nocobase/plugin-sample-hello": "0.8.0-alpha.1",
+    "@nocobase/plugin-sample-ratelimit": "0.8.0-alpha.1",
+    "@nocobase/plugin-sample-shop-actions": "0.8.0-alpha.1",
+    "@nocobase/plugin-sample-shop-events": "0.8.0-alpha.1",
+    "@nocobase/plugin-sample-shop-i18n": "0.8.0-alpha.1",
+    "@nocobase/plugin-sample-shop-modeling": "0.8.0-alpha.1",
     "@nocobase/server": "0.8.0-alpha.1"
   },
   "repository": {
