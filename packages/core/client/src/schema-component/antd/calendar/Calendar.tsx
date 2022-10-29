@@ -7,12 +7,12 @@ import React, { useMemo, useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
-import solarLunar from 'solarlunar-es';
 import { parseExpression } from 'cron-parser';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
 import { useProps } from '../../hooks/useProps';
 import { ActionContext } from '../action';
+import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import './style.less';
 import type { ToolbarProps } from './types';
@@ -20,29 +20,6 @@ import type { ToolbarProps } from './types';
 const Weeks = ['month', 'week', 'day'] as const;
 
 const localizer = momentLocalizer(moment);
-
-const DateHeader = ({ date, label, drilldownView, onDrillDown, showLunar = false }) => {
-  if (!drilldownView) {
-    return <span>{label}</span>;
-  }
-
-  const lunarElement = useMemo(() => {
-    if (!showLunar) {
-      return;
-    }
-    const md = moment(date);
-    const result = solarLunar.solar2lunar(md.year(), md.month() + 1, md.date());
-    const lunarDay = typeof result !== 'number' ? result.lunarFestival || result.term || result.dayCn : result;
-    return <span className="rbc-date-lunar">{lunarDay}</span>;
-  }, [date, showLunar]);
-
-  return (
-    <a onClick={onDrillDown} role="cell">
-      <span className="rbc-date-solar">{label}</span>
-      {lunarElement}
-    </a>
-  );
-};
 
 function Toolbar(props: ToolbarProps) {
   const fieldSchema = useFieldSchema();
@@ -214,8 +191,13 @@ export const Calendar: any = observer((props: any) => {
           },
         }}
         components={{
-          toolbar: Toolbar,
-          dateHeader: (props) => <DateHeader {...props} showLunar={showLunar}></DateHeader>,
+          toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
+          week: {
+            header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
+          },
+          month: {
+            dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
+          },
         }}
         localizer={localizer}
       />
