@@ -17,14 +17,14 @@ yarn pm create hello
 
 插件所在目录 `packages/plugins/hello`，插件目录结构为：
 
-```ts
+```bash
 |- /hello
   |- /src
-    |- /client
-    |- /server
+    |- /client      # 插件客户端代码
+    |- /server      # 插件服务端代码
   |- client.d.ts
   |- client.js
-  |- package.json
+  |- package.json   # 插件包信息
   |- server.d.ts
   |- server.js
 ```
@@ -60,18 +60,13 @@ export class HelloPlugin extends Plugin {
   beforeLoad() {}
 
   async load() {
-    // TODO
-    // Visit: http://localhost:13000/api/testHello:getInfo
-    this.app.resource({
-      name: 'testHello',
-      actions: {
-        async getInfo(ctx, next) {
-          ctx.body = `Hello hello!`;
-          next();
-        },
-      },
+    this.db.collection({
+      name: 'hello',
+      fields: [
+        { type: 'string', name: 'name' }
+      ],
     });
-    this.app.acl.allow('testHello', 'getInfo');
+    this.app.acl.allow('hello', '*');
   }
 
   async install(options?: InstallOptions) {}
@@ -94,6 +89,8 @@ yarn pm add hello
 
 ## 激活插件
 
+插件激活时，会自动创建刚才编辑插件配置的 hello 表。
+
 ```bash
 yarn pm enable hello
 ```
@@ -111,4 +108,18 @@ yarn start
 
 ## 体验插件功能
 
-访问插件自定义的 Resource Action API：http://localhost:13000/api/testHello:getInfo
+向插件的 hello 表里插入数据
+
+```bash
+curl --location --request POST 'http://localhost:13000/api/hello:create' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "Hello world"
+}'
+```
+
+查看 hello 表数据
+
+```bash
+curl --location --request GET 'http://localhost:13000/api/hello:list'
+```

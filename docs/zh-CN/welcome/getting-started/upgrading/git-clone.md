@@ -35,7 +35,9 @@ yarn dev
 生产环境
 
 ```bash
+# 编译
+yarn build
+# 启动
 yarn start # 暂不支持在 win 平台下运行
 ```
 
-注：生产环境，如果代码有修改，需要执行 `yarn build`，再重新启动 NocoBase。
