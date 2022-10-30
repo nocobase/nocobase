@@ -189,7 +189,7 @@ const InternalAdminLayout = (props: any) => {
               text-align: center;
               width: 100%;
               z-index: 0;
-              padding: 10px 50px;
+              padding: 0px 50px;
             }
           `}
         >
