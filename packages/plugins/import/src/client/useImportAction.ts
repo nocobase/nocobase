@@ -36,21 +36,29 @@ export const useDownloadXlsxTemplateAction = () => {
   return {
     async run() {
       const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
-      importColumns.forEach((es) => {
-        const { uiSchema, interface: fieldInterface } =
-          getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
-        es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
-        if (!es.enum && uiSchema.type === 'boolean') {
-          es.enum = [
-            { value: true, label: t('Yes') },
-            { value: false, label: t('No') },
-          ];
-        }
-        es.defaultTitle = compile(uiSchema?.title);
-        if (fieldInterface === 'chinaRegion') {
-          es.dataIndex.push('name');
-        }
-      });
+      try {
+        importColumns.forEach((es) => {
+          const { uiSchema, interface: fieldInterface } =
+            getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
+          if (isEmpty(uiSchema) && isEmpty(fieldInterface)) {
+            throw new Error(t('Field {{fieldName}} does not exist', { fieldName: es.dataIndex.join('.') }));
+          }
+          es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
+          if (!es.enum && uiSchema.type === 'boolean') {
+            es.enum = [
+              { value: true, label: t('Yes') },
+              { value: false, label: t('No') },
+            ];
+          }
+          es.defaultTitle = compile(uiSchema?.title);
+          if (fieldInterface === 'chinaRegion') {
+            es.dataIndex.push('name');
+          }
+        });
+      } catch (error) {
+        message.error(error.message);
+        return;
+      }
 
       const { data } = await resource.downloadXlsxTemplate(
         {
