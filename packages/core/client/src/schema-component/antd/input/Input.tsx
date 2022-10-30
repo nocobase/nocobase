@@ -4,10 +4,12 @@ import { Input as AntdInput } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/lib/input';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
+import { Json } from './Json';
 
 type ComposedInput = React.FC<InputProps> & {
   TextArea?: React.FC<TextAreaProps>;
   URL?: React.FC<InputProps>;
+  JSON?: React.FC<TextAreaProps>;
 };
 
 export const Input: ComposedInput = connect(
@@ -34,6 +36,9 @@ Input.TextArea = connect(
   }),
   mapReadPretty(ReadPretty.TextArea),
 );
+
 Input.URL = connect(AntdInput, mapReadPretty(ReadPretty.URL));
+
+Input.JSON = connect(Json, mapReadPretty(ReadPretty.JSON));
 
 export default Input;

@@ -4,7 +4,7 @@ import { observer, useForm, useFormEffects } from '@formily/react';
 
 import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
-import { useFlowContext } from '../WorkflowCanvas';
+import { useFlowContext } from '../FlowContext';
 import { collection, filter } from '../schemas/collection';
 import { css } from '@emotion/css';
 import { onFieldValueChange } from '@formily/core';

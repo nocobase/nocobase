@@ -12,6 +12,7 @@ export * from './icon';
 export * from './id';
 export * from './input';
 export * from './integer';
+export * from './json';
 export * from './linkTo';
 export * from './m2m';
 export * from './m2o';

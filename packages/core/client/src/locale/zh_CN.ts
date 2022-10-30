@@ -510,7 +510,7 @@ export default {
 
   // plugins/workflow
   'Workflow': '工作流',
-  'Execution History': '执行历史',
+  'Execution history': '执行历史',
   'Trigger type': '触发方式',
   'Description': '描述',
   'Status': '状态',
@@ -519,9 +519,11 @@ export default {
   'Version': '版本',
   'Copy to new version': '复制到新版本',
 
+  'Loading': '加载中',
   'Load failed': '加载失败',
 
   'Trigger': '触发器',
+  'Triggered at': '触发时间',
   'Collection event': '数据表事件',
   'Trigger on': '触发时机',
   'After record added': '新增数据后',
@@ -578,9 +580,13 @@ export default {
   'Arithmetic calculation': '算术运算',
   'String operation': '字符串',
 
+  'Executed at': '执行于',
+
+  'Queueing': '队列中',
   'On going': '进行中',
   'Succeeded': '成功',
   'Failed': '失败',
+  'Pending': '等待处理',
   'Canceled': '已取消',
 
   'This node contains branches, deleting will also be preformed to them, are you sure?': '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
