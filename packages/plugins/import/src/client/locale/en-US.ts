@@ -17,4 +17,7 @@ export default {
   'To download the failure data': 'To download the failure data',
   'Add importable field': 'Add importable field',
   Done: 'Done',
+  Yes: 'Yes',
+  No: 'No',
+  'Field {{fieldName}} does not exist': 'Field {{fieldName}} does not exist',
 };

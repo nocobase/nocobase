@@ -13,7 +13,8 @@ export async function transform({ ctx, record, columns, fields }) {
     const { dataIndex } = column;
     const field = fields.find((f) => f.name === dataIndex[0]);
     const t = getTransform(field.options.interface);
-    set(newRecord, dataIndex[0], await t({ ctx, column, value: cell, field }));
+    const value = await t({ ctx, column, value: cell, field });
+    set(newRecord, dataIndex[0], value);
   }
   return newRecord;
 }

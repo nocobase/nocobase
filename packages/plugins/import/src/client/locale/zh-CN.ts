@@ -17,4 +17,7 @@ export default {
   'To download the failure data': '下载导入失败的数据',
   'Add importable field': '添加可导入字段',
   Done: '完成',
+  Yes: '是',
+  No: '否',
+  'Field {{fieldName}} does not exist': '字段 {{fieldName}} 不存在',
 };

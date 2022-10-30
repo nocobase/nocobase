@@ -1,4 +1,5 @@
 import { Schema, useFieldSchema, useForm } from '@formily/react';
+import { isEmpty } from '@formily/shared';
 import {
   useActionContext,
   useAPIClient,
@@ -7,9 +8,11 @@ import {
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
+import { message } from 'antd';
 import { saveAs } from 'file-saver';
 import { cloneDeep } from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { NAMESPACE } from './constants';
 import { useImportContext } from './context';
 import { ImportStatus } from './ImportModal';
 
@@ -73,7 +76,7 @@ export const useImportStartAction = () => {
   const compile = useCompile();
   const { getCollectionJoinField } = useCollectionManager();
   const { name, title, getField } = useCollection();
-  const { t } = useTranslation();
+  const { t } = useTranslation(NAMESPACE);
   const { schema: importSchema } = useImportSchema(actionSchema);
   const form = useForm();
   const { setVisible } = useActionContext();
@@ -81,21 +84,29 @@ export const useImportStartAction = () => {
   return {
     async run() {
       const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
-      importColumns.forEach((es) => {
-        const { uiSchema, interface: fieldInterface } =
-          getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
-        es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
-        if (!es.enum && uiSchema.type === 'boolean') {
-          es.enum = [
-            { value: true, label: t('Yes') },
-            { value: false, label: t('No') },
-          ];
-        }
-        es.defaultTitle = compile(uiSchema?.title);
-        if (fieldInterface === 'chinaRegion') {
-          es.dataIndex.push('name');
-        }
-      });
+      try {
+        importColumns.forEach((es) => {
+          const { uiSchema, interface: fieldInterface } =
+            getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
+          if (isEmpty(uiSchema) && isEmpty(fieldInterface)) {
+            throw new Error(t('Field {{fieldName}} does not exist', { fieldName: es.dataIndex.join('.') }));
+          }
+          es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
+          if (!es.enum && uiSchema.type === 'boolean') {
+            es.enum = [
+              { value: true, label: t('Yes') },
+              { value: false, label: t('No') },
+            ];
+          }
+          es.defaultTitle = compile(uiSchema?.title);
+          if (fieldInterface === 'chinaRegion') {
+            es.dataIndex.push('name');
+          }
+        });
+      } catch (error) {
+        message.error(error.message);
+        return;
+      }
       let formData = new FormData();
       const uploadFiles = form.values.upload.map((f) => f.originFileObj);
       console.log(form, uploadFiles);
