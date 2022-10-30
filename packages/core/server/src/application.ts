@@ -212,11 +212,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     // this.context = Object.create(context);
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
+
     if (this._db) {
       // MaxListenersExceededWarning
       this._db.removeAllListeners();
     }
+
     this._db = this.createDatabase(options);
+
     this._resourcer = createResourcer(options);
     this._cli = new Command('nocobase').usage('[command] [options]');
     this._i18n = createI18n(options);
@@ -252,17 +255,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private createDatabase(options: ApplicationOptions) {
-    let databaseOptions;
-
-    if (options.database instanceof Database) {
-      databaseOptions = options.database.options;
-      options.database.close();
-    } else {
-      databaseOptions = options.database;
-    }
-
     return new Database({
-      ...databaseOptions,
+      ...(options.database instanceof Database ? options.database.options : options.database),
       migrator: {
         context: { app: this },
       },
@@ -322,8 +316,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async load(options?: any) {
     if (options?.reload) {
+      const oldDb = this._db;
       this.init();
+      await oldDb.close();
     }
+
     await this.emitAsync('beforeLoad', this, options);
     await this.pm.load(options);
     await this.emitAsync('afterLoad', this, options);
