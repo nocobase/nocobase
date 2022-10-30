@@ -31,7 +31,7 @@ export const useDownloadXlsxTemplateAction = () => {
   const compile = useCompile();
   const { getCollectionJoinField } = useCollectionManager();
   const { name, title, getField } = useCollection();
-  const { t } = useTranslation();
+  const { t } = useTranslation(NAMESPACE);
   const { schema: importSchema } = useImportSchema(actionSchema);
   return {
     async run() {
