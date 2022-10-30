@@ -11,6 +11,7 @@ const EXCLUDE_INTERFACES = [
   'createdBy',
   'updatedAt',
   'updatedBy',
+  'sequence',
 ];
 
 export const useFields = (collectionName: string) => {

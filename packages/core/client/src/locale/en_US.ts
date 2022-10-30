@@ -557,12 +557,16 @@ export default {
   "Print": "Print",
   'Single select and radio fields can be used as the grouping field': 'Single select and radio fields can be used as the grouping field',
   'Sign up successfully, and automatically jump to the sign in page': 'Sign up successfully, and automatically jump to the sign in page',
-  "Bulk update": "Bulk update",
   "After successful bulk update": "After successful bulk update",
+  "All": "All",
+  "Update selected data?": "Update selected data?",
+  "Update all data?": "Update all data?",
   "Bulk edit": "Bulk edit",
   "Data will be updated": "Data will be updated",
   "Selected": "Selected",
-  "All": "All",
-  "Update selected data?": "Update selected data?",
-  "Update all data?": "Update all data?"
+  "Remains the same": "Remains the same",
+  "Changed to": "Changed to",
+  "Clear":"Clear",
+  "Add attach":"Add attach",
+  "Please select the records to be updated": "Please select the records to be updated"
 }
