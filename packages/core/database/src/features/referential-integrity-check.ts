@@ -53,6 +53,7 @@ export async function referentialIntegrityCheck(options: ReferentialIntegrityChe
         values: {
           [sourceField]: null,
         },
+        hooks: false,
         transaction,
       });
     }
