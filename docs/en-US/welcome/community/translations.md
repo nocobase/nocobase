@@ -1,6 +1,6 @@
 # Translations
 
-The default language of NocoBase is English, currently English, Simplified Chinese are supported. You can help NocoBase to translate into your language.
+The default language of NocoBase is English, currently English, Simplified Chinese, Japanese, Russian, Turkish are supported. You can help NocoBase to translate into your language.
 
 The NocoBase language files are located at the following locations.
 
