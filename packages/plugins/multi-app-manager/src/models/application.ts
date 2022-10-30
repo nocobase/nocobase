@@ -9,11 +9,12 @@ export interface registerAppOptions extends Transactionable {
 
 export class ApplicationModel extends Model {
   static getDatabaseConfig(app: Application): IDatabaseOptions {
-    return lodash.cloneDeep(
-      lodash.isPlainObject(app.options.database)
-        ? (app.options.database as IDatabaseOptions)
-        : (app.options.database as Database).options,
-    );
+    const oldConfig =
+      app.options.database instanceof Database
+        ? (app.options.database as Database).options
+        : (app.options.database as IDatabaseOptions);
+
+    return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
   static async handleAppStart(app: Application, options: registerAppOptions) {
