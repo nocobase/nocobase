@@ -24,7 +24,7 @@ export const ReadPretty = observer((props: any) => {
   return (
     <div>
       {options.map((option, key) => (
-        <Tag key={key} color={option[fieldNames.color]}>
+        <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
           {option[fieldNames.label]}
         </Tag>
       ))}

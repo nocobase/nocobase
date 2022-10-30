@@ -5,7 +5,7 @@ import { Select } from 'antd';
 import { useCompile, useCollectionDataSource, useCollectionManager } from '@nocobase/client';
 
 import { ScheduleConfig } from './ScheduleConfig';
-import { useFlowContext } from '../../WorkflowCanvas';
+import { useFlowContext } from '../../FlowContext';
 import { BaseTypeSet } from '../../calculators';
 
 export default {

@@ -1,4 +1,8 @@
+import React from 'react';
 import { ISchema } from '@formily/react';
+import { Link } from 'react-router-dom';
+import { useActionContext } from '@nocobase/client';
+import { ExecutionStatusOptions } from '../constants';
 
 const collection = {
   name: 'executions',
@@ -10,21 +14,23 @@ const collection = {
       name: 'createdAt',
       uiSchema: {
         type: 'datetime',
-        title: '{{t("Created at")}}',
+        title: '{{t("Triggered at")}}',
         'x-component': 'DatePicker',
         'x-component-props': {},
         'x-read-pretty': true,
       } as ISchema,
     },
     {
-      interface: 'number',
-      type: 'number',
+      interface: 'object',
+      type: 'belongsTo',
       name: 'workflowId',
       uiSchema: {
         type: 'number',
         title: '{{t("Version")}}',
-        'x-component': 'InputNumber',
-        'x-read-pretty': true,
+        ['x-component']({ value }) {
+          const { setVisible } = useActionContext();
+          return <Link to={`/admin/settings/workflow/workflows/${value}`} onClick={() => setVisible(false)}>{`#${value}`}</Link>;
+        }
       } as ISchema,
     },
     {
@@ -36,12 +42,7 @@ const collection = {
         type: 'string',
         'x-component': 'Select',
         'x-decorator': 'FormItem',
-        enum: [
-          { value: 0, label: '{{t("On going")}}' },
-          { value: 1, label: '{{t("Succeeded")}}' },
-          { value: -1, label: '{{t("Failed")}}' },
-          { value: -2, label: '{{t("Canceled")}}' },
-        ],
+        enum: ExecutionStatusOptions,
       } as ISchema,
     }
   ],
@@ -58,6 +59,7 @@ export const executionSchema = {
         resource: 'executions',
         action: 'list',
         params: {
+          appends: ['workflow.id', 'workflow.title'],
           pageSize: 50,
           sort: ['-createdAt'],
         },
@@ -130,27 +132,27 @@ export const executionSchema = {
               },
             }
           },
-          // actions: {
-          //   type: 'void',
-          //   title: '{{ t("Actions") }}',
-          //   'x-component': 'Table.Column',
-          //   properties: {
-          //     actions: {
-          //       type: 'void',
-          //       'x-component': 'Space',
-          //       'x-component-props': {
-          //         split: '|',
-          //       },
-          //       properties: {
-          //         config: {
-          //           type: 'void',
-          //           title: '查看',
-          //           'x-component': 'ExecutionLink'
-          //         },
-          //       }
-          //     }
-          //   }
-          // }
+          actions: {
+            type: 'void',
+            title: '{{ t("Actions") }}',
+            'x-component': 'Table.Column',
+            properties: {
+              actions: {
+                type: 'void',
+                'x-component': 'Space',
+                'x-component-props': {
+                  split: '|',
+                },
+                properties: {
+                  config: {
+                    type: 'void',
+                    title: '{{t("Details")}}',
+                    'x-component': 'ExecutionLink'
+                  },
+                }
+              }
+            }
+          }
         }
       }
     }

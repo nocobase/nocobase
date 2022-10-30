@@ -416,7 +416,7 @@ export default {
   "Tencent COS": "Tencent COS",
   "Amazon S3": "Amazon S3",
   "Workflow": "Workflow",
-  "Execution History": "Execution History",
+  "Execution history": "Execution history",
   "Trigger type": "Trigger type",
   "Description": "Description",
   "Status": "Status",

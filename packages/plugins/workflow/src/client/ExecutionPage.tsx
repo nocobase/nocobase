@@ -1,13 +1,13 @@
-import { cx } from '@emotion/css';
 import React from 'react';
+import { cx } from '@emotion/css';
 import { useRouteMatch } from 'react-router-dom';
 import { SchemaComponent } from '@nocobase/client';
 import { workflowPageClass } from './style';
-import { WorkflowCanvas } from './WorkflowCanvas';
+import { ExecutionCanvas } from './ExecutionCanvas';
 
 
 
-export const WorkflowPage = () => {
+export const ExecutionPage = () => {
   const { params } = useRouteMatch<any>();
 
   return (
@@ -16,30 +16,30 @@ export const WorkflowPage = () => {
         schema={{
           type: 'void',
           properties: {
-            [`provider_${params.id}`]: {
+            [`execution_${params.id}`]: {
               type: 'void',
               'x-decorator': 'ResourceActionProvider',
               'x-decorator-props': {
                 collection: {
-                  name: 'workflows',
+                  name: 'executions',
                   fields: [],
                 },
-                resourceName: 'workflows',
+                resourceName: 'executions',
                 request: {
-                  resource: 'workflows',
+                  resource: 'executions',
                   action: 'get',
                   params: {
                     filter: params,
-                    appends: ['nodes', 'revisions.id', 'revisions.createdAt', 'revisions.current', 'revisions.executed', 'revisions.enabled'],
+                    appends: ['jobs', 'workflow', 'workflow.nodes'],
                   },
                 },
               },
-              'x-component': 'WorkflowCanvas'
+              'x-component': 'ExecutionCanvas'
             },
           },
         }}
         components={{
-          WorkflowCanvas,
+          ExecutionCanvas,
         }}
       />
     </div>
