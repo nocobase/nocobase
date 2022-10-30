@@ -3,6 +3,7 @@
 - Fork the source code to your own repository
 - Modify source code
 - Submit pull request
+- Sign the CLA
 
 ## Download 
 
