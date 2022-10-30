@@ -1,14 +1,14 @@
-# Docker 安装的升级
+# Upgrading for Docker compose
 
 <Alert>
 
-本篇文档所讲的 Docker 安装是基于 `docker-compose.yml` 配置文件，在 [NocoBase GitHub 仓库](https://github.com/nocobase/nocobase/tree/main/docker) 里也有提供。
+The Docker installation described in this document is based on the `docker-compose.yml` configuration file, which is also available in the [NocoBase GitHub repository](https://github.com/nocobase/nocobase/tree/main/docker).
 
 </Alert>
 
-## 1. 切换到之前安装时的目录
+## 1. Switch to the directory where you installed it before
 
-也可以根据实际情况，切换到 `docker-compose.yml` 所在的目录
+You can also switch to the directory where `docker-compose.yml` is located, depending on the situation.
 
 ```bash
 # SQLite
@@ -19,9 +19,9 @@ cd nocobase/docker/app-mysql
 cd nocobase/docker/app-postgres
 ```
 
-## 2. 更新 image 版本号
+## 2. Update the image version number
 
-`docker-compose.yml` 文件，app 容器的 image 替换为最新版本
+`docker-compose.yml` file, replace the image of the app container with the latest version.
 
 ```yml
 services:
@@ -29,9 +29,9 @@ services:
     image: nocobase/nocobase:0.8.0-alpha.1
 ```
 
-## 3. 删除旧镜像（非必须）
+## 3. Delete old images (not required)
 
-如果使用的是 latest 镜像，需要先停止并删除相对应容器
+If you are using the latest image, you need to stop and delete the corresponding container first.
 
 ```bash
 # find container ID
@@ -42,7 +42,7 @@ docker stop <YOUR_CONTAINER_ID>
 docker rm <YOUR_CONTAINER_ID>
 ```
 
-删除掉旧镜像
+Delete the old image
 
 ```bash
 # find image
@@ -51,7 +51,7 @@ docker images
 docker rmi <YOUR_CONTAINER_ID>
 ```
 
-## 4. 重启容器
+## 4. Restart the container
 
 ```bash
 docker-compose up -d app
