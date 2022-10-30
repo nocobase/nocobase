@@ -185,7 +185,8 @@ https://user-images.githubusercontent.com/1267426/198877269-1c56562b-167a-4808-a
 https://user-images.githubusercontent.com/1267426/198877336-6bd85f0b-17c5-40a5-9442-8045717cc7b0.mp4
 
 
-### 其它图表
+### 更多图表
+理论上支持 https://g2plot.antv.vision/en/examples/gallery 上的所有图表
 
 https://user-images.githubusercontent.com/1267426/198877347-7fc2544c-b938-4e34-8a83-721b3f62525e.mp4
 
