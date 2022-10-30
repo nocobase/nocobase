@@ -252,16 +252,21 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private createDatabase(options: ApplicationOptions) {
+    let databaseOptions;
+
     if (options.database instanceof Database) {
-      return options.database;
+      databaseOptions = options.database.options;
+      options.database.close();
     } else {
-      return new Database({
-        ...options.database,
-        migrator: {
-          context: { app: this },
-        },
-      });
+      databaseOptions = options.database;
     }
+
+    return new Database({
+      ...databaseOptions,
+      migrator: {
+        context: { app: this },
+      },
+    });
   }
 
   getVersion() {

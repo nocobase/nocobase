@@ -238,6 +238,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     });
 
+    this.initListener();
+  }
+
+  initListener() {
     this.on('afterCreate', async (instance) => {
       instance?.toChangedWithAssociations?.();
     });
