@@ -64,6 +64,13 @@ describe('belongs to field', () => {
   });
 
   it('custom targetKey and foreignKey', async () => {
+    db.collection({
+      name: "posts",
+      fields: [
+        { type: "string", name: "key" },
+      ]
+    });
+
     const Comment = db.collection({
       name: 'comments',
       fields: [
@@ -75,6 +82,7 @@ describe('belongs to field', () => {
         },
       ],
     });
+
     const association = Comment.model.associations.post;
     expect(association).toBeDefined();
     expect(association.foreignKey).toBe('postKey');
@@ -109,6 +117,7 @@ describe('belongs to field', () => {
     } catch (e) {
       error = e;
     }
+
 
     expect(error).toBeInstanceOf(IdentifierError);
   });
