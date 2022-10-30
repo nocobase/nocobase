@@ -567,6 +567,36 @@ button.rbc-input::-moz-focus-inner {
 .rbc-time-header-cell {
   min-height: 32px !important;
 }
+.rbc-time-header-cell .rbc-header {
+  display: flex;
+}
+.rbc-time-header-cell .rbc-header.rbc-today {
+  border-color: #1890ff;
+  background-color: #e6f7ff;
+  color: #1890ff
+}
+
+.rbc-time-header-cell .rbc-header a {
+  display: flex;
+  flex-direction: column;
+}
+
+.rbc-time-header-cell .rbc-date-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.rbc-time-header-cell .rbc-date-solar {
+  font-size: 18px;
+}
+.rbc-time-header-cell .rbc-date-lunar {
+  margin-left: 4px;
+}
+
+.rbc-time-header-cell .rbc-header:not(.rbc-today) .rbc-date-lunar {
+  color: #aaa;
+}
+
 .rbc-calendar.view-week {
   .rbc-time-header-cell {
     margin-top: -32px;
@@ -709,7 +739,7 @@ button.rbc-input::-moz-focus-inner {
 
 .rbc-time-header-content {
   flex: 1;
-  display: flex;
+  // display: flex;
   min-width: 0;
   flex-direction: column;
   // border-left: 1px solid #f0f0f0;
