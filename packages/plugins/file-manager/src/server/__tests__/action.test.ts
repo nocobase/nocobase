@@ -3,7 +3,6 @@ import path from 'path';
 import { getApp } from '.';
 import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../constants';
 
-
 const { LOCAL_STORAGE_BASE_URL, APP_PORT = '13000' } = process.env;
 
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `http://localhost:${APP_PORT}/uploads`;
@@ -73,7 +72,7 @@ describe('action', () => {
 
       const { documentRoot = 'uploads' } = storage.options || {};
       const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.env.PWD, documentRoot),
+        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
         storage.path,
       );
       const file = await fs.readFile(`${destPath}/${attachment.filename}`);
