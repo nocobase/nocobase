@@ -8,7 +8,7 @@ export default {
         '/welcome/introduction/index',
         '/welcome/introduction/features',
         '/welcome/introduction/when',
-        '/welcome/introduction/learning-guide',
+        // '/welcome/introduction/learning-guide',
       ],
     },
     {
@@ -46,7 +46,7 @@ export default {
       type: 'group',
       children: [
         '/welcome/community/contributing',
-        '/welcome/community/faq',
+        // '/welcome/community/faq',
         '/welcome/community/translations',
         '/welcome/community/thanks',
       ],
