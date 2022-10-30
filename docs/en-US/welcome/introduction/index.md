@@ -22,26 +22,26 @@ hello@nocobase.com
 ## Features
 
 - **Open source and free**
-	- Unrestricted commercial use under the Apache-2.0 license
-	- Full code ownership, private deployment, private and secure data
-	- Free to expand and develop for actual needs
-	- Good ecological support
+    - Unrestricted commercial use under the Apache-2.0 license
+    - Full code ownership, private deployment, private and secure data
+    - Free to expand and develop for actual needs
+    - Good ecological support
 - **Strong no-code capability**
-	- Data Model
-    - Create independent data models using dozens of field types such as text, number, attachment, and various association relationships such as one-to-one, one-to-many, etc.
-- Block
-    - Display and manipulate data within a page using a free combination of block types such as tables, forms, kanban, calendars, details, etc.
-- Action
-    - Support filtering, exporting, adding, deleting, modifying, viewing and other operations to process data, which can be extended to more types.
-- ACL
-    - Role-based control of user's system configuration rights, data action rights and menu access rights.
-- Workflow
-    - Repetitive tasks are replaced by automation to increase efficiency. Manual approval is required for important matters.
+    - Data Model
+        - Create independent data models using dozens of field types such as text, number, attachment, and various association relationships such as one-to-one, one-to-many, etc.
+    - Block
+        - Display and manipulate data within a page using a free combination of block types such as tables, forms, kanban, calendars, details, etc.
+    - Action
+        - Support filtering, exporting, adding, deleting, modifying, viewing and other operations to process data, which can be extended to more types.
+    - ACL
+        - Role-based control of user's system configuration rights, data action rights and menu access rights.
+    - Workflow
+        - Repetitive tasks are replaced by automation to increase efficiency. Manual approval is required for important matters.
 - **Built for extended development**
-	- Microkernel architecture, flexible and easy to extend, with a robust plug-in system
-	- Node.js-based, with popular frameworks and technologies, including Koa, Sequelize, React, Formily, Ant Design, etc.
-	- Progressive development, easy for getting-started, friendly to newcomers
-	- No binding, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
+    - Microkernel architecture, flexible and easy to extend, with a robust plug-in system
+    - Node.js-based, with popular frameworks and technologies, including Koa, Sequelize, React, Formily, Ant Design, etc.
+    - Progressive development, easy for getting-started, friendly to newcomers
+    - No binding, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
 
 ## Architecture
 
