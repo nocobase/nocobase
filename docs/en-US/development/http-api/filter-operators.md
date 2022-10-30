@@ -1,6 +1,6 @@
 # Filter operators
 
-## Common
+## 通用
 
 - $eq
 - $ne
@@ -37,7 +37,7 @@
 
 ## boolean
 
-- $isTruthy
+- $isTruly
 - $isFalsy
 
 ## date

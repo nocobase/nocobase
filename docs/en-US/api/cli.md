@@ -1,7 +1,3 @@
----
-order: 2
----
-
 # NocoBase CLI
 
 NocoBase CLI 旨在帮助你开发、构建和部署 NocoBase 应用。
@@ -26,7 +22,6 @@ Options:
   -h, --help
 
 Commands:
-  create-plugin         创建插件脚手架
   console
   db:auth               校验数据库是否连接成功
   db:sync               通过 collections 配置生成相关数据表和字段
@@ -39,6 +34,8 @@ Commands:
   test                  测试
   umi
   upgrade               升级
+  migrator              数据迁移
+  pm                    插件管理器
   help
 ```
 
@@ -54,7 +51,8 @@ Commands:
     "clean": "nocobase clean",
     "build": "nocobase build",
     "test": "nocobase test",
-    "postinstall": "nocobase umi generate tmp"
+    "pm": "nocobase pm",
+    "postinstall": "nocobase postinstall"
   }
 }
 ```
@@ -283,6 +281,48 @@ Usage: nocobase db:sync [options]
 Options:
   -f, --force
   -h, --help   display help for command
+```
+
+### `migrator`
+
+数据迁移
+
+```bash
+$ yarn nocobase migrator
+
+Positional arguments:
+  <command>
+    up        Applies pending migrations
+    down      Revert migrations
+    pending   Lists pending migrations
+    executed  Lists executed migrations
+    create    Create a migration file
+```
+
+### `pm`
+
+插件管理器
+
+```bash
+# 创建插件
+yarn pm create hello
+# 注册插件
+yarn pm add hello
+# 激活插件
+yarn pm enable hello
+# 禁用插件
+yarn pm disable hello
+# 删除插件
+yarn pm remove hello
+```
+
+未实现
+
+```bash
+# 升级插件
+yarn pm upgrade hello
+# 发布插件
+yarn pm publish hello
 ```
 
 ### `umi`
