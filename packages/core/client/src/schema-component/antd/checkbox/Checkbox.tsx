@@ -12,7 +12,12 @@ type ComposedCheckbox = React.FC<CheckboxProps> & {
 };
 
 export const Checkbox: ComposedCheckbox = connect(
-  AntdCheckbox,
+  (props: any) => {
+    const changeHandler = (val) => {
+      props?.onChange(val);
+    };
+    return <AntdCheckbox {...props} onChange={changeHandler} />;
+  },
   mapProps(
     {
       value: 'checked',

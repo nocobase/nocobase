@@ -1,7 +1,7 @@
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import { Select, Space } from 'antd';
+import { Checkbox, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../block-provider';
@@ -96,7 +96,7 @@ export const BulkEditField = (props: any) => {
   };
 
   const valueChangeHandler = (val) => {
-    setValue(val?.target?.value ?? val);
+    setValue(val?.target?.value ?? val?.target?.checked ?? val);
   };
 
   return (
@@ -109,10 +109,13 @@ export const BulkEditField = (props: any) => {
           <Select.Option value={BulkEditFormItemValueType.AddAttach}>{t('Add attach')}</Select.Option>
         )}
       </Select>
-
-      {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) && (
-        <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />
-      )}
+      {/* XXX: Not a best practice */}
+      {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
+        collectionField.interface !== 'checkbox' && (
+          <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />
+        )}
+      {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
+        collectionField.interface === 'checkbox' && <Checkbox checked={value} onChange={valueChangeHandler} />}
     </Space>
   );
 };

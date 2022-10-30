@@ -1,6 +1,7 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { message, Modal } from 'antd';
 import parse from 'json-templates';
+import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -334,7 +335,7 @@ export const useCustomizeBulkEditActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      let values = form.values;
+      let values = cloneDeep(form.values);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       for (const key in values) {
