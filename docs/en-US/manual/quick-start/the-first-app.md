@@ -48,17 +48,8 @@ In the same way, create Collections `Products`, `Orders`, `Order List` and their
 
 In this case, for relational fields, if you are not familiar with the concepts of one-to-many, many-to-many, etc., you can directly use the Link to type to create associations between collections. If you are familiar with these concepts, please use the correct types of One to many, Many to one, etc. to establish the association between collections. For example, in this example, we associate `Orders` with `Order list`Order list with the relationship One to many.
 
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
+![collection-list.jpg](./the-first-app/order-list-relation.jpg)
 
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
-
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
-
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
-
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
-
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
 
 In the graphical interface, you can visualize the relationship between the various collections. (Note: Graph-collection plugin is not yet open source)
 
