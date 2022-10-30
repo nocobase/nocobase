@@ -1,43 +1,44 @@
-# Git 源码安装的升级
+# Upgrading for Git source code
 
-## 1. 切换到 NocoBase 项目目录
+## 1. switch to the NocoBase project directory
 
 ```bash
 cd my-nocobase-app
 ```
 
-## 2. 拉取最新代码
+## 2. Pull the latest code
 
 ```bash
 git pull
 ```
 
-## 3. 更新依赖
+## 3. Update dependencies
 
 ```
 yarn install
 ```
 
-## 4. 执行更新命令
+## 4. Execute the update command
 
 ```bash
 yarn nocobase upgrade
 ```
 
-## 5. 启动 NocoBase
+## 5. Start NocoBase
 
-开发环境
+development environment
 
 ```bash
 yarn dev
 ```
 
-生产环境
+Production environment
 
 ```bash
-# 编译
+# compile
 yarn build
-# 启动
-yarn start # 暂不支持在 win 平台下运行
+
+# Start
+yarn start # Not supported on Windows platforms yet
 ```
 
