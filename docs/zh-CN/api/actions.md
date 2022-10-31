@@ -18,7 +18,7 @@ const app = new Application({
 ```
 
 
-内中的操作方法都是注册在 `application` 中的 `resourcer` 实例上。
+内置的操作方法都是注册在 `application` 中的 `resourcer` 实例上。
 通常情况下无需直接调用内置的 action 方法，在需要扩展默认操作行为时，可以在自定义的操作方法内调用默认方法。
 
 ## 资源操作
