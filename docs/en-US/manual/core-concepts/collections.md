@@ -4,7 +4,7 @@ Before developing a system, we usually have to abstract the business and build a
 
 For example, in a collection describing an order, each column contains information about a specific attribute of the order, such as the delivery address, while each row contains all the information about a specific order, such as order number, customer name, phone number, delivery address, etc.
 
-## Separation of data and interfaces
+## Separate "data structure" and "user interface"
 
 NocoBase's `Data` and `View` are separated, managed and presented by `Collections` and `Blocks` respectively.
 
