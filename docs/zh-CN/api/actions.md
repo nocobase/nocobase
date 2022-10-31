@@ -1,20 +1,27 @@
 # 内置常用资源操作
 
+## 概览
+
 针对常用的 CRUD 等数据资源的操作，NocoBase 内置了对应操作方法，并通过数据表资源自动映射相关的操作。
 
-所有的操作方法都是注册在 resourcer 实例上，也是标准兼容 Koa 的中间件函数（`(ctx, next) => Promise<void>`）。操作的参数由路由解析后附加在 `ctx.action` 对象上，后续参数相关介绍均基于此对象。
+```javascript
+import { Application } from "@nocobase/server";
 
-通常情况下无需直接调用内置的 action 方法，在需要扩展默认操作行为时，可以在自定义的操作方法内调用默认方法。
+const app = new Application({
+  database: {
+    dialect: 'sqlite',
+    storage: './db.sqlite',
+  },
+  registerActions: true // 注册内置资源操作，默认为 True
+});
 
-## 包结构
-
-可通过以下方式引入相关实体：
-
-```ts
-import actions from '@nocobase/actions';
 ```
 
-## 单一数据资源操作
+
+内置的操作方法都是注册在 `application` 中的 `resourcer` 实例上。
+通常情况下无需直接调用内置的 action 方法，在需要扩展默认操作行为时，可以在自定义的操作方法内调用默认方法。
+
+## 资源操作
 
 ### `list()`
 

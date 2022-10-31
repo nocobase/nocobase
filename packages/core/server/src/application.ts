@@ -43,7 +43,6 @@ export interface ApplicationOptions {
 
 export interface DefaultState extends KoaDefaultState {
   currentUser?: any;
-
   [key: string]: any;
 }
 
@@ -209,7 +208,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._eventsCount = [];
     this.removeAllListeners();
     this.middleware = new Toposort<any>();
-    // this.context = Object.create(context);
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
     if (this._db) {
