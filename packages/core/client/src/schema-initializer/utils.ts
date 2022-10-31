@@ -120,14 +120,14 @@ export const useAssociatedTableColumnInitializerFields = () => {
             // type: 'string',
             name: `${field.name}.${subField.name}`,
             // title: subField?.uiSchema?.title || subField.name,
-            
+
             'x-component': 'CollectionField',
             'x-read-pretty': true,
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
             'x-component-props': {
             },
           };
-          
+
           return {
             type: 'item',
             title: subField?.uiSchema?.title || subField.name,
@@ -145,7 +145,7 @@ export const useAssociatedTableColumnInitializerFields = () => {
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
-        children: items, 
+        children: items,
       } as SchemaInitializerItemOptions;
     });
 
@@ -171,6 +171,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
+        'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
         'x-component-props': {
         },
       };
@@ -234,7 +235,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
-        children: items, 
+        children: items,
       } as SchemaInitializerItemOptions;
     });
   return groups;
@@ -294,9 +295,9 @@ const removeSchema = (schema, cb) => {
 
 const recursiveParent = (schema: Schema) => {
   if (!schema.parent) return null;
-  
+
   if (schema.parent['x-initializer']) return schema.parent;
-  
+
   return recursiveParent(schema.parent);
 }
 
