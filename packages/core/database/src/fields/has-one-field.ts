@@ -102,6 +102,7 @@ export class HasOneField extends RelationField {
   bind() {
     const { database, collection } = this.context;
     const Target = this.TargetModel;
+
     if (!Target) {
       database.addPendingField(this);
       return false;
@@ -109,7 +110,7 @@ export class HasOneField extends RelationField {
 
     const association = collection.model.hasOne(Target, {
       constraints: false,
-      ...omit(this.options, ['name', 'type', 'target']),
+      ...omit(this.options, ['name', 'type', 'target', 'onDelete']),
       as: this.name,
       foreignKey: this.foreignKey,
     });

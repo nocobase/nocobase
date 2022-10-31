@@ -1,4 +1,3 @@
-
 export interface Reference {
   sourceCollectionName: string;
   sourceField: string;
@@ -15,7 +14,11 @@ class ReferencesMap {
 
     if (existReference) {
       if (reference.onDelete && existReference.onDelete !== reference.onDelete) {
-        throw new Error(`On Delete Conflict, exist reference ${existReference.onDelete}, new reference ${reference.onDelete}`)
+        throw new Error(
+          `On Delete Conflict, exist reference ${JSON.stringify(existReference)}, new reference ${JSON.stringify(
+            reference,
+          )}`,
+        );
       }
 
       return;
@@ -24,7 +27,6 @@ class ReferencesMap {
     if (!reference.onDelete) {
       reference.onDelete = 'SET NULL';
     }
-
 
     this.map.set(reference.targetCollectionName, [...(this.map.get(reference.targetCollectionName) || []), reference]);
   }
@@ -37,10 +39,10 @@ class ReferencesMap {
     const references = this.map.get(reference.targetCollectionName);
 
     if (!references) {
-      return null
+      return null;
     }
 
-    const keys = Object.keys(reference).filter(k => k !== 'onDelete');
+    const keys = Object.keys(reference).filter((k) => k !== 'onDelete');
 
     return references.find((ref) => keys.every((key) => ref[key] === reference[key]));
   }
