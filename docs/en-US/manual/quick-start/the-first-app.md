@@ -52,18 +52,7 @@ In this case, for relational fields, if you are not familiar with the concepts o
 
 
 In the graphical interface, you can visualize the relationship between the various collections. (Note: Graph-collection plugin is not yet open source)
-
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
-
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
-
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
-
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
-
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
-
-🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎
+![graph-collection.jpg](./the-first-app/graph-collection.jpg)
 
 Once the data collections and fields are created, we start making the interface.
 

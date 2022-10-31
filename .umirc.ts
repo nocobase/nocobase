@@ -98,6 +98,11 @@ const navs = [
     path: '/api',
   },
   {
+    title: 'Schema components',
+    'title.zh-CN': 'Schema 组件库',
+    path: '/components',
+  },
+  {
     title: 'GitHub',
     path: 'https://github.com/nocobase/nocobase',
   },
