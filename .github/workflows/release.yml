@@ -28,7 +28,7 @@ jobs:
           echo "# test" >> Release.md
           git add .
           git commit -m "chore(versions): test publish packages xxx"
-          yarn release:force --registry https://registry.npmjs.org/
+          yarn release:force --registry https://registry.npmjs.org/ --access=public
   push-docker:
     runs-on: ubuntu-latest
     needs: publish-npm
