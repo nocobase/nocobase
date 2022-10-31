@@ -194,7 +194,7 @@ export const Calendar: any = observer((props: any) => {
           if (!record) {
             return;
           }
-          record[fieldNames.start] = event.start;
+          record.__event = event;
           setRecord(record);
           setVisible(true);
         }}

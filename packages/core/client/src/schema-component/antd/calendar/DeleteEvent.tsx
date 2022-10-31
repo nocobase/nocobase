@@ -3,18 +3,15 @@ import { Modal, Radio, Space, Typography } from 'antd';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { useBlockRequestContext, useCalendarBlockProps, useFilterByTk } from '../../../block-provider';
+import { useBlockRequestContext, useFilterByTk } from '../../../block-provider';
 import { useRecord } from '../../../record-provider';
 import { useActionContext } from '../action';
-import get from 'lodash/get';
-import moment from 'moment';
 const { Text } = Typography;
 
 export const DeleteEvent = observer(() => {
   const { visible, setVisible } = useActionContext();
-  const { fieldNames } = useCalendarBlockProps();
   const { exclude = [], cron, ...record } = useRecord();
-  const startDate = moment(get(record.__parent, fieldNames.start)).format();
+  const startDate = record.__parent.__event.start.format();
   const filterByTk = useFilterByTk();
   const { resource, service, __parent } = useBlockRequestContext();
   const [value, onChange] = useState(startDate);
