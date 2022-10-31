@@ -1,4 +1,4 @@
-# 更新日志
+# Release Notes
 
 ## 2022/10/31 ~ v0.8.0-alpha.1
 
@@ -31,12 +31,12 @@
 
 ## 2022/10/16 ~ v0.7.5-alpha.1
 
-- 优化关系字段的查询性能
-- 添加手机号注册登录的支持
-- 自动编码类型字段
-- 新增日语、俄语翻译
-- 页面布局支持拖拽调整列宽
-- 修复若干 BUG
+- Optimized query performance for relational fields
+- Added support for mobile phone number registration and login
+- Sequence field type
+- Added Japanese and Russian translations
+- The page layout supports drag and drop to adjust the column width
+- Fixed several bugs
 
 ### Details
 
@@ -203,14 +203,14 @@
 
 ### New features
 
-- Fields: 整数字段
-- Blocks: 支持在区块里显示关系表的字段
-- Plugins: 筛选条件支持变量
+- Fields: Integer field
+- Blocks: Display fields of relational collections in blocks
+- Plugins: Filter conditions support variables
 
 ### Breaking changes
 
-- 新版本关系默认不建立外键约束，旧版本升级后会删除掉所有已创建的外键约束
-- 之前使用 yarn create 安装的 NocoBase 应用，需要重新 yarn create，再执行 `yarn nocobase upgrade --raw`
+- New version does not create foreign key constraints by default, old version will delete all created foreign key constraints after upgrade
+- If you installed NocoBase using yarn create before, you need to yarn create again and then execute `yarn nocobase upgrade --raw`
 
 ### Details
 
@@ -246,15 +246,15 @@
 
 ### New features
 
-- Fields: 公式、表关系(o2o, o2m, m2o, m2m)
-- Blocks: 图表(g2plot)
-- Plugins: 操作记录, 导出, 工作流(定时任务)
+- Fields: Formula、Relationships(o2o, o2m, m2o, m2m)
+- Blocks: Charts(g2plot)
+- Plugins: Audit logs, Export, Workflow(schedule trigger)
 
 ### Breaking changes
 
-- 百分比字段存储原始数值。 比如，旧版本将 1% 存储为  1，新版本将 1%  存储为 0.01
-- 去掉子表格字段，并使用一对多字段代替
-- 如果之前是使用 yarn create 安装的 NocoBase 应用，需要重新 yarn create，再执行 yarn nocobase upgrade
+- The percentage field stores the original value. For example, the old version stored 1% as 1 and the new version stores 1% as 0.01
+- Remove sub-table field and replace it with one-to-many relationship
+- If the NocoBase application was previously installed using yarn create, you need to yarn create again, and then execute yarn nocobase upgrade
 
 ### Details
 
@@ -379,7 +379,7 @@ There are major changes to the `APIClient` API, see details [JavaScript SDK](./d
 - fix(client): incomplete calendar events
 - fix(plugin-users): add translations (#416)
 
-## 2022/05/23 ~ v0.7.0-alpha.62
+## 2022/05/23 ~ v0.7.0-alpha.59
 
 - feat(docs): add alert message
 - fix(create-nocobase-app): storage path error
@@ -404,28 +404,26 @@ There are major changes to the `APIClient` API, see details [JavaScript SDK](./d
 
 ## 2022/05/19 ~ v0.7.0-alpha.57
 
-### 新功能
+### New features
+- Packaging tool `@nocobase/build`
+- CLI `@nocobase/cli`
+- devtools  `@nocobase/devtools`
+- JavaScript SDK `@nocobase/sdk`
+- Documents(v0.7)
 
-- 打包工具 `@nocobase/build`
-- cli 工具 `@nocobase/cli`
-- devtools 包 `@nocobase/devtools`
-- JavaScript 版本的 SDK `@nocobase/sdk`
-- 全新的文档（v0.7）
-
-### 问题修复和改进
-
-- 将 NocoBase 无代码平台插件放到一起 `@nocobase/preset-nocobase`
-- 改进 create 脚手架 `create-nocobase-app`
-- 官网文档主题 `dumi-theme-nocobase`
+### Bug fixes & improvements
+- `@nocobase/preset-nocobase`
+- create scaffolding `create-nocobase-app`
+- Documents theme `dumi-theme-nocobase`
 
 ### Breaking changes
 
-📢 在此之前创建的项目需要重新创建。
+📢 Previously created projects need to be recreated.
 
 ## 2022/05/14 ~ v0.7.0-alpha.34
 
 - feat: add plugins:getPinned action api
-- Fix(plugin workflow): fix cannot get job result properties (#382)
+- fix(plugin workflow): cannot get job result properties (#382)
 - feat: exist on server start throw error (#374)
 - chore: application options (#375)
 - fix: not in operator with null value record (#377)
@@ -452,9 +450,9 @@ There are major changes to the `APIClient` API, see details [JavaScript SDK](./d
 - fix: plugin workflow (#349)
 - fix: db:sync not working (#348)
 - fix(plugin-workflow): fix trigger bind logic to avoid duplication (#347)
-- Fix(plugin workflow) (#346)
+- fix(plugin workflow) (#346)
 - fix: action open mode
-- Fix: menu url style (#344)
+- fix: menu url style (#344)
 - feat: action loading
 - fix: compile the label field
 - fix: invalid drag and drop sort
@@ -462,18 +460,18 @@ There are major changes to the `APIClient` API, see details [JavaScript SDK](./d
 ## 2022/04/25 ~ v0.7.0-alpha.16
 
 - fix: cannot find module mkdirp (#330)
-- Fix(plugin workflow): UX issues (#329)
+- fix(plugin workflow): UX issues (#329)
 - fix(plugin-file-manager): test failed
 - fix(app-server): dist options
 
 ## 2022/04/25 ~ v0.7.0-alpha.0
 
-- 内测版
+- Alpha Version
 
 ## 2021/10/07 ~ v0.5.0
 
-- 第二个预览版
+- The second preview version
 
 ## 2021/04/07 ~ v0.4.0
 
-- 第一个预览版
+- The first preview version
