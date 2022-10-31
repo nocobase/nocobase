@@ -513,6 +513,8 @@ export const GraphDrawPage = React.memo(() => {
       targetNode.setAttrs({
         boxShadow: '0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%)',
       });
+    }else{
+      targetGraph.positionCell(nodes[0], 'top-left', { padding: 100 });
     }
     targetGraph.unfreeze();
     nodes.map((v) => {
@@ -523,6 +525,7 @@ export const GraphDrawPage = React.memo(() => {
       }
     });
   };
+  
   useLayoutEffect(() => {
     initGraphCollections();
     return () => {
@@ -665,6 +668,7 @@ export const GraphDrawPage = React.memo(() => {
                               type: 'void',
                               'x-component': () => {
                                 const { handleSearchCollection, collectionList } = useContext(CollapsedContext);
+                                const [selectedKeys, setSelectKey] = useState([]);
                                 const content = (
                                   <div>
                                     <Input
@@ -674,6 +678,7 @@ export const GraphDrawPage = React.memo(() => {
                                       onChange={handleSearchCollection}
                                     />
                                     <Menu
+                                      selectedKeys={selectedKeys}
                                       selectable={true}
                                       className={css`
                                         .ant-menu-item {
@@ -686,7 +691,18 @@ export const GraphDrawPage = React.memo(() => {
                                       <Menu.Divider />
                                       {collectionList.map((v) => {
                                         return (
-                                          <Menu.Item key={v.key} onClick={(e) => handleSelectCollection(e)}>
+                                          <Menu.Item
+                                            key={v.key}
+                                            onClick={(e: any) => {
+                                              if (e.key !== selectedKeys[0]) {
+                                                setSelectKey([e.key]);
+                                                handleSelectCollection(e);
+                                              } else {
+                                                handleSelectCollection(false);
+                                                setSelectKey([]);
+                                              }
+                                            }}
+                                          >
                                             <span>{compile(v.title)}</span>
                                           </Menu.Item>
                                         );
@@ -701,10 +717,6 @@ export const GraphDrawPage = React.memo(() => {
                                     placement="bottomRight"
                                     trigger={['click']}
                                     getPopupContainer={getPopupContainer}
-                                    destroyTooltipOnHide
-                                    onVisibleChange={(visible) => {
-                                      !visible && handleSelectCollection(visible);
-                                    }}
                                     overlayClassName={css`
                                       .ant-popover-inner-content {
                                         padding: 0;
