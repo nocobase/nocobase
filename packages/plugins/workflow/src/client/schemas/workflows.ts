@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { triggers } from '../triggers';
-import { executionSchema } from './executions';
+import { executionCollection, executionSchema } from './executions';
 
 
 
@@ -245,6 +245,21 @@ export const workflowSchema: ISchema = {
                         drawer: {
                           type: 'void',
                           title: '{{t("Execution history")}}',
+                          'x-decorator': 'ExecutionResourceProvider',
+                          'x-decorator-props': {
+                            collection: executionCollection,
+                            resourceName: 'executions',
+                            request: {
+                              resource: 'executions',
+                              action: 'list',
+                              params: {
+                                appends: ['workflow.id', 'workflow.title'],
+                                pageSize: 50,
+                                sort: ['-createdAt'],
+                                filter: {}
+                              },
+                            },
+                          },
                           'x-component': 'Action.Drawer',
                           properties: executionSchema
                         }

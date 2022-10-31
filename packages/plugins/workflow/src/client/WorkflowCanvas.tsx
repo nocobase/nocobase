@@ -1,12 +1,13 @@
 import React, { useEffect } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { Dropdown, Menu, Button, Tag, Switch, message } from 'antd';
-import { DownOutlined, RightOutlined } from '@ant-design/icons';
+import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import classnames from 'classnames';
 
 import {
+  SchemaComponent,
   useDocumentTitle,
   useResourceActionContext,
   useResourceContext
@@ -16,6 +17,9 @@ import { FlowContext } from './FlowContext';
 import { branchBlockClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
 import { TriggerConfig } from './triggers';
 import { Branch } from './Branch';
+import { executionCollection, executionSchema } from './schemas/executions';
+import { ExecutionLink } from './ExecutionLink';
+import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 
 
 
@@ -82,6 +86,8 @@ export function WorkflowCanvas() {
     history.push(`${revision.id}`);
   }
 
+  const revisionable = workflow.executed && !revisions.find(item => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt));
+
   return (
     <FlowContext.Provider value={{
       workflow,
@@ -135,12 +141,62 @@ export function WorkflowCanvas() {
             checkedChildren={t('On')}
             unCheckedChildren={t('Off')}
           />
-          {workflow.executed && !revisions.find(item => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt))
-            ? (
-              <Button onClick={onRevision}>{t('Copy to new version')}</Button>
-            )
-            : null
-          }
+          <Dropdown
+            overlay={
+              <Menu>
+                <Menu.Item>
+                  <SchemaComponent
+                    schema={{
+                      type: 'void',
+                      properties: {
+                        executions: {
+                          type: 'void',
+                          title: '{{t("Execution history")}}',
+                          'x-component': 'Action',
+                          'x-component-props': {
+                            type: 'text',
+                            disabled: !workflow.executed
+                          },
+                          properties: {
+                            drawer: {
+                              type: 'void',
+                              title: '{{t("Execution history")}}',
+                              'x-decorator': 'ResourceActionProvider',
+                              'x-decorator-props': {
+                                collection: executionCollection,
+                                resourceName: 'executions',
+                                request: {
+                                  resource: 'executions',
+                                  action: 'list',
+                                  params: {
+                                    appends: ['workflow.id', 'workflow.title'],
+                                    pageSize: 50,
+                                    sort: ['-createdAt'],
+                                    filter: { workflowId: workflow.id }
+                                  },
+                                },
+                              },
+                              'x-component': 'Action.Drawer',
+                              properties: executionSchema
+                            }
+                          }
+                        }
+                      }
+                    }}
+                    components={{
+                      ExecutionResourceProvider,
+                      ExecutionLink
+                    }}
+                  />
+                </Menu.Item>
+                <Menu.Item>
+                  <Button type="text" onClick={onRevision} disabled={!revisionable}>{t('Copy to new version')}</Button>
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <Button type="text" icon={<EllipsisOutlined />} />
+          </Dropdown>
         </aside>
       </div>
       <div className="workflow-canvas">

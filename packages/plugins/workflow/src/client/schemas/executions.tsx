@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useActionContext } from '@nocobase/client';
 import { ExecutionStatusOptions } from '../constants';
 
-const collection = {
+export const executionCollection = {
   name: 'executions',
   fields: [
     {
@@ -49,108 +49,85 @@ const collection = {
 };
 
 export const executionSchema = {
-  provider: {
+  actions: {
     type: 'void',
-    'x-decorator': 'ExecutionResourceProvider',
-    'x-decorator-props': {
-      collection,
-      resourceName: 'executions',
-      request: {
-        resource: 'executions',
-        action: 'list',
-        params: {
-          appends: ['workflow.id', 'workflow.title'],
-          pageSize: 50,
-          sort: ['-createdAt'],
-        },
-      },
-    },
-    'x-component': 'CollectionProvider',
+    'x-component': 'ActionBar',
     'x-component-props': {
-      collection,
+      style: {
+        marginBottom: 16,
+      },
     },
     properties: {
-      actions: {
+      // filter: {
+      //   type: 'object',
+      //   'x-component': 'Filter',
+      // }
+    }
+  },
+  table: {
+    type: 'void',
+    'x-component': 'Table.Void',
+    'x-component-props': {
+      rowKey: 'id',
+      useDataSource: '{{ cm.useDataSourceFromRAC }}',
+    },
+    properties: {
+      createdAt: {
         type: 'void',
-        'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 16,
-          },
-        },
-        properties: {
-          // filter: {
-          //   type: 'object',
-          //   'x-component': 'Filter',
-          // }
-        }
-      },
-      table: {
-        type: 'void',
-        'x-component': 'Table.Void',
-        'x-component-props': {
-          rowKey: 'id',
-          useDataSource: '{{ cm.useDataSourceFromRAC }}',
-        },
+        'x-decorator': 'Table.Column.Decorator',
+        'x-component': 'Table.Column',
         properties: {
           createdAt: {
-            type: 'void',
-            'x-decorator': 'Table.Column.Decorator',
-            'x-component': 'Table.Column',
-            properties: {
-              createdAt: {
-                type: 'datetime',
-                'x-component': 'CollectionField',
-                'x-component-props': {
-                  showTime: true
-                },
-                'x-read-pretty': true,
-              },
-            }
+            type: 'datetime',
+            'x-component': 'CollectionField',
+            'x-component-props': {
+              showTime: true
+            },
+            'x-read-pretty': true,
           },
+        }
+      },
+      workflowId: {
+        type: 'void',
+        'x-decorator': 'Table.Column.Decorator',
+        'x-component': 'Table.Column',
+        properties: {
           workflowId: {
-            type: 'void',
-            'x-decorator': 'Table.Column.Decorator',
-            'x-component': 'Table.Column',
-            properties: {
-              workflowId: {
-                type: 'number',
-                'x-component': 'CollectionField',
-                'x-read-pretty': true,
-              },
-            }
+            type: 'number',
+            'x-component': 'CollectionField',
+            'x-read-pretty': true,
           },
+        }
+      },
+      status: {
+        type: 'void',
+        'x-decorator': 'Table.Column.Decorator',
+        'x-component': 'Table.Column',
+        properties: {
           status: {
-            type: 'void',
-            'x-decorator': 'Table.Column.Decorator',
-            'x-component': 'Table.Column',
-            properties: {
-              status: {
-                type: 'number',
-                'x-component': 'CollectionField',
-                'x-read-pretty': true,
-              },
-            }
+            type: 'number',
+            'x-component': 'CollectionField',
+            'x-read-pretty': true,
           },
+        }
+      },
+      actions: {
+        type: 'void',
+        title: '{{ t("Actions") }}',
+        'x-component': 'Table.Column',
+        properties: {
           actions: {
             type: 'void',
-            title: '{{ t("Actions") }}',
-            'x-component': 'Table.Column',
+            'x-component': 'Space',
+            'x-component-props': {
+              split: '|',
+            },
             properties: {
-              actions: {
+              config: {
                 type: 'void',
-                'x-component': 'Space',
-                'x-component-props': {
-                  split: '|',
-                },
-                properties: {
-                  config: {
-                    type: 'void',
-                    title: '{{t("Details")}}',
-                    'x-component': 'ExecutionLink'
-                  },
-                }
-              }
+                title: '{{t("Details")}}',
+                'x-component': 'ExecutionLink'
+              },
             }
           }
         }
