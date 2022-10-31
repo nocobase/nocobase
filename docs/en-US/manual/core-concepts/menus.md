@@ -12,7 +12,7 @@ Once you enter the UI Editor mode, you can add and edit menus, as well as sort m
 
 NocoBase currently supports three types of menu items.
 
-- Page: Jumps to the content page the menu item is associated.
+- Page: jumps to the content page the menu item is associated.
 - Group: grouping menu items and placing similar menus in a uniform location.
 - Link: jumps to a specified URL.
 
