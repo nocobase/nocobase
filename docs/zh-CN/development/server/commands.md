@@ -1,7 +1,5 @@
 # 命令行
 
-## 简介
-
 NocoBase Server Application 除了用作 WEB 服务器以外，也是个强大可扩展的 CLI 工具。
 
 新建一个 `app.js` 文件，代码如下：
@@ -24,20 +22,24 @@ node app.js start # 启动
 
 为了更好的开发、构建和部署 NocoBase 应用，NocoBase 内置了许多命令，详情查看 [NocoBase CLI](/api/cli) 章节。
 
-## 自定义 Command
+## 如何自定义 Command？
 
 NocoBase CLI 的设计思想与 [Laravel Artisan](https://laravel.com/docs/9.x/artisan) 非常相似，都是可扩展的。NocoBase CLI 基于 [commander](https://www.npmjs.com/package/commander) 实现，可以这样扩展 Command：
 
 ```ts
-app
-  .command('echo')
-  .option('-v, --version');
-  .action(async ([options]) => {
-    console.log('Hello World!');
-    if (options.version) {
-      console.log('Current version:', app.getVersion());
-    }
-  });
+export class MyPlugin extends Plugin {
+  load() {
+    this.app
+      .command('echo')
+      .option('-v, --version');
+      .action(async ([options]) => {
+        console.log('Hello World!');
+        if (options.version) {
+          console.log('Current version:', app.getVersion());
+        }
+      });
+  }
+}
 ```
 
 这个方法定义了以下命令：
@@ -47,7 +49,7 @@ yarn nocobase echo
 # Hello World!
 yarn nocobase echo -v
 # Hello World!
-# Current version: 0.7.4-alpha.7
+# Current version: 0.8.0-alpha.1
 ```
 
 更多 API 细节可参考 [Application.command()](/api/server/application#command) 部分。

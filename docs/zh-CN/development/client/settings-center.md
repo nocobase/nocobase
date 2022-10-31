@@ -1,6 +1,6 @@
 # 配置中心
 
-<img src="./settings-tab.jpg" style="max-width: 100%;"/>
+<img src="./settings-center/settings-tab.jpg" style="max-width: 100%;"/>
 
 ## 示例
 

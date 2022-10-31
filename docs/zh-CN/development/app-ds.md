@@ -1,6 +1,6 @@
 # 项目目录结构
 
-无论是源码还是 `create-nocobase-app` 创建的应用，目录结构都是一样的，结构如下：
+无论是 [Git 源码](/welcome/getting-started/installation/git-clone) 还是 [create-nocobase-app](/welcome/getting-started/installation/create-nocobase-app) 创建的 NocoBase 应用，目录结构都是一样的，结构如下：
 
 ```bash
 ├── my-nocobase-app

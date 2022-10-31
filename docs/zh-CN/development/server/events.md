@@ -1,66 +1,58 @@
 # 事件
 
-事件在很多插件化可扩展的框架和系统中都有应用，比如著名的 Wordpress，是比较广泛的对生命周期支持扩展的机制。
+NocoBase 在应用、插件、数据库的生命周期中提供了非常多的事件监听，这些方法只有在触发了事件之后才会执行。
 
-## 基础概念
+## 如何添加事件监听？
 
-NocoBase 在应用生命周期中提供了一些钩子，以便在运行中的一些特殊时期根据需要进行扩展开发。
-
-### 数据库事件
-
-主要通过 `db.on()` 的方法定义，大部分事件兼容 Sequelize 原生的事件类型。例如需要在某张数据表创建一条数据后做一些事情时，可以使用 `<collectionName>.afterCreate` 事件：
+事件的注册一般放于 afterAdd 或 beforeLoad 中
 
 ```ts
-// posts 表创建数据完成时触发
-db.on('posts.afterCreate', async (post, options) => {
-  console.log(post);
-});
+export class MyPlugin extends Plugin {
+  // 插件添加进来之后，有没有激活都执行 afterAdd()
+  afterAdd() {
+    this.app.on();
+    this.db.on();
+  }
+
+  // 只有插件激活之后才会执行 beforeLoad()
+  beforeLoad() {
+    this.app.on();
+    this.db.on();
+  }
+}
 ```
 
-由于 Sequelize 默认的单条数据创建成功触发的时间点上并未完成与该条数据所有关联数据的处理，所以 NocoBase 针对默认封装的 Repository 数据仓库类完成数据创建和更新操作时，扩展了几个额外的事件，代表关联数据被一并操作完成：
+### `db.on`
 
-```ts
-// 已创建且已根据创建数据完成关联数据创建或更新完成时触发
-db.on('posts.afterCreateWithAssociations', async (post, options) => {
-  console.log(post);
-});
-```
+数据库相关事件与 Collection 配置、Repository 的 CRUD 相关，包括：
 
-与 Sequelize 同样的也可以针对全局的数据处理都定义特定的事件：
+- 'beforeSync' / 'afterSync'
+- 'beforeValidate' / 'afterValidate'
+- 'beforeCreate' / 'afterCreate'
+- 'beforeUpdate' / 'afterUpdate'
+- 'beforeSave' / 'afterSave'
+- 'beforeDestroy' / 'afterDestroy'
+- 'afterCreateWithAssociations'
+- 'afterUpdateWithAssociations'
+- 'afterSaveWithAssociations'
+- 'beforeDefineCollection'
+- 'afterDefineCollection'
+- 'beforeRemoveCollection' / 'afterRemoveCollection
 
-```ts
-// 每张表创建数据完成都触发
-db.on('beforeCreate', async (model, options) => {
-  console.log(model);
-});
-```
+更多详情参考 [Database API](/api/database#内置事件)。
 
-针对特殊的生命周期比如定义数据表等，NocoBase 也扩展了相应事件：
+### `app.on()`
 
-```ts
-// 定义任意数据表之前触发
-db.on('beforeDefineCollection', (collection) => {
-  collection.options.tableName = 'somePrefix' + collection.options.tableName;
-});
-```
+app 的事件与应用的生命周期相关，相关事件有：
 
-其他所有可用的数据库事件类型可以参考 [Database API](/api/database#on)。
+- 'beforeLoad' / 'afterLoad'
+- 'beforeInstall' / 'afterInstall'
+- 'beforeUpgrade' / 'afterUpgrade'
+- 'beforeStart' / 'afterStart'
+- 'beforeStop' / 'afterStop'
+- 'beforeDestroy' / 'afterDestroy'
 
-### 应用级事件
-
-在某些特殊需求时，会需要在应用的外层生命周期中定义事件进行扩展，比如当应用启动前做一些准备操作，当应用停止前做一些清理操作等：
-
-```ts
-app.on('beforeStart', async () => {
-  console.log('app is starting...');
-});
-
-app.on('beforeStop', async () => {
-  console.log('app is stopping...');
-});
-```
-
-其他所有可用的应用级事件类型可以参考 [Application API](/api/server/application#事件)。
+更多详情参考 [Application API](/api/server/application#事件)。
 
 ## 示例
 
@@ -72,7 +64,7 @@ app.on('beforeStop', async () => {
 
 ```ts
 class ShopPlugin extends Plugin {
-  load() {
+  beforeLoad() {
     this.db.on('orders.afterCreate', async (order, options) => {
       const product = await order.getProduct({
         transaction: options.transaction

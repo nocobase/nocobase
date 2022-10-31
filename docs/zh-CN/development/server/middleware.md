@@ -1,6 +1,20 @@
 # 中间件
 
-## 添加方法
+## 如何注册中间件？
+
+中间件的注册方法一般写在 load 方法里
+
+```ts
+export class MyPlugin extends Plugin {
+  load() {
+    this.app.acl.use();
+    this.app.resourcer.use();
+    this.app.use();
+  }
+}
+```
+
+说明：
 
 1. `app.acl.use()` 添加资源权限级中间件，在权限判断之前执行
 2. `app.resourcer.use()` 添加资源级中间件，只有请求已定义的 resource 时才执行
@@ -141,8 +155,6 @@ app.resourcer.use(async (ctx, next) => {
 
 待补充
 
-## 完整示例
-
-待补充
+## 示例
 
 - [samples/ratelimit](https://github.com/nocobase/nocobase/blob/main/packages/samples/ratelimit/) IP rate-limiting
