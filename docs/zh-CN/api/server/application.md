@@ -66,14 +66,10 @@ Nocobase Application 被设计为高度可扩展的框架，可以编写插件�
 例如上面的 Web 服务可以替换为插件形式。
 
 ```javascript
-const {Application, Plugin} = require('@nocobase/server');
+const { Application, Plugin } = require('@nocobase/server');
 
 // 通过继承 Plugin 类来编写插件
 class HelloWordPlugin extends Plugin {
-  getName() {
-    return "hello-world";
-  }
-
   load() {
     this.app.use(async (ctx, next) => {
       ctx.body = "Hello World";
@@ -89,7 +85,7 @@ const app = new Application({
 });
 
 // 注入插件
-app.plugin(HelloWordPlugin);
+app.plugin(HelloWordPlugin, { name: 'hello-world-plugin'} );
 
 app.runAsCLI()
 ```
@@ -101,12 +97,14 @@ Application 类的更多示例可参考 [examples](https://github.com/nocobase/n
 
 ## 生命周期
 
+根据不同运行模式，Application 有三种生命周期：
+
 ### 安装
 使用 `cli` 中的 `install` 命令调用安装。
 一般来说，插件在使用之前若需要在数据库中写入新表或者数据，都需要在安装时执行。在初次使用 Nocobase 时也需要调用安装。
 
-* 触发 `beforeInstall`。
 * 调用 `load` 方法，载入已注册的插件。
+* 触发 `beforeInstall` 事件。
 * 调用 `db.sync` 方法，同步数据库。
 * 调用 `pm.install` 方法，执行已注册插件的 `install` 方法。
 * 写入 `nocobase` 版本。

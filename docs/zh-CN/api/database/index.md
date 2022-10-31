@@ -36,7 +36,7 @@ const database = new Database({
 
 详细的配置参数请参考 [构造函数](#构造函数)。
 
-### 数据库定义
+### 数据模型定义
 
 `Database` 通过 `Collection` 定义数据库结构，一个 `Collection` 对象代表了数据库中的一张表。
 
@@ -66,7 +66,7 @@ await database.sync();
 
 更加详细的 `Collection` 使用方法请参考 [Collection](/api/database/collection.md)。
 
-### 数据库操作
+### 数据读写
 
 `Database` 通过 `Repository` 对数据进行操作。
 
@@ -98,7 +98,7 @@ await UserRepository.update({
 await UserRepository.destroy(user.id);
 ```
 
-更加详细的数据CRUD使用方法请参考 [Repository](/api/database/repository.md)。
+更加详细的数据 CRUD 使用方法请参考 [Repository](/api/database/repository.md)。
 
 
 ## 构造函数

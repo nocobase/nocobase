@@ -16,6 +16,7 @@ db.collection({
   name: 'users',
   // 定义模型字段
   fields: [
+    // 标量字段  
     {
       name: 'name',
       type: 'string',

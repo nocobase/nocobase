@@ -2,7 +2,7 @@
 
 ## 概览
 
-在一个给定的 `Collection` 对象上，可以获取到它的 `Repository` 对象，通过 `Repository` 对象，可以对数据表进行数据读写操作。
+在一个给定的 `Collection` 对象上，可以获取到它的 `Repository` 对象来对数据表进行读写操作。
 
 ```javascript
 const { UserCollection } = require("./collections");
@@ -26,19 +26,20 @@ await user.save();
 在 `Repository` 对象上，调用 `find*` 相关方法，可执行查询操作，查询方法都支持传入 `filter` 参数，用于过滤数据。
 
 ```javascript
+// SELECT * FROM users WHERE id = 1 
 userRepository.find({
   filter: {
       id: 1
   }
 });
 
-// SELECT * FROM users WHERE id = 1 
 ```
 #### 操作符
 
 `Repository` 中的 `filter` 参数，还提供了多种操作符，执行更加多样的查询操作。
 
 ```javascript
+// SELECT * FROM users WHERE age > 18
 userRepository.find({
   filter: {
     age: {
@@ -46,8 +47,8 @@ userRepository.find({
     }
   }
 });
-// SELECT * FROM users WHERE age > 18
 
+// SELECT * FROM users WHERE age > 18 OR name LIKE '%张%'
 userRepository.find({
   filter: {
     $or: [
@@ -56,7 +57,7 @@ userRepository.find({
     ]
   }
 });
-// SELECT * FROM users WHERE age > 18 OR name LIKE '%张%'
+
 ```
 
 操作符的更多详细信息请参考 [Filter Operators](/api/database/operators)。
@@ -70,20 +71,20 @@ userRepository.find({
 * `appends`: 追加输出关联字段
 
 ```javascript
+// 获取的结果只包含 id 和 name 字段
 userRepository.find({
   fields: ["id", "name"],
 });
-// 获取的结果只包含 id 和 name 字段
 
+// 获取的结果不包含 password 字段
 userRepository.find({
   except: ["password"],
 });
-// 获取的结果不包含 password 字段
 
+// 获取的结果会包含关联对象 posts 的数据
 userRepository.find({
   appends: ["posts"],
 });
-// 获取的结果会包含关联对象 posts 的数据
 ```
 
 #### 关联字段查询
@@ -109,6 +110,37 @@ await userRepository.find({
       $like: "%keywords%"
     }
   }
+});
+```
+
+#### 排序
+
+通过 `sort` 参数，可以对查询结果进行排序。
+
+```javascript
+
+// SELECT * FROM users ORDER BY age
+await userRepository.find({
+  sort: 'age'
+});
+
+
+// SELECT * FROM users ORDER BY age DESC
+await userRepository.find({
+  sort: '-age'
+});
+
+// SELECT * FROM users ORDER BY age DESC, name ASC
+await userRepository.find({
+  sort: ['-age', "name"],
+});
+```
+
+也可按照关联对象的字段进行排序
+
+```javascript
+await userRepository.find({
+  sort: 'profile.createdAt'
 });
 ```
 
@@ -349,7 +381,7 @@ await books.myQuery('SELECT * FROM books;');
 
 ### `find()`
 
-从数据库查询特定条件的数据集。相当于 Sequelize 中的 `Model.findAll()`。
+从数据库查询数据集，可指定筛选条件、排序等。
 
 **签名**
 

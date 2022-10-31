@@ -133,6 +133,7 @@ export class PluginManager {
         throw new Error(`plugin name invalid`);
       }
     }
+
     const instance = new plugin(this.app, {
       name,
       enabled: true,
