@@ -2,6 +2,7 @@ import { omit } from 'lodash';
 import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
 import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { Reference } from '../features/ReferencesMap';
 
 export class BelongsToField extends RelationField {
   static type = 'belongsTo';
@@ -9,6 +10,18 @@ export class BelongsToField extends RelationField {
   get target() {
     const { target, name } = this.options;
     return target || Utils.pluralize(name);
+  }
+
+  reference(association): Reference {
+    const targetKey = association.targetKey;
+
+    return {
+      sourceCollectionName: this.database.modelCollection.get(association.source).name,
+      sourceField: association.foreignKey,
+      targetField: targetKey,
+      targetCollectionName: this.database.modelCollection.get(association.target).name,
+      onDelete: this.options.onDelete,
+    };
   }
 
   bind() {
@@ -30,7 +43,7 @@ export class BelongsToField extends RelationField {
     const association = collection.model.belongsTo(Target, {
       as: this.name,
       constraints: false,
-      ...omit(this.options, ['name', 'type', 'target']),
+      ...omit(this.options, ['name', 'type', 'target', 'onDelete']),
     });
 
     // inverse relation
@@ -56,6 +69,9 @@ export class BelongsToField extends RelationField {
     }
 
     this.collection.addIndex([this.options.foreignKey]);
+
+    this.database.referenceMap.addReference(this.reference(association));
+
     return true;
   }
 
@@ -73,6 +89,10 @@ export class BelongsToField extends RelationField {
     if (!field1 && !field2) {
       collection.model.removeAttribute(foreignKey);
     }
+
+    const association = collection.model.associations[this.name];
+    this.database.referenceMap.removeReference(this.reference(association));
+
     // 删掉 model 的关联字段
     delete collection.model.associations[this.name];
     // @ts-ignore

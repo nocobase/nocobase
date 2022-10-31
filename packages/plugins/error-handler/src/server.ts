@@ -7,7 +7,6 @@ import enUS from './locale/en_US';
 import zhCN from './locale/zh_CN';
 
 export class PluginErrorHandler extends Plugin {
-
   errorHandler: ErrorHandler = new ErrorHandler();
   i18nNs: string = 'error-handler';
 
@@ -46,6 +45,7 @@ export class PluginErrorHandler extends Plugin {
       },
     );
   }
+
   async load() {
     this.app.i18n.addResources('zh-CN', this.i18nNs, zhCN);
     this.app.i18n.addResources('en-US', this.i18nNs, enUS);

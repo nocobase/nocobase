@@ -11,6 +11,7 @@ describe('collections repository', () => {
   beforeEach(async () => {
     app = await createApp();
     db = app.db;
+
     Collection = db.getCollection('collections');
     Field = db.getCollection('fields');
   });
