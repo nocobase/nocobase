@@ -2,7 +2,8 @@
 
 ## 2022/10/31 ~ v0.8.0-alpha.1
 
-- 从 v0.8 开始，NocoBase 开始提供可用的插件管理器和开发文档。[查看 v0.8 的主要变化](/welcome/release/v08-changelog)
+- Starting with v0.8, NocoBase begins to provide an available plugin manager and development documentation. 
+- [Check out the main changes in v0.8](/welcome/release/v08-changelog)
 
 ## 2022/10/26 ~ v0.7.7-alpha.1
 
