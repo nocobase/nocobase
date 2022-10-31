@@ -27,7 +27,6 @@ export const Sortable = (props: any) => {
   if (isOver) {
     droppableStyle['color'] = 'rgba(241, 139, 98, .1)';
   }
-
   return React.createElement(
     component || 'div',
     {

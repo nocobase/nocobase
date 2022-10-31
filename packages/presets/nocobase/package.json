@@ -18,6 +18,7 @@
     "@nocobase/plugin-collection-manager": "0.8.0-alpha.1",
     "@nocobase/plugin-error-handler": "0.8.0-alpha.1",
     "@nocobase/plugin-export": "0.8.0-alpha.1",
+    "@nocobase/plugin-import": "0.8.0-alpha.1",
     "@nocobase/plugin-file-manager": "0.8.0-alpha.1",
     "@nocobase/plugin-system-settings": "0.8.0-alpha.1",
     "@nocobase/plugin-ui-routes-storage": "0.8.0-alpha.1",

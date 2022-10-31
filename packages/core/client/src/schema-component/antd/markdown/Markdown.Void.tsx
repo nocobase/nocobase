@@ -1,5 +1,6 @@
 import { observer, useField, useFieldSchema } from '@formily/react';
 import { Button, Input as AntdInput, Space } from 'antd';
+import cls from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks/useDesignable';
@@ -41,7 +42,7 @@ const MarkdownEditor = (props: any) => {
 };
 
 export const MarkdownVoid: any = observer((props: any) => {
-  const { content } = props;
+  const { content, className } = props;
   const field = useField();
   const schema = useFieldSchema();
   const { dn } = useDesignable();
@@ -49,6 +50,7 @@ export const MarkdownVoid: any = observer((props: any) => {
   return field?.editable ? (
     <MarkdownEditor
       {...props}
+      className
       defaultValue={content}
       onCancel={() => {
         field.editable = false;
@@ -71,7 +73,7 @@ export const MarkdownVoid: any = observer((props: any) => {
       }}
     />
   ) : (
-    <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: markdown(content) }} />
+    <div className={cls(['nb-markdown', className])} dangerouslySetInnerHTML={{ __html: markdown(content) }} />
   );
 });
 
