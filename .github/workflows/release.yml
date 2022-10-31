@@ -23,7 +23,6 @@ jobs:
         name: publish npmjs.org
         run: |
           npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
-          git checkout -b release
           git config user.email "test@mail.com"
           git config user.name "test" && git add .
           git commit -m "chore(versions): test publish packages xxx"
