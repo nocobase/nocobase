@@ -1,12 +1,12 @@
 # REST API
 
-NocoBase 的 HTTP API 是 REST API 的超集，标准的 CRUD API 也支持 RESTful 风格。
+NocoBase's HTTP API is a superset of the REST API, and the standard CRUD API also supports the RESTful style.
 
-## Collection 资源
+## Collection resources
 
 ---
 
-### 创建 collection
+### Create collection
 
 HTTP API
 
@@ -24,7 +24,7 @@ POST  /api/<collection>
 {} # JSON body
 ```
 
-### 查看 collection 列表
+### List collection
 
 HTTP API
 
@@ -38,7 +38,7 @@ REST API
 GET   /api/<collection>
 ```
 
-### 查看 collection 详情
+### View collection details
 
 HTTP API
 
@@ -53,7 +53,7 @@ REST API
 GET   /api/<collection>/<collectionIndex>
 ```
 
-### 更新 collection
+### Update collection
 
 HTTP API
 
@@ -62,7 +62,7 @@ POST   /api/<collection>:update?filterByTk=<collectionIndex>
 
 {} # JSON body
 
-# 或者
+# Or
 POST   /api/<collection>:update/<collectionIndex>
 
 {} # JSON body
@@ -76,13 +76,13 @@ PUT    /api/<collection>/<collectionIndex>
 {} # JSON body
 ```
 
-### 删除 collection
+### Delete collection
 
 HTTP API
 
 ```bash
 POST      /api/<collection>:destroy?filterByTk=<collectionIndex>
-# 或者
+# Or
 POST      /api/<collection>:destroy/<collectionIndex>
 ```
 
@@ -92,11 +92,11 @@ REST API
 DELETE    /api/<collection>/<collectionIndex>
 ```
 
-## Association 资源
+## Association resources
 
 ---
 
-### 创建 Association
+### Create Association
 
 HTTP API
 
@@ -114,7 +114,7 @@ POST    /api/<collection>/<collectionIndex>/<association>
 {} # JSON body
 ```
 
-### 查看 Association 列表
+### List Association
 
 HTTP API
 
@@ -128,13 +128,13 @@ REST API
 GET   /api/<collection>/<collectionIndex>/<association>
 ```
 
-### 查看 Association 详情
+### View Association details
 
 HTTP API
 
 ```bash
 GET   /api/<collection>/<collectionIndex>/<association>:get?filterByTk=<associationIndex>
-# 或者
+# Or
 GET   /api/<collection>/<collectionIndex>/<association>:get/<associationIndex>
 ```
 
@@ -144,7 +144,7 @@ REST API
 GET   /api/<collection>/<collectionIndex>/<association>:get/<associationIndex>
 ```
 
-### 更新 Association
+### Update Association
 
 HTTP API
 
@@ -153,7 +153,7 @@ POST   /api/<collection>/<collectionIndex>/<association>:update?filterByTk=<asso
 
 {} # JSON body
 
-# 或者
+# Or
 POST   /api/<collection>/<collectionIndex>/<association>:update/<associationIndex>
 
 {} # JSON body
@@ -164,16 +164,16 @@ REST API
 ```bash
 PUT    /api/<collection>/<collectionIndex>/<association>:update/<associationIndex>
 
-{} # JSON 数据
+{} # JSON 
 ```
 
-### 删除 Association
+### Delete Association
 
 HTTP API
 
 ```bash
 POST    /api/<collection>/<collectionIndex>/<association>:destroy?filterByTk=<associationIndex>
-# 或者
+# Or
 POST    /api/<collection>/<collectionIndex>/<association>:destroy/<associationIndex>
 ```
 
