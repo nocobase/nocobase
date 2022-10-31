@@ -16,6 +16,7 @@ export class PresetNocoBase extends Plugin {
       'workflow',
       'client',
       'export',
+      'import',
       'audit-logs',
     ];
     await this.app.pm.add(plugins, {

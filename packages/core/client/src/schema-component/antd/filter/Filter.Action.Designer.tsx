@@ -37,6 +37,7 @@ export const FilterActionDesigner = (props) => {
           const checked = !nonfilterable.includes(field.name);
           return (
             <SchemaSettings.SwitchItem
+              key={field.name}
               checked={checked}
               title={compile(field?.uiSchema?.title)}
               onChange={(value) => {
