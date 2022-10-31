@@ -8,6 +8,7 @@ import { useCollectionFilterOptions, useSortFields } from '../../../collection-m
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
+import { cloneDeep } from 'lodash';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection();
@@ -15,7 +16,7 @@ export const TableSelectorDesigner = () => {
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
   const sortFields = useSortFields(name);
-  const { service } = useTableSelectorContext();
+  const { service, extraFilter } = useTableSelectorContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
@@ -57,7 +58,17 @@ export const TableSelectorDesigner = () => {
           params.filter = filter;
           field.decoratorProps.params = params;
           fieldSchema['x-decorator-props']['params'] = params;
-          service.run({ ...service.params?.[0], filter, page: 1 });
+          let serviceFilter = cloneDeep(filter);
+          if (extraFilter) {
+            if (serviceFilter) {
+              serviceFilter = {
+                $and: [extraFilter, serviceFilter],
+              };
+            } else {
+              serviceFilter = extraFilter;
+            }
+          }
+          service.run({ ...service.params?.[0], filter: serviceFilter, page: 1 });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],

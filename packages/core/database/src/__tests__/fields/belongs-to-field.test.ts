@@ -64,10 +64,13 @@ describe('belongs to field', () => {
   });
 
   it('custom targetKey and foreignKey', async () => {
-    const Post = db.collection({
-      name: 'posts',
-      fields: [{ type: 'string', name: 'key', unique: true }],
+    db.collection({
+      name: "posts",
+      fields: [
+        { type: "string", name: "key" },
+      ]
     });
+
     const Comment = db.collection({
       name: 'comments',
       fields: [
@@ -79,6 +82,7 @@ describe('belongs to field', () => {
         },
       ],
     });
+
     const association = Comment.model.associations.post;
     expect(association).toBeDefined();
     expect(association.foreignKey).toBe('postKey');
@@ -99,7 +103,7 @@ describe('belongs to field', () => {
     let error;
 
     try {
-      const Comment = db.collection({
+      db.collection({
         name: 'comments1',
         fields: [
           {
@@ -113,6 +117,7 @@ describe('belongs to field', () => {
     } catch (e) {
       error = e;
     }
+
 
     expect(error).toBeInstanceOf(IdentifierError);
   });
@@ -193,5 +198,108 @@ describe('belongs to field', () => {
     expect(belongsToField).toBeDefined();
     const association = Post.model.associations;
     expect(association['comments']).toBeDefined();
+  });
+
+  describe('foreign constraints', () => {
+    it('should set null on delete', async () => {
+      const Product = db.collection({
+        name: 'products',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      const Order = db.collection({
+        name: 'order',
+        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'SET NULL' }],
+      });
+
+      await db.sync();
+
+      const p = await Product.repository.create({ values: { name: 'p1' } });
+      const o = await Order.repository.create({ values: { product: p.id } });
+
+      expect(o.productId).toBe(p.id);
+
+      await Product.repository.destroy({
+        filterByTk: p.id,
+      });
+
+      const newO = await o.reload();
+
+      expect(newO.productId).toBeNull();
+    });
+
+    it('should delete reference map item when field unbind', async () => {
+      const Product = db.collection({
+        name: 'products',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      const Order = db.collection({
+        name: 'order',
+        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'CASCADE' }],
+      });
+
+      await db.sync();
+
+      Order.removeField('product');
+
+      expect(db.referenceMap.getReferences(Product.name)).toHaveLength(0);
+    });
+
+    it('should delete cascade', async () => {
+      const Product = db.collection({
+        name: 'products',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      const Order = db.collection({
+        name: 'order',
+        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'CASCADE' }],
+      });
+
+      await db.sync();
+      const p = await Product.repository.create({ values: { name: 'p1' } });
+      await Order.repository.create({ values: { product: p.id } });
+      await Order.repository.create({ values: { product: p.id } });
+
+      expect(await Order.repository.count({ filter: { productId: p.id } })).toBe(2);
+
+      await Product.repository.destroy({
+        filterByTk: p.id,
+      });
+
+      expect(await Order.repository.count({ filter: { productId: p.id } })).toBe(0);
+    });
+
+    it('should delete restrict', async () => {
+      const Product = db.collection({
+        name: 'products',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      const Order = db.collection({
+        name: 'order',
+        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'RESTRICT' }],
+      });
+
+      await db.sync();
+
+      const p = await Product.repository.create({ values: { name: 'p1' } });
+      const o = await Order.repository.create({ values: { product: p.id } });
+
+      expect(o.productId).toBe(p.id);
+
+      let error = null;
+
+      try {
+        await Product.repository.destroy({
+          filterByTk: p.id,
+        });
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).not.toBeNull();
+    });
   });
 });

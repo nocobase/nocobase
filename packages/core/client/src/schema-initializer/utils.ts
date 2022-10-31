@@ -170,6 +170,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
+        'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       return {

@@ -14,6 +14,5 @@ export async function create(ctx: Context, next) {
   });
 
   ctx.body = instance;
-
   await next();
 }

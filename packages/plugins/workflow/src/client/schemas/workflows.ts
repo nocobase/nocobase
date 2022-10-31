@@ -30,6 +30,7 @@ const collection = {
         enum: Array.from(triggers.getEntities()).map(([value, { title }]) => ({
           value,
           label: title,
+          color: 'gold'
         })),
         required: true,
       } as ISchema,
@@ -52,7 +53,7 @@ const collection = {
         title: '{{t("Status")}}',
         type: 'string',
         enum: [
-          { label: '{{t("On")}}', value: true },
+          { label: '{{t("On")}}', value: true, color: '#52c41a' },
           { label: '{{t("Off")}}', value: false },
         ],
         'x-component': 'Radio.Group',
@@ -64,7 +65,7 @@ const collection = {
 };
 
 export const workflowSchema: ISchema = {
-  type: 'object',
+  type: 'void',
   properties: {
     provider: {
       type: 'void',
@@ -235,7 +236,7 @@ export const workflowSchema: ISchema = {
                     },
                     executions: {
                       type: 'void',
-                      title: '{{t("Execution History")}}',
+                      title: '{{t("Execution history")}}',
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         type: 'primary',
@@ -243,7 +244,7 @@ export const workflowSchema: ISchema = {
                       properties: {
                         drawer: {
                           type: 'void',
-                          title: '{{t("Execution History")}}',
+                          title: '{{t("Execution history")}}',
                           'x-component': 'Action.Drawer',
                           properties: executionSchema
                         }

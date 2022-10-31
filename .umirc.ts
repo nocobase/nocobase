@@ -76,6 +76,38 @@ const parseMenuItems = (items: any[], lang: string) => {
   return menuItems;
 };
 
+const navs = [
+  {
+    title: 'Welcome',
+    'title.zh-CN': '欢迎',
+    path: '/welcome',
+  },
+  {
+    title: 'User manual',
+    'title.zh-CN': '使用手册',
+    path: '/manual',
+  },
+  {
+    title: 'Plugin Development',
+    'title.zh-CN': '插件开发',
+    path: '/development',
+  },
+  {
+    title: 'API reference',
+    'title.zh-CN': 'API 参考',
+    path: '/api',
+  },
+  {
+    title: 'Schema components',
+    'title.zh-CN': 'Schema 组件库',
+    path: '/components',
+  },
+  {
+    title: 'GitHub',
+    path: 'https://github.com/nocobase/nocobase',
+  },
+];
+
 export default defineConfig({
   title: 'NocoBase',
   outputPath: `./docs/dist/${lang}`,
@@ -87,66 +119,12 @@ export default defineConfig({
   hash: true,
   logo: 'https://www.nocobase.com/images/logo.png',
   navs: {
-    'en-US': [
-      {
-        title: 'Introduction',
-        path: '/introduction'
-      },
-      {
-        title: 'Getting started',
-        path: '/getting-started'
-      },
-      {
-        title: 'Manual',
-        path: '/manual'
-      },
-      {
-        title: 'Development',
-        path: '/development'
-      },
-      {
-        title: 'API reference',
-        path: '/api'
-      },
-      {
-        title: 'GitHub',
-        path: 'https://github.com/nocobase/nocobase',
-      },
-    ],
-    'zh-CN': [
-      {
-        title: '欢迎',
-        path: '/welcome'
-      },
-      // {
-      //   title: '快速开始',
-      //   path: '/getting-started'
-      // },
-      {
-        title: '使用手册',
-        path: '/manual'
-      },
-      {
-        title: '插件开发',
-        path: '/development'
-      },
-      {
-        title: 'API 参考',
-        path: '/api'
-      },
-      // {
-      //   title: '社区',
-      //   path: '/community'
-      // },
-      {
-        title: 'GitHub',
-        path: 'https://github.com/nocobase/nocobase',
-      },
-    ]
+    'en-US': navs,
+    'zh-CN': navs.map((item) => ({ ...item, title: item['title.zh-CN'] || item.title })),
   },
   menus: Object.keys(menus).reduce((result, key) => {
     const items = menus[key];
     result[key] = parseMenuItems(items, lang);
     return result;
-  }, {})
+  }, {}),
 });

@@ -415,7 +415,7 @@ export default {
   "Aliyun OSS": "Aliyun OSS",
   "Amazon S3": "Amazon S3",
   "Workflow": "İş Akışı",
-  "Execution History": "Yürütme Geçmişi",
+  "Execution history": "Yürütme Geçmişi",
   "Trigger type": "Tetikleme türü",
   "Description": "Açıklama",
   "Status": "Durum",

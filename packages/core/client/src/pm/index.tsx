@@ -355,6 +355,7 @@ export const PMProvider = (props) => {
       type: 'route',
       path: '/admin/settings/:pluginName?/:tabName?',
       component: SettingsCenter,
+      uiSchemaUid: routes[1].uiSchemaUid,
     },
   );
   return (

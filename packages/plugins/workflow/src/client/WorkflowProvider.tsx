@@ -2,14 +2,19 @@ import { PluginManagerContext, RouteSwitchContext, SettingsCenterProvider } from
 import React, { useContext } from 'react';
 import { WorkflowPage } from './WorkflowPage';
 import { WorkflowPane, WorkflowShortcut } from './WorkflowShortcut';
+import { ExecutionPage } from './ExecutionPage';
 
 export const WorkflowProvider = (props) => {
   const ctx = useContext(PluginManagerContext);
   const { routes, components, ...others } = useContext(RouteSwitchContext);
   routes[1].routes.unshift({
     type: 'route',
-    path: '/admin/plugins/workflows/:id',
+    path: '/admin/settings/workflow/workflows/:id',
     component: 'WorkflowPage',
+  }, {
+    type: 'route',
+    path: '/admin/settings/workflow/executions/:id',
+    component: 'ExecutionPage',
   });
   return (
     <SettingsCenterProvider
@@ -34,7 +39,7 @@ export const WorkflowProvider = (props) => {
           },
         }}
       >
-        <RouteSwitchContext.Provider value={{ components: { ...components, WorkflowPage }, ...others, routes }}>
+        <RouteSwitchContext.Provider value={{ components: { ...components, WorkflowPage, ExecutionPage }, ...others, routes }}>
           {props.children}
         </RouteSwitchContext.Provider>
       </PluginManagerContext.Provider>
