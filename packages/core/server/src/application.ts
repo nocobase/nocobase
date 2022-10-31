@@ -210,11 +210,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
+
     if (this._db) {
       // MaxListenersExceededWarning
       this._db.removeAllListeners();
     }
+
     this._db = this.createDatabase(options);
+
     this._resourcer = createResourcer(options);
     this._cli = new Command('nocobase').usage('[command] [options]');
     this._i18n = createI18n(options);
@@ -250,16 +253,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private createDatabase(options: ApplicationOptions) {
-    if (options.database instanceof Database) {
-      return options.database;
-    } else {
-      return new Database({
-        ...options.database,
-        migrator: {
-          context: { app: this },
-        },
-      });
-    }
+    return new Database({
+      ...(options.database instanceof Database ? options.database.options : options.database),
+      migrator: {
+        context: { app: this },
+      },
+    });
   }
 
   getVersion() {
@@ -315,8 +314,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async load(options?: any) {
     if (options?.reload) {
+      const oldDb = this._db;
       this.init();
+      await oldDb.close();
     }
+
     await this.emitAsync('beforeLoad', this, options);
     await this.pm.load(options);
     await this.emitAsync('afterLoad', this, options);
