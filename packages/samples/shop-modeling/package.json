@@ -1,14 +1,14 @@
 {
   "name": "@nocobase/plugin-sample-shop-modeling",
-  "version": "0.8.0-alpha.1",
+  "version": "0.8.0-alpha.5",
   "main": "lib/server/index.js",
   "dependencies": {
     "nodejs-snowflake": "2.0.1"
   },
   "devDependencies": {
-    "@nocobase/client": "0.8.0-alpha.1",
-    "@nocobase/server": "0.8.0-alpha.1",
-    "@nocobase/test": "0.8.0-alpha.1"
+    "@nocobase/client": "0.8.0-alpha.5",
+    "@nocobase/server": "0.8.0-alpha.5",
+    "@nocobase/test": "0.8.0-alpha.5"
   },
   "peerDependencies": {
     "@nocobase/client": "*",
