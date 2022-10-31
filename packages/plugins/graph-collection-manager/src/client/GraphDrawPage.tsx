@@ -314,77 +314,74 @@ export const GraphDrawPage = React.memo(() => {
       },
       true,
     );
-    targetGraph.on('edge:click', ({ e, edge }) => {
-      if (!edge.clickFlag) {
-        const { associated } = edge.store?.data;
-        e.stopPropagation();
-        edge.setAttrs({
-          line: {
-            stroke: '#1890ff',
-            strokeWidth: 1,
-            textAnchor: 'middle',
-            textVerticalAnchor: 'middle',
-            sourceMarker: null,
-            targetMarker: null,
-          },
-        });
-        edge.setLabels(
-          edge.getLabels().map((v) => {
-            return {
-              ...v,
-              attrs: {
-                labelText: {
-                  ...v.attrs.labelText,
-                  fill: '#1890ff',
-                },
-                labelBody: {
-                  ...v.attrs.labelBody,
+    targetGraph.on('edge:mouseover', ({ e, edge }) => {
+      const { associated } = edge.store?.data;
+      e.stopPropagation();
+      edge.setAttrs({
+        line: {
+          stroke: '#1890ff',
+          strokeWidth: 1,
+          textAnchor: 'middle',
+          textVerticalAnchor: 'middle',
+          sourceMarker: null,
+          targetMarker: null,
+        },
+      });
+      edge.setLabels(
+        edge.getLabels().map((v) => {
+          return {
+            ...v,
+            attrs: {
+              labelText: {
+                ...v.attrs.labelText,
+                fill: '#1890ff',
+              },
+              labelBody: {
+                ...v.attrs.labelBody,
 
-                  stroke: '#1890ff',
-                },
+                stroke: '#1890ff',
               },
-            };
-          }),
-        );
-        const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
-        const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
-        targeNode.setAttrs({ targetPort: edge.store.data.target.port });
-        sourceNode.setAttrs({ sourcePort: edge.store.data.source.port });
-        sourceNode.setAttrs({ associated });
-        targeNode.setAttrs({ associated });
-        edge.clickFlag = true;
-      } else {
-        e.stopPropagation();
-        const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
-        const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
-        targeNode.removeAttrs('targetPort');
-        sourceNode.removeAttrs('sourcePort');
-        sourceNode.removeAttrs('associated');
-        targeNode.removeAttrs('associated');
-        edge.setAttrs({
-          line: {
-            stroke: '#ddd',
-          },
-        });
-        edge.setLabels(
-          edge.getLabels().map((v) => {
-            return {
-              ...v,
-              attrs: {
-                labelText: {
-                  ...v.attrs.labelText,
-                  fill: 'rgba(0, 0, 0, 0.3)',
-                },
-                labelBody: {
-                  ...v.attrs.labelBody,
-                  stroke: '#ddd',
-                },
+            },
+          };
+        }),
+      );
+      const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
+      const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
+      targeNode.setAttrs({ targetPort: edge.store.data.target.port });
+      sourceNode.setAttrs({ sourcePort: edge.store.data.source.port });
+      sourceNode.setAttrs({ associated });
+      targeNode.setAttrs({ associated });
+    });
+    targetGraph.on('edge:mouseout', ({ e, edge }) => {
+      e.stopPropagation();
+      const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
+      const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
+      targeNode.removeAttrs('targetPort');
+      sourceNode.removeAttrs('sourcePort');
+      sourceNode.removeAttrs('associated');
+      targeNode.removeAttrs('associated');
+      edge.setAttrs({
+        line: {
+          stroke: '#ddd',
+        },
+      });
+      edge.setLabels(
+        edge.getLabels().map((v) => {
+          return {
+            ...v,
+            attrs: {
+              labelText: {
+                ...v.attrs.labelText,
+                fill: 'rgba(0, 0, 0, 0.3)',
               },
-            };
-          }),
-        );
-        edge.clickFlag = false;
-      }
+              labelBody: {
+                ...v.attrs.labelBody,
+                stroke: '#ddd',
+              },
+            },
+          };
+        }),
+      );
     });
     targetGraph.on('node:moved', ({ e, node }) => {
       const connectEdges = targetGraph.getConnectedEdges(node);
