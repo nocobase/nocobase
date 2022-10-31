@@ -1,36 +1,36 @@
-# Overview
+# 概述
 
-NocoBase HTTP API is designed based on Resource & Action, it is a superset of REST API. The operation is not limited to add, delete, change, and check, Resource Action can be extended arbitrarily in NocoBase.
+NocoBase 的 HTTP API 基于 Resource & Action 设计，是 REST API 的超集，操作不局限于增删改查，在 NocoBase 里，Resource Action 可以任意的扩展。
 
-## Resource
+## 资源 Resource
 
-Resource has two expressions in NocoBase.
+在 NocoBase 里，资源（resource）有两种表达方式：
 
 - `<collection>`
 - `<collection>.<association>`
 
 <Alert>
 
-- collection is the set of all abstract data
-- association is the association data for the collection
-- resource includes both collection and collection.association
+- collection 是所有抽象数据的集合
+- association 为 collection 的关联数据
+- resource 包括 collection 和 collection.association 两类
 
 </Alert>
 
-### Example
+### 示例
 
-- `posts` Post
-- `posts.user` Post user
-- `posts.tags` Post tags
+- `posts` 文章
+- `posts.user` 文章用户
+- `posts.tags` 文章标签
 
-## Action
+## 操作 Action
 
-Representing resource operations as `:<action>`
+以 `:<action>` 的方式表示资源操作
 
 - `<collection>:<action>`
 - `<collection>.<association>:<action>`
 
-Built-in global operations for collection or association
+内置的全局操作，可用于 collection 或 association
 
 - `create`
 - `get`
@@ -39,20 +39,20 @@ Built-in global operations for collection or association
 - `destroy`
 - `move`
 
-Built-in association operation for association only
+内置的关联操作，仅用于 association
 
 - `set`
 - `add`
 - `remove`
 - `toggle`
 
-### Example
+### 示例
 
-- `posts:create` Create posts
-- `posts.user:get` View posts user
-- `posts.tags:add` Attach post tags (associate existing tags with post)
+- `posts:create` 创建文章
+- `posts.user:get` 查看文章用户
+- `posts.tags:add` 附加文章标签（将现有的标签与文章关联）
 
-## Request URL
+## 请求 URL
 
 ```bash
 <GET|POST>   /api/<collection>:<action>
@@ -61,9 +61,9 @@ Built-in association operation for association only
 <GET|POST>   /api/<collection>/<collectionIndex>/<association>:<action>/<associationIndex>
 ```
 
-### Example
+### 示例
 
-posts resource
+posts 资源
 
 ```bash
 POST  /api/posts:create
@@ -73,7 +73,7 @@ POST  /api/posts:update/1
 POST  /api/posts:destroy/1
 ```
 
-posts.comments resource
+posts.comments 资源
 
 ```bash
 POST  /api/posts/1/comments:create
@@ -83,7 +83,7 @@ POST  /api/posts/1/comments:update/1
 POST  /api/posts/1/comments:destroy/1
 ```
 
-posts.tags resource
+posts.tags 资源
 
 ```bash
 POST  /api/posts/1/tags:create
@@ -95,45 +95,45 @@ POST  /api/posts/1/tags:add
 GET   /api/posts/1/tags:remove
 ```
 
-## Resource location
+## 资源定位
 
-- collection resource, locates the data to be processed by `collectionIndex`, `collectionIndex` must be unique
-- association resource, locates the data to be processed by `collectionIndex` and `associationIndex` jointly, `associationIndex` may not be unique, but `collectionIndex` and `associationIndex`'s association indexes must be unique
+- collection 资源，通过 `collectionIndex` 定位到待处理的数据，`collectionIndex` 必须唯一
+- association 资源，通过 `collectionIndex` 和 `associationIndex` 联合定位待处理的数据，`associationIndex` 可能不是唯一的，但是 `collectionIndex` 和 `associationIndex` 的联合索引必须唯一
 
-When viewing association resource details, the requested URL needs to provide both `<collectionIndex>` and `<associationIndex>`, `<collectionIndex>` is not redundant because `<associationIndex>` may not be unique.
+查看 association 资源详情时，请求的 URL 需要同时提供 `<collectionIndex>` 和 `<associationIndex>`，`<collectionIndex>` 并不多余，因为 `<associationIndex>` 可能不是唯一的。
 
-For example, `tables.fields` indicates the fields of a data table
+例如 `tables.fields` 表示数据表的字段
 
 ```bash
 GET   /api/tables/table1/fields/title
 GET   /api/tables/table2/fields/title
 ```
 
-Both table1 and table2 have a title field. The title is unique in table1, but other tables may also have a title field
+table1 和 table2 都有 title 字段，title 在 table1 里是唯一的，但是其他表也可能有 title 字段
 
-## Request parameters
+## 请求参数
 
-Request parameters can be placed in the request's headers, parameters (query string), and body (GET requests do not have a body).
+请求的参数可以放在 Request 的 headers、parameters（query string）、body（GET 请求没有 body） 里。
 
-A few special request parameters
+几个特殊的 Parameters 请求参数
 
-- `filter` Data filtering, used in query-related operations.
-- `filterByTk` filter by tk field, used in operations that specify details of the data.
-- `sort` Sorting, used in query-related operations.
-- `fields` which data to output, for use in query-related operations.
-- `appends` additional relationship fields for use in query-related operations.
-- `except` which fields to exclude (no output), used in query-related operations.
-- `whitelist` fields whitelist, used in data creation and update related operations.
-- `blacklist` fields blacklist, used in data creation and update related operations.
+- `filter` 数据过滤，用于查询相关操作里；
+- `filterByTk` 根据 tk 字段字过滤，用于指定详情数据的操作里；
+- `sort` 排序，用于查询相关操作里。
+- `fields` 输出哪些数据，用于查询相关操作里；
+- `appends` 附加关系字段，用于查询相关操作里；
+- `except` 排除哪些字段（不输出），用于查询相关操作里；
+- `whitelist` 字段白名单，用于数据的创建和更新相关操作里；
+- `blacklist` 字段黑名单，用于数据的创建和更新相关操作里；
 
 ### filter
 
-Data filter
+数据过滤
 
 ```bash
 # simple
 GET /api/posts?filter[status]=publish
-# Recommend using the json string format, which requires encodeURIComponent encoding
+# 推荐使用 json string 的格式，需要 encodeURIComponent 编码
 GET /api/posts?filter={"status":"published"}
 
 # filter operators
@@ -150,14 +150,14 @@ GET /api/posts?filter[user.email.$includes]=gmail
 GET /api/posts?filter={"user.email.$includes":"gmail"}
 ```
 
-[Click here for more information about filter operators](http-api/filter-operators) 
+[点此查看更多关于 filter operators 的内容](http-api/filter-operators) 
 
 ### filterByTk
 
-Filter by tk field. By default
+根据 tk 字段过滤，默认情况：
 
-- collection resource, tk is the primary key of the data table.
-- association resource, tk is the targetKey field of the association.
+- collection 资源，tk 为数据表的主键；
+- association 资源，tk 为 association 的 targetKey 字段。
 
 ```bash
 GET   /api/posts:get?filterByTk=1&fields=name,title&appends=tags
@@ -165,20 +165,20 @@ GET   /api/posts:get?filterByTk=1&fields=name,title&appends=tags
 
 ### sort
 
-Sorting. When sorting in descending order, the fields are preceded by the minus sign `-`.
+排序。降序时，字段前面加上减号 `-`。
 
 ```bash
-# createAt field in ascending order
-GET /api/posts:get?sort=createdAt
-# createAt field descending
-GET /api/posts:get?sort=-createdAt
-# Multiple fields sorted jointly, createAt field descending, title A-Z ascending
-GET /api/posts:get?sort=-createdAt,title
+# createAt 字段升序
+GET   /api/posts:get?sort=createdAt
+# createAt 字段降序
+GET   /api/posts:get?sort=-createdAt
+# 多个字段联合排序，createAt 字段降序、title A-Z 升序
+GET   /api/posts:get?sort=-createdAt,title
 ```
 
 ### fields
 
-Which fields to output
+输出哪些数据
 
 ```bash
 GET   /api/posts:list?fields=name,title
@@ -197,47 +197,47 @@ Response 200 (application/json)
 
 ### appends
 
-Appends a relationship field
+附加关系字段
 
 ### except
 
-Which fields to exclude (not output) for use in query-related operations.
+排除哪些字段（不输出），用于查询相关操作里；
 
 ### whitelist
 
-Whitelist
+白名单
 
 ```bash
 POST  /api/posts:create?whitelist=title
 
 {
   "title": "My first post",
-  "date": "2022-05-19"      # The date field will be filtered out and will not be written to the database
+  "date": "2022-05-19"      # date 字段会被过滤掉，不会写入数据库
 }
 ```
 
 ### blacklist
 
-Blacklist
+黑名单
 
 ```bash
 POST  /api/posts:create?blacklist=date
 
 {
   "title": "My first post",
-  "date": "2022-05-19"      # The date field will be filtered out and will not be written to the database
+  "date": "2022-05-19"      # date 字段会被过滤掉，不会写入数据库
 }
 ```
 
-## Request Response
+## 请求响应
 
-Format of the response
+响应的格式
 
 ```ts
 type ResponseResult = {
-  data?: any;               // Master data
-  meta?: any;               // Additional Data
-  errors?: ResponseError[]; // Errors
+  data?: any;               // 主体数据
+  meta?: any;               // 附加数据
+  errors?: ResponseError[]; // 报错
 };
 
 type ResponseError = {
@@ -246,9 +246,9 @@ type ResponseError = {
 };
 ```
 
-### Example
+### 示例
 
-View list
+查看列表
 
 ```bash
 GET /api/posts:list
@@ -270,7 +270,7 @@ Response 200 (application/json)
 }
 ```
 
-View details
+查看详情
 
 ```bash
 GET /api/posts:get/1
@@ -280,11 +280,11 @@ Response 200 (application/json)
 {
   data: {
     id: 1
-  }
+  },
 }
 ```
 
-Error
+报错
 
 ```bash
 POST /api/posts:create

@@ -8,7 +8,7 @@ export default {
         '/welcome/introduction/index',
         '/welcome/introduction/features',
         '/welcome/introduction/when',
-        '/welcome/introduction/learning-guide',
+        // '/welcome/introduction/learning-guide',
       ],
     },
     {
@@ -27,8 +27,17 @@ export default {
             '/welcome/getting-started/installation/git-clone',
           ],
         },
-        '/welcome/getting-started/upgrading',
-        '/welcome/getting-started/deployment',
+        {
+          title: 'Upgrading',
+          'title.zh-CN': '升级',
+          type: 'subMenu',
+          children: [
+            '/welcome/getting-started/upgrading/index',
+            '/welcome/getting-started/upgrading/docker-compose',
+            '/welcome/getting-started/upgrading/create-nocobase-app',
+            '/welcome/getting-started/upgrading/git-clone',
+          ],
+        },
       ],
     },
     {
@@ -37,30 +46,65 @@ export default {
       type: 'group',
       children: [
         '/welcome/community/contributing',
-        '/welcome/community/faq',
+        // '/welcome/community/faq',
         '/welcome/community/translations',
         '/welcome/community/thanks',
       ],
     },
   ],
   '/manual': [
-    '/manual/functional-zoning',
-    '/manual/collections',
-    '/manual/menus',
-    '/manual/blocks',
-    '/manual/actions',
-    '/manual/roles-permissions',
-    '/manual/tabs',
-    '/manual/file-storages',
-    '/manual/system-settings',
-    '/manual/plugins',
+    {
+      title: 'Quick Start',
+      'title.zh-CN': '快速上手',
+      type: 'group',
+      children: [
+        '/manual/quick-start/the-first-app',
+        '/manual/quick-start/functional-zoning',
+        '/manual/quick-start/ui-editor-mode',
+        '/manual/quick-start/plugins',
+      ],
+    },
+    {
+      title: 'Core Concepts',
+      'title.zh-CN': '核心概念',
+      type: 'group',
+      children: [
+        '/manual/core-concepts/a-b-c',
+        '/manual/core-concepts/collections',
+        '/manual/core-concepts/blocks',
+        '/manual/core-concepts/actions',
+        '/manual/core-concepts/menus',
+        '/manual/core-concepts/containers',
+      ],
+    },
+    {
+      title: 'Blocks Guide',
+      'title.zh-CN': '区块指南',
+      type: 'group',
+      children: [
+        '/manual/blocks-guide/charts',
+      ],
+    },
   ],
   '/development': [
     {
       title: 'Getting started',
       'title.zh-CN': '快速开始',
       type: 'group',
-      children: ['/development/index', '/development/your-fisrt-plugin'],
+      children: [
+        '/development/index',
+        '/development/your-fisrt-plugin',
+        '/development/learning-guide',
+      ],
+    },
+    {
+      title: '约束规范',
+      'title.zh-CN': '约束规范',
+      type: 'group',
+      children: [
+        '/development/app-ds',
+        '/development/plugin-ds',
+      ],
     },
     {
       title: 'Extension Guides',

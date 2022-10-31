@@ -15,17 +15,17 @@ module.exports = (cli) => {
     .option('--raw')
     .option('-S|--skip-code-update')
     .action(async (options) => {
+      if (!hasTsNode()) {
+        return;
+      }
       promptForTs();
+      if (hasCorePackages()) {
+        // await run('yarn', ['install']);
+        await runAppCommand('upgrade');
+        return;
+      }
       if (options.skipCodeUpdate) {
         await runAppCommand('upgrade');
-        return;
-      }
-      if (hasCorePackages()) {
-        await run('yarn', ['install']);
-        await runAppCommand('upgrade');
-        return;
-      }
-      if (!hasTsNode()) {
         return;
       }
       const version = await getVersion();

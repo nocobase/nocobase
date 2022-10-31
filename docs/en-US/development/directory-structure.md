@@ -1,24 +1,18 @@
-# Directory structure
+# 项目目录结构
 
-## Application scaffolding
-
-```bash
-$ yarn create nocobase-app my-nocobase-app
-```
-
-The directory structure of the application scaffold created by `create-nocobase-app` is as follows
+无论是源码还是 `create-nocobase-app` 创建的应用，目录结构都是一样的，结构如下：
 
 ```bash
 ├── my-nocobase-app
-  ├── packages        # Use the Monorepo approach to manage code, dividing different modules into packages
+  ├── packages        # 采用 Monorepo 的方式管理代码，将不同模块划分到不同包里
     ├── app
-      ├── client      # Client-side modules
-      ├── server      # Server-side modules
-    ├── plugins       # Plugins directory
-  ├── storage        # For database files, attachments, cache, etc.
+      ├── client      # 客户端模块
+      ├── server      # 服务端模块
+    ├── plugins       # 插件目录
+  ├── storage        # 用于存放数据库文件、附件、缓存等
     ├── db
-  ├── .env            # Environment variables
-  ├── .buildrc.ts     # Packaging configuration for packages, supports cjs, esm and umd packaging.
+  ├── .env            # 环境变量
+  ├── .buildrc.ts     # packages 的打包配置，支持 cjs、esm 和 umd 三种格式的打包。
   ├── jest.config.js
   ├── jest.setup.ts
   ├── lerna.json
@@ -28,7 +22,7 @@ The directory structure of the application scaffold created by `create-nocobase-
   ├── tsconfig.server.json
 ```
 
-### packages directory
+### packages 目录
 
 ```bash
 ├── packages
@@ -51,39 +45,20 @@ The directory structure of the application scaffold created by `create-nocobase-
       ├── package.json
 ```
 
-NocoBase uses the Monorepo approach to manage the code, dividing the different modules into different packages.
+NocoBase 采用 Monorepo 的方式管理代码，将不同模块划分到不同包里。
 
-- `app/client` is the client-side module of the application, built on [umi](https://umijs.org).
-- `app/server` is the server-side module of the application.
-- `plugins/*` directory can hold various plugins.
+- `app/client` 为应用的客户端模块，基于 [umi](https://umijs.org/zh-CN) 构建；
+- `app/server` 为应用的服务端模块；
+- `plugins/*` 目录里可以放各种插件。
 
-### storages directory
+### storages 目录
 
-Used to store database files, attachments, cache, etc.
+用于存放数据库文件、附件、缓存等。
 
-### .env file
+### .env 文件
 
-Environment variables
+环境变量。
 
-### .buildrc.ts file
+### .buildrc.ts 文件
 
-Packaging configuration for packages, supports cjs, esm and umd packaging.
-
-## Plugins scaffolding
-
-```bash
-$ yarn nocobase create-plugin my-plugin
-```
-
-The plugin scaffolding directory initialized by `nocobase create-plugin` is as follows
-
-```bash
-├── my-nocobase-app
-  ├── packages
-    ├── plugins
-      ├── my-plugin
-        ├── src
-          ├── client
-          ├── server
-        ├── package.json
-```
+packages 的打包配置，支持 cjs、esm 和 umd 三种格式的打包。

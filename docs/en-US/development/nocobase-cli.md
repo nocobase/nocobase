@@ -4,18 +4,18 @@ order: 2
 
 # NocoBase CLI
 
-NocoBase CLI is designed to help you develop, build, and deploy NocoBase applications.
+NocoBase CLI 旨在帮助你开发、构建和部署 NocoBase 应用。
 
 <Alert>
 
-NocoBase CLI supports both ts-node and node modes
+NocoBase CLI 支持 ts-node 和 node 两种运行模式
 
-- ts-node mode (default): used for development environment, supports real-time compilation, but slow response
-- node mode: for production environment, fast response, but need to execute `yarn nocobase build` to compile all source code first
+- ts-node 模式（默认）：用于开发环境，支持实时编译，但是响应较慢
+- node 模式：用于生产环境，响应迅速，但需要先执行 `yarn nocobase build` 将全部源码进行编译
 
 </Alert>
 
-## Instructions
+## 使用说明
 
 ```bash
 $ yarn nocobase -h
@@ -26,25 +26,25 @@ Options:
   -h, --help
 
 Commands:
-  create-plugin         Create plugin scaffolding
+  create-plugin         创建插件脚手架
   console
-  db:auth               Verify that the database connection is successful
-  db:sync               Generate relevant data tables and fields from collections configuration
-  install               Install
-  start                 Start the application in the production environment
-  build                 Compile and package
-  clean                 Delete the compiled files
-  dev                   Start the application for the development environment and supports live compilation
-  doc                   Documentation development
-  test                  Test
+  db:auth               校验数据库是否连接成功
+  db:sync               通过 collections 配置生成相关数据表和字段
+  install               安装
+  start                 生产环境启动应用
+  build                 编译打包
+  clean                 删除编译之后的文件
+  dev                   启动应用，用于开发环境，支持实时编译
+  doc                   文档开发
+  test                  测试
   umi
-  upgrade               Upgrade
+  upgrade               升级
   help
 ```
 
-## Use in scaffolding
+## 在脚手架里应用
 
-The `scripts` in the application scaffolding `package.json` are as follows
+应用脚手架 `package.json` 里的 `scripts` 如下：
 
 ```json
 {
@@ -59,9 +59,9 @@ The `scripts` in the application scaffolding `package.json` are as follows
 }
 ```
 
-## Extensions
+## 命令行扩展
 
-NocoBase CLI is built on [commander](https://github.com/tj/commander.js), you can freely extend the command, the extended command can be written in `app/server/index.ts`.
+NocoBase CLI 基于 [commander](https://github.com/tj/commander.js) 构建，你可以自由扩展命令，扩展的 command 可以写在 `app/server/index.ts` 里：
 
 ```ts
 const app = new Application(config);
@@ -69,7 +69,7 @@ const app = new Application(config);
 app.command('hello').action(() => {});
 ```
 
-Alternatively, write in the plugin.
+或者，写在插件里：
 
 ```ts
 class MyPlugin extends Plugin {
@@ -79,22 +79,22 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Terminal runs
+终端运行
 
 ```bash
 $ yarn nocobase hello
 ```
 
-## Built-in command line
+## 内置命令行
 
-Sort by frequency of use
+按使用频率排序
 
 ### `dev`
 
-Start the application in the development environment and the code is compiled in real time.
+开发环境下，启动应用，代码实时编译。
 
 <Alert>
-NocoBase will be installed automatically if it is not installed (refer to the install command)
+NocoBase 未安装时，会自动安装（参考 install 命令）
 </Alert>
 
 ```bash
@@ -107,25 +107,25 @@ Options:
   -h, --help
 ```
 
-Example
+示例
 
 ```bash
-# Start application for development environment, live compile
+# 启动应用，用于开发环境，实时编译
 yarn nocobase dev
-# Start only the server side
+# 只启动服务端
 yarn nocobase dev --server
-# Start only the client side
+# 只启动客户端
 yarn nocobase dev --client
 ```
 
 ### `start`
 
-Start the application in a production environment, the code needs to be yarn build.
+生产环境下，启动应用，代码需要 yarn build。
 
 <Alert>
 
-- NocoBase will be installed automatically if it is not installed (refer to the install command)
-- If the source code has been modified, it needs to be repackaged (refer to the build command)
+- NocoBase 未安装时，会自动安装（参考 install 命令）
+- 源码有修改时，需要重新打包（参考 build 命令）
 
 </Alert>
 
@@ -140,16 +140,16 @@ Options:
   -h, --help
 ```
 
-Example
+示例
 
 ```bash
-# Start the application in a production environment
+# 启动应用，用于生产环境，
 yarn nocobase start
 ```
 
 ### `install`
 
-Install
+安装
 
 ```bash
 $ yarn nocobase install -h
@@ -167,28 +167,28 @@ Options:
   -h, --help
 ```
 
-Example
+示例
 
 ```bash
-# Initial Installation
-yarn nocobase install -l en-US -e admin@nocobase.com -p admin123
-# Delete all data tables of NocoBase and reinstall
-yarn nocobase install -f -l en-US -e admin@nocobase.com -p admin123
-# Empty the database and reinstall
-yarn nocobase install -c -l en-US -e admin@nocobase.com -p admin123
+# 初始安装
+yarn nocobase install -l zh-CN -e admin@nocobase.com -p admin123
+# 删除 NocoBase 的所有数据表，并重新安装
+yarn nocobase install -f -l zh-CN -e admin@nocobase.com -p admin123
+# 清空数据库，并重新安装
+yarn nocobase install -c -l zh-CN -e admin@nocobase.com -p admin123
 ```
 
 <Alert>
 
-Difference between `-f/--force` and `-c/--clean`
-- `-f/--force` Delete all data tables of NocoBase
-- `-c/--clean` Delete all data tables of the database
+`-f/--force` 和 `-c/--clean` 的区别
+- `-f/--force` 删除 NocoBase 的数据表
+- `-c/--clean` 清空数据库，所有数据表都会被删除
 
 </Alert>
 
 ### `upgrade`
 
-Upgrade
+升级
 
 ```bash
 yarn nocobase upgrade
@@ -196,7 +196,7 @@ yarn nocobase upgrade
 
 ### `test`
 
-jest tests, supports all [jest-cli](https://jestjs.io/docs/cli) options, and extends `-c, --db-clean` support in addition.
+jest 测试，支持所有 [jest-cli](https://jestjs.io/docs/cli) 的 options，除此之外还扩展了 `-c, --db-clean` 的支持。
 
 ```bash
 $ yarn nocobase test -h
@@ -204,62 +204,62 @@ $ yarn nocobase test -h
 Usage: nocobase test [options]
 
 Options:
-  -c, --db-clean        Empty the database before running all tests
+  -c, --db-clean        运行所有测试前清空数据库
   -h, --help
 ```
 
-Example
+示例
 
 ```bash
-# Run all test files
+# 运行所有测试文件
 yarn nocobase test
-# Run all test files in the specified folder
+# 运行指定文件夹下所有测试文件
 yarn nocobase test packages/core/server
-# Run all tests in the specified file
+# 运行指定文件里的所有测试
 yarn nocobase test packages/core/database/src/__tests__/database.test.ts
 
-# Empty the database before running tests
+# 运行测试前，清空数据库
 yarn nocobase test -c
 yarn nocobase test packages/core/server -c
 ```
 
 ### `build`
 
-Before deployed to the production environment, the source code needs to be compiled and packaged. It needs to be rebuilt if there are changes to the code.
+代码部署到生产环境前，需要将源码编译打包，如果代码有修改，也需要重新构建。
 
 ```bash
-# All packages
+# 所有包
 yarn nocobase build
-# Specified package
+# 指定包
 yarn nocobase build app/server app/client
 ```
 
 ### `clean`
 
-Delete the compiled file
+删除编译之后的文件
 
 ```bash
 yarn clean
-# Equivalent to
+# 等同于
 yarn rimraf -rf packages/*/*/{lib,esm,es,dist}
 ```
 
 ### `doc`
 
-Documentation development
+文档开发
 
 ```bash
-# Start documentation
-yarn doc  --lang=en-US # Equivalent to yarn doc dev
-# Build the documentation and output it to . /docs/dist/ directory by default 
+# 启动文档
+yarn doc  --lang=zh-CN # 等同于 yarn doc dev
+# 构建文档，默认输出到 ./docs/dist/ 目录下
 yarn doc build
-# View the final result of the document output by dist
-yarn doc serve --lang=en-US
+# 查看 dist 输出的文档最终效果
+yarn doc serve --lang=zh-CN
 ```
 
 ### `db:auth`
 
-Verify that the database is successfully connected
+校验数据库是否连接成功
 
 ```bash
 $ yarn nocobase db:auth -h
@@ -267,13 +267,13 @@ $ yarn nocobase db:auth -h
 Usage: nocobase db:auth [options]
 
 Options:
-  -r, --retry [retry]   retry times
+  -r, --retry [retry]   重试次数
   -h, --help
 ```
 
 ### `db:sync`
 
-Generate data tables and fields via collections configuration
+通过 collections 配置生成数据表和字段
 
 ```bash
 $ yarn nocobase db:sync -h
@@ -287,24 +287,24 @@ Options:
 
 ### `umi`
 
-`app/client` is built based on [umi](https://umijs.org/) and can be used to execute other related commands via `nocobase umi`.
+`app/client` 基于 [umi](https://umijs.org/) 构建，可以通过 `nocobase umi` 来执行其他相关命令。
 
 ```bash
-# Generate the .umi cache required by the development environment
+# 生成开发环境所需的 .umi 缓存
 yarn nocobase umi generate tmp
 ```
 
 ### `help`
 
-The help command, also available with the option parameter, `-h` and `--help`
+帮助命令，也可以用 option 参数，`-h` 和 `--help`
 
 ```bash
-# View all cli
+# 查看所有 cli
 yarn nocobase help
-# You can also use -h
+# 也可以用 -h
 yarn nocobase -h
-# or --help
+# 或者 --help
 yarn nocobase --help
-# Option to view the db:sync command
+# 查看 db:sync 命令的 option
 yarn nocobase db:sync -h
 ```

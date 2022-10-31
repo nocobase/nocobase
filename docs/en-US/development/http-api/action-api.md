@@ -4,7 +4,7 @@
 
 ---
 
-Collection and Association resources are common.
+Collection 和 Association 资源通用。
 
 ### `create`
 
@@ -15,12 +15,12 @@ POST  /api/users:create?whitelist=a,b&blacklist=c,d
 ```
 
 - Parameters
-  - whitelist White list
-  - blacklist Black list
-- Request body: JSON data to be inserted
-- Response body data: Created data JSON
+  - whitelist 白名单
+  - blacklist 黑名单
+- Request body: 待插入的 JSON 数据
+- Response body data: 已创建的数据 JSON
 
-#### Add a User
+#### 新增用户
 
 ```bash
 POST  /api/users:create
@@ -37,7 +37,7 @@ Response 200 (application/json)
 }
 ```
 
-#### Add a user's article
+#### 新增用户文章
 
 ```bash
 POST  /api/users/1/posts:create
@@ -49,11 +49,11 @@ Request Body
 
 Response 200 (application/json)
 {
-  "data": {},
+  "data": {}
 }
 ```
 
-#### Association in Request Body
+#### Request Body 里的 association
 
 ```bash
 POST  /api/posts:create
@@ -86,13 +86,13 @@ POST  /api/users:create?filterByTk=1&whitelist=a,b&blacklist=c,d
 ```
 
 - Parameters
-  - whitelist White list
-  - blacklist Black list
-  - filterByTk Filter by tk field, by default tk is the primary key of the data table
-  - filter Filter，support json string
-- Request body: JSON data to be updated
+  - whitelist 白名单
+  - blacklist 黑名单
+  - filterByTk 根据 tk 字段过滤，默认情况 tk 为数据表的主键
+  - filter 过滤，支持 json string
+- Request body: 待更新的 JSON 数据
 
-#### Association in Request Body
+#### Request Body 里的 association
 
 ```bash
 POST  /api/posts:update/1
@@ -137,6 +137,3 @@ Response 200 (application/json)
 ### `remove`
 
 ### `toggle`
-
-
-

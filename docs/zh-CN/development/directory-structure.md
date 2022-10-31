@@ -1,12 +1,6 @@
-# 目录结构
+# 项目目录结构
 
-## 应用脚手架
-
-```bash
-$ yarn create nocobase-app my-nocobase-app
-```
-
-通过 `create-nocobase-app` 创建的应用脚手架目录结构如下：
+无论是源码还是 `create-nocobase-app` 创建的应用，目录结构都是一样的，结构如下：
 
 ```bash
 ├── my-nocobase-app
@@ -68,22 +62,3 @@ NocoBase 采用 Monorepo 的方式管理代码，将不同模块划分到不同�
 ### .buildrc.ts 文件
 
 packages 的打包配置，支持 cjs、esm 和 umd 三种格式的打包。
-
-## 插件脚手架
-
-```bash
-$ yarn nocobase create-plugin my-plugin
-```
-
-通过 `nocobase create-plugin` 初始化的插件脚手架目录如下：
-
-```bash
-├── my-nocobase-app
-  ├── packages
-    ├── plugins
-      ├── my-plugin
-        ├── src
-          ├── client
-          ├── server
-        ├── package.json
-```
