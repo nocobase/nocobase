@@ -229,11 +229,10 @@ export extend({
 假设我们需要直接应用 Snowflake ID 生成算法，扩展出一个 `snowflake` 字段类型，我们可以创建一个 `fields/snowflake.ts` 文件：
 
 ```ts
-import { DataTypes } from 'sequelize';
 // 引入算法工具包
 import { Snowflake } from 'nodejs-snowflake';
 // 引入字段类型基类
-import { Field, BaseColumnFieldOptions } from '@nocobase/database';
+import { DataTypes, Field, BaseColumnFieldOptions } from '@nocobase/database';
 
 export interface SnowflakeFieldOptions extends BaseColumnFieldOptions {
   type: 'snowflake';
