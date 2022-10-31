@@ -18,14 +18,17 @@
     "deepmerge": "^4.2.2",
     "flat": "^5.0.2",
     "glob": "^7.1.6",
+    "lodash": "^4.17.21",
     "mathjs": "^10.6.1",
     "moment": "2.x",
     "semver": "^7.3.7",
-    "sequelize": "^6.9.0",
+    "sequelize": "6.11.0",
     "umzug": "^3.1.1"
   },
   "devDependencies": {
-    "@types/glob": "^7.2.0"
+    "@types/glob": "^7.2.0",
+    "@types/lodash": "^4.14.177",
+    "@types/sequelize": "^4.28.14"
   },
   "repository": {
     "type": "git",

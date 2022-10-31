@@ -1,4 +1,4 @@
-import Koa from 'koa';
+import type Koa from 'koa';
 import { Database } from '@nocobase/database';
 import { Action } from '@nocobase/resourcer';
 import { Cache } from '@nocobase/cache';

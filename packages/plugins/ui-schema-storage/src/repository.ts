@@ -1,8 +1,7 @@
-import { Repository, Transactionable } from '@nocobase/database';
+import { Repository, Transactionable, Transaction } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
 import { uid } from '@nocobase/utils';
 import lodash from 'lodash';
-import { Transaction } from 'sequelize';
 import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
 
 export interface GetJsonSchemaOptions {

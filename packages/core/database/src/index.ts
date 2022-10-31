@@ -1,4 +1,4 @@
-export { DataTypes, ModelCtor, Op, SyncOptions } from 'sequelize';
+export { DataTypes, ModelCtor, Op, SyncOptions, Transaction } from 'sequelize';
 export * from './collection';
 export * from './database';
 export { Database as default } from './database';

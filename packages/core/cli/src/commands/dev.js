@@ -1,4 +1,5 @@
 const chalk = require('chalk');
+const { resolve } = require('path');
 const { Command } = require('commander');
 const { runAppCommand, runInstall, run, postCheck, nodeCheck, promptForTs } = require('../util');
 const { getPortPromise } = require('portfinder');
@@ -8,6 +9,7 @@ const { getPortPromise } = require('portfinder');
  * @param {Command} cli
  */
 module.exports = (cli) => {
+  const binPath = resolve(__dirname, '../../node_modules/.bin');
   const { APP_PACKAGE_ROOT } = process.env;
   cli
     .command('dev')
@@ -19,7 +21,7 @@ module.exports = (cli) => {
     .action(async (opts) => {
       promptForTs();
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
-        run('ts-node', [
+        run(resolve(binPath, 'ts-node'), [
           '-P',
           './tsconfig.server.json',
           '-r',

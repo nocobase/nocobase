@@ -14,12 +14,17 @@
   "dependencies": {
     "@nocobase/cache": "0.8.0-alpha.1",
     "@nocobase/database": "0.8.0-alpha.1",
-    "@nocobase/resourcer": "0.8.0-alpha.1"
+    "@nocobase/resourcer": "0.8.0-alpha.1",
+    "lodash": "^4.17.21"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/actions"
   },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990",
+  "devDependencies": {
+    "@types/koa": "^2.13.4",
+    "@types/lodash": "^4.14.177"
+  }
 }

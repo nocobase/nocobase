@@ -13,11 +13,12 @@
   "dependencies": {
     "@hapi/topo": "^6.0.0",
     "deepmerge": "^4.2.2",
-    "flat-to-nested": "^1.1.1"
-  },
-  "peerDependencies": {
+    "flat-to-nested": "^1.1.1",
     "moment": "2.x",
-    "rc-input-number": "7.x"
+    "rc-input-number": "^7.3.9"
   },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990",
+  "devDependencies": {
+    "@types/moment": "^2.13.0"
+  }
 }

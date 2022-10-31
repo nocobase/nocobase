@@ -20,7 +20,10 @@
     "execa": "^5.1.1",
     "pm2": "^5.2.0",
     "portfinder": "^1.0.28",
-    "serve": "^13.0.2"
+    "serve": "^13.0.2",
+    "ts-node": "9.1.1",
+    "ts-node-dev": "1.1.8",
+    "typescript": "4.5.5"
   },
   "devDependencies": {
     "@nocobase/devtools": "0.8.0-alpha.1"

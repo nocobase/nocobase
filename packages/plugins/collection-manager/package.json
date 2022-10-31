@@ -13,10 +13,12 @@
     "@nocobase/database": "0.8.0-alpha.1",
     "@nocobase/plugin-error-handler": "0.8.0-alpha.1",
     "@nocobase/server": "0.8.0-alpha.1",
-    "sequelize": "^6.9.0"
+    "sequelize": "^6.9.0",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "@nocobase/test": "0.8.0-alpha.1"
-  },
+    "@nocobase/test": "0.8.0-alpha.1",
+    "@types/lodash": "^4.14.177"
+   },
   "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
 }

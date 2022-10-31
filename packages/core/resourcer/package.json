@@ -14,6 +14,7 @@
   "dependencies": {
     "@nocobase/utils": "0.8.0-alpha.1",
     "deepmerge": "^4.2.2",
+    "glob": "^8.0.3",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
     "path-to-regexp": "^6.1.0",
@@ -24,5 +25,7 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/resourcer"
   },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  "devDependencies": {
+    "@types/lodash": "^4.14.177"
+  }
 }

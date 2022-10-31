@@ -11,7 +11,11 @@
   ],
   "devDependencies": {
     "@formily/json-schema": "2.0.20",
-    "@nocobase/test": "0.8.0-alpha.1"
+    "@nocobase/test": "0.8.0-alpha.1",
+    "@types/lodash": "^4.14.177"
   },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
 }

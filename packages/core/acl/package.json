@@ -13,12 +13,17 @@
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@nocobase/resourcer": "0.8.0-alpha.1",
-    "json-templates": "^4.2.0"
+    "json-templates": "^4.2.0",
+    "koa-compose": "^4.1.0",
+    "lodash": "^4.17.21"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/acl"
   },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990",
+  "devDependencies": {
+    "@types/lodash": "^4.14.177"
+  }
 }

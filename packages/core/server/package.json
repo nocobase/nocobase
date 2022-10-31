@@ -20,6 +20,7 @@
     "@nocobase/resourcer": "0.8.0-alpha.1",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
+    "execa": "^5.1.1",
     "find-package-json": "^1.2.0",
     "i18next": "^21.6.0",
     "koa": "^2.13.4",
@@ -30,6 +31,9 @@
     "xpipe": "^1.0.5"
   },
   "devDependencies": {
+    "@types/koa": "^2.13.4",
+    "@types/koa-compose": "^3.2.5",
+    "@types/lodash": "^4.14.177",
     "@types/semver": "^7.3.9"
   },
   "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
