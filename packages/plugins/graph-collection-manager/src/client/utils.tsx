@@ -143,7 +143,12 @@ const formatEdgeData = (data, targetTables, tableData) => {
         ],
       };
       const isuniq = (id) => {
-        return !edges.find((v) => v.id === id);
+        const targetEdge = edges.find((v) => v.id === id);
+        if (targetEdge) {
+          targetEdge.associated.push(data[i].name);
+          return false;
+        }
+        return true;
       };
       if (['m2m', 'linkTo'].includes(data[i].interface)) {
         const throughTable = tableData.find((v) => v.name === data[i].through);
@@ -228,6 +233,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 name: 'left',
               },
             },
+            associated: [data[i].name],
             ...commonAttrs,
           });
         isuniq(tCellId2 + tPortId2 + sCellId2 + sPortId2) &&
@@ -249,6 +255,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 name: 'left',
               },
             },
+            associated: [data[i].name],
             ...commonAttrs,
           });
       }

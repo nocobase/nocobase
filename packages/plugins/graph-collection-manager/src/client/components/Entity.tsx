@@ -244,7 +244,11 @@ const Entity: React.FC<{
                   id={property.id}
                   style={{
                     background:
-                      attrs?.targetPort === property.id || attrs?.sourcePort === property.id ? '#e6f7ff' : null,
+                      attrs?.targetPort === property.id ||
+                      attrs?.sourcePort === property.id ||
+                      attrs?.associated?.includes(property.name)
+                        ? '#e6f7ff'
+                        : null,
                   }}
                 >
                   <div className="name">{compile(property.uiSchema?.title)}</div>
