@@ -1,6 +1,6 @@
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
-import { merge } from '@formily/shared';
+import { merge, uid } from '@formily/shared';
 import { Checkbox, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,12 +36,11 @@ const InternalField: React.FC = (props) => {
       return;
     }
     setFieldProps('content', uiSchema['x-content']);
-    setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);
-    if (!field.validator && uiSchema['x-validator']) {
-      field.validator = uiSchema['x-validator'];
-    }
+    // if (!field.validator && uiSchema['x-validator']) {
+    //   field.validator = uiSchema['x-validator'];
+    // }
     if (fieldSchema['x-disabled'] === true) {
       field.disabled = true;
     }
@@ -99,6 +98,24 @@ export const BulkEditField = (props: any) => {
     setValue(val?.target?.value ?? val?.target?.checked ?? val);
   };
 
+  const collectionSchema: any = {
+    type: 'void',
+    properties: {
+      [uid()]: {
+        type: 'string',
+        'x-component': 'BulkEditCollectionField',
+        'x-collection-field': fieldSchema['x-collection-field'],
+        'x-component-props': {
+          ...props,
+          value,
+          onChange: valueChangeHandler,
+          style: { minWidth: 150 },
+        },
+        'x-decorator': 'FormItem',
+      },
+    },
+  };
+
   return (
     <Space>
       <Select defaultValue={type} value={type} style={{ width: 150 }} onChange={typeChangeHandler}>
@@ -113,6 +130,11 @@ export const BulkEditField = (props: any) => {
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
         collectionField.interface !== 'checkbox' && (
           <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />
+          // <SchemaComponent
+          //   schema={collectionSchema}
+          //   components={{ BulkEditCollectionField: CollectionField }}
+          //   onlyRenderProperties
+          // />
         )}
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
         collectionField.interface === 'checkbox' && <Checkbox checked={value} onChange={valueChangeHandler} />}
