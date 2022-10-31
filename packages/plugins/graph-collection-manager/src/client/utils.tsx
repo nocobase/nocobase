@@ -71,10 +71,16 @@ const formatEdgeData = (data, targetTables, tableData) => {
               {
                 tagName: 'ellipse',
                 selector: 'labelBody',
+                style: {
+                  cursor: 'pointer',
+                },
               },
               {
                 tagName: 'text',
                 selector: 'labelText',
+                style: {
+                  cursor: 'pointer',
+                },
               },
             ],
             attrs: {
@@ -108,10 +114,16 @@ const formatEdgeData = (data, targetTables, tableData) => {
               {
                 tagName: 'ellipse',
                 selector: 'labelBody',
+                style: {
+                  cursor: 'pointer',
+                },
               },
               {
                 tagName: 'text',
                 selector: 'labelText',
+                style: {
+                  cursor: 'pointer',
+                },
               },
             ],
             attrs: {
