@@ -1,139 +1,144 @@
-# v0.8：插件管理器和文档
+# v0.8：Plugin manager & docs
 
-从 v0.8 开始，NocoBase 开始提供可用的插件管理器和开发文档。以下是 v0.8 的主要变化。
+Starting with v0.8, NocoBase begins to provide an available plugin manager and development documentation. Here are the main changes in v0.8.
 
-## 界面右上角的调整
+## Tweaks to the top right corner of the interface
 
-- 界面配置
-- 插件管理器
-- 配置中心
-- 个人中心
+- UI Editor
+- Plugin Manager
+- Settings Center
+- Personal Center
 
 <img src="./v08-changelog/topright.jpg" style="max-width: 500px;" />
 
-## 全新的插件管理器
+## The new plugin manager
 
-v0.8 提供了强大的插件管理器用于无代码的方式管理插件。
+v0.8 provides a powerful plugin manager for managing plugins in a no-code way.
 
-### 插件管理器流程
+### Plugin manager flow
 
 <img src="./v08-changelog/pm-flow.svg" style="max-width: 580px;"/>
 
-### 插件管理器界面
+### Plugin Manager interface
 
-目前主要用于本地插件的禁用、激活和删除。内置插件不能删除，插件市场敬请期待。
+Currently it is mainly used for disabling, activating and deleting local plugins. Built-in plugins cannot be deleted.
 
 <img src="./v08-changelog/pm-ui.jpg" />
 
-### 插件管理器命令行
+### Plugin Manager command
 
-除了可以在无代码界面激活、禁用插件，也可以通过命令行更完整的管理插件。
+In addition to being able to activate and disable plugins from the no-code interface, you can also manage plugins more completely from the command line.
 
-```bash
-# 创建插件
+```
+# Create a plugin
 yarn pm create hello
-# 注册插件
+# Register the plugin
 yarn pm add hello
-# 激活插件
+# Activate the plugin
 yarn pm enable hello
-# 禁用插件
+# Disable the plugin
 yarn pm disable hello
-# 删除插件
+# Remove the plugin
 yarn pm remove hello
+
 ```
 
-备注：插件的发布和升级会在后续的版本里支持。
+Note: Releases and upgrades for plugins will be supported in subsequent releases.
 
-```bash
-# 发布插件
+```
+# Publish the plugin
 yarn pm publish hello
-# 升级插件
+# Publish the plugin
 yarn pm upgrade hello
+
 ```
 
-更多插件示例，查看 [packages/samples](https://github.com/nocobase/nocobase/tree/main/packages/samples)。
+For more plugin examples, see [packages/samples](https://github.com/nocobase/nocobase/tree/main/packages/samples).
 
-## 插件的变化
+## Changes of plugin
 
-### 插件目录结构
+### Plugin’s directory structure
 
-```bash
+```
 |- /hello
   |- /src
-    |- /client      # 插件客户端代码
-    |- /server      # 插件服务端代码
+    |- /client      # Plugin client
+    |- /server      # Plugin server
   |- client.d.ts
   |- client.js
-  |- package.json   # 插件包信息
+  |- package.json   # Plugin package information
   |- server.d.ts
   |- server.js
+
 ```
 
-### 插件名称规范
+### Plugin’s name specification
 
-NocoBase 插件也是 NPM 包，插件名和 NPM 包名的对应规则为 `${PLUGIN_PACKAGE_PREFIX}-${pluginName}`。
+NocoBase plugin is also an NPM package, the correspondence rule between plugin name and NPM package name is `${PLUGIN_PACKAGE_PREFIX}-${pluginName}`.
 
-`PLUGIN_PACKAGE_PREFIX` 为插件包前缀，可以在 .env 里自定义，[点此查看 PLUGIN_PACKAGE_PREFIX 说明](/api/env#plugin_package_prefix)。
+`PLUGIN_PACKAGE_PREFIX` is the plugin package prefix, which can be customized in .env, [click here for PLUGIN_PACKAGE_PREFIX description](https://www.notion.so/api/env#plugin_package_prefix).
 
-例如，有一名为 `my-nocobase-app` 的项目，新增了 `hello` 插件，包名为 `@my-nocobase-app/plugin-hello`。
+For example, a project named `my-nocobase-app` adds the `hello` plugin with package name `@my-nocobase-app/plugin-hello`.
 
-PLUGIN_PACKAGE_PREFIX 配置如下：
+`PLUGIN_PACKAGE_PREFIX` is configured as follows.
 
-```bash
+```
 PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@my-nocobase-app/plugin-
+
 ```
 
-插件名和包名的对应关系为：
+The correspondence between plugin names and package names is
 
-- `users` 插件包名为 `@nocobase/plugin-users`
-- `nocobase` 插件包名为 `@nocobase/preset-nocobase`
-- `hello` 插件包名为 `@my-nocobase-app/plugin-hello`
+- `users` plugin package name is `@nocobase/plugin-users`
+- `nocobase` plugin package name is `@nocobase/preset-nocobase`
+- `hello` plugin package named `@my-nocobase-app/plugin-hello`
 
-### 插件的生命周期
+### Plugin’s lifecycle
 
-v0.8 提供了更完整的插件生命周期方法
+v0.8 provides a more complete approach to the plugin lifecycle.
 
-```ts
+```
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class HelloPlugin extends Plugin {
   afterAdd() {
-    // 插件通过 pm.add 添加之后
+    // After the plugin has been added via pm.add
   }
 
   beforeLoad() {
-    // 所有插件执行 load 之前，一般用于注册类和事件监听
+    // Before all plugins are loaded, generally used to register classes and event listeners
   }
 
   async load() {
-    // 加载配置
+    // Load configuration
   }
 
   async install(options?: InstallOptions) {
-    // 安装逻辑
+    // Install logic
   }
 
   async afterEnable() {
-    // 激活之后
+    // After activation
   }
 
   async afterDisable() {
-    // 禁用之后
+    // After disable
   }
 
   async remove() {
-    // 删除逻辑
+    // Remove logic
   }
 }
 
 export default HelloPlugin;
+
 ```
 
-### 插件的前后端入口
+### Front- and back-end entrance for plugins
 
-插件的生命周期由服务端控制
+The lifecycle of the plugin is controlled by the server
 
-```ts
+```
 import { Application } from '@nocobase/server';
 
 const app = new Application({
@@ -151,11 +156,12 @@ class MyPlugin extends Plugin {
 }
 
 app.plugin(MyPlugin, { name: 'my-plugin' });
+
 ```
 
-插件的客户端以 Context.Provider 形式存在（类似于服务端的 Middleware）
+The client side of the plugin exists as Context.Provider (similar to Middleware on the server side)
 
-```tsx | pure
+```
 import React from 'react';
 import { Application } from '@nocobase/client';
 
@@ -168,7 +174,7 @@ const app = new Application({
   },
 });
 
-// 访问 /hello 页面时，显示 Hello world!
+// When you visit the /hello page, it displays Hello world!
 const HelloProvider = React.memo((props) => {
   const location = useLocation();
   if (location.pathname === '/hello') {
@@ -178,39 +184,38 @@ const HelloProvider = React.memo((props) => {
 });
 
 app.use(HelloProvider);
+
 ```
 
-## 自定义的业务代码
+## Custom business code
 
-v0.7 的插件并不完整，自定义的业务代码可能分散在 `packages/app/client` 和 `packages/app/server` 里，不利于升级、维护。v0.8 推荐以插件包的形式整理，并使用 `yarn pm` 来管理插件。
+v0.7 plugins are not complete, custom business code may be scattered in `packages/app/client` and `packages/app/server`, which is not conducive to upgrade and maintenance. v0.8 recommends organizing as a plugin package and using `yarn pm` to manage plugins.
 
-## 提供了更完整的文档
+## More complete documentation is provided
 
-- **欢迎**：快速了解 NocoBase
-- **用户使用手册**：进一步了解 NocoBase 平台提供的核心功能
-- **插件开发教程**：进阶深入插件开发
-- **API 参考**：插件开发过程中，查阅各 API 用法
-- **客户端组件库**（正在准备中）：提供 NocoBase 各组件的示例和用法
+- **Welcome**: a quick look at NocoBase
+- **Manual**: learn more about the core features provided by the NocoBase platform
+- **Plugin Development Tutorial**: Advanced dive into plugin development
+- **API Reference**: Check the API usage during plugin development
+- **Client Components Library** (in preparation): provides examples and usage of NocoBase components
 
-备注：文档还有很多细节待补充，也会根据大家进一步反馈，继续调整。
+## More plugin examples are provided
 
-## 提供了更多插件示例
+- [command](https://github.com/nocobase/nocobase/tree/develop/packages/samples/command)
+- [custom-block](https://github.com/nocobase/nocobase/tree/develop/packages/samples/custom-block)
+- [custom-page](https://github.com/nocobase/nocobase/tree/develop/packages/samples/custom-page)
+- [custom-signup-page](https://github.com/nocobase/nocobase/tree/develop/packages/samples/custom-signup-page)
+- [hello](https://github.com/nocobase/nocobase/tree/develop/packages/samples/hello)
+- [ratelimit](https://github.com/nocobase/nocobase/tree/develop/packages/samples/ratelimit)
+- [shop-actions](https://github.com/nocobase/nocobase/tree/develop/packages/samples/shop-actions)
+- [shop-events](https://github.com/nocobase/nocobase/tree/develop/packages/samples/shop-events)
+- [shop-i18n](https://github.com/nocobase/nocobase/tree/develop/packages/samples/shop-i18n)
+- [shop-modeling](https://github.com/nocobase/nocobase/tree/develop/packages/samples/shop-modeling)
 
-- [command](https://github.com/nocobase/nocobase/tree/develop/packages/samples/command "command")
-- [custom-block](https://github.com/nocobase/nocobase/tree/develop/packages/samples/custom-block "custom-block")
-- [custom-page](https://github.com/nocobase/nocobase/tree/develop/packages/samples/custom-page "custom-page")
-- [custom-signup-page](https://github.com/nocobase/nocobase/tree/develop/packages/samples/custom-signup-page "custom-signup-page")
-- [hello](https://github.com/nocobase/nocobase/tree/develop/packages/samples/hello "hello")
-- [ratelimit](https://github.com/nocobase/nocobase/tree/develop/packages/samples/ratelimit "ratelimit")
-- [shop-actions](https://github.com/nocobase/nocobase/tree/develop/packages/samples/shop-actions "shop-actions")
-- [shop-events](https://github.com/nocobase/nocobase/tree/develop/packages/samples/shop-events "shop-events")
-- [shop-i18n](https://github.com/nocobase/nocobase/tree/develop/packages/samples/shop-i18n "shop-i18n")
-- [shop-modeling](https://github.com/nocobase/nocobase/tree/develop/packages/samples/shop-modeling "shop-modeling")
+## Other new features and functionality
 
-## 其他新特性和功能
-
-- 导入
-- 批量更新 & 编辑
-- 图形化数据表配置
-- 工作流支持查看执行历史
-- JSON 字段
+- Import from Excel
+- Bulk Update & Edit
+- Graphical collection
+- Workflow support for viewing execution history
+- JSON field
