@@ -49,7 +49,7 @@ NocoBase, veri yapısını kullanıcı arayüzünden ayırma tasarım fikrini be
 
 ![2.collection-block.png](https://docs.nocobase.com/static/2.collection-block.7dcc928f.png)
 
-### 2. "Sistem yapılandırmasını" ve "sistem kullanımını" entegre edin
+### 2. ne görüyorsanız onu alırsınız
 
 NocoBase, karmaşık ve farklı iş sistemlerinin geliştirilmesine olanak tanır, ancak bu karmaşık ve özel operasyonların gerekli olduğu anlamına gelmez. Tek bir tıklama ile kullanım arayüzünde yapılandırma seçenekleri görüntülenebilir. Bu da sistem yapılandırma haklarına sahip yöneticilerin kullanıcı arayüzünü doğrudan WYSIWYG işlemleri ile yapılandırılabileceği anlamına gelir.
 
@@ -67,14 +67,14 @@ NocoBase eklenti mimarisini benimser, tüm yeni özellikler eklentiler geliştir
 
 NocoBase üç kurulum modelini destekler:
 
-- <a target="_blank" href="https://docs.nocobase.com/getting-started/installation/docker-compose">Docker kurulumu (👍Tavsiye edilen)</a>
+- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/docker-compose">Docker kurulumu (👍Tavsiye edilen)</a>
 
   Kodsuz senaryolar için uygundur, yazılacak kod yoktur. Yükseltme yaparken, sadece en son görüntüyü indirin ve yeniden başlatın.
 
-- <a target="_blank" href="https://docs.nocobase.com/getting-started/installation/create-nocobase-app">create-nocobase-app CLI ile kurulum</a>
+- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/create-nocobase-app">create-nocobase-app CLI ile kurulum</a>
 
   Projenin iş kodu tamamen bağımsızdır ve düşük kod geliştirmeyi destekler.
 
-- <a target="_blank" href="https://docs.nocobase.com/getting-started/installation/git-clone">Git kaynak kodlarından derleme</a>
+- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/git-clone">Git kaynak kodlarından derleme</a>
 
   Yayınlanmamış en son sürümü deneyimlemek veya katkıda bulunmak istiyorsanız, kaynak kodunda değişiklik yapmanız ve hata ayıklamanız gerekiyorsa, yüksek düzeyde geliştirme becerisi gerektiren bu kurulum yöntemini seçmeniz önerilir. Eğer kodlar güncellendiyse git pull ile son sürümü çekebilirsiniz.
