@@ -5,7 +5,6 @@ import { enUS, zhCN } from './locale';
 import { importMiddleware } from './middleware';
 
 export class ImportPlugin extends Plugin {
-
   beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);
@@ -25,6 +24,8 @@ export class ImportPlugin extends Plugin {
     this.app.acl.setAvailableAction('importXlsx', {
       displayName: '{{t("Import")}}',
       allowConfigureFields: true,
+      type: 'new-data',
+      onNewRecord: true,
     });
     this.app.acl.use(async (ctx, next) => {
       const { actionName } = ctx.action;
