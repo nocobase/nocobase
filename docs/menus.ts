@@ -8,6 +8,7 @@ export default {
         '/welcome/introduction/index',
         '/welcome/introduction/features',
         '/welcome/introduction/when',
+        '/welcome/introduction/v08-changelog'
         // '/welcome/introduction/learning-guide',
       ],
     },
