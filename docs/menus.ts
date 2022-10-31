@@ -8,7 +8,6 @@ export default {
         '/welcome/introduction/index',
         '/welcome/introduction/features',
         '/welcome/introduction/when',
-        '/welcome/introduction/v08-changelog'
         // '/welcome/introduction/learning-guide',
       ],
     },
@@ -42,6 +41,15 @@ export default {
       ],
     },
     {
+      title: 'Release',
+      'title.zh-CN': '版本发布',
+      type: 'group',
+      children: [
+        '/welcome/release/index',
+        '/welcome/release/v08-changelog',
+      ],
+    },
+    {
       title: 'Community',
       'title.zh-CN': '社区',
       type: 'group',
@@ -49,6 +57,7 @@ export default {
         '/welcome/community/contributing',
         // '/welcome/community/faq',
         '/welcome/community/translations',
+        
         '/welcome/community/thanks',
       ],
     },
