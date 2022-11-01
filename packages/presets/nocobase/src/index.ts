@@ -1,4 +1,5 @@
 import { Plugin } from '@nocobase/server';
+import path from 'path';
 
 export class PresetNocoBase extends Plugin {
   async addBuiltInPlugins() {
@@ -53,7 +54,15 @@ export class PresetNocoBase extends Plugin {
       await this.addBuiltInPlugins();
     });
   }
-  beforeLoad() {}
+  beforeLoad() {
+    this.db.addMigrations({
+      namespace: this.getName(),
+      directory: path.resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+  }
 }
 
 export default PresetNocoBase;
