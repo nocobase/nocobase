@@ -234,7 +234,7 @@ export const GraphDrawPage = React.memo(() => {
       scroller: {
         enabled: true,
         pannable: true,
-        padding: { top: 0, left: 500, right: 300 },
+        padding: { top: 0, left: 500, right: 300, bottom: 400 },
       },
       connecting: {
         anchor: {
