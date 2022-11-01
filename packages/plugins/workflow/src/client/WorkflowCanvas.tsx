@@ -144,7 +144,7 @@ export function WorkflowCanvas() {
         </aside>
       </div>
       <div className="workflow-canvas">
-        <TriggerConfig workflow={workflow} />
+        <TriggerConfig />
         <div className={branchBlockClass}>
           <Branch entry={entry} />
         </div>
