@@ -6,7 +6,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { InfoOutlined } from '@ant-design/icons';
 
-import { SchemaComponent, useActionContext, useAPIClient, useCompile, useResourceActionContext } from '@nocobase/client';
+import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
 
 import { nodeCardClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from "../style";
 import { useFlowContext } from "../FlowContext";
@@ -128,9 +128,10 @@ function TriggerExecution() {
   );
 }
 
-export const TriggerConfig = ({ workflow }) => {
+export const TriggerConfig = () => {
   const { t } = useTranslation();
   const compile = useCompile();
+  const { workflow } = useFlowContext();
   if (!workflow || !workflow.type) {
     return null;
   }
@@ -161,7 +162,11 @@ export const TriggerConfig = ({ workflow }) => {
               'x-component': 'Action.Drawer',
               'x-decorator': 'Form',
               'x-decorator-props': {
-                initialValue: { config }
+                useValues(options) {
+                  return useRequest(() => Promise.resolve({
+                    data: { config },
+                  }), options);
+                },
               },
               properties: {
                 config: {
