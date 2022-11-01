@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/plugin-sample-custom-signup-page",
-  "version": "0.8.0-alpha.7",
+  "version": "0.8.0-alpha.8",
   "main": "lib/server/index.js",
   "devDependencies": {
-    "@nocobase/client": "0.8.0-alpha.7",
-    "@nocobase/server": "0.8.0-alpha.7",
-    "@nocobase/test": "0.8.0-alpha.7"
+    "@nocobase/client": "0.8.0-alpha.8",
+    "@nocobase/server": "0.8.0-alpha.8",
+    "@nocobase/test": "0.8.0-alpha.8"
   }
 }
