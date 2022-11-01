@@ -74,6 +74,9 @@ export const collectionFieldSchema: ISchema = {
         pageSize: 50,
         filter: {
           'interface.$not': null,
+          options: {
+            isForeignKey: { $not: true },
+          },
         },
         sort: ['sort'],
         appends: ['uiSchema'],
