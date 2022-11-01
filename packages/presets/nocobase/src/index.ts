@@ -24,18 +24,7 @@ export class PresetNocoBase extends Plugin {
       builtIn: true,
       installed: true,
     });
-    const samples = [
-      'sample-command',
-      'sample-custom-block',
-      'sample-custom-page',
-      'sample-custom-signup-page',
-      'sample-hello',
-      'sample-ratelimit',
-      'sample-shop-actions',
-      'sample-shop-events',
-      'sample-shop-i18n',
-      'sample-shop-modeling',
-    ];
+    const samples = ['sample-hello'];
     await this.app.pm.add(samples, {});
     await this.app.reload();
   }
