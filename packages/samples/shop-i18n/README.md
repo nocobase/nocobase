@@ -1,15 +1,15 @@
-# Modeling for simple shop scenario
+# I18n for simple shop scenario
 
 ## Register
 
 ```ts
-yarn pm add sample-shop-modeling
+yarn pm add sample-shop-i18n
 ```
 
 ## Activate
 
 ```bash
-yarn pm enable sample-shop-modeling
+yarn pm enable sample-shop-i18n
 ```
 
 ## Launch the app
