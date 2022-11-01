@@ -146,13 +146,14 @@ const RuleTypes = {
         title: '{{t("Reset cycle")}}',
         'x-decorator': 'FormItem',
         ['x-component']({ value, onChange }) {
+          const { t } = useTranslation();
           const shortValues = [
-            { label: '不重置', value: 0 },
-            { label: '每天', value: 1, cron: '0 0 * * *' },
-            { label: '每周一', value: 2, cron: '0 0 * * 1' },
-            { label: '每月', value: 3, cron: '0 0 1 * *' },
-            { label: '每年', value: 4, cron: '0 0 1 1 *' },
-            { label: '自定义', value: 5, cron: '* * * * *' }
+            { label: 'No reset', value: 0 },
+            { label: 'Daily', value: 1, cron: '0 0 * * *' },
+            { label: 'Every Monday', value: 2, cron: '0 0 * * 1' },
+            { label: 'Monthly', value: 3, cron: '0 0 1 * *' },
+            { label: 'Yearly', value: 4, cron: '0 0 1 1 *' },
+            { label: 'Customize', value: 5, cron: '* * * * *' }
           ];
           const option = typeof value === 'undefined'
             ? shortValues[0]
@@ -163,7 +164,7 @@ const RuleTypes = {
             <fieldset>
               <Select value={option.value} onChange={(v) => onChange(shortValues[v].cron)}>
                 {shortValues.map(item => (
-                  <Select.Option key={item.value} value={item.value}>{item.label}</Select.Option>
+                  <Select.Option key={item.value} value={item.value}>{t(item.label)}</Select.Option>
                 ))}
               </Select>
               {option.value === 5

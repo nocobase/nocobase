@@ -57,12 +57,14 @@ export class CollectionModel extends MagicAttributeModel {
     if (!collection) {
       return;
     }
+
     const fields = await this.db.getRepository('fields').find({
       filter: {
         'type.$in': ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'],
       },
       transaction,
     });
+
     for (const field of fields) {
       if (field.get('target') && field.get('target') === name) {
         await field.destroy({ transaction });

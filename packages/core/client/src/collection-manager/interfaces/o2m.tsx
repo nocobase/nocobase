@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { recordPickerSelector, recordPickerViewer, relationshipType, reverseFieldProperties } from './properties';
+import { constraintsProps, recordPickerSelector, recordPickerViewer, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 
 export const o2m: IField = {
@@ -86,8 +86,8 @@ export const o2m: IField = {
         },
       };
     } else {
-      schema['x-component'] = 'CollectionField';
-      schema.type = 'array';
+      // schema['x-component'] = 'CollectionField';
+      // schema.type = 'array';
 
       if (block === 'Form') {
         schema['properties'] = {
@@ -102,7 +102,7 @@ export const o2m: IField = {
         } else {
           schema['properties'] = {
             selector: cloneDeep(recordPickerSelector),
-          }
+          };
         }
       }
     }
@@ -240,6 +240,7 @@ export const o2m: IField = {
         },
       },
     },
+    ...constraintsProps,
     ...reverseFieldProperties,
   },
   filterable: {

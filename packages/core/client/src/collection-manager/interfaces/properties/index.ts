@@ -53,6 +53,23 @@ export const relationshipType: ISchema = {
   ],
 };
 
+export const constraintsProps = {
+  onDelete: {
+    type: 'string',
+    title: '{{t("ON DELETE")}}',
+    required: true,
+    default: 'SET NULL',
+    'x-decorator': 'FormItem',
+    'x-component': 'Select',
+    enum: [
+      { label: "{{t('SET NULL')}}", value: 'SET NULL' },
+      { label: "{{t('RESTRICT')}}", value: 'RESTRICT' },
+      { label: "{{t('CASCADE')}}", value: 'CASCADE' },
+      { label: "{{t('NO ACTION')}}", value: 'NO ACTION' },
+    ],
+  },
+};
+
 export const reverseFieldProperties: Record<string, ISchema> = {
   reverse: {
     type: 'void',

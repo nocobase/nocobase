@@ -1,6 +1,7 @@
 import { useCollectionDataSource } from '@nocobase/client';
 
-import { CollectionFieldset, VariableComponent } from '../calculators';
+import { VariableComponent } from '../calculators';
+import CollectionFieldset from '../components/CollectionFieldset';
 import { collection, filter, values } from '../schemas/collection';
 
 

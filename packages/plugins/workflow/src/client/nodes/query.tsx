@@ -2,7 +2,7 @@ import React from 'react';
 
 import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
-import { useFlowContext } from '../WorkflowCanvas';
+import { useFlowContext } from '../FlowContext';
 import { VariableComponent } from '../calculators';
 import { collection, filter } from '../schemas/collection';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';

@@ -34,7 +34,7 @@ export const PluginManagerLink = () => {
         icon={<AppstoreAddOutlined />}
         title={t('Plugin manager')}
         onClick={() => {
-          history.push('/admin/plugins');
+          history.push('/admin/pm/list');
         }}
       />
     </ActionContext.Provider>
@@ -66,10 +66,10 @@ export const SettingsCenterDropdown = () => {
       title: t('Workflow'),
       path: 'workflow/workflows',
     },
-    {
-      title: t('Graph Collections'),
-      path: 'graph/collections',
-    },
+    // {
+    //   title: t('Graph Collections'),
+    //   path: 'graph/collections',
+    // },
   ];
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>

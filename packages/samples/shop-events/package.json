@@ -1,11 +1,11 @@
 {
-  "name": "@nocobase/plugin-sample-shop-hooks",
-  "version": "0.8.0-alpha.1",
+  "name": "@nocobase/plugin-sample-shop-events",
+  "version": "0.8.0-alpha.8",
   "main": "lib/server/index.js",
   "devDependencies": {
-    "@nocobase/client": "0.8.0-alpha.1",
-    "@nocobase/server": "0.8.0-alpha.1",
-    "@nocobase/test": "0.8.0-alpha.1"
+    "@nocobase/client": "0.8.0-alpha.8",
+    "@nocobase/server": "0.8.0-alpha.8",
+    "@nocobase/test": "0.8.0-alpha.8"
   },
   "peerDependencies": {
     "@nocobase/client": "*",

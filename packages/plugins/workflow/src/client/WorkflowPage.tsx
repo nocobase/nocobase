@@ -30,7 +30,7 @@ export const WorkflowPage = () => {
                   action: 'get',
                   params: {
                     filter: params,
-                    appends: ['nodes', 'revisions.id', 'revisions.createdAt', 'revisions.current', 'revisions.executed'],
+                    appends: ['nodes', 'revisions.id', 'revisions.createdAt', 'revisions.current', 'revisions.executed', 'revisions.enabled'],
                   },
                 },
               },

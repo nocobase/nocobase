@@ -52,6 +52,7 @@ export class PluginManagerRepository extends Repository {
         name: item.get('name'),
         version: item.get('version'),
         enabled: item.get('enabled'),
+        async: true,
       });
     }
   }

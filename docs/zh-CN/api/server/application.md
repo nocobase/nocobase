@@ -1,6 +1,136 @@
 # Application
 
-基于 [Koa](https://koajs.com/) 实现的 WEB 框架，兼容所有的 Koa 插件。
+## 概览
+
+### Web服务 
+Nocobase Application 是基于 [Koa](https://koajs.com/) 实现的 WEB 框架，兼容 Koa 的 API。
+
+```javascript
+// index.js
+const { Application } = require('@nocobase/server');
+
+// 创建App实例，并配置数据库连接信息
+const app = new Application({
+    database: {
+        dialect: 'sqlite',
+        storage: ':memory:',
+    }
+});
+
+// 注册中间件 响应请求
+app.use(async ctx => {
+  ctx.body = 'Hello World';
+});
+
+// 以命令行模式启动
+app.runAsCLI();
+```
+
+在命令行中运行 `node index.js start` 启动服务后，使用 `curl` 请求服务。
+
+```bash
+$> curl localhost:3000
+Hello World
+```
+
+### 命令行工具
+Nocobase Application 中也内置了 `cli commander`，可以当作命令行工具运行。
+
+```javascript
+// cmd.js
+const {Application} = require('@nocobase/server');
+const app = new Application({
+  database: {
+    dialect: 'sqlite',
+    storage: ':memory:',
+  }
+});
+
+app.cli.command('hello').action(async () => {
+  console.log("hello world")
+});
+
+app.runAsCLI()
+```
+
+在命令行中运行
+
+```bash
+$> node cmd.js hello
+hello world
+```
+
+### 插件注入
+
+Nocobase Application 被设计为高度可扩展的框架，可以编写插件注入到应用中扩展功能。
+例如上面的 Web 服务可以替换为插件形式。
+
+```javascript
+const { Application, Plugin } = require('@nocobase/server');
+
+// 通过继承 Plugin 类来编写插件
+class HelloWordPlugin extends Plugin {
+  load() {
+    this.app.use(async (ctx, next) => {
+      ctx.body = "Hello World";
+    })
+  }
+}
+
+const app = new Application({
+  database: {
+    dialect: 'sqlite',
+    storage: ':memory:',
+  }
+});
+
+// 注入插件
+app.plugin(HelloWordPlugin, { name: 'hello-world-plugin'} );
+
+app.runAsCLI()
+```
+
+### 更多示例
+
+更加详细的插件开发文档请参考 [插件开发](./plugin.md)。
+Application 类的更多示例可参考 [examples](https://github.com/nocobase/nocobase/blob/main/examples/index.md)
+
+## 生命周期
+
+根据不同运行模式，Application 有三种生命周期：
+
+### 安装
+使用 `cli` 中的 `install` 命令调用安装。
+一般来说，插件在使用之前若需要在数据库中写入新表或者数据，都需要在安装时执行。在初次使用 Nocobase 时也需要调用安装。
+
+* 调用 `load` 方法，载入已注册的插件。
+* 触发 `beforeInstall` 事件。
+* 调用 `db.sync` 方法，同步数据库。
+* 调用 `pm.install` 方法，执行已注册插件的 `install` 方法。
+* 写入 `nocobase` 版本。
+* 触发 `afterInstall`。
+* 调用 `stop` 方法，结束安装。
+
+### 启动
+使用 `cli` 中的 `start` 命令来启动 Nocobase Web 服务。
+
+* 调用 `load` 方法，载入已注册的插件。
+* 调用 `start` 方法
+  * 触发 `beforeStart`
+  * 启动端口监听
+  * 触发 `afterStart`
+
+### 更新
+
+当需要更新 Nocobase 时，可使用 `cli` 中的 `upgrade` 命令。
+
+* 调用 `load` 方法，载入已注册的插件。
+* 触发 `beforeUpgrade`。
+* 调用 `db.migrator.up` 方法，执行数据库迁移。
+* 调用 `db.sync` 方法，同步数据库。
+* 调用 `version.update` 方法，更新 `nocobase` 版本。
+* 触发 `afterUpgrade`。
+* 调用 `stop` 方法，结束更新。
 
 ## 构造函数
 
@@ -30,29 +160,6 @@ Type
 interface ApplicationOptions {
 
 }
-```
-
-**示例**
-
-```ts
-import Application from '@nocobase/server';
-
-const app = new Application({
-  database: {
-    dialect: 'mysql',
-    host: 'localhost',
-    port: 3306,
-    username: 'root',
-    password: '123456',
-    database: 'test',
-  },
-  resourcer: {
-    prefix: '/api',
-  },
-  cors: {
-    origin: '*',
-  }
-});
 ```
 
 ## 实例成员

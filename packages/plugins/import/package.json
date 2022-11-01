@@ -1,0 +1,20 @@
+{
+  "name": "@nocobase/plugin-import",
+  "version": "0.8.0-alpha.8",
+  "main": "lib/server/index.js",
+  "license": "Apache-2.0",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
+  "devDependencies": {
+    "@nocobase/client": "0.8.0-alpha.8",
+    "@nocobase/test": "0.8.0-alpha.8"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+}

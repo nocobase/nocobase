@@ -1,22 +1,105 @@
 # Database
 
-NocoBase 内置的数据库访问类，通过封装 [Sequelize](https://sequelize.org/) 提供了更加简单的数据库访问接口和统一化的 JSON 数据库表配置方式，同时也提供了扩展字段类型和查询操作符的能力。
+## 概览
 
-Database 类继承自 EventEmitter，可以通过 `db.on('event', callback)` 监听数据库事件，以及 `db.off('event', callback)` 移除监听。
+Database 是 Nocobase 提供的数据库交互工具，为无代码、低代码应用提供了非常方便的数据库交互功能。目前支持的数据库为：
 
-## 包结构
+* SQLite 3.8.8+
+* MySQL 8.0.17+ 
+* PostgreSQL 10.0+
 
-可通过以下方式引入相关实体：
 
-```ts
-import Database, {
-  Field,
-  Collection,
-  Repository,
-  RelationRepository,
-  extend
-} from '@nocobase/database';
+### 连接数据库
+
+在 `Database` 构造函数中，可以通过传入 `options` 参数来配置数据库连接。
+
+```javascript
+const { Database } = require('@nocobase/database');
+
+// SQLite 数据库配置参数
+const database = new Database({
+  dialect: 'sqlite',
+  storage: 'path/to/database.sqlite'
+})
+
+// MySQL \ PostgreSQL 数据库配置参数
+const database = new Database({
+  dialect: /* 'postgres' 或者 'mysql' */,
+  database: 'database',
+  username: 'username',
+  password: 'password',
+  host: 'localhost',
+  port: 'port'
+})
+
 ```
+
+详细的配置参数请参考 [构造函数](#构造函数)。
+
+### 数据模型定义
+
+`Database` 通过 `Collection` 定义数据库结构，一个 `Collection` 对象代表了数据库中的一张表。
+
+```javascript
+// 定义 Collection 
+const UserCollection = database.collection({
+  name: 'users',
+  fields: [
+    {
+      name: 'name',
+      type: 'string',
+    },
+    {
+      name: 'age',
+      type: 'integer',
+    },
+  ],
+});
+
+```
+
+数据库结构定义完成之后，可使用 `sync()` 方法来同步数据库结构。
+
+```javascript
+await database.sync();
+```
+
+更加详细的 `Collection` 使用方法请参考 [Collection](/api/database/collection.md)。
+
+### 数据读写
+
+`Database` 通过 `Repository` 对数据进行操作。
+
+```javascript
+
+const UserRepository = UserCollection.repository();
+
+// 创建
+await UserRepository.create({
+  name: '张三',
+  age: 18,
+});
+
+// 查询
+const user = await UserRepository.findOne({
+  filter: {
+    name: '张三',
+  },
+});
+
+// 修改
+await UserRepository.update({
+  values: {
+    age: 20,
+  },
+});
+
+// 删除
+await UserRepository.destroy(user.id);
+```
+
+更加详细的数据 CRUD 使用方法请参考 [Repository](/api/database/repository.md)。
+
 
 ## 构造函数
 
@@ -28,7 +111,6 @@ import Database, {
 
 **参数**
 
-`options` 参数与 [Sequelize 的构造参数](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-constructor-constructor)一致的部分会透传至 Sequelize，同时 NocoBase 也会使用一些额外的参数：
 
 | 参数名 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |
@@ -43,46 +125,6 @@ import Database, {
 | `options.define?` | `Object` | `{}` | 默认的表定义参数 |
 | `options.tablePrefix?` | `string` | `''` | NocoBase 扩展，表名前缀 |
 | `options.migrator?` | `UmzugOptions` | `{}` | NocoBase 扩展，迁移管理器相关参数，参考 [Umzug](https://github.com/sequelize/umzug/blob/main/src/types.ts#L15) 实现 |
-
-**示例**
-
-```ts
-import Database from '@nocobase/database';
-
-const app = new Database({
-  dialect: 'mysql',
-  host: 'localhost',
-  port: 3306,
-  username: 'root',
-  password: '123456',
-  database: 'test',
-  tablePrefix: 'my_'
-});
-```
-
-## 实例成员
-
-### `sequelize`
-
-初始化后的 Sequelize 实例，在需要使用 sequelize 底层方法时可以调用，相关信息可以直接参考 sequelize 的文档。
-
-### `options`
-
-初始化的配置参数，包含了 Sequelize 的配置参数和 NocoBase 的额外配置参数。
-
-### `version`
-
-连接的数据库的版本信息对象，可通过 `await db.version.satisfies(<sem_ver>)` 检查是否满足特定数据库版本要求。
-
-**示例**
-
-```ts
-const r = await this.db.version.satisfies({
-  mysql: '>=8.0.17',
-  sqlite: '3.x',
-  postgres: '>=10',
-});
-```
 
 ## 迁移相关方法
 

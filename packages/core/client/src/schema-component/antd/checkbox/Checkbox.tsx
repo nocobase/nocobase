@@ -12,7 +12,12 @@ type ComposedCheckbox = React.FC<CheckboxProps> & {
 };
 
 export const Checkbox: ComposedCheckbox = connect(
-  AntdCheckbox,
+  (props: any) => {
+    const changeHandler = (val) => {
+      props?.onChange(val);
+    };
+    return <AntdCheckbox {...props} onChange={changeHandler} />;
+  },
   mapProps(
     {
       value: 'checked',
@@ -27,7 +32,7 @@ export const Checkbox: ComposedCheckbox = connect(
   ),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
-      return <div></div>;
+      return null;
     }
     return props.value ? <CheckOutlined style={{ color: '#52c41a' }} /> : null;
   }),
@@ -42,7 +47,7 @@ Checkbox.Group = connect(
   }),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
-      return <div></div>;
+      return null;
     }
     const { options = [] } = props;
     const field = useField<any>();
@@ -53,7 +58,7 @@ Checkbox.Group = connect(
         {dataSource
           .filter((option) => value.includes(option.value))
           .map((option, key) => (
-            <Tag key={key} color={option.color}>
+            <Tag key={key} color={option.color} icon={option.icon}>
               {option.label}
             </Tag>
           ))}

@@ -143,6 +143,11 @@ export default {
   "Start from": "起始于",
   "Starts from {{value}}": "从 {{value}} 开始",
   "Reset cycle": "重置周期",
+  "No reset": "不重置",
+  "Daily": "每天",
+  "Every Monday": "每周一",
+  "Monthly": "每月",
+  "Yearly": "每年",
   "Operations": "操作",
   "Choices": "选择类型",
   "Checkbox": "勾选",
@@ -229,6 +234,7 @@ export default {
   "Edit button": "编辑按钮",
   "Hide": "隐藏",
   "Enable actions": "启用操作",
+  "Import": "导入",
   "Export": "导出",
   "Customize": "自定义",
   "Function": "Function",
@@ -321,6 +327,7 @@ export default {
   "Title": "标题",
   "Select view": "切换视图",
   "Reset": "重置",
+  "Importable fields": "可导入字段",
   "Exportable fields": "可导出字段",
   "Saved successfully": "保存成功",
   "Nickname": "昵称",
@@ -510,7 +517,7 @@ export default {
 
   // plugins/workflow
   'Workflow': '工作流',
-  'Execution History': '执行历史',
+  'Execution history': '执行历史',
   'Trigger type': '触发方式',
   'Description': '描述',
   'Status': '状态',
@@ -519,9 +526,11 @@ export default {
   'Version': '版本',
   'Copy to new version': '复制到新版本',
 
+  'Loading': '加载中',
   'Load failed': '加载失败',
 
   'Trigger': '触发器',
+  'Triggered at': '触发时间',
   'Collection event': '数据表事件',
   'Trigger on': '触发时机',
   'After record added': '新增数据后',
@@ -578,9 +587,13 @@ export default {
   'Arithmetic calculation': '算术运算',
   'String operation': '字符串',
 
+  'Executed at': '执行于',
+
+  'Queueing': '队列中',
   'On going': '进行中',
   'Succeeded': '成功',
   'Failed': '失败',
+  'Pending': '等待处理',
   'Canceled': '已取消',
 
   'This node contains branches, deleting will also be preformed to them, are you sure?': '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
@@ -680,6 +693,7 @@ export default {
   "Enabled languages": "启用的语言",
   "View all plugins": "查看所有插件",
   "Print": "打印",
+  "Done": "完成",
   'Sign up successfully, and automatically jump to the sign in page': '注册成功，即将跳转到登录页面',
   'File manager': '文件管理器',
   'ACL': '访问控制',
@@ -695,4 +709,17 @@ export default {
   'Create inverse field in the target collection': '在目标数据表里创建反向关系字段',
   'Inverse field name': '反向关系字段标识',
   'Inverse field display name': '反向关系字段名称',
+  "Bulk update": "批量更新",
+  "After successful bulk update": "批量成功更新后",
+  "Bulk edit": "批量编辑",
+  "Data will be updated": "更新的数据",
+  "Selected": "选中",
+  "All": "所有",
+  "Update selected data?": "更新选中的数据吗？",
+  "Update all data?": "更新全部数据吗？",
+  "Remains the same": "不更新",
+  "Changed to": "修改为",
+  "Clear":"清空",
+  "Add attach":"增加关联",
+  "Please select the records to be updated": "请选择要更新的记录"
 }

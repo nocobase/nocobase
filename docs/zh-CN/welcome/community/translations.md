@@ -1,6 +1,6 @@
 # 翻译
 
-NocoBase 默认语言是英语，目前支持英语、简体中文。你可以帮助 NocoBase 翻译成你的语言。
+NocoBase 默认语言是英语，目前支持英语、简体中文、日语、俄语、土耳其语。你可以帮助 NocoBase 翻译成你的语言。
 
 NocoBase 语言文件在以下位置：
 
@@ -15,7 +15,7 @@ https://github.com/nocobase/nocobase/tree/main/packages/core/client/src/locale
 
 请复制 en_US.ts，命名为想要新增的语言的名字，然后对其中的字符串进行翻译。翻译完成之后，请通过 pull request 提交给 NocoBase，我们将会把它加入语言列表。之后你将在系统配置中看到新增的语言，在这里你可以配置需要显示哪些语言供用户选择。
 
-<img src="../../images/enabled-languages.jpg" style="max-width: 800px;"/>
+<img src="./translations/enabled-languages.jpg" style="max-width: 800px;"/>
 
 下面的表格中列出了 Language Culture Name, Locale File Name, Display Name.
 

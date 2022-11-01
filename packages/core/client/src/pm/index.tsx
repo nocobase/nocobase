@@ -198,7 +198,7 @@ const PluginList = (props) => {
           <Tabs
             activeKey={tabName}
             onChange={(activeKey) => {
-              history.push(`/admin/plugins/${activeKey}`);
+              history.push(`/admin/pm/list/${activeKey}`);
             }}
           >
             <Tabs.TabPane tab={t('Local')} key={'local'} />
@@ -348,13 +348,14 @@ export const PMProvider = (props) => {
   routes[1].routes.unshift(
     {
       type: 'route',
-      path: '/admin/plugins/:tabName?',
+      path: '/admin/pm/list/:tabName?',
       component: PluginList,
     },
     {
       type: 'route',
       path: '/admin/settings/:pluginName?/:tabName?',
       component: SettingsCenter,
+      uiSchemaUid: routes[1].uiSchemaUid,
     },
   );
   return (

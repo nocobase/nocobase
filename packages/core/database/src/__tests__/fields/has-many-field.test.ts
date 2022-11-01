@@ -171,4 +171,87 @@ describe('has many field', () => {
 
     expect(error).toBeInstanceOf(IdentifierError);
   });
+
+  describe('foreign key constraint', function () {
+    it('should cascade delete', async () => {
+      const Post = db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'hasMany', name: 'comments', onDelete: 'CASCADE' },
+        ],
+      });
+
+      const Comment = db.collection({
+        name: 'comments',
+        fields: [
+          { type: 'string', name: 'content' },
+          { type: 'belongsTo', name: 'post', onDelete: "CASCADE" },
+        ],
+      });
+
+      await db.sync();
+
+      const post = await Post.repository.create({
+        values: {
+          title: 'post1',
+        },
+      });
+
+      const comment = await Comment.repository.create({
+        values: {
+          content: 'comment1',
+          postId: post.id,
+        },
+      });
+
+      await Post.repository.destroy({
+        filterByTk: post.id,
+      });
+
+      expect(await Comment.repository.count()).toEqual(0);
+    });
+
+    it('should throw error when foreign key constraint is violated', async function () {
+      const Post = db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'hasMany', name: 'comments', onDelete: 'RESTRICT' },
+        ],
+      });
+
+      const Comment = db.collection({
+        name: 'comments',
+        fields: [{ type: 'string', name: 'content' }],
+      });
+
+      await db.sync();
+
+      const post = await Post.repository.create({
+        values: {
+          title: 'post1',
+        },
+      });
+
+      const comment = await Comment.repository.create({
+        values: {
+          content: 'comment1',
+          postId: post.id,
+        },
+      });
+
+      let error;
+
+      try {
+        await Post.repository.destroy({
+          filterByTk: post.id,
+        });
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeDefined();
+    });
+  });
 });

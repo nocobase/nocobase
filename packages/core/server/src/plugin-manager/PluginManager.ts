@@ -97,6 +97,15 @@ export class PluginManager {
 
   clientWrite(data: any) {
     const { method, plugins } = data;
+    if (method === 'create') {
+      try {
+        console.log(method, plugins);
+        this[method](plugins);
+      } catch (error) {
+        console.error(error.message);
+      }
+      return;
+    }
     const client = new net.Socket();
     client.connect(this.pmSock, () => {
       client.write(JSON.stringify(data));
@@ -123,17 +132,22 @@ export class PluginManager {
     });
   }
 
-  async create(name: string) {
+  async create(name: string | string[]) {
+    console.log('creating...');
+    const pluginNames = Array.isArray(name) ? name : [name];
     const { run } = require('@nocobase/cli/src/util');
-    const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
-    const generator = new PluginGenerator({
-      cwd: resolve(process.cwd(), name),
-      args: {},
-      context: {
-        name,
-      },
-    });
-    await generator.run();
+    const createPlugin = async (name) => {
+      const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
+      const generator = new PluginGenerator({
+        cwd: resolve(process.cwd(), name),
+        args: {},
+        context: {
+          name,
+        },
+      });
+      await generator.run();
+    };
+    await Promise.all(pluginNames.map((pluginName) => createPlugin(pluginName)));
     await run('yarn', ['install']);
   }
 
@@ -161,6 +175,7 @@ export class PluginManager {
         throw new Error(`plugin name invalid`);
       }
     }
+
     const instance = new plugin(this.app, {
       name,
       enabled: true,
@@ -174,9 +189,17 @@ export class PluginManager {
     return instance;
   }
 
-  async add(plugin: any, options: any = {}) {
+  async add(plugin: any, options: any = {}, transaction?: any) {
     if (Array.isArray(plugin)) {
-      return Promise.all(plugin.map((p) => this.add(p, options)));
+      const t = transaction || (await this.app.db.sequelize.transaction());
+      try {
+        const items = await Promise.all(plugin.map((p) => this.add(p, options, t)));
+        await t.commit();
+        return items;
+      } catch (error) {
+        await t.rollback();
+        throw error;
+      }
     }
     // console.log(`adding ${plugin} plugin`);
     const packageName = await PluginManager.findPackage(plugin);
@@ -186,6 +209,7 @@ export class PluginManager {
       async: true,
     });
     let model = await this.repository.findOne({
+      transaction,
       filter: { name: plugin },
     });
     if (model) {
@@ -193,6 +217,7 @@ export class PluginManager {
     }
     const { enabled, builtIn, installed, ...others } = options;
     await this.repository.create({
+      transaction,
       values: {
         name: plugin,
         version: packageJson.version,

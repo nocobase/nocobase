@@ -1,8 +1,29 @@
 # ACL
 
+## 概览
+
 ACL 为 Nocobase 中的权限控制模块。在 ACL 中注册角色、资源以及配置相应权限之后，即可对角色进行权限判断。
 
-## 概念解释
+### 基本使用
+
+```javascript
+const { ACL } = require('@nocobase/acl');
+
+const acl = new ACL();
+
+// 定义一个名称为 member 的角色
+const memberRole = acl.define({
+  role: 'member',
+});
+
+// 使 member 角色拥有 posts 资源的 list 权限
+memberRole.grantAction('posts:list');
+
+acl.can('member', 'posts:list'); // true
+acl.can('member', 'posts:edit'); // null
+```
+
+### 概念解释
 
 * 角色 (`ACLRole`)：权限判断的对象
 * 资源 (`ACLResource`)：在 Nocobase ACL 中，资源通常对应一个数据库表，概念上可类比为 Restful API 中的 Resource。

@@ -26,3 +26,7 @@ group:
 ### URL
 
 <code src="./demos/demo3.tsx" />
+
+### JSON
+
+<code src="./demos/demo4.tsx" />

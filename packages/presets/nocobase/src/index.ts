@@ -1,4 +1,5 @@
 import { Plugin } from '@nocobase/server';
+import path from 'path';
 
 export class PresetNocoBase extends Plugin {
   async addBuiltInPlugins() {
@@ -16,6 +17,7 @@ export class PresetNocoBase extends Plugin {
       'workflow',
       'client',
       'export',
+      'import',
       'audit-logs',
       'graph-collection-manager',
     ];
@@ -24,6 +26,8 @@ export class PresetNocoBase extends Plugin {
       builtIn: true,
       installed: true,
     });
+    const samples = ['sample-hello'];
+    await this.app.pm.add(samples, {});
     await this.app.reload();
   }
 
@@ -51,7 +55,15 @@ export class PresetNocoBase extends Plugin {
       await this.addBuiltInPlugins();
     });
   }
-  beforeLoad() {}
+  beforeLoad() {
+    this.db.addMigrations({
+      namespace: this.getName(),
+      directory: path.resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+  }
 }
 
 export default PresetNocoBase;
