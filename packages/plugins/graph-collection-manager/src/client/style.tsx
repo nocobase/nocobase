@@ -27,9 +27,11 @@ export const entityContainer = css`
     width: 100%;
     height: 100%;
     background-color: #fff;
-    overflow: auto;
     cursor: pointer;
-    max-height: 400px;
+    .morePorts {
+      max-height: 300px;
+      overflow: auto;
+    }
     .body-item {
       display: inline-table;
       width: 100%;
