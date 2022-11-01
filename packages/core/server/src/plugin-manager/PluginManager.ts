@@ -189,9 +189,17 @@ export class PluginManager {
     return instance;
   }
 
-  async add(plugin: any, options: any = {}) {
+  async add(plugin: any, options: any = {}, transaction?: any) {
     if (Array.isArray(plugin)) {
-      return Promise.all(plugin.map((p) => this.add(p, options)));
+      const t = transaction || (await this.app.db.sequelize.transaction());
+      try {
+        const items = await Promise.all(plugin.map((p) => this.add(p, options, t)));
+        await t.commit();
+        return items;
+      } catch (error) {
+        await t.rollback();
+        throw error;
+      }
     }
     // console.log(`adding ${plugin} plugin`);
     const packageName = await PluginManager.findPackage(plugin);
@@ -201,6 +209,7 @@ export class PluginManager {
       async: true,
     });
     let model = await this.repository.findOne({
+      transaction,
       filter: { name: plugin },
     });
     if (model) {
@@ -208,6 +217,7 @@ export class PluginManager {
     }
     const { enabled, builtIn, installed, ...others } = options;
     await this.repository.create({
+      transaction,
       values: {
         name: plugin,
         version: packageJson.version,

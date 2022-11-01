@@ -15,10 +15,7 @@ module.exports = (cli) => {
     .option('--raw')
     .option('-S|--skip-code-update')
     .action(async (options) => {
-      if (!hasTsNode()) {
-        return;
-      }
-      promptForTs();
+      if (hasTsNode()) promptForTs();
       if (hasCorePackages()) {
         // await run('yarn', ['install']);
         await runAppCommand('upgrade');
@@ -26,6 +23,11 @@ module.exports = (cli) => {
       }
       if (options.skipCodeUpdate) {
         await runAppCommand('upgrade');
+        return;
+      }
+      await runAppCommand('upgrade');
+      // If ts-node is not installed, do not do the following
+      if (!hasTsNode()) {
         return;
       }
       const version = await getVersion();

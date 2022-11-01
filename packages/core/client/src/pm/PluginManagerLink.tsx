@@ -66,10 +66,10 @@ export const SettingsCenterDropdown = () => {
       title: t('Workflow'),
       path: 'workflow/workflows',
     },
-    {
-      title: t('Graph Collections'),
-      path: 'graph/collections',
-    },
+    // {
+    //   title: t('Graph Collections'),
+    //   path: 'graph/collections',
+    // },
   ];
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
