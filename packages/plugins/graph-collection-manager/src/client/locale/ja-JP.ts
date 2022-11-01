@@ -3,5 +3,7 @@ export default {
   'Collection List': 'データテーブルリスト',
   'Full Screen': 'フルスクリーン',
   'Collection Search': '表フィルタ',
-  'Create Collection':'データテーブルの作成'
+  'Create Collection':'データテーブルの作成',
+  'Show All':'すべて',
+  'Fold':'やめる'
 };

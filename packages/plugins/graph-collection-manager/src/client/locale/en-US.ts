@@ -3,5 +3,7 @@ export default {
   'Collection List': 'Collection List',
   'Full Screen': 'Full Screen',
   'Collection Search': 'Collection Search',
-  'Create Collection':'Create Collection'
+  'Create Collection': 'Create Collection',
+  'Show All': 'Show All',
+  'Fold': 'Fold',
 };

@@ -22,6 +22,7 @@ import {
   Formula,
   useRecord,
 } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
 import { Dropdown, Popover, Tag, Badge } from 'antd';
 import React, { useRef, useState } from 'react';
 import { groupBy } from 'lodash';
@@ -52,6 +53,7 @@ const Entity: React.FC<{
     },
     id,
   } = node;
+  const { t } = useTranslation('graphPositions');
   const portsData = groupBy(ports.items, (v) => {
     if (v.isForeignKey || ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id'].includes(v.interface)) {
       return 'initPorts';
@@ -574,8 +576,8 @@ const Entity: React.FC<{
           onClick={handelOpenPorts}
         >
           {collapse
-            ? [<UpOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>收起</span>]
-            : [<DownOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>全部</span>]}
+            ? [<UpOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>{t('Fold')}</span>]
+            : [<DownOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>{t('Show All')}</span>]}
         </a>
       </div>
     </div>
