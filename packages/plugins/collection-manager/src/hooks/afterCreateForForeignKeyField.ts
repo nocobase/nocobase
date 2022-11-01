@@ -50,23 +50,37 @@ export function afterCreateForForeignKeyField(db: Database) {
       },
       transaction,
     });
+
     if (instance) {
       if (instance.type !== values.type) {
         throw new Error(`fk type invalid`);
       }
-      instance.set('sort',1);
+      instance.set('sort', 1);
       instance.set('isForeignKey', true);
       await instance.save({ transaction });
     } else {
-      await r.create({
+      const creatInstance = await r.create({
         values: {
           isForeignKey: true,
-          sort:1,
           ...values,
         },
         transaction,
       });
+      // SortField#setSortValue instance._previousDataValues[scopeKey] judgment cause create set sort:1 invalid, need update
+      creatInstance.set('sort', 1);
+      await creatInstance.save({ transaction });
     }
+    // update ID sort:0
+    await r.update({
+      filter: {
+        collectionName,
+        name: 'id',
+      },
+      values: {
+        sort: 0,
+      },
+      transaction,
+    });
   }
 
   return async (model, { transaction, context }) => {
