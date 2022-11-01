@@ -71,13 +71,14 @@ export const useCreateAction = (collectionName, targetId) => {
   const api = useAPIClient();
   const ctx = useActionContext();
   const { refreshCM } = useCollectionManager();
-  const { positionTargetNode } = useContext(GraphCollectionContext);
+  const { positionTargetNode, openPorts } = useContext(GraphCollectionContext);
   const { getValues } = useCollectionFieldFormValues();
 
   return {
     async run() {
       await form.submit();
       const values = getValues();
+      const isOpenPorts = !['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id'].includes(values.interface);
       const {
         data: { data },
       } = await api.resource('collections.fields', collectionName).create({ values });
@@ -90,6 +91,7 @@ export const useCreateAction = (collectionName, targetId) => {
       ctx.setVisible(false);
       await form.reset();
       positionTargetNode();
+      isOpenPorts && openPorts && openPorts();
       await refreshCM();
     },
   };

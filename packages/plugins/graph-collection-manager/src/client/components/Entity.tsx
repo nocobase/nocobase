@@ -107,6 +107,10 @@ const Entity: React.FC<{
       return 'orange';
     }
   };
+  const handelOpenPorts = () => {
+    targetGraph.getCellById(item.key).toFront();
+    setCollapse(!collapse);
+  };
 
   return (
     <div className={cx(entityContainer)} style={{ boxShadow: attrs?.boxShadow }}>
@@ -273,7 +277,7 @@ const Entity: React.FC<{
                     {compile(property.uiSchema?.title)}
                   </div>
                   <div className="type">{compile(getInterface(property.interface).title)}</div>
-                  <div className="field-operator">
+                  <div className="field-operator" key={property.id}>
                     <SchemaComponentProvider
                       components={{
                         FormItem,
@@ -303,7 +307,12 @@ const Entity: React.FC<{
                       }}
                       scope={{ useAsyncDataSource, loadCollections, useCancelAction, useNewId, useCurrentFields }}
                     >
-                      <CollectionNodeProvder record={collectionData.current} setTargetNode={setTargetNode} node={node}>
+                      <CollectionNodeProvder
+                        record={collectionData.current}
+                        setTargetNode={setTargetNode}
+                        node={node}
+                        handelOpenPorts={handelOpenPorts}
+                      >
                         <SchemaComponent
                           scope={useCancelAction}
                           schema={{
@@ -562,10 +571,7 @@ const Entity: React.FC<{
               color: rgb(99 90 88);
             }
           `}
-          onClick={() => {
-            targetGraph.getCellById(item.key).toFront();
-            setCollapse(!collapse);
-          }}
+          onClick={handelOpenPorts}
         >
           {collapse
             ? [<UpOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>收起</span>]

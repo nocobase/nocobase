@@ -1,24 +1,25 @@
+import React, { createContext } from 'react';
 
-
-import React, {createContext } from 'react';
-
- interface CollectionNodeOptions {
-    setTargetNode?:Function;
-    node?: Node | any;
-    record?:Object;
-
-  }
+interface CollectionNodeOptions {
+  setTargetNode?: Function;
+  node?: Node | any;
+  record?: Object;
+  handelOpenPorts?: Function;
+}
 export const GraphCollectionContext = createContext(null);
 
-export const  CollectionNodeProvder: React.FC <CollectionNodeOptions>= (props:any) => {
-  const { record,setTargetNode,node} = props;
-  
+export const CollectionNodeProvder: React.FC<CollectionNodeOptions> = (props: any) => {
+  const { record, setTargetNode, node, handelOpenPorts } = props;
+
   return (
     <GraphCollectionContext.Provider
       value={{
         node,
         record,
-        positionTargetNode:(target)=>{setTargetNode(target||node)}
+        positionTargetNode: (target) => {
+          setTargetNode(target || node);
+        },
+        openPorts: handelOpenPorts,
       }}
     >
       {props.children}
