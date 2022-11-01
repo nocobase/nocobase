@@ -9,7 +9,6 @@ const { getPortPromise } = require('portfinder');
  * @param {Command} cli
  */
 module.exports = (cli) => {
-  const binPath = resolve(__dirname, '../../node_modules/.bin');
   const { APP_PACKAGE_ROOT } = process.env;
   cli
     .command('dev')
@@ -21,7 +20,7 @@ module.exports = (cli) => {
     .action(async (opts) => {
       promptForTs();
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
-        run(resolve(binPath, 'ts-node'), [
+        run('ts-node', [
           '-P',
           './tsconfig.server.json',
           '-r',
@@ -75,7 +74,8 @@ module.exports = (cli) => {
           env: {
             PORT: clientPort,
             APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
-            PROXY_TARGET_URL: process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
+            PROXY_TARGET_URL:
+              process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
           },
         });
       }

@@ -1,7 +1,10 @@
 import { Plugin } from '@nocobase/server';
+import { resolve } from 'path';
 
 export class PresetNocoBase extends Plugin {
   async addBuiltInPlugins() {
+    const nodeModules = resolve(__dirname, '../../node_modules');
+
     const plugins = [
       'error-handler',
       'collection-manager',
@@ -18,11 +21,14 @@ export class PresetNocoBase extends Plugin {
       'export',
       'audit-logs',
     ];
+
     await this.app.pm.add(plugins, {
       enabled: true,
       builtIn: true,
       installed: true,
+      nodeModules,
     });
+
     const samples = [
       'sample-command',
       'sample-custom-block',
@@ -35,7 +41,11 @@ export class PresetNocoBase extends Plugin {
       'sample-shop-i18n',
       'sample-shop-modeling',
     ];
-    await this.app.pm.add(samples, {});
+
+    await this.app.pm.add(samples, {
+      nodeModules,
+    });
+
     await this.app.reload();
   }
 

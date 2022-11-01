@@ -10,7 +10,9 @@
     }
   ],
   "dependencies": {
-    "@nocobase/server": "0.8.0-alpha.1"
+    "@nocobase/server": "0.8.0-alpha.1",
+    "koa-send": "^5.0.1",
+    "koa-static": "^5.0.0"
   },
   "devDependencies": {
     "@nocobase/test": "0.8.0-alpha.1"

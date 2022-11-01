@@ -11,6 +11,9 @@ import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './PluginManagerRepository';
 
+type PluginClass = new (app: Application, options?: any) => Plugin;
+type PluginIdentify = string | PluginClass;
+
 export interface PluginManagerOptions {
   app: Application;
   plugins?: any[];
@@ -35,9 +38,11 @@ export class PluginManager {
     this.app = options.app;
     const f = resolve(process.cwd(), 'storage', 'pm.sock');
     this.pmSock = xpipe.eq(this.app.options.pmSock || f);
+
     this.app.db.registerRepositories({
       PluginManagerRepository,
     });
+
     this.collection = this.app.db.collection(collectionOptions);
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
@@ -161,11 +166,13 @@ export class PluginManager {
     return pm;
   }
 
-  addStatic(plugin?: any, options?: any) {
+  addStatic(plugin?: PluginIdentify, options?: any) {
     if (!options?.async) {
       this._tmpPluginArgs.push([plugin, options]);
     }
+
     let name: string;
+
     if (typeof plugin === 'string') {
       name = plugin;
       plugin = PluginManager.resolvePlugin(plugin);
@@ -175,37 +182,47 @@ export class PluginManager {
         throw new Error(`plugin name invalid`);
       }
     }
+
     const instance = new plugin(this.app, {
       name,
       enabled: true,
       ...options,
     });
+
     const pluginName = instance.getName();
+
     if (this.plugins.has(pluginName)) {
       throw new Error(`plugin name [${pluginName}] exists`);
     }
+
     this.plugins.set(pluginName, instance);
+
     return instance;
   }
 
-  async add(plugin: any, options: any = {}) {
+  async add(plugin: string, options: any = {}) {
     if (Array.isArray(plugin)) {
       return Promise.all(plugin.map((p) => this.add(p, options)));
     }
-    // console.log(`adding ${plugin} plugin`);
+
     const packageName = await PluginManager.findPackage(plugin);
     const packageJson = require(`${packageName}/package.json`);
+
     const instance = this.addStatic(plugin, {
       ...options,
       async: true,
     });
+
     let model = await this.repository.findOne({
       filter: { name: plugin },
     });
+
     if (model) {
       throw new Error(`${plugin} plugin already exists`);
     }
+
     const { enabled, builtIn, installed, ...others } = options;
+
     await this.repository.create({
       values: {
         name: plugin,
@@ -218,6 +235,7 @@ export class PluginManager {
         },
       },
     });
+
     const file = resolve(
       process.cwd(),
       'packages',
@@ -225,6 +243,7 @@ export class PluginManager {
       'client/src/plugins',
       `${plugin}.ts`,
     );
+
     if (!fs.existsSync(file)) {
       try {
         require.resolve(`${packageName}/client`);
@@ -314,6 +333,7 @@ export class PluginManager {
 
   static getPackageName(name: string) {
     const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
+
     for (const prefix of prefixes) {
       try {
         require.resolve(`${prefix}${name}`);
@@ -322,6 +342,7 @@ export class PluginManager {
         continue;
       }
     }
+
     throw new Error(`${name} plugin does not exist`);
   }
 
@@ -346,7 +367,7 @@ export class PluginManager {
     throw new Error(`${name} plugin does not exist`);
   }
 
-  static resolvePlugin(pluginName: string) {
+  static resolvePlugin(pluginName: string): PluginClass {
     const packageName = this.getPackageName(pluginName);
     return requireModule(packageName);
   }
