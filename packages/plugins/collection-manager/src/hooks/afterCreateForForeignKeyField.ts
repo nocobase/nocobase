@@ -2,7 +2,14 @@ import Database from '@nocobase/database';
 
 export function afterCreateForForeignKeyField(db: Database) {
   function generateFkOptions(collectionName: string, foreignKey: string) {
-    const M = db.getModel(collectionName);
+    const collection = db.getCollection(collectionName);
+
+    if (!collection) {
+      throw new Error('collection not found');
+    }
+
+    const M = collection.model;
+
     const attr = M.rawAttributes[foreignKey];
     if (!attr) {
       throw new Error(`${collectionName}.${foreignKey} does not exists`);
@@ -88,7 +95,9 @@ export function afterCreateForForeignKeyField(db: Database) {
     if (!context) {
       return;
     }
+
     const { type, interface: interfaceType, collectionName, target, through, foreignKey, otherKey } = model.get();
+
     // foreign key in target collection
     if (['oho', 'o2m'].includes(interfaceType)) {
       const values = generateFkOptions(target, foreignKey);
@@ -100,6 +109,7 @@ export function afterCreateForForeignKeyField(db: Database) {
         transaction,
       });
     }
+
     // foreign key in source collection
     else if (['obo', 'm2o'].includes(interfaceType)) {
       const values = generateFkOptions(collectionName, foreignKey);
@@ -108,6 +118,7 @@ export function afterCreateForForeignKeyField(db: Database) {
         transaction,
       });
     }
+
     // foreign key in through collection
     else if (['linkTo', 'm2m'].includes(interfaceType)) {
       if (type !== 'belongsToMany') {

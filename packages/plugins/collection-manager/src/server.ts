@@ -15,6 +15,7 @@ import {
   beforeDestroyForeignKey,
   beforeInitOptions
 } from './hooks';
+
 import { CollectionModel, FieldModel } from './models';
 
 export class CollectionManagerPlugin extends Plugin {
@@ -83,6 +84,7 @@ export class CollectionManagerPlugin extends Plugin {
         });
       }
     });
+  
     // after migrate
     this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
 
