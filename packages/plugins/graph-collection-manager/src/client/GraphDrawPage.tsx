@@ -66,7 +66,7 @@ async function layout(createPositions) {
               return v.collectionName === node.store.data.name;
             })) ||
           {};
-        const calculatedPosition = { x: col * 325 + 50, y: row * 460 + 60 };
+        const calculatedPosition = { x: col * 325 + 50, y: row * 400 + 60 };
         node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
         if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
           // 位置表中没有的表都自动保存
@@ -435,7 +435,7 @@ export const GraphDrawPage = React.memo(() => {
           let position;
           if (referenceNode.x > 4500) {
             referenceNode = minBy(yNodes, 'x');
-            position = { x: referenceNode.x, y: referenceNode.y + 480 };
+            position = { x: referenceNode.x, y: referenceNode.y + 400 };
           } else {
             position = { x: referenceNode.x + 350, y: referenceNode.y };
           }
