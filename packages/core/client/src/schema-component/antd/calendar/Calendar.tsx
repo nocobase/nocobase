@@ -112,23 +112,26 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
       push();
 
       if (!cron) return;
-      const interval = parseExpression(cron, {
-        startDate: startDate.toDate(),
-        endDate: endDate.toDate(),
-        iterator: true,
-        currentDate: start.toDate(),
-        utc: true,
-      });
-
-      while (interval.hasNext()) {
-        const { value } = interval.next();
-        if (
-          push({
-            start: moment(value.toDate()),
-            end: moment(value.toDate()).add(intervalTime, 'millisecond'),
-          })
-        )
-          break;
+      try {
+        const interval = parseExpression(cron, {
+          startDate: startDate.toDate(),
+          endDate: endDate.toDate(),
+          iterator: true,
+          currentDate: start.toDate(),
+          utc: true,
+        });
+        while (interval.hasNext()) {
+          const { value } = interval.next();
+          if (
+            push({
+              start: moment(value.toDate()),
+              end: moment(value.toDate()).add(intervalTime, 'millisecond'),
+            })
+          )
+            break;
+        }
+      } catch (err) {
+        console.error(err);
       }
     });
     return events;
