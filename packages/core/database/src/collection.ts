@@ -22,6 +22,7 @@ export type CollectionSortable = string | boolean | { name?: string; scopeKey?: 
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   tableName?: string;
+  inherits?: string[] | string;
   filterTargetKey?: string;
   fields?: FieldOptions[];
   model?: string | ModelCtor<Model>;
