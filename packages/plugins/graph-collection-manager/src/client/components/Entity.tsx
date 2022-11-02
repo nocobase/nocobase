@@ -55,7 +55,11 @@ const Entity: React.FC<{
   } = node;
   const { t } = useTranslation('graphPositions');
   const portsData = groupBy(ports.items, (v) => {
-    if (v.isForeignKey || ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id'].includes(v.interface)) {
+    if (
+      v.isForeignKey ||
+      v.primaryKey ||
+      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id'].includes(v.interface)
+    ) {
       return 'initPorts';
     } else {
       return 'morePorts';
@@ -103,7 +107,7 @@ const Entity: React.FC<{
     );
   };
   const typeColor = (v) => {
-    if (v.isForeignKey || v.interface === 'id') {
+    if (v.isForeignKey || v.primaryKey || v.interface === 'id') {
       return 'red';
     } else if (['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(v.interface)) {
       return 'orange';
