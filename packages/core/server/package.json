@@ -28,6 +28,7 @@
     "koa-static": "^5.0.0",
     "lodash": "^4.17.21",
     "semver": "^7.3.7",
+    "winston": "^3.8.2",
     "xpipe": "^1.0.5"
   },
   "devDependencies": {

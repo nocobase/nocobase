@@ -3,7 +3,8 @@ import { resolve } from 'path';
 
 export class PresetNocoBase extends Plugin {
   async addBuiltInPlugins() {
-    const nodeModules = resolve(__dirname, '../../node_modules');
+    const nodeModules = resolve(__dirname, '../node_modules');
+    this.app.pm.addResolvePath(nodeModules);
 
     const plugins = [
       'error-handler',
@@ -26,7 +27,6 @@ export class PresetNocoBase extends Plugin {
       enabled: true,
       builtIn: true,
       installed: true,
-      nodeModules,
     });
 
     const samples = [
@@ -42,9 +42,7 @@ export class PresetNocoBase extends Plugin {
       'sample-shop-modeling',
     ];
 
-    await this.app.pm.add(samples, {
-      nodeModules,
-    });
+    await this.app.pm.add(samples, {});
 
     await this.app.reload();
   }

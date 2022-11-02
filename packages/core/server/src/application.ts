@@ -16,6 +16,7 @@ import { createACL } from './acl';
 import { AppManager } from './app-manager';
 import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
+import logger from './logger';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 
@@ -203,6 +204,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected init() {
     const options = this.options;
+    logger.debug('init application', { options });
+
     // @ts-ignore
     this._events = [];
     // @ts-ignore

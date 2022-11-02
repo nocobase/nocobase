@@ -13,12 +13,17 @@
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@formily/json-schema": "^2.0.15",
-    "@nocobase/server": "0.8.0-alpha.1"
+    "@nocobase/server": "0.8.0-alpha.1",
+    "lodash": "^4.17.21",
+    "sequelize": "^6.25.3"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugin-error-handler"
   },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990",
+  "devDependencies": {
+    "@types/lodash": "^4.14.177"
+  }
 }

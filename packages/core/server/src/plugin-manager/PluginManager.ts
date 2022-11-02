@@ -6,6 +6,7 @@ import net from 'net';
 import { resolve } from 'path';
 import xpipe from 'xpipe';
 import Application from '../application';
+import logger from '../logger';
 import { Plugin } from '../plugin';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
@@ -33,6 +34,8 @@ export class PluginManager {
   server: net.Server;
   pmSock: string;
   _tmpPluginArgs = [];
+
+  static resolvePaths: string[] = [];
 
   constructor(options: PluginManagerOptions) {
     this.app = options.app;
@@ -80,6 +83,14 @@ export class PluginManager {
       }
     });
     this.addStaticMultiple(options.plugins);
+  }
+
+  addResolvePath(path: string) {
+    if (PluginManager.resolvePaths.includes(path)) {
+      return;
+    }
+
+    PluginManager.resolvePaths.push(path);
   }
 
   addStaticMultiple(plugins: any) {
@@ -167,6 +178,8 @@ export class PluginManager {
   }
 
   addStatic(plugin?: PluginIdentify, options?: any) {
+    logger.debug('addStatic', { plugin, options });
+
     if (!options?.async) {
       this._tmpPluginArgs.push([plugin, options]);
     }
@@ -200,13 +213,12 @@ export class PluginManager {
     return instance;
   }
 
-  async add(plugin: string, options: any = {}) {
+  async add(plugin: string | string[], options: any = {}) {
     if (Array.isArray(plugin)) {
       return Promise.all(plugin.map((p) => this.add(p, options)));
     }
 
-    const packageName = await PluginManager.findPackage(plugin);
-    const packageJson = require(`${packageName}/package.json`);
+    const { entryPath, packageName } = PluginManager.resolvePackageEntry(plugin);
 
     const instance = this.addStatic(plugin, {
       ...options,
@@ -226,7 +238,7 @@ export class PluginManager {
     await this.repository.create({
       values: {
         name: plugin,
-        version: packageJson.version,
+        version: 123,
         enabled: !!enabled,
         builtIn: !!builtIn,
         installed: !!installed,
@@ -331,13 +343,65 @@ export class PluginManager {
     this.app.reload();
   }
 
-  static getPackageName(name: string) {
-    const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
+  // static getPackageName(name: string) {
+  //   const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
 
-    for (const prefix of prefixes) {
+  //   for (const prefix of prefixes) {
+  //     try {
+  //       const resolvedPath = require.resolve(`${prefix}${name}`);
+  //       logger.debug('resolvedPath', { name, resolvedPath });
+  //       const resolvedModule = require(resolvedPath);
+  //       logger.debug('resolvedModule', { name, resolvedModule });
+
+  //       return `${prefix}${name}`;
+  //     } catch (error) {
+  //       continue;
+  //     }
+  //   }
+
+  //   throw new Error(`${name} plugin does not exist`);
+  // }
+
+  // static async findPackage(name: string) {
+  //   try {
+  //     const packageName = this.getPackageName(name);
+  //     return packageName;
+  //   } catch (error) {
+  //     const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
+  //     for (const prefix of prefixes) {
+  //       try {
+  //         const packageName = `${prefix}${name}`;
+  //         await execa('npm', ['v', packageName, 'versions']);
+  //         console.log(`${packageName} is downloading...`);
+  //         await execa('yarn', ['add', packageName, '-W']);
+  //         return packageName;
+  //       } catch (error) {
+  //         continue;
+  //       }
+  //     }
+  //   }
+  //   throw new Error(`${name} plugin does not exist`);
+  // }
+
+  // find plugin entry path by name
+  static resolvePackageEntry(name: string): {
+    entryPath: string;
+    packageName: string;
+  } {
+    const suggestdPluginFullNames = PluginManager.suggestdPluginFullNames(name);
+
+    for (const suggestdPluginFullName of suggestdPluginFullNames) {
       try {
-        require.resolve(`${prefix}${name}`);
-        return `${prefix}${name}`;
+        const requirePaths = require.resolve.paths(suggestdPluginFullName);
+
+        const resolvedPath = require.resolve(suggestdPluginFullName, {
+          paths: [...this.resolvePaths, ...requirePaths],
+        });
+
+        return {
+          entryPath: resolvedPath,
+          packageName: suggestdPluginFullName,
+        };
       } catch (error) {
         continue;
       }
@@ -346,30 +410,18 @@ export class PluginManager {
     throw new Error(`${name} plugin does not exist`);
   }
 
-  static async findPackage(name: string) {
-    try {
-      const packageName = this.getPackageName(name);
-      return packageName;
-    } catch (error) {
-      const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
-      for (const prefix of prefixes) {
-        try {
-          const packageName = `${prefix}${name}`;
-          await execa('npm', ['v', packageName, 'versions']);
-          console.log(`${packageName} is downloading...`);
-          await execa('yarn', ['add', packageName, '-W']);
-          return packageName;
-        } catch (error) {
-          continue;
-        }
-      }
-    }
-    throw new Error(`${name} plugin does not exist`);
+  static suggestdPluginFullNames(name: string) {
+    const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
+    return prefixes.map((prefix) => `${prefix}${name}`);
   }
 
   static resolvePlugin(pluginName: string): PluginClass {
-    const packageName = this.getPackageName(pluginName);
-    return requireModule(packageName);
+    const { entryPath } = this.resolvePackageEntry(pluginName);
+
+    const pluginModule = requireModule(entryPath);
+    logger.debug('plugin resolved', { pluginName });
+
+    return pluginModule;
   }
 }
 

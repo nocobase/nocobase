@@ -1,7 +1,5 @@
-import { Transaction, Transactionable } from 'sequelize';
+import { Model, Transaction, Transactionable } from '@nocobase/database';
 import parse from 'json-templates';
-
-import { Model } from "@nocobase/database";
 
 import Plugin from '.';
 import ExecutionModel from './models/Execution';
@@ -10,15 +8,11 @@ import FlowNodeModel from './models/FlowNode';
 import calculators from './calculators';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 
-
-
 export interface ProcessorOptions extends Transactionable {
   // TODO(temp): pass request context here for $isVar and other operators
   _context?: any;
-  plugin: Plugin
+  plugin: Plugin;
 }
-
-
 
 export default class Processor {
   static StatusMap = {
@@ -35,8 +29,7 @@ export default class Processor {
   jobsMap = new Map<number, JobModel>();
   jobsMapByNodeId: { [key: number]: any } = {};
 
-  constructor(public execution: ExecutionModel, public options: ProcessorOptions) {
-  }
+  constructor(public execution: ExecutionModel, public options: ProcessorOptions) {}
 
   // make dual linked nodes list then cache
   private makeNodes(nodes = []) {
@@ -74,15 +67,14 @@ export default class Processor {
 
     const { sequelize } = (<typeof ExecutionModel>this.execution.constructor).database;
 
-    // @ts-ignore
-    const transaction = options.transaction && !options.transaction.finished
-      ? options.transaction
-      : await sequelize.transaction();
+    const transaction =
+      options.transaction && !(options.transaction as any).finished
+        ? options.transaction
+        : await sequelize.transaction();
 
     // @ts-ignore
     if (this.execution.transaction !== transaction.id) {
-
-    // @ts-ignore
+      // @ts-ignore
       await this.execution.update({ transaction: transaction.id }, { transaction });
     }
     return transaction;
@@ -120,7 +112,7 @@ export default class Processor {
     }
     await this.prepare();
     if (this.nodes.length) {
-      const head = this.nodes.find(item => !item.upstream);
+      const head = this.nodes.find((item) => !item.upstream);
       await this.run(head, { result: execution.context });
     } else {
       await this.exit(null);
@@ -157,9 +149,10 @@ export default class Processor {
     } catch (err) {
       // for uncaught error, set to rejected
       job = {
-        result: err instanceof Error
-          ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
-          : err,
+        result:
+          err instanceof Error
+            ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
+            : err,
         status: JOB_STATUS.REJECTED,
       };
       // if previous job is from resuming
@@ -241,15 +234,18 @@ export default class Processor {
       [job] = await model.update(payload, {
         where: { id: payload.id },
         returning: true,
-        transaction: this.transaction
+        transaction: this.transaction,
       });
     } else {
-      job = await model.create({
-        ...payload,
-        executionId: this.execution.id,
-      }, {
-        transaction: this.transaction
-      });
+      job = await model.create(
+        {
+          ...payload,
+          executionId: this.execution.id,
+        },
+        {
+          transaction: this.transaction,
+        },
+      );
     }
     this.jobsMap.set(job.id, job);
     this.jobsMapByNodeId[job.nodeId] = job.result;
@@ -259,7 +255,7 @@ export default class Processor {
 
   getBranches(node: FlowNodeModel): FlowNodeModel[] {
     return this.nodes
-      .filter(item => item.upstream === node && item.branchIndex !== null)
+      .filter((item) => item.upstream === node && item.branchIndex !== null)
       .sort((a, b) => a.branchIndex - b.branchIndex);
   }
 
@@ -302,7 +298,7 @@ export default class Processor {
     const injectedFns = {};
     const scope = {
       execution: this.execution,
-      node
+      node,
     };
     for (let [name, fn] of calculators.getEntities()) {
       injectedFns[name] = fn.bind(scope);
@@ -311,7 +307,7 @@ export default class Processor {
     return parse(value)({
       $context: this.execution.context,
       $jobsMapByNodeId: this.jobsMapByNodeId,
-      $fn: injectedFns
+      $fn: injectedFns,
     });
   }
 }

@@ -18,7 +18,10 @@
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
     "json-templates": "^4.2.0",
-    "react-js-cron": "^1.4.0"
+    "koa-compose": "^4.1.0",
+    "lodash": "^4.17.21",
+    "react-js-cron": "^1.4.0",
+    "sequelize": "^6.25.3"
   },
   "devDependencies": {
     "@nocobase/test": "0.8.0-alpha.1"

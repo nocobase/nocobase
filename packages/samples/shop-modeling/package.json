@@ -8,7 +8,8 @@
   "devDependencies": {
     "@nocobase/client": "0.8.0-alpha.1",
     "@nocobase/server": "0.8.0-alpha.1",
-    "@nocobase/test": "0.8.0-alpha.1"
+    "@nocobase/test": "0.8.0-alpha.1",
+    "@nocobase/database": "0.8.0-alpha.1"
   },
   "peerDependencies": {
     "@nocobase/client": "*",
