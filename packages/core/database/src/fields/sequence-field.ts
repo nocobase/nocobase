@@ -44,7 +44,7 @@ sequencePatterns.register('integer', {
     const { lastRecord = null } = this.options;
 
     if (typeof options.current === 'undefined') {
-      if (lastRecord) {
+      if (lastRecord && lastRecord.get(this.options.name)) {
         // if match current pattern
         const matcher = this.match(lastRecord.get(this.options.name));
         if (matcher) {
