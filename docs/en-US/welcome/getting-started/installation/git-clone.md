@@ -27,7 +27,7 @@ yarn install
 
 ## 4. Set environment variables
 
-The environment variables required by NocoBase are stored in the root `.env` file, modify the environment variables according to the actual situation, if you don't know how to change them, [click here for environment variables description](../../development/env.md), or you can leave it as default.
+The environment variables required by NocoBase are stored in the root `.env` file, modify the environment variables according to the actual situation, if you don't know how to change them, [click here for environment variables description](/api/env), or you can leave it as default.
 
 ```bash
 # Using sqlite database
