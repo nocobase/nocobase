@@ -191,6 +191,8 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 name: 'left',
               },
             },
+            associated: [data[i].name],
+            m2m: [id1, id2],
             ...commonAttrs,
           });
           edges.push({
@@ -209,6 +211,8 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 name: 'left',
               },
             },
+            associated: [data[i].name],
+            m2m: [id1, id2],
             ...commonAttrs,
           });
         }

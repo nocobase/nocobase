@@ -117,7 +117,6 @@ const Entity: React.FC<{
     targetGraph.getCellById(item.key).toFront();
     setCollapse(!collapse);
   };
-
   return (
     <div className={cx(entityContainer)} style={{ boxShadow: attrs?.boxShadow }}>
       <div className={headClass}>
@@ -271,7 +270,7 @@ const Entity: React.FC<{
                   id={property.id}
                   style={{
                     background:
-                      attrs?.targetPort === property.id ||
+                      attrs?.[property.id] ||
                       attrs?.sourcePort === property.id ||
                       attrs?.associated?.includes(property.name)
                         ? '#e6f7ff'
@@ -434,7 +433,7 @@ const Entity: React.FC<{
                       id={property.id}
                       style={{
                         background:
-                          attrs?.targetPort === property.id ||
+                          attrs?.[property.id] ||
                           attrs?.sourcePort === property.id ||
                           attrs?.associated?.includes(property.name)
                             ? '#e6f7ff'
