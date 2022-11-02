@@ -174,10 +174,12 @@ export const ConfigurationTable = () => {
   const { collections = [] } = useCollectionManager();
   const compile = useCompile();
   const loadCollections = async (field: any) => {
-    return collections?.map((item: any) => ({
-      label: compile(item.title),
-      value: item.name,
-    }));
+    return collections
+      ?.filter((item) => !(item.autoCreate && item.isThrough))
+      .map((item: any) => ({
+        label: compile(item.title),
+        value: item.name,
+      }));
   };
   const ctx = useContext(SchemaComponentContext);
   return (
