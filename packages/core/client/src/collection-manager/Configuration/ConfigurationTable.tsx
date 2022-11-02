@@ -11,7 +11,7 @@ import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
-import {CollectionFieldsTable} from "@nocobase/client";
+import { CollectionFieldsTable } from ".";
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
