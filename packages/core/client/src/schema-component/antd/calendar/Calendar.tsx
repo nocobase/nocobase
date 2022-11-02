@@ -77,31 +77,35 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
       const end = moment(get(item, fieldNames.end) || start);
       const intervalTime = end.diff(start, 'millisecond', true);
 
-      const startDate = moment(date).startOf('month');
-      const endDate = startDate.endOf('month');
+      const dateM = moment(date);
+      const startDate = dateM.clone().startOf('month');
+      const endDate = startDate.clone().endOf('month');
       if (view === 'month') {
         startDate.startOf('week');
         endDate.endOf('week');
       }
-
       const push = (fields?: Record<string, any>) => {
-        let out = false;
-
+        // 必须在这个月的开始时间和结束时间，切在日程的开始时间之后
+        const eventStart: moment.Moment = fields?.start || start;
+        if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
+          return;
+        }
         const event = {
           id: get(item, fieldNames.id || 'id'),
           title: get(item, fieldNames.title) || t('Untitle'),
-          start,
-          end,
+          end: eventStart.add(intervalTime, 'millisecond'),
           ...fields,
+          start: eventStart,
         };
 
+        let out = false;
         const res = exclude?.some((d) => {
           if (d.endsWith('_after')) {
             d = d.replace(/_after$/, '');
             out = true;
-            return event.start.isSameOrAfter(d, 'millisecond');
+            return event.start.isSameOrAfter(d);
           } else {
-            return event.start.isSame(d, 'millisecond');
+            return event.start.isSame(d);
           }
         });
 
@@ -109,29 +113,52 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
         events.push(event);
       };
 
-      push();
-
-      if (!cron) return;
-      try {
-        const interval = parseExpression(cron, {
-          startDate: startDate.toDate(),
-          endDate: endDate.toDate(),
-          iterator: true,
-          currentDate: start.toDate(),
-          utc: true,
-        });
-        while (interval.hasNext()) {
-          const { value } = interval.next();
+      if (cron === 'every_week') {
+        let nextStart = start
+          .clone()
+          .year(startDate.year())
+          .month(startDate.month())
+          .date(startDate.date())
+          .day(start.day());
+        while (nextStart.isBefore(endDate)) {
           if (
             push({
-              start: moment(value.toDate()),
-              end: moment(value.toDate()).add(intervalTime, 'millisecond'),
+              start: nextStart.clone(),
             })
-          )
+          ) {
             break;
+          }
+          nextStart.add(1, 'week');
         }
-      } catch (err) {
-        console.error(err);
+      } else if (cron === 'every_month') {
+        push({
+          start: start.clone().year(dateM.year()).month(dateM.month()),
+        });
+      } else if (cron === 'every_year') {
+        push({ start: start.clone().year(dateM.year()) });
+      } else {
+        push();
+        if (!cron) return;
+        try {
+          const interval = parseExpression(cron, {
+            startDate: startDate.toDate(),
+            endDate: endDate.toDate(),
+            iterator: true,
+            currentDate: start.toDate(),
+            utc: true,
+          });
+          while (interval.hasNext()) {
+            const { value } = interval.next();
+            if (
+              push({
+                start: moment(value.toDate()),
+              })
+            )
+              break;
+          }
+        } catch (err) {
+          console.error(err);
+        }
       }
     });
     return events;
@@ -172,7 +199,7 @@ export const Calendar: any = observer((props: any) => {
   const [record, setRecord] = useState<any>({});
 
   return (
-    <div {...props} style={{ height: 700 }}>
+    <div style={{ height: 700 }}>
       <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
       <BigCalendar
         popup

@@ -26,7 +26,7 @@ export const DeleteEvent = observer(() => {
       await resource.update({
         filterByTk,
         values: {
-          exclude: [...exclude, value],
+          exclude: (exclude || []).concat(value),
         },
       });
     }
