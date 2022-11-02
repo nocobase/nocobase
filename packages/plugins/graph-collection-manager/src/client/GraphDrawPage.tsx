@@ -350,7 +350,7 @@ export const GraphDrawPage = React.memo(() => {
         );
         const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
         const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
-        targeNode.setAttrs({ [edge.store.data.target.port]: edge.store.data.target.port});
+        targeNode.setAttrs({ [edge.store.data.target.port]: edge.store.data.target.port });
         sourceNode.setAttrs({ sourcePort: edge.store.data.source.port });
         sourceNode.setAttrs({ associated });
         targeNode.setAttrs({ associated });
@@ -515,14 +515,21 @@ export const GraphDrawPage = React.memo(() => {
   const handleSelectCollection = (value) => {
     const nodes = targetGraph.getNodes();
     let visibleNode = [];
+    if (targetNode && typeof targetNode !== 'string') {
+      targetNode.removeAttrs();
+    }
     if (value) {
       visibleNode.push(value.key);
-      if (targetNode && typeof targetNode !== 'string') {
-        targetNode.removeAttrs();
-      }
       targetNode = targetGraph.getCellById(value.key);
       const connectEdges = targetGraph.getConnectedEdges(targetNode);
       connectEdges.map((v) => {
+        if (v.store.data.m2m) {
+          v.store.data.m2m.forEach((i) => {
+            const m2mEdge = targetGraph.getCellById(i);
+            visibleNode.push(m2mEdge.getSourceCellId());
+            visibleNode.push(m2mEdge.getTargetCellId());
+          });
+        }
         visibleNode.push(v.getSourceCellId());
         visibleNode.push(v.getTargetCellId());
       });
