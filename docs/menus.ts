@@ -116,7 +116,20 @@ export default {
       type: 'group',
       children: [
         '/development/server/index',
-        '/development/server/collections-fields',
+        {
+          title: 'Collections & Fields',
+          'title.zh-CN': '数据表和字段',
+          type: 'subMenu',
+          children: [
+            '/development/server/collections/index',
+            '/development/server/collections/options',
+            '/development/server/collections/configure',
+            '/development/server/collections/association-fields',
+            '/development/server/collections/field-extension',
+            '/development/server/collections/collection-template',
+          ],
+        },
+        // '/development/server/collections-fields',
         '/development/server/resources-actions',
         '/development/server/middleware',
         '/development/server/commands',
