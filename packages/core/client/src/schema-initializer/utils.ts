@@ -74,7 +74,7 @@ export const useTableColumnInitializerFields = () => {
   const { name, fields = [] } = useCollection();
   const { getInterface } = useCollectionManager();
   return fields
-    .filter((field) => field?.interface && field?.interface !== 'subTable')
+    .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey)
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const schema = {
@@ -157,7 +157,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
 
   return fields
-    ?.filter((field) => field?.interface)
+    ?.filter((field) => field?.interface && !field?.isForeignKey)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
 
