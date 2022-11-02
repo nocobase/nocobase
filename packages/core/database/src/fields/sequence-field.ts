@@ -115,6 +115,8 @@ export interface SequenceFieldOptions extends BaseColumnFieldOptions {
 }
 
 export class SequenceField extends Field {
+  matcher: RegExp;
+
   get dataType() {
     return DataTypes.STRING;
   }
@@ -170,7 +172,7 @@ export class SequenceField extends Field {
   };
 
   match(value) {
-    return value.match(this.matcher);
+    return typeof value === 'string' ? value.match(this.matcher) : null;
   }
 
   parse(value: string, patternIndex: number): string {
