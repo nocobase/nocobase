@@ -11,6 +11,7 @@ import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
+import {CollectionFieldsTable} from "@nocobase/client";
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
@@ -191,6 +192,7 @@ export const ConfigurationTable = () => {
             AddSubFieldAction,
             EditSubFieldAction,
             FieldSummary,
+            CollectionFieldsTable
           }}
           scope={{
             useDestroySubField,
