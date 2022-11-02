@@ -6,6 +6,7 @@ export * from './ConfigurationTable';
 export * from './EditFieldAction';
 export * from './interfaces';
 export * from './components';
+export * from './CollectionFieldsTable';
 
 registerValidateFormats({
   uid: /^[A-Za-z0-9][A-Za-z0-9_-]*$/,

@@ -83,6 +83,7 @@ export class CollectionManagerPlugin extends Plugin {
         });
       }
     });
+  
     // after migrate
     this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
 

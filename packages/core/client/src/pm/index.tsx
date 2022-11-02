@@ -14,7 +14,7 @@ import { useCompile } from '../schema-component';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
 
-const SettingsCenterContext = createContext<any>({});
+export const SettingsCenterContext = createContext<any>({});
 
 const PluginCard = (props) => {
   const history = useHistory<any>();
