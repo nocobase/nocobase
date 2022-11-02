@@ -1,3 +1,4 @@
+import DeleteEvent from './DeleteEvent';
 import { ActionBar } from '../action';
 import { Calendar } from './Calendar';
 import { CalendarDesigner } from './Calendar.Designer';
@@ -10,6 +11,7 @@ import { ViewSelect } from './ViewSelect';
 
 Calendar.ActionBar = ActionBar;
 Calendar.Event = Event;
+Calendar.DeleteEvent = DeleteEvent;
 Calendar.Title = Title;
 Calendar.Today = Today;
 Calendar.Nav = Nav;

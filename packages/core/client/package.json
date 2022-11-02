@@ -25,6 +25,7 @@
     "antd": "~4.19.5",
     "axios": "^0.26.1",
     "classnames": "^2.3.1",
+    "cron-parser": "^4.6.0",
     "cronstrue": "^2.11.0",
     "file-saver": "^2.0.5",
     "i18next": "^21.6.0",
