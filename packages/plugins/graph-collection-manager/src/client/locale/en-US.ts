@@ -4,6 +4,6 @@ export default {
   'Full Screen': 'Full Screen',
   'Collection Search': 'Collection Search',
   'Create Collection': 'Create Collection',
-  'Show All': 'Show All',
-  'Fold': 'Fold',
+  'All Fields': 'All Fields',
+  'Association Fields': 'Association Fields',
 };

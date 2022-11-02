@@ -4,6 +4,6 @@ export default {
   'Full Screen': '全屏',
   'Collection Search': '表筛选',
   'Create Collection':'创建数据表',
-  'Show All':'全部',
-  'Fold':'收起'
+  'All Fields': '全部',
+  'Association Fields': '关系字段',
 };

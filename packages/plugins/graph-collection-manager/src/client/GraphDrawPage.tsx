@@ -1,4 +1,4 @@
-import { FullscreenExitOutlined, FullscreenOutlined, MenuOutlined } from '@ant-design/icons';
+import { FullscreenExitOutlined, FullscreenOutlined, MenuOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import '@antv/x6-react-shape';
 import { css, cx } from '@emotion/css';
@@ -15,7 +15,7 @@ import {
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
 import dagre from 'dagre';
-import { last, maxBy, minBy, uniq } from 'lodash';
+import { last, maxBy, minBy, uniq, groupBy, chunk } from 'lodash';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateActionAndRefreshCM } from './action-hooks';
@@ -314,74 +314,88 @@ export const GraphDrawPage = React.memo(() => {
       },
       true,
     );
-    targetGraph.on('edge:mouseover', ({ e, edge }) => {
-      const { associated } = edge.store?.data;
+    targetGraph.on('edge:mouseover', ({ e, edge: targetEdge }) => {
       e.stopPropagation();
-      edge.setAttrs({
-        line: {
-          stroke: '#1890ff',
-          strokeWidth: 1,
-          textAnchor: 'middle',
-          textVerticalAnchor: 'middle',
-          sourceMarker: null,
-          targetMarker: null,
-        },
-      });
-      edge.setLabels(
-        edge.getLabels().map((v) => {
-          return {
-            ...v,
-            attrs: {
-              labelText: {
-                ...v.attrs.labelText,
-                fill: '#1890ff',
-              },
-              labelBody: {
-                ...v.attrs.labelBody,
+      const { associated, m2m } = targetEdge.store?.data;
+      const m2mLineId = m2m?.find((v) => v !== targetEdge.id);
+      const m2mEdge = targetGraph.getCellById(m2mLineId);
+      const lightUp = (edge) => {
+        edge.toFront();
+        edge.setAttrs({
+          line: {
+            stroke: '#1890ff',
+            strokeWidth: 1,
+            textAnchor: 'middle',
+            textVerticalAnchor: 'middle',
+            sourceMarker: null,
+            targetMarker: null,
+          },
+        });
+        edge.setLabels(
+          edge.getLabels().map((v) => {
+            return {
+              ...v,
+              attrs: {
+                labelText: {
+                  ...v.attrs.labelText,
+                  fill: '#1890ff',
+                },
+                labelBody: {
+                  ...v.attrs.labelBody,
 
-                stroke: '#1890ff',
+                  stroke: '#1890ff',
+                },
               },
-            },
-          };
-        }),
-      );
-      const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
-      const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
-      targeNode.setAttrs({ targetPort: edge.store.data.target.port });
-      sourceNode.setAttrs({ sourcePort: edge.store.data.source.port });
-      sourceNode.setAttrs({ associated });
-      targeNode.setAttrs({ associated });
+            };
+          }),
+        );
+        const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
+        const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
+        targeNode.setAttrs({ [edge.store.data.target.port]: edge.store.data.target.port });
+        sourceNode.setAttrs({ sourcePort: edge.store.data.source.port });
+        sourceNode.setAttrs({ associated });
+        targeNode.setAttrs({ associated });
+      };
+      lightUp(targetEdge);
+      m2mEdge && lightUp(m2mEdge);
     });
-    targetGraph.on('edge:mouseout', ({ e, edge }) => {
+    targetGraph.on('edge:mouseleave', ({ e, edge: targetEdge }) => {
+      const { m2m } = targetEdge.store?.data;
+      const m2mLineId = m2m?.find((v) => v !== targetEdge.id);
+      const m2mEdge = targetGraph.getCellById(m2mLineId);
       e.stopPropagation();
-      const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
-      const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
-      targeNode.removeAttrs('targetPort');
-      sourceNode.removeAttrs('sourcePort');
-      sourceNode.removeAttrs('associated');
-      targeNode.removeAttrs('associated');
-      edge.setAttrs({
-        line: {
-          stroke: '#ddd',
-        },
-      });
-      edge.setLabels(
-        edge.getLabels().map((v) => {
-          return {
-            ...v,
-            attrs: {
-              labelText: {
-                ...v.attrs.labelText,
-                fill: 'rgba(0, 0, 0, 0.3)',
+      const lightsOut = (edge) => {
+        const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
+        const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
+        targeNode.removeAttrs('targetPort');
+        sourceNode.removeAttrs('sourcePort');
+        sourceNode.removeAttrs('associated');
+        targeNode.removeAttrs('associated');
+        edge.setAttrs({
+          line: {
+            stroke: '#ddd',
+          },
+        });
+        edge.setLabels(
+          edge.getLabels().map((v) => {
+            return {
+              ...v,
+              attrs: {
+                labelText: {
+                  ...v.attrs.labelText,
+                  fill: 'rgba(0, 0, 0, 0.3)',
+                },
+                labelBody: {
+                  ...v.attrs.labelBody,
+                  stroke: '#ddd',
+                },
               },
-              labelBody: {
-                ...v.attrs.labelBody,
-                stroke: '#ddd',
-              },
-            },
-          };
-        }),
-      );
+            };
+          }),
+        );
+      };
+      lightsOut(targetEdge);
+      m2mEdge && lightsOut(m2mEdge);
     });
     targetGraph.on('node:moved', ({ e, node }) => {
       const connectEdges = targetGraph.getConnectedEdges(node);
@@ -408,6 +422,7 @@ export const GraphDrawPage = React.memo(() => {
   // 首次渲染
   const renderInitGraphCollection = (rawData) => {
     const { nodesData, edgesData } = formatData(rawData);
+    targetGraph.data = { nodes: nodesData, edges: edgesData };
     targetGraph.clearCells();
     getNodes(nodesData);
     getEdges(edgesData);
@@ -416,7 +431,7 @@ export const GraphDrawPage = React.memo(() => {
 
   // 增量渲染
   const renderDiffGraphCollection = (rawData) => {
-    const { positions }: any = targetGraph;
+    const { positions }: { positions: { x: number; y: number }[] } = targetGraph;
     const { nodesData, edgesData } = formatData(rawData);
     const currentNodes = targetGraph.getNodes().map((v) => v.store.data);
     const currentEdges = targetGraph.getEdges().map((v) => v.store.data);
@@ -426,10 +441,9 @@ export const GraphDrawPage = React.memo(() => {
       const updateNode = targetGraph.getCellById(node.id);
       switch (status) {
         case 'add':
-          //@ts-ignore
           const maxY = maxBy(positions, 'y').y;
           const yNodes = positions.filter((v) => {
-            return v.y === maxY;
+            return Math.abs(v.y - maxY) < 100;
           });
           let referenceNode: any = maxBy(yNodes, 'x');
           let position;
@@ -502,14 +516,21 @@ export const GraphDrawPage = React.memo(() => {
   const handleSelectCollection = (value) => {
     const nodes = targetGraph.getNodes();
     let visibleNode = [];
+    if (targetNode && typeof targetNode !== 'string') {
+      targetNode.removeAttrs();
+    }
     if (value) {
       visibleNode.push(value.key);
-      if (targetNode && typeof targetNode !== 'string') {
-        targetNode.removeAttrs();
-      }
       targetNode = targetGraph.getCellById(value.key);
       const connectEdges = targetGraph.getConnectedEdges(targetNode);
       connectEdges.map((v) => {
+        if (v.store.data.m2m) {
+          v.store.data.m2m.forEach((i) => {
+            const m2mEdge = targetGraph.getCellById(i);
+            visibleNode.push(m2mEdge.getSourceCellId());
+            visibleNode.push(m2mEdge.getTargetCellId());
+          });
+        }
         visibleNode.push(v.getSourceCellId());
         visibleNode.push(v.getTargetCellId());
       });
@@ -531,11 +552,99 @@ export const GraphDrawPage = React.memo(() => {
     });
   };
 
+  const formatNodeData = () => {
+    const layoutNodes = [];
+    const edges = targetGraph.getEdges();
+    const nodes = targetGraph.getNodes();
+    edges.forEach((edge) => {
+      layoutNodes.push(edge.getSourceCellId());
+      layoutNodes.push(edge.getTargetCellId());
+    });
+    const nodeGroup = groupBy(nodes, (v) => {
+      if (layoutNodes.includes(v.id)) {
+        return 'linkNodes';
+      } else {
+        return 'rawNodes';
+      }
+    });
+    return nodeGroup;
+  };
+
+  //自动布局
+  const handelResetLayout = () => {
+    console.log(formatNodeData());
+    const nodeGroup = formatNodeData();
+    const nodes = nodeGroup.linkNodes.concat(nodeGroup.rawNodes);
+    const edges = targetGraph.getEdges();
+    const g = new dagre.graphlib.Graph();
+    g.setGraph({ rankdir: dir, nodesep: 50, edgesep: 50, rankSep: 50, align: 'DL', controlPoints: true });
+    const width = 250;
+    const height = 400;
+    nodes.forEach((node) => {
+      g.setNode(node.id, { width, height });
+    });
+    edges.forEach((edge) => {
+      const source = edge.getSource();
+      const target = edge.getTarget();
+      g.setEdge(source.cell, target.cell, {});
+    });
+    dagre.layout(g);
+    targetGraph.freeze();
+    const gNodes = g.nodes();
+    const layoutData = chunk(gNodes, nodeGroup.linkNodes.length);
+    layoutData[0].forEach((id) => {
+      const node = targetGraph.getCell(id);
+      if (node) {
+        const pos = g.node(id);
+        node.position(pos?.x, pos?.y);
+      }
+    });
+    const maxY = targetGraph
+      .getCellById(
+        maxBy(layoutData[0], (k) => {
+          return targetGraph.getCellById(k).position().y;
+        }),
+      )
+      .position().y;
+    const minX = targetGraph
+      .getCellById(
+        minBy(layoutData[0], (k) => {
+          return targetGraph.getCellById(k).position().x;
+        }),
+      )
+      .position().x;
+    const maxX = targetGraph
+      .getCellById(
+        maxBy(layoutData[0], (k) => {
+          return targetGraph.getCellById(k).position().x;
+        }),
+      )
+      .position().x;
+    const num = Math.round(maxX / 320);
+    const rawNodes = getGridData(num, nodeGroup.rawNodes);
+
+    rawNodes.forEach((arr, row) => {
+      arr.forEach((id, index) => {
+        const node = targetGraph.getCell(id);
+        const col = index % num;
+        if (node) {
+          const calculatedPosition = { x: col * 325 + minX, y: row * 300 + maxY + 300 };
+          node.position(calculatedPosition.x, calculatedPosition.y);
+        }
+      });
+    });
+
+    edges.forEach((edge) => {
+      optimizeEdge(edge);
+    });
+    targetGraph.unfreeze();
+  };
+
   useLayoutEffect(() => {
     initGraphCollections();
     return () => {
       targetGraph.off('edge:mouseover');
-      targetGraph.off('edge:mouseout');
+      targetGraph.off('edge:mouseleave');
       targetGraph.off('node:moved');
       targetGraph = null;
       targetNode = null;
@@ -736,6 +845,26 @@ export const GraphDrawPage = React.memo(() => {
                               },
                               'x-component-props': {
                                 icon: 'MenuOutlined',
+                                useAction: () => {
+                                  return {
+                                    run() {},
+                                  };
+                                },
+                              },
+                            },
+                            autoLayout: {
+                              type: 'void',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                component: forwardRef(() => {
+                                  return (
+                                    <Tooltip title={t('Auto Layout')} getPopupContainer={getPopupContainer}>
+                                      <Button onClick={handelResetLayout}>
+                                        <ApartmentOutlined />
+                                      </Button>
+                                    </Tooltip>
+                                  );
+                                }),
                                 useAction: () => {
                                   return {
                                     run() {},

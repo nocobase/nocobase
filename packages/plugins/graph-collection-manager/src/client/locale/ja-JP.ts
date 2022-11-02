@@ -4,6 +4,6 @@ export default {
   'Full Screen': 'フルスクリーン',
   'Collection Search': '表フィルタ',
   'Create Collection':'データテーブルの作成',
-  'Show All':'すべて',
-  'Fold':'やめる'
+  'All Fields': 'すべて',
+  'Associations Fields': '関係フィールド',
 };
