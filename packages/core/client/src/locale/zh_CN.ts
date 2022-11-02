@@ -119,7 +119,7 @@ export default {
   "Configure columns": "配置字段",
   "Edit field": "编辑字段",
   "Configure fields of {{title}}": "「{{title}}」的字段配置",
-  "Primary key fields": "主键字段",
+  "Primary key & Foreign key fields": "主外键字段",
   "Relation fields": "关系字段",
   "System fields": "系统字段",
   "General fields": "普通字段",

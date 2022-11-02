@@ -92,10 +92,10 @@ const groupColumns = [
   },
 ];
 
-type CategorizeKey = 'primaryKey' | 'relation' | 'systemInfo' | 'basic';
-const sortKeyArr: Array<CategorizeKey> = ['primaryKey', 'relation', 'basic', 'systemInfo'];
+type CategorizeKey = 'primaryAndForeignKey' | 'relation' | 'systemInfo' | 'basic';
+const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'basic', 'systemInfo'];
 const CategorizeKeyNameMap = new Map<CategorizeKey, string>([
-  ['primaryKey', 'Primary key fields'],
+  ['primaryAndForeignKey', 'Primary key & Foreign key fields'],
   ['relation', 'Relation fields'],
   ['systemInfo', 'System fields'],
   ['basic', 'General fields'],
@@ -137,8 +137,8 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
       };
       field.value.forEach((item) => {
         const itemInterface = getInterface(item?.interface);
-        if (item?.primaryKey) {
-          addCategorizeVal('primaryKey', item);
+        if (item?.primaryKey || item.isForeignKey) {
+          addCategorizeVal('primaryAndForeignKey', item);
           return;
         }
         const group = itemInterface?.group as CategorizeKey;

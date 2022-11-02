@@ -74,9 +74,6 @@ export const collectionFieldSchema: ISchema = {
         paginate: false,
         filter: {
           'interface.$not': null,
-          options: {
-            isForeignKey: { $not: true },
-          },
         },
         sort: ['sort'],
         appends: ['uiSchema'],
