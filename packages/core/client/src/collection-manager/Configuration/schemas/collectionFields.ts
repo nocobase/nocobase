@@ -71,7 +71,7 @@ export const collectionFieldSchema: ISchema = {
       resource: 'collections.fields',
       action: 'list',
       params: {
-        pageSize: 50,
+        paginate: false,
         filter: {
           'interface.$not': null,
         },
@@ -123,7 +123,7 @@ export const collectionFieldSchema: ISchema = {
     table: {
       type: 'void',
       'x-uid': 'input',
-      'x-component': 'Table.Void',
+      'x-component': 'CollectionFieldsTable',
       'x-component-props': {
         rowKey: 'name',
         rowSelection: {

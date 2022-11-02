@@ -74,7 +74,7 @@ export const useTableColumnInitializerFields = () => {
   const { name, fields = [] } = useCollection();
   const { getInterface } = useCollectionManager();
   return fields
-    .filter((field) => field?.interface && field?.interface !== 'subTable')
+    .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey)
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const schema = {
@@ -157,7 +157,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
 
   return fields
-    ?.filter((field) => field?.interface)
+    ?.filter((field) => field?.interface && !field?.isForeignKey)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
 
@@ -433,7 +433,13 @@ export const useCollectionDataSourceItems = (componentName) => {
       type: 'itemGroup',
       title: t('Select collection'),
       children: collections
-        ?.filter((item) => !item.inherit)
+        ?.filter((item) => {
+          if(item.inherit){
+            return false
+          }else{
+            return !(item?.isThrough && item?.autoCreate);
+          }
+        })
         ?.map((item, index) => {
           const templates = getTemplatesByCollection(item.name).filter((template) => {
             return (
