@@ -19,7 +19,6 @@ export class PresetNocoBase extends Plugin {
       'export',
       'import',
       'audit-logs',
-      'graph-collection-manager',
     ];
     await this.app.pm.add(plugins, {
       enabled: true,
