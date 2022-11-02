@@ -12,6 +12,7 @@ export * from './CustomizeActionInitializer';
 export * from './CustomizeBulkEditActionInitializer';
 export * from './DataBlockInitializer';
 export * from './DestroyActionInitializer';
+export * from './DeleteEventActionInitializer';
 export * from './DetailsBlockInitializer';
 export * from './FilterActionInitializer';
 export * from './FormBlockInitializer';
@@ -36,4 +37,3 @@ export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';
-
