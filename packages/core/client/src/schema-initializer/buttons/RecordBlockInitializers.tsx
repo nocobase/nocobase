@@ -12,13 +12,13 @@ const recursiveParent = (schema: Schema) => {
   } else {
     return recursiveParent(schema.parent);
   }
-}
+};
 
 const useRelationFields = () => {
   const fieldSchema = useFieldSchema();
   const { getCollectionFields } = useCollectionManager();
   let fields = [];
-  
+
   if (fieldSchema['x-initializer']) {
     fields = useCollection().fields;
   } else {
@@ -52,7 +52,7 @@ const useRelationFields = () => {
             //   component: 'RecordAssociationFormBlockInitializer',
             // },
           ],
-        }
+        };
       }
 
       if (['hasMany', 'belongsToMany'].includes(field.type)) {
@@ -90,7 +90,7 @@ const useRelationFields = () => {
               component: 'RecordAssociationCalendarBlockInitializer',
             },
           ],
-        }
+        };
       }
 
       return {
@@ -101,7 +101,7 @@ const useRelationFields = () => {
         component: 'RecordAssociationBlockInitializer',
       };
     }) as any;
-    return relationFields;
+  return relationFields;
 };
 
 export const RecordBlockInitializers = (props: any) => {
@@ -124,6 +124,7 @@ export const RecordBlockInitializers = (props: any) => {
               type: 'item',
               title: '{{t("Details")}}',
               component: 'RecordReadPrettyFormBlockInitializer',
+              actionInitializers: 'CalendarFormActionInitializers',
             },
             {
               key: 'form',
