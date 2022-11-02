@@ -122,6 +122,7 @@ export default {
           type: 'subMenu',
           children: [
             '/development/server/collections/index',
+            '/development/server/collections/options',
             '/development/server/collections/configure',
             '/development/server/collections/collection-template',
             '/development/server/collections/field-extension',
