@@ -429,7 +429,7 @@ export const GraphDrawPage = React.memo(() => {
 
   // 增量渲染
   const renderDiffGraphCollection = (rawData) => {
-    const { positions }: any = targetGraph;
+    const { positions }: { positions: { x: number; y: number }[] } = targetGraph;
     const { nodesData, edgesData } = formatData(rawData);
     const currentNodes = targetGraph.getNodes().map((v) => v.store.data);
     const currentEdges = targetGraph.getEdges().map((v) => v.store.data);
@@ -439,10 +439,9 @@ export const GraphDrawPage = React.memo(() => {
       const updateNode = targetGraph.getCellById(node.id);
       switch (status) {
         case 'add':
-          //@ts-ignore
           const maxY = maxBy(positions, 'y').y;
           const yNodes = positions.filter((v) => {
-            return v.y === maxY;
+            return Math.abs(v.y - maxY) < 100;
           });
           let referenceNode: any = maxBy(yNodes, 'x');
           let position;
@@ -555,7 +554,7 @@ export const GraphDrawPage = React.memo(() => {
     initGraphCollections();
     return () => {
       targetGraph.off('edge:mouseover');
-      targetGraph.off('edge:mouseout');
+      targetGraph.off('edge:mouseleave');
       targetGraph.off('node:moved');
       targetGraph = null;
       targetNode = null;
