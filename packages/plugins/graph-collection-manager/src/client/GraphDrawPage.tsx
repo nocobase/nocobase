@@ -1,4 +1,4 @@
-import { FullscreenExitOutlined, FullscreenOutlined, MenuOutlined } from '@ant-design/icons';
+import { FullscreenExitOutlined, FullscreenOutlined, MenuOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import '@antv/x6-react-shape';
 import { css, cx } from '@emotion/css';
@@ -15,7 +15,7 @@ import {
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
 import dagre from 'dagre';
-import { last, maxBy, minBy, uniq } from 'lodash';
+import { last, maxBy, minBy, uniq, groupBy, chunk } from 'lodash';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateActionAndRefreshCM } from './action-hooks';
@@ -320,6 +320,7 @@ export const GraphDrawPage = React.memo(() => {
       const m2mLineId = m2m?.find((v) => v !== targetEdge.id);
       const m2mEdge = targetGraph.getCellById(m2mLineId);
       const lightUp = (edge) => {
+        edge.toFront();
         edge.setAttrs({
           line: {
             stroke: '#1890ff',
@@ -421,6 +422,7 @@ export const GraphDrawPage = React.memo(() => {
   // 首次渲染
   const renderInitGraphCollection = (rawData) => {
     const { nodesData, edgesData } = formatData(rawData);
+    targetGraph.data = { nodes: nodesData, edges: edgesData };
     targetGraph.clearCells();
     getNodes(nodesData);
     getEdges(edgesData);
@@ -548,6 +550,94 @@ export const GraphDrawPage = React.memo(() => {
         v.show();
       }
     });
+  };
+
+  const formatNodeData = () => {
+    const layoutNodes = [];
+    const edges = targetGraph.getEdges();
+    const nodes = targetGraph.getNodes();
+    edges.forEach((edge) => {
+      layoutNodes.push(edge.getSourceCellId());
+      layoutNodes.push(edge.getTargetCellId());
+    });
+    const nodeGroup = groupBy(nodes, (v) => {
+      if (layoutNodes.includes(v.id)) {
+        return 'linkNodes';
+      } else {
+        return 'rawNodes';
+      }
+    });
+    return nodeGroup;
+  };
+
+  //自动布局
+  const handelResetLayout = () => {
+    console.log(formatNodeData());
+    const nodeGroup = formatNodeData();
+    const nodes = nodeGroup.linkNodes.concat(nodeGroup.rawNodes);
+    const edges = targetGraph.getEdges();
+    const g = new dagre.graphlib.Graph();
+    g.setGraph({ rankdir: dir, nodesep: 50, edgesep: 50, rankSep: 50, align: 'DL', controlPoints: true });
+    const width = 250;
+    const height = 400;
+    nodes.forEach((node) => {
+      g.setNode(node.id, { width, height });
+    });
+    edges.forEach((edge) => {
+      const source = edge.getSource();
+      const target = edge.getTarget();
+      g.setEdge(source.cell, target.cell, {});
+    });
+    dagre.layout(g);
+    targetGraph.freeze();
+    const gNodes = g.nodes();
+    const layoutData = chunk(gNodes, nodeGroup.linkNodes.length);
+    layoutData[0].forEach((id) => {
+      const node = targetGraph.getCell(id);
+      if (node) {
+        const pos = g.node(id);
+        node.position(pos?.x, pos?.y);
+      }
+    });
+    const maxY = targetGraph
+      .getCellById(
+        maxBy(layoutData[0], (k) => {
+          return targetGraph.getCellById(k).position().y;
+        }),
+      )
+      .position().y;
+    const minX = targetGraph
+      .getCellById(
+        minBy(layoutData[0], (k) => {
+          return targetGraph.getCellById(k).position().x;
+        }),
+      )
+      .position().x;
+    const maxX = targetGraph
+      .getCellById(
+        maxBy(layoutData[0], (k) => {
+          return targetGraph.getCellById(k).position().x;
+        }),
+      )
+      .position().x;
+    const num = Math.round(maxX / 320);
+    const rawNodes = getGridData(num, nodeGroup.rawNodes);
+
+    rawNodes.forEach((arr, row) => {
+      arr.forEach((id, index) => {
+        const node = targetGraph.getCell(id);
+        const col = index % num;
+        if (node) {
+          const calculatedPosition = { x: col * 325 + minX, y: row * 300 + maxY + 300 };
+          node.position(calculatedPosition.x, calculatedPosition.y);
+        }
+      });
+    });
+
+    edges.forEach((edge) => {
+      optimizeEdge(edge);
+    });
+    targetGraph.unfreeze();
   };
 
   useLayoutEffect(() => {
@@ -755,6 +845,26 @@ export const GraphDrawPage = React.memo(() => {
                               },
                               'x-component-props': {
                                 icon: 'MenuOutlined',
+                                useAction: () => {
+                                  return {
+                                    run() {},
+                                  };
+                                },
+                              },
+                            },
+                            autoLayout: {
+                              type: 'void',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                component: forwardRef(() => {
+                                  return (
+                                    <Tooltip title={t('Auto Layout')} getPopupContainer={getPopupContainer}>
+                                      <Button onClick={handelResetLayout}>
+                                        <ApartmentOutlined />
+                                      </Button>
+                                    </Tooltip>
+                                  );
+                                }),
                                 useAction: () => {
                                   return {
                                     run() {},
