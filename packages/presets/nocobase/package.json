@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/preset-nocobase",
-  "version": "0.8.0-alpha.8",
+  "version": "0.8.0-alpha.9",
   "license": "Apache-2.0",
   "licenses": [
     {
@@ -11,23 +11,23 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/plugin-acl": "0.8.0-alpha.8",
-    "@nocobase/plugin-audit-logs": "0.8.0-alpha.8",
-    "@nocobase/plugin-china-region": "0.8.0-alpha.8",
-    "@nocobase/plugin-client": "0.8.0-alpha.8",
-    "@nocobase/plugin-collection-manager": "0.8.0-alpha.8",
-    "@nocobase/plugin-error-handler": "0.8.0-alpha.8",
-    "@nocobase/plugin-export": "0.8.0-alpha.8",
-    "@nocobase/plugin-file-manager": "0.8.0-alpha.8",
-    "@nocobase/plugin-import": "0.8.0-alpha.8",
-    "@nocobase/plugin-sample-hello": "0.8.0-alpha.8",
-    "@nocobase/plugin-system-settings": "0.8.0-alpha.8",
-    "@nocobase/plugin-ui-routes-storage": "0.8.0-alpha.8",
-    "@nocobase/plugin-ui-schema-storage": "0.8.0-alpha.8",
-    "@nocobase/plugin-users": "0.8.0-alpha.8",
-    "@nocobase/plugin-verification": "0.8.0-alpha.8",
-    "@nocobase/plugin-workflow": "0.8.0-alpha.8",
-    "@nocobase/server": "0.8.0-alpha.8"
+    "@nocobase/plugin-acl": "0.8.0-alpha.9",
+    "@nocobase/plugin-audit-logs": "0.8.0-alpha.9",
+    "@nocobase/plugin-china-region": "0.8.0-alpha.9",
+    "@nocobase/plugin-client": "0.8.0-alpha.9",
+    "@nocobase/plugin-collection-manager": "0.8.0-alpha.9",
+    "@nocobase/plugin-error-handler": "0.8.0-alpha.9",
+    "@nocobase/plugin-export": "0.8.0-alpha.9",
+    "@nocobase/plugin-file-manager": "0.8.0-alpha.9",
+    "@nocobase/plugin-import": "0.8.0-alpha.9",
+    "@nocobase/plugin-sample-hello": "0.8.0-alpha.9",
+    "@nocobase/plugin-system-settings": "0.8.0-alpha.9",
+    "@nocobase/plugin-ui-routes-storage": "0.8.0-alpha.9",
+    "@nocobase/plugin-ui-schema-storage": "0.8.0-alpha.9",
+    "@nocobase/plugin-users": "0.8.0-alpha.9",
+    "@nocobase/plugin-verification": "0.8.0-alpha.9",
+    "@nocobase/plugin-workflow": "0.8.0-alpha.9",
+    "@nocobase/server": "0.8.0-alpha.9"
   },
   "repository": {
     "type": "git",
