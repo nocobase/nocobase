@@ -579,8 +579,8 @@ const Entity: React.FC<{
           onClick={handelOpenPorts}
         >
           {collapse
-            ? [<UpOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>{t('Fold')}</span>]
-            : [<DownOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>{t('Show All')}</span>]}
+            ? [<UpOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>{t('Association Fields')}</span>]
+            : [<DownOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>{t('All Fields')}</span>]}
         </a>
       </div>
     </div>
