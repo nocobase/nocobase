@@ -358,7 +358,7 @@ export const GraphDrawPage = React.memo(() => {
       lightUp(targetEdge);
       m2mEdge && lightUp(m2mEdge);
     });
-    targetGraph.on('edge:mouseout', ({ e, edge: targetEdge }) => {
+    targetGraph.on('edge:mouseleave', ({ e, edge: targetEdge }) => {
       const { m2m } = targetEdge.store?.data;
       const m2mLineId = m2m?.find((v) => v !== targetEdge.id);
       const m2mEdge = targetGraph.getCellById(m2mLineId);
