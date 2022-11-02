@@ -95,7 +95,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
           ...fields,
         };
 
-        const res = exclude.some((d) => {
+        const res = exclude?.some((d) => {
           if (d.endsWith('_after')) {
             d = d.replace(/_after$/, '');
             out = true;
