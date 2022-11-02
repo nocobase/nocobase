@@ -3,7 +3,9 @@
   "version": "0.8.0-alpha.1",
   "license": "MIT",
   "devDependencies": {
-    "@nocobase/client": "0.8.0-alpha.1"
+    "@nocobase/client": "0.8.0-alpha.1",
+    "@nocobase/devtools": "0.8.0-alpha.1",
+    "umi": "^3.2.20"
   },
   "repository": {
     "type": "git",

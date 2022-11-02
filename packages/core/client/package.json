@@ -29,6 +29,7 @@
     "file-saver": "^2.0.5",
     "i18next": "^21.6.0",
     "json-templates": "^4.2.0",
+    "lodash": "^4.17.21",
     "marked": "^4.0.12",
     "mathjs": "^10.6.0",
     "react-beautiful-dnd": "^13.1.0",

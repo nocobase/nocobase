@@ -1,4 +1,7 @@
-import { getUmiConfig, resolveNocobasePackagesAlias } from '@nocobase/devtools/umiConfig';
+import { umiConfig as UmiConfig } from '@nocobase/devtools';
+
+const { getUmiConfig, resolveNocobasePackagesAlias } = UmiConfig;
+
 import { defineConfig } from 'umi';
 
 const umiConfig = getUmiConfig();

@@ -55,7 +55,7 @@ exports.nodeCheck = () => {
 
 exports.run = (command, argv, options = {}) => {
   const binPath = resolve(__dirname, '../node_modules/.bin');
-  const bins = ['ts-node', 'ts-node-dev'];
+  const bins = ['ts-node', 'ts-node-dev', 'umi'];
 
   return execa(bins.includes(command) ? resolve(binPath, command) : command, argv, {
     shell: true,
