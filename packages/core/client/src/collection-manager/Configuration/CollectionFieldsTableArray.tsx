@@ -182,7 +182,6 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   };
 
   const expandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
-    debugger;
     return (
       <Table
         {...others}
