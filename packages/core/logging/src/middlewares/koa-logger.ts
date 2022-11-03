@@ -12,8 +12,8 @@ function KoaLogger(options) {
       return id;
     },
 
-    customReceivedMessage: function (req, res) {
-      return 'request received: ' + req.method;
+    redact: {
+      paths: ['req.headers.cookie', 'req.headers.accept', 'req.headers.authorization'],
     },
   });
 }
