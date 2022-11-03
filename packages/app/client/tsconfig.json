@@ -12,6 +12,7 @@
     "strict": true,
     "paths": {
       "@nocobase/plugin-sample-*/client": ["../../samples/*/src/client"],
+      "@nocobase/plugin-pro-*/client": ["../../pro-plugins/*/src/client"],
       "@nocobase/plugin-*/client": ["../../plugins/*/src/client"],
       "@nocobase/utils/client": ["../../core/utils/src/client"],
       "@nocobase/*": ["../../core/*/src/"],
