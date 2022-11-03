@@ -1,6 +1,6 @@
-import { Database } from '../../database';
-import { mockDatabase } from '../';
-import { JsonField } from '../../fields';
+import {Database} from '../../database';
+import {mockDatabase} from '../';
+import {JsonField} from '../../fields';
 
 describe('json field', () => {
   let db: Database;
@@ -33,15 +33,15 @@ describe('json field', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
+    await db.clean({drop: true});
     db.registerFieldTypes({
       json: JsonField,
     });
     const Test = db.collection({
       name: 'tests',
       fields: [
-        { type: 'string', name: 'studentId' },
-        { type: 'json', name: 'json_test' },
+        {type: 'string', name: 'studentId'},
+        {type: 'json', name: 'json_test'},
       ],
     });
     await db.sync();
@@ -49,7 +49,7 @@ describe('json field', () => {
   });
 
   afterEach(async () => {
-    await db.clean({ drop: true });
+    await db.clean({drop: true});
     await db.close();
   });
 
@@ -78,7 +78,28 @@ describe('json field', () => {
     items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: { $isFalsy: true },
+          isRegister: 'null',
+        },
+      },
+    });
+    console.log(items);
+
+    items = await db.getRepository('tests').find({
+      filter: {
+        json_test: {
+          isRegister: 'NULL',
+        },
+      },
+    });
+    console.log(items);
+
+    items = await db.getRepository('tests').find({
+      filter: {
+        json_test: {
+          $or: [
+            {isRegister: false},
+            {isRegister: 'null'}
+          ]
         },
       },
     });
@@ -89,7 +110,7 @@ describe('json field', () => {
     let items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: { $or: [false, true] },
+          isRegister: {$or: [false, true]},
         },
       },
     });
@@ -99,7 +120,7 @@ describe('json field', () => {
     items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: { $isFalsy: true },
+          isRegister: {$isFalsy: true},
         },
       },
     });
@@ -110,7 +131,7 @@ describe('json field', () => {
       filter: {
         json_test: {
           $and: {
-            isRegister: { $isFalsy: true },
+            isRegister: {$isFalsy: true},
             age: 20,
           },
         },
