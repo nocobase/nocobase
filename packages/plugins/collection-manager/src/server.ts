@@ -108,7 +108,7 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
-    this.app.db.on('fields.afterSaveWithAssociations', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, { context, transaction }) => {
       if (context) {
         await model.load({ transaction });
       }
