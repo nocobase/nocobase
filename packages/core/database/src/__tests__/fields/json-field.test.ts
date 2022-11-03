@@ -5,19 +5,39 @@ import { JsonField } from '../../fields';
 describe('json field', () => {
   let db: Database;
 
+  const students = [
+    {
+      studentId: 'No.001',
+      json_test: {
+        name: 'John',
+        age: 20,
+      },
+    },
+    {
+      studentId: 'No.002',
+      json_test: {
+        name: 'Emma',
+        age: 18,
+        isRegister: true,
+      },
+    },
+    {
+      studentId: 'No.003',
+      json_test: {
+        name: 'Justin',
+        age: 19,
+        isRegister: false,
+      },
+    },
+  ];
+
+
   beforeEach(async () => {
     db = mockDatabase();
     await db.clean({ drop: true });
     db.registerFieldTypes({
       json: JsonField,
     });
-  });
-
-  afterEach(async () => {
-    await db.close();
-  });
-
-  it('json-filter', async () => {
     const Test = db.collection({
       name: 'tests',
       fields: [
@@ -26,39 +46,51 @@ describe('json field', () => {
       ],
     });
     await db.sync();
-
-    const students = [
-      {
-        studentId: 'No.001',
-        json_test: {
-          name: 'John',
-          age: 20,
-        },
-      },
-      {
-        studentId: 'No.002',
-        json_test: {
-          name: 'Emma',
-          age: 18,
-          isRegister: true,
-        },
-      },
-      {
-        studentId: 'No.003',
-        json_test: {
-          name: 'Justin',
-          age: 19,
-          isRegister: false,
-        },
-      },
-    ];
-
     await Test.model.bulkCreate<any>(students);
+  });
 
+  afterEach(async () => {
+    await db.clean({ drop: true });
+    await db.close();
+  });
+
+  it('json-filter', async () => {
     let items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: { $or: [false, null] },
+          isRegister: true,
+        },
+      },
+    });
+    expect(items.length).toEqual(1);
+    expect(items[0].get("studentId")).toEqual(students[1].studentId);
+
+    items = await db.getRepository('tests').find({
+      filter: {
+        json_test: {
+          isRegister: false,
+          age: 19
+        },
+      },
+    });
+    expect(items.length).toEqual(1);
+    expect(items[0].get("studentId")).toEqual(students[2].studentId);
+
+    items = await db.getRepository('tests').find({
+      filter: {
+        json_test: {
+          isRegister: null,
+        },
+      },
+    });
+    console.log(items);
+  });
+
+  it('json-filter-or', async () => {
+    let items = await db.getRepository('tests').find({
+      filter: {
+        json_test: {
+          isRegister: { $or: [false, true] },
         },
       },
     });
