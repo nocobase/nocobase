@@ -1,0 +1,25 @@
+{
+  "name": "@nocobase/logging",
+  "version": "0.8.0-alpha.9",
+  "description": "nocobase logging library",
+  "license": "Apache-2.0",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/logging"
+  },
+  "dependencies": {
+    "koa-pino-logger": "^4.0.0",
+    "koa2-winston": "^3.1.1",
+    "pino": "^8.7.0",
+    "winston": "^3.8.2"
+  }
+}

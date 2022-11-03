@@ -1,5 +1,6 @@
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
+import { KoaLogger } from '@nocobase/logging';
 import Resourcer from '@nocobase/resourcer';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
@@ -31,6 +32,12 @@ export function createResourcer(options: ApplicationOptions) {
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
+  app.use(
+    KoaLogger({
+      logger: app.logger,
+    }),
+  );
+
   app.use(
     cors({
       exposeHeaders: ['content-disposition'],

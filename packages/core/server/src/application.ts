@@ -12,6 +12,8 @@ import compose from 'koa-compose';
 import { isBoolean } from 'lodash';
 import semver from 'semver';
 import { promisify } from 'util';
+import { Logger, createLogger } from '@nocobase/logging';
+
 import { createACL } from './acl';
 import { AppManager } from './app-manager';
 import { registerCli } from './commands';
@@ -116,6 +118,7 @@ export class ApplicationVersion {
     await this.collection.model.destroy({
       truncate: true,
     });
+
     await this.collection.model.create({
       value: this.app.getVersion(),
     });
@@ -136,6 +139,7 @@ export class ApplicationVersion {
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   protected _db: Database;
+  protected _logger: Logger;
 
   protected _resourcer: Resourcer;
 
@@ -200,8 +204,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._appManager;
   }
 
+  get logger() {
+    return this._logger;
+  }
+
   protected init() {
     const options = this.options;
+    this._logger = createLogger();
+
     // @ts-ignore
     this._events = [];
     // @ts-ignore
@@ -223,6 +233,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._i18n = createI18n(options);
     this._cache = createCache(options.cache);
     this.context.db = this._db;
+    this.context.logger = this._logger;
     this.context.resourcer = this._resourcer;
     this.context.cache = this._cache;
 
