@@ -1,5 +1,4 @@
 import { MockServer } from '@nocobase/test';
-import { CustomSchemaScopePlugin } from 'packages/samples/custom-signup-page/lib/server';
 import { createApp } from '..';
 
 describe('collections repository', () => {
@@ -102,8 +101,6 @@ describe('collections repository', () => {
         otherKey: 'tag_id',
       },
     });
-
-    const postCollection = db.getCollection('posts');
 
     const response2 = await agent.resource('posts').create({
       values: {

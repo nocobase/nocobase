@@ -168,6 +168,7 @@ export class HasOneField extends RelationField {
     const association = collection.model.associations[this.name];
     this.database.referenceMap.removeReference(this.reference(association));
 
+    this.clearAccessors();
     // 删掉 model 的关联字段
     delete collection.model.associations[this.name];
     // @ts-ignore
