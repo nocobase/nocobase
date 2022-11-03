@@ -114,17 +114,22 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
       };
 
       if (cron === 'every_week') {
-        let nextStart = start.year(startDate.year()).month(startDate.month()).date(startDate.date()).day(start.day());
+        let nextStart = start
+          .clone()
+          .year(startDate.year())
+          .month(startDate.month())
+          .date(startDate.date())
+          .day(start.day());
         while (nextStart.isBefore(endDate)) {
-          if (push(nextStart)) {
+          if (push(nextStart.clone())) {
             break;
           }
           nextStart.add(1, 'week');
         }
       } else if (cron === 'every_month') {
-        push(start.year(dateM.year()).month(dateM.month()));
+        push(start.clone().year(dateM.year()).month(dateM.month()));
       } else if (cron === 'every_year') {
-        push(start.year(dateM.year()));
+        push(start.clone().year(dateM.year()));
       } else {
         push();
         if (!cron) return;
