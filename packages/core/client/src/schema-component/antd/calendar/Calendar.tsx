@@ -84,32 +84,32 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
         startDate.startOf('week');
         endDate.endOf('week');
       }
-      const push = (fields?: Record<string, any>) => {
+      const push = (eventStart: moment.Moment = start) => {
         // 必须在这个月的开始时间和结束时间，切在日程的开始时间之后
-        const eventStart: moment.Moment = fields?.start || start;
         if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
           return;
         }
-        const event = {
-          id: get(item, fieldNames.id || 'id'),
-          title: get(item, fieldNames.title) || t('Untitle'),
-          end: eventStart.add(intervalTime, 'millisecond'),
-          ...fields,
-          start: eventStart,
-        };
 
         let out = false;
         const res = exclude?.some((d) => {
           if (d.endsWith('_after')) {
             d = d.replace(/_after$/, '');
             out = true;
-            return event.start.isSameOrAfter(d);
+            return eventStart.isSameOrAfter(d);
           } else {
-            return event.start.isSame(d);
+            return eventStart.isSame(d);
           }
         });
 
         if (res) return out;
+
+        const event = {
+          id: get(item, fieldNames.id || 'id'),
+          title: get(item, fieldNames.title) || t('Untitle'),
+          start: eventStart.toDate(),
+          end: eventStart.add(intervalTime, 'millisecond').toDate(),
+        };
+
         events.push(event);
       };
 
@@ -121,21 +121,15 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
           .date(startDate.date())
           .day(start.day());
         while (nextStart.isBefore(endDate)) {
-          if (
-            push({
-              start: nextStart.clone(),
-            })
-          ) {
+          if (push(nextStart.clone())) {
             break;
           }
           nextStart.add(1, 'week');
         }
       } else if (cron === 'every_month') {
-        push({
-          start: start.clone().year(dateM.year()).month(dateM.month()),
-        });
+        push(start.clone().year(dateM.year()).month(dateM.month()));
       } else if (cron === 'every_year') {
-        push({ start: start.clone().year(dateM.year()) });
+        push(start.clone().year(dateM.year()));
       } else {
         push();
         if (!cron) return;
@@ -149,12 +143,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
           });
           while (interval.hasNext()) {
             const { value } = interval.next();
-            if (
-              push({
-                start: moment(value.toDate()),
-              })
-            )
-              break;
+            if (push(moment(value.toDate()))) break;
           }
         } catch (err) {
           console.error(err);
