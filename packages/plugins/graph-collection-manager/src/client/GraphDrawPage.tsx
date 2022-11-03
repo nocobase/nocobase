@@ -15,7 +15,7 @@ import {
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Tooltip } from 'antd';
 import dagre from 'dagre';
-import { last, maxBy, minBy, uniq, groupBy, chunk } from 'lodash';
+import { last, maxBy, minBy, uniq, groupBy, drop, take } from 'lodash';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateActionAndRefreshCM } from './action-hooks';
@@ -572,7 +572,6 @@ export const GraphDrawPage = React.memo(() => {
 
   //自动布局
   const handelResetLayout = () => {
-    console.log(formatNodeData());
     const nodeGroup = formatNodeData();
     const nodes = nodeGroup.linkNodes.concat(nodeGroup.rawNodes);
     const edges = targetGraph.getEdges();
@@ -591,8 +590,9 @@ export const GraphDrawPage = React.memo(() => {
     dagre.layout(g);
     targetGraph.freeze();
     const gNodes = g.nodes();
-    const layoutData = chunk(gNodes, nodeGroup.linkNodes.length);
-    layoutData[0].forEach((id) => {
+    const nodeWithEdges = take(gNodes, nodeGroup.linkNodes.length);
+    const nodeWithoutEdges = drop(gNodes, nodeGroup.linkNodes.length);
+    nodeWithEdges.forEach((id) => {
       const node = targetGraph.getCell(id);
       if (node) {
         const pos = g.node(id);
@@ -601,28 +601,45 @@ export const GraphDrawPage = React.memo(() => {
     });
     const maxY = targetGraph
       .getCellById(
-        maxBy(layoutData[0], (k) => {
+        maxBy(nodeWithEdges, (k) => {
           return targetGraph.getCellById(k).position().y;
         }),
       )
       .position().y;
     const minX = targetGraph
       .getCellById(
-        minBy(layoutData[0], (k) => {
+        minBy(nodeWithEdges, (k) => {
           return targetGraph.getCellById(k).position().x;
         }),
       )
       .position().x;
     const maxX = targetGraph
       .getCellById(
-        maxBy(layoutData[0], (k) => {
+        maxBy(nodeWithEdges, (k) => {
           return targetGraph.getCellById(k).position().x;
         }),
       )
       .position().x;
+    const yNodes = nodeWithEdges.filter((v) => {
+      return Math.abs(targetGraph.getCellById(v).position().y - maxY) < 50;
+    });
+    let referenceNode: any = targetGraph
+      .getCell(maxBy(yNodes, (k) => targetGraph.getCellById(k).position().x))
+      ?.position();
     const num = Math.round(maxX / 320);
-    const rawNodes = getGridData(num, nodeGroup.rawNodes);
-
+    const alternateNum = Math.floor((maxX + 100 - referenceNode.x) / 280);
+    let rawNodes = getGridData(num, nodeGroup.rawNodes);
+    if (alternateNum >= 1) {
+      const alternateNodes = take(nodeWithoutEdges, alternateNum);
+      rawNodes = getGridData(num, drop(nodeWithoutEdges, alternateNum));
+      alternateNodes.forEach((id, index) => {
+        const node = targetGraph.getCell(id);
+        if (node) {
+          const calculatedPosition = { x: referenceNode.x + 270 * index + 280, y: referenceNode.y };
+          node.position(calculatedPosition.x, calculatedPosition.y);
+        }
+      });
+    }
     rawNodes.forEach((arr, row) => {
       arr.forEach((id, index) => {
         const node = targetGraph.getCell(id);
