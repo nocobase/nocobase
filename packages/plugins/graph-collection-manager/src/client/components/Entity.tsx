@@ -24,7 +24,7 @@ import {
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import { Dropdown, Popover, Tag, Badge } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { groupBy } from 'lodash';
 import {
   useAsyncDataSource,
@@ -49,7 +49,7 @@ const Entity: React.FC<{
   const { node, setTargetNode, targetGraph } = props;
   const {
     store: {
-      data: { title, name, item, ports, attrs },
+      data: { title, name, item, ports, attrs, data },
     },
     id,
   } = node;
@@ -113,10 +113,17 @@ const Entity: React.FC<{
       return 'orange';
     }
   };
-  const handelOpenPorts = () => {
+  const handelOpenPorts = (isCollapse?) => {
     targetGraph.getCellById(item.key).toFront();
-    setCollapse(!collapse);
+    setCollapse(isCollapse);
+    const collapseNodes = targetGraph.collapseNodes || [];
+    collapseNodes.push({
+      [item.key]: isCollapse,
+    });
+    targetGraph.collapseNodes = collapseNodes;
+    targetGraph.getCellById(item.key).setData({ collapse: true });
   };
+  const isCollapse = collapse && data?.collapse;
   return (
     <div className={cx(entityContainer)} style={{ boxShadow: attrs?.boxShadow }}>
       <div className={headClass}>
@@ -316,7 +323,7 @@ const Entity: React.FC<{
                         record={collectionData.current}
                         setTargetNode={setTargetNode}
                         node={node}
-                        handelOpenPorts={handelOpenPorts}
+                        handelOpenPorts={() => handelOpenPorts(true)}
                       >
                         <SchemaComponent
                           scope={useCancelAction}
@@ -405,7 +412,7 @@ const Entity: React.FC<{
           );
         })}
         <div className="morePorts">
-          {collapse &&
+          {isCollapse &&
             portsData['morePorts']?.map((property) => {
               return (
                 property.uiSchema && (
@@ -576,9 +583,9 @@ const Entity: React.FC<{
               color: rgb(99 90 88);
             }
           `}
-          onClick={handelOpenPorts}
+          onClick={() => handelOpenPorts(!isCollapse)}
         >
-          {collapse
+          {isCollapse
             ? [<UpOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>{t('Association Fields')}</span>]
             : [<DownOutlined style={{ margin: '0px 8px 0px 5px' }} />, <span>{t('All Fields')}</span>]}
         </a>

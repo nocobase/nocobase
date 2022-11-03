@@ -258,6 +258,7 @@ export const GraphDrawPage = React.memo(() => {
         magnetConnectable: false,
       },
       async: true,
+      preventDefaultBlankAction: true,
     });
     Graph.registerPortLayout(
       'erPortPosition',
@@ -360,10 +361,10 @@ export const GraphDrawPage = React.memo(() => {
       m2mEdge && lightUp(m2mEdge);
     });
     targetGraph.on('edge:mouseleave', ({ e, edge: targetEdge }) => {
+      e.stopPropagation();
       const { m2m } = targetEdge.store?.data;
       const m2mLineId = m2m?.find((v) => v !== targetEdge.id);
       const m2mEdge = targetGraph.getCellById(m2mLineId);
-      e.stopPropagation();
       const lightsOut = (edge) => {
         const targeNode = targetGraph.getCellById(edge.store.data.target.cell);
         const sourceNode = targetGraph.getCellById(edge.store.data.source.cell);
@@ -398,10 +399,10 @@ export const GraphDrawPage = React.memo(() => {
       m2mEdge && lightsOut(m2mEdge);
     });
     targetGraph.on('node:moved', ({ e, node }) => {
+      e.stopPropagation();
       const connectEdges = targetGraph.getConnectedEdges(node);
       const currentPosition = node.position();
       const oldPosition = targetGraph.positions.find((v) => v.collectionName === node.store.data.name);
-      e.stopPropagation();
       if (oldPosition) {
         (oldPosition.x !== currentPosition.x || oldPosition.y !== currentPosition.y) &&
           useUpdatePositionAction({
@@ -416,6 +417,12 @@ export const GraphDrawPage = React.memo(() => {
       }
       connectEdges.forEach((edge) => {
         optimizeEdge(edge);
+      });
+    });
+    targetGraph.on('blank:click', (e) => {
+      targetGraph.collapseNodes?.map((v) => {
+        const node = targetGraph.getCell(Object.keys(v)[0]);
+        Object.values(v)[0]&&node.setData({ collapse: false });
       });
     });
   };
