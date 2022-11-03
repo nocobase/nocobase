@@ -1,11 +1,9 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { useForm } from '@formily/react';
 import { AddFieldAction as AddCollectionFieldAction } from '@nocobase/client';
 import React from 'react';
 import { useCancelAction, useCreateAction } from '../action-hooks';
 
 const useCreateCollectionField = (record) => {
-  const form = useForm();
   const title = record.collectionName;
   const { run } = useCreateAction(title, record.key);
   return {
@@ -19,14 +17,20 @@ export const AddFieldAction = ({ item: record }) => {
   return (
     <AddCollectionFieldAction
       trigger={['click']}
+      align={{
+        overflow: {
+          adjustY: false, // 关闭溢出位置调整
+        },
+      }}
       item={record}
       scope={{
         useCancelAction,
         useCreateCollectionField: () => useCreateCollectionField(record),
       }}
       getContainer={() => document.getElementById('graph_container')}
+      // getPopupContainer={triggerNode => triggerNode.parentNode}
     >
-      <PlusOutlined className="btn-add" />
+      <PlusOutlined className="btn-add" id='graph_btn_add_field'/>
     </AddCollectionFieldAction>
   );
 };

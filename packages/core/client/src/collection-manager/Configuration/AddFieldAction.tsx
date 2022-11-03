@@ -108,9 +108,9 @@ export const useCollectionFieldFormValues = () => {
       }
       delete values.autoCreateReverseField;
       return values;
-    }
-  }
-}
+    },
+  };
+};
 
 const useCreateCollectionField = () => {
   const form = useForm();
@@ -143,7 +143,7 @@ export const AddCollectionField = (props) => {
 };
 
 export const AddFieldAction = (props) => {
-  const { scope, getContainer, item: record, children,trigger } = props;
+  const { scope, getContainer, item: record, children, trigger, align } = props;
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -153,8 +153,10 @@ export const AddFieldAction = (props) => {
     <RecordProvider record={record}>
       <ActionContext.Provider value={{ visible, setVisible }}>
         <Dropdown
+          align={align}
           getPopupContainer={getContainer}
           trigger={trigger}
+          placement="bottomRight"
           overlay={
             <Menu
               style={{
