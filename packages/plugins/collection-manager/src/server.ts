@@ -120,8 +120,7 @@ export class CollectionManagerPlugin extends Plugin {
       await model.remove(options);
     });
 
-    this.app.db.on('collections.beforeDestroy', async (model, options) => {
-      console.log({ model });
+    this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
       await model.remove(options);
     });
 

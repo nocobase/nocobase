@@ -23,7 +23,9 @@ export class BelongsToManyField extends RelationField {
 
   bind() {
     const { database, collection } = this.context;
+
     const Target = this.TargetModel;
+
     if (!Target) {
       database.addPendingField(this);
       return false;

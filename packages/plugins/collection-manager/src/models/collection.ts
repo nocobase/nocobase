@@ -73,6 +73,7 @@ export class CollectionModel extends MagicAttributeModel {
         await field.destroy({ transaction });
       }
     }
+
     await collection.removeFromDb({
       transaction,
     });
