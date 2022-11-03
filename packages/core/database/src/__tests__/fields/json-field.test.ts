@@ -40,7 +40,7 @@ describe('json field', () => {
         json_test: {
           name: 'Emma',
           age: 18,
-          isRegister: true
+          isRegister: true,
         },
       },
       {
@@ -48,33 +48,42 @@ describe('json field', () => {
         json_test: {
           name: 'Justin',
           age: 19,
-          isRegister: false
+          isRegister: false,
         },
       },
-    ]
+    ];
 
     await Test.model.bulkCreate<any>(students);
-
 
     let items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: {$not: true}
-        }
+          isRegister: { $or: [false, null] },
+        },
       },
     });
+    console.log(items);
     expect(items.length).toEqual(2);
 
     items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: {$not: true},
-          age: 20
-        }
+          isRegister: { $not: true },
+        },
+      },
+    });
+    console.log(items);
+    expect(items.length).toEqual(2);
+
+    items = await db.getRepository('tests').find({
+      filter: {
+        json_test: {
+          isRegister: { $not: true },
+          age: 20,
+        },
       },
     });
     expect(items.length).toEqual(1);
-    expect(items[0].get("studentId")).toBe(students[0].studentId)
+    expect(items[0].get('studentId')).toBe(students[0].studentId);
   });
-
 });
