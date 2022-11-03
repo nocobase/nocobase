@@ -28,7 +28,6 @@ export const AddFieldAction = ({ item: record }) => {
         useCreateCollectionField: () => useCreateCollectionField(record),
       }}
       getContainer={() => document.getElementById('graph_container')}
-      // getPopupContainer={triggerNode => triggerNode.parentNode}
     >
       <PlusOutlined className="btn-add" id='graph_btn_add_field'/>
     </AddCollectionFieldAction>
