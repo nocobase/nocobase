@@ -1,12 +1,8 @@
-import winston, { LoggerOptions, Logger } from 'winston';
 import KoaLogger from './middlewares/koa-logger';
+import pino, { LoggerOptions, Logger } from 'pino';
 
 function createLogger(options: LoggerOptions = {}) {
-  return winston.createLogger({
-    level: 'info',
-    format: winston.format.json(),
-    transports: [new winston.transports.Console()],
-  });
+  return pino();
 }
 
 export { Logger, createLogger, KoaLogger };
