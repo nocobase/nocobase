@@ -216,6 +216,31 @@ describe('string field', () => {
       const item4 = await TestModel.create();
       expect(item4.get('name')).toBe('1');
     });
+
+    it('last record has no value of this field', async () => {
+      const testCollection = db.collection({
+        name: 'tests',
+        fields: [],
+      });
+      await db.sync();
+
+      const TestModel = db.getModel('tests');
+      const item1 = await TestModel.create();
+      expect(item1.get('name')).toBeUndefined();
+
+      testCollection.addField('name', {
+        type: 'sequence',
+        patterns: [
+          {
+            type: 'integer'
+          }
+        ]
+      });
+      await db.sync();
+
+      const item2 = await TestModel.create();
+      expect(item2.get('name')).toBe('0');
+    });
   });
 
   describe('date pattern', () => {

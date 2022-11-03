@@ -20,13 +20,10 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 export class MyPlugin extends Plugin {
   afterAdd() {
     // 插件 pm.add 注册进来之后，主要用于放置 app beforeLoad 事件的监听
+    this.app.on('beforeLoad');
   }
   beforeLoad() {
     // 自定义类或方法
-    this.db.registerFields();
-    this.db.registerFields();
-    this.db.registerFields();
-    this.db.registerFields();
     this.db.registerFieldTypes()
     this.db.registerModels()
     this.db.registerRepositories()
