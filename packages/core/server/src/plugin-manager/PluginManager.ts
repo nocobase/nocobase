@@ -194,8 +194,9 @@ export class PluginManager {
         throw error;
       }
     }
-    // console.log(`adding ${plugin} plugin`);
+    console.log(`adding ${plugin} plugin`);
     const packageName = await PluginManager.findPackage(plugin);
+    console.log(`adding ${packageName}`);
     const packageJson = require(`${packageName}/package.json`);
     const instance = this.addStatic(plugin, {
       ...options,
@@ -317,7 +318,7 @@ export class PluginManager {
   }
 
   static getPackageName(name: string) {
-    const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
+    const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(',');
     for (const prefix of prefixes) {
       try {
         require.resolve(`${prefix}${name}`);
@@ -334,7 +335,7 @@ export class PluginManager {
       const packageName = this.getPackageName(name);
       return packageName;
     } catch (error) {
-      const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
+      const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(',');
       for (const prefix of prefixes) {
         try {
           const packageName = `${prefix}${name}`;
