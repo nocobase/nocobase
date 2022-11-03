@@ -31,7 +31,6 @@ describe('json field', () => {
     },
   ];
 
-
   beforeEach(async () => {
     db = mockDatabase();
     await db.clean({ drop: true });
@@ -63,23 +62,23 @@ describe('json field', () => {
       },
     });
     expect(items.length).toEqual(1);
-    expect(items[0].get("studentId")).toEqual(students[1].studentId);
+    expect(items[0].get('studentId')).toEqual(students[1].studentId);
 
     items = await db.getRepository('tests').find({
       filter: {
         json_test: {
           isRegister: false,
-          age: 19
+          age: 19,
         },
       },
     });
     expect(items.length).toEqual(1);
-    expect(items[0].get("studentId")).toEqual(students[2].studentId);
+    expect(items[0].get('studentId')).toEqual(students[2].studentId);
 
     items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: null,
+          $or: [{ isRegister: { $is: null } }],   // mysql can't use isRegister: null
         },
       },
     });
@@ -100,7 +99,7 @@ describe('json field', () => {
     items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: { $not: true },
+          $or: [{ isRegister: { $is: null } }, { isRegister: false }],
         },
       },
     });
@@ -110,8 +109,10 @@ describe('json field', () => {
     items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: { $not: true },
-          age: 20,
+          $and:{
+            $or: [{ isRegister: { $is: null } }, { isRegister: false }],
+            age: 20,
+          }
         },
       },
     });
