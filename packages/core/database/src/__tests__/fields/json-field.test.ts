@@ -78,7 +78,7 @@ describe('json field', () => {
     items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: { $notIn: [true] }, // mysql can't use isRegister: null
+          $or: [{ isRegister: { $empty: true } }, { isRegister: false }], // mysql can't use isRegister: null
         },
       },
     });
@@ -99,7 +99,7 @@ describe('json field', () => {
     items = await db.getRepository('tests').find({
       filter: {
         json_test: {
-          isRegister: { $notIn: [true] },
+          $or: [{ isRegister: { $empty: true } }, { isRegister: false }]
         },
       },
     });
@@ -110,7 +110,7 @@ describe('json field', () => {
       filter: {
         json_test: {
           $and: {
-            isRegister: { $notIn: [true] },
+            $or: [{ isRegister: { $empty: true } }, { isRegister: false }],
             age: 20,
           },
         },
