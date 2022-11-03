@@ -8,14 +8,12 @@
       "type": "node",
       "request": "launch",
       "name": "Debug Server",
-      "cmd": "${workspaceRoot}",
       "runtimeArgs": [
         "-r", "dotenv/config",
         "-r", "tsconfig-paths/register",
         "-r", "ts-node/register"
       ],
       "args": ["${workspaceRoot}/packages/app/server/src/index.ts", "start"],
-      "port": 9229,
       "skipFiles": [
         "<node_internals>/**"
       ],
@@ -32,10 +30,8 @@
         "--inspect-brk",
         "test",
         "--runInBand",
-        // could be any single file path to debug
-        "${workspaceFolder}/packages/plugins/workflow/src/__tests__/instructions/parallel.test.ts"
+        "${fileBasenameNoExtension}"
       ],
-      "port": 9229,
       "skipFiles": [
         "<node_internals>/**"
       ],
