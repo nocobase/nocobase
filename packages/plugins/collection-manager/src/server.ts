@@ -83,7 +83,7 @@ export class CollectionManagerPlugin extends Plugin {
         });
       }
     });
-  
+
     // after migrate
     this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
 
@@ -121,6 +121,7 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.db.on('collections.beforeDestroy', async (model, options) => {
+      console.log({ model });
       await model.remove(options);
     });
 
