@@ -42,14 +42,7 @@ export class PluginManager {
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
-    this.app.acl.use(async (ctx, next) => {
-      if (ctx.action.resourceName === 'pm') {
-        ctx.permission = {
-          skip: true,
-        };
-      }
-      await next();
-    });
+    this.app.acl.allow('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
     this.server = net.createServer((socket) => {
       socket.on('data', async (data) => {
         const { method, plugins } = JSON.parse(data.toString());

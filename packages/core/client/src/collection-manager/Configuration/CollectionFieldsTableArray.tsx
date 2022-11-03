@@ -4,8 +4,8 @@ import { observer, RecursionField, Schema, useField, useFieldSchema } from '@for
 import { Table, TableColumnProps } from 'antd';
 import { default as classNames } from 'classnames';
 import React, { useState } from 'react';
-import { RecordIndexProvider, RecordProvider, useCollectionManager, useRequest, useSchemaInitializer } from '../..';
 import { useTranslation } from 'react-i18next';
+import { RecordIndexProvider, RecordProvider, useCollectionManager, useRequest, useSchemaInitializer } from '../..';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -95,8 +95,8 @@ const groupColumns = [
 type CategorizeKey = 'primaryAndForeignKey' | 'relation' | 'systemInfo' | 'basic';
 const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'basic', 'systemInfo'];
 const CategorizeKeyNameMap = new Map<CategorizeKey, string>([
-  ['primaryAndForeignKey', 'Primary key & Foreign key fields'],
-  ['relation', 'Relation fields'],
+  ['primaryAndForeignKey', 'PK & FK fields'],
+  ['relation', 'Association fields'],
   ['systemInfo', 'System fields'],
   ['basic', 'General fields'],
 ]);
@@ -182,7 +182,6 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   };
 
   const expandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
-    debugger;
     return (
       <Table
         {...others}

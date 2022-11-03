@@ -14,7 +14,7 @@ git pull
 
 ## 3. Update dependencies
 
-```
+```bash
 yarn install
 ```
 

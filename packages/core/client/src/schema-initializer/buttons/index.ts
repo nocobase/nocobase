@@ -9,6 +9,7 @@ export * from './FormActionInitializers';
 export * from './FormItemInitializers';
 export * from './KanbanActionInitializers';
 export * from './ReadPrettyFormActionInitializers';
+export * from './CalendarFormActionInitializers';
 export * from './ReadPrettyFormItemInitializers';
 export * from './RecordBlockInitializers';
 export * from './RecordFormBlockInitializers';
@@ -18,4 +19,3 @@ export * from './TableActionInitializers';
 export * from './TableColumnInitializers';
 export * from './TableSelectorInitializers';
 export * from './TabPaneInitializers';
-

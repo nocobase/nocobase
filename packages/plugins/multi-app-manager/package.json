@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-multi-app-manager",
-  "version": "0.8.0-alpha.8",
+  "version": "0.8.0-alpha.9",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -10,7 +10,7 @@
     }
   ],
   "dependencies": {
-    "@nocobase/server": "0.8.0-alpha.8"
+    "@nocobase/server": "0.8.0-alpha.9"
   },
   "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
 }
