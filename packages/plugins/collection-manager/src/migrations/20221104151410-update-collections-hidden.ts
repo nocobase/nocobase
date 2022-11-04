@@ -6,10 +6,8 @@ export default class UpdateCollectionsHiddenMigration extends Migration {
     if (!result) {
       return;
     }
-    const db = this.app.db;
-    const transaction = await db.sequelize.transaction();
     try {
-      await db.getRepository('collections').update({
+      await this.app.db.getRepository('collections').update({
         filter: {
           options: {
             autoCreate: true,
@@ -19,13 +17,9 @@ export default class UpdateCollectionsHiddenMigration extends Migration {
         values: {
           hidden: true,
         },
-        transaction,
       });
-
-      await transaction.commit();
     } catch (error) {
-      console.log(error);
-      await transaction.rollback();
+      console.error(error);
     }
   }
 }
