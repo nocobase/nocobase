@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-china-region",
-  "version": "0.8.0-alpha.9",
+  "version": "0.8.0-alpha.11",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -10,12 +10,12 @@
     }
   ],
   "dependencies": {
-    "@nocobase/client": "0.8.0-alpha.9",
-    "@nocobase/server": "0.8.0-alpha.9",
+    "@nocobase/client": "0.8.0-alpha.11",
+    "@nocobase/server": "0.8.0-alpha.11",
     "china-division": "^2.4.0"
   },
   "devDependencies": {
-    "@nocobase/test": "0.8.0-alpha.9"
+    "@nocobase/test": "0.8.0-alpha.11"
   },
   "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
 }
