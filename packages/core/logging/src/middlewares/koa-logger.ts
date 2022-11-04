@@ -17,6 +17,8 @@ function KoaLogger(options: { logger: Logger }) {
       ctx.log.error(error, {
         reqId: ctx.reqId,
       });
+
+      throw error;
     }
 
     ctx.log.info(`--> ${ctx.method} ${ctx.url}`, {
