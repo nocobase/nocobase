@@ -56,6 +56,7 @@ import {
 } from './types';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import ReferencesMap from './features/ReferencesMap';
+import { InheritedCollection } from './inherited-collection';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -293,9 +294,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     this.emit('beforeDefineCollection', options);
 
-    const collection = new Collection(options, {
-      database: this,
-    });
+    const collection = options.inherits
+      ? new InheritedCollection(options, {
+          database: this,
+        })
+      : new Collection(options, {
+          database: this,
+        });
 
     this.collections.set(collection.name, collection);
 
@@ -429,6 +434,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (isMySQL) {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', null);
     }
+
     return result;
   }
 

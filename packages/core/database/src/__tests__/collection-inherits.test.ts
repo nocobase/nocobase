@@ -22,6 +22,7 @@ describe('collection inherits', () => {
     const student = db.collection({
       name: 'student',
       inherits: 'person',
+      fields: [{ name: 'score', type: 'integer' }],
     });
 
     await db.sync();
