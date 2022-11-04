@@ -15,12 +15,12 @@ describe('belongsToMany', () => {
     Field = db.getCollection('fields');
     await Collection.repository.create({
       values: {
-        name: 'tests',
+        name: 'posts',
       },
     });
     await Collection.repository.create({
       values: {
-        name: 'foos',
+        name: 'tags',
       },
     });
   });
@@ -29,7 +29,5 @@ describe('belongsToMany', () => {
     await app.destroy();
   });
 
-  it('a', () => {
-    expect(true).toBe(true);
-  });
+  it('should create belongsToMany field', async () => {});
 });

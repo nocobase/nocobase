@@ -54,6 +54,7 @@ export class CollectionModel extends MagicAttributeModel {
     const { transaction } = options || {};
     const name = this.get('name');
     const collection = this.db.getCollection(name);
+
     if (!collection) {
       return;
     }
@@ -72,6 +73,7 @@ export class CollectionModel extends MagicAttributeModel {
         await field.destroy({ transaction });
       }
     }
+
     await collection.removeFromDb({
       transaction,
     });
