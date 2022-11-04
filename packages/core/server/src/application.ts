@@ -83,6 +83,7 @@ interface ListenOptions {
 
 interface StartOptions {
   cliArgs?: any[];
+  dbSync?: boolean;
   listen?: ListenOptions;
 }
 
@@ -350,6 +351,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     // reconnect database
     if (this.db.closed()) {
       await this.db.reconnect();
+    }
+
+    if (options.dbSync) {
+      console.log('db sync...');
+      await this.db.sync();
     }
 
     await this.emitAsync('beforeStart', this, options);

@@ -140,6 +140,7 @@ export function afterCreateForForeignKeyField(db: Database) {
             title: through,
             timestamps: false,
             autoGenId: false,
+            hidden: true,
             autoCreate: true,
             isThrough: true,
           },
