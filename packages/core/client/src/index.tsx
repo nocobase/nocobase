@@ -1,5 +1,10 @@
 import 'antd/dist/antd.css';
 import './global.less';
+export * as reactI18nNext from 'react-i18next';
+export * as antd from 'antd';
+export * as formilyReact from '@formily/react';
+export * as antdIcons from '@ant-design/icons';
+export * as emotionCss from '@emotion/css';
 
 export * from './acl';
 export * from './antd-config-provider';
@@ -25,4 +30,3 @@ export * from './schema-templates';
 export * from './settings-form';
 export * from './system-settings';
 export * from './user';
-

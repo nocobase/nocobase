@@ -1,9 +1,7 @@
-import { useFieldSchema } from '@formily/react';
-import {
-  GeneralSchemaDesigner,
-  SchemaSettings,
-  useCollection
-} from '@nocobase/client';
+import { formilyReact } from '@nocobase/client';
+const { useFieldSchema } = formilyReact;
+
+import { GeneralSchemaDesigner, SchemaSettings, useCollection } from '@nocobase/client';
 import React from 'react';
 
 export const HelloDesigner = () => {

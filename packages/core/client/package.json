@@ -12,6 +12,7 @@
   "module": "es/index.js",
   "typings": "es/index.d.ts",
   "dependencies": {
+    "@ant-design/icons": "^4.7.0",
     "@antv/g2plot": "^2.4.18",
     "@dnd-kit/core": "^5.0.1",
     "@dnd-kit/sortable": "^6.0.0",
@@ -19,6 +20,7 @@
     "@formily/antd": "2.0.20",
     "@formily/core": "2.0.20",
     "@formily/react": "2.0.20",
+    "@formily/shared": "^2.2.10",
     "@nocobase/sdk": "0.8.0-alpha.1",
     "@nocobase/utils": "0.8.0-alpha.1",
     "ahooks": "^3.0.5",

@@ -10,21 +10,22 @@
     }
   ],
   "dependencies": {
-    "@nocobase/actions": "0.8.0-alpha.1",
-    "@nocobase/client": "0.8.0-alpha.1",
-    "@nocobase/database": "0.8.0-alpha.1",
-    "@nocobase/server": "0.8.0-alpha.1",
-    "@nocobase/utils": "0.8.0-alpha.1",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/utils": "workspace:*",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
     "json-templates": "^4.2.0",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
+    "moment": "2.x",
     "react-js-cron": "^1.4.0",
     "sequelize": "^6.25.3"
   },
   "devDependencies": {
-    "@nocobase/test": "0.8.0-alpha.1"
+    "@nocobase/test": "workspace:*"
   },
   "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
 }

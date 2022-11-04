@@ -1,14 +1,18 @@
-import { TableOutlined } from '@ant-design/icons';
+const { TableOutlined } = antdIcons;
+
 import {
   SchemaComponentOptions,
   SchemaInitializer,
-  SchemaInitializerContext, SettingsCenterProvider
+  SchemaInitializerContext,
+  SettingsCenterProvider,
+  reactI18nNext,
+  antdIcons,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext } from 'react';
-import { useTranslation } from 'react-i18next';
 import { HelloDesigner } from './HelloDesigner';
 
+const { useTranslation } = reactI18nNext;
 export const HelloBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();

@@ -247,6 +247,7 @@ importers:
 
   packages/core/client:
     specifiers:
+      '@ant-design/icons': ^4.7.0
       '@antv/g2plot': ^2.4.18
       '@dnd-kit/core': ^5.0.1
       '@dnd-kit/sortable': ^6.0.0
@@ -254,6 +255,7 @@ importers:
       '@formily/antd': 2.0.20
       '@formily/core': 2.0.20
       '@formily/react': 2.0.20
+      '@formily/shared': ^2.2.10
       '@nocobase/sdk': 0.8.0-alpha.1
       '@nocobase/utils': 0.8.0-alpha.1
       '@testing-library/react': ^12.1.2
@@ -285,13 +287,15 @@ importers:
       solarlunar-es: ^1.0.9
       use-deep-compare-effect: ^1.8.1
     dependencies:
+      '@ant-design/icons': 4.7.0
       '@antv/g2plot': 2.4.20
       '@dnd-kit/core': 5.0.3
       '@dnd-kit/sortable': 6.0.1_@dnd-kit+core@5.0.3
       '@emotion/css': 11.10.5
-      '@formily/antd': 2.0.20_antd@4.19.5
+      '@formily/antd': 2.0.20_ygohokjero4g4tajqgx7qfgc4m
       '@formily/core': 2.0.20
       '@formily/react': 2.0.20
+      '@formily/shared': 2.2.10
       '@nocobase/sdk': link:../sdk
       '@nocobase/utils': link:../utils
       ahooks: 3.7.2
@@ -834,17 +838,18 @@ importers:
 
   packages/plugins/workflow:
     specifiers:
-      '@nocobase/actions': 0.8.0-alpha.1
-      '@nocobase/client': 0.8.0-alpha.1
-      '@nocobase/database': 0.8.0-alpha.1
-      '@nocobase/server': 0.8.0-alpha.1
-      '@nocobase/test': 0.8.0-alpha.1
-      '@nocobase/utils': 0.8.0-alpha.1
+      '@nocobase/actions': workspace:*
+      '@nocobase/client': workspace:*
+      '@nocobase/database': workspace:*
+      '@nocobase/server': workspace:*
+      '@nocobase/test': workspace:*
+      '@nocobase/utils': workspace:*
       classnames: ^2.3.1
       cron-parser: 4.4.0
       json-templates: ^4.2.0
       koa-compose: ^4.1.0
       lodash: ^4.17.21
+      moment: 2.x
       react-js-cron: ^1.4.0
       sequelize: ^6.25.3
     dependencies:
@@ -858,6 +863,7 @@ importers:
       json-templates: 4.2.0
       koa-compose: 4.1.0
       lodash: 4.17.21
+      moment: 2.29.4
       react-js-cron: 1.4.0
       sequelize: 6.25.3
     devDependencies:
@@ -959,9 +965,9 @@ importers:
 
   packages/samples/hello:
     specifiers:
-      '@nocobase/client': 0.8.0-alpha.1
-      '@nocobase/server': 0.8.0-alpha.1
-      '@nocobase/test': 0.8.0-alpha.1
+      '@nocobase/client': workspace:*
+      '@nocobase/server': workspace:*
+      '@nocobase/test': workspace:*
     devDependencies:
       '@nocobase/client': link:../../core/client
       '@nocobase/server': link:../../core/server
@@ -1002,9 +1008,9 @@ importers:
 
   packages/samples/shop-i18n:
     specifiers:
-      '@nocobase/client': 0.8.0-alpha.1
-      '@nocobase/server': 0.8.0-alpha.1
-      '@nocobase/test': 0.8.0-alpha.1
+      '@nocobase/client': workspace:*
+      '@nocobase/server': workspace:*
+      '@nocobase/test': workspace:*
       nodejs-snowflake: 2.0.1
     dependencies:
       nodejs-snowflake: 2.0.1
@@ -4791,7 +4797,7 @@ packages:
       - supports-color
     dev: false
 
-  /@formily/antd/2.0.20_antd@4.19.5:
+  /@formily/antd/2.0.20_ygohokjero4g4tajqgx7qfgc4m:
     resolution: {integrity: sha512-bUfbuqFJXTrkLNh8op2aeByQH+uBwoC1o9RU78INJ8G9DWqh7j27aMo/BWeTMgxZo6PvTDlPShzGh2lG12EQ/Q==}
     engines: {npm: '>=3.0.0'}
     peerDependencies:
@@ -4808,6 +4814,7 @@ packages:
       '@types/react-dom':
         optional: true
     dependencies:
+      '@ant-design/icons': 4.7.0
       '@formily/core': 2.0.20
       '@formily/grid': 2.0.20
       '@formily/json-schema': 2.0.20
