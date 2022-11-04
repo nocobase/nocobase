@@ -8718,6 +8718,13 @@ cron-parser@4.4.0:
   dependencies:
     luxon "^1.28.0"
 
+cron-parser@^4.6.0:
+  version "4.6.0"
+  resolved "https://registry.yarnpkg.com/cron-parser/-/cron-parser-4.6.0.tgz#404c3fdbff10ae80eef6b709555d577ef2fd2e0d"
+  integrity sha512-guZNLMGUgg6z4+eGhmHGw7ft+v6OQeuHzd1gcLxCo9Yg/qoxmG3nindp2/uwGCLizEisf2H0ptqeVXeoCpP6FA==
+  dependencies:
+    luxon "^3.0.1"
+
 croner@~4.1.92:
   version "4.1.97"
   resolved "https://registry.npmjs.org/croner/-/croner-4.1.97.tgz#6e373dc7bb3026fab2deb0d82685feef20796766"
@@ -14871,6 +14878,11 @@ luxon@^1.28.0:
   version "1.28.0"
   resolved "https://registry.yarnpkg.com/luxon/-/luxon-1.28.0.tgz#e7f96daad3938c06a62de0fb027115d251251fbf"
   integrity sha512-TfTiyvZhwBYM/7QdAVDh+7dBTBA29v4ik0Ce9zda3Mnf8on1S5KJI8P2jKFZ8+5C0jhmr0KwJEO/Wdpm0VeWJQ==
+
+luxon@^3.0.1:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/luxon/-/luxon-3.0.4.tgz#d179e4e9f05e092241e7044f64aaa54796b03929"
+  integrity sha512-aV48rGUwP/Vydn8HT+5cdr26YYQiUZ42NM6ToMoaGKwYfWbfLeRkEu1wXWMHBZT6+KyLfcbbtVcoQFCbbPjKlw==
 
 lz-string@^1.4.4:
   version "1.4.4"

@@ -4,10 +4,34 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Debug Server",
+      "runtimeArgs": [
+        "-r", "dotenv/config",
+        "-r", "tsconfig-paths/register",
+        "-r", "ts-node/register"
+      ],
+      "args": ["${workspaceRoot}/packages/app/server/src/index.ts", "start"],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Debug Jest Tests",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": ["run", "--inspect-brk", "test", "--runInBand", "${fileBasenameNoExtension}"],
-      "skipFiles": ["<node_internals>/**"],
+      "runtimeArgs": [
+        "run",
+        "--inspect-brk",
+        "test",
+        "--runInBand",
+        "${fileBasenameNoExtension}"
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
     }

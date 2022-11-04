@@ -35,6 +35,8 @@ export default (app: Application) => {
             let command = '$ yarn nocobase install -f';
             console.log(chalk.yellow(command));
             console.log();
+            console.log(chalk.red('This operation will clear the database!!!'));
+            console.log();
           }
           return;
         }

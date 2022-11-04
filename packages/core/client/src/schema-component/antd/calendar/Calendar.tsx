@@ -7,6 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
+import { parseExpression } from 'cron-parser';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
 import { useProps } from '../../hooks/useProps';
@@ -15,6 +16,8 @@ import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import './style.less';
 import type { ToolbarProps } from './types';
+
+const Weeks = ['month', 'week', 'day'] as const;
 
 const localizer = momentLocalizer(moment);
 
@@ -62,22 +65,93 @@ const messages: any = {
   showMore: (count) => i18n.t('{{count}} more items', { count }),
 };
 
-const useEvents = (dataSource: any, fieldNames: any) => {
+const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof Weeks[number]) => {
   const { t } = useTranslation();
-  return useMemo(
-    () =>
-      Array.isArray(dataSource)
-        ? dataSource?.map((item) => {
-            return {
-              id: get(item, fieldNames.id || 'id'),
-              title: get(item, fieldNames.title) || t('Untitle'),
-              start: new Date(get(item, fieldNames.start)),
-              end: new Date(get(item, fieldNames.end || fieldNames.start)),
-            };
-          })
-        : [],
-    [dataSource, fieldNames],
-  );
+  return useMemo(() => {
+    if (!Array.isArray(dataSource)) return [];
+    const events = [];
+
+    dataSource.forEach((item) => {
+      const { cron, exclude = [] } = item;
+      const start = moment(get(item, fieldNames.start) || moment());
+      const end = moment(get(item, fieldNames.end) || start);
+      const intervalTime = end.diff(start, 'millisecond', true);
+
+      const dateM = moment(date);
+      const startDate = dateM.clone().startOf('month');
+      const endDate = startDate.clone().endOf('month');
+      if (view === 'month') {
+        startDate.startOf('week');
+        endDate.endOf('week');
+      }
+      const push = (eventStart: moment.Moment = start) => {
+        // 必须在这个月的开始时间和结束时间，切在日程的开始时间之后
+        if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
+          return;
+        }
+
+        let out = false;
+        const res = exclude?.some((d) => {
+          if (d.endsWith('_after')) {
+            d = d.replace(/_after$/, '');
+            out = true;
+            return eventStart.isSameOrAfter(d);
+          } else {
+            return eventStart.isSame(d);
+          }
+        });
+
+        if (res) return out;
+
+        const event = {
+          id: get(item, fieldNames.id || 'id'),
+          title: get(item, fieldNames.title) || t('Untitle'),
+          start: eventStart.toDate(),
+          end: eventStart.add(intervalTime, 'millisecond').toDate(),
+        };
+
+        events.push(event);
+      };
+
+      if (cron === 'every_week') {
+        let nextStart = start
+          .clone()
+          .year(startDate.year())
+          .month(startDate.month())
+          .date(startDate.date())
+          .day(start.day());
+        while (nextStart.isBefore(endDate)) {
+          if (push(nextStart.clone())) {
+            break;
+          }
+          nextStart.add(1, 'week');
+        }
+      } else if (cron === 'every_month') {
+        push(start.clone().year(dateM.year()).month(dateM.month()));
+      } else if (cron === 'every_year') {
+        push(start.clone().year(dateM.year()));
+      } else {
+        push();
+        if (!cron) return;
+        try {
+          const interval = parseExpression(cron, {
+            startDate: startDate.toDate(),
+            endDate: endDate.toDate(),
+            iterator: true,
+            currentDate: start.toDate(),
+            utc: true,
+          });
+          while (interval.hasNext()) {
+            const { value } = interval.next();
+            if (push(moment(value.toDate()))) break;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
+    return events;
+  }, [dataSource, fieldNames, date, view]);
 };
 
 const CalendarRecordViewer = (props) => {
@@ -107,21 +181,27 @@ const CalendarRecordViewer = (props) => {
 
 export const Calendar: any = observer((props: any) => {
   const { dataSource, fieldNames, showLunar } = useProps(props);
-  const events = useEvents(dataSource, fieldNames);
+  const [date, setDate] = useState<Date>(new Date());
+  const [view, setView] = useState<typeof Weeks[number]>('month');
+  const events = useEvents(dataSource, fieldNames, date, view);
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
 
   return (
-    <div {...props} style={{ height: 700 }}>
+    <div style={{ height: 700 }}>
       <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
       <BigCalendar
         popup
         selectable
         events={events}
-        views={['month', 'week', 'day']}
+        view={view}
+        views={Weeks}
+        date={date}
         step={60}
         showMultiDayTimes
         messages={messages}
+        onNavigate={setDate}
+        onView={setView}
         onSelectSlot={(slotInfo) => {
           console.log('onSelectSlot', slotInfo);
         }}
@@ -133,6 +213,7 @@ export const Calendar: any = observer((props: any) => {
           if (!record) {
             return;
           }
+          record.__event = event;
           setRecord(record);
           setVisible(true);
         }}
@@ -147,7 +228,6 @@ export const Calendar: any = observer((props: any) => {
             return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
           },
         }}
-        defaultDate={new Date()}
         components={{
           toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
           week: {

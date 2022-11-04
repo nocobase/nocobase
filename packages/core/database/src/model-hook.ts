@@ -5,8 +5,6 @@ import { Model } from './model';
 
 const { hooks } = require('sequelize/lib/hooks');
 
-
-
 export class ModelHook {
   database: Database;
 

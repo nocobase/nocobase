@@ -17,9 +17,11 @@ const ObjectSelect = (props: Props) => {
     if (isEmptyObject(v)) {
       return;
     }
-    const values = toArr(v).filter(item => item).map((val) => {
-      return typeof val === 'object' ? val[fieldNames.value] : val;
-    });
+    const values = toArr(v)
+      .filter((item) => item)
+      .map((val) => {
+        return typeof val === 'object' ? val[fieldNames.value] : val;
+      });
     const current = getCurrentOptions(values, options, fieldNames)?.map((val) => {
       return {
         label: val[fieldNames.label],
@@ -38,6 +40,13 @@ const ObjectSelect = (props: Props) => {
       labelInValue
       options={options}
       fieldNames={fieldNames}
+      showSearch
+      filterOption={(input, option) => (option?.[fieldNames.label || 'label'] ?? '').includes(input)}
+      filterSort={(optionA, optionB) =>
+        (optionA?.[fieldNames.label || 'label'] ?? '')
+          .toLowerCase()
+          .localeCompare((optionB?.[fieldNames.label || 'label'] ?? '').toLowerCase())
+      }
       onChange={(changed) => {
         const current = getCurrentOptions(
           toArr(changed).map((v) => v.value),
@@ -62,7 +71,18 @@ export const Select = connect(
     if (objectValue) {
       return <ObjectSelect {...others} />;
     }
-    return <AntdSelect {...others} value={others.value || undefined}/>;
+    return (
+      <AntdSelect
+        showSearch
+        filterOption={(input, option) => (option?.label ?? '').includes(input)}
+        filterSort={(optionA, optionB) =>
+          (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
+        }
+        allowClear
+        {...others}
+        value={others.value || undefined}
+      />
+    );
   },
   mapProps(
     {

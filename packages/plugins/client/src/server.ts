@@ -1,4 +1,4 @@
-import { Plugin } from '@nocobase/server';
+import { Plugin, PluginManager } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
 import { isAbsolute, resolve } from 'path';
@@ -64,7 +64,8 @@ export class ClientPlugin extends Plugin {
           ctx.body = items
             .filter((item) => {
               try {
-                require.resolve(`@nocobase/plugin-${item.name}/client`);
+                const packageName = PluginManager.getPackageName(item.name);
+                require.resolve(`${packageName}/client`);
                 return true;
               } catch (error) {}
               return false;

@@ -11,6 +11,7 @@ import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
+import { CollectionFieldsTable } from ".";
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
@@ -174,10 +175,12 @@ export const ConfigurationTable = () => {
   const { collections = [] } = useCollectionManager();
   const compile = useCompile();
   const loadCollections = async (field: any) => {
-    return collections?.map((item: any) => ({
-      label: compile(item.title),
-      value: item.name,
-    }));
+    return collections
+      ?.filter((item) => !(item.autoCreate && item.isThrough))
+      .map((item: any) => ({
+        label: compile(item.title),
+        value: item.name,
+      }));
   };
   const ctx = useContext(SchemaComponentContext);
   return (
@@ -189,6 +192,7 @@ export const ConfigurationTable = () => {
             AddSubFieldAction,
             EditSubFieldAction,
             FieldSummary,
+            CollectionFieldsTable
           }}
           scope={{
             useDestroySubField,

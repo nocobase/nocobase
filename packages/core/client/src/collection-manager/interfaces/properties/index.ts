@@ -78,7 +78,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
     properties: {
       autoCreateReverseField: {
         type: 'boolean',
-        default: true,
+        default: false,
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox',
         'x-content': '{{t("Create inverse field in the target collection")}}',
