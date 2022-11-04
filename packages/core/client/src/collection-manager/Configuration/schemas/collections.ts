@@ -62,12 +62,7 @@ export const collectionSchema: ISchema = {
           params: {
             pageSize: 50,
             filter: {
-              inherit: false,
-              options: {
-                // filter auto create through collections
-                autoCreate: { $not: true },
-                isThrough: { $not: true },
-              },
+              'hidden.$isFalsy': true,
             },
             sort: ['sort'],
             appends: [],
