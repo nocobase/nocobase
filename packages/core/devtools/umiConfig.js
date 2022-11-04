@@ -44,9 +44,25 @@ function getUmiConfig() {
   };
 }
 
+function getNamespace() {
+  const content = fs.readFileSync(resolve(process.cwd(), 'package.json'), 'utf-8');
+  const json = JSON.parse(content);
+  return json.name;
+}
+
 function resolveNocobasePackagesAlias(config) {
   const coreDir = resolve(process.cwd(), './packages/core');
   if (!existsSync(coreDir)) {
+    const namespace = getNamespace();
+    console.log('NAMESPACE: ' + namespace);
+    const plugins = fs.readdirSync(resolve(process.cwd(), './packages/plugins'));
+    for (const package of plugins) {
+      const packageSrc = resolve(process.cwd(), './packages/plugins/', package, 'src');
+      if (existsSync(packageSrc)) {
+        config.module.rules.get('ts-in-node_modules').include.add(packageSrc);
+        config.resolve.alias.set(`@${namespace}/plugin-${package}`, packageSrc);
+      }
+    }
     return;
   }
   const cores = fs.readdirSync(coreDir);
