@@ -12,10 +12,6 @@ export default (app: Application) => {
       const port = opts.port || process.env.APP_PORT || 13000;
       const host = opts.host || process.env.APP_HOST || '0.0.0.0';
 
-      if (opts?.dbSync) {
-        await app.db.sync();
-      }
-
       await app.start({
         dbSync: opts?.dbSync,
         cliArgs,
