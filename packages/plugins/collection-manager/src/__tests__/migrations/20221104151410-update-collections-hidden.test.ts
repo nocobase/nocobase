@@ -1,4 +1,4 @@
-import { Database, MigrationContext, mockDatabase } from '@nocobase/database';
+import { Database, MigrationContext} from '@nocobase/database';
 import UpdateCollectionsHiddenMigration from '../../migrations/20221104151410-update-collections-hidden';
 
 import { createApp } from '../index';
@@ -25,23 +25,44 @@ describe('migration 20221104151410-update-collections-hidden test', () => {
       },
       hidden: false,
     });
+    await db.getCollection('collections').model.create({
+      name: 'test1',
+      hidden: false,
+    });
+    await db.getCollection('collections').model.create({
+      name: 'test2',
+      options: {
+        isThrough: true,
+      },
+      hidden: false,
+    });
 
-    const result = await db.getRepository('collections').findOne({
+    const result = await db.getRepository('collections').find({
       filter: {
         name: 'test',
       },
     });
-    expect(result.get('hidden')).toBeFalsy();
+    expect(result.length).toBe(1);
+    expect(result[0].get('hidden')).toBeFalsy();
 
     const migration = new UpdateCollectionsHiddenMigration({ db } as MigrationContext);
     migration.context.app = app;
     await migration.up();
 
-    const upResult = await db.getRepository('collections').findOne({
+
+    const upResult = await db.getRepository('collections').find({
       filter: {
         name: 'test',
       },
     });
-    expect(upResult.get('hidden')).toBeTruthy();
+
+    expect(upResult[0].get('hidden')).toBeTruthy();
+
+    const hiddenResult = await db.getRepository('collections').find({
+      filter: {
+        hidden: true,
+      },
+    });
+    expect(hiddenResult.length).toBe(1);
   });
 });
