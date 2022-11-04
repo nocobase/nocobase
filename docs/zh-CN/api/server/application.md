@@ -180,6 +180,11 @@ interface ApplicationOptions {
 
 ACL 实例，相关 API 参考 [ACL](/api/acl)。
 
+
+### `logger`
+
+Logger 实例，相关 API 参考 [Logger](/api/logging)。
+
 ### `i18n`
 
 I18next 实例，相关 API 参考 [I18next](https://www.i18next.com/overview/api)。
