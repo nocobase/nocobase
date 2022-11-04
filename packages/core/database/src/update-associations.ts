@@ -6,7 +6,7 @@ import {
   HasOne,
   Hookable,
   ModelCtor,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
@@ -375,6 +375,7 @@ export async function updateMultipleAssociation(
     const setAccessor = association.accessors.set;
 
     const createAccessor = association.accessors.create;
+
     if (isUndefinedOrNull(value)) {
       await model[setAccessor](null, { transaction, context });
       model.setDataValue(key, null);

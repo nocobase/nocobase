@@ -83,7 +83,7 @@ export class CollectionManagerPlugin extends Plugin {
         });
       }
     });
-  
+
     // after migrate
     this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
 
@@ -108,7 +108,7 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
-    this.app.db.on('fields.afterSaveWithAssociations', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, { context, transaction }) => {
       if (context) {
         await model.load({ transaction });
       }
@@ -120,7 +120,7 @@ export class CollectionManagerPlugin extends Plugin {
       await model.remove(options);
     });
 
-    this.app.db.on('collections.beforeDestroy', async (model, options) => {
+    this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
       await model.remove(options);
     });
 

@@ -23,6 +23,9 @@
       "@nocobase/plugin-sample-*": [
         "packages/samples/*/src"
       ],
+      "@nocobase/plugin-pro-*": [
+        "packages/pro-plugins/*/src"
+      ],
       "@nocobase/plugin-*": [
         "packages/plugins/*/src"
       ],

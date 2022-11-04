@@ -23,7 +23,9 @@ export class BelongsToManyField extends RelationField {
 
   bind() {
     const { database, collection } = this.context;
+
     const Target = this.TargetModel;
+
     if (!Target) {
       database.addPendingField(this);
       return false;
@@ -86,9 +88,12 @@ export class BelongsToManyField extends RelationField {
   unbind() {
     const { database, collection } = this.context;
     const Through = database.getCollection(this.through);
+
     // 如果关系字段还没建立就删除了，也同步删除待建立关联的关系字段
     database.removePendingField(this);
     // 删掉 model 的关联字段
+
+    this.clearAccessors();
     delete collection.model.associations[this.name];
   }
 }

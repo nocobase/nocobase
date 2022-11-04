@@ -176,7 +176,7 @@ export class PluginManager {
     });
     const pluginName = instance.getName();
     if (this.plugins.has(pluginName)) {
-      throw new Error(`plugin name [${pluginName}] exists`);
+      throw new Error(`plugin name [${pluginName}] already exists`);
     }
     this.plugins.set(pluginName, instance);
     return instance;
@@ -194,7 +194,6 @@ export class PluginManager {
         throw error;
       }
     }
-    // console.log(`adding ${plugin} plugin`);
     const packageName = await PluginManager.findPackage(plugin);
     const packageJson = require(`${packageName}/package.json`);
     const instance = this.addStatic(plugin, {
@@ -317,7 +316,7 @@ export class PluginManager {
   }
 
   static getPackageName(name: string) {
-    const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
+    const prefixes = this.getPluginPkgPrefix();
     for (const prefix of prefixes) {
       try {
         require.resolve(`${prefix}${name}`);
@@ -329,25 +328,32 @@ export class PluginManager {
     throw new Error(`${name} plugin does not exist`);
   }
 
+  static getPluginPkgPrefix() {
+    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(',');
+  }
+
   static async findPackage(name: string) {
     try {
       const packageName = this.getPackageName(name);
       return packageName;
     } catch (error) {
-      const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
+      console.log(`\`${name}\` plugin not found locally`);
+      const prefixes = this.getPluginPkgPrefix();
       for (const prefix of prefixes) {
         try {
           const packageName = `${prefix}${name}`;
+          console.log(`Try to find ${packageName}`);
           await execa('npm', ['v', packageName, 'versions']);
-          console.log(`${packageName} is downloading...`);
+          console.log(`${packageName} downloading`);
           await execa('yarn', ['add', packageName, '-W']);
+          console.log(`${packageName} downloaded`);
           return packageName;
         } catch (error) {
           continue;
         }
       }
     }
-    throw new Error(`${name} plugin does not exist`);
+    throw new Error(`No available packages found, ${name} plugin does not exist`);
   }
 
   static resolvePlugin(pluginName: string) {

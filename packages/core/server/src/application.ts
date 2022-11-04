@@ -9,7 +9,6 @@ import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
-import { isBoolean } from 'lodash';
 import semver from 'semver';
 import { promisify } from 'util';
 import { Logger, createLogger } from '@nocobase/logging';
@@ -330,6 +329,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async load(options?: any) {
     if (options?.reload) {
+      console.log(`Reload the application configuration`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
@@ -443,17 +443,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
 
-    if (options?.clean) {
-      await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
+    console.log('Database dialect: ' + this.db.sequelize.getDialect());
+
+    if (options?.clean || options?.sync?.force) {
+      console.log('Truncate database and reload app configuration');
+      await this.db.clean({ drop: true });
       await this.reload({ method: 'install' });
     }
 
     await this.emitAsync('beforeInstall', this, options);
-
-    await this.db.sync(options?.sync);
+    await this.db.sync();
     await this.pm.install(options);
     await this.version.update();
-
     await this.emitAsync('afterInstall', this, options);
   }
 
