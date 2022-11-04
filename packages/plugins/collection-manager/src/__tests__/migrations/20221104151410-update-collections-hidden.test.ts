@@ -45,12 +45,43 @@ describe('migration 20221104151410-update-collections-hidden test', () => {
     expect(result.length).toBe(1);
     expect(result[0].get('hidden')).toBeFalsy();
 
+    // > 0.8.0-alpha.9 version up test
+    await db.getRepository('applicationVersion').update({
+      filterByTk:1,
+      values: {
+        value: '0.8.0-alpha.10',
+      },
+    });
     const migration = new UpdateCollectionsHiddenMigration({ db } as MigrationContext);
     migration.context.app = app;
     await migration.up();
 
+    let upResult = await db.getRepository('collections').find({
+      filter: {
+        name: 'test',
+      },
+    });
 
-    const upResult = await db.getRepository('collections').find({
+    expect(upResult[0].get('hidden')).toBeFalsy();
+
+    let hiddenResult = await db.getRepository('collections').find({
+      filter: {
+        hidden: true,
+      },
+    });
+    expect(hiddenResult.length).toBe(0);
+
+
+    // <= 0.8.0-alpha.9 version up test
+    await db.getRepository('applicationVersion').update({
+      filterByTk:1,
+      values: {
+        value: '0.8.0-alpha.9',
+      },
+    });
+    await migration.up();
+
+    upResult = await db.getRepository('collections').find({
       filter: {
         name: 'test',
       },
@@ -58,7 +89,7 @@ describe('migration 20221104151410-update-collections-hidden test', () => {
 
     expect(upResult[0].get('hidden')).toBeTruthy();
 
-    const hiddenResult = await db.getRepository('collections').find({
+    hiddenResult = await db.getRepository('collections').find({
       filter: {
         hidden: true,
       },
