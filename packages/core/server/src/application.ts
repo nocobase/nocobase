@@ -30,6 +30,7 @@ export interface ResourcerOptions {
 }
 
 export interface ApplicationOptions {
+  basePath?: string;
   database?: IDatabaseOptions | Database;
   cache?: ICacheConfig | ICacheConfig[];
   resourcer?: ResourcerOptions;
@@ -208,9 +209,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._logger;
   }
 
+  get log() {
+    return this._logger;
+  }
+
   protected init() {
     const options = this.options;
-    this._logger = createLogger();
+    this._logger = createLogger(this.options);
 
     // @ts-ignore
     this._events = [];

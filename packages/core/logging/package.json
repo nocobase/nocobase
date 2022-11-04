@@ -17,9 +17,7 @@
     "directory": "packages/logging"
   },
   "dependencies": {
-    "koa-pino-logger": "^4.0.0",
-    "koa2-winston": "^3.1.1",
-    "pino": "^8.7.0",
-    "winston": "^3.8.2"
+    "winston": "^3.8.2",
+    "winston-daily-rotate-file": "^4.7.1"
   }
 }

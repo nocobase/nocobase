@@ -1,21 +1,30 @@
-import logger from 'koa-pino-logger';
-const { randomUUID } = require('node:crypto');
+import { randomUUID } from 'crypto';
+import { Logger } from 'winston';
 
-function KoaLogger(options) {
-  return logger({
-    ...options,
+function KoaLogger(options: { logger: Logger }) {
+  const { logger } = options;
+  return (ctx, next) => {
+    ctx.log = logger;
+    ctx.reqId = ctx.req.id = randomUUID();
 
-    genReqId: function (req, res) {
-      if (req.id) return req.id;
-      let id = req.headers['X-Request-Id'];
-      if (!id) id = randomUUID();
-      return id;
-    },
+    ctx.log.info(`<-- ${ctx.method} ${ctx.url}`, {
+      reqId: ctx.reqId,
+    });
 
-    redact: {
-      paths: ['req.headers.cookie', 'req.headers.accept', 'req.headers.authorization'],
-    },
-  });
+    next()
+      .then(() => {
+        ctx.log.info(`--> ${ctx.method} ${ctx.url}`, {
+          reqId: ctx.reqId,
+          status: ctx.status,
+        });
+      })
+      .catch((err) => {
+        ctx.log.error(err, {
+          reqId: ctx.reqId,
+        });
+        throw err;
+      });
+  };
 }
 
 export default KoaLogger;
