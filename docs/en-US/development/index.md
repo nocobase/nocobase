@@ -1,62 +1,61 @@
-# 介绍
+# Introduction
 
-NocoBase 采用微内核架构，各类功能以插件形式扩展，前后端分离，提供了各种插件化接口，插件按功能模块划分，具有可插拔的特点。
+NocoBase adopts microkernel architecture, functions are extended in the form of plugins. Front and back ends are separated. Various plugin interfaces are provided, and plugins are divided by functional modules with pluggable features.
 
 <img src="https://www.nocobase.com/images/NocoBaseMindMapLite.png" style="max-width: 800px;" >
 
-插件化的设计降低了模块之间的耦合度，提高了复用率。随着插件库的不断扩充，常见的场景只需要组合插件即可完成基础搭建。例如 NocoBase 的无代码平台，就是由各种插件组合起来。
+The pluggable design reduces the coupling between modules and increases the reuse rate. As the plugin library continues to expand, common scenarios require only a combination of plugins to complete the base build. NocoBase's no-code platform, for example, is a combination of various plugins.
 
 <img src="./index/pm-built-in.jpg" style="max-width: 800px;" />
 
-## 插件管理器
+## Plugin Manager
 
-NocoBase 提供了强大的插件管理器用于管理插件，插件管理器的流程如下：
+NocoBase provides a powerful plugin manager for managing plugins. The flow of the plugin manager is as follows
 
 <img src="./index/pm-flow.svg" style="max-width: 580px;" />
 
-无代码用户可以通过界面管理本地插件的激活和禁用：
+No-code Users can manage the activation and deactivation of local plugins through the interface at
 
 <img src="./index/pm-ui.jpg" style="max-width: 800px;" />
 
-开发也可以通过 CLI 的方式管理完整的插件流程：
+Developers can also manage the complete plugin process by way of the CLI: 
 
 ```bash
-# 创建插件
+# Create the plugin
 yarn pm create hello
-# 注册插件
+# Register the plugin
 yarn pm add hello
-# 激活插件
+# Activate the plugin
 yarn pm enable hello
-# 禁用插件
+# Disable the plugin
 yarn pm disable hello
-# 删除插件
+# Remove the plugin
 yarn pm remove hello
 ```
 
-更多插件示例，查看 [packages/samples](https://github.com/nocobase/nocobase/tree/main/packages/samples)。
+For more plugin examples, see [packages/samples](https://github.com/nocobase/nocobase/tree/main/packages/samples).
 
-## 扩展能力
+## Extensibility
 
-无论是通用性的功能，还是个性化定制，都建议以插件的形式编写，NocoBase 的扩展性体现在方方面面：
+Whether it is generic functionality or personalization, it is recommended to write it as a plugin. NocoBase is extensible in all aspects.
 
-- 可以是用户直观可见的界面相关的页面模块、区块类型、操作类型、字段类型等
-- 也可以是用于增强或限制 HTTP API 的过滤器、校验器、访问限制等
-- 也可以是更底层的数据表、迁移、事件、命令行等功能的增强
+- It can be user-intuitive interface-related page modules, block types, action types, field types, etc.
+- Filters, validators, access restrictions, etc. for enhancing or restricting the HTTP API
+- It can also be enhancements to underlying data tables, migrations, events, command lines, etc.
 
 
-各模块分布：
+Distribution of modules.
 
 - Server
-  - Collections & Fields：主要用于系统表配置，业务表建议在「配置中心 - 数据表配置」里配置
-  - Resources & Actions：主要用于扩展 Action API
-  - Middleware：中间件
-  - Events：事件
-  - I18n：服务端国际化
-  - Commands：自定义命令行
-  - Migrations：迁移脚本
+  - Collections & Fields: mainly used for system table configuration. Business tables are recommended to be configured in "Settings Center - Collection manager".
+  - Resources & Actions: Mainly used to extend the Action API
+  - Middleware: Middleware
+  - Events: Events
+  - I18n: server-side internationalization
+  - Commands: Custom command lines
+  - Migrations: Migration scripts
 - Client
-  - UI Schema Designer：页面设计器
-  - UI Router：有自定义页面需求时
-  - Settings Center：为插件提供配置页面
-  - I18n：客户端国际化
-
+  - UI Schema Designer: Page Designer
+  - UI Router: When there is a need for custom pages
+  - Settings Center: Provides configuration pages for plugins
+  - I18n: Client side internationalization
