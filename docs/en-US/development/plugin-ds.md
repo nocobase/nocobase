@@ -1,17 +1,17 @@
-# 插件目录结构
+# Plugin directory structure
 
-可以通过 `yarn pm create my-plugin` 快速创建一个空插件，目录结构如下：
+An empty plugin can be created quickly with `yarn pm create my-plugin`, with the following directory structure.
 
 ```bash
 |- /my-plugin
   |- /src
-    |- /client      # 插件客户端代码
-    |- /server      # 插件服务端代码
+    |- /client # client-side of the plugin
+    |- /server # server-side of the plugin
   |- client.d.ts
   |- client.js
-  |- package.json   # 插件包信息
+  |- package.json # plugin package information
   |- server.d.ts
   |- server.js
 ```
 
-`/src/server` 的教程参考 [服务端](./server) 章节，`/src/client` 的教程参考 [客户端](./client) 章节。
+The tutorial for `/src/server` refers to the [server](./server) section, and the tutorial for `/src/client` refers to the [client](./client) section.
