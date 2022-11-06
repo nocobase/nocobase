@@ -1,9 +1,9 @@
 # 编写第一个插件
 
-在此之前，需要先安装好 NocoBase：
+在开始前前，需要先安装好 NocoBase：
 
-- [create-nocobase-app 安装](/getting-started/installation/create-nocobase-app)
-- [Git 源码安装](/getting-started/installation/git-clone)
+- [create-nocobase-app 安装](/welcome/getting-started/installation/create-nocobase-app)
+- [Git 源码安装](/welcome/getting-started/installation/git-clone)
 
 安装好 NocoBase 之后，我们就可以开始插件开发之旅了。
 
