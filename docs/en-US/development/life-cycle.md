@@ -1,39 +1,39 @@
-# 生命周期
+# Life cycle
 
-## 应用的生命周期
+## Lifecycle of applications
 
 <img src="./index/app-flow.svg" style="max-width: 380px;" />
 
-## 插件的生命周期
+## Lifecycle of plugins
 
-<img src="./index/pm-flow.svg" style="max-width: 600px;"  />
+<img src="./index/pm-flow.svg" style="max-width: 600px;" />
 
-## 插件的生命周期方法
+## Lifecycle methods for plugins
 
 ```ts
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class MyPlugin extends Plugin {
   afterAdd() {
-    // 插件 pm.add 注册进来之后，主要用于放置 app.beforeLoad 的事件。
-  }
+    // After the plugin pm.add is registered. Mainly used to place the app.beforeLoad event.
+  beforeLoad() { }
   beforeLoad() {
-    // 所有插件执行 load 之前，一般用于注册类和事件监听
+    // Before all plugins are loaded. Generally used for registering classes and event listeners
   }
   async load() {
-    // 加载配置
+    // Load configuration
   }
   async install(options?: InstallOptions) {
-    // 安装逻辑
+    // Logic for installing
   }
   async afterEnable() {
-    // 激活之后
+    // After activation
   }
   async afterDisable() {
-    // 禁用之后
+    // After disable
   }
   async remove() {
-    // 删除逻辑
+    // Logic for removing
   }
 }
 
