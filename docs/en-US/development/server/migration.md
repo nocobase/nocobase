@@ -1,39 +1,39 @@
-# 数据库迁移
+# Database Migration
 
-插件在更新迭代过程中，可能会出现某些不兼容的改动，这些不兼容的升级脚本可以通过编写 migration 文件来处理。
+There may be some incompatible changes during the plugin update iteration, these incompatible upgrade scripts can be handled by writing migration files.
 
-## 如何添加迁移文件？
+## How to add a migration file?
 
 ```ts
 export class MyPlugin extends Plugin {
   load() {
-    // 加载单个 Migration 文件
+    // Load a single Migration file
     this.db.addMigration();
-    // 加载多个 Migration 文件
+    // Load multiple Migration files
     this.db.addMigrations();
   }
 }
 ```
 
-API 参考：
+API reference.
 
 - [db.addMigration()](/api/database#addmigration)
 - [db.addMigrations()](/api/database#addmigrations)
 
-## 什么时候执行？
+## When to execute?
 
 ```bash
-# app 升级时，会执行 migrator.up() 和 db.sync()
+## When the app is upgraded, migrator.up() and db.sync() are executed
 yarn nocobase upgrade
-# 单独触发 migration
+# Trigger migration separately
 yarn nocobase migrator up
 ```
 
-## 什么时候需要写 migration 文件？
+## When do I need to write a migration file?
 
-一般用于升级过程中，存于数据库的系统配置的更新。如果只是 collection 配置的变更，无需配置 migration，直接执行 `yarn nocobase db:sync` 就可以同步给数据库了。
+It is usually used to update the system configuration stored in the database during the upgrade process. If it is just a collection configuration change, you don't need to configure migration, just execute ``yarn nocobase db:sync`` to synchronize to the database.
 
-## Migration 文件
+## Migration file
 
 ```ts
 import { Migration } from '@nocobase/server';
