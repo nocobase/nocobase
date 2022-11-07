@@ -1,6 +1,6 @@
-# 关系字段配置
+# Association Fields
 
-在关系数据库里，标准的建表关系的方式是添加一个外键字段，然后再加一个外键约束。例如 Knex 建表的例子：
+In a relational database, the standard way to build a table relationship is to add a foreign key field followed by a foreign key constraint. For example, Knex builds a table with the following example.
 
 ```ts
 knex.schema.table('posts', function (table) {
@@ -9,7 +9,7 @@ knex.schema.table('posts', function (table) {
 });
 ```
 
-这个过程会在 posts 表里创建一个 userId 字段，并且设置上外键约束 posts.userId 引用 users.id。而在 NocoBase 的 Collection 中，是通过配置关系字段来建立上这样一种关系约束，如：
+This procedure creates a userId field in the posts table and sets the foreign key constraint posts.userId to refer to users.id. In NocoBase's Collection, such a relational constraint is created by configuring the relational field, e.g.
 
 ```ts
 {
@@ -25,7 +25,7 @@ knex.schema.table('posts', function (table) {
 }
 ```
 
-## 关系参数说明
+## Relationship parameters
 
 ### BelongsTo
 
@@ -33,24 +33,24 @@ knex.schema.table('posts', function (table) {
 interface BelongsTo {
   type: 'belongsTo';
   name: string;
-  // 默认值为 name 复数
+  // defaults to name's plural
   target?: string;
-  // 默认值为 target model 的主键，一般为 'id'
+  // The default value is the primary key of the target model, usually 'id'
   targetKey?: any;
-  // 默认值为 target + 'Id'
+  // defaults to target + 'Id'
   foreignKey?: any;
 }
 
-// authors 表主键 id 和 books 表外键 authorId 相连
+// The authors table's primary key id is concatenated with the books table's foreign key authorId
 {
-  name:  'books',
+  name: 'books',
   fields: [
     {
       type: 'belongsTo',
       name: 'author',
       target: 'authors',
-      targetKey: 'id',         // authors 表主键
-      foreignKey: 'authorId',  // 外键在 books 表
+      targetKey: 'id', // authors table's primary key
+      foreignKey: 'authorId', // foreign key in books table
     }
   ],
 }
@@ -62,24 +62,24 @@ interface BelongsTo {
 interface HasOne {
   type: 'hasOne';
   name: string;
-  // 默认值为 name 复数
+  // defaults to name's plural
   target?: string;
-  // 默认值为 source model 的主键，一般为 'id'
+  // The default value is the primary key of the source model, usually 'id'
   sourceKey?: string;
-  // 默认值为 source collection name 的单数形态 + 'Id'
+  // default value is the singular form of source collection name + 'Id'
   foreignKey?: string;
-}
+foreignKey?}
 
-// users 表主键 id 和 profiles 外键 userId 相连
+// The users table's primary key id is concatenated with the profiles' foreign key userId
 {
-  name:  'users',
+  name: 'users',
   fields: [
     {
       type: 'hasOne',
       name: 'profile',
       target: 'profiles',
-      sourceKey: 'id',      // users 表主键
-      foreignKey: 'userId', // 外键在 profiles 表
+      sourceKey: 'id', // users table's primary key
+      foreignKey: 'userId', // foreign key in profiles table
     }
   ],
 }
@@ -91,24 +91,24 @@ interface HasOne {
 interface HasMany {
   type: 'hasMany';
   name: string;
-  // 默认值为 name
+  // defaults to name
   target?: string;
-  // 默认值为 source model 的主键，一般为 'id'
+  // The default value is the primary key of the source model, usually 'id'
   sourceKey?: string;
-  // 默认值为 source collection name 的单数形态 + 'Id'
+  // the default value is the singular form of the source collection name + 'Id'
   foreignKey?: string;
 }
 
-// posts 表主键 id 和 comments 表 postId 相连
+// The posts table's primary key id is concatenated with the comments table's postId
 {
-  name:  'posts',
+  name: 'posts',
   fields: [
     {
       type: 'hasMany',
       name: 'comments',
       target: 'comments',
-      sourceKey: 'id',          // posts 表主键
-      foreignKey: 'postId',     // 外键在 comments 表
+      sourceKey: 'id', // posts table's primary key
+      foreignKey: 'postId', // foreign key in the comments table
     }
   ],
 }
@@ -120,33 +120,33 @@ interface HasMany {
 interface BelongsToMany {
   type: 'belongsToMany';
   name: string;
-  // 默认值为 name
+  // default value is name
   target?: string;
-  // 默认值为 source collection name 和 target 的首字母自然顺序拼接的字符串
+  // defaults to the source collection name and target in the natural order of the first letter of the string
   through?: string;
-  //默认值为 source collection name 的单数形态 + 'Id'
+  // defaults to the singular form of source collection name + 'Id'
   foreignKey?: string;
-  // 默认值为 source model 的主键，一般为 id
+  // The default value is the primary key of the source model, usually id
   sourceKey?: string;
-  //默认值为 target 的单数形态 + 'Id'
+  // the default value is the singular form of target + 'Id'
   otherKey?: string;
-  // 默认值为 target model 的主键，一般为 id
+  // the default value is the primary key of the target model, usually id
   targetKey?: string;
 }
 
-// tags 表主键、posts 表主键和 posts_tags 两个外键相连
+// tags table's primary key, posts table's primary key and posts_tags two foreign keys are linked
 {
   name: 'posts',
   fields: [
     {
-      type: 'belongsToMany',
+      type: 'believesToMany',
       name: 'tags',
       target: 'tags',
-      through: 'posts_tags', // 中间表
-      foreignKey: 'tagId',   // 外键1，在 posts_tags 表里
-      otherKey: 'postId',    // 外键2，在 posts_tags 表里
-      targetKey: 'id',       // tags 表主键
-      sourceKey: 'id',       // posts 表主键
+      through: 'posts_tags', // intermediate table
+      foreignKey: 'tagId', // foreign key 1, in posts_tags table
+      otherKey: 'postId', // foreignKey2, in posts_tags table
+      targetKey: 'id', // tags table's primary key
+      sourceKey: 'id', // posts table's primary key
     }
   ],
 }
