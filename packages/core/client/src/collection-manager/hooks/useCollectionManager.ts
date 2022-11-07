@@ -15,6 +15,42 @@ export const useCollectionManager = () => {
     }
     return collection?.fields?.find((field) => field.name === fieldName);
   };
+  const getParentCollections = (name) => {
+    const parents = [];
+    const getParents = (name) => {
+      const collection = collections?.find((collection) => collection.name === name);
+      if (collection) {
+        const { inherits } = collection;
+        if (inherits) {
+          for (let index = 0; index < inherits.length; index++) {
+            const collectionKey = inherits[index];
+            parents.push(collectionKey);
+            getParents(collectionKey);
+          }
+        }
+      }
+      return parents;
+    };
+
+    return getParents(name);
+  };
+
+  const getChildrenCollections = (name) => {
+    const childrens = [];
+    const getChildrens = (name) => {
+      const inheritCollections = collections.filter((v) => {
+        return v.inherits?.includes(name);
+      });
+      inheritCollections.forEach((v) => {
+        const collectionKey = v.name;
+        childrens.push(v)
+        return getChildrens(collectionKey);
+      });
+      return childrens;
+    };
+    return getChildrens(name);
+  };
+
   return {
     service,
     interfaces,
@@ -58,5 +94,7 @@ export const useCollectionManager = () => {
     getInterface(name: string) {
       return interfaces[name] ? clone(interfaces[name]) : null;
     },
+    getParentCollections,
+    getChildrenCollections,
   };
 };
