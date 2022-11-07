@@ -1,5 +1,6 @@
 import { Collection } from '../collection';
 import Database from '../database';
+import { InheritedCollection } from '../inherited-collection';
 import { mockDatabase } from './index';
 
 describe('collection inherits', () => {
@@ -34,5 +35,39 @@ describe('collection inherits', () => {
     });
 
     expect(await person.repository.count()).toBe(1);
+  });
+
+  it('should get parent fields', async () => {
+    const root = db.collection({
+      name: 'root',
+      fields: [{ name: 'rootField', type: 'string' }],
+    });
+
+    const parent1 = db.collection({
+      name: 'parent1',
+      inherits: 'root',
+      fields: [{ name: 'parent1Field', type: 'string' }],
+    });
+
+    const parent2 = db.collection({
+      name: 'parent2',
+      inherits: 'parent1',
+      fields: [{ name: 'parent2Field', type: 'string' }],
+    });
+
+    const parent21 = db.collection({
+      name: 'parent21',
+      fields: [{ name: 'parent21Field', type: 'string' }],
+    });
+
+    const child: InheritedCollection = db.collection({
+      name: 'child',
+      inherits: ['parent2', 'parent21'],
+      fields: [{ name: 'childField', type: 'string' }],
+    }) as InheritedCollection;
+
+    const parentFields = child.parentFields();
+
+    console.log({ parentFields });
   });
 });

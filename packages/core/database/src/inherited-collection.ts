@@ -31,4 +31,14 @@ export class InheritedCollection extends Collection {
       }
     }
   }
+
+  getParents() {
+    return this.parents;
+  }
+
+  parentFields() {}
+
+  isInherired() {
+    return true;
+  }
 }

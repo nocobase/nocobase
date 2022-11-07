@@ -389,4 +389,8 @@ export class Collection<
       await model.sync(syncOptions);
     }
   }
+
+  public isInherired() {
+    return false;
+  }
 }

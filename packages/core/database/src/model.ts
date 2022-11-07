@@ -3,6 +3,8 @@ import { Model as SequelizeModel, ModelCtor } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
+import type { InheritedCollection } from './inherited-collection';
+import { SyncRunner } from './sync-runner';
 
 interface IModel {
   [key: string]: any;
@@ -144,5 +146,15 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     });
 
     return lodash.orderBy(data, orderItems, orderDirections);
+  }
+
+  static async sync(options) {
+    const model = this as any;
+
+    if (this.collection.isInherired()) {
+      return SyncRunner.syncInheritModel(model, options);
+    }
+
+    return SequelizeModel.sync.call(this, options);
   }
 }
