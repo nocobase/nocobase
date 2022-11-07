@@ -10,7 +10,7 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps
+  SchemaInitializerItemProps,
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -107,6 +107,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
 
   return (
     <Dropdown
+      overlayStyle={{ maxHeight: '60vh', overflow: 'auto' }}
       className={classNames('nb-schema-initializer-button')}
       openClassName={`nb-schema-initializer-button-open`}
       overlayClassName={classNames(
