@@ -386,7 +386,7 @@ export default {
   "Green": "极光绿",
   "Cyan": "明青",
   "Blue": "拂晓蓝",
-  "Geek Blue": "极客蓝",
+  "Geek blue": "极客蓝",
   "Purple": "酱紫",
   "Default": "默认",
 
@@ -731,5 +731,7 @@ export default {
   "Changed to": "修改为",
   "Clear":"清空",
   "Add attach":"增加关联",
-  "Please select the records to be updated": "请选择要更新的记录"
+  "Please select the records to be updated": "请选择要更新的记录",
+  "Selector": "选择器",
+  "Inner": "里面",
 }

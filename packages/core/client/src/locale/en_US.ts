@@ -301,7 +301,7 @@ export default {
   "Green": "Green",
   "Cyan": "Cyan",
   "Blue": "Blue",
-  "Geek Blue": "Geek Blue",
+  "Geek blue": "Geek blue",
   "Purple": "Purple",
   "Default": "Default",
   "Add card": "Add card",
@@ -578,5 +578,7 @@ export default {
   "Changed to": "Changed to",
   "Clear":"Clear",
   "Add attach":"Add attach",
-  "Please select the records to be updated": "Please select the records to be updated"
+  "Please select the records to be updated": "Please select the records to be updated",
+  "Selector": "Selector",
+  "Inner": "Inner",
 }

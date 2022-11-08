@@ -291,7 +291,7 @@ export default {
   "Green": "Yeşil",
   "Cyan": "Camgöbeği",
   "Blue": "Mavi",
-  "Geek Blue": "Geek Blue",
+  "Geek blue": "Geek blue",
   "Purple": "Mor",
   "Default": "Varsayılan",
   "Add card": "Kart Ekle",
