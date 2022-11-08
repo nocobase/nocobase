@@ -63,7 +63,6 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
       },
     },
   ]);
-  console.log(fieldItems)
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}

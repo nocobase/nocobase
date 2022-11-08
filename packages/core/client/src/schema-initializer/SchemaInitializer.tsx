@@ -99,15 +99,13 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       }
     });
   };
-  const menu = <Menu>{renderItems(items)}</Menu>;
+  const menu = <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>{renderItems(items)}</Menu>;
 
   if (!designable && props.designable !== true) {
     return null;
   }
-
   return (
     <Dropdown
-      overlayStyle={{ maxHeight: '60vh', overflow: 'auto' }}
       className={classNames('nb-schema-initializer-button')}
       openClassName={`nb-schema-initializer-button-open`}
       overlayClassName={classNames(
