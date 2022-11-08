@@ -188,7 +188,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
             eventKey={item.key}
             key={item.key}
             onClick={(info) => {
-              item?.clearKeywords();
+              item?.clearKeywords?.();
               onClick({ ...info, item });
             }}
           >
@@ -216,7 +216,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
       eventKey={eventKey ? `${eventKey}-${index}` : info.key}
       icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
       onClick={(opts) => {
-        info?.clearKeywords();
+        info?.clearKeywords?.();
         onClick({ ...opts, item: info });
       }}
     >
