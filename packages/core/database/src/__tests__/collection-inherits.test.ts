@@ -67,7 +67,6 @@ describe('collection inherits', () => {
     }) as InheritedCollection;
 
     const parentFields = child.parentFields();
-
-    console.log({ parentFields });
+    expect(parentFields.size).toBe(4);
   });
 });

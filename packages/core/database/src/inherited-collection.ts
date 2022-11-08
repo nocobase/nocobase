@@ -36,7 +36,22 @@ export class InheritedCollection extends Collection {
     return this.parents;
   }
 
-  parentFields() {}
+  parentFields() {
+    const fields = new Map<string, Field>();
+    for (const parent of this.parents) {
+      if (parent.isInherired()) {
+        for (const [name, field] of (<InheritedCollection>parent).parentFields()) {
+          fields.set(name, field);
+        }
+      }
+
+      const parentFields = parent.fields;
+      for (const [name, field] of parentFields) {
+        fields.set(name, field);
+      }
+    }
+    return fields;
+  }
 
   isInherired() {
     return true;
