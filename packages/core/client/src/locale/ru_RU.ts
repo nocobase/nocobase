@@ -557,4 +557,5 @@ export default {
   "Print": "Печать",
   'Single select and radio fields can be used as the grouping field': 'Одиночное поле выбора и радиополя могут использоваться в качестве поля группировки',
   'Sign up successfully, and automatically jump to the sign in page': 'Зарегистрируйтесь успешно и автоматически перейдете на страницу входа',
+  "Search and select collection": "Search and select collection",
 }
