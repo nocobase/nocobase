@@ -37,6 +37,29 @@ describe('collection inherits', () => {
     expect(await person.repository.count()).toBe(1);
   });
 
+  it('should create inherited table', async () => {
+    const person = db.collection({
+      name: 'person',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const student = db.collection({
+      name: 'student',
+      inherits: 'person',
+      fields: [{ name: 'score', type: 'integer' }],
+    });
+
+    await db.sync();
+
+    const studentTableInfo = await db.sequelize.getQueryInterface().describeTable(student.model.tableName);
+
+    expect(studentTableInfo.score).toBeDefined();
+    expect(studentTableInfo.name).toBeDefined();
+    expect(studentTableInfo.id).toBeDefined();
+    expect(studentTableInfo.createdAt).toBeDefined();
+    expect(studentTableInfo.updatedAt).toBeDefined();
+  });
+
   it('should get parent fields', async () => {
     const root = db.collection({
       name: 'root',

@@ -1,7 +1,7 @@
 import { Collection } from './collection';
 import { InheritedCollection } from './inherited-collection';
 import { Model } from './model';
-import _ from 'lodash';
+import lodash from 'lodash';
 
 export class SyncRunner {
   static async syncInheritModel(model: any, options: any) {
@@ -20,7 +20,10 @@ export class SyncRunner {
 
     const attributes = model.tableAttributes;
 
-    await this.createTable(tableName, attributes, options, model, parentTables);
+    const parentAttributes = inheritedCollection.parentAttributes();
+
+    const childAttributes = lodash.omit(attributes, Object.keys(parentAttributes));
+    await this.createTable(tableName, childAttributes, options, model, parentTables);
     return;
   }
 
@@ -30,7 +33,7 @@ export class SyncRunner {
     options = { ...options };
 
     if (options && options.uniqueKeys) {
-      _.forOwn(options.uniqueKeys, (uniqueKey) => {
+      lodash.forOwn(options.uniqueKeys, (uniqueKey) => {
         if (uniqueKey.customIndex === undefined) {
           uniqueKey.customIndex = true;
         }
@@ -43,7 +46,7 @@ export class SyncRunner {
 
     const queryGenerator = model.queryGenerator;
 
-    attributes = _.mapValues(attributes, (attribute) => model.sequelize.normalizeAttribute(attribute));
+    attributes = lodash.mapValues(attributes, (attribute) => model.sequelize.normalizeAttribute(attribute));
 
     attributes = queryGenerator.attributesToSQL(attributes, { table: tableName, context: 'createTable' });
 

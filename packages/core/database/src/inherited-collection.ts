@@ -53,6 +53,19 @@ export class InheritedCollection extends Collection {
     return fields;
   }
 
+  parentAttributes() {
+    const attributes = {};
+    for (const parent of this.parents) {
+      if (parent.isInherired()) {
+        Object.assign(attributes, (<InheritedCollection>parent).parentAttributes());
+      }
+
+      Object.assign(attributes, (<any>parent.model).tableAttributes);
+    }
+
+    return attributes;
+  }
+
   isInherired() {
     return true;
   }
