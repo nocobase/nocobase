@@ -13,7 +13,7 @@ import {
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions,
+  beforeInitOptions
 } from './hooks';
 
 import { CollectionModel, FieldModel } from './models';
@@ -130,7 +130,16 @@ export class CollectionManagerPlugin extends Plugin {
       }
       const exists = await this.app.db.collectionExistsInDb('collections');
       if (exists) {
-        await this.app.db.getRepository<CollectionRepository>('collections').load();
+        try {
+          await this.app.db.getRepository<CollectionRepository>('collections').load();
+        } catch (error) {
+          await this.app.db.sync();
+          try {
+            await this.app.db.getRepository<CollectionRepository>('collections').load();
+          } catch (error) {
+            throw error;
+          }
+        }
       }
     });
 

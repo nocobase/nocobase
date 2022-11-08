@@ -32,6 +32,11 @@ export default {
       defaultValue: false,
     },
     {
+      type: 'boolean',
+      name: 'hidden',
+      defaultValue: false,
+    },
+    {
       type: 'json',
       name: 'options',
       defaultValue: {},

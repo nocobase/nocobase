@@ -103,7 +103,6 @@ export const useTableColumnInitializerFields = () => {
 export const useAssociatedTableColumnInitializerFields = () => {
   const { name, fields } = useCollection();
   const { getInterface, getCollectionFields } = useCollectionManager();
-
   const groups = fields
     ?.filter((field) => {
       return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
@@ -139,7 +138,6 @@ export const useAssociatedTableColumnInitializerFields = () => {
             schema,
           } as SchemaInitializerItemOptions;
         });
-
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
@@ -148,6 +146,40 @@ export const useAssociatedTableColumnInitializerFields = () => {
     });
 
   return groups;
+};
+
+export const useInheritsTableColumnInitializerFields = () => {
+  const { name } = useCollection();
+  const { getCollectionFields, getInterface, getParentCollections, getCollection } = useCollectionManager();
+  const inherits = getParentCollections(name);
+  return inherits?.map((v) => {
+    const fields = getCollectionFields(v);
+    const targetCollection = getCollection(v);
+    return {
+      [targetCollection.title]: fields.map((k) => {
+        const interfaceConfig = getInterface(k.interface);
+        const schema = {
+          name: `${k.name}`,
+          'x-component': 'CollectionField',
+          'x-read-pretty': true,
+          'x-collection-field': `${targetCollection.name}.${k.name}`,
+          'x-component-props': {},
+        };
+        return {
+          type: 'item',
+          title: k?.uiSchema?.title || k.name,
+          component: 'TableCollectionFieldInitializer',
+          find: findTableColumn,
+          remove: removeTableColumn,
+          schemaInitialize: (s) => {
+            interfaceConfig?.schemaInitialize?.(s, { field: k, readPretty: true, block: 'Table' });
+          },
+          field: k,
+          schema,
+        } as SchemaInitializerItemOptions;
+      }),
+    };
+  });
 };
 
 export const useFormItemInitializerFields = (options?: any) => {
@@ -238,6 +270,45 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   return groups;
 };
 
+export const useInheritsFormItemInitializerFields = (options?) => {
+  const { name } = useCollection();
+  const { getCollectionFields, getInterface, getParentCollections, getCollection } = useCollectionManager();
+  const inherits = getParentCollections(name);
+  return inherits?.map((v) => {
+    const fields = getCollectionFields(v);
+    const form = useForm();
+    const { readPretty = form.readPretty, block = 'Form' } = options || {};
+    const targetCollection = getCollection(v);
+    return {
+      [targetCollection.title]: fields
+        ?.filter((field) => field?.interface && !field?.isForeignKey)
+        ?.map((field) => {
+          const interfaceConfig = getInterface(field.interface);
+          const schema = {
+            type: 'string',
+            name: field.name,
+            title: field?.uiSchema?.title || field.name,
+            'x-designer': 'FormItem.Designer',
+            'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
+            'x-decorator': 'FormItem',
+            'x-collection-field': `${targetCollection.name}.${field.name}`,
+            'x-component-props': {},
+            'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
+          };
+          return {
+            type: 'item',
+            title: field?.uiSchema?.title || field.name,
+            component: 'CollectionFieldInitializer',
+            remove: removeGridFormItem,
+            schemaInitialize: (s) => {
+              interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
+            },
+            schema,
+          } as SchemaInitializerItemOptions;
+        }),
+    };
+  });
+};
 export const useCustomFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
   const { getInterface } = useCollectionManager();
@@ -434,9 +505,9 @@ export const useCollectionDataSourceItems = (componentName) => {
       title: t('Select collection'),
       children: collections
         ?.filter((item) => {
-          if(item.inherit){
-            return false
-          }else{
+          if (item.inherit) {
+            return false;
+          } else {
             return !(item?.isThrough && item?.autoCreate);
           }
         })

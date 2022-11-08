@@ -44,6 +44,19 @@ export const collection: CollectionOptions = {
       targetKey: 'name',
       uiSchema: {},
     },
+    {
+      type: 'hasMany',
+      name: 'inherits',
+      interface: 'select',
+      uiSchema: {
+        title: '{{ t("Inherits") }}',
+        type: 'string',
+        'x-component': 'Select',
+        'x-component-props': {
+          mode: 'multiple',
+        },
+      },
+    },
   ],
 };
 
@@ -62,12 +75,7 @@ export const collectionSchema: ISchema = {
           params: {
             pageSize: 50,
             filter: {
-              inherit: false,
-              options: {
-                // filter auto create through collections
-                autoCreate: { $not: true },
-                isThrough: { $not: true },
-              },
+              'hidden.$isFalsy': true,
             },
             sort: ['sort'],
             appends: [],
@@ -139,6 +147,11 @@ export const collectionSchema: ISchema = {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                       'x-validator': 'uid',
+                    },
+                    inherits:{
+                      'x-component': 'CollectionField',
+                      'x-decorator': 'FormItem',
+                      'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                     },
                     footer: {
                       type: 'void',
@@ -261,6 +274,12 @@ export const collectionSchema: ISchema = {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                               'x-disabled': true,
+                            },
+                            inherits:{
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                              'x-disabled': true,
+                              'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                             },
                             footer: {
                               type: 'void',

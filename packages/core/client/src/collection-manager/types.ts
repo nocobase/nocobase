@@ -21,6 +21,7 @@ export interface CollectionOptions {
   targetKey?: string;
   sortable?: any;
   fields?: FieldOptions[];
+  inherits?:string[];
 }
 
 export interface ICollectionProviderProps {
