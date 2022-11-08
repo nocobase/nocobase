@@ -1,7 +1,7 @@
-import { Collection } from '../collection';
-import Database from '../database';
-import { InheritedCollection } from '../inherited-collection';
-import { mockDatabase } from './index';
+import { Collection } from '../../collection';
+import Database from '../../database';
+import { InheritedCollection } from '../../inherited-collection';
+import { mockDatabase } from '../index';
 
 describe('collection inherits', () => {
   let db: Database;

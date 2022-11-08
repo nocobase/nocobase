@@ -9,6 +9,8 @@ export class SyncRunner {
     const db = inheritedCollection.context.database;
     const dialect = db.sequelize.getDialect();
 
+    const queryInterface = db.sequelize.getQueryInterface();
+
     if (dialect != 'postgres') {
       throw new Error('Inherit model is only supported on postgres');
     }
@@ -24,7 +26,15 @@ export class SyncRunner {
 
     const childAttributes = lodash.omit(attributes, Object.keys(parentAttributes));
     await this.createTable(tableName, childAttributes, options, model, parentTables);
-    return;
+
+    if (options.alter) {
+      const columns = await queryInterface.describeTable(tableName);
+      for (const columnName in childAttributes) {
+        if (!columns[columnName]) {
+          await queryInterface.addColumn(tableName, columnName, childAttributes[columnName], options);
+        }
+      }
+    }
   }
 
   static async createTable(tableName, attributes, options, model, parentTables) {
