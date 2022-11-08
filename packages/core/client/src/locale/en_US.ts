@@ -581,4 +581,5 @@ export default {
   "Please select the records to be updated": "Please select the records to be updated",
   "Selector": "Selector",
   "Inner": "Inner",
+  "Search and select collection": "Search and select collection",
 }

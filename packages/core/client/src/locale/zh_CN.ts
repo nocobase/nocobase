@@ -734,4 +734,5 @@ export default {
   "Please select the records to be updated": "请选择要更新的记录",
   "Selector": "选择器",
   "Inner": "里面",
+  "Search and select collection": "搜索并选择数据表",
 }
