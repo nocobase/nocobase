@@ -1,66 +1,66 @@
-# UI Schema 是什么？
+# What is UI Schema?
 
-一种描述前端组件的协议，基于 Formily Schema 2.0，类 JSON Schema 风格。
+A protocol for describing front-end components, based on Formily Schema 2.0, JSON Schema-like style.
 
 ```ts
 interface ISchema {
   type: 'void' | 'string' | 'number' | 'object' | 'array';
   name?: string;
   title?: any;
-  // 包装器组件
-  ['x-decorator']?: string;
-  // 包装器组件属性
-  ['x-decorator-props']?: any;
-  // 组件
-  ['x-component']?: string;
-  // 组件属性
-  ['x-component-props']?: any;
-  // 展示状态，默认为 'visible'
-  ['x-display']?: 'none' | 'hidden' | 'visible';
-  // 组件的子节点，简单使用
-  ['x-content']?: any;
-  // children 节点 schema
+  // wrapper component
+  ['x-decorator']? : string;
+  // Wrapper component properties
+  ['x-decorator-props']? : any;
+  // component
+  ['x-component']? : string;
+  // Component properties
+  ['x-component-props']? : any;
+  // display state, default is 'visible'
+  ['x-display']? : 'none' | 'hidden' | 'visible';
+  // child node of the component, simply use
+  ['x-content']? : any;
+  // children node schema
   properties?: Record<string, ISchema>;
 
-  // 以下仅字段组件时使用
+  // The following is used only for field components
 
-  // 字段联动
-  ['x-reactions']?: SchemaReactions;
-  // 字段 UI 交互模式，默认为 'editable'
-  ['x-pattern']?: 'editable' | 'disabled' | 'readPretty';
-  // 字段校验
-  ['x-validator']?: Validator;
-  // 默认数据
-  default: ?:any;
+  // field linkage
+  ['x-reactions']? : SchemaReactions;
+  // Field UI interaction mode, default is 'editable'
+  ['x-pattern']? : 'editable' | 'disabled' | 'readPretty';
+  // Field validation
+  ['x-validator']? : Validator;
+  // default data
+  default: ? :any;
 
-  // 设计器相关
+  // Designer related
 
-  // 设计器组件（工具栏），包括：拖拽移动、插入新节点、修改参数、移除等
-  ['x-designer']?: any;
-  // 初始化器组件（工具栏），决定当前 schema 内部可以插入什么
-  ['x-initializer']?: any;
+  // Designer component (toolbar), including: drag and drop to move, insert new nodes, modify parameters, remove, etc.
+  ['x-designer']? : any;
+  // Initializer component (toolbar), determines what can be inserted inside the current schema
+  ['x-initializer']? : any;
 }
 ```
 
-## 最简单的组件
+## The simplest component
 
-所有的原生 html 标签都可以转为 schema 的写法。如：
+All native html tags can be converted to schema writing. For example
 
 ```ts
 {
   type: 'void',
   'x-component': 'h1',
-  'x-content': 'Hello, world!',
+  'x-content': 'Hello, world!
 }
 ```
 
-JSX 示例
+JSX examples
 
 ```tsx | pure
 <h1>Hello, world!</h1>
 ```
 
-## children 组件可以写在 properties 里
+## children components can be written in properties
 
 ```ts
 {
@@ -76,7 +76,7 @@ JSX 示例
 }
 ```
 
-JSX 等同于
+JSX is equivalent to
 
 ```tsx | pure
 <div className={'form-item'}>
@@ -84,11 +84,11 @@ JSX 等同于
 </div>
 ```
 
-## decorator 的巧妙用法
+## The clever use of Decorator
 
-decorator + component 的组合，可以将两个组件放在一个 schema 节点里，降低 schema 结构复杂度，提高组件的复用率。
+The combination of decorator + component allows you to put two components in a single schema node, reducing the complexity of the schema structure and increasing the reusability of the components.
 
-例如表单场景里，可以将 FormItem 组件与任意字段组件组合，在这里 FormItem 就是 Decorator。
+For example, in a form scenario, you can combine a FormItem component with any field component, where the FormItem is the Decorator.
 
 ```ts
 {
@@ -109,7 +109,7 @@ decorator + component 的组合，可以将两个组件放在一个 schema 节�
 }
 ```
 
-JSX 等同于
+JSX is equivalent to
 
 ```tsx | pure
 <div>
@@ -122,7 +122,7 @@ JSX 等同于
 </div>
 ```
 
-也可以提供一个 CardItem 组件，用于包裹所有区块，这样所有区块就都是 Card 包裹的了。
+It is also possible to provide a CardItem component that wraps all blocks, so that all blocks are Card wrapped.
 
 ```ts
 {
@@ -143,7 +143,7 @@ JSX 等同于
 }
 ```
 
-JSX 等同于
+JSX is equivalent to
 
 ```tsx | pure
 <div>
@@ -156,11 +156,11 @@ JSX 等同于
 </div>
 ```
 
-## 组件的展示状态
+## Display state of the component
 
-- `'x-display': 'visible'`：显示组件
-- `'x-display': 'hidden'`：隐藏组件，数据不隐藏
-- `'x-display': 'none'`：隐藏组件，数据也隐藏
+- `'x-display': 'visible'`: the component is displayed
+- `'x-display': 'hidden'`: component is hidden, data is not hidden
+- `'x-display': 'none'`: component is hidden, data is also hidden
 
 ### `'x-display': 'visible'`
 
@@ -179,7 +179,7 @@ JSX 等同于
 }
 ```
 
-JSX 等同于
+JSX is equivalent to
 
 ```tsx | pure
 <div className={'form-item'}>
@@ -204,11 +204,11 @@ JSX 等同于
 }
 ```
 
-JSX 等同于
+JSX is equivalent to
 
 ```tsx | pure
 <div className={'form-item'}>
-  {/* 此处不输出 input 组件，对应的 name=title 的字段模型还存在 */}
+  {/* The input component is not output here, the corresponding field model with name=title still exists */}
 </div>
 ```
 
@@ -229,23 +229,23 @@ JSX 等同于
 }
 ```
 
-JSX 等同于
+JSX is equivalent to
 
 ```tsx | pure
 <div className={'form-item'}>
-  {/* 此处不输出 input 组件，对应的 name=title 的字段模型也不存在了 */}
+  {/* The input component is not output here, and the corresponding field model with name=title does not exist anymore */}
 </div>
 ```
 
-## 组件的显示模式
+## Display modes for components
 
-用于字段组件，有三种显示模式：
+For field components, there are three display modes:
 
-- `'x-pattern': 'editable'` 可编辑
-- `'x-pattern': 'disabled'` 不可编辑
-- `'x-pattern': 'readPretty'` 友好阅读
+- `'x-pattern': 'editable'` Editable
+- `'x-pattern': 'disabled'` Non-editable
+- `'x-pattern': 'readPretty'` Friendly reading
 
-如单行文本 `<SingleText />` 组件，编辑和不可编辑模式为 `<input />`，友好阅读模式为 `<div />`
+As in the case of the `<SingleText />` component, the editable and disabled modes are `<input />` and the readPretty mode is `<div />`.
 
 ### `'x-pattern': 'editable'`
 
@@ -266,7 +266,7 @@ const schema = {
 };
 ```
 
-JSX 等同于
+JSX is equivalent to
 
 ```tsx | pure
 <div className={'form-item'}>
@@ -293,7 +293,7 @@ const schema = {
 };
 ```
 
-JSX 等同于
+JSX is equivalent to
 
 ```tsx | pure
 <div className={'form-item'}>
@@ -320,7 +320,7 @@ const schema = {
 };
 ```
 
-JSX 等同于
+JSX is equivalent to
 
 ```tsx | pure
 <div className={'form-item'}>
