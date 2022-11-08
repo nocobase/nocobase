@@ -1,6 +1,6 @@
 # 概述
 
-NocoBase 客户端的扩展大多以 Provider 的形式提供，无论是内置的 Provider 还是插件的主文件都是 Provider。
+NocoBase 客户端的扩展大多以 Provider 的形式提供。
 
 ## 内置的 Providers
 
@@ -48,7 +48,7 @@ app.use(HelloProvider);
 
 ## 插件的客户端
 
-初始化的空插件，服务端相关目录结构如下：
+初始化的空插件，客户端相关目录结构如下：
 
 ```bash
 |- /my-plugin
