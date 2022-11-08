@@ -291,7 +291,7 @@ export default {
   "Green": "グリーン",
   "Cyan": "シアン",
   "Blue": "ブルー",
-  "Geek Blue": "ギークブルー",
+  "Geek blue": "ギークブルー",
   "Purple": "パープル",
   "Default": "デフォルト",
   "Add card": "カードを追加",
