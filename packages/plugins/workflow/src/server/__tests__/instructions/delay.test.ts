@@ -79,6 +79,44 @@ describe('workflow > instructions > delay', () => {
       const [j2] = await e2.getJobs();
       expect(j2.status).toBe(JOB_STATUS.REJECTED);
     });
+
+    it('delay to resolve and rollback in downstream node', async () => {
+      const n1 = await workflow.createNode({
+        type: 'delay',
+        config: {
+          duration: 1000,
+          endStatus: JOB_STATUS.RESOLVED
+        }
+      });
+      const n2 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'comment',
+          params: {
+            values: {
+              status: 'should be number but use string to raise an error'
+            }
+          }
+        },
+        upstreamId: n1.id
+      });
+      await n1.setDownstream(n2);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
+      const [j1] = await e1.getJobs();
+      expect(j1.status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(2000);
+
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toEqual(EXECUTION_STATUS.REJECTED);
+      const [j2, j3] = await e2.getJobs({ order: [['id', 'ASC']] });
+      expect(j2.status).toBe(JOB_STATUS.RESOLVED);
+      expect(j3.status).toBe(JOB_STATUS.REJECTED);
+    });
   });
 
   describe('app lifecycle', () => {

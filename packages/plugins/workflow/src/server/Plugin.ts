@@ -156,7 +156,7 @@ export default class WorkflowPlugin extends Plugin {
       key: workflow.key,
       status: EXECUTION_STATUS.STARTED,
       useTransaction: workflow.useTransaction,
-      transaction: transaction.id
+      transaction: transaction?.id
     }, { transaction });
 
     console.log('workflow triggered:', new Date(), workflow.id, execution.id);
