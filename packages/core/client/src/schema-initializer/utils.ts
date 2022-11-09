@@ -156,7 +156,7 @@ export const useInheritsTableColumnInitializerFields = () => {
     const fields = getCollectionFields(v);
     const targetCollection = getCollection(v);
     return {
-      [targetCollection.title]: fields.map((k) => {
+      [targetCollection?.title]: fields.map((k) => {
         const interfaceConfig = getInterface(k.interface);
         const schema = {
           name: `${k.name}`,

@@ -1,9 +1,11 @@
 import { createForm } from '@formily/core';
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { useDesignable } from '../schema-component';
+import { findParent } from './hooks';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -46,6 +48,14 @@ const InternalFormBlockProvider = (props) => {
 };
 
 export const FormBlockProvider = (props) => {
+  const { designable } = useDesignable();
+  console.log(designable);
+  const fieldSchema = useFieldSchema();
+  if (!designable) {
+    const targetParentSchema = findParent(fieldSchema);
+    targetParentSchema['x-hidden'] = true;
+    console.log(targetParentSchema);
+  }
   return (
     <BlockProvider {...props}>
       <InternalFormBlockProvider {...props} />

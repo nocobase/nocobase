@@ -1,7 +1,7 @@
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
 import { SchemaComponent, SchemaComponentContext, useActionContext, useCompile } from '../../schema-component';
@@ -11,7 +11,7 @@ import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
-import { CollectionFieldsTable } from ".";
+import { CollectionFieldsTable } from '.';
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
@@ -173,9 +173,11 @@ const useNewId = (prefix) => {
 
 export const ConfigurationTable = () => {
   const { collections = [] } = useCollectionManager();
+  const collectonsRef: any = useRef();
+  collectonsRef.current = collections;
   const compile = useCompile();
   const loadCollections = async (field: any) => {
-    return collections
+    return collectonsRef.current
       ?.filter((item) => !(item.autoCreate && item.isThrough))
       .map((item: any) => ({
         label: compile(item.title),
@@ -192,7 +194,7 @@ export const ConfigurationTable = () => {
             AddSubFieldAction,
             EditSubFieldAction,
             FieldSummary,
-            CollectionFieldsTable
+            CollectionFieldsTable,
           }}
           scope={{
             useDestroySubField,
