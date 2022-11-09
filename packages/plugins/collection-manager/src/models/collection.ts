@@ -138,8 +138,13 @@ export class CollectionModel extends MagicAttributeModel {
       },
     });
 
+    const selfFields = await this.getFields({ transaction });
+
     const inheritedFields = ancestorFields.filter((field: FieldModel) => {
-      return !field.isAssociationField();
+      return (
+        !field.isAssociationField() &&
+        !selfFields.find((selfField: FieldModel) => selfField.get('name') == field.get('name'))
+      );
     });
 
     for (const inheritedField of inheritedFields) {
