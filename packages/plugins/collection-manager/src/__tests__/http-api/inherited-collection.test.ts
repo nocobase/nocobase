@@ -25,6 +25,21 @@ pgOnly()('Inherited Collection', () => {
     await app.destroy();
   });
 
+  it('should reload collection when parent fields change', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'students',
+        inherits: 'person',
+        fields: [
+          {
+            name: 'score',
+            type: 'integer',
+          },
+        ],
+      },
+    });
+  });
+
   it('should create inherited collection', async () => {
     const response = await agent.resource('collections').create({
       values: {
@@ -53,7 +68,7 @@ pgOnly()('Inherited Collection', () => {
     expect(studentFieldsResponse.statusCode).toBe(200);
 
     const studentFields = studentFieldsResponse.body.data;
-    expect(studentFields.length).toBe(2);
+    expect(studentFields.length).toBe(1);
 
     const createStudentResponse = await agent.resource('students').create({
       values: {
@@ -67,5 +82,8 @@ pgOnly()('Inherited Collection', () => {
     const fooStudent = createStudentResponse.body.data;
 
     expect(fooStudent.name).toBe('foo');
+
+    const studentList = await agent.resource('students').list();
+    expect(studentList.statusCode).toBe(200);
   });
 });

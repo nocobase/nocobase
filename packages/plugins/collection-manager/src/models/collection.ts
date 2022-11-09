@@ -51,6 +51,14 @@ export class CollectionModel extends MagicAttributeModel {
     for (const instance of instances) {
       await instance.load(options);
     }
+
+    if (this.isInheritedModel()) {
+      const parentFields = await this.parentFields(options);
+      for (const parentField of parentFields) {
+        parentField.set('collectionName', this.get('name'));
+        await parentField.load(options);
+      }
+    }
   }
 
   async remove(options?: any) {
@@ -106,8 +114,7 @@ export class CollectionModel extends MagicAttributeModel {
     return this.get('inherits');
   }
 
-  // sync fields from parents
-  async syncParentFields(options: Transactionable) {
+  async findParents(options: Transactionable) {
     const { transaction } = options;
 
     const findModelParents = async (model: CollectionModel, carry = []) => {
@@ -130,13 +137,25 @@ export class CollectionModel extends MagicAttributeModel {
       return carry;
     };
 
-    const ancestors = await findModelParents(this);
+    return findModelParents(this);
+  }
 
-    const ancestorFields = await this.db.getCollection('fields').repository.find({
+  async parentFields(options: Transactionable) {
+    const { transaction } = options;
+
+    return this.db.getCollection('fields').repository.find({
       filter: {
-        collectionName: { $in: ancestors },
+        collectionName: { $in: await this.findParents({ transaction }) },
       },
+      transaction,
     });
+  }
+
+  // sync fields from parents
+  async syncParentFields(options: Transactionable) {
+    const { transaction } = options;
+
+    const ancestorFields = await this.parentFields({ transaction });
 
     const selfFields = await this.getFields({ transaction });
 

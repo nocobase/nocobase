@@ -69,12 +69,6 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on(
       'collections.afterCreateWithAssociations',
       async (model: CollectionModel, { context, transaction }) => {
-        if (model.isInheritedModel()) {
-          await model.syncParentFields({
-            transaction,
-          });
-        }
-
         if (context) {
           await model.migrate({
             transaction,
