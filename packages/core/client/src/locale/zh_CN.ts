@@ -540,6 +540,9 @@ export default {
   'Load failed': '加载失败',
 
   'Trigger': '触发器',
+  'Trigger context': '触发数据',
+  'Trigger data': '触发数据',
+  'Trigger time': '触发时间',
   'Triggered at': '触发时间',
   'Collection event': '数据表事件',
   'Trigger on': '触发时机',
@@ -585,7 +588,6 @@ export default {
 
   'End': '结束',
 
-  'Trigger context': '触发数据',
   'Node result': '节点数据',
   'Constant': '常量',
 
