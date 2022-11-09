@@ -16,6 +16,7 @@ export class SyncRunner {
     }
 
     const parents = inheritedCollection.parents;
+
     const parentTables = parents.map((parent) => parent.model.tableName);
 
     const tableName = model.getTableName();
@@ -28,7 +29,8 @@ export class SyncRunner {
     await this.createTable(tableName, childAttributes, options, model, parentTables);
 
     if (options.alter) {
-      const columns = await queryInterface.describeTable(tableName);
+      const columns = await queryInterface.describeTable(tableName, options);
+
       for (const columnName in childAttributes) {
         if (!columns[columnName]) {
           await queryInterface.addColumn(tableName, columnName, childAttributes[columnName], options);

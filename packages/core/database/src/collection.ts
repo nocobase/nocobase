@@ -372,6 +372,7 @@ export class Collection<
     for (const associationKey in associations) {
       const association = associations[associationKey];
       modelNames.add(association.target.name);
+
       if ((<any>association).through) {
         modelNames.add((<any>association).through.model.name);
       }

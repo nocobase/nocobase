@@ -67,6 +67,10 @@ export class FieldModel extends MagicAttributeModel {
     return (<any>this.constructor).database;
   }
 
+  isAssociationField() {
+    return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(this.get('type'));
+  }
+
   async load(loadOptions?: LoadOptions) {
     const { skipExist = false } = loadOptions || {};
     const collectionName = this.get('collectionName');

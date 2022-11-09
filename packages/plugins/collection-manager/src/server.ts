@@ -13,7 +13,7 @@ import {
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 
 import { CollectionModel, FieldModel } from './models';
@@ -66,14 +66,22 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
-    this.app.db.on('collections.afterCreateWithAssociations', async (model, { context, transaction }) => {
-      if (context) {
-        await model.migrate({
-          isNew: true,
-          transaction,
-        });
-      }
-    });
+    this.app.db.on(
+      'collections.afterCreateWithAssociations',
+      async (model: CollectionModel, { context, transaction }) => {
+        if (model.isInheritedModel()) {
+          await model.syncParentFields({
+            transaction,
+          });
+        }
+
+        if (context) {
+          await model.migrate({
+            transaction,
+          });
+        }
+      },
+    );
 
     this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
       if (context) {
