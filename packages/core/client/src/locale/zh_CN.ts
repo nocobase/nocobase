@@ -387,7 +387,7 @@ export default {
   "Green": "极光绿",
   "Cyan": "明青",
   "Blue": "拂晓蓝",
-  "Geek Blue": "极客蓝",
+  "Geek blue": "极客蓝",
   "Purple": "酱紫",
   "Default": "默认",
 
@@ -541,6 +541,9 @@ export default {
   'Load failed': '加载失败',
 
   'Trigger': '触发器',
+  'Trigger context': '触发数据',
+  'Trigger data': '触发数据',
+  'Trigger time': '触发时间',
   'Triggered at': '触发时间',
   'Collection event': '数据表事件',
   'Trigger on': '触发时机',
@@ -586,7 +589,6 @@ export default {
 
   'End': '结束',
 
-  'Trigger context': '触发数据',
   'Node result': '节点数据',
   'Constant': '常量',
 
@@ -611,6 +613,7 @@ export default {
 
   'Control': '流程控制',
   'Collection operations': '数据表操作',
+  'Extended': '扩展类型',
 
   'Node type': '节点类型',
 
@@ -732,5 +735,8 @@ export default {
   "Changed to": "修改为",
   "Clear":"清空",
   "Add attach":"增加关联",
-  "Please select the records to be updated": "请选择要更新的记录"
+  "Please select the records to be updated": "请选择要更新的记录",
+  "Selector": "选择器",
+  "Inner": "里面",
+  "Search and select collection": "搜索并选择数据表",
 }

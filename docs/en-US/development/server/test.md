@@ -1,10 +1,10 @@
-# 测试
+# Testing
 
-测试基于 [Jest](https://jestjs.io/) 测试框架。为了方便的编写测试，提供了 `mockDatabase()` 和 `mockServer()` 用于数据库和服务端应用的测试。
+The tests are based on the [Jest](https://jestjs.io/) framework. To facilitate writing tests, `mockDatabase()` and `mockServer()` are provided for database and server-side application testing.
 
 ## `mockDatabase()`
 
-默认提供一种完全隔离的 db 测试环境
+provides a fully isolated db testing environment by default
 
 ```ts
 import { mockDatabase } from '@nocobase/test';
@@ -45,7 +45,7 @@ describe('my db suite', () => {
 
 ## `mockServer()`
 
-提供模拟的服务端应用实例，对应的 app.db 为 `mockDatabase()` 实例，同时还提供了便捷的 `app.agent()` 用于测试 HTTP API，针对 NocoBase 的 Resource Action 还封装了 `app.agent().resource()` 用于测试资源的 Action。
+provides a mock server-side application instance, corresponding to app.db as a `mockDatabase()` instance, and also provides a convenient `app.agent()` for testing the HTTP API, and wraps `app.agent().resource()` for the Resource Action of NocoBase for testing the Action.
 
 ```ts
 import { mockServer } from '@nocobase/test';
@@ -61,11 +61,11 @@ describe('my suite', () => {
   beforeEach(async () => {
     app = mockServer();
     agent = app.agent();
-    // 添加待注册的插件
+    // Add the plugins to be registered
     app.plugin(MyPlugin, { name: 'my-plugin' });
-    // 加载配置
+    // Load the configuration
     app.load();
-    // 清空数据库并安装
+    // Clear the database and install
     app.install({ clean: true });
   });
 
@@ -84,13 +84,13 @@ describe('my suite', () => {
 });
 ```
 
-## 示例
+## Example
 
-我们以之前在 [资源与操作](development/guide/resources-actions) 章节的功能为例，来写一个插件的测试：
+Let's write a test of the plugin using in previous chapter [Resources and Actions](development/server/resources-actions) as an example.
 
 ```ts
 import { mockServer } from '@nocobase/test';
-import Plugin from '../../src/server';
+import Plugin from '... /... /src/server';
 
 describe('shop actions', () => {
   let app;
@@ -143,20 +143,20 @@ describe('shop actions', () => {
 });
 ```
 
-编写完成后，在命令行中允许测试命令：
+Once finished, allow the test command on the command line:
 
 ```bash
 yarn test packages/samples/shop-actions
 ```
 
-该测试将验证：
+This test will verify that:
 
-1. 商品可以创建成功；
-2. 订单可以创建成功；
-3. 订单可以发货成功；
+1. products can be created successfully.
+2. orders can be created successfully.
+3. orders can be shipped successfully.
 
-当然这只是个最基本的例子，从业务上来说并不完善，但作为示例已经可以说明整个测试的流程。
+Of course this is just a minimal example, not perfect business-wise, but as an example it can already illustrate the whole testing process.
 
-## 小结
+## Summary
 
-本章涉及的示例代码整合在对应的包 [packages/samples/shop-actions](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-actions) 中，可以直接在本地运行，查看效果。
+The sample code covered in this chapter is integrated in the corresponding package [packages/samples/shop-actions](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-actions), which can be run directly locally to see the results.

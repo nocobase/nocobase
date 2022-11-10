@@ -1,8 +1,8 @@
-# 测试
+# Testing
 
-测试基于 [Jest](https://jestjs.io/) 测试框架。同时还包括了常用的 React 测试库，如 [@testing-library/react](https://testing-library.com/docs/react-testing-library/intro/)
+Testing is based on the [Jest](https://jestjs.io/) testing framework. Also included are common React testing libraries such as [@testing-library/react](https://testing-library.com/docs/react-testing-library/intro/)
 
-## 示例
+## Example
 
 ```tsx | pure
 import { render } from '@testing-library/react';

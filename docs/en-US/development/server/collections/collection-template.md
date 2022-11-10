@@ -1,12 +1,12 @@
-# Collection 模板
+# Collection templates
 
 <Alert>
-📢 Collection 模板计划在 2022 年第四季度提供。
+📢 Collection templates are scheduled to be available in Q4 2022.
 </Alert>
 
-在实际的业务场景中，不同的 collection 可能有自己的初始化规则和业务逻辑，NocoBase 通过提供 Collection 模板来解决这类问题。
+In real business scenarios, different collections may have their own initialization rules and business logic, and NocoBase addresses such issues by providing collection templates.
 
-## 常规表
+## General collections
 
 ```ts
 db.collection({
@@ -20,7 +20,7 @@ db.collection({
 });
 ```
 
-## 树结构表
+## Tree structure collections
 
 ```ts
 db.collection({
@@ -51,7 +51,7 @@ db.collection({
 });
 ```
 
-## 父子继承表
+## Parent-child inheritance collections
 
 ```ts
 db.collection({
@@ -70,9 +70,9 @@ db.collection({
 });
 ```
 
-## 更多模板
+## More templates
 
-如日历表，每个初始化的表都需要初始化特殊的 cron 和 exclude 字段，而这种字段的定义就由模板来完成
+As in the case of calendar collections, each initialized collection needs to be initialized with special cron and exclude fields, and the definition of such fields is done by the template
 
 ```ts
 db.collection({

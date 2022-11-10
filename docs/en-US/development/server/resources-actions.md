@@ -1,35 +1,35 @@
-# 资源与操作
+# Resources and Actions
 
-在 Web 开发领域，你可能听说过 RESTful 的概念，NocoBase 也借用了这个资源的概念来映射系统中的各种实体，比如数据库中的数据、文件系统中的文件或某个服务等。但 NocoBase 基于实践考虑，并未完全遵循 RESTful 的约定，而是参考 [Google Cloud API 设计指南](https://cloud.google.com/apis/design) 的规范做了一些扩展，以适应更多的场景。
+In the web development world, you may have heard of the concept of RESTful, and NocoBase borrows this concept of resources to map various entities in the system, such as data in a database, a file in a file system or a service. However, NocoBase does not fully follow the RESTful conventions based on practical considerations, but rather extends the specifications from the [Google Cloud API Design Guide](https://cloud.google.com/apis/design) to fit more scenarios.
 
-## 基础概念
+## Basic concepts
 
-与 RESTful 中资源的概念相同，是系统中对外提供的可操作的对象，可以是数据表、文件、和其他自定义的对象。
+The same concept as resources in RESTful, which are externally available objects in the system that can be manipulated, such as data tables, files, and other custom objects.
 
-操作主要指对资源的读取和写入，通常用于查阅数据、创建数据、更新数据、删除数据等。NocoBase 通过定义操作来实现对资源的访问，操作的核心其实是一个用于处理请求且兼容 Koa 的中间件函数。
+Actions refer to reading and writing to resources, usually for accessing data, creating data, updating data, deleting data, etc. NocoBase implements access to resources by defining actions, the core of which is actually a Koa-compatible middleware function for handling requests.
 
-### 数据表自动映射为资源
+### Automatic mapping of collections to resources
 
-目前的资源主要针对数据库表中的数据，NocoBase 在默认情况下都会将数据库中的数据表自动映射为资源，同时也提供了服务端的数据接口。所以在默认情况下，只要使用了 `db.collection()` 定义了数据表，就可以通过 NocoBase 的 HTTP API 访问到这个数据表的数据资源了。自动生成的资源的名称与数据库表定义的表名相同，比如 `db.collection({ name: 'users' })` 定义的数据表，对应的资源名称就是 `users`。
+NocoBase automatically maps collections to resources by default, and also provides a server-side data interface. So by default, as long as a collection is defined using `db.collection()`, you can access the data resources of this collection via NocoBase HTTP API. The name of the automatically generated resource is the same as the collection name, for example, the collection defined by `db.collection({ name: 'users' })` has the corresponding resource name `users`.
 
-同时，还为这些数据资源内置了常用的 CRUD 操作，对关系型数据资源也内置了关联数据从操作方法。
+Also, there are built-in common CRUD actions for these data resources, and built-in actions methods for associative data for relational data resources.
 
-对简单数据资源的默认操作：
+The default actions for a simple data resource:
 
-* [`list`](/api/actions#list)：查询数据表中的数据列表
-* [`get`](/api/actions#get)：查询数据表中的单条数据
-* [`create`](/api/actions#create)：对数据表创建单条数据
-* [`update`](/api/actions#update)：对数据表更新单条数据
-* [`destroy`](/api/actions#destroy)：对数据表删除单条数据
+* [`list`](/api/actions#list): Query the list of data in the collection
+* [`get`](/api/actions#get): Query a single record in the collection
+* [`create`](/api/actions#create): Create a single record to the collection
+* [`update`](/api/actions#update): Update a single record on the collection
+* [`destroy`](/api/actions#destroy): Delete a single record from the collection
 
-对关系资源除了简单的 CRUD 操作，还有默认的关系操作：
+In addition to simple CRUD actions, relational resources have default relational actions:
 
-* [`add`](/api/actions#add)：对数据添加关联
-* [`remove`](/api/actions#remove)：对数据移除关联
-* [`set`](/api/actions#set)：对数据设置关联
-* [`toggle`](/api/actions#toggle)：对数据添加或移除关联
+* [`add`](/api/actions#add): Add a association to the data
+* [`remove`](/api/actions#remove): Removes an association from the data
+* [`set`](/api/actions#set): Set the association to the data
+* [`toggle`](/api/actions#toggle): Add or remove associations to data
 
-比如定义一个文章数据表并同步到数据：
+For example, to define an article collection and synchronize it to the database.
 
 ```ts
 app.db.collection({
@@ -42,35 +42,35 @@ app.db.collection({
 await app.db.sync();
 ```
 
-之后针对 `posts` 数据资源的所有 CRUD 方法就可以直接通过 HTTP API 被调用了：
+All CRUD methods for the `posts` data resource can then be called directly via the HTTP API: ```bash
 
 ```bash
 # create
-curl -X POST -H "Content-Type: application/json" -d '{"title":"first"}' http://localhost:13000/api/posts:create
+curl -X POST -H "Content-Type: application/json" -d '{"title": "first"}' http://localhost:13000/api/posts:create
 # list
 curl http://localhost:13000/api/posts:list
 # update
-curl -X PUT -H "Content-Type: application/json" -d '{"title":"second"}' http://localhost:13000/api/posts:update
+curl -X PUT -H "Content-Type: application/json" -d '{"title": "second"}' http://localhost:13000/api/posts:update
 # destroy
 curl -X DELETE http://localhost:13000/api/posts:destroy?filterByTk=1
 ```
 
-### 自定义 Action
+### Customize Actions
 
-当默认提供的 CRUD 等操作不满足业务场景的情况下，也可以对特定资源扩展更多的操作。比如是对内置操作额外的处理需求，或者需要设置默认参数的情况。
+It is also possible to extend specific resources with more actions when the default provided actions such as CRUD do not satisfy the business scenario. For example, additional processing of built-in actions, or the need to set default parameters.
 
-针对特定资源的自定义操作，如覆盖定义文章表的创建操作：
+Custom actions for specific resources, such as overriding the `create` action in the article collection.
 
 ```ts
-// 等同于 app.resourcer.registerActions()
-// 注册针对文章资源的 create 操作方法
+// Equivalent to app.resourcer.registerActions()
+// Register the create action method for article resources
 app.actions({
   async ['posts:create'](ctx, next) {
     const postRepo = ctx.db.getRepository('posts');
     await postRepo.create({
       values: {
-        ...ctx.action.params.values,
-        // 限定当前用户是文章的创建者
+        ... . ctx.action.params.values,
+        // restrict the current user to be the creator of the post
         userId: ctx.state.currentUserId
       }
     });
@@ -80,23 +80,23 @@ app.actions({
 });
 ```
 
-这样在业务中就增加了合理的限制，用户不能以其他用户身份创建文章。
+This adds a reasonable restriction in the business that users cannot create articles as other users.
 
-针对全局所有资源的自定义操作，如对所有数据表都增加导出的操作：
+Custom operations for all global resources, such as adding `export` action to all collections.
 
 ```ts
 app.actions({
-  // 对所有资源都增加了 export 方法，用于导出数据
+  // Add export method to all resources for exporting data
   async export(ctx, next) {
     const repo = ctx.db.getRepository(ctx.action.resource);
     const results = await repo.find({
       filter: ctx.action.params.filter
     });
     ctx.type = 'text/csv';
-    // 拼接为 CSV 格式
+    // Splice to CSV format
     ctx.body = results
       .map(row => Object.keys(row)
-        .reduce((arr, col) => [...arr, row[col]], []).join(',')
+        .reduce((arr, col) => [... . arr, row[col]], []).join(',')
       ).join('\n');
 
     next();
@@ -104,27 +104,27 @@ app.actions({
 });
 ```
 
-则可以按以下 HTTP API 的方式进行 CSV 格式的数据导出：
+The data in CSV format can then be exported as follows from the HTTP API.
 
 ```bash
 curl http://localhost:13000/api/<any_table>:export
 ```
 
-### Action 参数
+### Action parameters
 
-客户端的请求到达服务端后，相关的请求参数会被按规则解析并放在请求的 `ctx.action.params` 对象上。Action 参数主要有三个来源：
+Once the client's request reaches the server, the relevant request parameters are parsed by rule and placed on the request's `ctx.action.params` object. there are three main sources for Action parameters.
 
-1. Action 定义时默认参数
-2. 客户端请求携带
-3. 其他中间件预处理
+1. default parameters at the time of Action definition
+2. carried by the client request
+3. other middleware preprocessing
 
-在真正操作处理函数处理之前，上面这三个部分的参数会按此顺序被合并到一起，最终传入操作的执行函数中。在多个中间件中也是如此，上一个中间件处理完的参数会被继续随 `ctx` 传递到下一个中间件中。
+The parameters from these three parts are combined in this order and eventually passed into the action's execution function before being processed by the real action handler. This is also true in multiple middleware, where the parameters from the previous middleware are continued to be passed to the next middleware with `ctx`.
 
-针对内置的操作可使用的参数，可以参考 [@nocobase/actions](/api/actions) 包的内容。除自定义操作以外，客户端请求主要使用这些参数，自定义的操作可以根据业务需求扩展需要的参数。
+The parameters available for built-in actions can be found in the [@nocobase/actions](/api/actions) package. Except for custom actions, client requests mainly use these parameters, and custom actions can be extended with the required parameters according to business requirements.
 
-中间件预处理主要使用 `ctx.action.mergeParams()` 方法，且根据不同的参数类型有不同的合并策略，具体也可以参考 [mergeParams()](/api/resourcer/action#mergeparams) 方法的内容。
+Middleware preprocessing mainly uses the `ctx.action.mergeParams()` method and has different merge strategies depending on the parameter types, see also the [mergeParams()](/api/resourcer/action#mergeparams) method for details.
 
-内置 Action 的默认参数在合并时只能以 `mergeParams()` 方法针对各个参数的默认策略执行，以达到服务端进行一定操作限制的目的。例如：
+The default parameters of the built-in Action can only be executed with the `mergeParams()` method for each parameter's default policy when merging, in order to achieve the purpose of limiting certain operations on the server side. For example
 
 ```ts
 app.resource({
@@ -138,37 +138,37 @@ app.resource({
 });
 ```
 
-如上定义了针对 `posts` 资源的 `create` 操作，其中 `whitelist` 和 `blacklist` 分别是针对 `values` 参数的白名单和黑名单，即只允许 `values` 参数中的 `title` 和 `content` 字段，且禁止 `values` 参数中的 `createdAt` 和 `createdById` 字段。
+The above defines the `create` action for the `posts` resource, where `whitelist` and `blacklist` are whitelisted and blacklisted respectively for the `values` parameter, i.e. only the `title` and `content` fields in the `values` parameter are allowed, and the ` createdAt` and `createdById` fields in the `values` parameter are disabled.
 
-### 自定义资源
+### Custom resources
 
-数据型的资源还分为独立资源和关系资源：
+Data-based resources are also divided into standalone resources and association resources.
 
-* 独立资源：`<collection>`
-* 关系资源：`<collection>.<association>`
+* Standalone resources: `<collection>`
+* Association resources: `<collection>. <association>`
 
 ```ts
-// 等同于 app.resourcer.define()
+// Equivalent to app.resourcer.define()
 
-// 定义文章资源
+// Define article resources
 app.resource({
   name: 'posts'
 });
 
-// 定义文章的作者资源
+// Define the article's author resource
 app.resource({
   name: 'posts.user'
 });
 
-// 定义文章的评论资源
+// Define the article's comment resource
 app.resource({
   name: 'posts.coments'
 });
 ```
 
-需要自定义的情况主要针对于非数据库表类资源，比如内存中的数据、其他服务的代理接口等，以及需要对已有数据表类资源定义特定操作的情况。
+The cases where customization is needed are mainly for non-database table-like resources, such as in-memory data, proxy interfaces for other services, etc., and for cases where specific actions need to be defined for existing table-like resources.
 
-例如定义一个与数据库无关的发送通知操作的资源：
+For example, to define a database-independent resource that sends a notification action.
 
 ```ts
 app.resource({
@@ -182,20 +182,22 @@ app.resource({
 });
 ```
 
-则在 HTTP API 中可以这样访问：
+Then it can be accessed in the HTTP API as follows
 
 ```bash
 curl -X POST -d '{"title": "Hello", "to": "hello@nocobase.com"}' 'http://localhost:13000/api/notifications:send'
 ```
 
-## 示例
+## Example
 
-我们继续之前 [数据表与字段示例](/development/guide/collections-fields#示例) 中的简单店铺场景，进一步理解资源与操作相关的概念。这里假设我们的在基于之前数据表的示例进行进一步资源和操作的定义，所以这里不再重复定义数据表的内容。
+Let's continue the simple store scenario from the previous [Collections and fields example](/development/server/collections-fields#Example) to further understand the concepts related to resources and actions. It is assumed here that we base further resource and action definitions on the previous collection's example, so the definition of collection is not repeated here.
 
-另外，只要定义了对应的数据表，我们对商品、订单等数据资源就可以直接使用这些默认操作以完成最场景的 CRUD 场景。
-### 覆盖默认操作
+As long as the corresponding collections are defined, we can use default actions directly for data resources such as products, orders, etc. in order to complete the most basic CRUD scenarios.
 
-某些情况下，不只是简单的针对单条数据的操作时，或者默认操作的参数需要有一定控制时，我们也可以覆盖默认的操作行为。比如我们创建订单时，不应该由客户端提交 `userId` 来代表订单的归属，而是应该由服务端根据当前登录用户来确定订单归属，这时我们就可以覆盖默认的 `create` 操作。对于简单的扩展，我们直接在插件的主类中编写：
+### Overriding default actions
+
+
+Sometimes, there are operations that are not simply for a single record, or the parameters of the default actions need to have some control, we can override the default actions. For example, when we create an order, instead of the client submitting `userId` to represent the ownership of the order, the server should determine the ownership of the order based on the currently logged-in user, so we can override the default `create` action. For simple extensions, we write directly in the main class of the plugin.
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -222,21 +224,21 @@ export default class ShopPlugin extends Plugin {
 }
 ```
 
-这样，我们在插件加载过程中针对订单数据资源就覆盖了默认的 `create` 操作，但在修改操作参数以后仍调用了默认逻辑，无需自行编写。修改提交参数的 `mergeParams()` 方法对内置默认操作来说非常有用，我们会在后面介绍。
+In this way, we override the default `create` action for order data resources during plugin loading, but the default logic is still called after modifying the action parameters, so there is no need to write it yourself. The `mergeParams()` method that modifies the submit parameters is useful for the built-in default actions, which we will describe later.
 
-### 数据表资源的自定义操作
+### Custom actions for collection resources
 
-当内置操作不能满足业务需求时，我们可以通过自定义操作来扩展资源的功能。例如通常一个订单会有很多状态，如果我们对 `status` 字段的取值设计为一系列枚举值：
+When the built-in actions do not meet the business needs, we can extend the functionality of the resource by customizing the actions. For example, usually an order will have many statuses, if we design the values of the `status` field as a series of enumerated values.
 
-* `-1`：已取消
-* `0`：已下单，未付款
-* `1`：已付款，未发货
-* `2`：已发货，未签收
-* `3`：已签收，订单完成
+* `-1`: cancelled
+* `0`: order placed, not paid
+* `1`: Paid, not shipped
+* `2`: shipped, not signed
+* `3`: signed, order completed
 
-那么我们就可以通过自定义操作来实现订单状态的变更，比如对订单进行一个发货的操作，虽然简单的情况下可以通过 `update` 操作来实现，但是如果还有支付、签收等更复杂的情况，仅使用 `update` 会造成语义不清晰且参数混乱的问题，因此我们可以通过自定义操作来实现。
+Then we can realize the change of order status through custom actions, such as a shipping action on the order. Although the simple case can be realized through the `update` action, if there are more complicated cases such as payment and signing, using only `update` will cause the problem of unclear semantics and confusing parameters, so we can realize it through custom actions.
 
-首先我们增加一张发货信息表的定义，保存到 `collections/deliveries.ts`：
+First we add a definition of a shipping information collection, saved to `collections/deliveries.ts`.
 
 ```ts
 export default {
@@ -262,13 +264,13 @@ export default {
 };
 ```
 
-同时对订单表也扩展一个发货信息的关联字段（`collections/orders.ts`）：
+Also extend the orders collection with an associated field for shipping information (`collections/orders.ts`).
 
 ```ts
 export default {
   name: 'orders',
   fields: [
-    // ...other fields
+    // ... . other fields
     {
       type: 'hasOne',
       name: 'delivery'
@@ -277,7 +279,7 @@ export default {
 };
 ```
 
-然后我们在插件的主类中增加对应的操作定义：
+Then we add the corresponding action definition in the main class of the plugin: 
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -297,9 +299,9 @@ export default class ShopPlugin extends Plugin {
             values: {
               status: 2,
               delivery: {
-                ...ctx.action.params.values,
+                ... . ctx.action.params.values,
                 status: 0
-              }
+              status: 0 }
             }
           });
 
@@ -313,9 +315,9 @@ export default class ShopPlugin extends Plugin {
 }
 ```
 
-其中，Repository 是使用数据表数据仓库类，大部分进行数据读写的操作都会由此完成，详细可以参考 [Repository API](/api/database/repository) 部分。
+The Repository uses the data repository class of collection, from which most of the data reading and writing actions are done, see the [Repository API](/api/database/repository) section for details.
 
-定义好之后我们从客户端就可以通过 HTTP API 来调用“发货”这个操作了：
+Once defined, we can call the "ship" action from the client via the HTTP API: 
 
 ```bash
 curl \
@@ -325,11 +327,11 @@ curl \
   '/api/orders:deliver/<id>'
 ```
 
-同样的，我们还可以定义更多类似的操作，比如支付、签收等。
+Similarly, we can define more similar actions, such as payment, signup, etc.
 
-### 参数合并
+### Parameter merging
 
-假设我们要提供用户查询自己的且只能查询自己的订单，同时我们需要限制用户不能查询已取消的订单，那么我们可以通过 action 的默认参数来定义：
+Suppose we want to allow users to query their own and only their own orders, and we need to restrict them from querying cancelled orders, then we can define with the default parameters of the action.
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -340,10 +342,10 @@ export default class ShopPlugin extends Plugin {
     this.app.resource({
       name: 'orders',
       actions: {
-        // 对 list 操作的默认参数
+        // default parameters for list actions
         list: {
           filter: {
-            // 由 users 插件扩展的过滤器运算符
+            // Filter operator extended by the users plugin
             $isCurrentUser: true,
             status: {
               $ne: -1
@@ -357,13 +359,13 @@ export default class ShopPlugin extends Plugin {
 }
 ```
 
-当用户从客户端查询时，也可以在请求的 URL 上加入其他的参数，比如：
+When the user queries from the client, additional parameters can also be added to the requested URL, such as
 
 ```bash
 curl 'http://localhost:13000/api/orders:list?productId=1&fields=id,status,quantity,totalPrice&appends=product'
 ```
 
-实际的查询条件会合并为：
+The actual query criteria will be combined as
 
 ```json
 {
@@ -381,9 +383,9 @@ curl 'http://localhost:13000/api/orders:list?productId=1&fields=id,status,quanti
 }
 ```
 
-并得到预期的查询结果。
+and get the expected query results.
 
-另外的，如果我们需要对创建订单的接口限制不能由客户端提交订单编号（`id`）、总价（`totalPrice`）等字段，可以通过对 `create` 操作定义默认参数控制：
+Alternatively, if we need to restrict the interface for creating orders to fields such as order number (`id`), total price (`totalPrice`), etc. that cannot be submitted by the client, this can be controlled by defining default parameters for the `create` action as follows
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -406,9 +408,9 @@ export default class ShopPlugin extends Plugin {
 }
 ```
 
-这样即使客户端故意提交了这些字段，也会被过滤掉，不会存在于 `ctx.action.params` 参数集中。
+This way, even if the client intentionally submits these fields, they will be filtered out and will not exist in the `ctx.action.params` parameter set.
 
-如果还要有更复杂的限制，比如只能在商品上架且有库存的情况下才能下单，可以通过配置中间件来实现：
+If there are more complex restrictions, such as only being able to place an order if the item is on the shelf and in stock, this can be achieved by configuring the middleware to
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -448,15 +450,15 @@ export default class ShopPlugin extends Plugin {
 }
 ```
 
-把部分业务逻辑（尤其是前置处理）放到中间件中，可以让我们的代码更加清晰，也更容易维护。
+Putting some of the business logic (especially the preprocessing) into middleware makes our code clearer and easier to maintain.
 
-## 小结
+## Summary
 
-通过上面的示例我们介绍了如何定义资源和相关的操作，回顾一下本章内容：
+With the above example we have described how to define resources and related actions. To review this chapter.
 
-* 数据表自动映射为资源
-* 内置默认的资源操作
-* 对资源自定义操作
-* 操作的参数合并顺序与策略
+* Automatic mapping of collections to resources
+* Built-in default resource actions
+* Custom actions on resources
+* Parameter merging order and strategy for operations
 
-本章所涉及到的相关代码放到了一个完整的示例包 [packages/samples/shop-actions](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-actions) 中，可以直接在本地运行，查看效果。
+The code covered in this chapter is included in a complete sample package [packages/samples/shop-actions](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-actions ), which can be run directly locally to see the results.

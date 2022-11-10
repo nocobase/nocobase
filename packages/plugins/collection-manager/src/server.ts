@@ -108,6 +108,13 @@ export class CollectionManagerPlugin extends Plugin {
       if (prevDefaultValue != currentDefaultValue) {
         await model.syncDefaultValue({ transaction, defaultValue: currentDefaultValue });
       }
+
+      const prevOnDelete = prevOptions['onDelete'];
+      const currentOnDelete = currentOptions['onDelete'];
+
+      if (prevOnDelete != currentOnDelete) {
+        await model.syncReferenceCheckOption({ transaction });
+      }
     });
 
     this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, { context, transaction }) => {

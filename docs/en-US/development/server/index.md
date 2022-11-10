@@ -1,70 +1,70 @@
-# 概述
+# Overview
 
-初始化的空插件，服务端相关目录结构如下：
+The server-side for an initialized, empty plugin has the following directory structure.
 
 ```bash
 |- /my-plugin
   |- /src
-    |- /server      # 插件服务端代码
-      |- plugin.ts  # 插件类
-      |- index.ts   # 服务端入口
+    |- /server # Server-side code of the plugin
+      |- plugin.ts # Classes of the plugin
+      |- index.ts # server-side entry
   |- server.d.ts
   |- server.js
 ```
 
-`plugin.ts` 提供了插件生命周期的各种方法的调用
+`plugin.ts` provides calls to various methods of the plugin lifecycle
 
 ```ts
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class MyPlugin extends Plugin {
   afterAdd() {
-    // 插件 pm.add 注册进来之后，主要用于放置 app beforeLoad 事件的监听
+    // After the plugin pm.add is registered. This is mainly used to place a listener for the app beforeLoad event
     this.app.on('beforeLoad');
   }
   beforeLoad() {
-    // 自定义类或方法
+    // Custom classes or methods
     this.db.registerFieldTypes()
     this.db.registerModels()
     this.db.registerRepositories()
     this.db.registerOperators()
-    // 事件监听
+    // Event Listening
     this.app.on();
     this.db.on();
   }
   async load() {
-    // 定义 collection
+    // Define collection
     this.db.collection();
-    // 导入 collection
+    // Import collection
     this.db.import();
     this.db.addMigrations();
 
-    // 定义 resource
+    // Define resource
     this.resourcer.define();
     // resource action
     this.resourcer.registerActions();
 
-    // 注册 middleware
+    // Register middleware
     this.resourcer.use();
     this.acl.use();
     this.app.use();
 
-    // 自定义多语言包
+    // Customize the multilingual package
     this.app.i18n.addResources();
-    // 自定义命令行
+    // Customize command line
     this.app.command();
   }
   async install(options?: InstallOptions) {
-    // 安装逻辑
+    // Logic for installing
   }
   async afterEnable() {
-    // 激活之后
+    // After activation
   }
   async afterDisable() {
-    // 禁用之后
+    // After disable
   }
   async remove() {
-    // 删除逻辑
+    // Logic for removing
   }
 }
 

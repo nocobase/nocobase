@@ -42,6 +42,20 @@ const FieldsSelect = observer((props) => {
   );
 });
 
+const COLLECTION_TRIGGER_MODE = {
+  CREATED: 1,
+  UPDATED: 2,
+  SAVED: 3,
+  DELETED: 4,
+};
+
+const collectionModeOptions = [
+  { label: '{{t("After record added")}}', value: COLLECTION_TRIGGER_MODE.CREATED },
+  { label: '{{t("After record updated")}}', value: COLLECTION_TRIGGER_MODE.UPDATED },
+  { label: '{{t("After record added or updated")}}', value: COLLECTION_TRIGGER_MODE.SAVED },
+  { label: '{{t("After record deleted")}}', value: COLLECTION_TRIGGER_MODE.DELETED },
+];
+
 
 
 export default {
@@ -85,12 +99,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
-        options: [
-          { value: 1, label: '{{t("After record added")}}' },
-          { value: 2, label: '{{t("After record updated")}}' },
-          { value: 3, label: '{{t("After record added or updated")}}' },
-          { value: 4, label: '{{t("After record deleted")}}' }
-        ],
+        options: collectionModeOptions,
         placeholder: '{{t("Trigger on")}}'
       },
       required: true,
@@ -99,7 +108,7 @@ export default {
           target: 'config.changed',
           fulfill: {
             state: {
-              disabled: '{{!($self.value & 0b010)}}',
+              disabled: `{{!($self.value & ${COLLECTION_TRIGGER_MODE.UPDATED})}}`,
             },
           }
         },
