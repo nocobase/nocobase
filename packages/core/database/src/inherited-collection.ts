@@ -31,20 +31,6 @@ export class InheritedCollection extends Collection {
     }
   }
 
-  getField<F extends Field>(name: string): F {
-    const field = super.getField<F>(name);
-    if (field) {
-      return field;
-    }
-
-    for (const parent of this.parents) {
-      const field = parent.getField<F>(name);
-      if (field) {
-        return field;
-      }
-    }
-  }
-
   getParents() {
     return this.parents;
   }

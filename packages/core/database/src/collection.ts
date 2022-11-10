@@ -196,7 +196,7 @@ export class Collection<
         const existField = childCollection.getField(name);
 
         if (!existField || existField.options.inherit) {
-          this.db.getCollection(child).setField(name, {
+          childCollection.setField(name, {
             ...options,
             inherit: true,
           });

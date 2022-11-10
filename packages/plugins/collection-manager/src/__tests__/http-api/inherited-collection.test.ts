@@ -55,12 +55,17 @@ pgOnly()('Inherited Collection', () => {
     const createInstructorResponse = await agent.resource('instructor').create({
       values: {
         name: 'foo',
-        score: 100,
+        salary: 1000,
+        rank: 100,
       },
     });
 
     expect(createInstructorResponse.statusCode).toBe(200);
 
+    const employeeCollection = app.db.getCollection('employee');
+    expect(employeeCollection.fields.get('new-field')).not.toBeDefined();
+
+    // add new field to root collection
     await agent.resource('fields').create({
       values: {
         collectionName: 'person',
@@ -69,10 +74,17 @@ pgOnly()('Inherited Collection', () => {
       },
     });
 
-    const listResponse = await agent.resource('instructor').list();
+    expect(employeeCollection.fields.get('age')).toBeDefined();
+
+    let listResponse = await agent.resource('employee').list();
     expect(listResponse.statusCode).toBe(200);
 
-    expect(listResponse.body.data[0].age).not.toBeUndefined();
+    expect(listResponse.body.data[0].age).toBeDefined();
+
+    listResponse = await agent.resource('instructor').list();
+    expect(listResponse.statusCode).toBe(200);
+
+    expect(listResponse.body.data[0].age).toBeDefined();
   });
 
   it('should create inherited collection', async () => {
