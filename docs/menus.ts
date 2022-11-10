@@ -57,7 +57,7 @@ export default {
         '/welcome/community/contributing',
         // '/welcome/community/faq',
         '/welcome/community/translations',
-        
+
         '/welcome/community/thanks',
       ],
     },
@@ -270,6 +270,6 @@ export default {
     },
   ],
   '/plugins': [
-    '/plugins/workflow',
+    '/plugins/workflow/index',
   ]
 };
