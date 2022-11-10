@@ -640,18 +640,3 @@ export const useDetailsPaginationProps = () => {
     },
   };
 };
-
-export function findParent(schema) {
-  if (!schema) {
-    return;
-  }
-  let parent;
-  while (schema.parent) {
-    if (schema.parent['x-component'] === 'Grid.Row') {
-      parent = schema.parent;
-      break;
-    }
-    schema = schema.parent;
-  }
-  return parent;
-}
