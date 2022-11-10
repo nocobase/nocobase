@@ -121,4 +121,32 @@ pgOnly()('Inherited Collection', () => {
     const studentList = await agent.resource('students').list();
     expect(studentList.statusCode).toBe(200);
   });
+
+  it('should know which table row it is', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'students',
+        inherits: 'person',
+        fields: [
+          {
+            name: 'score',
+            type: 'integer',
+          },
+        ],
+      },
+    });
+
+    await agent.resource('students').create({
+      values: {
+        name: 'foo',
+        score: 100,
+      },
+    });
+
+    const personList = await agent.resource('person').list();
+
+    const person = personList.body.data[0];
+
+    expect(person['__collection']).toBe('students');
+  });
 });

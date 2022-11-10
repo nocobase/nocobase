@@ -39,7 +39,7 @@ export class InheritedCollection extends Collection {
   parentFields() {
     const fields = new Map<string, Field>();
     for (const parent of this.parents) {
-      if (parent.isInherired()) {
+      if (parent.isInherited()) {
         for (const [name, field] of (<InheritedCollection>parent).parentFields()) {
           fields.set(name, field);
         }
@@ -56,7 +56,7 @@ export class InheritedCollection extends Collection {
   parentAttributes() {
     const attributes = {};
     for (const parent of this.parents) {
-      if (parent.isInherired()) {
+      if (parent.isInherited()) {
         Object.assign(attributes, (<InheritedCollection>parent).parentAttributes());
       }
 
@@ -66,7 +66,7 @@ export class InheritedCollection extends Collection {
     return attributes;
   }
 
-  isInherired() {
+  isInherited() {
     return true;
   }
 }

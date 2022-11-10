@@ -391,7 +391,7 @@ export class Collection<
     }
   }
 
-  public isInherired() {
+  public isInherited() {
     return false;
   }
 }
