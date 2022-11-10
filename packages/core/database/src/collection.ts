@@ -75,7 +75,9 @@ export class Collection<
 
     this.bindFieldEventListener();
     this.modelInit();
+
     this.db.modelCollection.set(this.model, this);
+    this.db.tableNameCollectionMap.set(this.model.tableName, this);
 
     this.setFields(options.fields);
     this.setRepository(options.repository);
@@ -393,5 +395,9 @@ export class Collection<
 
   public isInherited() {
     return false;
+  }
+
+  public isParent() {
+    return this.context.database.inheritanceMap.isParentNode(this.name);
   }
 }

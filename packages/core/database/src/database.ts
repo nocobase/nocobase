@@ -150,6 +150,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelCtor<any>, Collection>();
+  tableNameCollectionMap = new Map<string, Collection>();
+
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
 

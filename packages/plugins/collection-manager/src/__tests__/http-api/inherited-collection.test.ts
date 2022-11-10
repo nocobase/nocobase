@@ -122,7 +122,7 @@ pgOnly()('Inherited Collection', () => {
     expect(studentList.statusCode).toBe(200);
   });
 
-  it('should know which table row it is', async () => {
+  it('should know which child table row it is', async () => {
     await agent.resource('collections').create({
       values: {
         name: 'students',
