@@ -40,4 +40,19 @@ export default class InheritanceMap {
     const node = this.getNode(name);
     return node && node.children.size > 0;
   }
+
+  getChildren(name: string): Set<string> {
+    const results = new Set<string>();
+    const node = this.getNode(name);
+    if (!node) return results;
+
+    for (const child of node.children) {
+      results.add(child.name);
+      for (const grandchild of this.getChildren(child.name)) {
+        results.add(grandchild);
+      }
+    }
+
+    return results;
+  }
 }
