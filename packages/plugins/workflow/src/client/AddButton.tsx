@@ -49,6 +49,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   const groups = [
     { value: 'control', name: '{{t("Control")}}' },
     { value: 'collection', name: '{{t("Collection operations")}}' },
+    { value: 'extended', name: '{{t("Extended")}}' },
   ];
   const instructionList = (Array.from(instructions.getValues()) as Instruction[]);
 
@@ -58,21 +59,24 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
         trigger={['click']}
         overlay={
           <Menu onClick={ev => onCreate(ev)}>
-            {groups.map(group => (
-              <Menu.ItemGroup key={group.value} title={compile(group.name)}>
-                {instructionList.filter(item => item.group === group.value).map(item => item.options
-                ? (
-                  <Menu.SubMenu key={item.type} title={compile(item.title)}>
-                    {item.options.map(option => (
-                      <Menu.Item key={option.key}>{compile(option.label)}</Menu.Item>
-                    ))}
-                  </Menu.SubMenu>
-                )
-                : (
-                  <Menu.Item key={item.type}>{compile(item.title)}</Menu.Item>
-                ))}
-              </Menu.ItemGroup>
-            ))}
+            {groups.map(group => {
+              const groupInstructions = instructionList.filter(item => item.group === group.value);
+              return groupInstructions.length ? (
+                <Menu.ItemGroup key={group.value} title={compile(group.name)}>
+                  {groupInstructions.map(item => item.options
+                  ? (
+                    <Menu.SubMenu key={item.type} title={compile(item.title)}>
+                      {item.options.map(option => (
+                        <Menu.Item key={option.key}>{compile(option.label)}</Menu.Item>
+                      ))}
+                    </Menu.SubMenu>
+                  )
+                  : (
+                    <Menu.Item key={item.type}>{compile(item.title)}</Menu.Item>
+                  ))}
+                </Menu.ItemGroup>
+              ) : null;
+            })}
           </Menu>
         }
         disabled={workflow.executed}
