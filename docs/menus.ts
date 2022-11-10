@@ -227,16 +227,16 @@ export default {
       title: 'HTTP API',
       type: 'subMenu',
       children: [
-        '/api/http/index', 
-        '/api/http/rest-api', 
+        '/api/http/index',
+        '/api/http/rest-api',
       ],
     },
     {
       title: '@nocobase/server',
       type: 'subMenu',
       children: [
-        '/api/server/application', 
-        // '/api/server/plugin-manager', 
+        '/api/server/application',
+        // '/api/server/plugin-manager',
         '/api/server/plugin',
       ],
     },
@@ -321,4 +321,7 @@ export default {
       path: '/api/sdk',
     },
   ],
+  '/plugins': [
+    '/plugins/workflow',
+  ]
 };

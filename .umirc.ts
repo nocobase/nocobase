@@ -108,6 +108,11 @@ const navs = [
     path: '/components',
   },
   {
+    title: 'Plugins',
+    'title.zh-CN': '内置插件',
+    path: '/plugins',
+  },
+  {
     title: 'GitHub',
     path: 'https://github.com/nocobase/nocobase',
   },
