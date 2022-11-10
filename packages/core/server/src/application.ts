@@ -106,6 +106,9 @@ export class ApplicationVersion {
   async get() {
     if (await this.app.db.collectionExistsInDb('applicationVersion')) {
       const model = await this.collection.model.findOne();
+      if (!model) {
+        return null;
+      }
       return model.get('value') as any;
     }
     return null;

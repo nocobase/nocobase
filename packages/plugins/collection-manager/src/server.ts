@@ -13,7 +13,7 @@ import {
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 
 import { CollectionModel, FieldModel } from './models';
@@ -105,6 +105,13 @@ export class CollectionManagerPlugin extends Plugin {
 
       if (prevDefaultValue != currentDefaultValue) {
         await model.syncDefaultValue({ transaction, defaultValue: currentDefaultValue });
+      }
+
+      const prevOnDelete = prevOptions['onDelete'];
+      const currentOnDelete = currentOptions['onDelete'];
+
+      if (prevOnDelete != currentOnDelete) {
+        await model.syncReferenceCheckOption({ transaction });
       }
     });
 
