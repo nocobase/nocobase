@@ -275,12 +275,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         }),
         templateModel: ids[0].row,
       });
+    } else {
+      rows = await model.findAll({
+        ...opts,
+        transaction,
+      });
     }
-
-    rows = await model.findAll({
-      ...opts,
-      transaction,
-    });
 
     if (this.collection.isParent()) {
       for (const row of rows) {
