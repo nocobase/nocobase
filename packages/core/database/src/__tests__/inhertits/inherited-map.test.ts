@@ -10,5 +10,7 @@ describe('InheritedMap', () => {
 
     expect(nodeA.children.has(nodeB)).toBe(true);
     expect(nodeB.parents.has(nodeA)).toBe(true);
+
+    expect(map.isParentNode('a')).toBe(true);
   });
 });

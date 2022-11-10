@@ -35,4 +35,9 @@ export default class InheritanceMap {
       parent.children.add(node);
     }
   }
+
+  isParentNode(name: string) {
+    const node = this.getNode(name);
+    return node && node.children.size > 0;
+  }
 }
