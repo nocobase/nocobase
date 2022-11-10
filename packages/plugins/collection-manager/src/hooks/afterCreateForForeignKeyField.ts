@@ -81,9 +81,9 @@ export function afterCreateForForeignKeyField(db: Database) {
     await r.update({
       filter: {
         collectionName,
-        options:{
-          primaryKey: true
-        }
+        options: {
+          primaryKey: true,
+        },
       },
       values: {
         sort: 0,

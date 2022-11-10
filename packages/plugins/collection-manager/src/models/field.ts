@@ -156,6 +156,20 @@ export class FieldModel extends MagicAttributeModel {
     );
   }
 
+  async syncReferenceCheckOption(options: Transactionable) {
+    const reverseKey = this.get('reverseKey');
+    if (!reverseKey) return;
+
+    const reverseField = await this.db.getCollection('fields').repository.findOne({
+      filterByTk: reverseKey,
+      transaction: options.transaction,
+    });
+
+    if (!reverseField) return;
+    reverseField.set('onDelete', this.get('onDelete'));
+    await reverseField.save({ hooks: false, transaction: options.transaction });
+  }
+
   protected getFieldCollection(): Collection | null {
     const collectionName = this.get('collectionName');
 
