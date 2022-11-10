@@ -88,6 +88,11 @@ const navs = [
     path: '/manual',
   },
   {
+    title: 'User manual',
+    'title.zh-CN': '使用手册（新）',
+    path: '/user-manual',
+  },
+  {
     title: 'Plugin Development',
     'title.zh-CN': '插件开发',
     path: '/development',
