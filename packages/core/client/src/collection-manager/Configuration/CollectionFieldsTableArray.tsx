@@ -91,6 +91,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   } = props;
   const [selectedRowKeys, setSelectedRowKeys] = useSelectedRowKeys();
   const [categorizeData, setCategorizeData] = useState<Array<CategorizeDataItem>>([]);
+  const [expandedKeys, setExpendedKeys] = useState(selectedRowKeys);
   const inherits = getParentCollections(record.name);
   useDataSource({
     onSuccess(data) {
@@ -121,11 +122,9 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
             addCategorizeVal('basic', item);
         }
       });
-
       if (inherits) {
         inherits.forEach((v) => {
           sortKeyArr.push(v);
-          const parentCollection = getCollection(v);
           const parentFields = getParentCollectionFields(v, record.name);
           parentFields.map((k) => {
             addCategorizeVal(v, new Proxy(k, {}));
@@ -143,6 +142,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
           });
         }
       });
+      setExpendedKeys(sortKeyArr);
       setCategorizeData(tmpData);
     },
   });
@@ -228,7 +228,18 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         pagination={false}
         expandable={{
           expandedRowRender,
-          defaultExpandedRowKeys: sortKeyArr,
+          expandedRowKeys: expandedKeys,
+        }}
+        onExpand={(expanded, record) => {
+          let keys=[]
+          if (expanded) {
+            keys = expandedKeys.concat([record.key])
+          } else {
+             keys = expandedKeys.filter((v) => {
+              return v !== record.key;
+            });
+          }
+          setExpendedKeys(keys);
         }}
       />
     </div>
