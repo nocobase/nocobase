@@ -22,8 +22,8 @@ export class SyncRunner {
     const attributes = model.tableAttributes;
 
     const parentAttributes = inheritedCollection.parentAttributes();
-
     const childAttributes = lodash.omit(attributes, Object.keys(parentAttributes));
+
     await this.createTable(tableName, childAttributes, options, model, parentTables);
 
     if (options.alter) {

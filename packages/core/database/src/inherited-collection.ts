@@ -73,7 +73,12 @@ export class InheritedCollection extends Collection {
         Object.assign(attributes, (<InheritedCollection>parent).parentAttributes());
       }
 
-      Object.assign(attributes, (<any>parent.model).tableAttributes);
+      Object.assign(
+        attributes,
+        lodash.filter((<any>parent.model).tableAttributes, (value, key) => {
+          return !value.inherit;
+        }),
+      );
     }
 
     return attributes;
