@@ -51,14 +51,6 @@ export class CollectionModel extends MagicAttributeModel {
     for (const instance of instances) {
       await instance.load(options);
     }
-
-    if (this.isInheritedModel()) {
-      const parentFields = await this.parentFields(options);
-      for (const parentField of parentFields) {
-        parentField.set('collectionName', this.get('name'));
-        await parentField.load(options);
-      }
-    }
   }
 
   async remove(options?: any) {

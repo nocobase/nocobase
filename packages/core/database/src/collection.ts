@@ -187,6 +187,15 @@ export class Collection<
     this.removeField(name);
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
+
+    if (this.isParent()) {
+      for (const child of this.context.database.inheritanceMap.getChildren(this.name, {
+        deep: false,
+      })) {
+        this.db.getCollection(child).setField(name, options);
+      }
+    }
+
     return field;
   }
 

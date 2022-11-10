@@ -93,4 +93,39 @@ pgOnly()('collection inherits', () => {
     const parentFields = child.parentFields();
     expect(parentFields.size).toBe(4);
   });
+
+  it('should sync parent fields', async () => {
+    const person = db.collection({
+      name: 'person',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const student = db.collection({
+      name: 'student',
+      inherits: 'person',
+      fields: [{ name: 'score', type: 'integer' }],
+    });
+
+    await db.sync();
+
+    expect(student.fields.get('name')).toBeDefined();
+
+    // add new field to parent
+    person.setField('age', { type: 'integer' });
+
+    await db.sync();
+
+    expect(student.fields.get('age')).toBeDefined();
+
+    const student1 = await db.getCollection('student').repository.create({
+      values: {
+        name: 'student1',
+        age: 10,
+        score: 100,
+      },
+    });
+
+    expect(student1.get('name')).toBe('student1');
+    expect(student1.get('age')).toBe(10);
+  });
 });

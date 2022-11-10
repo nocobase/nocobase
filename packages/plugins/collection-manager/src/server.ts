@@ -83,16 +83,6 @@ export class CollectionManagerPlugin extends Plugin {
           isNew: true,
           transaction,
         });
-
-        if (this.db.inheritanceMap.isParentNode(model.get('collectionName'))) {
-          const childrenCollections = this.db.inheritanceMap.getChildren(model.get('collectionName'));
-          for (const childrenCollectionName of childrenCollections) {
-            model.set('collectionName', childrenCollectionName);
-            model.load({
-              transaction,
-            });
-          }
-        }
       }
     });
 

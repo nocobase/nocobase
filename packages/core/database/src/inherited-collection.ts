@@ -12,12 +12,18 @@ export class InheritedCollection extends Collection {
 
     super(options, context);
     this.setParents(options.inherits);
-
     this.context.database.inheritanceMap.setInheritance(this.name, options.inherits);
+    this.setParentFields();
   }
 
   protected setParents(inherits: string | string[]) {
     this.parents = lodash.castArray(inherits).map((name) => this.context.database.collections.get(name));
+  }
+
+  protected setParentFields() {
+    for (const [name, field] of this.parentFields()) {
+      this.setField(name, field.options);
+    }
   }
 
   getField<F extends Field>(name: string): F {

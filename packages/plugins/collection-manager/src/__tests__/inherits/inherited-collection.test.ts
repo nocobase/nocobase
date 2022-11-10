@@ -53,4 +53,42 @@ pgOnly()('Inherited Collection', () => {
     expect(studentFields.length).toBe(1);
     expect(studentFields[0].get('title')).toBe('姓名');
   });
+
+  it('should remove parent collections field', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'person',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'students',
+        fields: [
+          {
+            name: 'score',
+            type: 'integer',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const studentCollection = await db.getCollection('students');
+
+    console.log(studentCollection.fields);
+    await studentCollection.repository.create({
+      values: {
+        name: 'foo',
+        score: 100,
+      },
+    });
+  });
 });
