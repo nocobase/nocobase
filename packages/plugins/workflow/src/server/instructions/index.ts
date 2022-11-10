@@ -15,25 +15,15 @@ export type Job = {
 
 export type InstructionResult = Job | Promise<Job>;
 
+export type Runner = (node: FlowNodeModel, input: any, processor: Processor) => InstructionResult;
+
 // what should a instruction do?
 // - base on input and context, do any calculations or system call (io), and produce a result or pending.
 export interface Instruction {
-  run(
-    node: FlowNodeModel,
-    // what should input to be?
-    // - just use previously output result for convenience?
-    input: any,
-    // what should context to be?
-    // - could be the workflow execution object (containing context data)
-    processor: Processor
-  ): InstructionResult;
+  run: Runner;
 
   // for start node in main flow (or branch) to resume when manual sub branch triggered
-  resume?(
-    node: FlowNodeModel,
-    input: any,
-    processor: Processor
-  ): InstructionResult
+  resume?: Runner
 }
 
 type InstructionConstructor<T> = { new(p: Plugin): T };

@@ -612,6 +612,7 @@ export default {
 
   'Control': '流程控制',
   'Collection operations': '数据表操作',
+  'Extended': '扩展类型',
 
   'Node type': '节点类型',
 
