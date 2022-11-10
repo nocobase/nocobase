@@ -16,6 +16,77 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should replace child association target', async () => {
+    db.collection({
+      name: 'person',
+      fields: [
+        { name: 'name', type: 'string' },
+        { type: 'hasOne', name: 'profile' },
+      ],
+    });
+
+    db.collection({
+      name: 'profiles',
+      fields: [
+        { name: 'age', type: 'integer' },
+        {
+          type: 'belongsTo',
+          name: 'person',
+        },
+      ],
+    });
+
+    db.collection({
+      name: 'teachers',
+      inherits: 'person',
+      fields: [{ name: 'salary', type: 'integer' }],
+    });
+
+    db.collection({
+      name: 'students',
+      inherits: 'person',
+      fields: [
+        { name: 'score', type: 'integer' },
+        {
+          type: 'hasOne',
+          name: 'profile',
+          target: 'studentProfiles',
+        },
+      ],
+    });
+
+    db.collection({
+      name: 'studentProfiles',
+      fields: [{ name: 'grade', type: 'string' }],
+    });
+
+    await db.sync();
+
+    const student = await db.getCollection('students').repository.create({
+      values: {
+        name: 'foo',
+        score: 100,
+        profile: {
+          grade: 'A',
+        },
+      },
+    });
+
+    expect(student.get('profile').get('grade')).toBe('A');
+
+    const teacher = await db.getCollection('teachers').repository.create({
+      values: {
+        name: 'bar',
+        salary: 1000,
+        profile: {
+          age: 30,
+        },
+      },
+    });
+
+    expect(student.get('profile').get('age')).toBe(30);
+  });
+
   it('should inherit association field', async () => {
     const person = db.collection({
       name: 'person',
