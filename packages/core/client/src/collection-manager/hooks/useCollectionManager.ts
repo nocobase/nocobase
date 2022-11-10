@@ -43,7 +43,7 @@ export const useCollectionManager = () => {
       });
       inheritCollections.forEach((v) => {
         const collectionKey = v.name;
-        childrens.push(v)
+        childrens.push(v);
         return getChildrens(collectionKey);
       });
       return childrens;
@@ -96,5 +96,14 @@ export const useCollectionManager = () => {
     },
     getParentCollections,
     getChildrenCollections,
+    getParentCollectionFields: (parentCollection, currentCollection) => {
+      const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields;
+      const parentFields = collections?.find((collection) => collection.name === parentCollection)?.fields;
+      return parentFields.filter((v)=>{
+        return !currentFields.find((k)=>{
+          return k.name===v.name
+        })
+      })
+    },
   };
 };

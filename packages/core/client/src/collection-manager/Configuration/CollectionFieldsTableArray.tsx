@@ -81,7 +81,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const field = useField<ArrayField>();
   const record = useRecord();
   const { t } = useTranslation();
-  const { getInterface, getParentCollections, getCollection } = useCollectionManager();
+  const { getInterface, getParentCollections, getCollection, getParentCollectionFields } = useCollectionManager();
   const {
     showIndex = true,
     useSelectedRowKeys = useDef,
@@ -126,7 +126,8 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         inherits.forEach((v) => {
           sortKeyArr.push(v);
           const parentCollection = getCollection(v);
-          parentCollection.fields.map((k) => {
+          const parentFields = getParentCollectionFields(v, record.name);
+          parentFields.map((k) => {
             addCategorizeVal(v, new Proxy(k, {}));
             field.value.push(new Proxy(k, {}));
           });
