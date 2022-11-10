@@ -16,6 +16,25 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should update inherit field when parent field update', async () => {
+    db.collection({
+      name: 'person',
+      fields: [{ name: 'name', type: 'string', title: 'parent-name' }],
+    });
+
+    db.collection({
+      name: 'students',
+      inherits: 'person',
+    });
+
+    expect(db.getCollection('students').getField('name').get('title')).toBe('parent-name');
+
+    db.getCollection('person').setField('name', { type: 'string', title: 'new-name' });
+
+    expect(db.getCollection('person').getField('name').get('title')).toBe('new-name');
+    expect(db.getCollection('students').getField('name').get('title')).toBe('new-name');
+  });
+
   it('should not replace child field when parent field update', async () => {
     db.collection({
       name: 'person',
