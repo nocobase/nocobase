@@ -23,7 +23,10 @@ export class InheritedCollection extends Collection {
   protected setParentFields() {
     for (const [name, field] of this.parentFields()) {
       if (!this.hasField(name)) {
-        this.setField(name, field.options);
+        this.setField(name, {
+          ...field.options,
+          inherit: true,
+        });
       }
     }
   }

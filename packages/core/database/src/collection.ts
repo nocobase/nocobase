@@ -192,7 +192,15 @@ export class Collection<
       for (const child of this.context.database.inheritanceMap.getChildren(this.name, {
         deep: false,
       })) {
-        this.db.getCollection(child).setField(name, options);
+        const childCollection = this.db.getCollection(child);
+        const existField = childCollection.getField(name);
+
+        if (!existField || existField.options.inherit) {
+          this.db.getCollection(child).setField(name, {
+            ...options,
+            inherit: true,
+          });
+        }
       }
     }
 

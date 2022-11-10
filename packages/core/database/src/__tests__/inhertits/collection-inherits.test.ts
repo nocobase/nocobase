@@ -16,6 +16,26 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should not replace child field when parent field update', async () => {
+    db.collection({
+      name: 'person',
+      fields: [{ name: 'name', type: 'string', title: 'parent-name' }],
+    });
+
+    db.collection({
+      name: 'students',
+      inherits: 'person',
+      fields: [{ name: 'name', type: 'string', title: 'student-name' }],
+    });
+
+    expect(db.getCollection('students').getField('name').get('title')).toBe('student-name');
+
+    db.getCollection('person').setField('name', { type: 'string', title: 'new-name' });
+
+    expect(db.getCollection('person').getField('name').get('title')).toBe('new-name');
+    expect(db.getCollection('students').getField('name').get('title')).toBe('student-name');
+  });
+
   it('should replace child association target', async () => {
     db.collection({
       name: 'person',
