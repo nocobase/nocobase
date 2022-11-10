@@ -52,7 +52,6 @@ export async function submit(context: Context, next) {
   instance.job.latestUserJob = instance;
 
   const plugin = context.app.pm.get('workflow');
-  const processor = plugin.createProcessor(instance.execution);
   // NOTE: resume the process and no `await` for quick returning
-  processor.resume(instance.job);
+  plugin.resume(instance.job);
 }

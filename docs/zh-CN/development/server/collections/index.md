@@ -2,7 +2,7 @@
 
 ## Collection
 
-Collection 是所有种类数据的集合，中文翻译为「数据表」，如订单、商品、用户、评论等都是 Collection，不同 Collection 通过 name 区分，如：
+Collection 是所有种类数据的集合，中文翻译为「数据表」，如订单、商品、用户、评论等都是 Collection。不同 Collection 通过 name 区分，如：
 
 ```ts
 // 订单
@@ -82,7 +82,7 @@ Collection 是所有种类数据的集合，中文翻译为「数据表」，如
 
 ### Field Component
 
-只有数据类型的字段，字段值的 IO 没问题了，但是还不够，如果需要将字段展示在界面上，还需要另一个维度的配置 —— `uiSchema`，如：
+字段有了数据类型，字段值的 IO 没问题了，但是还不够，如果需要将字段展示在界面上，还需要另一个维度的配置 —— `uiSchema`，如：
 
 ```tsx | pure
 // 邮箱字段，用 Input 组件展示，使用 email 校验规则

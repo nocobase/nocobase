@@ -6,6 +6,7 @@ import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 
 
+// NOTE: skipped because time is not stable on github ci, but should work in local
 describe.skip('workflow > instructions > prompt', () => {
   describe('base', () => {
     let app: MockServer;

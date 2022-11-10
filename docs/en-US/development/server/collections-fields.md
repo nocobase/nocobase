@@ -1,52 +1,52 @@
-# 数据表与字段
+## Collections and Fields
 
-## 基础概念
+## Basic Concepts
 
-数据建模是一个应用最底层的基础，在 NocoBase 应用中我们通过数据表（Collection）和字段（Field）来进行数据建模，并且建模也将映射到数据库表以持久化。
+Data modeling is the lowest level foundation of an application. In NocoBase applications we model data through data tables (Collection) and fields (Field), and the modeling is also mapped to database tables for persistence.
 
 ### Collection
 
-Collection 是所有同类数据的集合，在 NocoBase 中对应数据库表的概念，如订单、商品、用户、评论等都可以形成 Collection 定义，不同 Collection 通过 name 区分，包含的字段由 `fields` 定义，如：
+Collection is a collection of all similar data, which corresponds to the concept of database tables in NocoBase. Such as orders, products, users, comments, etc. can form a collection definition. Different collections are distinguished by name and contain fields defined by `fields`, such as
 
 ```ts
 db.collection({
   name: 'posts',
   fields: [
-    { name: 'title', type: 'string' },
+    { name: 'title', type: 'string' }
     { name: 'content', type: 'text' },
     // ...
   ]
 });
 ```
 
-定义完成后 collection 暂时只处于内存中，还需要调用 [`db.sync()`](/api/database#sync) 方法将其同步到数据库中。
+The collection is only in memory after the definition, you need to call the [``db.sync()`'' (/api/database#sync) method to synchronize it to the database.
 
 ### Field
 
-对应数据库表“字段”的概念，每个数据表（Collection）都可以有若干 Fields，例如：
+Corresponding to the concept of database table "fields", each data table (Collection) can have a number of Fields, for example.
 
 ```ts
 db.collection({
   name: 'users',
   fields: [
-    { type: 'string', name: 'name' },
-    { type: 'integer', name: 'age' },
-    // 其他字段
+    { type: 'string', name: 'name' }
+    { type: 'integer', name: 'age' }
+    // Other fields
   ],
 });
 ```
 
-其中字段名称（`name`）和字段类型（`type`）是必填项，不同字段通过字段名（`name`）区分，除 `name` 与 `type` 以外，根据不同字段类型可以有更多的配置信息。所有数据库字段类型及配置详见 API 参考的[内置字段类型列表](/api/database/field#内置字段类型列表)部分。
+The field name (`name`) and field type (`type`) are required, and different fields are distinguished by the field name (`name`). All field types and their configurations are described in the [List of built-in field types](/api/database/field#List of built-in field types) section of the API reference.
 
-## 示例
+## Example
 
-对于开发者，通常我们会建立与普通数据表不同的一些功能型数据表，并把这些数据表固化成插件的一部分，并结合其他数据处理流程以形成完整的功能。
+For developers, we usually build functional collections that are different from normal collections and solidify these collections as part of the plugin and combine them with other data processing processes to form a complete functionality.
 
-接下来我们以一个简单的在线商店插件为例来介绍如何建模并管理插件的数据表。假设你已经学习过 [编写第一个插件](/development/your-first-plugin)，我们继续在之前的插件代码上开发，只不过插件的名称从 `hello` 改为 `shop-modeling`。
+Let's take a simple online store plugin as an example to show how to model and manage the collections of the plugin. Assuming you have already learned about [Develop your first plugin](/development/your-first-plugin), we continue to build on the previous plugin code, except that the name of the plugin is changed from `hello` to `shop-modeling`.
 
-### 插件中定义并创建数据表
+### Define and create collections in the plugin
 
-对于一个店铺，首先需要建立一张商品的数据表，命名为 `products`。与直接调用 [`db.collection()`](/api/database#collection) 这样的方法稍有差异，在插件中我们会使用更方便的方法一次性导入多个文件定义的数据表。所以我们先为商品数据表的定义创建一个文件命名为 `collections/products.ts`，填入以下内容：
+For a store, you first need to create a collection of products, named `products`. Instead of calling [`db.collection()`](/api/database#collection) directly, in the plugin we will use a more convenient method to import multiple files of defined data tables at once. So let's start by creating a file for the product collection definition named ``collections/products.ts`` and fill it with the following content.
 
 ```ts
 export default {
@@ -72,9 +72,9 @@ export default {
 };
 ```
 
-可以看到，NocoBase 的数据库表结构定义可以直接使用标准的 JSON 格式，其中 `name` 和 `fields` 都是必填项，代表数据表名和该表中的字段定义。字段定义中与 Sequelize 类似会默认创建主键（`id`）、数据创建时间（`createdAt`）和数据更新时间（`updatedAt`）等系统字段，如有特殊需要可以以同名的配置覆盖定义。
+As you can see, the collections structure definition can be used directly in standard JSON format, where `name` and `fields` are required representing the collection's name and the field definitions in the collection. Field definitions similar to Sequelize create system fields such as primary key (`id`), data creation time (`createdAt`) and data update time (`updatedAt`) by default, which can be overridden by a configuration with the same name if there is a special need.
 
-该文件定义的数据表我们可以在插件主类的 `load()` 周期中使用 `db.import()` 引入并完成定义。如下所示：
+The data table defined in this file we can introduce and complete the definition in the `load()` cycle of the main plugin class using `db.import()`. This is shown below.
 
 ```ts
 import path from 'path';
@@ -93,23 +93,23 @@ export default class ShopPlugin extends Plugin {
 }
 ```
 
-同时我们为了方便测试，先暂时允许针对这几张表数据资源的所有访问权限，后面我们会在 [权限管理](/development/guide/acl) 中详细介绍如何管理资源的权限。
+In the meantime, for testing purposes, we will temporarily allow all access permissions for the data in these collections, and later we will detail how to manage data permissions in [Permissions Management](/development/guide/acl).
 
-这样在插件被主应用加载时，我们定义的 `products` 表也就被加载到数据库管理实例的内存中了。同时，基于 NocoBase 约定式的数据表资源映射，在应用的服务启动以后，会自动生成对应的 CRUD HTTP API。
+This way, when the plugin is loaded by the main application, the `products` collection we defined is also loaded into the memory of the database management instance. At the same time, the NocoBase constraint-based resource mapping of the collections  automatically generates the corresponding CRUD HTTP API after the application's service is started.
 
-当从客户端请求以下 URL 时，会得到对应的响应结果：
+When the following URLs are requested from the client, the corresponding responses are obtained.
 
-* `GET /api/products:list`：获取所有商品数据列表
-* `GET /api/products:get?filterByTk=<id>`：获取指定 ID 的商品数据
-* `POST /api/products`：创建一条新的商品数据
-* `PUT /api/products:update?filterByTk=<id>`：更新一条商品数据
-* `DELETE /api/products:destroy?filterByTk=<id>`：删除一条商品数据
+* `GET /api/products:list`: Get a list of all product data
+* `GET /api/products:get?filterByTk=<id>`: Get the product data for the specified ID
+* `POST /api/products`: Create a new product data
+* `PUT /api/products:update?filterByTk=<id>`: Update a product data
+* `DELETE /api/products:destroy?filterByTk=<id>`: Delete a product data
 
-### 定义关系表和关联字段
+### Defining associated collections and fields
 
-在上面的例子中，我们只定义了一个商品数据表，但是实际上一个商品还需要关联到一个分类，一个品牌，一个供应商等等。这些关联关系可以通过定义关系表来实现，比如我们可以定义一个 `categories` 表，用来关联商品和分类，然后在商品表中添加一个 `category` 字段来关联到分类表。
+In the above example, we only defined a product collection, but in reality a product also needs to be associated to a category, a brand, a supplier, etc. For example, we can define a `categories` collection to store the categories, and then add a `category` field to the product collection to associate it with the category collection.
 
-新增文件 `collections/categories.ts`，并填入内容：
+Add a new file `collections/categories.ts` and fill in the content.
 
 ```ts
 export default {
@@ -127,9 +127,9 @@ export default {
 };
 ```
 
-我们为 `categories` 表定义了两个字段，一个是标题，另一个是该分类下关联的所有产品的一对多字段，会在后面一起介绍。因为我们已经在插件的主类中使用了 `db.import()` 方法导入 `collections` 目录下的所有数据表定义，所以这里新增的 `categories` 表也会被自动导入到数据库管理实例中。
+We have defined two fields for the `categories` collection, one for the title and another one-to-many field for all the products associated under that category, which will be described later. Since we have already used the `db.import()` method in the plugin's main class to import all the data table definitions under the `collections` directory, the new `categories` collection added here will also be automatically imported into the database management instance.
 
-修改文件 `collections/products.ts`，在 `fields` 中添加一个 `category` 字段：
+Modify the file `collections/products.ts`` to add a `category` field to the `fields`.
 
 ```ts
 {
@@ -145,25 +145,25 @@ export default {
 }
 ```
 
-可以看到，我们为 `products` 表新增的 `category` 字段是一个 `belongsTo` 类型的字段，它的 `target` 属性指向了 `categories` 表，这样就定义了一个 `products` 表和 `categories` 表之间的多对一关系。同时结合我们在 `categories` 表中定义的 `hasMany` 字段，就可以实现一个商品可以关联到多个分类，一个分类下可以有多个商品的关系。通常 `belongsTo` 和 `hasMany` 可以成对出现，分别定义在两张表中。
+As you can see, the `category` field we added to the `products` collection is a `belongsTo` type field, and its `target` property points to the `categories` collection, thus defining a many-to-one relationship between the `products` collection and the `categories` collection. Combined with the `hasMany` field defined in the `categories` collection, we can achieve a relationship where one product can be associated to multiple categories and multiple products under one category. Usually `belongsTo` and `hasMany` can appear in pairs, defined in two separate collections.
 
-定义好两张表之间的关系后，同样的我们就可以直接通过 HTTP API 来请求关联数据了：
+Once the relationship between the two collections is defined, we can also request the associated data directly through the HTTP API
 
-* `GET /api/products:list?appends=category`：获取所有商品数据，同时包含关联的分类数据
-* `GET /api/products:get?filterByTk=<id>&appends=category`：获取指定 ID 的商品数据，同时包含关联的分类数据
-* `GET /api/categories/<categoryId>/products:list`：获取指定分类下的所有商品数据
-* `POST /api/categories/<categoryId>/products`：在指定分类下创建新的商品
+* `GET /api/products:list?appends=category`: Get all products data, including the associated categories data
+* `GET /api/products:get?filterByTk=<id>&appends=category`: Get the product data for the specified ID, including the associated category data.
+* `GET /api/categories/<categoryId>/products:list`: Get all the products under the specified category
+* `POST /api/categories/<categoryId>/products`: Create a new product under the specified category
 
-与一般的 ORM 框架类似，NocoBase 内置了四种关系字段类型，更多信息可以参考 API 字段类型相关的章节：
+Similar to the general ORM framework, NocoBase has four built-in relational field types, for more information you can refer to the section about API field types.
 
-* [`belongsTo` 类型](/api/database/field#belongsto)
-* [`belongsToMany` 类型](/api/database/field#belongstomany)
-* [`hasMany` 类型](/api/database/field#hasmany)
-* [`hasOne` 类型](/api/database/field#hasone)
+* [`belongsTo` type](/api/database/field#belongsto)
+* [`belongsToMany` type](/api/database/field#belongstomany)
+* [`hasMany` type](/api/database/field#hasmany)
+* [`hasOne` type](/api/database/field#hasone)
 
-### 扩展已有数据表
+### Extend an existing collection
 
-在上面的例子中，我们已经有了商品表和分类表，为了提供销售流程，我们还需要一个订单表。我们可以在 `collections` 目录下新增一个 `orders.ts` 文件，然后定义一个 `orders` 表：
+In the above example, we already have a product collection and a category collection, in order to provide the sales process we also need an order collection. We can add a new `orders.ts` file to the `collections` directory and define an `orders` collection as follows
 
 ```ts
 export default {
@@ -202,7 +202,7 @@ export default {
 }
 ```
 
-为了简化，订单表中与商品的关联我们只简单的定义为多对一关系，而在实际业务中可能会用到多对多或快照等复杂的建模方式。可以看到，一个订单除了对应某个商品，我们还增加了一个对应用户的关系定义，用户是 NocoBase 内置插件管理的数据表（详细参考[用户插件的代码](https://github.com/nocobase/nocobase/tree/main/packages/plugins/users)），如果我们希望针对已存在的用户表扩展定义“一个用户所拥有的多个订单”的关系，可以在当前的 shop-modeling 插件内继续新增一个数据表文件 `collections/users.ts`，与直接导出 JSON 数据表配置不同的是，这里使用 `@nocobase/database` 包的 `extend()` 方法，进行对已有数据表的扩展定义：
+For the sake of simplicity, the association between the order collection and the product collection we simply define as a many-to-one relationship, while in the actual business may be used in a complex modeling approach such as many-to-many or snapshot. As you can see, an order in addition to corresponding to a commodity, we also added a relationship definition corresponding to the users, which is a collection managed by the NocoBase built-in plugins (refer to [code for users plugin](https://github.com/nocobase/nocobase/tree/main/packages/) for details plugins/users)). If we want to extend the definition of the "multiple orders owned by a user" relationship for the existing users collection, we can continue to add a new collection file `collections/users.ts` inside the current shop-modeling plugin, which is different from exporting the JSON collection directly. Unlike the direct export of a JSON, the `@nocobase/database` package's `extend()` method is used here to extend the definition of an existing collection: ``ts
 
 ```ts
 import { extend } from '@nocobase/database';
@@ -218,20 +218,20 @@ export extend({
 });
 ```
 
-这样，原先已存在的用户表也就拥有了一个 `orders` 关联字段，我们可以通过 `GET /api/users/<userId>/orders:list` 来获取指定用户的所有订单数据。
+This way, the existing users table also has an `orders` associated field, and we can retrieve all the order data for a given user via `GET /api/users/<userId>/orders:list`.
 
-这个方法在扩展其他已有插件已定义的数据表时非常有用，使得其他已有插件不会反向依赖新的插件，仅形成单向依赖关系，方便在扩展层面进行一定程度的解耦。
+This method is very useful when extending collections already defined by other plugins, so that other existing plugins do not depend on the new plugin in reverse, but only form one-way dependencies, facilitating a certain degree of decoupling at the extension level.
 
-### 扩展字段类型
+### Extend field types
 
-我们在定义订单表的时候针对 `id` 字段使用了 `uuid` 类型，这是一个内置的字段类型，有时候我们也会觉得 UUID 看起来太长比较浪费空间，且查询性能不佳，希望用一个更适合的字段类型，比如一个含日期信息等复杂的编号逻辑，或者是 Snowflake 算法，我们就需要扩展一个自定义字段类型。
+We use `uuid` type for `id` field when we define order table, which is a built-in field type. Sometimes we may feel that UUID looks too long and waste space, and the query performance is not good, we want to use a more suitable field type, such as a complex numbering logic with date information, or Snowflake algorithm, we need to extend a custom field type.
 
-假设我们需要直接应用 Snowflake ID 生成算法，扩展出一个 `snowflake` 字段类型，我们可以创建一个 `fields/snowflake.ts` 文件：
+Suppose we need to apply the Snowflake ID generation algorithm directly to extend a ``snowflake`` field type, we can create a ``fields/snowflake.ts`` file.
 
 ```ts
-// 引入算法工具包
+// Import the algorithm toolkit
 import { Snowflake } from 'nodejs-snowflake';
-// 引入字段类型基类
+// Import field type base class
 import { DataTypes, Field, BaseColumnFieldOptions } from '@nocobase/database';
 
 export interface SnowflakeFieldOptions extends BaseColumnFieldOptions {
@@ -274,10 +274,10 @@ export class SnowflakeField extends Field {
 export default SnowflakeField;
 ```
 
-之后在插件主文件向数据库注册新的字段类型：
+Afterwards, register the new field type into the collection in the main plugin file.
 
 ```ts
-import SnowflakeField from './fields/snowflake';
+import SnowflakeField from '. /fields/snowflake';
 
 export default class ShopPlugin extends Plugin {
   initialize() {
@@ -290,7 +290,7 @@ export default class ShopPlugin extends Plugin {
 }
 ```
 
-这样，我们就可以在订单表中使用 `snowflake` 字段类型了：
+This allows us to use the `snowflake` field type in the order table: 
 
 ```ts
 export default {
@@ -301,18 +301,19 @@ export default {
       name: 'id',
       primaryKey: true
     },
-    // ...other fields
+    // ... . other fields
   ]
 }
 ```
 
-## 小结
+## Summary
 
-通过上面的示例，我们基本了解了如何在一个插件中进行数据建模，包括：
+With the above example, we basically understand how to model data in a plugin, including.
 
-* 定义数据表和普通字段
-* 定义关联表和关联字段关系
-* 扩展已有的数据表的字段
-* 扩展新的字段类型
+* Defining collections and common fields
+* Defining association collections and fields relationships
+* Extending fields of an existing collections
+* Extending new field types
 
-我们将本章所涉及的代码放到了一个完整的示例包 [packages/samples/shop-modeling](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-modeling) 中，可以直接在本地运行，查看效果。
+We have put the code covered in this chapter into a complete sample package [packages/samples/shop-modeling](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-modeling), which can be run directly locally to see the results.
+

@@ -164,7 +164,7 @@ pgOnly()('collection inherits', () => {
       },
     });
 
-    expect(student.get('profile').get('age')).toBe(30);
+    expect(teacher.get('profile').get('age')).toBe(30);
   });
 
   it('should inherit association field', async () => {

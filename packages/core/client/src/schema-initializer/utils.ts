@@ -1,10 +1,12 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItemOptions } from '../';
 import { useCollection, useCollectionManager } from '../collection-manager';
 import { useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
+import { SelectCollection } from './SelectCollection';
 
 export const itemsMerge = (items1, items2) => {
   return items1;
@@ -498,17 +500,28 @@ export const useCollectionDataSourceItems = (componentName) => {
   const { t } = useTranslation();
   const { collections } = useCollectionManager();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
+  const [selected, setSelected] = useState([]);
+  const [value, onChange] = useState(null);
+  const clearKeywords = () => {
+    setSelected([]);
+    onChange(null);
+  };
   return [
     {
       key: 'tableBlock',
       type: 'itemGroup',
-      title: t('Select collection'),
+      title: React.createElement(SelectCollection, {
+        value,
+        onChange,
+        setSelected,
+      }),
       children: collections
         ?.filter((item) => {
+          const b = !value || selected.includes(item.name);
           if (item.inherit) {
             return false;
           } else {
-            return !(item?.isThrough && item?.autoCreate);
+            return b && !(item?.isThrough && item?.autoCreate);
           }
         })
         ?.map((item, index) => {
@@ -524,6 +537,7 @@ export const useCollectionDataSourceItems = (componentName) => {
               type: 'item',
               name: item.name,
               title: item.title,
+              clearKeywords,
             };
           }
           return {
@@ -536,6 +550,7 @@ export const useCollectionDataSourceItems = (componentName) => {
                 type: 'item',
                 name: item.name,
                 title: t('Blank block'),
+                clearKeywords,
               },
               {
                 type: 'divider',
@@ -553,6 +568,7 @@ export const useCollectionDataSourceItems = (componentName) => {
                     mode: 'copy',
                     name: item.name,
                     template,
+                    clearKeywords,
                     title: templateName || t('Untitled'),
                   };
                 }),
@@ -568,6 +584,7 @@ export const useCollectionDataSourceItems = (componentName) => {
                   return {
                     type: 'item',
                     mode: 'reference',
+                    clearKeywords,
                     name: item.name,
                     template,
                     title: templateName || t('Untitled'),

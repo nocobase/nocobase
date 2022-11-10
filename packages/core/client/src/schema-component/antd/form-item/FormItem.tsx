@@ -393,6 +393,10 @@ FormItem.Designer = (props) => {
               action: tk ? 'get' : null,
             });
 
+            if (v === 'CollectionField') {
+              schema['type'] = 'string';
+            }
+
             insertAdjacent('beforeBegin', divWrap(schema), {
               onSuccess: () => {
                 dn.remove(null, {

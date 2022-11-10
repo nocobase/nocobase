@@ -1,24 +1,24 @@
-# 如何配置数据表？
+# How to configure collections?
 
-NocoBase 有三种方式配置数据表：
+NocoBase has three ways to configure collections.
 
 <img src="./cm.svg" style="max-width: 800px;" />
 
-## 通过界面配置数据表
+## Configuring collections through the interface
 
-业务数据一般建议使用界面配置，NocoBase 平台提供了两种界面配置数据表
+Business data is generally recommended to be configured using the interface, and the NocoBase platform provides two interfaces to configure collections.
 
-### 常规的表格界面
+### Regular table interface
 
 <img src="./table.jpg" style="max-width: 800px;" />
 
-### 图形化配置界面
+### Graphical configuration interface
 
 <img src="./graph.jpg" style="max-width: 800px;" />
 
-## 在插件代码里定义
+## Defined in the plugin code
 
-一般用于配置插件功能表或系统配置表，用户可以读写数据，但不能修改表结构。
+Generally used to configure plugin functions or system configuration tables where users can read and write data, but cannot modify the data structure.
 
 ```ts
 export class MyPlugin extends Plugin {
@@ -29,34 +29,34 @@ export class MyPlugin extends Plugin {
 }
 ```
 
-相关 API 参考
+Related API Reference
 
 - [db.collection()](/api/database#collection)
 - [db.import()](/api/database#import)
 
-在插件里配置的 collection，插件激活时自动与数据库同步，生相对应的数据表和字段。
+The collection configured in the plugin is automatically synchronized with the database when the plugin is activated, giving birth to the corresponding data tables and fields.
 
-## 通过 REST API 管理数据表
+## Managing data tables via REST API
 
-第三方还可以通过 HTTP 接口管理数据表（需要开放权限）
+Third parties can also manage data tables via the HTTP interface (permissions required)
 
 ### Collections
 
 ```bash
-GET     /api/collections
-POST    /api/collections
-GET     /api/collections/<collectionName>
-PUT     /api/collections/<collectionName>
-DELETE  /api/collections/<collectionName>
+GET /api/collections
+POST /api/collections
+GET /api/collections/<collectionName>
+PUT /api/collections/<collectionName>
+DELETE /api/collections/<collectionName>
 ```
 
 ### Collection fields
 
 ```bash
-GET     /api/collections/<collectionName>/fields
-POST    /api/collections/<collectionName>/fields
-GET     /api/collections/<collectionName>/fields/<fieldName>
-PUT     /api/collections/<collectionName>/fields/<fieldName>
-DELETE  /api/collections/<collectionName>/fields/<fieldName>
+GET /api/collections/<collectionName>/fields
+POST /api/collections/<collectionName>/fields
+GET /api/collections/<collectionName>/fields/<fieldName>
+PUT /api/collections/<collectionName>/fields/<fieldName>
+DELETE /api/collections/<collectionName>/fields/<fieldName>
 ```
 
