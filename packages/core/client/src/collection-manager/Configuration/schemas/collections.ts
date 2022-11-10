@@ -148,7 +148,7 @@ export const collectionSchema: ISchema = {
                       'x-decorator': 'FormItem',
                       'x-validator': 'uid',
                     },
-                    inherits:{
+                    inherits: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
@@ -236,6 +236,9 @@ export const collectionSchema: ISchema = {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
+                          'x-component-props': {
+                            destroyOnClose: true,
+                          },
                           'x-reactions': (field) => {
                             const i = field.path.segments[1];
                             const table = field.form.getValuesIn(`table.${i}`);
@@ -275,7 +278,7 @@ export const collectionSchema: ISchema = {
                               'x-decorator': 'FormItem',
                               'x-disabled': true,
                             },
-                            inherits:{
+                            inherits: {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                               'x-disabled': true,

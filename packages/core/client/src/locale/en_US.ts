@@ -123,6 +123,7 @@ export default {
   "Configure fields of {{title}}": "Configure fields of {{title}}",
   "PK & FK fields": "PK & FK fields",
   "Association fields": "Association fields",
+  "Parent collection fields":"Parent collection fields",
   "System fields": "System fields",
   "General fields": "General fields",
   "Basic": "Basic",

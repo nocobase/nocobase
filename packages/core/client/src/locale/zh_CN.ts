@@ -129,6 +129,7 @@ export default {
   "Association fields": "关系字段",
   "System fields": "系统字段",
   "General fields": "普通字段",
+  "Parent collection fields":"父表字段",
   "Basic": "基本类型",
   "Single line text": "单行文本",
   "Long text": "多行文本",
