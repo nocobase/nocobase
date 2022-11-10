@@ -9,10 +9,77 @@ pgOnly()('collection inherits', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should inherit association field', async () => {
+    const person = db.collection({
+      name: 'person',
+      fields: [
+        { name: 'name', type: 'string' },
+        { type: 'hasOne', name: 'profile' },
+      ],
+    });
+
+    const profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { name: 'age', type: 'integer' },
+        {
+          type: 'belongsTo',
+          name: 'person',
+        },
+      ],
+    });
+
+    db.collection({
+      name: 'students',
+      inherits: 'person',
+      fields: [{ name: 'score', type: 'integer' }],
+    });
+
+    db.collection({
+      name: 'teachers',
+      inherits: 'person',
+      fields: [{ name: 'salary', type: 'integer' }],
+    });
+
+    await db.sync();
+
+    await db.getCollection('students').repository.create({
+      values: {
+        name: 'foo',
+        score: 100,
+        profile: {
+          age: 18,
+        },
+      },
+    });
+
+    await db.getCollection('teachers').repository.create({
+      values: {
+        name: 'bar',
+        salary: 1000,
+        profile: {
+          age: 30,
+        },
+      },
+    });
+
+    const studentFoo = await db.getCollection('students').repository.findOne({
+      appends: ['profile'],
+    });
+
+    const teacherBar = await db.getCollection('teachers').repository.findOne({
+      appends: ['profile'],
+    });
+
+    expect(studentFoo.get('profile').age).toBe(18);
+    expect(teacherBar.get('profile').age).toBe(30);
   });
 
   it('should inherit from Collection', async () => {
