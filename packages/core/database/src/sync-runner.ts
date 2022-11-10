@@ -62,7 +62,7 @@ export class SyncRunner {
 
     sql = `${queryGenerator.createTableQuery(tableName, attributes, options)}`.replace(
       ';',
-      ` INHERITS (${parentTables.join(', ')});`,
+      ` INHERITS (${parentTables.map((t) => `"${t}"`).join(', ')});`,
     );
 
     return await model.sequelize.query(sql, options);
