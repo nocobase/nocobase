@@ -57,6 +57,7 @@ import {
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import ReferencesMap from './features/ReferencesMap';
 import { InheritedCollection } from './inherited-collection';
+import InheritanceMap from './inherited-map';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -150,6 +151,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelCtor<any>, Collection>();
   referenceMap = new ReferencesMap();
+  inheritanceMap = new InheritanceMap();
 
   modelHook: ModelHook;
   version: DatabaseVersion;

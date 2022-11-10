@@ -12,6 +12,8 @@ export class InheritedCollection extends Collection {
 
     super(options, context);
     this.setParents(options.inherits);
+
+    this.context.database.inheritanceMap.setInheritance(this.name, options.inherits);
   }
 
   protected setParents(inherits: string | string[]) {
