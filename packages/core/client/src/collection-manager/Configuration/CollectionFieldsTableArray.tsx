@@ -125,8 +125,8 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
       if (inherits) {
         inherits.forEach((v) => {
           sortKeyArr.push(v);
-          const parentFields = getParentCollectionFields(v, record.name);
-          parentFields.map((k) => {
+          const parentCollection = getCollection(v);
+          parentCollection.fields.map((k) => {
             addCategorizeVal(v, new Proxy(k, {}));
             field.value.push(new Proxy(k, {}));
           });
