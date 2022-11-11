@@ -281,7 +281,7 @@ export const collectionSchema: ISchema = {
                             inherits: {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
-                              'x-disabled': true,
+                              // 'x-disabled': true,
                               'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                             },
                             footer: {
