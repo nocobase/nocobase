@@ -34,7 +34,7 @@ export class SyncRunner {
     if (childAttributes.id && childAttributes.id.autoIncrement) {
       for (const parent of parentTables) {
         const sequenceNameResult = await queryInterface.sequelize.query(
-          `select pg_get_serial_sequence('${parent}', 'id')`,
+          `select pg_get_serial_sequence('"${parent}"', 'id')`,
           {
             transaction,
           },
