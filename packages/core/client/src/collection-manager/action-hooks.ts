@@ -166,7 +166,7 @@ export const useCreateAction = () => {
   return {
     async run() {
       await form.submit();
-      await resource.create({ values: form.values ,inherit:true});
+      await resource.create({ values: form.values, inherit: true });
       ctx.setVisible(false);
       await form.reset();
       refresh();
