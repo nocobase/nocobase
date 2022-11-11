@@ -4,6 +4,7 @@ export function afterCreateForReverseField(db: Database) {
   return async (model, { transaction }) => {
     const Field = db.getCollection('fields');
     const reverseKey = model.get('reverseKey');
+
     if (!reverseKey) {
       return;
     }

@@ -1,4 +1,5 @@
 export const EXECUTION_STATUS = {
+  CRETEAD: null,
   STARTED: 0,
   RESOLVED: 1,
   REJECTED: -1,
