@@ -4,7 +4,7 @@ import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
 import pgOnly from './helper';
 
-pgOnly()('sync inhertis', () => {
+pgOnly()('sync inherits', () => {
   let db: Database;
 
   beforeEach(async () => {

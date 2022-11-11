@@ -16,6 +16,84 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should inherit belongsToMany field', async () => {
+    db.collection({
+      name: 'person',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        {
+          name: 'pets',
+          type: 'hasMany',
+        },
+      ],
+    });
+
+    db.collection({
+      name: 'pets',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+      ],
+    });
+
+    db.collection({
+      name: 'students',
+      inherits: 'person',
+      fields: [
+        {
+          name: 'score',
+          type: 'integer',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await db.getCollection('person').repository.create({
+      values: {
+        name: 'Max',
+        pets: [
+          {
+            name: 'doge1',
+          },
+          {
+            name: 'kitty1',
+          },
+        ],
+      },
+    });
+
+    await db.getCollection('students').repository.create({
+      values: {
+        name: 'John',
+        score: 100,
+        pets: [
+          {
+            name: 'doge',
+          },
+          {
+            name: 'kitty',
+          },
+          {
+            name: 'doge2',
+          },
+        ],
+      },
+    });
+
+    const john = await db.getCollection('students').repository.findOne({
+      appends: ['pets'],
+    });
+
+    expect(john.get('name')).toBe('John');
+    expect(john.get('pets')).toHaveLength(3);
+  });
+
   it('can inherit from multiple collections', async () => {
     db.collection({
       name: 'a',
