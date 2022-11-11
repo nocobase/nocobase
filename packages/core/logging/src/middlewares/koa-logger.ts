@@ -17,8 +17,15 @@ function KoaLogger(options: { logger: Logger }) {
       throw error;
     }
 
-    ctx.log.info(`--> ${ctx.method} ${ctx.url}`, {
-      status: ctx.status,
+    const statusCode = ctx.status;
+    let responseLogger = ctx.log.info;
+
+    if (Math.floor(statusCode / 100) == 5) {
+      responseLogger = ctx.log.error;
+    }
+
+    responseLogger(`--> ${ctx.method} ${ctx.url}`, {
+      status: statusCode,
     });
   };
 }
