@@ -74,6 +74,7 @@ export class FieldModel extends MagicAttributeModel {
   async load(loadOptions?: LoadOptions) {
     const { skipExist = false } = loadOptions || {};
     const collectionName = this.get('collectionName');
+
     if (!this.db.hasCollection(collectionName)) {
       return;
     }

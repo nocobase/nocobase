@@ -1,8 +1,11 @@
 import { InheritedCollection } from './inherited-collection';
 import lodash from 'lodash';
+import { Sequelize } from 'sequelize';
 
 export class SyncRunner {
   static async syncInheritModel(model: any, options: any) {
+    const { transaction } = options;
+
     const inheritedCollection = model.collection as InheritedCollection;
     const db = inheritedCollection.context.database;
     const dialect = db.sequelize.getDialect();
@@ -21,10 +24,54 @@ export class SyncRunner {
 
     const attributes = model.tableAttributes;
 
-    const parentAttributes = inheritedCollection.parentAttributes();
-    const childAttributes = lodash.omit(attributes, Object.keys(parentAttributes));
+    const childAttributes = lodash.pickBy(attributes, (value) => {
+      return !value.inherit;
+    });
+
+    let maxSequenceVal = 0;
+    let maxSequenceName;
+
+    if (childAttributes.id && childAttributes.id.autoIncrement) {
+      for (const parent of parentTables) {
+        const sequenceNameResult = await queryInterface.sequelize.query(
+          `select pg_get_serial_sequence('${parent}', 'id')`,
+          {
+            transaction,
+          },
+        );
+        const sequenceName = sequenceNameResult[0][0]['pg_get_serial_sequence'];
+
+        const sequenceCurrentValResult = await queryInterface.sequelize.query(
+          `select last_value from ${sequenceName}`,
+          {
+            transaction,
+          },
+        );
+        const sequenceCurrentVal = sequenceCurrentValResult[0][0]['last_value'];
+
+        if (sequenceCurrentVal > maxSequenceVal) {
+          maxSequenceName = sequenceName;
+          maxSequenceVal = sequenceCurrentVal;
+        }
+      }
+    }
 
     await this.createTable(tableName, childAttributes, options, model, parentTables);
+
+    const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map(
+      (parent) => db.getCollection(parent).model.tableName,
+    );
+
+    const sequenceTables = [...parentsDeep, tableName];
+
+    for (const sequenceTable of sequenceTables) {
+      await queryInterface.sequelize.query(
+        `alter table "${sequenceTable}" alter column id set default nextval('${maxSequenceName}')`,
+        {
+          transaction,
+        },
+      );
+    }
 
     if (options.alter) {
       const columns = await queryInterface.describeTable(tableName, options);

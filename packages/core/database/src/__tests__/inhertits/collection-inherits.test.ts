@@ -187,17 +187,17 @@ pgOnly()('collection inherits', () => {
   });
 
   it('can inherit from multiple collections', async () => {
-    db.collection({
+    const a = db.collection({
       name: 'a',
       fields: [{ type: 'string', name: 'a1' }],
     });
 
-    db.collection({
+    const b = db.collection({
       name: 'b',
       fields: [{ type: 'string', name: 'b1' }],
     });
 
-    db.collection({
+    const c = db.collection({
       name: 'c',
       inherits: ['a', 'b'],
       fields: [
@@ -207,8 +207,6 @@ pgOnly()('collection inherits', () => {
     });
 
     await db.sync();
-
-    const c = db.getCollection('c');
 
     expect(c.getField('a1')).toBeTruthy();
     expect(c.getField('b1')).toBeTruthy();
@@ -225,6 +223,14 @@ pgOnly()('collection inherits', () => {
     expect(c1.get('a1')).toBe('a1');
     expect(c1.get('b1')).toBe('b1');
     expect(c1.get('c1')).toBe('c1');
+
+    const a2 = await a.repository.create({
+      values: {
+        a1: 'a2',
+      },
+    });
+
+    expect(a2.get('id')).toEqual(2);
   });
 
   it('should update inherit field when parent field update', async () => {

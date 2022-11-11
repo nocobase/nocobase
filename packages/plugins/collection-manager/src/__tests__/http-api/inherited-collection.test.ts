@@ -25,6 +25,29 @@ pgOnly()('Inherited Collection', () => {
     await app.destroy();
   });
 
+  it.skip('can drop child replaced field', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'students',
+        inherits: 'person',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+          },
+        ],
+      },
+    });
+
+    const response = await agent.resource('collections.fields', 'students').destroy({
+      filter: {
+        name: 'name',
+      },
+    });
+
+    expect(response.status).toBe(200);
+  });
+
   it('should reload collection when parent fields change', async () => {
     await agent.resource('collections').create({
       values: {

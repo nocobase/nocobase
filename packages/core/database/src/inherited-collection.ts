@@ -59,7 +59,9 @@ export class InheritedCollection extends Collection {
         Object.assign(attributes, (<InheritedCollection>parent).parentAttributes());
       }
 
-      Object.assign(attributes, (<any>parent.model).tableAttributes);
+      const parentAttributes = (<any>parent.model).tableAttributes;
+
+      Object.assign(attributes, parentAttributes);
     }
 
     return attributes;

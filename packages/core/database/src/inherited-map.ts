@@ -59,4 +59,23 @@ export default class InheritanceMap {
 
     return results;
   }
+
+  getParents(name: string, options: { deep: boolean } = { deep: true }): Set<string> {
+    const results = new Set<string>();
+    const node = this.getNode(name);
+    if (!node) return results;
+
+    for (const parent of node.parents) {
+      results.add(parent.name);
+      if (!options.deep) {
+        continue;
+      }
+
+      for (const grandparent of this.getParents(parent.name)) {
+        results.add(grandparent);
+      }
+    }
+
+    return results;
+  }
 }
