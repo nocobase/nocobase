@@ -1,8 +1,17 @@
-import { PluginManagerContext, RouteSwitchContext, SettingsCenterProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
+import { PluginManagerContext, RouteSwitchContext, SettingsCenterProvider } from '@nocobase/client';
 import { WorkflowPage } from './WorkflowPage';
 import { WorkflowPane, WorkflowShortcut } from './WorkflowShortcut';
 import { ExecutionPage } from './ExecutionPage';
+import { triggers } from './triggers';
+import { instructions } from './nodes';
+import { lang } from './locale';
+
+export const WorkflowContext = React.createContext({});
+
+export function useWorkflowContext() {
+  return useContext(WorkflowContext);
+}
 
 export const WorkflowProvider = (props) => {
   const ctx = useContext(PluginManagerContext);
@@ -21,10 +30,11 @@ export const WorkflowProvider = (props) => {
       settings={{
         workflow: {
           icon: 'PartitionOutlined',
-          title: '{{t("Workflow")}}',
+          // title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
+          title: lang('Workflow'),
           tabs: {
             workflows: {
-              title: '{{t("Workflow")}}',
+              title: lang('Workflow'),
               component: WorkflowPane,
             },
           },
@@ -35,12 +45,14 @@ export const WorkflowProvider = (props) => {
         value={{
           components: {
             ...ctx?.components,
-            WorkflowShortcut,
+            // WorkflowShortcut,
           },
         }}
       >
         <RouteSwitchContext.Provider value={{ components: { ...components, WorkflowPage, ExecutionPage }, ...others, routes }}>
-          {props.children}
+          <WorkflowContext.Provider value={{ triggers, instructions }}>
+            {props.children}
+          </WorkflowContext.Provider>
         </RouteSwitchContext.Provider>
       </PluginManagerContext.Provider>
     </SettingsCenterProvider>

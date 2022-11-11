@@ -3,6 +3,7 @@ import { ISchema } from '@formily/react';
 import { Link } from 'react-router-dom';
 import { useActionContext } from '@nocobase/client';
 import { ExecutionStatusOptions } from '../constants';
+import { NAMESPACE } from '../locale';
 
 export const executionCollection = {
   name: 'executions',
@@ -14,7 +15,7 @@ export const executionCollection = {
       name: 'createdAt',
       uiSchema: {
         type: 'datetime',
-        title: '{{t("Triggered at")}}',
+        title: `{{t("Triggered at", { ns: "${NAMESPACE}" })}}`,
         'x-component': 'DatePicker',
         'x-component-props': {},
         'x-read-pretty': true,
@@ -26,7 +27,7 @@ export const executionCollection = {
       name: 'workflowId',
       uiSchema: {
         type: 'number',
-        title: '{{t("Version")}}',
+        title: `{{t("Version", { ns: "${NAMESPACE}" })}}`,
         ['x-component']({ value }) {
           const { setVisible } = useActionContext();
           return <Link to={`/admin/settings/workflow/workflows/${value}`} onClick={() => setVisible(false)}>{`#${value}`}</Link>;
@@ -38,7 +39,7 @@ export const executionCollection = {
       name: 'status',
       interface: 'select',
       uiSchema: {
-        title: '{{t("Status")}}',
+        title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
         'x-decorator': 'FormItem',
@@ -125,7 +126,7 @@ export const executionSchema = {
             properties: {
               config: {
                 type: 'void',
-                title: '{{t("Details")}}',
+                title: `{{t("Details", { ns: "${NAMESPACE}" })}}`,
                 'x-component': 'ExecutionLink'
               },
             }
