@@ -260,9 +260,9 @@ export default {
       title: '@nocobase/sdk',
       path: '/api/sdk',
     },
-    {
-      title: '@nocobase/logging',
-      path: '/api/logging',
-    },
+    // {
+    //   title: '@nocobase/logger',
+    //   path: '/api/logger',
+    // },
   ],
 };
