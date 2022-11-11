@@ -5,11 +5,12 @@ import { collection, values } from '../schemas/collection';
 import { useFlowContext } from '../FlowContext';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
 import CollectionFieldset from '../components/CollectionFieldset';
+import { NAMESPACE } from '../locale';
 
 
 
 export default {
-  title: '{{t("Create record")}}',
+  title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
   type: 'create',
   group: 'collection',
   fieldset: {

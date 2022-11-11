@@ -7,6 +7,7 @@ import { css } from "@emotion/css";
 
 import { CollectionField, CollectionProvider, SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
 import { Operand, parseStringValue, VariableTypes, VariableTypesContext } from "../calculators";
+import { lang, NAMESPACE } from "../locale";
 
 function AssociationInput(props) {
   const { getCollectionFields } = useCollectionManager();
@@ -63,7 +64,7 @@ export default observer(({ value, onChange }: any) => {
                 const VTypes = {
                   ...(['linkTo', 'hasMany', 'belongsToMany'].includes(field.type) ? {} : VariableTypes),
                   constant: {
-                    title: '{{t("Constant")}}',
+                    title: `{{t("Constant", { ns: "${NAMESPACE}" })}}`,
                     value: 'constant',
                     options: undefined
                   }
@@ -150,7 +151,7 @@ export default observer(({ value, onChange }: any) => {
             }
           </CollectionProvider>
         )
-        : <p>{t('Please select collection first')}</p>
+        : <p>{lang('Please select collection first')}</p>
       }
     </fieldset>
   );

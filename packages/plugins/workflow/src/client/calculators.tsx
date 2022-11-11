@@ -9,6 +9,7 @@ import { useFlowContext } from "./FlowContext";
 import { triggers } from "./triggers";
 import { useTranslation } from "react-i18next";
 import { Registry } from "@nocobase/utils/client";
+import { lang, NAMESPACE, useWorkflowTranslation } from "./locale";
 
 function NullRender() {
   return null;
@@ -110,7 +111,7 @@ calculators.register('notEndsWith', {
   group: 'string'
 });
 calculators.register('concat', {
-  name: '{{t("concat")}}',
+  name: `{{t("concat", { ns: "${NAMESPACE}" })}}`,
   type: 'string',
   group: 'string'
 });
@@ -118,19 +119,19 @@ calculators.register('concat', {
 const calculatorGroups = [
   {
     value: 'boolean',
-    title: '{{t("Comparison")}}'
+    title: `{{t("Comparision", { ns: "${NAMESPACE}" })}}`,
   },
   {
     value: 'number',
-    title: '{{t("Arithmetic calculation")}}'
+    title: `{{t("Arithmetic calculation", { ns: "${NAMESPACE}" })}}`,
   },
   {
     value: 'string',
-    title: '{{t("String operation")}}'
+    title: `{{t("String operation", { ns: "${NAMESPACE}" })}}`,
   },
   {
     value: 'date',
-    title: '{{t("Date")}}'
+    title: `{{t("Date", { ns: "${NAMESPACE}" })}}`,
   }
 ];
 
@@ -158,7 +159,7 @@ export const BaseTypeSet = new Set(['boolean', 'number', 'string', 'date']);
 
 const ConstantTypes = {
   string: {
-    title: '{{t("String")}}',
+    title: `{{t("String", { ns: "${NAMESPACE}" })}}`,
     value: 'string',
     component({ onChange, type, options, value }) {
       return (
@@ -184,7 +185,7 @@ const ConstantTypes = {
     default: 0
   },
   boolean: {
-    title: '{{t("Boolean")}}',
+    title: `{{t("Boolean", { ns: "${NAMESPACE}" })}}`,
     value: 'boolean',
     component({ onChange, type, options, value }) {
       const { t } = useTranslation();
@@ -194,8 +195,8 @@ const ConstantTypes = {
           onChange={v => onChange({ value: v, type, options })}
           placeholder={t('Select')}
         >
-          <Select.Option value={true}>{t('True')}</Select.Option>
-          <Select.Option value={false}>{t('False')}</Select.Option>
+          <Select.Option value={true}>{lang('True')}</Select.Option>
+          <Select.Option value={false}>{lang('False')}</Select.Option>
         </Select>
       );
     },
@@ -213,7 +214,7 @@ const ConstantTypes = {
 
 export const VariableTypes = {
   constant: {
-    title: '{{t("Constant")}}',
+    title: `{{t("Constant", { ns: "${NAMESPACE}" })}}`,
     value: 'constant',
     options: Object.values(ConstantTypes).map(item => ({
       value: item.value,
@@ -241,7 +242,7 @@ export const VariableTypes = {
     }
   },
   $jobsMapByNodeId: {
-    title: '{{t("Node result")}}',
+    title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
     value: '$jobsMapByNodeId',
     options() {
       const node = useNodeContext();
@@ -296,7 +297,7 @@ export const VariableTypes = {
     }
   },
   $context: {
-    title: '{{t("Trigger context")}}',
+    title: `{{t("Trigger context", { ns: "${NAMESPACE}" })}}`,
     value: '$context',
     component() {
       const { workflow } = useFlowContext();
@@ -382,7 +383,7 @@ export function Operand({
 }
 
 export function Calculation({ calculator, operands = [], onChange }) {
-  const { t } = useTranslation();
+  const { t } = useWorkflowTranslation();
   const compile = useCompile();
   return (
     <VariableTypesContext.Provider value={VariableTypes}>
@@ -400,7 +401,7 @@ export function Calculation({ calculator, operands = [], onChange }) {
                 onChange={v => onChange({ operands, calculator: v })}
                 placeholder={t('Calculator')}
               >
-                {calculatorGroups.map(group => (
+                {calculatorGroups.filter(group => Boolean(getGroupCalculators(group.value).length)).map(group => (
                   <Select.OptGroup key={group.value} label={compile(group.title)}>
                     {getGroupCalculators(group.value).map(([value, { name }]) => (
                       <Select.Option key={value} value={value}>{compile(name)}</Select.Option>
@@ -421,7 +422,7 @@ export function Calculation({ calculator, operands = [], onChange }) {
 export function VariableComponent({ value, onChange, renderSchemaComponent }) {
   const VTypes = { ...VariableTypes,
     constant: {
-      title: '{{t("Constant")}}',
+      title: `{{t("Constant", { ns: "${NAMESPACE}" })}}`,
       value: 'constant',
       options: undefined
     }

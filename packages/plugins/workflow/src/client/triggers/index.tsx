@@ -12,6 +12,7 @@ import { nodeCardClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from ".
 import { useFlowContext } from "../FlowContext";
 import collection from './collection';
 import schedule from "./schedule/";
+import { lang } from "../locale";
 
 
 function useUpdateConfigAction() {
@@ -138,13 +139,13 @@ export const TriggerConfig = () => {
   const { type, config, executed } = workflow;
   const { title, fieldset, scope, components } = triggers.get(type);
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
-  const titleText = `${t('Trigger')}: ${compile(title)}`;
+  const titleText = `${lang('Trigger')}: ${compile(title)}`;
 
   return (
     <div className={cx(nodeCardClass)}>
       <div className={cx(nodeHeaderClass)}>
         <div className={cx(nodeMetaClass)}>
-          <Tag color="gold">{t('Trigger')}</Tag>
+          <Tag color="gold">{lang('Trigger')}</Tag>
         </div>
         <h4>{compile(title)}</h4>
         <TriggerExecution />

@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { Dropdown, Menu, Button, Tag, Switch, message } from 'antd';
-import { DownOutlined, RightOutlined } from '@ant-design/icons';
+import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import classnames from 'classnames';
 
 import {
+  ActionContext,
+  SchemaComponent,
   useDocumentTitle,
   useResourceActionContext,
   useResourceContext
@@ -16,7 +18,11 @@ import { FlowContext } from './FlowContext';
 import { branchBlockClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
 import { TriggerConfig } from './triggers';
 import { Branch } from './Branch';
+import { executionCollection, executionSchema } from './schemas/executions';
+import { ExecutionLink } from './ExecutionLink';
+import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 
+import { lang, NAMESPACE } from './locale';
 
 
 
@@ -35,18 +41,18 @@ function makeNodes(nodes): void {
 }
 
 export function WorkflowCanvas() {
-  const { t } = useTranslation();
   const history = useHistory();
   const { data, refresh, loading } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
   const { setTitle } = useDocumentTitle();
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
     const { title } = data?.data ?? {};
-    setTitle(`${t('Workflow')}${title ? `: ${title}` : ''}`);
+    setTitle(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
   }, [data?.data]);
 
   if (!data?.data && !loading) {
-    return <div>{t('Load failed')}</div>;
+    return <div>{lang('Load failed')}</div>;
   }
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
@@ -77,10 +83,24 @@ export function WorkflowCanvas() {
     const { data: { data: revision } } = await resource.revision({
       filterByTk: workflow[targetKey]
     });
-    message.success(t('Operation succeeded'));
+    message.success(lang('Operation succeeded'));
 
     history.push(`${revision.id}`);
   }
+
+  async function onMenuCommand({ key }) {
+    switch (key) {
+      case 'history':
+        setVisible(true);
+        return;
+      case 'revision':
+        return onRevision();
+      default:
+        break;
+    }
+  }
+
+  const revisionable = workflow.executed && !revisions.find(item => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt));
 
   return (
     <FlowContext.Provider value={{
@@ -93,14 +113,14 @@ export function WorkflowCanvas() {
         <header>
           <span>
             <Link to={`/admin/settings/workflow/workflows`}>
-              {t('Workflow')}
+              {lang('Workflow')}
             </Link>
           </span>
           <strong>{workflow.title}</strong>
         </header>
         <aside>
           <div className="workflow-versions">
-            <label>{t('Version')}</label>
+            <label>{lang('Version')}</label>
             <Dropdown
               trigger={['click']}
               overlay={
@@ -132,15 +152,33 @@ export function WorkflowCanvas() {
           <Switch
             checked={workflow.enabled}
             onChange={onToggle}
-            checkedChildren={t('On')}
-            unCheckedChildren={t('Off')}
+            checkedChildren={lang('On')}
+            unCheckedChildren={lang('Off')}
           />
-          {workflow.executed && !revisions.find(item => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt))
-            ? (
-              <Button onClick={onRevision}>{t('Copy to new version')}</Button>
-            )
-            : null
-          }
+          <Dropdown
+            overlay={
+              <Menu onClick={onMenuCommand}>
+                <Menu.Item key="history" disabled={!workflow.executed}>{lang('Execution history')}</Menu.Item>
+                <Menu.Item key="revision" disabled={!revisionable}>{lang('Copy to new version')}</Menu.Item>
+              </Menu>
+            }
+          >
+            <Button type="text" icon={<EllipsisOutlined />} />
+          </Dropdown>
+          <ActionContext.Provider value={{ visible, setVisible }}>
+            <SchemaComponent
+              schema={{
+                type: 'void',
+                properties: {
+                  drawer: executionSchema
+                }
+              }}
+              components={{
+                ExecutionResourceProvider,
+                ExecutionLink
+              }}
+            />
+          </ActionContext.Provider>
         </aside>
       </div>
       <div className="workflow-canvas">
@@ -150,7 +188,7 @@ export function WorkflowCanvas() {
         </div>
         <div className={cx(nodeCardClass)}>
           <div className={cx(nodeMetaClass)}>
-            <Tag color="#333">{t('End')}</Tag>
+            <Tag color="#333">{lang('End')}</Tag>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import React from "react";
 import { InputNumber, Select } from "antd";
-import { useTranslation } from "react-i18next";
 import { css } from "@emotion/css";
+import { lang } from "../locale";
 
 const UnitOptions = [
   { value: 1_000, label: 'Seconds' },
@@ -16,7 +16,6 @@ function getNumberOption(v) {
 }
 
 export default function ({ value = 60000, onChange }) {
-  const { t } = useTranslation();
   const option = getNumberOption(value);
   const quantity = Math.round(value / option.value);
 
@@ -28,7 +27,7 @@ export default function ({ value = 60000, onChange }) {
       <InputNumber min={1} value={quantity} onChange={(v) => onChange(Math.round(v * option.value))}/>
       <Select value={option.value} onChange={unit => onChange(Math.round(quantity * unit))}>
         {UnitOptions.map(item => (
-          <Select.Option key={item.value} value={item.value}>{t(item.label)}</Select.Option>
+          <Select.Option key={item.value} value={item.value}>{lang(item.label)}</Select.Option>
         ))}
       </Select>
     </fieldset>

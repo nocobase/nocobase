@@ -24,6 +24,7 @@ import create from './create';
 import update from './update';
 import destroy from './destroy';
 import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
+import { lang, NAMESPACE } from '../locale';
 
 export interface Instruction {
   title: string;
@@ -52,7 +53,6 @@ instructions.register('update', update);
 instructions.register('destroy', destroy);
 
 function useUpdateAction() {
-  const { t } = useTranslation();
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
@@ -62,7 +62,7 @@ function useUpdateAction() {
   return {
     async run() {
       if (workflow.executed) {
-        message.error(t('Node in executed workflow cannot be modified'));
+        message.error(lang('Node in executed workflow cannot be modified'));
         return;
       }
       // TODO: how to do validation separately for each field? especially disabled for dynamic fields?
@@ -87,7 +87,6 @@ export function useNodeContext() {
 }
 
 export function Node({ data }) {
-
   const instruction = instructions.get(data.type);
 
   return (
@@ -147,8 +146,8 @@ export function RemoveButton() {
 
     const hasBranches = !nodes.find(item => item.upstream === current && item.branchIndex != null);
     const message = hasBranches
-      ? t('Are you sure you want to delete it?')
-      : t('This node contains branches, deleting will also be preformed to them, are you sure?');
+      ? lang('Are you sure you want to delete it?')
+      : lang('This node contains branches, deleting will also be preformed to them, are you sure?');
 
     Modal.confirm({
       title: t('Delete'),
@@ -171,7 +170,6 @@ export function RemoveButton() {
 }
 
 export function JobButton() {
-  const { t } = useTranslation();
   const compile = useCompile();
   const { execution } = useFlowContext();
   const { id, type, title, job } = useNodeContext() ?? {};
@@ -229,7 +227,7 @@ export function JobButton() {
                 properties: {
                   status: {
                     type: 'number',
-                    title: '{{t("Status")}}',
+                    title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
                     'x-decorator': 'FormItem',
                     'x-component': 'Select',
                     enum: JobStatusOptions,
@@ -237,7 +235,7 @@ export function JobButton() {
                   },
                   updatedAt: {
                     type: 'string',
-                    title: '{{t("Executed at")}}',
+                    title: `{{t("Executed at", { ns: "${NAMESPACE}" })}}`,
                     'x-decorator': 'FormItem',
                     'x-component': 'DatePicker',
                     'x-component-props': {
@@ -247,7 +245,7 @@ export function JobButton() {
                   },
                   result: {
                     type: 'object',
-                    title: '{{t("Node result")}}',
+                    title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
                     'x-decorator': 'FormItem',
                     'x-component': 'Input.JSON',
                     'x-component-props': {

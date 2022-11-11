@@ -1,6 +1,4 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { css } from '@emotion/css';
 import { Cascader } from 'antd';
 
 import { useCompile, useCollectionDataSource, useCollectionManager } from '@nocobase/client';
@@ -9,9 +7,10 @@ import { ScheduleConfig } from './ScheduleConfig';
 import { useFlowContext } from '../../FlowContext';
 import { BaseTypeSet } from '../../calculators';
 import { SCHEDULE_MODE } from './constants';
+import { NAMESPACE, useWorkflowTranslation } from '../../locale';
 
 export default {
-  title: '{{t("Schedule event")}}',
+  title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
   type: 'schedule',
   fieldset: {
     config: {
@@ -29,7 +28,7 @@ export default {
     ScheduleConfig
   },
   getter({ type, options, onChange }) {
-    const { t } = useTranslation();
+    const { t } = useWorkflowTranslation();
     const compile = useCompile();
     const { workflow } = useFlowContext();
     const { collections = [] } = useCollectionManager();

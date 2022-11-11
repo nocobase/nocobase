@@ -9,6 +9,7 @@ import {
 import { useFlowContext } from './FlowContext';
 import { Instruction, instructions, Node } from './nodes';
 import { addButtonClass } from './style';
+import { NAMESPACE } from './locale';
 
 
 interface AddButtonProps {
@@ -47,9 +48,9 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   }
 
   const groups = [
-    { value: 'control', name: '{{t("Control")}}' },
-    { value: 'collection', name: '{{t("Collection operations")}}' },
-    { value: 'extended', name: '{{t("Extended")}}' },
+    { value: 'control', name: `{{t("Control", { ns: "${NAMESPACE}" })}}` },
+    { value: 'collection', name: `{{t("Collection operations", { ns: "${NAMESPACE}" })}}` },
+    { value: 'extended', name: `{{t("Extended types", { ns: "${NAMESPACE}" })}}` },
   ];
   const instructionList = (Array.from(instructions.getValues()) as Instruction[]);
 

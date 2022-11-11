@@ -10,6 +10,7 @@ import { workflowSchema } from './schemas/workflows';
 import { WorkflowLink } from './WorkflowLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { ExecutionLink } from './ExecutionLink';
+import { lang } from './locale';
 
 
 
@@ -29,12 +30,12 @@ export const WorkflowPane = () => {
 };
 
 export const WorkflowShortcut = () => {
-  const { t } = useTranslation();
   const history = useHistory();
   return (
     <PluginManager.Toolbar.Item
+      key="workflow"
       icon={<PartitionOutlined />}
-      title={t('Workflow')}
+      title={lang('Workflow')}
       onClick={() => {
         history.push('/admin/settings/workflow/workflows');
       }}
