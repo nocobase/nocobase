@@ -50,85 +50,110 @@ export const executionCollection = {
 };
 
 export const executionSchema = {
-  actions: {
-    type: 'void',
-    'x-component': 'ActionBar',
-    'x-component-props': {
-      style: {
-        marginBottom: 16,
+  type: 'void',
+  title: `{{t("Execution history", { ns: "${NAMESPACE}" })}}`,
+  'x-component': 'Action.Drawer',
+  properties: {
+    content: {
+      type: 'void',
+      'x-decorator': 'ExecutionResourceProvider',
+      'x-decorator-props': {
+        collection: executionCollection,
+        resourceName: 'executions',
+        request: {
+          resource: 'executions',
+          action: 'list',
+          params: {
+            appends: ['workflow.id', 'workflow.title'],
+            pageSize: 50,
+            sort: ['-createdAt'],
+            filter: {}
+          },
+        },
       },
-    },
-    properties: {
-      // filter: {
-      //   type: 'object',
-      //   'x-component': 'Filter',
-      // }
-    }
-  },
-  table: {
-    type: 'void',
-    'x-component': 'Table.Void',
-    'x-component-props': {
-      rowKey: 'id',
-      useDataSource: '{{ cm.useDataSourceFromRAC }}',
-    },
-    properties: {
-      createdAt: {
-        type: 'void',
-        'x-decorator': 'Table.Column.Decorator',
-        'x-component': 'Table.Column',
-        properties: {
-          createdAt: {
-            type: 'datetime',
-            'x-component': 'CollectionField',
-            'x-component-props': {
-              showTime: true
+      properties: {
+        actions: {
+          type: 'void',
+          'x-component': 'ActionBar',
+          'x-component-props': {
+            style: {
+              marginBottom: 16,
             },
-            'x-read-pretty': true,
           },
-        }
-      },
-      workflowId: {
-        type: 'void',
-        'x-decorator': 'Table.Column.Decorator',
-        'x-component': 'Table.Column',
-        properties: {
-          workflowId: {
-            type: 'number',
-            'x-component': 'CollectionField',
-            'x-read-pretty': true,
+          properties: {
+            // filter: {
+            //   type: 'object',
+            //   'x-component': 'Filter',
+            // }
+          }
+        },
+        table: {
+          type: 'void',
+          'x-component': 'Table.Void',
+          'x-component-props': {
+            rowKey: 'id',
+            useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
-        }
-      },
-      status: {
-        type: 'void',
-        'x-decorator': 'Table.Column.Decorator',
-        'x-component': 'Table.Column',
-        properties: {
-          status: {
-            type: 'number',
-            'x-component': 'CollectionField',
-            'x-read-pretty': true,
-          },
-        }
-      },
-      actions: {
-        type: 'void',
-        title: '{{ t("Actions") }}',
-        'x-component': 'Table.Column',
-        properties: {
-          actions: {
-            type: 'void',
-            'x-component': 'Space',
-            'x-component-props': {
-              split: '|',
+          properties: {
+            createdAt: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                createdAt: {
+                  type: 'datetime',
+                  'x-component': 'CollectionField',
+                  'x-component-props': {
+                    showTime: true
+                  },
+                  'x-read-pretty': true,
+                },
+              }
             },
-            properties: {
-              config: {
-                type: 'void',
-                title: `{{t("Details", { ns: "${NAMESPACE}" })}}`,
-                'x-component': 'ExecutionLink'
-              },
+            workflowId: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                workflowId: {
+                  type: 'number',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              }
+            },
+            status: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                status: {
+                  type: 'number',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              }
+            },
+            actions: {
+              type: 'void',
+              title: '{{ t("Actions") }}',
+              'x-component': 'Table.Column',
+              properties: {
+                actions: {
+                  type: 'void',
+                  'x-component': 'Space',
+                  'x-component-props': {
+                    split: '|',
+                  },
+                  properties: {
+                    config: {
+                      type: 'void',
+                      title: `{{t("Details", { ns: "${NAMESPACE}" })}}`,
+                      'x-component': 'ExecutionLink'
+                    },
+                  }
+                }
+              }
             }
           }
         }

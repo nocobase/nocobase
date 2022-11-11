@@ -170,27 +170,7 @@ export function WorkflowCanvas() {
               schema={{
                 type: 'void',
                 properties: {
-                  drawer: {
-                    type: 'void',
-                    title: `{{t("Execution history", { ns: "${NAMESPACE}" })}}`,
-                    'x-decorator': 'ResourceActionProvider',
-                    'x-decorator-props': {
-                      collection: executionCollection,
-                      resourceName: 'executions',
-                      request: {
-                        resource: 'executions',
-                        action: 'list',
-                        params: {
-                          appends: ['workflow.id', 'workflow.title'],
-                          pageSize: 50,
-                          sort: ['-createdAt'],
-                          filter: { workflowId: workflow.id }
-                        },
-                      },
-                    },
-                    'x-component': 'Action.Drawer',
-                    properties: executionSchema
-                  }
+                  drawer: executionSchema
                 }
               }}
               components={{

@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { NAMESPACE } from '../locale';
 import { triggers } from '../triggers';
-import { executionCollection, executionSchema } from './executions';
+import { executionSchema } from './executions';
 
 
 
@@ -82,7 +82,7 @@ export const workflowSchema: ISchema = {
             filter: {
               current: true
             },
-            sort: ['createdAt'],
+            sort: ['-enabled', '-createdAt'],
             except: ['config'],
           },
         },
@@ -243,27 +243,7 @@ export const workflowSchema: ISchema = {
                         type: 'primary',
                       },
                       properties: {
-                        drawer: {
-                          type: 'void',
-                          title: `{{t("Execution history", { ns: "${NAMESPACE}" })}}`,
-                          'x-decorator': 'ExecutionResourceProvider',
-                          'x-decorator-props': {
-                            collection: executionCollection,
-                            resourceName: 'executions',
-                            request: {
-                              resource: 'executions',
-                              action: 'list',
-                              params: {
-                                appends: ['workflow.id', 'workflow.title'],
-                                pageSize: 50,
-                                sort: ['-createdAt'],
-                                filter: {}
-                              },
-                            },
-                          },
-                          'x-component': 'Action.Drawer',
-                          properties: executionSchema
-                        }
+                        drawer: executionSchema
                       }
                     },
                     update: {
