@@ -15,12 +15,12 @@ const defaultRequestWhitelist = [
 const defaultResponseWhitelist = ['status'];
 
 export interface AppLoggerOptions extends LoggerOptions {
-  skip: (ctx?: any) => Promise<boolean>;
+  skip?: (ctx?: any) => Promise<boolean>;
   requestWhitelist?: string[];
   responseWhitelist?: string[];
 }
 
-export function createAppLogger(options?: AppLoggerOptions) {
+export function createAppLogger(options: AppLoggerOptions = {}) {
   const {
     skip,
     requestWhitelist = defaultRequestWhitelist,
