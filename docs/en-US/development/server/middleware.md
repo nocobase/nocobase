@@ -1,8 +1,8 @@
-# 中间件
+# Middleware
 
-## 如何注册中间件？
+## How to register middleware?
 
-中间件的注册方法一般写在 load 方法里
+The registration method for middleware is usually written in the load method
 
 ```ts
 export class MyPlugin extends Plugin {
@@ -14,13 +14,13 @@ export class MyPlugin extends Plugin {
 }
 ```
 
-说明：
+Notes.
 
-1. `app.acl.use()` 添加资源权限级中间件，在权限判断之前执行
-2. `app.resourcer.use()` 添加资源级中间件，只有请求已定义的 resource 时才执行
-3. `app.use()` 添加应用级中间件，每次请求都执行
+1. `app.acl.use()` Add a resource-permission-level middleware to be executed before permission determination
+2. `app.resourcer.use()` Adds a resource-level middleware that is executed only when a defined resource is requested
+3. `app.use()` Add an application-level middleware to be executed on every request
 
-## 洋葱圈模型
+## Onion Circle Model
 
 ```ts
 app.use(async (ctx, next) => {
@@ -38,45 +38,45 @@ app.use(async (ctx, next) => {
 });
 ```
 
-访问 http://localhost:13000/api/hello 查看，浏览器响应的数据是：
+Visit http://localhost:13000/api/hello to see that the browser responds with the following data
 
 ```js
 {"data": [1,3,4,2]}
 ```
 
-## 内置中间件及执行顺序
+## Built-in middlewares and execution order
 
 1. `cors`
 2. `bodyParser`
 3. `i18n`
 4. `dataWrapping`
-5. `db2resource`
-6. `restApi`
-   1. `parseToken`
+5. `db2resource` 6.
+6. `restApi` 1.
+   1. `parseToken` 2.
    2. `checkRole`
-   3. `acl`
-      1. `acl.use()` 添加的其他中间件
-   4. `resourcer.use()` 添加的其他中间件
-   5. action handler
-7. `app.use()` 添加的其他中间件
+   3. `acl` 1.
+      1. `acl.use()` Additional middleware added
+   4. `resourcer.use()` Additional middleware added
+   5. `action handler`
+7. `app.use()` Additional middleware added
 
-也可以使用 `before` 或 `after` 将中间件插入到前面的某个 `tag` 标记的位置，如：
+You can also use `before` or `after` to insert the middleware into the location of one of the preceding `tag`, e.g.
 
 ```ts
 app.use(m1, { tag: 'restApi' });
 app.resourcer.use(m2, { tag: 'parseToken' });
 app.resourcer.use(m3, { tag: 'checkRole' });
-// m4 将排在 m1 前面
+// m4 will come before m1
 app.use(m4, { before: 'restApi' });
-// m5 会插入到 m2 和 m3 之间
+// m5 will be inserted between m2 and m3
 app.resourcer.use(m5, { after: 'parseToken', before: 'checkRole' });
 ```
 
-如果未特殊指定位置，新增的中间件的执行顺序是：
+If no location is specifically specified, the order of execution of the added middlewares is
 
-1. 优先执行 acl.use 添加的，
-2. 然后是 resourcer.use 添加的，包括 middleware handler 和 action handler，
-3. 最后是 app.use 添加的。
+1. middlewares added by `acl.use` will be executed first
+2. then the ones added by `resourcer.use`, including the middleware handler and action handler
+3. and finally the ones added by `app.use`
 
 ```ts
 app.use(async (ctx, next) => {
@@ -113,19 +113,19 @@ app.resourcer.define({
 });
 ```
 
-访问 http://localhost:13000/api/hello 查看，浏览器响应的数据是：
+Visit http://localhost:13000/api/hello to see that the browser responds with the data
 
 ```js
 {"data": [1,2]}
 ```
 
-访问 http://localhost:13000/api/test:list 查看，浏览器响应的数据是：
+Visiting http://localhost:13000/api/test:list to see, the browser responds with the following data
 
 ```js
 {"data": [5,3,7,1,2,8,4,6]}
 ```
 
-### resource 未定义，不执行 resourcer.use() 添加的中间件
+### Resource undefined, middlewares added by resourcer.use() will not be executed
 
 ```ts
 app.use(async (ctx, next) => {
@@ -143,18 +143,18 @@ app.resourcer.use(async (ctx, next) => {
 });
 ```
 
-访问 http://localhost:13000/api/hello 查看，浏览器响应的数据是：
+Visit http://localhost:13000/api/hello to see that the browser responds with the following data
 
 ```js
 {"data": [1,2]}
 ```
 
-以上示例，hello 资源未定义，不会进入 resourcer，所以就不会执行 resourcer 里的中间件
+In the above example, the hello resource is not defined and will not enter the resourcer, so the middleware in the resourcer will not be executed
 
-## 中间件用途
+## Middleware Usage
 
-待补充
+TODO
 
-## 示例
+## Example
 
 - [samples/ratelimit](https://github.com/nocobase/nocobase/blob/main/packages/samples/ratelimit/) IP rate-limiting

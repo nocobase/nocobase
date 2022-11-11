@@ -10,22 +10,25 @@ class ReferencesMap {
   protected map: Map<string, Reference[]> = new Map();
 
   addReference(reference: Reference) {
+    if (!reference.onDelete) {
+      reference.onDelete = 'SET NULL';
+    }
+
     const existReference = this.existReference(reference);
 
-    if (existReference) {
-      if (reference.onDelete && existReference.onDelete !== reference.onDelete) {
+    if (existReference && existReference.onDelete !== reference.onDelete) {
+      if (reference.onDelete === 'SET NULL') {
+        // using existing reference
+        return;
+      } else if (existReference.onDelete === 'SET NULL') {
+        this.removeReference(existReference);
+      } else {
         throw new Error(
           `On Delete Conflict, exist reference ${JSON.stringify(existReference)}, new reference ${JSON.stringify(
             reference,
           )}`,
         );
       }
-
-      return;
-    }
-
-    if (!reference.onDelete) {
-      reference.onDelete = 'SET NULL';
     }
 
     this.map.set(reference.targetCollectionName, [...(this.map.get(reference.targetCollectionName) || []), reference]);

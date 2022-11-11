@@ -291,7 +291,7 @@ export default {
   "Green": "グリーン",
   "Cyan": "シアン",
   "Blue": "ブルー",
-  "Geek Blue": "ギークブルー",
+  "Geek blue": "ギークブルー",
   "Purple": "パープル",
   "Default": "デフォルト",
   "Add card": "カードを追加",
@@ -588,4 +588,5 @@ export default {
   "Error message": "エラーメッセージ",
   "Record picker": "レコードピッカー",
   "Sortable": "ソート可能",
+  "Search and select collection": "Search and select collection",
 }

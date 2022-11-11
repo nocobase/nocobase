@@ -1,37 +1,37 @@
-# 命令行
+# Commands
 
-NocoBase Server Application 除了用作 WEB 服务器以外，也是个强大可扩展的 CLI 工具。
+NocoBase Server Application is a powerful and extensible CLI tool in addition to being used as a WEB server.
 
-新建一个 `app.js` 文件，代码如下：
+Create a new `app.js` file with the following code.
 
 ```ts
 const Application = require('@nocobase/server');
 
-// 此处省略具体配置
-const app = new Application({/*...*/});
+// omit the specific configuration here
+const app = new Application({/*... */});
 
 app.runAsCLI();
 ```
 
-以 `runAsCLI()` 方式运行的 app.js 是一个 CLI，在命令行工具就可以像这样操作了：
+app.js run as ``runAsCLI()`` is a CLI,  it will work like this in the command line tool.
 
 ```bash
-node app.js install # 安装
-node app.js start # 启动
+node app.js install # install
+node app.js start # start
 ```
 
-为了更好的开发、构建和部署 NocoBase 应用，NocoBase 内置了许多命令，详情查看 [NocoBase CLI](/api/cli) 章节。
+To better develop, build and deploy NocoBase applications, NocoBase has many built-in commands, see the [NocoBase CLI](/api/cli) section for details.
 
-## 如何自定义 Command？
+## How to customize Command?
 
-NocoBase CLI 的设计思想与 [Laravel Artisan](https://laravel.com/docs/9.x/artisan) 非常相似，都是可扩展的。NocoBase CLI 基于 [commander](https://www.npmjs.com/package/commander) 实现，可以这样扩展 Command：
+NocoBase CLI is designed to be very similar to [Laravel Artisan](https://laravel.com/docs/9.x/artisan), both are extensible. NocoBase CLI is based on [commander](https://www.npmjs.com/ package/commander) implementation, which extends Command like this
 
 ```ts
 export class MyPlugin extends Plugin {
   load() {
     this.app
       .command('echo')
-      .option('-v, --version');
+      .option('--v, --version');
       .action(async ([options]) => {
         console.log('Hello World!');
         if (options.version) {
@@ -42,7 +42,7 @@ export class MyPlugin extends Plugin {
 }
 ```
 
-这个方法定义了以下命令：
+This method defines the following command.
 
 ```bash
 yarn nocobase echo
@@ -52,13 +52,13 @@ yarn nocobase echo -v
 # Current version: 0.8.0-alpha.1
 ```
 
-更多 API 细节可参考 [Application.command()](/api/server/application#command) 部分。
+More API details can be found in the [Application.command()](/api/server/application#command) section.
 
-## 示例
+## Example
 
-### 定义导出数据表的命令
+### Defining a command for exporting collections
 
-如果我们希望把应用的数据表中的数据导出成 JSON 文件，可以定义一个如下的子命令：
+If we want to export the data in the application's collections to a JSON file, we can define a subcommand as follows.
 
 ```ts
 import path from 'path';
@@ -69,7 +69,7 @@ class MyPlugin extends Plugin {
     this.app
       .command('export')
       .option('-o, --output-dir')
-      .action(async (options, ...collections) => {
+      .action(async (options, . .collections) => {
         const { outputDir = path.join(process.env.PWD, 'storage') } = options;
         await collections.reduce((promise, collection) => promise.then(async () => {
           if (!this.db.hasCollection(collection)) {
@@ -86,15 +86,15 @@ class MyPlugin extends Plugin {
 }
 ```
 
-注册和激活插件之后在命令行调用：
+After registering and activating the plugin call from the command line.
 
 ```bash
-mkdir -p ./storage/backups
-yarn nocobase export -o ./storage/backups users
+mkdir -p . /storage/backups
+yarn nocobase export -o . /storage/backups users
 ```
 
-执行后会生成 `./storage/backups/users.json` 文件包含数据表中的数据。
+After execution, it will generate `. /storage/backups/users.json` file containing the data from the collections.
 
-## 小结
+## Summary
 
-本章所涉及示例代码整合在 [packages/samples/command](https://github.com/nocobase/nocobase/tree/main/packages/samples/command) 包中，可以直接在本地运行，查看效果。
+The sample code covered in this chapter is integrated in the [packages/samples/command](https://github.com/nocobase/nocobase/tree/main/packages/samples/command) package and can be run directly locally to see the results.

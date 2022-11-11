@@ -9,9 +9,10 @@ import { collection } from '../../schemas/collection';
 import { OnField } from './OnField';
 import { EndsByField } from './EndsByField';
 import { RepeatField } from './RepeatField';
+import { SCHEDULE_MODE } from './constants';
 
 const ModeFieldsets = {
-  0: {
+  [SCHEDULE_MODE.STATIC]: {
     startsOn: {
       type: 'datetime',
       name: 'startsOn',
@@ -70,7 +71,7 @@ const ModeFieldsets = {
       }
     }
   },
-  1: {
+  [SCHEDULE_MODE.COLLECTION_FIELD]: {
     collection: {
       ...collection,
       'x-reactions': [
@@ -148,6 +149,11 @@ const ModeFieldsets = {
   }
 };
 
+const scheduleModeOptions = [
+  { value: SCHEDULE_MODE.STATIC, label: '{{t("Based on certain date")}}' },
+  { value: SCHEDULE_MODE.COLLECTION_FIELD, label: '{{t("Based on date field of collection")}}' },
+]
+
 export const ScheduleConfig = () => {
   const { values = {}, clearFormGraph } = useForm();
   const { config = {} } = values;
@@ -173,10 +179,7 @@ export const ScheduleConfig = () => {
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
           'x-component-props': {
-            options: [
-              { value: 0, label: '{{t("Based on certain date")}}' },
-              { value: 1, label: '{{t("Based on date field of collection")}}' },
-            ]
+            options: scheduleModeOptions
           },
           required: true
         }}

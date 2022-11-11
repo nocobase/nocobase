@@ -1,8 +1,8 @@
-# 概述
+# Overview
 
-NocoBase 客户端的扩展大多以 Provider 的形式提供，无论是内置的 Provider 还是插件的主文件都是 Provider。
+Most of the extensions for the NocoBase client are provided as Providers.
 
-## 内置的 Providers
+## Built-in Providers
 
 - APIClientProvider
 - I18nextProvider
@@ -17,9 +17,9 @@ NocoBase 客户端的扩展大多以 Provider 的形式提供，无论是内置�
 - DocumentTitleProvider
 - ACLProvider
 
-## 客户端 Provider 模块的注册
+## Registration of client-side Provider modules
 
-静态的 Provider 通过 app.use() 注册，动态的 Provider 通过 dynamicImport 适配。
+Static Providers are registered with app.use() and dynamic Providers are adapted with dynamicImport.
 
 ```tsx | pure
 import React from 'react';
@@ -30,11 +30,11 @@ const app = new Application({
     baseURL: process.env.API_BASE_URL,
   },
   dynamicImport: (name: string) => {
-    return import(`../plugins/${name}`);
+    return import(`... /plugins/${name}`);
   },
 });
 
-// 访问 /hello 页面时，显示 Hello world!
+// When visiting the /hello page, display Hello world!
 const HelloProvider = React.memo((props) => {
   const location = useLocation();
   if (location.pathname === '/hello') {
@@ -46,9 +46,9 @@ const HelloProvider = React.memo((props) => {
 app.use(HelloProvider);
 ```
 
-## 插件的客户端
+## Client-side of plugins
 
-初始化的空插件，服务端相关目录结构如下：
+Directory structure of the client-side of an empty plugin is as follows
 
 ```bash
 |- /my-plugin
@@ -59,15 +59,15 @@ app.use(HelloProvider);
   |- client.js
 ```
 
-`client/index.tsx` 内容如下：
+``client/index.tsx`` reads as follows.
 
 ```tsx | pure
 import React from 'react';
 
-// 这是一个空的 Provider，只有 children 传递，并未提供自定义的 Context
+// This is an empty Provider, only children are passed, no custom Context is provided
 export default React.memo((props) => {
   return <>{props.children}</>;
 });
 ```
 
-插件 pm.add 之后，会向 `packages/app/client/src/plugins` 目录写入 `my-plugin.ts` 文件
+After the plugin pm.add, it writes the `my-plugin.ts` file to the `packages/app/client/src/plugins` directory.

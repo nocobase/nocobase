@@ -1,8 +1,8 @@
-# 配置中心
+# Settings Center
 
 <img src="./settings-center/settings-tab.jpg" style="max-width: 100%;"/>
 
-## 示例
+## Example
 
 ```tsx | pure
 import { SettingsCenterProvider } from '@nocobase/client';
@@ -30,4 +30,4 @@ export default React.memo((props) => {
 });
 ```
 
-完整示例查看 [samples/hello](https://github.com/nocobase/nocobase/tree/develop/packages/samples/hello)。
+See [samples/hello](https://github.com/nocobase/nocobase/tree/develop/packages/samples/hello) for full examples.

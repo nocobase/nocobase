@@ -1,64 +1,64 @@
-# 项目目录结构
+# App directory structure
 
-无论是 [Git 源码](/welcome/getting-started/installation/git-clone) 还是 [create-nocobase-app](/welcome/getting-started/installation/create-nocobase-app) 创建的 NocoBase 应用，目录结构都是一样的，结构如下：
+Either [Git source](/welcome/getting-started/installation/git-clone) or [create-nocobase-app](/welcome/getting-started/installation/create-nocobase-app), the directory structure of the created NocoBase application is the same, with the following structure.
 
 ```bash
 ├── my-nocobase-app
-  ├── packages        # 采用 Monorepo 的方式管理代码，将不同模块划分到不同包里
+  ├── packages # NocoBase uses the Monorepo approach to manage code, dividing different modules into different packages
     ├── app
-      ├── client      # 客户端模块
-      ├── server      # 服务端模块
-    ├── plugins       # 插件目录
-  ├── storage        # 用于存放数据库文件、附件、缓存等
-    ├── db
-  ├── .env            # 环境变量
-  ├── .buildrc.ts     # packages 的打包配置，支持 cjs、esm 和 umd 三种格式的打包。
+      ├── client # client-side module
+      ├── server # server-side modules
+    ├─ plugins # plugin directory
+  ├── storage # for database files, attachments, cache, etc.
+    ├─ db
+  ├── .env # environment variables
+  ├── .buildrc.ts # package configuration for packages, supports cjs, esm and umd packages.
   ├── jest.config.js
   ├── jest.setup.ts
   ├── lerna.json
   ├── package.json
   ├── tsconfig.jest.json
-  ├── tsconfig.json
+  ├─ tsconfig.json
   ├── tsconfig.server.json
 ```
 
-### packages 目录
+## Packages directory
 
 ```bash
-├── packages
-  ├── app
+├─ packages
+  ├─ app
     ├── client
-      ├── public
-      ├── src
-        ├── pages
-          ├── index.tsx
-      ├── .umirc.ts
-      ├── package.json
-    ├── server
-      ├── src
-        ├── config
-        ├── index.ts
-      ├── package.json
-  ├── /plugins
-    ├── my-plugin
-      ├── src
-      ├── package.json
+      ├─ public
+      ├─ src
+        ├─ pages
+          ├─ index.tsx
+      ├─ .umirc.ts
+      ├─ package.json
+    ├─ server
+      ├─ src
+        ├─ config
+        ├─ index.ts
+      ├─ package.json
+  ├─ /plugins
+    ├─ my-plugin
+      ├─ src
+      ├─ package.json
 ```
 
-NocoBase 采用 Monorepo 的方式管理代码，将不同模块划分到不同包里。
+NocoBase uses the Monorepo approach to manage code, dividing different modules into different packages.
 
-- `app/client` 为应用的客户端模块，基于 [umi](https://umijs.org/zh-CN) 构建；
-- `app/server` 为应用的服务端模块；
-- `plugins/*` 目录里可以放各种插件。
+- `app/client` is the client module of the application, built on [umi](https://umijs.org/zh-CN).
+- `app/server` is the server-side module of the application.
+- The `plugins/*` directory can hold various plugins.
 
-### storages 目录
+## storages directory
 
-用于存放数据库文件、附件、缓存等。
+Store database files, attachments, cache, etc.
 
-### .env 文件
+## .env files
 
-环境变量。
+Environment variables.
 
-### .buildrc.ts 文件
+## .buildrc.ts file
 
-packages 的打包配置，支持 cjs、esm 和 umd 三种格式的打包。
+Package configuration for packages, supporting cjs, esm and umd formats.

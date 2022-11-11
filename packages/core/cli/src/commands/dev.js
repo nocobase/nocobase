@@ -46,9 +46,9 @@ module.exports = (cli) => {
         });
       }
       await runAppCommand('install', ['--silent']);
-      if (opts.dbSync) {
-        await runAppCommand('db:sync');
-      }
+      // if (opts.dbSync) {
+      //   await runAppCommand('db:sync');
+      // }
       if (server || !client) {
         console.log('starting server', serverPort);
         const argv = [
@@ -61,6 +61,9 @@ module.exports = (cli) => {
           ...process.argv.slice(3),
           `--port=${serverPort}`,
         ];
+        if (opts.dbSync) {
+          argv.push('--db-sync');
+        }
         run('ts-node-dev', argv, {
           env: {
             APP_PORT: serverPort,

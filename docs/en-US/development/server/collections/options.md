@@ -1,12 +1,12 @@
-# Collection 协议
+# Collection protocol
 
-Collection 是 NocoBase 的中枢，是一种用于描述数据结构（数据表和字段）的协议，和关系型数据库的概念非常接近，但不仅限于关系型数据库，也可以是 NoSQL 数据库、HTTP API 等数据源。
+Collection is the backbone of NocoBase, a protocol for describing data structures (collections and fields), very close to the concept of a relational database, but not limited to relational databases, but can also be a data source for NoSQL databases, HTTP APIs, etc.
 
 <img src="./schema.svg" style="max-width: 800px;" >
 
-现阶段基于 Collection 协议实现了关系型数据库的对接（db.collections），NoSQL 数据库、HTTP API 等数据源在未来也会逐步实现。
+At this stage, the Collection protocol is based on the relational database interface (db.collections), and data sources such as NoSQL databases and HTTP APIs will be implemented gradually in the future.
 
-Collection 协议主要包括 CollectionOptions 和 FieldOptions 两部分，因为 Field 是可扩展的，所以 FieldOptions 的参数非常灵活。
+Collection protocol mainly includes two parts: CollectionOptions and FieldOptions. Because Field is extensible, the parameters of FieldOptions are very flexible.
 
 ## CollectionOptions
 
@@ -14,9 +14,9 @@ Collection 协议主要包括 CollectionOptions 和 FieldOptions 两部分，因
 interface CollectionOptions {
   name: string;
   title?: string;
-  // 树结构表，TreeRepository
+  // Tree structure table, TreeRepository
   tree?: 'adjacency-list' | 'closure-table' | 'materialized-path' | 'nested-set';
-  // 父子继承
+  // parent-child inheritance
   inherits?: string | string[];
   fields?: FieldOptions[];
   timestamps?: boolean;
@@ -32,7 +32,7 @@ type CollectionSortable = string | boolean | { name?: string; scopeKey?: string 
 
 ## FieldOptions
 
-通用的字段参数
+Generic field parameters
 
 ```ts
 interface FieldOptions {
@@ -44,11 +44,11 @@ interface FieldOptions {
   uiSchema?: ISchema;
 ```
 
-[UI Schema 的介绍点此查看](/development/client/ui-schema-designer/what-is-ui-schema)
+[Introduction to UI Schema here](/development/client/ui-schema-designer/what-is-ui-schema)
 
 ### Field Type
 
-Field Type 包括 Attribute Type 和 Association Type 两类：
+Field Type includes Attribute Type and Association Type.
 
 **Attribute Type**
 
@@ -116,12 +116,12 @@ Field Type 包括 Attribute Type 和 Association Type 两类：
 
 **Relation**
 
-- linkTo - `type: 'belongsToMany'`
+- linkTo - `type: 'believesToMany'`
 - oho - `type: 'hasOne'`
-- obo - `type: 'belongsTo'`
+- obo - `type: 'believesTo'`
 - o2m - `type: 'hasMany'`
-- m2o - `type: 'belongsTo'`
-- m2m - `type: 'belongsToMany'`
+- m2o - `type: 'believesTo'`
+- m2m - `type: 'believesToMany'`
 
 **Advanced**
 

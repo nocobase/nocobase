@@ -86,6 +86,7 @@ interface ListenOptions {
 
 interface StartOptions {
   cliArgs?: any[];
+  dbSync?: boolean;
   listen?: ListenOptions;
 }
 
@@ -108,6 +109,9 @@ export class ApplicationVersion {
   async get() {
     if (await this.app.db.collectionExistsInDb('applicationVersion')) {
       const model = await this.collection.model.findOne();
+      if (!model) {
+        return null;
+      }
       return model.get('value') as any;
     }
     return null;
@@ -366,6 +370,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     // reconnect database
     if (this.db.closed()) {
       await this.db.reconnect();
+    }
+
+    if (options.dbSync) {
+      console.log('db sync...');
+      await this.db.sync();
     }
 
     await this.emitAsync('beforeStart', this, options);

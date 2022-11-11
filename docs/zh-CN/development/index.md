@@ -1,6 +1,6 @@
 # 介绍
 
-NocoBase 采用微内核架构，各类功能以插件形式扩展，前后端分离，提供了各种插件化接口，插件按功能模块划分，具有可插拔的特点。
+NocoBase 采用微内核架构，各类功能以插件形式扩展。前后端分离，提供了各种插件化接口。插件按功能模块划分，具有可插拔的特点。
 
 <img src="https://www.nocobase.com/images/NocoBaseMindMapLite.png" style="max-width: 800px;" >
 
@@ -18,7 +18,7 @@ NocoBase 提供了强大的插件管理器用于管理插件，插件管理器�
 
 <img src="./index/pm-ui.jpg" style="max-width: 800px;" />
 
-开发也可以通过 CLI 的方式管理完整的插件流程：
+开发者也可以通过 CLI 的方式管理完整的插件流程：
 
 ```bash
 # 创建插件

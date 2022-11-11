@@ -81,9 +81,9 @@ export function afterCreateForForeignKeyField(db: Database) {
     await r.update({
       filter: {
         collectionName,
-        options:{
-          primaryKey: true
-        }
+        options: {
+          primaryKey: true,
+        },
       },
       values: {
         sort: 0,
@@ -140,6 +140,7 @@ export function afterCreateForForeignKeyField(db: Database) {
             title: through,
             timestamps: false,
             autoGenId: false,
+            hidden: true,
             autoCreate: true,
             isThrough: true,
           },
