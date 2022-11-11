@@ -33,12 +33,6 @@ export function createResourcer(options: ApplicationOptions) {
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
   app.use(
-    KoaLogger({
-      logger: app.logger,
-    }),
-  );
-
-  app.use(
     cors({
       exposeHeaders: ['content-disposition'],
       ...options.cors,
@@ -59,6 +53,12 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
       },
     );
   }
+
+  app.use(
+    KoaLogger({
+      logger: app.logger,
+    }),
+  );
 
   app.use(async (ctx, next) => {
     ctx.getBearerToken = () => {

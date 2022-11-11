@@ -1,30 +1,45 @@
 import { randomUUID } from 'crypto';
 import { Logger } from 'winston';
+import lodash from 'lodash';
 
 function KoaLogger(options: { logger: Logger }) {
   const { logger } = options;
   return async (ctx, next) => {
     ctx.reqId = ctx.req.id = randomUUID();
-    ctx.log = logger.child({ reqId: ctx.reqId });
+    const ctxLogger = logger.child({ reqId: ctx.reqId });
 
-    ctx.log.info(`<-- ${ctx.method} ${ctx.url}`);
+    ctx.logger = ctx.log = ctxLogger;
+
+    ctx.logger.info(`<-- ${ctx.method} ${ctx.url}`, {
+      headers: lodash.omit(ctx.headers, [
+        'authorization',
+        'cookie',
+        'x-xsrf-token',
+        'accept',
+        'accept-encoding',
+        'user-agent',
+      ]),
+      body: ctx.request.body,
+    });
 
     try {
       await next();
     } catch (error) {
-      ctx.log.error(error);
+      ctx.logger.error(error);
 
       throw error;
     }
 
     const statusCode = ctx.status;
-    let responseLogger = ctx.log.info;
+    let responseLevel = 'info';
 
     if (Math.floor(statusCode / 100) == 5) {
-      responseLogger = ctx.log.error;
+      responseLevel = 'error';
     }
 
-    responseLogger(`--> ${ctx.method} ${ctx.url}`, {
+    ctx.logger.log({
+      level: responseLevel,
+      message: `--> ${ctx.method} ${ctx.url}`,
       status: statusCode,
     });
   };

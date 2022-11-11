@@ -17,6 +17,7 @@
     "directory": "packages/logging"
   },
   "dependencies": {
+    "lodash": "^4.17.21",
     "winston": "^3.8.2",
     "winston-daily-rotate-file": "^4.7.1"
   }
