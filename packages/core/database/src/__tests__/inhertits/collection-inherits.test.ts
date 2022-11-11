@@ -25,6 +25,98 @@ pgOnly()('collection inherits', () => {
           type: 'string',
         },
         {
+          name: 'tags',
+          type: 'belongsToMany',
+        },
+      ],
+    });
+
+    db.collection({
+      name: 'tags',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        {
+          name: 'person',
+          type: 'belongsToMany',
+        },
+      ],
+    });
+
+    db.collection({
+      name: 'students',
+      inherits: 'person',
+      fields: [
+        {
+          name: 'score',
+          type: 'integer',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await db.getCollection('students').repository.create({
+      values: {
+        name: 'John',
+        score: 100,
+        tags: [
+          {
+            name: 't1',
+          },
+          {
+            name: 't2',
+          },
+          {
+            name: 't3',
+          },
+        ],
+      },
+    });
+
+    await db.getCollection('person').repository.create({
+      values: {
+        name: 'Max',
+        tags: [
+          {
+            name: 't2',
+          },
+          {
+            name: 't4',
+          },
+        ],
+      },
+    });
+
+    const john = await db.getCollection('students').repository.findOne({
+      appends: ['tags'],
+    });
+
+    expect(john.get('name')).toBe('John');
+    expect(john.get('tags')).toHaveLength(3);
+
+    const max = await db.getCollection('person').repository.findOne({
+      appends: ['tags'],
+      filter: {
+        name: 'Max',
+      },
+    });
+
+    expect(max.get('name')).toBe('Max');
+    expect(max.get('tags')).toHaveLength(2);
+  });
+
+  it('should inherit hasMany field', async () => {
+    db.collection({
+      name: 'person',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        {
           name: 'pets',
           type: 'hasMany',
         },
