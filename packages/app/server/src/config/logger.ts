@@ -1,4 +1,4 @@
-import { LoggerOptions } from '@nocobase/logging';
+import { LoggerOptions } from '@nocobase/logger';
 
 export default {
   transports: process.env.LOGGER_TRANSPORT || ['console', 'dailyRotateFile'],

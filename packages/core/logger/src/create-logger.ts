@@ -1,7 +1,6 @@
 import path from 'path';
 import winston, { format, Logger } from 'winston';
 import 'winston-daily-rotate-file';
-import KoaLogger from './middlewares/koa-logger';
 
 const { combine, timestamp, label, prettyPrint, json } = format;
 
@@ -63,4 +62,4 @@ function createLogger(options: LoggerOptions = {}) {
   return logger;
 }
 
-export { Logger, LoggerOptions, Transports, createLogger, KoaLogger };
+export { Logger, LoggerOptions, Transports, createLogger };

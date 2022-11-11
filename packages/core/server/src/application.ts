@@ -2,7 +2,7 @@ import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
-import { createLogger, Logger, LoggerOptions } from '@nocobase/logging';
+import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
@@ -38,7 +38,7 @@ export interface ApplicationOptions {
   i18n?: i18n | InitOptions;
   plugins?: PluginConfiguration[];
   acl?: boolean;
-  logger?: LoggerOptions;
+  logger?: AppLoggerOptions;
   pmSock?: string;
 }
 
@@ -217,8 +217,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected init() {
     const options = this.options;
-    this._logger = createLogger(options.logger);
-
+    const logger = createAppLogger(options.logger);
+    this._logger = logger.instance;
     // @ts-ignore
     this._events = [];
     // @ts-ignore
@@ -227,6 +227,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
+
+    this.use(logger.middleware, { tag: 'logger' });
 
     if (this._db) {
       // MaxListenersExceededWarning

@@ -1,6 +1,5 @@
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
-import { KoaLogger } from '@nocobase/logging';
 import Resourcer from '@nocobase/resourcer';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
@@ -50,15 +49,10 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
       }),
       {
         tag: 'bodyParser',
+        after: 'logger',
       },
     );
   }
-
-  app.use(
-    KoaLogger({
-      logger: app.logger,
-    }),
-  );
 
   app.use(async (ctx, next) => {
     ctx.getBearerToken = () => {
