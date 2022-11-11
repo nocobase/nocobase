@@ -2,6 +2,7 @@ import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
+import { createLogger, Logger, LoggerOptions } from '@nocobase/logging';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
@@ -11,8 +12,6 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import semver from 'semver';
 import { promisify } from 'util';
-import { Logger, createLogger } from '@nocobase/logging';
-
 import { createACL } from './acl';
 import { AppManager } from './app-manager';
 import { registerCli } from './commands';
@@ -29,7 +28,6 @@ export interface ResourcerOptions {
 }
 
 export interface ApplicationOptions {
-  basePath?: string;
   database?: IDatabaseOptions | Database;
   cache?: ICacheConfig | ICacheConfig[];
   resourcer?: ResourcerOptions;
@@ -40,6 +38,7 @@ export interface ApplicationOptions {
   i18n?: i18n | InitOptions;
   plugins?: PluginConfiguration[];
   acl?: boolean;
+  logger?: LoggerOptions;
   pmSock?: string;
 }
 
@@ -218,7 +217,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected init() {
     const options = this.options;
-    this._logger = createLogger(this.options);
+    this._logger = createLogger(options.logger);
 
     // @ts-ignore
     this._events = [];
