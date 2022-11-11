@@ -10,18 +10,19 @@ import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
 import { useFlowContext } from '../FlowContext';
 import { branchBlockClass, nodeSubtreeClass } from "../style";
+import { lang, NAMESPACE } from "../locale";
 
 
 
 export default {
-  title: '{{t("Parallel branch")}}',
+  title: `{{t("Parallel branch", { ns: "${NAMESPACE}" })}}`,
   type: 'parallel',
   group: 'control',
   fieldset: {
     'config.mode': {
       type: 'string',
       name: 'config.mode',
-      title: '{{t("Mode")}}',
+      title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       'x-component-props': {
@@ -31,10 +32,10 @@ export default {
           value: 'all',
           label: (
             <Tooltip
-              title={i18n.t('Continue after all branches succeeded')}
+              title={lang('Continue after all branches succeeded')}
               placement="bottom"
             >
-              {i18n.t('All succeeded')} <QuestionCircleOutlined style={{ color: '#999' }} />
+              {lang('All succeeded')} <QuestionCircleOutlined style={{ color: '#999' }} />
             </Tooltip>
           )
         },
@@ -42,10 +43,10 @@ export default {
           value: 'any',
           label: (
             <Tooltip
-              title={i18n.t('Continue after any branch succeeded')}
+              title={lang('Continue after any branch succeeded')}
               placement="bottom"
             >
-              {i18n.t('Any succeeded')} <QuestionCircleOutlined style={{ color: '#999' }} />
+              {lang('Any succeeded')} <QuestionCircleOutlined style={{ color: '#999' }} />
             </Tooltip>
           )
         },
@@ -53,10 +54,10 @@ export default {
           value: 'race',
           label: (
             <Tooltip
-              title={i18n.t('Continue after any branch succeeded, or exit after any branch failed')}
+              title={lang('Continue after any branch succeeded, or exit after any branch failed')}
               placement="bottom"
             >
-              {i18n.t('Any succeeded or failed')} <QuestionCircleOutlined style={{ color: '#999' }} />
+              {lang('Any succeeded or failed')} <QuestionCircleOutlined style={{ color: '#999' }} />
             </Tooltip>
           )
         },
@@ -69,7 +70,6 @@ export default {
   },
   render(data) {
     const { id, config: { mode } } = data;
-    const { t } = useTranslation();
     const { nodes } = useFlowContext();
     const branches = nodes.reduce((result, node) => {
       if (node.upstreamId === id && node.branchIndex != null) {
@@ -124,7 +124,7 @@ export default {
               height: 2em;
             `}
           >
-            <Tooltip title={t('Add branch')}>
+            <Tooltip title={lang('Add branch')}>
               <Button
                 icon={<PlusOutlined />}
                 className={css`

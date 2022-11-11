@@ -40,7 +40,7 @@ export const FilterItem = observer((props: any) => {
           onChange={(value) => {
             setOperator(value);
           }}
-          placeholder={t('Comparison')}
+          placeholder={t('Comparision')}
         />
         {!operator?.noValue &&
           React.createElement(DynamicComponent, {

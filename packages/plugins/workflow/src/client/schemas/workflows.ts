@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import { NAMESPACE } from '../locale';
 import { triggers } from '../triggers';
 import { executionSchema } from './executions';
 
@@ -23,7 +24,7 @@ const collection = {
       name: 'type',
       interface: 'select',
       uiSchema: {
-        title: '{{t("Trigger type")}}',
+        title: `{{t("Trigger type", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
         'x-decorator': 'FormItem',
@@ -50,11 +51,11 @@ const collection = {
       name: 'enabled',
       interface: 'radio',
       uiSchema: {
-        title: '{{t("Status")}}',
+        title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         enum: [
-          { label: '{{t("On")}}', value: true, color: '#52c41a' },
-          { label: '{{t("Off")}}', value: false },
+          { label: `{{t("On", { ns: "${NAMESPACE}" })}}`, value: true, color: '#52c41a' },
+          { label: `{{t("Off", { ns: "${NAMESPACE}" })}}`, value: false },
         ],
         'x-component': 'Radio.Group',
         'x-decorator': 'FormItem',
@@ -81,7 +82,7 @@ export const workflowSchema: ISchema = {
             filter: {
               current: true
             },
-            sort: ['createdAt'],
+            sort: ['-enabled', '-createdAt'],
             except: ['config'],
           },
         },
@@ -236,18 +237,13 @@ export const workflowSchema: ISchema = {
                     },
                     executions: {
                       type: 'void',
-                      title: '{{t("Execution history")}}',
+                      title: `{{t("Execution history", { ns: "${NAMESPACE}" })}}`,
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         type: 'primary',
                       },
                       properties: {
-                        drawer: {
-                          type: 'void',
-                          title: '{{t("Execution history")}}',
-                          'x-component': 'Action.Drawer',
-                          properties: executionSchema
-                        }
+                        drawer: executionSchema
                       }
                     },
                     update: {

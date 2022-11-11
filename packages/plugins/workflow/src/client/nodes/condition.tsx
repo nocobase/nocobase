@@ -11,6 +11,7 @@ import { Branch } from "../Branch";
 import { useFlowContext } from '../FlowContext';
 import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { Calculation } from "../calculators";
+import { lang, NAMESPACE } from "../locale";
 
 
 
@@ -140,14 +141,14 @@ function CalculationConfig({ value, onChange }) {
 }
 
 export default {
-  title: '{{t("Condition")}}',
+  title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
   type: 'condition',
   group: 'control',
   fieldset: {
     'config.rejectOnFalse': {
       type: 'boolean',
       name: 'config.rejectOnFalse',
-      title: '{{t("Mode")}}',
+      title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       'x-component-props': {
@@ -156,18 +157,18 @@ export default {
       enum: [
         {
           value: true,
-          label: i18n.t('Continue when "Yes"')
+          label: lang('Continue when "Yes"')
         },
         {
           value: false,
-          label: i18n.t('Branch into "Yes" and "No"')
+          label: lang('Branch into "Yes" and "No"')
         }
       ],
     },
     'config.calculation': {
       type: 'string',
       name: 'config.calculation',
-      title: '{{t("Conditions")}}',
+      title: `{{t("Conditions", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',
     }
@@ -176,8 +177,8 @@ export default {
 
   },
   options: [
-    { label: i18n.t('Continue when "Yes"'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
-    { label: i18n.t('Branch into "Yes" and "No"'), key: 'branch', value: { rejectOnFalse: false } }
+    { label: lang('Continue when "Yes"'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
+    { label: lang('Branch into "Yes" and "No"'), key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
     const { id, config: { rejectOnFalse } } = data;
@@ -216,8 +217,8 @@ export default {
                 }
               `}
             >
-              <span className={css`right: 4em;`}>{i18n.t('No')}</span>
-              <span className={css`left: 4em;`}>{i18n.t('Yes')}</span>
+              <span className={css`right: 4em;`}>{lang('No')}</span>
+              <span className={css`left: 4em;`}>{lang('Yes')}</span>
             </div>
           </div>
         )}

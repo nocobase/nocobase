@@ -9,6 +9,7 @@ import { collection, filter } from '../schemas/collection';
 import { css } from '@emotion/css';
 import { onFieldValueChange } from '@formily/core';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
+import { NAMESPACE } from '../locale';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
@@ -50,16 +51,16 @@ const COLLECTION_TRIGGER_MODE = {
 };
 
 const collectionModeOptions = [
-  { label: '{{t("After record added")}}', value: COLLECTION_TRIGGER_MODE.CREATED },
-  { label: '{{t("After record updated")}}', value: COLLECTION_TRIGGER_MODE.UPDATED },
-  { label: '{{t("After record added or updated")}}', value: COLLECTION_TRIGGER_MODE.SAVED },
-  { label: '{{t("After record deleted")}}', value: COLLECTION_TRIGGER_MODE.DELETED },
+  { label: `{{t("After record added", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.CREATED },
+  { label: `{{t("After record updated", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.UPDATED },
+  { label: `{{t("After record added or updated", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.SAVED },
+  { label: `{{t("After record deleted", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.DELETED },
 ];
 
 
 
 export default {
-  title: '{{t("Collection event")}}',
+  title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
   type: 'collection',
   fieldset: {
     'config.collection': {
@@ -94,13 +95,13 @@ export default {
     },
     'config.mode': {
       type: 'number',
-      title: '{{t("Trigger on")}}',
+      title: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`,
       name: 'config.mode',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
         options: collectionModeOptions,
-        placeholder: '{{t("Trigger on")}}'
+        placeholder: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`
       },
       required: true,
       'x-reactions': [
@@ -117,8 +118,8 @@ export default {
     'config.changed': {
       type: 'array',
       name: 'changed',
-      title: '{{t("Changed fields")}}',
-      description: '{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.")}}',
+      title: `{{t("Changed fields", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'FieldsSelect',
       'x-component-props': {
@@ -129,7 +130,7 @@ export default {
     'config.condition': {
       ...filter,
       name: 'config.condition',
-      title: '{{t("Only triggers when match conditions")}}'
+      title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`
     }
   },
   scope: {

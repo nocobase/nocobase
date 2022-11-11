@@ -16,6 +16,7 @@ import { branchBlockClass, nodeCardClass, nodeMetaClass } from './style';
 import { TriggerConfig } from './triggers';
 import { Branch } from './Branch';
 import { ExecutionStatusOptionsMap } from './constants';
+import { lang } from './locale';
 
 
 
@@ -41,20 +42,19 @@ function makeNodes(nodes, jobs = []): void {
 }
 
 export function ExecutionCanvas() {
-  const { t } = useTranslation();
   const compile = useCompile();
-  const { data, refresh, loading } = useResourceActionContext();
+  const { data, loading } = useResourceActionContext();
   const { setTitle } = useDocumentTitle();
   useEffect(() => {
     const { workflow } = data?.data ?? {};
-    setTitle(`${workflow?.title ? `${workflow.title} - ` : ''}${t('Execution history')}`);
+    setTitle(`${workflow?.title ? `${workflow.title} - ` : ''}${lang('Execution history')}`);
   }, [data?.data]);
 
   if (!data?.data) {
     if (loading) {
-      return <div>{t('Loading')}</div>
+      return <div>{lang('Loading')}</div>
     } else {
-      return <div>{t('Load failed')}</div>;
+      return <div>{lang('Load failed')}</div>;
     }
   }
 
@@ -80,7 +80,7 @@ export function ExecutionCanvas() {
         <header>
           <span>
             <Link to={`/admin/settings/workflow/workflows`}>
-              {t('Workflow')}
+              {lang('Workflow')}
             </Link>
           </span>
           <span>
@@ -102,7 +102,7 @@ export function ExecutionCanvas() {
         </div>
         <div className={cx(nodeCardClass)}>
           <div className={cx(nodeMetaClass)}>
-            <Tag color="#333">{t('End')}</Tag>
+            <Tag color="#333">{lang('End')}</Tag>
           </div>
         </div>
       </div>
