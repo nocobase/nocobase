@@ -53,7 +53,8 @@ export const FormBlockProvider = (props) => {
   const { getParentCollections } = useCollectionManager();
   const inheritCollections = getParentCollections(__tableName);
   const { designable } = useDesignable();
-  const flag = !designable && !inheritCollections.includes(props.collection) && __tableName !== props.collection;
+  const flag =
+    !designable && __tableName && !inheritCollections.includes(props.collection) && __tableName !== props.collection;
   return (
     !flag && (
       <BlockProvider {...props}>

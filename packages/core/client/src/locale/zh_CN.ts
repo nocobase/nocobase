@@ -117,6 +117,7 @@ export default {
   "Create collection": "创建数据表",
   "Collection display name": "数据表名称",
   "Collection name": "数据表标识",
+  "Inherits":"继承",
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头。",
   "Storage type": "存储类型",
   "Edit": "编辑",

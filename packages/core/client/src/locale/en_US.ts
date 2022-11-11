@@ -113,6 +113,7 @@ export default {
   "Create collection": "Create collection",
   "Collection display name": "Collection display name",
   "Collection name": "Collection name",
+  "Inherits":"Inherits",
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.",
   "Storage type": "Storage type",
   "Edit": "Edit",
