@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
-import { Tag } from 'antd';
+import { Tag, Breadcrumb } from 'antd';
 import { cx } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import {
@@ -21,7 +20,7 @@ import { lang } from './locale';
 
 
 
-function makeNodes(nodes, jobs = []): void {
+function makeNodes(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
   nodes.forEach(item => nodesMap.set(item.id, item));
   const jobsMap = new Map();
@@ -47,7 +46,7 @@ export function ExecutionCanvas() {
   const { setTitle } = useDocumentTitle();
   useEffect(() => {
     const { workflow } = data?.data ?? {};
-    setTitle(`${workflow?.title ? `${workflow.title} - ` : ''}${lang('Execution history')}`);
+    setTitle?.(`${workflow?.title ? `${workflow.title} - ` : ''}${lang('Execution history')}`);
   }, [data?.data]);
 
   if (!data?.data) {
@@ -78,17 +77,17 @@ export function ExecutionCanvas() {
     }}>
       <div className="workflow-toolbar">
         <header>
-          <span>
-            <Link to={`/admin/settings/workflow/workflows`}>
-              {lang('Workflow')}
-            </Link>
-          </span>
-          <span>
-            <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>
-              {workflow.title}
-            </Link>
-          </span>
-          <strong>{`#${execution.id}`}</strong>
+          <Breadcrumb>
+            <Breadcrumb.Item>
+              <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link>
+            </Breadcrumb.Item>
+            <Breadcrumb.Item>
+              <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>{workflow.title}</Link>
+            </Breadcrumb.Item>
+            <Breadcrumb.Item>
+              <strong>{`#${execution.id}`}</strong>
+            </Breadcrumb.Item>
+          </Breadcrumb>
         </header>
         <aside>
           <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
