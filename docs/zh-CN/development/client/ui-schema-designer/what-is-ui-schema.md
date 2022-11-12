@@ -129,13 +129,13 @@ JSX 等同于
   type: 'void',
   ['x-component']: 'div',
   properties: {
-    title: {
-      type: 'string',
+    table: {
+      type: 'array',
       'x-decorator': 'CardItem',
       'x-component': 'Table',
     },
-    content: {
-      type: 'string',
+    kanban: {
+      type: 'array',
       'x-decorator': 'CardItem',
       'x-component': 'Kanban',
     },

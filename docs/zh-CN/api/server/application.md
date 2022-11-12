@@ -148,6 +148,7 @@ Application 类的更多示例可参考 [examples](https://github.com/nocobase/n
 | --- | --- | --- | --- |
 | `options.database` | `IDatabaseOptions` or `Database` | `{}` | 数据库配置 |
 | `options.resourcer` | `ResourcerOptions` | `{}` | 资源路由配置 |
+| `options.logger` | `AppLoggerOptions` | `{}` | 日志 |
 | `options.cors` | [`CorsOptions`](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/koa__cors/index.d.ts#L24) | `{}` | 跨域配置，参考 [@koa/cors](https://npmjs.com/package/@koa/cors) |
 | `options.dataWrapping` | `boolean` | `true` | 是否包装响应数据，`true` 则将把通常的 `ctx.body` 包装为 `{ data, meta }` 的结构。 |
 | `options.registerActions` | `boolean` | `true` | 是否注册默认的 [actions](#) |
@@ -180,6 +181,11 @@ interface ApplicationOptions {
 
 ACL 实例，相关 API 参考 [ACL](/api/acl)。
 
+
+### `logger`
+
+Winston 实例，相关 API 参考 [Winston](https://github.com/winstonjs/winston#table-of-contents)。
+
 ### `i18n`
 
 I18next 实例，相关 API 参考 [I18next](https://www.i18next.com/overview/api)。
@@ -196,11 +202,12 @@ I18next 实例，相关 API 参考 [I18next](https://www.i18next.com/overview/ap
 
 内置的中间件有：
 
+- logger
 - i18next
 - bodyParser
 - cors
 - dataWrapping
-- collection2resource
+- db2resource
 - restApiMiddleware
 
 ### `context`
@@ -215,6 +222,7 @@ NocoBase 默认对 context 注入了以下成员，可以在请求处理函数�
 | `ctx.db` | `Database` | 数据库实例 |
 | `ctx.resourcer` | `Resourcer` | 资源路由管理器实例 |
 | `ctx.action` | `Action` | 资源操作相关对象实例 |
+| `ctx.logger` | `Winston` | 日志实例 |
 | `ctx.i18n` | `I18n` | 国际化实例 |
 | `ctx.t` | `i18n.t` | 国际化翻译函数快捷方式 |
 | `ctx.getBearerToken()` | `Function` | 获取请求头中的 bearer token |
