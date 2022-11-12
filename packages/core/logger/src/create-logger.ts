@@ -5,7 +5,7 @@ import 'winston-daily-rotate-file';
 const { combine, timestamp, label, prettyPrint, json } = format;
 
 function loggingLevel() {
-  return process.env.LOGGING_LEVEL || 'info';
+  return process.env.LOGGER_LEVEL || 'info';
 }
 
 const Transports = {

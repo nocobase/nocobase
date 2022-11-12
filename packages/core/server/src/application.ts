@@ -2,7 +2,7 @@ import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
-import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logging';
+import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
