@@ -2,7 +2,7 @@ import path from 'path';
 import winston, { format, Logger } from 'winston';
 import 'winston-daily-rotate-file';
 
-const { combine, timestamp, label, prettyPrint, json } = format;
+const { combine, timestamp, colorize, simple } = format;
 
 function loggingLevel() {
   return process.env.LOGGER_LEVEL || 'info';
@@ -11,7 +11,7 @@ function loggingLevel() {
 const Transports = {
   console(options) {
     return new winston.transports.Console({
-      format: winston.format.simple(),
+      format: combine(simple(), colorize()),
       ...options,
     });
   },
@@ -55,10 +55,12 @@ function createLogger(options: LoggerOptions = {}) {
     .filter((t) => t);
   const logger = winston.createLogger({
     level: loggingLevel(),
-    format: combine(timestamp(), format.errors({ stack: true }), format.json()),
+    levels: winston.config.cli.levels,
+    format: combine(timestamp(), format.errors({ stack: true }), format.json(), colorize()),
     ...options,
     transports,
   });
+  winston.addColors(winston.config.cli.colors);
   return logger;
 }
 
