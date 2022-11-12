@@ -5,6 +5,7 @@ import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@noco
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
+import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
@@ -361,6 +362,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async runAsCLI(argv = process.argv, options?: ParseOptions) {
+    await this.dbVersionCheck({ exit: true });
     await this.load({
       method: argv?.[2],
     });
@@ -441,7 +443,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterDestroy', this, options);
   }
 
-  async install(options: InstallOptions = {}) {
+  async dbVersionCheck(options?: { exit?: boolean }) {
     const r = await this.db.version.satisfies({
       mysql: '>=8.0.17',
       sqlite: '3.x',
@@ -449,10 +451,28 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     if (!r) {
-      console.log('The database only supports MySQL 8.0.17 and above, SQLite 3.x and PostgreSQL 10+');
-      return;
+      console.log(chalk.red('The database only supports MySQL 8.0.17 and above, SQLite 3.x and PostgreSQL 10+'));
+      if (options?.exit) {
+        process.exit();
+      }
+      return false;
     }
 
+    if (this.db.inDialect('mysql')) {
+      const result = await this.db.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
+      if (result?.Value === '1') {
+        console.log(chalk.red(`mysql variable 'lower_case_table_names' must be set to '0' or '2'`));
+        if (options?.exit) {
+          process.exit();
+        }
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  async install(options: InstallOptions = {}) {
     console.log('Database dialect: ' + this.db.sequelize.getDialect());
 
     if (options?.clean || options?.sync?.force) {
