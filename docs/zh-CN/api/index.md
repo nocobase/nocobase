@@ -10,4 +10,3 @@
 | [CLI](/api/cli)                   | `@nocobase/cli`       | NocoBase 命令行工具 |
 | [SDK](/api/sdk)                   | `@nocobase/sdk`       | NocoBase SDK        |
 | [Actions](/api/actions)           | `@nocobase/actions`   | 内置常用资源操作    |
-| [Logging](/api/logging)           | `@nocobase/logging`   | 日志 |
