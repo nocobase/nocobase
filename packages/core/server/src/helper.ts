@@ -49,6 +49,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
       }),
       {
         tag: 'bodyParser',
+        after: 'logger',
       },
     );
   }

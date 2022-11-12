@@ -152,6 +152,17 @@ DB_TABLE_PREFIX=nocobase_
 DB_LOGGING=on
 ```
 
+### LOGGER_TRANSPORT
+
+日志 transport，默认值 `console,dailyRotateFile`，可选项
+
+- `console`
+- `dailyRotateFile`
+
+### DAILY_ROTATE_FILE_DIRNAME
+
+`dailyRotateFile` 日志的存储路径，默认为 `storage/logs`
+
 ## 临时环境变量
 
 安装 NocoBase 时，可以通过设置临时的环境变量来辅助安装，如：

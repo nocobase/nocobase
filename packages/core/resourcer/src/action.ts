@@ -221,6 +221,15 @@ export class Action {
     this.mergeParams(params);
   }
 
+  toJSON() {
+    return {
+      actionName: this.actionName,
+      resourceName: this.resourceName,
+      resourceOf: this.resourceOf,
+      params: this.params,
+    };
+  }
+
   clone() {
     const options = _.cloneDeep(this.options);
     delete options.middleware;
@@ -286,9 +295,11 @@ export class Action {
   }
 
   getHandlers() {
-    const handers = [...this.resource.resourcer.getMiddlewares(), ...this.getMiddlewareHandlers(), this.getHandler()].filter(
-      Boolean,
-    );
+    const handers = [
+      ...this.resource.resourcer.getMiddlewares(),
+      ...this.getMiddlewareHandlers(),
+      this.getHandler(),
+    ].filter(Boolean);
     return handers;
   }
 
