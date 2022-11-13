@@ -517,8 +517,8 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const openAssignedFieldValueHandler = async () => {
     if (!schemaUid && initialSchema?.['x-uid']) {
       fieldSchema['x-action-settings'].schemaUid = initialSchema['x-uid'];
-      dn.emit('patch', { schema: fieldSchema });
       await api.resource('uiSchemas').insert({ values: initialSchema });
+      dn.emit('patch', { schema: fieldSchema });
       setSchemaUid(initialSchema['x-uid']);
     }
 
