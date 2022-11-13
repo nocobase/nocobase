@@ -36,7 +36,7 @@ describe('workflow > instructions > delay', () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
-          duration: 1000,
+          duration: 2000,
           endStatus: JOB_STATUS.RESOLVED
         }
       });
@@ -62,7 +62,7 @@ describe('workflow > instructions > delay', () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
-          duration: 1000,
+          duration: 2000,
           endStatus: JOB_STATUS.REJECTED
         }
       });
@@ -88,7 +88,7 @@ describe('workflow > instructions > delay', () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
-          duration: 1000,
+          duration: 2000,
           endStatus: JOB_STATUS.RESOLVED
         }
       });
