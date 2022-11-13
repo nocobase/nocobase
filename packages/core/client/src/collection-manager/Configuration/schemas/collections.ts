@@ -98,6 +98,45 @@ export const createCollectionProperties = {
   },
 };
 
+export const editCollectionProperties = {
+  title: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  name: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-disabled': true,
+  },
+  inherits: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-disabled': true,
+    'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+  },
+  footer: {
+    type: 'void',
+    'x-component': 'Action.Drawer.Footer',
+    properties: {
+      action1: {
+        title: '{{ t("Cancel") }}',
+        'x-component': 'Action',
+        'x-component-props': {
+          useAction: '{{ useCancelAction }}',
+        },
+      },
+      action2: {
+        title: '{{ t("Submit") }}',
+        'x-component': 'Action',
+        'x-component-props': {
+          type: 'primary',
+          useAction: '{{ useUpdateCollectionActionAndRefreshCM }}',
+        },
+      },
+    },
+  },
+};
+
 export const collectionSchema: ISchema = {
   type: 'object',
   properties: {
@@ -270,44 +309,7 @@ export const collectionSchema: ISchema = {
                             useValues: '{{ cm.useValuesFromRecord }}',
                           },
                           title: '{{ t("Edit collection") }}',
-                          properties: {
-                            title: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            name: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                              'x-disabled': true,
-                            },
-                            inherits: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                              'x-disabled': true,
-                              'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
-                            },
-                            footer: {
-                              type: 'void',
-                              'x-component': 'Action.Drawer.Footer',
-                              properties: {
-                                action1: {
-                                  title: '{{ t("Cancel") }}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
-                                  },
-                                },
-                                action2: {
-                                  title: '{{ t("Submit") }}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                    useAction: '{{ cm.useUpdateCollectionActionAndRefreshCM }}',
-                                  },
-                                },
-                              },
-                            },
-                          },
+                          properties: editCollectionProperties,
                         },
                       },
                     },

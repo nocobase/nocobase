@@ -12,6 +12,7 @@ import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
 import { CollectionFieldsTable } from '.';
+import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
@@ -205,6 +206,8 @@ export const ConfigurationTable = () => {
             loadCollections,
             useCurrentFields,
             useNewId,
+            useCancelAction,
+            useUpdateCollectionActionAndRefreshCM,
           }}
         />
       </SchemaComponentContext.Provider>
