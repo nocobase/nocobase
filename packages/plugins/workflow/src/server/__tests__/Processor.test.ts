@@ -1,6 +1,6 @@
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { getApp } from '.';
+import { getApp, sleep } from '.';
 import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
 
@@ -37,6 +37,8 @@ describe('workflow > Processor', () => {
     it('empty workflow without any nodes', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -48,6 +50,8 @@ describe('workflow > Processor', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -64,6 +68,8 @@ describe('workflow > Processor', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
@@ -92,6 +98,8 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -109,6 +117,8 @@ describe('workflow > Processor', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
@@ -135,6 +145,8 @@ describe('workflow > Processor', () => {
       await n1.setDownstream(n2);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -166,6 +178,8 @@ describe('workflow > Processor', () => {
       await n1.setDownstream(n2);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -206,6 +220,8 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
@@ -236,6 +252,8 @@ describe('workflow > Processor', () => {
       await n1.setDownstream(n3);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -269,6 +287,8 @@ describe('workflow > Processor', () => {
       await n1.setDownstream(n3);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -318,6 +338,8 @@ describe('workflow > Processor', () => {
       await n1.setDownstream(n5);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -369,6 +391,8 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
 
@@ -402,6 +426,8 @@ describe('workflow > Processor', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const posts = await PostRepo.find();
       expect(posts.length).toBe(2);

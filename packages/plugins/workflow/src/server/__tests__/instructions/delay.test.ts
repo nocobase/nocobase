@@ -43,6 +43,8 @@ describe('workflow > instructions > delay', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
       const [j1] = await e1.getJobs();
@@ -66,6 +68,8 @@ describe('workflow > instructions > delay', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -104,6 +108,8 @@ describe('workflow > instructions > delay', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
       const [j1] = await e1.getJobs();
@@ -133,6 +139,8 @@ describe('workflow > instructions > delay', () => {
     it('restart app should trigger delayed job', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
       const [j1] = await e1.getJobs();
@@ -152,6 +160,8 @@ describe('workflow > instructions > delay', () => {
 
     it('restart app should trigger missed delayed job', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);

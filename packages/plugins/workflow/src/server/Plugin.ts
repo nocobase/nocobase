@@ -127,30 +127,28 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  async trigger(workflow: WorkflowModel, context: Object, options: Transactionable & { context?: any } = {}): Promise<ExecutionModel | null> {
+  async trigger(workflow: WorkflowModel, context: Object, options: Transactionable & { context?: any } = {}): Promise<void> {
     // `null` means not to trigger
     if (context === null) {
       return null;
     }
 
-    let transaction = null;
+    // @ts-ignore
+    const transaction = options.transaction && !options.transaction.finished
+      ? options.transaction
+      : await (<typeof WorkflowModel>workflow.constructor).database.sequelize.transaction();
 
-    if (workflow.useTransaction) {
-      // @ts-ignore
-      transaction = options.transaction && !options.transaction.finished
-        ? options.transaction
-        : await (<typeof WorkflowModel>workflow.constructor).database.sequelize.transaction();
-
+    if (options.context?.transaction) {
       const existed = await workflow.countExecutions({
         where: {
-          transaction: transaction.id
+          transaction: options.context.transaction
         },
         transaction
       });
 
       if (existed) {
-        console.warn(`workflow ${workflow.id} has already been triggered in same execution (${transaction.id}), and newly triggering will be skipped.`);
-        return null;
+        console.warn(`workflow ${workflow.id} has already been triggered in same execution (${options.context.transaction}), and newly triggering will be skipped.`);
+        return;
       }
     }
 
@@ -159,7 +157,8 @@ export default class WorkflowPlugin extends Plugin {
       key: workflow.key,
       status: EXECUTION_STATUS.STARTED,
       useTransaction: workflow.useTransaction,
-      transaction: transaction?.id
+      // @ts-ignore
+      transaction: options.context?.transaction ?? transaction?.id
     }, { transaction });
 
     console.log('workflow triggered:', new Date(), workflow.id, execution.id);
@@ -187,16 +186,22 @@ export default class WorkflowPlugin extends Plugin {
 
     execution.workflow = workflow;
 
-    const processor = this.createProcessor(execution, { transaction, _context: options.context });
-
-    await processor.start();
-
     // @ts-ignore
     if (transaction && (!options.transaction || options.transaction.finished)) {
       await transaction.commit();
     }
 
-    return execution;
+    const processor = this.createProcessor(execution, {
+      _context: {
+        ...options.context,
+        // transaction id for detecting cycle trigger
+        transaction: execution.transaction
+      }
+    });
+
+    setTimeout(() => {
+      processor.start();
+    }, 0);
   }
 
   async resume(job) {
