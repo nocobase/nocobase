@@ -1,4 +1,6 @@
 # HasOneRepository
+## 概览
+
 `HasOneRepository` 为 `HasOne` 类型的关联 Repository。
 
 ```typescript
@@ -19,8 +21,14 @@ const user = await User.repository.create({
   values: { name: 'u1' },
 });
 
-// 创建 HasOneRepository 实例
-const userProfileRepository = new HasOneRepository(User, 'profile', user.get('id'));
+
+// 获取到关联 Repository 
+const userProfileRepository = User.repository.relation('profile').of(user.get('id'));
+
+// 也可直接初始化
+new HasOneRepository(User, 'profile', user.get('id'));
+
+
 
 ```
 
