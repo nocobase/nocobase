@@ -1,12 +1,39 @@
 # Collection
 
-数据表结构管理类。
+## 概览
 
-大部分接口通常不会直接由开发者调用，除非进行较底层的扩展开发。
+`Collection` 用于定义系统中的数据模型，如模型名称、字段、索引、关联等信息。
+一般通过 `Database` 实例的 `collection` 方法作为代理入口调用。
+
+```javascript
+const { Database } = require('@nocobase/database')
+
+// 创建数据库实例
+const db = new Database({...}); 
+
+// 定义数据模型
+db.collection({
+  name: 'users',
+  // 定义模型字段
+  fields: [
+    // 标量字段  
+    {
+      name: 'name',
+      type: 'string',
+    },
+    
+    // 关联字段
+    {
+      name: 'profile',
+      type: 'hasOne' // 'hasMany', 'belongsTo', 'belongsToMany'
+    }
+  ],
+});
+```
+
+更多字段类型请参考 [Fields](/api/database/field.md)。
 
 ## 构造函数
-
-通常不会直接使用，主要通过 `Database` 实例的 `collection` 方法作为代理入口调用。
 
 **签名**
 

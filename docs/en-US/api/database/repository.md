@@ -1,6 +1,331 @@
 # Repository
 
-数据表数据仓库管理类。大部分基于数据表的数据存取等操作均通过该类实现。
+## 概览
+
+在一个给定的 `Collection` 对象上，可以获取到它的 `Repository` 对象来对数据表进行读写操作。
+
+```javascript
+const { UserCollection } = require("./collections");
+
+const UserRepository = UserCollection.repository;
+
+const user = await UserRepository.findOne({
+  filter: {
+    id: 1
+  },
+});
+
+user.name = "new name";
+await user.save();
+```
+
+### 查询
+
+#### 基础查询
+
+在 `Repository` 对象上，调用 `find*` 相关方法，可执行查询操作，查询方法都支持传入 `filter` 参数，用于过滤数据。
+
+```javascript
+// SELECT * FROM users WHERE id = 1 
+userRepository.find({
+  filter: {
+      id: 1
+  }
+});
+
+```
+#### 操作符
+
+`Repository` 中的 `filter` 参数，还提供了多种操作符，执行更加多样的查询操作。
+
+```javascript
+// SELECT * FROM users WHERE age > 18
+userRepository.find({
+  filter: {
+    age: {
+      $gt: 18
+    }
+  }
+});
+
+// SELECT * FROM users WHERE age > 18 OR name LIKE '%张%'
+userRepository.find({
+  filter: {
+    $or: [
+      { age: { $gt: 18 } },
+      { name: { $like: "%张%" } }
+    ]
+  }
+});
+
+```
+
+操作符的更多详细信息请参考 [Filter Operators](/api/database/operators)。
+
+#### 字段控制
+
+在查询操作时，通过 `fields`, `except`, `appends` 参数可以控制输出字段。
+
+* `fields`: 指定输出字段
+* `except`: 排除输出字段
+* `appends`: 追加输出关联字段
+
+```javascript
+// 获取的结果只包含 id 和 name 字段
+userRepository.find({
+  fields: ["id", "name"],
+});
+
+// 获取的结果不包含 password 字段
+userRepository.find({
+  except: ["password"],
+});
+
+// 获取的结果会包含关联对象 posts 的数据
+userRepository.find({
+  appends: ["posts"],
+});
+```
+
+#### 关联字段查询
+
+`filter` 参数支持按关联字段进行过滤，例如：
+
+```javascript
+// 查询 user 对象，其所关联的 posts 存在 title 为 'title1' 的对象
+userRepository.find({
+  filter: {
+      "posts.title": "post title"
+  }
+});
+```
+
+关联字段也可进行嵌套
+
+```javascript
+// 查询 user 对象，查询结果满足其 posts 的 comments 包含 keywords
+await userRepository.find({
+  filter: {
+    "posts.comments.content": {
+      $like: "%keywords%"
+    }
+  }
+});
+```
+
+#### 排序
+
+通过 `sort` 参数，可以对查询结果进行排序。
+
+```javascript
+
+// SELECT * FROM users ORDER BY age
+await userRepository.find({
+  sort: 'age'
+});
+
+
+// SELECT * FROM users ORDER BY age DESC
+await userRepository.find({
+  sort: '-age'
+});
+
+// SELECT * FROM users ORDER BY age DESC, name ASC
+await userRepository.find({
+  sort: ['-age', "name"],
+});
+```
+
+也可按照关联对象的字段进行排序
+
+```javascript
+await userRepository.find({
+  sort: 'profile.createdAt'
+});
+```
+
+### 创建
+
+#### 基础创建
+
+通过 `Repository` 创建新的数据对象。
+
+```javascript
+
+await userRepository.create({
+  name: "张三",
+  age: 18,
+});
+// INSERT INTO users (name, age) VALUES ('张三', 18)
+
+
+// 支持批量创建
+await userRepository.create([
+  {
+    name: "张三",
+    age: 18,
+  },
+  {
+    name: "李四",
+    age: 20,
+  },
+])
+
+```
+
+#### 创建关联
+
+创建时可以同时创建关联对象，和查询类似，也支持关联对象的嵌套使用，例如：
+
+```javascript
+await userRepository.create({
+  name: "张三",
+  age: 18,
+  posts: [
+    {
+      title: "post title",
+      content: "post content",
+      tags: [
+        {
+          name: "tag1",
+        },
+        {
+          name: "tag2",
+        },
+      ],
+    },
+  ],
+});
+// 创建用户的同时，创建 post 与用户关联，创建 tags 与 post 相关联。
+```
+若关联对象已在数据库中，可传入其ID，创建时会建立与关联对象的关联关系。
+
+```javascript
+const tag1 = await tagRepository.findOne({
+  filter: {
+    name: "tag1"
+  },
+});
+
+await userRepository.create({
+  name: "张三",
+  age: 18,
+  posts: [
+    {
+      title: "post title",
+      content: "post content",
+      tags: [
+        {
+          id: tag1.id,  // 建立与已存在关联对象的关联关系
+        },
+        {
+          name: "tag2",
+        },
+      ],
+    },
+  ],
+});
+```
+
+### 更新
+
+#### 基础更新
+
+获取到数据对象后，可直接在数据对象(`Model`)上修改属性，然后调用 `save` 方法保存修改。
+
+```javascript
+const user = await userRepository.findOne({
+  filter: {
+    name: "张三",
+  },
+});
+
+
+user.age = 20;
+await user.save();
+```
+
+数据对象 `Model` 继承自 Sequelize Model，对 `Model` 的操作可参考 [Sequelize Model](https://sequelize.org/master/manual/model-basics.html)。
+
+也可通过 `Repository` 更新数据：
+
+```javascript
+// 修改满足筛选条件的数据记录
+await userRepository.update({
+  filter: {
+    name: "张三",
+  },
+  values: {
+    age: 20,
+  },
+});
+```
+
+更新时，可以通过 `whitelist` 、`blacklist` 参数控制更新字段，例如：
+
+```javascript
+await userRepository.update({
+  filter: {
+    name: "张三",
+  },
+  values: {
+    age: 20,
+    name: "李四",
+  },
+  whitelist: ["age"], // 仅更新 age 字段
+});
+````
+
+#### 更新关联字段
+
+在更新时，可以设置关联对象，例如：
+
+```javascript
+const tag1 = tagRepository.findOne({
+  filter: {
+    id: 1
+  },
+});
+
+await postRepository.update({
+  filter: {
+    id: 1
+  },
+  values: {
+    title: "new post title",
+    tags: [
+      {
+        id: tag1.id // 与 tag1 建立关联
+      },
+      {
+        name: "tag2", // 创建新的 tag 并建立关联
+      },
+    ],
+  },
+});
+
+
+await postRepository.update({
+  filter: {
+    id: 1
+  },
+  values: {
+    tags: null // 解除 post 与 tags 的关联
+  },
+})
+```
+
+### 删除
+
+可调用 `Repository` 中的 `destroy()`方法进行删除操作。删除时需指定筛选条件：
+
+```javascript
+await userRepository.destroy({
+  filter: {
+    status: "blocked",
+  },
+});
+```
 
 ## 构造函数
 
@@ -56,7 +381,7 @@ await books.myQuery('SELECT * FROM books;');
 
 ### `find()`
 
-从数据库查询特定条件的数据集。相当于 Sequelize 中的 `Model.findAll()`。
+从数据库查询数据集，可指定筛选条件、排序等。
 
 **签名**
 

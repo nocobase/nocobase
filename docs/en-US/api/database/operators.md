@@ -1,6 +1,6 @@
 # Filter Operators
 
-用于 Repository 的 find、findOne、findAndCount、count 等 API 的 filter 参数里。如：
+用于 Repository 的 find、findOne、findAndCount、count 等 API 的 filter 参数中：
 
 ```ts
 const repository = db.getRepository('books');
@@ -14,9 +14,7 @@ repository.find({
 });
 ```
 
-相当于 Sequelize Where 查询的 [Op](https://sequelize.org/docs/v6/core-concepts/model-querying-basics/#operators) 对象。
-
-为了支持 JSON 化，NocoBase 中将查询运算符转换为以 $ 为前缀的字符串标识。
+为了支持 JSON 化，NocoBase 中将查询运算符以 $ 为前缀的字符串标识。
 
 另外，NocoBase 也提供了扩展运算符的 API，详见 [`db.registerOperators()`](../database#registeroperators)。
 
