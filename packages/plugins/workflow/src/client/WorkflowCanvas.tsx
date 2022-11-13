@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { Dropdown, Menu, Button, Tag, Switch, message } from 'antd';
+import { Dropdown, Menu, Button, Tag, Switch, message, Breadcrumb } from 'antd';
 import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
@@ -48,7 +48,7 @@ export function WorkflowCanvas() {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const { title } = data?.data ?? {};
-    setTitle(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
+    setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
   }, [data?.data]);
 
   if (!data?.data && !loading) {
@@ -111,27 +111,30 @@ export function WorkflowCanvas() {
     }}>
       <div className="workflow-toolbar">
         <header>
-          <span>
-            <Link to={`/admin/settings/workflow/workflows`}>
-              {lang('Workflow')}
-            </Link>
-          </span>
-          <strong>{workflow.title}</strong>
+          <Breadcrumb>
+            <Breadcrumb.Item>
+              <Link to={`/admin/settings/workflow/workflows`}>
+                {lang('Workflow')}
+              </Link>
+            </Breadcrumb.Item>
+            <Breadcrumb.Item>
+              <strong>{workflow.title}</strong>
+            </Breadcrumb.Item>
+          </Breadcrumb>
         </header>
         <aside>
           <div className="workflow-versions">
-            <label>{lang('Version')}</label>
             <Dropdown
               trigger={['click']}
               overlay={
                 <Menu
                   onClick={onSwitchVersion}
-                  defaultSelectedKeys={[workflow.id]}
+                  defaultSelectedKeys={[`${workflow.id}`]}
                   className={cx(workflowVersionDropdownClass)}
                 >
                   {revisions.sort((a, b) => b.id - a.id).map((item, index) => (
                     <Menu.Item
-                      key={item.id}
+                      key={`${item.id}`}
                       icon={item.current ? <RightOutlined /> : null}
                       className={classnames({
                         executed: item.executed,
@@ -146,7 +149,11 @@ export function WorkflowCanvas() {
                 </Menu>
               }
             >
-              <Button type="link">{workflow?.id ? `#${workflow.id}` : null}<DownOutlined /></Button>
+              <Button type="text">
+                <label>{lang('Version')}</label>
+                <span>{workflow?.id ? `#${workflow.id}` : null}</span>
+                <DownOutlined />
+              </Button>
             </Dropdown>
           </div>
           <Switch
