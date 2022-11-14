@@ -15,6 +15,74 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('can update relation with child table', async () => {
+    const A = db.collection({
+      name: 'a',
+      fields: [
+        {
+          name: 'a-field',
+          type: 'string',
+        },
+        {
+          name: 'a1s',
+          type: 'hasMany',
+          target: 'a1',
+          foreignKey: 'aId',
+        },
+      ],
+    });
+
+    const A1 = db.collection({
+      name: 'a1',
+      inherits: ['a'],
+      fields: [
+        {
+          name: 'a1-field',
+          type: 'string',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await A.repository.create({
+      values: {
+        'a-field': 'a-1',
+      },
+    });
+
+    let a11 = await A1.repository.create({
+      values: {
+        'a1-field': 'a1-1',
+        'a-field': 'a1-1',
+      },
+    });
+
+    const a12 = await A1.repository.create({
+      values: {
+        'a1-field': 'a1-2',
+        'a-field': 'a1-2',
+      },
+    });
+
+    await A1.repository.update({
+      filterByTk: a11.get('id'),
+      values: {
+        a1s: [{ id: a12.get('id') }],
+      },
+    });
+
+    a11 = await A1.repository.findOne({
+      filter: {
+        'a1-field': 'a1-1',
+      },
+      appends: ['a1s'],
+    });
+
+    const a11a1s = a11.get('a1s');
+    expect(a11a1s[0].get('id')).toBe(a12.get('id'));
+  });
+
   it('can create relation with child table', async () => {
     const A = db.collection({
       name: 'a',
