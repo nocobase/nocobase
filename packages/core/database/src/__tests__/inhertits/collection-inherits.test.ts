@@ -1,8 +1,9 @@
 import Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
+import pgOnly from './helper';
 
-describe('collection inherits', () => {
+pgOnly()('collection inherits', () => {
   let db: Database;
 
   beforeEach(async () => {

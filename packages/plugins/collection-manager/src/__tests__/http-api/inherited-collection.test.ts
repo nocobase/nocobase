@@ -1,16 +1,12 @@
-import { MockServer } from '@nocobase/test';
+import { MockServer, pgOnly } from '@nocobase/test';
 import { createApp } from '..';
 
-describe('Inherited Collection', () => {
+pgOnly()('Inherited Collection', () => {
   let app: MockServer;
   let agent;
 
   beforeEach(async () => {
     app = await createApp();
-    if (app.db.sequelize.getDialect() !== 'postgres') {
-      return;
-    }
-
     agent = app.agent();
     await agent.resource('collections').create({
       values: {
