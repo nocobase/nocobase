@@ -75,17 +75,9 @@ export default class Processor {
     const { sequelize } = (<typeof ExecutionModel>this.execution.constructor).database;
 
     // @ts-ignore
-    const transaction = options.transaction && !options.transaction.finished
+    return options.transaction && !options.transaction.finished
       ? options.transaction
       : await sequelize.transaction();
-
-    // @ts-ignore
-    if (this.execution.transaction !== transaction.id) {
-
-    // @ts-ignore
-      await this.execution.update({ transaction: transaction.id }, { transaction });
-    }
-    return transaction;
   }
 
   async prepare(commit?: boolean) {

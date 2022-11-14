@@ -47,7 +47,7 @@ export default class implements Instruction {
     }) as JobModel[];
 
     jobs.forEach(job => {
-      this.schedule(job, job.node.config.duration);
+      this.schedule(job, job.node!.config.duration);
     });
   }
 
@@ -70,8 +70,8 @@ export default class implements Instruction {
   async trigger(job) {
     const execution = await job.getExecution() as ExecutionModel;
     if (execution.status === EXECUTION_STATUS.STARTED) {
-      const processor = this.plugin.createProcessor(execution);
-      await processor.resume(job);
+      job.execution = execution;
+      await this.plugin.resume(job);
     }
     if (this.timers.get(job.id)) {
       this.timers.delete(job.id);
