@@ -312,12 +312,12 @@ export const useInheritsFormItemInitializerFields = (options?) => {
   });
 };
 export const useCustomFormItemInitializerFields = (options?: any) => {
-  const { name, fields } = useCollection();
+  const { name, currentFields } = useCollection();
   const { getInterface } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
-  return fields
+  return currentFields
     ?.filter((field) => {
       return field?.interface && !field?.uiSchema?.['x-read-pretty'];
     })
