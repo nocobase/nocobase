@@ -73,9 +73,9 @@ export const findTableColumn = (schema: Schema, key: string, action: string, dee
 };
 
 export const useTableColumnInitializerFields = () => {
-  const { name, fields = [] } = useCollection();
+  const { name, currentFields = [] } = useCollection();
   const { getInterface } = useCollectionManager();
-  return fields
+  return currentFields
     .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey)
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -185,12 +185,12 @@ export const useInheritsTableColumnInitializerFields = () => {
 };
 
 export const useFormItemInitializerFields = (options?: any) => {
-  const { name, fields } = useCollection();
+  const { name, currentFields } = useCollection();
   const { getInterface } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
 
-  return fields
+  return currentFields
     ?.filter((field) => field?.interface && !field?.isForeignKey)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);

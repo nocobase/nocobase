@@ -1,5 +1,6 @@
 import { clone } from '@formily/shared';
 import { useContext } from 'react';
+import { reduce } from 'lodash';
 import { CollectionManagerContext } from '../context';
 
 export const useCollectionManager = () => {
@@ -55,10 +56,13 @@ export const useCollectionManager = () => {
     service,
     interfaces,
     collections,
+    getParentCollections,
+    getChildrenCollections,
     refreshCM: () => refreshCM?.(),
     get(name: string) {
       return collections?.find((collection) => collection.name === name);
     },
+    getCollectionField,
     getCollection(name: any) {
       if (typeof name !== 'string') {
         return name;
@@ -66,10 +70,19 @@ export const useCollectionManager = () => {
       return collections?.find((collection) => collection.name === name);
     },
     getCollectionFields(name: string) {
-      const collection = collections?.find((collection) => collection.name === name);
-      return collection?.fields || [];
+      const currentFields = collections?.find((collection) => collection.name === name)?.fields;
+      const inheritKeys = getParentCollections(name);
+      const inheritedFields = reduce(
+        inheritKeys,
+        (result, value) => {
+          const arr = result;
+          return arr.concat(collections?.find((collection) => collection.name === value)?.fields);
+        },
+        [],
+      );
+      const totalFields = currentFields?.concat(inheritedFields) || [];
+      return totalFields;
     },
-    getCollectionField,
     getCollectionJoinField(name: string) {
       if (!name) {
         return;
@@ -94,16 +107,18 @@ export const useCollectionManager = () => {
     getInterface(name: string) {
       return interfaces[name] ? clone(interfaces[name]) : null;
     },
-    getParentCollections,
-    getChildrenCollections,
     getParentCollectionFields: (parentCollection, currentCollection) => {
       const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields;
       const parentFields = collections?.find((collection) => collection.name === parentCollection)?.fields;
-      return parentFields.filter((v)=>{
-        return !currentFields.find((k)=>{
-          return k.name===v.name
-        })
-      })
+      return parentFields.filter((v) => {
+        return !currentFields.find((k) => {
+          return k.name === v.name;
+        });
+      });
+    },
+    getCurrentCollectionFields(name: string) {
+      const collection = collections?.find((collection) => collection.name === name);
+      return collection?.fields || [];
     },
   };
 };
