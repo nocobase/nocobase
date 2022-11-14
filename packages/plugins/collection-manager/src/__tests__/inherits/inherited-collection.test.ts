@@ -1,9 +1,8 @@
-import { pgOnly } from '@nocobase/test';
 import Database, { Collection as DBCollection, Repository } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '..';
 
-pgOnly()('Inherited Collection', () => {
+describe('Inherited Collection', () => {
   let db: Database;
   let app: Application;
 
@@ -11,6 +10,10 @@ pgOnly()('Inherited Collection', () => {
 
   beforeEach(async () => {
     app = await createApp();
+    if (app.db.sequelize.getDialect() !== 'postgres') {
+      return;
+    }
+
     db = app.db;
 
     collectionRepository = db.getCollection('collections').repository;
@@ -18,6 +21,39 @@ pgOnly()('Inherited Collection', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should remove replaced field', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'person',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const studentCollection = await collectionRepository.create({
+      values: {
+        name: 'students',
+        fields: [
+          {
+            name: 'score',
+            type: 'integer',
+          },
+          {
+            name: 'name',
+            type: 'string',
+            someAttr: 'replaced',
+          },
+        ],
+      },
+      context: {},
+    });
   });
 
   it('should replace parent collection field', async () => {

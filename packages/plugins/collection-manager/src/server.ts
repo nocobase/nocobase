@@ -125,7 +125,7 @@ export class CollectionManagerPlugin extends Plugin {
 
     // before field remove
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
-    this.app.db.on('fields.beforeDestroy', async (model, options) => {
+    this.app.db.on('fields.beforeDestroy', async (model: FieldModel, options) => {
       await model.remove(options);
     });
 

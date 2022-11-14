@@ -1,12 +1,16 @@
-import { pgOnly, MockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import { createApp } from '..';
 
-pgOnly()('Inherited Collection', () => {
+describe('Inherited Collection', () => {
   let app: MockServer;
   let agent;
 
   beforeEach(async () => {
     app = await createApp();
+    if (app.db.sequelize.getDialect() !== 'postgres') {
+      return;
+    }
+
     agent = app.agent();
     await agent.resource('collections').create({
       values: {
@@ -25,7 +29,7 @@ pgOnly()('Inherited Collection', () => {
     await app.destroy();
   });
 
-  it.skip('can drop child replaced field', async () => {
+  it('can drop child replaced field', async () => {
     await agent.resource('collections').create({
       values: {
         name: 'students',
