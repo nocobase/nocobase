@@ -3,7 +3,6 @@ import { Link, useHistory } from 'react-router-dom';
 import { Dropdown, Menu, Button, Tag, Switch, message, Breadcrumb } from 'antd';
 import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
 import classnames from 'classnames';
 
 import {
@@ -18,11 +17,10 @@ import { FlowContext } from './FlowContext';
 import { branchBlockClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
 import { TriggerConfig } from './triggers';
 import { Branch } from './Branch';
-import { executionCollection, executionSchema } from './schemas/executions';
+import { executionSchema } from './schemas/executions';
 import { ExecutionLink } from './ExecutionLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
-
-import { lang, NAMESPACE } from './locale';
+import { lang } from './locale';
 
 
 
@@ -174,12 +172,7 @@ export function WorkflowCanvas() {
           </Dropdown>
           <ActionContext.Provider value={{ visible, setVisible }}>
             <SchemaComponent
-              schema={{
-                type: 'void',
-                properties: {
-                  drawer: executionSchema
-                }
-              }}
+              schema={executionSchema}
               components={{
                 ExecutionResourceProvider,
                 ExecutionLink
