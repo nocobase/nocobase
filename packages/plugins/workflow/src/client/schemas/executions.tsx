@@ -51,6 +51,7 @@ export const executionCollection = {
 
 export const executionSchema = {
   type: 'void',
+  name: 'executionHistoryDrawer',
   title: `{{t("Execution history", { ns: "${NAMESPACE}" })}}`,
   'x-component': 'Action.Drawer',
   properties: {
