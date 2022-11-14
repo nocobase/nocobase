@@ -1,12 +1,14 @@
 import { clone } from '@formily/shared';
 import { useContext } from 'react';
-import { reduce } from 'lodash';
+import { reduce ,unionBy} from 'lodash';
 import { CollectionManagerContext } from '../context';
+import { CollectionFieldOptions } from '../types';
+
 
 export const useCollectionManager = () => {
   const { refreshCM, service, interfaces, collections } = useContext(CollectionManagerContext);
   
-  const getCollectionFields=(name: string)=> {
+  const getCollectionFields=(name: string):CollectionFieldOptions[]=> {
     const currentFields = collections?.find((collection) => collection.name === name)?.fields;
     const inheritKeys = getParentCollections(name);
     const inheritedFields = reduce(
@@ -17,7 +19,7 @@ export const useCollectionManager = () => {
       },
       [],
     );
-    const totalFields = currentFields?.concat(inheritedFields) || [];
+    const totalFields = unionBy(currentFields?.concat(inheritedFields) || [],'name');
     return totalFields;
   }
   const getCollectionField = (name: string) => {

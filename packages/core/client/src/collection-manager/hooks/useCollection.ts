@@ -1,5 +1,5 @@
 import { SchemaKey } from '@formily/react';
-import { reduce } from 'lodash';
+import { reduce ,unionBy} from 'lodash';
 import { useContext } from 'react';
 import { useAPIClient } from '../../api-client';
 import { CollectionContext } from '../context';
@@ -21,7 +21,7 @@ export const useCollection = () => {
     },
     [],
   );
-  const totalFields = currentFields?.concat(inheritedFields);
+  const totalFields = unionBy(currentFields?.concat(inheritedFields),'name');
   return {
     ...collection,
     resource,
