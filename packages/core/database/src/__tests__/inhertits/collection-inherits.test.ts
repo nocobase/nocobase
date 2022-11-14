@@ -58,11 +58,11 @@ pgOnly()('collection inherits', () => {
 
     expect(a1.get('bs').length).toBe(2);
 
-    const b1 = await B.repository.find({
-      appends: ['bs'],
+    const b1 = await B.repository.findOne({
       filter: {
         af: 'a1',
       },
+      appends: ['bs'],
     });
 
     expect(b1.get('bs').length).toBe(2);
