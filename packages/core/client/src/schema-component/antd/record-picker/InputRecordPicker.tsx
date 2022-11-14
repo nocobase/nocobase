@@ -3,8 +3,9 @@ import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useFilterByTk } from '../../../block-provider';
 import { useTableSelectorProps as useTsp } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider, useCollection } from '../../../collection-manager';
+import { CollectionProvider, useCollection, useCollectionField } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
@@ -68,17 +69,37 @@ const useAssociation = (props) => {
   return getField(fieldSchema.name);
 };
 
-export const InputRecordPicker: React.FC<any> = (props) => {
-  const { value, multiple, onChange, ...others } = props;
+const SelectField = (props) => {
+  const { useSelect, value, multiple, onChange, ...others } = props;
   const fieldNames = useFieldNames(props);
-  const [visible, setVisible] = useState(false);
-  const fieldSchema = useFieldSchema();
-  const collectionField = useAssociation(props);
+  const { setVisible } = useActionContext();
+  const { setSelectedRows } = useContext(RecordPickerContext);
+
+  const getValue = () => {
+    if (multiple == null) return null;
+    // console.log('getValue', multiple, value, Array.isArray(value));
+
+    return Array.isArray(value) ? value?.map((v) => v[fieldNames.value]) : value?.[fieldNames.value];
+  };
+
   const compile = useCompile();
+  const collectionField = useAssociation(props);
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
 
-  const [selectedRows, setSelectedRows] = useState([]);
   const [options, setOptions] = useState([]);
+  const { resource } = useCollection();
+
+  useEffect(() => {
+    if (useSelect) {
+      resource.list().then((res) => {
+        setOptions(
+          res.data.data.map((item) => {
+            return item;
+          }),
+        );
+      });
+    }
+  }, [useSelect]);
 
   useEffect(() => {
     if (value) {
@@ -92,55 +113,70 @@ export const InputRecordPicker: React.FC<any> = (props) => {
       setOptions(opts);
       setSelectedRows(opts);
     }
-  }, [value,fieldNames?.label]);
+  }, [value, fieldNames?.label]);
 
-  const getValue = () => {
-    if (multiple == null) return null;
-    // console.log('getValue', multiple, value, Array.isArray(value));
+  return (
+    <Select
+      {...others}
+      mode={multiple ? 'multiple' : props.mode}
+      fieldNames={fieldNames}
+      onDropdownVisibleChange={
+        !useSelect
+          ? (open) => {
+              setVisible(true);
+            }
+          : undefined
+      }
+      allowClear
+      onChange={(changed: any) => {
+        if (changed) {
+          onChange(changed);
+          setSelectedRows(changed);
+          return;
+        }
+        if (!changed || !changed?.length) {
+          onChange(null);
+          setSelectedRows([]);
+        } else if (Array.isArray(changed)) {
+          const values = options?.filter((option) => changed.includes(option[fieldNames.value]));
+          onChange(values);
+          setSelectedRows(values);
+        }
+      }}
+      options={options}
+      value={getValue()}
+      open={useSelect ? undefined : false}
+    />
+  );
+};
 
-    return Array.isArray(value) ? value?.map((v) => v[fieldNames.value]) : value?.[fieldNames.value];
-  };
+export const InputRecordPicker: React.FC<any> = (props) => {
+  const { value, multiple, onChange, ...others } = props;
+  const [visible, setVisible] = useState(false);
+  const fieldSchema = useFieldSchema();
+  const useSelect = fieldSchema['x-component-props'].type === 'Select';
+  const collectionField = useAssociation(props);
+  const [selectedRows, setSelectedRows] = useState([]);
+
   return (
     <div>
-      <Select
-        {...others}
-        mode={multiple ? 'multiple' : props.mode}
-        fieldNames={fieldNames}
-        onDropdownVisibleChange={(open) => {
-          setVisible(true);
-        }}
-        allowClear
-        onChange={(changed: any) => {
-          if (!changed) {
-            onChange(null);
-            setSelectedRows([]);
-          } else if (!changed?.length) {
-            onChange(null);
-            setSelectedRows([]);
-          } else if (Array.isArray(changed)) {
-            const values = options?.filter((option) => changed.includes(option[fieldNames.value]));
-            onChange(values);
-            setSelectedRows(values);
-          }
-        }}
-        options={options}
-        value={getValue()}
-        open={false}
-      />
       <RecordPickerContext.Provider value={{ multiple, onChange, selectedRows, setSelectedRows }}>
         <CollectionProvider allowNull name={collectionField?.target}>
           <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
-            <FormProvider>
-              <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
-                <RecursionField
-                  schema={fieldSchema}
-                  onlyRenderProperties
-                  filterProperties={(s) => {
-                    return s['x-component'] === 'RecordPicker.Selector';
-                  }}
-                />
-              </SchemaComponentOptions>
-            </FormProvider>
+            <SelectField {...props} useSelect={useSelect} />
+            {!useSelect ? (
+              <FormProvider>
+                <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
+                  <RecursionField
+                    schema={fieldSchema}
+                    onlyRenderProperties
+                    filterProperties={(s) => {
+                      return s['x-component'] === 'RecordPicker.Selector';
+                    }}
+                  />
+                </SchemaComponentOptions>
+              </FormProvider>
+            ) : null}
           </ActionContext.Provider>
         </CollectionProvider>
       </RecordPickerContext.Provider>

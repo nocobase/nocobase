@@ -328,36 +328,67 @@ FormItem.Designer = (props) => {
       )}
       {form && !form?.readPretty && collectionField?.uiSchema?.type && (
         <SchemaSettings.ModalItem
-        title={t('Set default value')}
-        components={{ ArrayCollapse, FormLayout }}
-        schema={{
-          type: 'object',
-          title: t('Set default value'),
-          properties: {
-            default: {
-              ...collectionField.uiSchema,
-              name: 'default',
-              title: t('Default value'),
-              'x-decorator': 'FormItem',
-              default: fieldSchema.default || collectionField.defaultValue,
+          title={t('Set default value')}
+          components={{ ArrayCollapse, FormLayout }}
+          schema={
+            {
+              type: 'object',
+              title: t('Set default value'),
+              properties: {
+                default: {
+                  ...collectionField.uiSchema,
+                  name: 'default',
+                  title: t('Default value'),
+                  'x-decorator': 'FormItem',
+                  default: fieldSchema.default || collectionField.defaultValue,
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={(v) => {
+            const schema: ISchema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            if (field.value !== v.default) {
+              field.value = v.default;
             }
-          }
-        } as ISchema}
-        onSubmit={(v) => {
-          const schema: ISchema = {
-            ['x-uid']: fieldSchema['x-uid'],
-          };
-          if (field.value !== v.default) {
-            field.value = v.default;
-          }
-          fieldSchema.default = v.default;
-          schema.default = v.default;
-          dn.emit('patch', {
-            schema,
-          });
-          refresh();
-        }}
-      />
+            fieldSchema.default = v.default;
+            schema.default = v.default;
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      )}
+      {form && !isSubFormAssocitionField && ['m2o'].includes(collectionField?.interface) && (
+        <SchemaSettings.SelectItem
+          title={t('Field component')}
+          options={[
+            {
+              label: t('Select'),
+              value: 'Select',
+            },
+            {
+              label: t('Record picker'),
+              value: 'RecordPicker',
+            },
+          ]}
+          def
+          value={fieldSchema['x-component-props']?.type || 'RecordPicker'}
+          onChange={(v) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['type'] = v;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
       )}
       {form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
