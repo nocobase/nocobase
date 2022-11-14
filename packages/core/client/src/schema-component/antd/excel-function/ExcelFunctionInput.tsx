@@ -1,11 +1,10 @@
 import { Field, onFormSubmitValidateStart } from '@formily/core';
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useFormEffects } from '@formily/react';
-import { Button, Input, Popover, Tag, Menu, Dropdown } from 'antd';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import { connect, mapProps, useField, useFormEffects } from '@formily/react';
+import { getHotExcelParser } from '@nocobase/utils/client';
+import { Dropdown, Menu } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useTranslation } from 'react-i18next';
-import {Parser, SUPPORTED_FORMULAS}  from 'hot-formula-parser'
-import { getHotExcelParser } from '@nocobase/utils';
 
 const AntdExcelFormula = (props) => {
   const { value, onChange, supports, useCurrentFields } = props;
