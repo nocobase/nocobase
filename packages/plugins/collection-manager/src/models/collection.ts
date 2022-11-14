@@ -99,6 +99,7 @@ export class CollectionModel extends MagicAttributeModel {
       console.error(error);
       const name = this.get('name');
       this.db.removeCollection(name);
+      throw error;
     }
   }
 
