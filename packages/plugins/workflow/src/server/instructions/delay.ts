@@ -71,7 +71,7 @@ export default class implements Instruction {
     const execution = await job.getExecution() as ExecutionModel;
     if (execution.status === EXECUTION_STATUS.STARTED) {
       job.execution = execution;
-      await this.plugin.resume(pending);
+      await this.plugin.resume(job);
     }
     if (this.timers.get(job.id)) {
       this.timers.delete(job.id);
