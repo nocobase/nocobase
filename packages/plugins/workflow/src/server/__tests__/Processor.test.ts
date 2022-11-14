@@ -1,6 +1,6 @@
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { getApp } from '.';
+import { getApp, sleep } from '.';
 import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
 
@@ -37,6 +37,8 @@ describe('workflow > Processor', () => {
     it('empty workflow without any nodes', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -48,6 +50,8 @@ describe('workflow > Processor', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -64,6 +68,8 @@ describe('workflow > Processor', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
@@ -92,6 +98,8 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -109,6 +117,8 @@ describe('workflow > Processor', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
@@ -136,6 +146,8 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
       const [pending] = await execution.getJobs();
@@ -143,8 +155,11 @@ describe('workflow > Processor', () => {
       expect(pending.result).toEqual(null);
 
       pending.set('result', 123);
-      const processor = plugin.createProcessor(execution);
-      await processor.resume(pending);
+      pending.execution = execution;
+      await plugin.resume(pending);
+
+      await sleep(500);
+
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -167,6 +182,8 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
       const [pending] = await execution.getJobs();
@@ -174,8 +191,11 @@ describe('workflow > Processor', () => {
       expect(pending.result).toEqual(null);
 
       pending.set('result', 123);
-      const processor = plugin.createProcessor(execution);
-      await processor.resume(pending);
+      pending.execution = execution;
+      await plugin.resume(pending);
+
+      await sleep(500);
+
       expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
 
       const jobs = await execution.getJobs();
@@ -205,6 +225,8 @@ describe('workflow > Processor', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -237,13 +259,17 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
 
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
       pending.set('result', 123);
-      const processor = plugin.createProcessor(execution);
-      await processor.resume(pending);
+      pending.execution = execution;
+      await plugin.resume(pending);
+
+      await sleep(500);
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(3);
@@ -270,13 +296,18 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
 
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
       pending.set('result', 123);
-      const processor = plugin.createProcessor(execution);
-      await processor.resume(pending);
+      pending.execution = execution;
+      await plugin.resume(pending);
+
+      await sleep(500);
+
       expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
 
       const jobs = await execution.getJobs();
@@ -319,6 +350,8 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
 
@@ -327,8 +360,10 @@ describe('workflow > Processor', () => {
 
       const pending = pendingJobs.find(item => item.nodeId === n3.id );
       pending.set('result', 123);
-      const processor = plugin.createProcessor(execution);
-      await processor.resume(pending);
+      pending.execution = execution;
+      await plugin.resume(pending);
+
+      await sleep(500);
 
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -369,6 +404,8 @@ describe('workflow > Processor', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
 
@@ -377,8 +414,10 @@ describe('workflow > Processor', () => {
 
       const pending = pendingJobs.find(item => item.nodeId === n2.id );
       pending.set('result', 123);
-      const processor = plugin.createProcessor(e1);
-      await processor.resume(pending);
+      pending.execution = e1;
+      await plugin.resume(pending);
+
+      await sleep(500);
 
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -402,6 +441,8 @@ describe('workflow > Processor', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const posts = await PostRepo.find();
       expect(posts.length).toBe(2);

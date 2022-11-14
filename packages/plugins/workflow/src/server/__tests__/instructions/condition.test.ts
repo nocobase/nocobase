@@ -1,6 +1,6 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
-import { getApp } from '..';
+import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, BRANCH_INDEX } from '../../constants';
 
 
@@ -67,6 +67,8 @@ describe('workflow > instructions > condition', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
@@ -103,6 +105,8 @@ describe('workflow > instructions > condition', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
@@ -142,6 +146,8 @@ describe('workflow > instructions > condition', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(true);
@@ -170,6 +176,8 @@ describe('workflow > instructions > condition', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -200,6 +208,8 @@ describe('workflow > instructions > condition', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions({ include: ['jobs'] });
       const [job] = execution.jobs;
       expect(job.result).toBe(true);
@@ -228,6 +238,8 @@ describe('workflow > instructions > condition', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -262,6 +274,8 @@ describe('workflow > instructions > condition', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();

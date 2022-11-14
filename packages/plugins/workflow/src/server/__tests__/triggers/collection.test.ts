@@ -41,6 +41,8 @@ describe('workflow > triggers > collection', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(0);
     });
@@ -59,6 +61,8 @@ describe('workflow > triggers > collection', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
       await PostRepo.update({ filterByTk: post.id, values: { title: 't2' } });
+
+      await sleep(500);
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
@@ -79,6 +83,8 @@ describe('workflow > triggers > collection', () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
       await PostRepo.update({ filterByTk: post.id, values: { title: 't2' } });
 
+      await sleep(500);
+
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
       expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -98,6 +104,8 @@ describe('workflow > triggers > collection', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
       await PostRepo.update({ filterByTk: post.id, values: { title: 't2' } });
+
+      await sleep(500);
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(0);

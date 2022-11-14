@@ -1,6 +1,6 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
-import { getApp } from '..';
+import { getApp, sleep } from '..';
 
 
 
@@ -51,6 +51,8 @@ describe('workflow > instructions > update', () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
       expect(post.published).toBe(false);
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.published).toBe(true);
@@ -93,6 +95,9 @@ describe('workflow > instructions > update', () => {
 
     // NOTE: the result of post immediately created will not be changed by workflow
     const { id } = await PostRepo.create({ values: { title: 'test' } });
+
+    await sleep(500);
+
     // should get from db
     const post = await PostRepo.findById(id);
     expect(post.title).toBe('changed');
