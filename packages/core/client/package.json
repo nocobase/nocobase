@@ -28,6 +28,7 @@
     "cron-parser": "^4.6.0",
     "cronstrue": "^2.11.0",
     "file-saver": "^2.0.5",
+    "hot-formula-parser": "^4.0.0",
     "i18next": "^21.6.0",
     "json-templates": "^4.2.0",
     "marked": "^4.0.12",

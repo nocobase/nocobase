@@ -6,6 +6,7 @@ export * from './createdAt';
 export * from './createdBy';
 export * from './datetime';
 export * from './email';
+export * from './excelFunction'
 export * from './formula';
 export * from './sequence';
 export * from './icon';
