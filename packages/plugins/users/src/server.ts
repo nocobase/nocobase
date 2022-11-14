@@ -21,14 +21,11 @@ export interface UserPluginConfig {
 export default class UsersPlugin extends Plugin<UserPluginConfig> {
   public jwtService: JwtService;
 
-  public tokenMiddleware: Middleware;
-
   public authenticators: Registry<HandlerType> = new Registry();
 
   constructor(app, options) {
     super(app, options);
     this.jwtService = new JwtService(options?.jwt || {});
-    this.tokenMiddleware = new Middleware(parseToken);
   }
 
   async beforeLoad() {

@@ -207,6 +207,9 @@ describe('workflow > instructions > query', () => {
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const p2 = await PostRepo.create({ values: { title: 't2' } });
 
       await sleep(500);

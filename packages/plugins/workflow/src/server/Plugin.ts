@@ -22,6 +22,8 @@ export default class WorkflowPlugin extends Plugin {
   triggers: Registry<Trigger> = new Registry();
   calculators = calculators;
   extensions = extensions;
+  executing: Promise<any> = null;
+  pending: [ExecutionModel, JobModel][] = [];
 
   onBeforeSave = async (instance: WorkflowModel, options) => {
     const Model = <typeof WorkflowModel>instance.constructor;
@@ -127,9 +129,9 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  async trigger(workflow: WorkflowModel, context: Object, options: Transactionable & { context?: any } = {}): Promise<void> {
+  public async trigger(workflow: WorkflowModel, context: Object, options: Transactionable & { context?: any } = {}): Promise<void> {
     // `null` means not to trigger
-    if (context === null) {
+    if (context == null) {
       return null;
     }
 
@@ -155,7 +157,7 @@ export default class WorkflowPlugin extends Plugin {
     const execution = await workflow.createExecution({
       context,
       key: workflow.key,
-      status: EXECUTION_STATUS.STARTED,
+      status: EXECUTION_STATUS.CREATED,
       useTransaction: workflow.useTransaction,
       // @ts-ignore
       transaction: options.context?.transaction ?? transaction?.id
@@ -191,28 +193,56 @@ export default class WorkflowPlugin extends Plugin {
       await transaction.commit();
     }
 
-    const processor = this.createProcessor(execution, {
-      _context: {
-        ...options.context,
-        // transaction id for detecting cycle trigger
-        transaction: execution.transaction
-      }
-    });
-
-    setTimeout(() => {
-      processor.start();
-    }, 0);
+    setTimeout(() => this.dispatch(execution), 0);
   }
 
-  async resume(job) {
+  public async resume(job) {
     if (!job.execution) {
       job.execution = await job.getExecution();
     }
-    const processor = this.createProcessor(job.execution);
-    return processor.resume(job);
+
+    setTimeout(() => this.dispatch(job.execution, job), 0);
   }
 
-  createProcessor(execution: ExecutionModel, options = {}): Processor {
+  private async dispatch(execution?: ExecutionModel, job?: JobModel) {
+    if (this.executing) {
+      if (job) {
+        this.pending.push([execution, job]);
+      }
+      return;
+    }
+
+    if (!execution) {
+      execution = await this.db.getRepository('executions').findOne({
+        filter: {
+          status: EXECUTION_STATUS.CREATED
+        },
+        sort: 'createdAt'
+      }) as ExecutionModel;
+      if (!execution) {
+        return;
+      }
+    }
+
+    if (execution.status === EXECUTION_STATUS.CREATED) {
+      await execution.update({ status: EXECUTION_STATUS.STARTED });
+    }
+
+    const processor = this.createProcessor(execution, { _context: { transaction: execution.transaction} });
+
+    this.executing = job ? processor.resume(job) : processor.start();
+
+    await this.executing;
+
+    this.executing = null;
+
+    setTimeout(() => {
+      const args = this.pending.length ? this.pending.shift() : [];
+      this.dispatch(...args);
+    });
+  }
+
+  private createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
   }
 }
