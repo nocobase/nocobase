@@ -362,6 +362,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async runAsCLI(argv = process.argv, options?: ParseOptions) {
+    await this.db.auth({ retry: 30 });
     await this.dbVersionCheck({ exit: true });
     await this.load({
       method: argv?.[2],
