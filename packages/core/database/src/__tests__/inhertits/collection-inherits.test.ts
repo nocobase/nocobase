@@ -1,10 +1,8 @@
-import { Collection } from '../../collection';
 import Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
-import pgOnly from './helper';
 
-pgOnly()('collection inherits', () => {
+describe('collection inherits', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -14,6 +12,59 @@ pgOnly()('collection inherits', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('can create relation with child table', async () => {
+    const A = db.collection({
+      name: 'a',
+      fields: [
+        {
+          name: 'af',
+          type: 'string',
+        },
+        {
+          name: 'bs',
+          type: 'hasMany',
+          target: 'b',
+        },
+      ],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      inherits: ['a'],
+      fields: [
+        {
+          name: 'bf',
+          type: 'string',
+        },
+        {
+          name: 'a',
+          type: 'belongsTo',
+          target: 'a',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const a1 = await B.repository.create({
+      values: {
+        af: 'a1',
+        bs: [{ bf: 'b1' }, { bf: 'b2' }],
+      },
+    });
+
+    expect(a1.get('bs').length).toBe(2);
+
+    const b1 = await B.repository.find({
+      appends: ['bs'],
+      filter: {
+        af: 'a1',
+      },
+    });
+
+    expect(b1.get('bs').length).toBe(2);
   });
 
   it('should inherit belongsToMany field', async () => {

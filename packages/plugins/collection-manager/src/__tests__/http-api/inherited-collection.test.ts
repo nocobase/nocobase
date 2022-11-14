@@ -29,6 +29,61 @@ describe('Inherited Collection', () => {
     await app.destroy();
   });
 
+  it('can  create relation with child table', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'a',
+        fields: [
+          {
+            name: 'af',
+            type: 'string',
+          },
+          {
+            name: 'bs',
+            type: 'hasMany',
+            target: 'b',
+          },
+        ],
+      },
+    });
+
+    await agent.resource('collections').create({
+      values: {
+        name: 'b',
+        inherits: ['a'],
+        fields: [
+          {
+            name: 'bf',
+            type: 'string',
+          },
+          {
+            name: 'a',
+            type: 'belongsTo',
+            target: 'a',
+          },
+        ],
+      },
+    });
+
+    const res = await agent.resource('b').create({
+      values: {
+        af: 'a1',
+        bs: [{ bf: 'b1' }, { bf: 'b2' }],
+      },
+    });
+
+    expect(res.statusCode).toEqual(200);
+
+    const a1 = await agent.resource('b').list({
+      filter: {
+        af: 'a1',
+      },
+      appends: 'bs',
+    });
+
+    expect(a1.body.data[0].bs.length).toEqual(2);
+  });
+
   it('can drop child replaced field', async () => {
     await agent.resource('collections').create({
       values: {
