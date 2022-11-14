@@ -30,11 +30,26 @@ exports.isDev = function isDev() {
   return exports.hasTsNode();
 };
 
+const isProd = () => {
+  const { APP_PACKAGE_ROOT } = process.env;
+  const file = `./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`;
+  if (!existsSync(resolve(process.cwd(), file))) {
+    console.log('For production environment, please build the code first.');
+    console.log();
+    console.log(chalk.yellow('$ yarn build'));
+    console.log();
+    process.exit(1);
+  }
+  return true;
+};
+
+exports.isProd = isProd;
+
 exports.nodeCheck = () => {
   if (!exports.hasTsNode()) {
     console.log('Please install all dependencies');
     console.log(chalk.yellow('$ yarn install'));
-    process.exit(0);
+    process.exit(1);
   }
 };
 
@@ -100,8 +115,9 @@ exports.runInstall = async () => {
       '-s',
     ];
     await exports.run('ts-node', argv);
-  } else {
-    const argv = [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '-s'];
+  } else if (isProd()) {
+    const file = `./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`;
+    const argv = [file, 'install', '-s'];
     await exports.run('node', argv);
   }
 };
@@ -120,7 +136,7 @@ exports.runAppCommand = async (command, args = []) => {
       ...args,
     ];
     await exports.run('ts-node', argv);
-  } else {
+  } else if (isProd()) {
     const argv = [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, command, ...args];
     await exports.run('node', argv);
   }

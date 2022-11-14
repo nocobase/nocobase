@@ -192,8 +192,9 @@ export class OptionsParser {
 
     /**
      * set include params
-     * @param includeRoot
-     * @param appends
+     * @param model
+     * @param queryParams
+     * @param append
      */
     const setInclude = (model: ModelCtor<any>, queryParams: any, append: string) => {
       const appendFields = append.split('.');

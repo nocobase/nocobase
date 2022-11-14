@@ -13,7 +13,7 @@ async function findUserByToken(ctx: Context) {
   if (!token) {
     return null;
   }
-  const { jwtService } = ctx.app.getPlugin('@nocobase/plugin-users');
+  const { jwtService } = ctx.app.getPlugin('users');
   try {
     const { userId } = await jwtService.decode(token);
     const collection = ctx.db.getCollection('users');
@@ -29,9 +29,11 @@ async function findUserByToken(ctx: Context) {
         id: userId,
       },
     });
+    ctx.logger.info(`Current user id: ${userId}`);
     return user;
   } catch (error) {
     console.log(error);
+    ctx.logger.error(error);
     return null;
   }
 }

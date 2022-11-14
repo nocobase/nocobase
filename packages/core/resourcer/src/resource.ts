@@ -61,7 +61,7 @@ export class Resource {
   public readonly except: Array<ActionName>;
 
   constructor(options: ResourceOptions, resourcer: Resourcer) {
-    const { middleware, middlewares, actions = {} } = options;
+    const { middleware, middlewares, actions = {}, only = [], except = [] } = options;
     this.options = options;
     this.resourcer = resourcer;
     this.middlewares = Middleware.toInstanceArray(middleware || middlewares);
@@ -71,7 +71,6 @@ export class Resource {
         actions[name as string] = handler;
       }
     }
-    const { only = [], except = [] } = options;
     if (except.length > 0) {
       excludes = except;
     } else if (only.length > 0) {

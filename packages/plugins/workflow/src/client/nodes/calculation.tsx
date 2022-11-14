@@ -1,17 +1,18 @@
-import { css } from '@emotion/css';
 import React from 'react';
+import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 
 import { Calculation } from '../calculators';
+import { NAMESPACE, useWorkflowTranslation } from '../locale';
 
 export default {
-  title: '{{t("Calculation")}}',
+  title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
   type: 'calculation',
   group: 'control',
   fieldset: {
     'config.calculation': {
       type: 'object',
-      title: '{{t("Configure calculation")}}',
+      title: `{{t("Configure calculation", { ns: "${NAMESPACE}" })}}`,
       name: 'config.calculation',
       required: true,
       'x-decorator': 'FormItem',
@@ -29,7 +30,7 @@ export default {
     }
   },
   getter() {
-    const { t } = useTranslation();
+    const { t } = useWorkflowTranslation();
     return <div className={css`flex-shrink: 0`}>{t('Calculation result')}</div>;
   }
 };

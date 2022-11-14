@@ -10,7 +10,6 @@ describe('reverseField options', () => {
 
   beforeEach(async () => {
     app = await createApp();
-    await app.db.sync();
     db = app.db;
     Collection = db.getCollection('collections');
     Field = db.getCollection('fields');
@@ -55,6 +54,49 @@ describe('reverseField options', () => {
       },
     });
     expect(json.foreignKey).toBe(json.reverseField.foreignKey);
+  });
+
+  it('should sync onDelete options for reverse field', async () => {
+    const field = await Field.repository.create({
+      values: {
+        type: 'hasMany',
+        collectionName: 'tests',
+        target: 'targets',
+        onDelete: 'CASCADE',
+        reverseField: {},
+      },
+    });
+
+    const { reverseField } = field.toJSON();
+
+    expect(reverseField.onDelete).toBe('CASCADE');
+  });
+
+  it('should update reverseField onDelete options', async () => {
+    const field = await Field.repository.create({
+      values: {
+        type: 'hasMany',
+        collectionName: 'tests',
+        target: 'targets',
+        onDelete: 'CASCADE',
+        reverseField: {},
+      },
+    });
+
+    const { reverseField } = field.toJSON();
+
+    await Field.repository.update({
+      filterByTk: reverseField.key,
+      values: {
+        onDelete: 'SET NULL',
+      },
+    });
+
+    const mainField = await Field.repository.findOne({
+      filterByTk: field.get('key'),
+    });
+
+    expect(mainField.get('onDelete')).toBe('SET NULL');
   });
 
   it('should update reverseField', async () => {

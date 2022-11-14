@@ -1,4 +1,4 @@
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import glob from 'glob';
@@ -14,7 +14,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -27,6 +27,35 @@ import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
+import {
+  AfterDefineCollectionListener,
+  BeforeDefineCollectionListener,
+  CreateListener,
+  CreateWithAssociationsListener,
+  DatabaseAfterDefineCollectionEventType,
+  DatabaseAfterRemoveCollectionEventType,
+  DatabaseBeforeDefineCollectionEventType,
+  DatabaseBeforeRemoveCollectionEventType,
+  DestroyListener,
+  EventType,
+  ModelCreateEventTypes,
+  ModelCreateWithAssociationsEventTypes,
+  ModelDestroyEventTypes,
+  ModelSaveEventTypes,
+  ModelSaveWithAssociationsEventTypes,
+  ModelUpdateEventTypes,
+  ModelUpdateWithAssociationsEventTypes,
+  ModelValidateEventTypes,
+  RemoveCollectionListener,
+  SaveListener,
+  SaveWithAssociationsListener,
+  SyncListener,
+  UpdateListener,
+  UpdateWithAssociationsListener,
+  ValidateListener,
+} from './types';
+import { referentialIntegrityCheck } from './features/referential-integrity-check';
+import ReferencesMap from './features/ReferencesMap';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -119,6 +148,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelCtor<any>, Collection>();
+  referenceMap = new ReferencesMap();
 
   modelHook: ModelHook;
   version: DatabaseVersion;
@@ -127,6 +157,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   constructor(options: DatabaseOptions) {
     super();
+
+    // this.setMaxListeners(100);
 
     this.version = new DatabaseVersion(this);
 
@@ -206,12 +238,24 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     });
 
+    this.initListener();
+  }
+
+  initListener() {
     this.on('afterCreate', async (instance) => {
       instance?.toChangedWithAssociations?.();
     });
 
     this.on('afterUpdate', async (instance) => {
       instance?.toChangedWithAssociations?.();
+    });
+
+    this.on('beforeDestroy', async (instance, options) => {
+      await referentialIntegrityCheck({
+        db: this,
+        referencedInstance: instance,
+        transaction: options.transaction,
+      });
     });
   }
 
@@ -230,7 +274,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
       this.migrations.add({
         name: namespace ? `${namespace}/${filename}` : filename,
-        migration: this.requireModule(file),
+        migration: requireModule(file),
         context,
       });
     }
@@ -238,16 +282,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   inDialect(...dialect: string[]) {
     return dialect.includes(this.sequelize.getDialect());
-  }
-
-  private requireModule(module: any) {
-    if (typeof module === 'string') {
-      module = require(module);
-    }
-    if (typeof module !== 'object') {
-      return module;
-    }
-    return module.__esModule ? module.default : module;
   }
 
   /**
@@ -264,7 +298,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     this.collections.set(collection.name, collection);
-    this.modelCollection.set(collection.model, collection);
 
     this.emit('afterDefineCollection', collection);
 
@@ -466,7 +499,23 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.close();
   }
 
-  on(event: string | symbol, listener): this {
+  on(event: EventType, listener: any): this;
+  on(event: ModelValidateEventTypes, listener: SyncListener): this;
+  on(event: ModelValidateEventTypes, listener: ValidateListener): this;
+  on(event: ModelCreateEventTypes, listener: CreateListener): this;
+  on(event: ModelUpdateEventTypes, listener: UpdateListener): this;
+  on(event: ModelSaveEventTypes, listener: SaveListener): this;
+  on(event: ModelDestroyEventTypes, listener: DestroyListener): this;
+  on(event: ModelCreateWithAssociationsEventTypes, listener: CreateWithAssociationsListener): this;
+  on(event: ModelUpdateWithAssociationsEventTypes, listener: UpdateWithAssociationsListener): this;
+  on(event: ModelSaveWithAssociationsEventTypes, listener: SaveWithAssociationsListener): this;
+  on(event: DatabaseBeforeDefineCollectionEventType, listener: BeforeDefineCollectionListener): this;
+  on(event: DatabaseAfterDefineCollectionEventType, listener: AfterDefineCollectionListener): this;
+  on(
+    event: DatabaseBeforeRemoveCollectionEventType | DatabaseAfterRemoveCollectionEventType,
+    listener: RemoveCollectionListener,
+  ): this;
+  on(event: EventType, listener: any): this {
     // NOTE: to match if event is a sequelize or model type
     const type = this.modelHook.match(event);
 

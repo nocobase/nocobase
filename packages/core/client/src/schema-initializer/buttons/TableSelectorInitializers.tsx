@@ -13,7 +13,7 @@ export const TableSelectorInitializers = (props: any) => {
       items={[
         {
           type: 'itemGroup',
-          title: 'Selector',
+          title: t('Selector'),
           children: [
             {
               key: 'details',

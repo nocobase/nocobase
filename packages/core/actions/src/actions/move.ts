@@ -27,7 +27,7 @@ export async function move(ctx: Context, next) {
       await sortAbleCollection.sticky(sourceId);
     }
   }
-
+  ctx.body = 'ok';
   await next();
 }
 

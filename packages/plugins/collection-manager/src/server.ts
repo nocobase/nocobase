@@ -8,11 +8,14 @@ import { Plugin } from '@nocobase/server';
 
 import { CollectionRepository } from '.';
 import {
+  afterCreateForForeignKeyField,
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
+  beforeDestroyForeignKey,
   beforeInitOptions,
 } from './hooks';
+
 import { CollectionModel, FieldModel } from './models';
 
 export class CollectionManagerPlugin extends Plugin {
@@ -55,18 +58,11 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('fields.beforeCreate', beforeCreateForChildrenCollection(this.app.db));
     this.app.db.on('fields.beforeCreate', async (model, options) => {
       const type = model.get('type');
-      await this.app.db.emitAsync(`fields.${type}.beforeInitOptions`, model, {
-        ...options,
-        database: this.app.db,
-      });
-    });
-
-    for (const key in beforeInitOptions) {
-      if (Object.prototype.hasOwnProperty.call(beforeInitOptions, key)) {
-        const fn = beforeInitOptions[key];
-        this.app.db.on(`fields.${key}.beforeInitOptions`, fn);
+      const fn = beforeInitOptions[type];
+      if (fn) {
+        await fn(model, { database: this.app.db });
       }
-    }
+    });
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
@@ -88,6 +84,9 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
+    // after migrate
+    this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
+
     this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
       const prevOptions = model.previous('options');
       const currentOptions = model.get('options');
@@ -107,41 +106,47 @@ export class CollectionManagerPlugin extends Plugin {
       if (prevDefaultValue != currentDefaultValue) {
         await model.syncDefaultValue({ transaction, defaultValue: currentDefaultValue });
       }
+
+      const prevOnDelete = prevOptions['onDelete'];
+      const currentOnDelete = currentOptions['onDelete'];
+
+      if (prevOnDelete != currentOnDelete) {
+        await model.syncReferenceCheckOption({ transaction });
+      }
     });
 
-    this.app.db.on('fields.afterSaveWithAssociations', async (model, { context, transaction }) => {
+    this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, { context, transaction }) => {
       if (context) {
         await model.load({ transaction });
       }
     });
 
+    // before field remove
+    this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
     this.app.db.on('fields.beforeDestroy', async (model, options) => {
       await model.remove(options);
     });
 
-    this.app.db.on('collections.beforeDestroy', async (model, options) => {
+    this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
       await model.remove(options);
     });
 
-    this.app.on('beforeStart', async () => {
-      await this.app.db.getRepository<CollectionRepository>('collections').load();
-    });
-
-    this.app.on('beforeUpgrade', async () => {
-      await this.app.db.getRepository<CollectionRepository>('collections').load();
-    });
-
-    this.app.on('cli.beforeMigrator', async () => {
-      const exists = await this.app.db.collectionExistsInDb('collections');
-      if (exists) {
-        await this.app.db.getRepository<CollectionRepository>('collections').load();
+    this.app.on('afterLoad', async (app, options) => {
+      if (options?.method === 'install') {
+        return;
       }
-    });
-
-    this.app.on('cli.beforeDbSync', async () => {
       const exists = await this.app.db.collectionExistsInDb('collections');
       if (exists) {
-        await this.app.db.getRepository<CollectionRepository>('collections').load();
+        try {
+          await this.app.db.getRepository<CollectionRepository>('collections').load();
+        } catch (error) {
+          await this.app.db.sync();
+          try {
+            await this.app.db.getRepository<CollectionRepository>('collections').load();
+          } catch (error) {
+            throw error;
+          }
+        }
       }
     });
 
@@ -157,42 +162,6 @@ export class CollectionManagerPlugin extends Plugin {
       await next();
     });
 
-    // this.app.resourcer.use(async (ctx, next) => {
-    //   const { resourceName, actionName } = ctx.action;
-    //   if (actionName === 'update') {
-    //     const { updateAssociationValues = [] } = ctx.action.params;
-    //     const [collectionName, associationName] = resourceName.split('.');
-    //     if (!associationName) {
-    //       const collection: Collection = ctx.db.getCollection(collectionName);
-    //       if (collection) {
-    //         for (const [, field] of collection.fields) {
-    //           if (['subTable', 'o2m'].includes(field.options.interface)) {
-    //             updateAssociationValues.push(field.name);
-    //           }
-    //         }
-    //       }
-    //     } else {
-    //       const association = ctx.db.getCollection(collectionName)?.getField?.(associationName);
-    //       if (association?.target) {
-    //         const collection: Collection = ctx.db.getCollection(association?.target);
-    //         if (collection) {
-    //           for (const [, field] of collection.fields) {
-    //             if (['subTable', 'o2m'].includes(field.options.interface)) {
-    //               updateAssociationValues.push(field.name);
-    //             }
-    //           }
-    //         }
-    //       }
-    //     }
-    //     if (updateAssociationValues.length) {
-    //       ctx.action.mergeParams({
-    //         updateAssociationValues,
-    //       });
-    //     }
-    //   }
-    //   await next();
-    // });
-
     this.app.acl.allow('collections', 'list', 'loggedIn');
     this.app.acl.allow('collections', ['create', 'update', 'destroy'], 'allowConfigure');
   }
@@ -202,7 +171,7 @@ export class CollectionManagerPlugin extends Plugin {
       directory: path.resolve(__dirname, './collections'),
     });
 
-    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('@nocobase/plugin-error-handler');
+    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('error-handler');
     errorHandlerPlugin.errorHandler.register(
       (err) => {
         return err instanceof UniqueConstraintError;
@@ -211,10 +180,6 @@ export class CollectionManagerPlugin extends Plugin {
         return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
       },
     );
-  }
-
-  getName(): string {
-    return this.getPackageName(__dirname);
   }
 }
 

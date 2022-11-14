@@ -1,50 +1,44 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Card } from 'antd';
 import { PartitionOutlined } from '@ant-design/icons';
-import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
 import { useTranslation } from 'react-i18next';
+import { useHistory } from 'react-router-dom';
 
-import { PluginManager, ActionContext, SchemaComponent } from '@nocobase/client';
+import { PluginManager, SchemaComponent } from '@nocobase/client';
 
 import { workflowSchema } from './schemas/workflows';
 import { WorkflowLink } from './WorkflowLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
+import { ExecutionLink } from './ExecutionLink';
+import { lang } from './locale';
 
 
 
-const schema: ISchema = {
-  type: 'object',
-  properties: {
-    [uid()]: {
-      'x-component': 'Action.Drawer',
-      type: 'void',
-      title: '{{t("Workflow")}}',
-      properties: {
-        table: workflowSchema,
-      },
-    },
-  },
+export const WorkflowPane = () => {
+  return (
+    <Card bordered={false}>
+      <SchemaComponent
+        schema={workflowSchema}
+        components={{
+          WorkflowLink,
+          ExecutionResourceProvider,
+          ExecutionLink
+        }}
+      />
+    </Card>
+  );
 };
 
 export const WorkflowShortcut = () => {
-  const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
+  const history = useHistory();
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
-      <PluginManager.Toolbar.Item
-        icon={<PartitionOutlined />}
-        title={t('Workflow')}
-        onClick={() => {
-          setVisible(true);
-        }}
-      />
-      <SchemaComponent
-        schema={schema}
-        components={{
-          WorkflowLink,
-          ExecutionResourceProvider
-        }}
-      />
-    </ActionContext.Provider>
+    <PluginManager.Toolbar.Item
+      key="workflow"
+      icon={<PartitionOutlined />}
+      title={lang('Workflow')}
+      onClick={() => {
+        history.push('/admin/settings/workflow/workflows');
+      }}
+    />
   );
 };

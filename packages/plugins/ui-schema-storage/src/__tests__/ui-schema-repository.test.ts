@@ -25,7 +25,7 @@ describe('ui_schema repository', () => {
     const queryInterface = db.sequelize.getQueryInterface();
     await queryInterface.dropAllTables();
 
-    app.plugin(PluginUiSchema);
+    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
     await app.load();
     await db.sync({

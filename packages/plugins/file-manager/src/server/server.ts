@@ -39,7 +39,4 @@ export default class PluginFileManager extends Plugin {
     this.app.acl.allow('attachments', 'upload', 'loggedIn');
   }
 
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
 }

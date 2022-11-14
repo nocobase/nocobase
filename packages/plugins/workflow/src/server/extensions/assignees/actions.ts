@@ -51,8 +51,7 @@ export async function submit(context: Context, next) {
 
   instance.job.latestUserJob = instance;
 
-  const plugin = context.app.pm.get('@nocobase/plugin-workflow');
-  const processor = plugin.createProcessor(instance.execution);
+  const plugin = context.app.pm.get('workflow');
   // NOTE: resume the process and no `await` for quick returning
-  processor.resume(instance.job);
+  plugin.resume(instance.job);
 }

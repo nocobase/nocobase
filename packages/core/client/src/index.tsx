@@ -14,6 +14,7 @@ export * from './document-title';
 export * from './i18n';
 export * from './icon';
 export * from './plugin-manager';
+export * from './pm';
 export * from './powered-by';
 export * from './record-provider';
 export * from './route-switch';
@@ -24,3 +25,4 @@ export * from './schema-templates';
 export * from './settings-form';
 export * from './system-settings';
 export * from './user';
+

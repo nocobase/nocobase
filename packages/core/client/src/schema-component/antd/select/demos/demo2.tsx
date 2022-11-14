@@ -27,7 +27,7 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
-        mode: 'tags',
+        mode: 'multiple',
       },
       enum: dataSource,
       'x-reactions': {

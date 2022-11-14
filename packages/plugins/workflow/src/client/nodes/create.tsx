@@ -1,16 +1,16 @@
-import { Select } from 'antd';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+import { useCollectionDataSource } from '@nocobase/client';
+
 import { collection, values } from '../schemas/collection';
-import { useFlowContext } from '../WorkflowCanvas';
+import { useFlowContext } from '../FlowContext';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
 import CollectionFieldset from '../components/CollectionFieldset';
+import { NAMESPACE } from '../locale';
 
 
 
 export default {
-  title: '{{t("Create record")}}',
+  title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
   type: 'create',
   group: 'collection',
   fieldset: {

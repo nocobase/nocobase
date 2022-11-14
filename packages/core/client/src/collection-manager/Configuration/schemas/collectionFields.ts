@@ -71,7 +71,7 @@ export const collectionFieldSchema: ISchema = {
       resource: 'collections.fields',
       action: 'list',
       params: {
-        pageSize: 50,
+        paginate: false,
         filter: {
           'interface.$not': null,
         },
@@ -113,7 +113,7 @@ export const collectionFieldSchema: ISchema = {
         create: {
           type: 'void',
           title: '{{ t("Add new") }}',
-          'x-component': 'AddFieldAction',
+          'x-component': 'AddCollectionField',
           'x-component-props': {
             type: 'primary',
           },
@@ -123,7 +123,7 @@ export const collectionFieldSchema: ISchema = {
     table: {
       type: 'void',
       'x-uid': 'input',
-      'x-component': 'Table.Void',
+      'x-component': 'CollectionFieldsTable',
       'x-component-props': {
         rowKey: 'name',
         rowSelection: {
@@ -181,7 +181,7 @@ export const collectionFieldSchema: ISchema = {
                 update: {
                   type: 'void',
                   title: '{{ t("Edit") }}',
-                  'x-component': 'EditFieldAction',
+                  'x-component': 'EditCollectionField',
                   'x-component-props': {
                     type: 'primary',
                   },

@@ -1,7 +1,5 @@
 import { Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
-import CollectionManagerPlugin from '@nocobase/plugin-collection-manager';
-import { UiSchemaStoragePlugin } from '@nocobase/plugin-ui-schema-storage';
+import { MockServer } from '@nocobase/test';
 import { createApp } from '.';
 
 describe('action test', () => {
@@ -10,7 +8,6 @@ describe('action test', () => {
 
   beforeEach(async () => {
     app = await createApp();
-    await app.install({ clean: true });
     db = app.db;
   });
 

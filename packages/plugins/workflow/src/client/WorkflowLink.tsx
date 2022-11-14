@@ -10,6 +10,6 @@ export const WorkflowLink = () => {
   const { id } = useRecord();
   const { setVisible } = useActionContext();
   return (
-    <Link to={`/admin/plugins/workflows/${id}`} onClick={() => setVisible(false)}>{t('View')}</Link>
+    <Link to={`/admin/settings/workflow/workflows/${id}`} onClick={() => setVisible(false)}>{t('View')}</Link>
   );
 }

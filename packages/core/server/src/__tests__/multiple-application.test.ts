@@ -1,4 +1,5 @@
 import { mockServer, MockServer } from '@nocobase/test';
+import { uid } from '@nocobase/utils';
 import { IncomingMessage } from 'http';
 import * as url from 'url';
 
@@ -47,7 +48,9 @@ describe('multiple apps', () => {
 describe('multiple application', () => {
   let app: MockServer;
   beforeEach(async () => {
-    app = mockServer();
+    app = mockServer({
+      acl: false,
+    });
   });
 
   afterEach(async () => {
@@ -55,28 +58,33 @@ describe('multiple application', () => {
   });
 
   it('should create multiple apps', async () => {
-    const subApp1 = app.appManager.createApplication('sub1', {
+    const sub1 = `a_${uid()}`;
+    const sub2 = `a_${uid()}`;
+    const sub3 = `a_${uid()}`;
+    const subApp1 = app.appManager.createApplication(sub1, {
       database: app.db,
+      acl: false,
     });
 
     subApp1.resourcer.define({
       name: 'test',
       actions: {
         async test(ctx) {
-          ctx.body = 'sub1';
+          ctx.body = sub1;
         },
       },
     });
 
-    const subApp2 = app.appManager.createApplication('sub2', {
+    const subApp2 = app.appManager.createApplication(sub2, {
       database: app.db,
+      acl: false,
     });
 
     subApp2.resourcer.define({
       name: 'test',
       actions: {
         async test(ctx) {
-          ctx.body = 'sub2';
+          ctx.body = sub2;
         },
       },
     });
@@ -90,18 +98,18 @@ describe('multiple application', () => {
     });
 
     response = await app.agent().resource('test').test({
-      app: 'sub1',
+      app: sub1,
     });
 
     expect(response.statusCode).toEqual(200);
 
     response = await app.agent().resource('test').test({
-      app: 'sub2',
+      app: sub2,
     });
     expect(response.statusCode).toEqual(200);
 
     response = await app.agent().resource('test').test({
-      app: 'sub3',
+      app: sub3,
     });
     expect(response.statusCode).toEqual(404);
   });

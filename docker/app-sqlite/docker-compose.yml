@@ -4,11 +4,10 @@ networks:
     driver: bridge
 services:
   app:
-    image: nocobase/nocobase:0.7.7-alpha.1
+    image: nocobase/nocobase:0.8.0-alpha.13
     networks:
       - nocobase
     environment:
-      - APP_ENV=production
       - LOCAL_STORAGE_BASE_URL=/storage/uploads
     volumes:
       - ./storage:/app/nocobase/storage

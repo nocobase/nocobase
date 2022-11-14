@@ -34,4 +34,20 @@ export abstract class RelationField extends Field {
   get TargetModel() {
     return this.context.database.sequelize.models[this.target];
   }
+
+  protected clearAccessors() {
+    const { collection } = this.context;
+    const association = collection.model.associations[this.name];
+    if (!association) {
+      return;
+    }
+
+    // @ts-ignore
+    const accessors = Object.values(association.accessors);
+
+    accessors.forEach((accessor) => {
+      // @ts-ignore
+      delete collection.model.prototype[accessor];
+    });
+  }
 }

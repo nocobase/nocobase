@@ -62,7 +62,7 @@ export const collectionSchema: ISchema = {
           params: {
             pageSize: 50,
             filter: {
-              inherit: false,
+              'hidden.$isFalsy': true,
             },
             sort: ['sort'],
             appends: [],

@@ -1,18 +1,19 @@
 import path from 'path';
 
-import { Plugin } from '@nocobase/server';
 import { Op, Transactionable } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
 import initActions from './actions';
-import initTriggers, { Trigger } from './triggers';
-import initInstructions, { Instruction } from './instructions';
-import Processor from './Processor';
 import calculators from './calculators';
-import extensions from './extensions';
-import WorkflowModel from './models/Workflow';
-import ExecutionModel from './models/Execution';
 import { EXECUTION_STATUS } from './constants';
+import extensions from './extensions';
+import initInstructions, { Instruction } from './instructions';
+import ExecutionModel from './models/Execution';
+import WorkflowModel from './models/Workflow';
+import Processor from './Processor';
+import initTriggers, { Trigger } from './triggers';
+import JobModel from './models/Job';
 
 
 
@@ -65,10 +66,6 @@ export default class WorkflowPlugin extends Plugin {
     }
   };
 
-  getName(): string {
-    return this.getPackageName(__dirname);
-  }
-
   async load() {
     const { db, options } = this;
 
@@ -84,7 +81,9 @@ export default class WorkflowPlugin extends Plugin {
     db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));
     db.on('workflows.afterDestroy', (model: WorkflowModel) => this.toggle(model, false));
 
-    this.app.on('afterLoadAll', async () => this.extensions.reduce((promise, extend) => promise.then(() => extend(this)), Promise.resolve()));
+    this.app.on('afterLoad', async () => {
+      this.extensions.reduce((promise, extend) => promise.then(() => extend(this)), Promise.resolve());
+    });
 
     // [Life Cycle]:
     //   * load all workflows in db
@@ -160,7 +159,7 @@ export default class WorkflowPlugin extends Plugin {
       key: workflow.key,
       status: EXECUTION_STATUS.STARTED,
       useTransaction: workflow.useTransaction,
-      transaction: transaction.id
+      transaction: transaction?.id
     }, { transaction });
 
     console.log('workflow triggered:', new Date(), workflow.id, execution.id);
@@ -198,6 +197,14 @@ export default class WorkflowPlugin extends Plugin {
     }
 
     return execution;
+  }
+
+  async resume(job) {
+    if (!job.execution) {
+      job.execution = await job.getExecution();
+    }
+    const processor = this.createProcessor(job.execution);
+    return processor.resume(job);
   }
 
   createProcessor(execution: ExecutionModel, options = {}): Processor {

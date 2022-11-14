@@ -1,6 +1,6 @@
 import { ACL } from './acl';
 
-type ConditionFunc = (ctx: any) => Promise<boolean>;
+export type ConditionFunc = (ctx: any) => Promise<boolean> | boolean;
 
 export class AllowManager {
   protected skipActions = new Map<string, Map<string, string | ConditionFunc | true>>();
@@ -20,7 +20,7 @@ export class AllowManager {
 
       const roleInstance = await ctx.db.getRepository('roles').findOne({
         filter: {
-          name: roleName
+          name: roleName,
         },
       });
 

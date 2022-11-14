@@ -52,7 +52,7 @@ export default class implements Instruction {
     const { actionName, resourceName } = context.action;
     if (actionName === 'submit'
       && resourceName === 'jobs'
-      && this.middlewares.length
+      // && this.middlewares.length
     ) {
       return compose([loadJob, ...this.middlewares])(context, next);
     }

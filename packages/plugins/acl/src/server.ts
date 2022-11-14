@@ -1,6 +1,5 @@
 import { Context } from '@nocobase/actions';
 import { Collection } from '@nocobase/database';
-import UsersPlugin from '@nocobase/plugin-users';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
@@ -269,12 +268,49 @@ export class PluginACL extends Plugin {
     });
 
     // sync database role data to acl
-    this.app.on('beforeStart', async () => {
-      await this.writeRolesToACL();
+    this.app.on('afterLoad', async (app, options) => {
+      if (options?.method === 'install') {
+        return;
+      }
+      const exists = await this.app.db.collectionExistsInDb('roles');
+      if (exists) {
+        await this.writeRolesToACL();
+      }
+    });
+
+    this.app.on('afterInstall', async (app, options) => {
+      const exists = await this.app.db.collectionExistsInDb('roles');
+      if (exists) {
+        await this.writeRolesToACL();
+      }
+    });
+
+    this.app.on('afterInstallPlugin', async (plugin) => {
+      if (plugin.getName() !== 'users') {
+        return;
+      }
+      const User = this.db.getCollection('users');
+      await User.repository.update({
+        values: {
+          roles: ['root', 'admin', 'member'],
+        },
+        forceUpdate: true,
+      });
+
+      const RolesUsers = this.db.getCollection('rolesUsers');
+      await RolesUsers.repository.update({
+        filter: {
+          userId: 1,
+          roleName: 'root',
+        },
+        values: {
+          default: true,
+        },
+      });
     });
 
     this.app.on('beforeInstallPlugin', async (plugin) => {
-      if (plugin.constructor.name !== 'UsersPlugin') {
+      if (plugin.getName() !== 'users') {
         return;
       }
       const roles = this.app.db.getRepository('roles');
@@ -320,8 +356,7 @@ export class PluginACL extends Plugin {
       });
     });
 
-    const usersPlugin = this.app.pm.get('@nocobase/plugin-users') as UsersPlugin;
-    usersPlugin.tokenMiddleware.use(setCurrentRole);
+    this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'parseToken' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
 
@@ -416,38 +451,12 @@ export class PluginACL extends Plugin {
     if (repo) {
       await repo.db2cm('roles');
     }
-
-    const User = this.db.getCollection('users');
-
-    await User.repository.update({
-      values: {
-        roles: ['root', 'admin', 'member'],
-      },
-      forceUpdate: true,
-    });
-
-    const RolesUsers = this.db.getCollection('rolesUsers');
-    await RolesUsers.repository.update({
-      filter: {
-        userId: 1,
-        roleName: 'root',
-      },
-      values: {
-        default: true,
-      },
-    });
   }
 
   async load() {
     await this.app.db.import({
       directory: resolve(__dirname, 'collections'),
     });
-
-    this.app.resourcer.use(this.acl.middleware());
-  }
-
-  getName(): string {
-    return this.getPackageName(__dirname);
   }
 }
 

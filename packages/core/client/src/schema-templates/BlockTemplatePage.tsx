@@ -19,3 +19,11 @@ export const BlockTemplatePage = () => {
     </div>
   );
 };
+
+export const BlockTemplatesPane = () => {
+  return (
+    <CollectionManagerProvider collections={[uiSchemaTemplatesCollection]}>
+      <SchemaComponent schema={uiSchemaTemplatesSchema} />
+    </CollectionManagerProvider>
+  );
+};

@@ -65,7 +65,7 @@ export class Collection<
     return this.context.database;
   }
 
-  constructor(options: CollectionOptions, context?: CollectionContext) {
+  constructor(options: CollectionOptions, context: CollectionContext) {
     super();
     this.checkOptions(options);
 
@@ -74,6 +74,8 @@ export class Collection<
 
     this.bindFieldEventListener();
     this.modelInit();
+    this.db.modelCollection.set(this.model, this);
+
     this.setFields(options.fields);
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
