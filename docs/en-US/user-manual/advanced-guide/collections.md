@@ -34,6 +34,10 @@ Click the "Collections & Fields" button to enter the configuration interface. He
 - Relationship Type
     - Link to
     - Sub-table
+- Advanced
+    - Formula
+    - Sequence 
+    - Excel Functions.
 - System Info
     - ID
     - Created at

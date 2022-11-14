@@ -33,6 +33,7 @@ export * from './belongs-to-many-field';
 export * from './boolean-field';
 export * from './context-field';
 export * from './date-field';
+export * from './excel-function-field';
 export * from './field';
 export * from './has-many-field';
 export * from './has-one-field';
