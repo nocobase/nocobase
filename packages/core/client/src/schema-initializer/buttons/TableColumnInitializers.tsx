@@ -23,7 +23,7 @@ export const TableColumnInitializers = (props: any) => {
   ];
   if (inheritFields?.length > 0) {
     inheritFields.forEach((inherit) => {
-      fieldItems.push(
+      Object.values(inherit)[0].length&&fieldItems.push(
         {
           type: 'divider',
         },
