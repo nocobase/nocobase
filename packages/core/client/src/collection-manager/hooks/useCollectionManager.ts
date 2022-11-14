@@ -5,6 +5,21 @@ import { CollectionManagerContext } from '../context';
 
 export const useCollectionManager = () => {
   const { refreshCM, service, interfaces, collections } = useContext(CollectionManagerContext);
+  
+  const getCollectionFields=(name: string)=> {
+    const currentFields = collections?.find((collection) => collection.name === name)?.fields;
+    const inheritKeys = getParentCollections(name);
+    const inheritedFields = reduce(
+      inheritKeys,
+      (result, value) => {
+        const arr = result;
+        return arr.concat(collections?.find((collection) => collection.name === value)?.fields);
+      },
+      [],
+    );
+    const totalFields = currentFields?.concat(inheritedFields) || [];
+    return totalFields;
+  }
   const getCollectionField = (name: string) => {
     const [collectionName, fieldName] = name.split('.');
     if (!fieldName) {
@@ -14,7 +29,7 @@ export const useCollectionManager = () => {
     if (!collection) {
       return;
     }
-    return collection?.fields?.find((field) => field.name === fieldName);
+    return getCollectionFields(collectionName)?.find((field) => field.name === fieldName);
   };
   const getParentCollections = (name) => {
     const parents = [];
@@ -63,25 +78,12 @@ export const useCollectionManager = () => {
       return collections?.find((collection) => collection.name === name);
     },
     getCollectionField,
+    getCollectionFields,
     getCollection(name: any) {
       if (typeof name !== 'string') {
         return name;
       }
       return collections?.find((collection) => collection.name === name);
-    },
-    getCollectionFields(name: string) {
-      const currentFields = collections?.find((collection) => collection.name === name)?.fields;
-      const inheritKeys = getParentCollections(name);
-      const inheritedFields = reduce(
-        inheritKeys,
-        (result, value) => {
-          const arr = result;
-          return arr.concat(collections?.find((collection) => collection.name === value)?.fields);
-        },
-        [],
-      );
-      const totalFields = currentFields?.concat(inheritedFields) || [];
-      return totalFields;
     },
     getCollectionJoinField(name: string) {
       if (!name) {
