@@ -389,8 +389,10 @@ describe('workflow > instructions > parallel', () => {
 
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
       pending.set('result', 123);
-      const processor = plugin.createProcessor(execution);
-      await processor.resume(pending);
+      pending.execution = execution;
+      await plugin.resume(pending);
+
+      await sleep(500);
 
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
