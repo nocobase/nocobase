@@ -128,6 +128,7 @@ export class FieldModel extends MagicAttributeModel {
     if (!field) {
       return;
     }
+
     return field.removeFromDb({
       transaction: options.transaction,
     });

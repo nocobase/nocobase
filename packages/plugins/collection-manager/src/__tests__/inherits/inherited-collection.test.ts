@@ -1,9 +1,8 @@
-import { pgOnly } from '@nocobase/test';
-import Database, { Collection as DBCollection, Repository } from '@nocobase/database';
+import Database, { Repository } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '..';
 
-pgOnly()('Inherited Collection', () => {
+describe('Inherited Collection', () => {
   let db: Database;
   let app: Application;
 
@@ -11,6 +10,10 @@ pgOnly()('Inherited Collection', () => {
 
   beforeEach(async () => {
     app = await createApp();
+    if (app.db.sequelize.getDialect() !== 'postgres') {
+      return;
+    }
+
     db = app.db;
 
     collectionRepository = db.getCollection('collections').repository;
@@ -18,6 +21,43 @@ pgOnly()('Inherited Collection', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should not inherit with difference type', async () => {
+    const personCollection = await collectionRepository.create({
+      values: {
+        name: 'person',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    let err;
+    try {
+      const studentCollection = await collectionRepository.create({
+        values: {
+          name: 'students',
+          inherits: 'person',
+          fields: [
+            {
+              name: 'name',
+              type: 'integer',
+            },
+          ],
+        },
+        context: {},
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+    expect(err.message.includes('type conflict')).toBeTruthy();
   });
 
   it('should replace parent collection field', async () => {
