@@ -17,6 +17,7 @@ import {
 } from './hooks';
 
 import { CollectionModel, FieldModel } from './models';
+import { InheritedCollection } from '../../../core/database/src/inherited-collection';
 
 export class CollectionManagerPlugin extends Plugin {
   async beforeLoad() {
@@ -56,6 +57,20 @@ export class CollectionManagerPlugin extends Plugin {
     // 要在 beforeInitOptions 之前处理
     this.app.db.on('fields.beforeCreate', beforeCreateForReverseField(this.app.db));
     this.app.db.on('fields.beforeCreate', beforeCreateForChildrenCollection(this.app.db));
+
+    this.app.db.on('fields.beforeCreate', async (model, options) => {
+      const collectionName = model.get('collectionName');
+      const collection = this.app.db.getCollection(collectionName);
+
+      if (!collection) {
+        return;
+      }
+
+      if (collection.isInherited() && (<InheritedCollection>collection).parentFields().has(model.get('name'))) {
+        model.set('overriding', true);
+      }
+    });
+
     this.app.db.on('fields.beforeCreate', async (model, options) => {
       const type = model.get('type');
       const fn = beforeInitOptions[type];
@@ -131,6 +146,25 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
       await model.remove(options);
+    });
+
+    this.app.db.on('fields.afterDestroy', async (model: FieldModel, options) => {
+      const { transaction } = options;
+      const collectionName = model.get('collectionName');
+      const childCollections = this.db.inheritanceMap.getChildren(collectionName);
+
+      await this.db.getCollection('fields').repository.destroy({
+        filter: {
+          name: model.get('name'),
+          collectionName: {
+            $in: Array.from(childCollections),
+          },
+          options: {
+            overriding: true,
+          },
+        },
+        transaction,
+      });
     });
 
     this.app.on('afterLoad', async (app, options) => {

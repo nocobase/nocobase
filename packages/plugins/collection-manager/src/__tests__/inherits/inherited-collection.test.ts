@@ -21,6 +21,115 @@ pgOnly()('Inherited Collection', () => {
     await app.destroy();
   });
 
+  it("should delete child's field when parent field deleted", async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'person',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'students',
+        inherits: ['person'],
+      },
+      context: {},
+    });
+
+    await db.getCollection('fields').repository.create({
+      values: {
+        collectionName: 'students',
+        name: 'name',
+        type: 'string',
+      },
+      context: {},
+    });
+
+    await db.getCollection('fields').repository.create({
+      values: {
+        collectionName: 'students',
+        name: 'age',
+        type: 'integer',
+      },
+      context: {},
+    });
+
+    const childNameField = await db.getCollection('fields').repository.findOne({
+      filter: {
+        collectionName: 'students',
+        name: 'name',
+      },
+    });
+
+    expect(childNameField.get('overriding')).toBeTruthy();
+
+    await db.getCollection('fields').repository.destroy({
+      filter: {
+        collectionName: 'person',
+        name: 'name',
+      },
+    });
+
+    expect(
+      await db.getCollection('fields').repository.findOne({
+        filter: {
+          collectionName: 'students',
+          name: 'name',
+        },
+      }),
+    ).toBeNull();
+
+    expect(
+      await db.getCollection('fields').repository.findOne({
+        filter: {
+          collectionName: 'students',
+          name: 'age',
+        },
+      }),
+    ).not.toBeNull();
+
+    await db.getCollection('fields').repository.create({
+      values: {
+        collectionName: 'person',
+        name: 'age',
+        type: 'integer',
+      },
+      context: {},
+    });
+
+    await db.getCollection('fields').repository.destroy({
+      filter: {
+        collectionName: 'person',
+        name: 'age',
+      },
+    });
+
+    expect(
+      await db.getCollection('fields').repository.findOne({
+        filter: {
+          collectionName: 'person',
+          name: 'age',
+        },
+      }),
+    ).toBeNull();
+
+    expect(
+      await db.getCollection('fields').repository.findOne({
+        filter: {
+          collectionName: 'students',
+          name: 'age',
+        },
+      }),
+    ).not.toBeNull();
+  });
+
   it('should not inherit with difference type', async () => {
     const personCollection = await collectionRepository.create({
       values: {
