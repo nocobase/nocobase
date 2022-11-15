@@ -144,7 +144,7 @@ const InternalAdminLayout = (props: any) => {
         `}
         style={{ height: 46, lineHeight: '46px', position: 'relative', paddingLeft: 0 }}
       >
-        <div style={{ display: 'flex', height: '100%' }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', height: '100%', width: 'calc(100vw - 300px)' }}>
           <div style={{ width: 200, display: 'inline-flex', color: '#fff', padding: '0', alignItems: 'center' }}>
             <img
               className={css`
@@ -165,7 +165,7 @@ const InternalAdminLayout = (props: any) => {
             <MenuEditor sideMenuRef={sideMenuRef} />
           </div>
         </div>
-        <div style={{ position: 'absolute', top: 0, right: 0 }}>
+        <div style={{ position: 'absolute', zIndex: 10, top: 0, right: 0 }}>
           <ACLAllowConfigure>
             <RemotePluginManagerToolbar />
           </ACLAllowConfigure>
