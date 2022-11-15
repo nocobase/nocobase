@@ -43,7 +43,7 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
       },
     ]);
 
-  fieldItems.push([
+  fieldItems.push(
     {
       type: 'divider',
     },
@@ -62,7 +62,7 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
         },
       },
     },
-  ]);
+  );
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}

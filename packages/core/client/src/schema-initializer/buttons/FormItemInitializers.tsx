@@ -37,7 +37,7 @@ export const FormItemInitializers = (props: any) => {
     });
   }
   associationFields.length > 0 &&
-    fieldItems.push([
+    fieldItems.push(
       {
         type: 'divider',
       },
@@ -46,9 +46,9 @@ export const FormItemInitializers = (props: any) => {
         title: t('Display association fields'),
         children: associationFields,
       },
-    ]);
+    );
 
-  fieldItems.push([
+  fieldItems.push(
     {
       type: 'divider',
     },
@@ -67,7 +67,7 @@ export const FormItemInitializers = (props: any) => {
         },
       },
     },
-  ]);
+  );
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
