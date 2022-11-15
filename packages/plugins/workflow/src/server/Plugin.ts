@@ -135,32 +135,30 @@ export default class WorkflowPlugin extends Plugin {
       return null;
     }
 
+    if (options.context?.executionId) {
+      // NOTE: no transaction here for read-uncommitted execution
+      const existed = await workflow.countExecutions({
+        where: {
+          id: options.context.executionId
+        }
+      });
+
+      if (existed) {
+        console.warn(`workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`);
+        return;
+      }
+    }
+
     // @ts-ignore
     const transaction = options.transaction && !options.transaction.finished
       ? options.transaction
       : await (<typeof WorkflowModel>workflow.constructor).database.sequelize.transaction();
-
-    if (options.context?.transaction) {
-      const existed = await workflow.countExecutions({
-        where: {
-          transaction: options.context.transaction
-        },
-        transaction
-      });
-
-      if (existed) {
-        console.warn(`workflow ${workflow.id} has already been triggered in same execution (${options.context.transaction}), and newly triggering will be skipped.`);
-        return;
-      }
-    }
 
     const execution = await workflow.createExecution({
       context,
       key: workflow.key,
       status: EXECUTION_STATUS.CREATED,
       useTransaction: workflow.useTransaction,
-      // @ts-ignore
-      transaction: options.context?.transaction ?? transaction?.id
     }, { transaction });
 
     console.log('workflow triggered:', new Date(), workflow.id, execution.id);
@@ -193,7 +191,7 @@ export default class WorkflowPlugin extends Plugin {
       await transaction.commit();
     }
 
-    setTimeout(() => this.dispatch(execution), 0);
+    setTimeout(() => this.dispatch(execution));
   }
 
   public async resume(job) {
@@ -201,7 +199,7 @@ export default class WorkflowPlugin extends Plugin {
       job.execution = await job.getExecution();
     }
 
-    setTimeout(() => this.dispatch(job.execution, job), 0);
+    setTimeout(() => this.dispatch(job.execution, job));
   }
 
   private async dispatch(execution?: ExecutionModel, job?: JobModel) {
@@ -228,7 +226,7 @@ export default class WorkflowPlugin extends Plugin {
       await execution.update({ status: EXECUTION_STATUS.STARTED });
     }
 
-    const processor = this.createProcessor(execution, { _context: { transaction: execution.transaction} });
+    const processor = this.createProcessor(execution);
 
     this.executing = job ? processor.resume(job) : processor.start();
 
