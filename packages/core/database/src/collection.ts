@@ -184,6 +184,13 @@ export class Collection<
       },
     );
 
+    if (this.fields.has(name)) {
+      const oldField = this.fields.get(name);
+      if (oldField.options.inherit && options.type != oldField.options.type) {
+        throw new Error('Cannot change field type when override field');
+      }
+    }
+
     this.removeField(name);
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);

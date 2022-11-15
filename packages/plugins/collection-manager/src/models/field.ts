@@ -81,6 +81,7 @@ export class FieldModel extends MagicAttributeModel {
 
     const collection = this.db.getCollection(collectionName);
     const name = this.get('name');
+
     if (skipExist && collection.hasField(name)) {
       return collection.getField(name);
     }

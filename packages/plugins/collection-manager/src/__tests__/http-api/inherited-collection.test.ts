@@ -25,7 +25,29 @@ pgOnly()('Inherited Collection', () => {
     await app.destroy();
   });
 
-  it('should not replace field with difference type', async () => {
+  it('should not replace field with difference type when add field', async () => {
+    let response = await agent.resource('collections').create({
+      values: {
+        name: 'students',
+        inherits: 'person',
+        fields: [],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    response = await agent.resource('fields').create({
+      values: {
+        collectionName: 'students',
+        name: 'name',
+        type: 'integer',
+      },
+    });
+
+    expect(response.statusCode).not.toBe(200);
+  });
+
+  it('should not replace field with difference type when create collection', async () => {
     const response = await agent.resource('collections').create({
       context: {},
       values: {
