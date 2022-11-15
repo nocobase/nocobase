@@ -84,27 +84,28 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 };
 
 const useOverridingCollectionField = () => {
-    const form = useForm();
-    const { refreshCM } = useCollectionManager();
-    const ctx = useActionContext();
-    const { refresh } = useResourceActionContext();
-    const { resource } = useResourceContext();
-    return {
-      async run() {
-        await form.submit();
-        const values = cloneDeep(form.values);
-        if (values.autoCreateReverseField) {
-        } else {
-          delete values.reverseField;
-        }
-        delete values.autoCreateReverseField;
-        await resource.create({ values:{...values,key:null }});
-        ctx.setVisible(false);
-        await form.reset();
-        refresh();
-        await refreshCM();
-      },
-    };
+  const form = useForm();
+  const { refreshCM } = useCollectionManager();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  return {
+    async run() {
+      await form.submit();
+      const values = cloneDeep(form.values);
+      if (values.autoCreateReverseField) {
+      } else {
+        delete values.reverseField;
+      }
+      delete values.autoCreateReverseField;
+      const {  name, type, uiSchema } = values;
+      await resource.create({ values: { interface:values.interface, name, type, uiSchema:{title:uiSchema.title,type:uiSchema.type,'x-component':uiSchema['x-component']} } });
+      ctx.setVisible(false);
+      await form.reset();
+      refresh();
+      await refreshCM();
+    },
+  };
 };
 
 export const OverridingCollectionField = (props) => {
@@ -113,7 +114,7 @@ export const OverridingCollectionField = (props) => {
 };
 
 export const OverridingFieldAction = (props) => {
-  const { scope, getContainer, item: record,children } = props;
+  const { scope, getContainer, item: record, children } = props;
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -153,7 +154,7 @@ export const OverridingFieldAction = (props) => {
             setVisible(true);
           }}
         >
-          {children||t('Override')}
+          {children || t('Override')}
         </a>
         <SchemaComponent
           schema={schema}

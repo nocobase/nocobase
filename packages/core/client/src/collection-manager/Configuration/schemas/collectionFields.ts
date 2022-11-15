@@ -202,3 +202,28 @@ export const collectionFieldSchema: ISchema = {
     },
   },
 };
+
+export const overridingSchema: ISchema = {
+  type: 'void',
+  title: '{{ t("Actions") }}',
+  'x-component': 'Table.Column',
+  properties: {
+    actions: {
+      type: 'void',
+      'x-component': 'Space',
+      'x-component-props': {
+        split: '|',
+      },
+      properties: {
+        overriding: {
+          type: 'void',
+          title: '{{ t("Overriding") }}',
+          'x-component': 'OverridingCollectionField',
+          'x-component-props': {
+            type: 'primary',
+          },
+        },
+      },
+    },
+  },
+};

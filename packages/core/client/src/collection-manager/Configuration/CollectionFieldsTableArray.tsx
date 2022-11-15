@@ -15,6 +15,7 @@ import {
   useSchemaInitializer,
   useRecord,
 } from '../..';
+import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -82,7 +83,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const field = useField<ArrayField>();
   const record = useRecord();
   const { t } = useTranslation();
-  const { getInterface, getParentCollections, getCollection } = useCollectionManager();
+  const { getInterface, getParentCollections, getCollection, getCurrentCollectionFields } = useCollectionManager();
   const {
     showIndex = true,
     useSelectedRowKeys = useDef,
@@ -94,6 +95,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const [categorizeData, setCategorizeData] = useState<Array<CategorizeDataItem>>([]);
   const [expandedKeys, setExpendedKeys] = useState(selectedRowKeys);
   const inherits = getParentCollections(record.name);
+  const totalFields = getCurrentCollectionFields(record.name);
   useDataSource({
     onSuccess(data) {
       field.value = data?.data || [];
@@ -185,30 +187,6 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const expandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
     const columns = useTableColumns();
     if (inherits.includes(record.key)) {
-      const overridingSchema: ISchema = {
-        type: 'void',
-        title: '{{ t("Actions") }}',
-        'x-component': 'Table.Column',
-        properties: {
-          actions: {
-            type: 'void',
-            'x-component': 'Space',
-            'x-component-props': {
-              split: '|',
-            },
-            properties: {
-              overriding: {
-                type: 'void',
-                title: '{{ t("Overriding") }}',
-                'x-component': 'OverridingCollectionField',
-                'x-component-props': {
-                  type: 'primary',
-                },
-              },
-            },
-          },
-        },
-      };
       columns.pop();
       columns.push({
         title: <RecursionField name={'column4'} schema={overridingSchema as Schema} onlyRenderSelf />,
@@ -216,12 +194,17 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         key: 'column4',
         render: (v, record) => {
           const index = findIndex(field.value, record);
+          const flag = totalFields.find((v) => {
+            return v.name !== record.name;
+          });
           return (
-            <RecordIndexProvider index={index}>
-              <RecordProvider record={record}>
-                <RecursionField schema={overridingSchema as Schema} name={index} onlyRenderProperties />
-              </RecordProvider>
-            </RecordIndexProvider>
+            flag && (
+              <RecordIndexProvider index={index}>
+                <RecordProvider record={record}>
+                  <RecursionField schema={overridingSchema as Schema} name={index} onlyRenderProperties />
+                </RecordProvider>
+              </RecordIndexProvider>
+            )
           );
         },
       });
