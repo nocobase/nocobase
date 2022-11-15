@@ -13,7 +13,7 @@ import { SchemaComponent, SchemaComponentOptions } from "../../schema-component"
 export const KanbanBlockInitializer = (props) => {
     const { insert } = props;
     const { t } = useTranslation();
-    const { getCollectionFields } = useCollectionManager();
+    const { getCollectionFields,getCollection } = useCollectionManager();
     const options = useContext(SchemaOptionsContext);
     const api = useAPIClient();
     return (
@@ -22,6 +22,7 @@ export const KanbanBlockInitializer = (props) => {
         componentType={'Kanban'}
         icon={<FormOutlined />}
         onCreateBlockSchema={async ({ item }) => {
+          const collection = getCollection(item.name);
           const collectionFields = getCollectionFields(item.name);
           const fields = collectionFields
             ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))
