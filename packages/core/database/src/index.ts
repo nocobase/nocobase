@@ -1,5 +1,6 @@
 export { DataTypes, ModelCtor, Op, SyncOptions } from 'sequelize';
 export * from './collection';
+export * from './inherited-collection';
 export * from './database';
 export { Database as default } from './database';
 export * from './fields';
@@ -14,4 +15,3 @@ export * from './relation-repository/multiple-relation-repository';
 export * from './relation-repository/single-relation-repository';
 export * from './repository';
 export * from './update-associations';
-

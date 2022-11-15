@@ -9,16 +9,95 @@ pgOnly()('Inherited Collection', () => {
 
   let collectionRepository: Repository;
 
+  let fieldsRepository: Repository;
+
   beforeEach(async () => {
     app = await createApp();
 
     db = app.db;
 
     collectionRepository = db.getCollection('collections').repository;
+    fieldsRepository = db.getCollection('fields').repository;
   });
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it("should not delete child's field when parent field delete that inherits from multiple table", async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'b',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'c',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'a',
+        inherits: ['b', 'c'],
+      },
+      context: {},
+    });
+
+    await fieldsRepository.create({
+      values: {
+        collectionName: 'a',
+        name: 'name',
+        type: 'string',
+      },
+    });
+
+    await db.getCollection('fields').repository.destroy({
+      filter: {
+        collectionName: 'b',
+        name: 'name',
+      },
+    });
+
+    expect(
+      await db.getCollection('fields').repository.findOne({
+        filter: {
+          collectionName: 'a',
+          name: 'name',
+        },
+      }),
+    ).not.toBeNull();
+
+    await db.getCollection('fields').repository.destroy({
+      filter: {
+        collectionName: 'c',
+        name: 'name',
+      },
+    });
+
+    expect(
+      await db.getCollection('fields').repository.findOne({
+        filter: {
+          collectionName: 'a',
+          name: 'name',
+        },
+      }),
+    ).toBeNull();
   });
 
   it("should delete child's field when parent field deleted", async () => {

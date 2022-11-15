@@ -17,7 +17,7 @@ import {
 } from './hooks';
 
 import { CollectionModel, FieldModel } from './models';
-import { InheritedCollection } from '../../../core/database/src/inherited-collection';
+import { InheritedCollection } from '@nocobase/database';
 
 export class CollectionManagerPlugin extends Plugin {
   async beforeLoad() {
@@ -153,11 +153,23 @@ export class CollectionManagerPlugin extends Plugin {
       const collectionName = model.get('collectionName');
       const childCollections = this.db.inheritanceMap.getChildren(collectionName);
 
+      const childShouldRemoveField = Array.from(childCollections).filter((item) => {
+        const parents = Array.from(this.db.inheritanceMap.getParents(item))
+          .map((parent) => {
+            const collection = this.db.getCollection(parent);
+            const field = collection.getField(model.get('name'));
+            return field;
+          })
+          .filter(Boolean);
+
+        return parents.length == 0;
+      });
+
       await this.db.getCollection('fields').repository.destroy({
         filter: {
           name: model.get('name'),
           collectionName: {
-            $in: Array.from(childCollections),
+            $in: childShouldRemoveField,
           },
           options: {
             overriding: true,
