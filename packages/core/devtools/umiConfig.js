@@ -2,6 +2,7 @@ const { existsSync } = require('fs');
 const { resolve } = require('path');
 const packageJson = require('./package.json');
 const fs = require('fs');
+const glob = require('glob');
 
 console.log('VERSION: ', packageJson.version);
 
@@ -50,52 +51,42 @@ function getNamespace() {
   return json.name;
 }
 
-function resolveNocobasePackagesAlias(config) {
-  const coreDir = resolve(process.cwd(), './packages/core');
-  if (!existsSync(coreDir)) {
-    const namespace = getNamespace();
-    console.log('NAMESPACE: ' + namespace);
-    const plugins = fs.readdirSync(resolve(process.cwd(), './packages/plugins'));
-    for (const package of plugins) {
-      const packageSrc = resolve(process.cwd(), './packages/plugins/', package, 'src');
-      if (existsSync(packageSrc)) {
-        config.module.rules.get('ts-in-node_modules').include.add(packageSrc);
-        config.resolve.alias.set(`@${namespace}/plugin-${package}`, packageSrc);
+function getTsconfigPaths() {
+  const content = fs.readFileSync(resolve(process.cwd(), 'tsconfig.json'), 'utf-8');
+  const json = JSON.parse(content);
+  return json.compilerOptions.paths;
+}
+
+function getPackagePaths() {
+  const paths = getTsconfigPaths();
+  const pkgs = [];
+  for (const key in paths) {
+    if (Object.hasOwnProperty.call(paths, key)) {
+      const dir = paths[key][0];
+      if (dir.includes('*')) {
+        const files = glob.sync(dir);
+        for (const file of files) {
+          const dirname = resolve(process.cwd(), file);
+          if (existsSync(dirname)) {
+            const re = new RegExp(dir.replace('*', '(.+)'));
+            const match = re.exec(dirname.substring(process.cwd().length + 1));
+            pkgs.push([key.replace('*', match?.[1]), dirname]);
+          }
+        }
+      } else {
+        const dirname = resolve(process.cwd(), dir);
+        pkgs.push([key, dirname]);
       }
     }
-    return;
   }
-  const cores = fs.readdirSync(coreDir);
-  for (const package of cores) {
-    const packageSrc = resolve(process.cwd(), './packages/core/', package, 'src');
-    if (existsSync(packageSrc)) {
-      config.module.rules.get('ts-in-node_modules').include.add(packageSrc);
-      config.resolve.alias.set(`@nocobase/${package}`, packageSrc);
-    }
-  }
-  const plugins = fs.readdirSync(resolve(process.cwd(), './packages/plugins'));
-  for (const package of plugins) {
-    const packageSrc = resolve(process.cwd(), './packages/plugins/', package, 'src');
-    if (existsSync(packageSrc)) {
-      config.module.rules.get('ts-in-node_modules').include.add(packageSrc);
-      config.resolve.alias.set(`@nocobase/plugin-${package}`, packageSrc);
-    }
-  }
-  const samples = fs.readdirSync(resolve(process.cwd(), './packages/samples'));
-  for (const package of samples) {
-    const packageSrc = resolve(process.cwd(), './packages/samples/', package, 'src');
-    if (existsSync(packageSrc)) {
-      config.module.rules.get('ts-in-node_modules').include.add(packageSrc);
-      config.resolve.alias.set(`@nocobase/plugin-sample-${package}`, packageSrc);
-    }
-  }
-  const pros = fs.readdirSync(resolve(process.cwd(), './packages/pro-plugins'));
-  for (const package of pros) {
-    const packageSrc = resolve(process.cwd(), './packages/pro-plugins/', package, 'src');
-    if (existsSync(packageSrc)) {
-      config.module.rules.get('ts-in-node_modules').include.add(packageSrc);
-      config.resolve.alias.set(`@nocobase/plugin-pro-${package}`, packageSrc);
-    }
+  return pkgs;
+}
+
+function resolveNocobasePackagesAlias(config) {
+  const pkgs = getPackagePaths();
+  for (const [pkg, dir] of pkgs) {
+    config.module.rules.get('ts-in-node_modules').include.add(dir);
+    config.resolve.alias.set(pkg, dir);
   }
 }
 
