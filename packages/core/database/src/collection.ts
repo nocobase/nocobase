@@ -187,7 +187,7 @@ export class Collection<
     if (this.fields.has(name)) {
       const oldField = this.fields.get(name);
       if (oldField.options.inherit && options.type != oldField.options.type) {
-        throw new Error('Cannot change field type when override field');
+        throw new Error('Type conflict: cannot change field type when override field');
       }
     }
 
