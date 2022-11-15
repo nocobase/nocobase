@@ -21,7 +21,9 @@ export const useCollection = () => {
     },
     [],
   );
-  const totalFields = unionBy(currentFields?.concat(inheritedFields),'name');
+  const totalFields = unionBy(currentFields?.concat(inheritedFields),'name').filter((v)=>{
+    return !v.isForeignKey
+  });
   return {
     ...collection,
     resource,

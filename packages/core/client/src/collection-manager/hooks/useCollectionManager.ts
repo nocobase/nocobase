@@ -22,7 +22,9 @@ export const useCollectionManager = () => {
   const getCollectionFields = (name: string): CollectionFieldOptions[] => {
     const currentFields = collections?.find((collection) => collection.name === name)?.fields;
     const inheritedFields = getInheritedFields(name);
-    const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name');
+    const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v:any) => {
+      return !v.isForeignKey;
+    });
     return totalFields;
   };
   const getCollectionField = (name: string) => {
