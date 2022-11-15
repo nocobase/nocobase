@@ -13,7 +13,7 @@ import {
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions,
+  beforeInitOptions
 } from './hooks';
 
 import { CollectionModel, FieldModel } from './models';
@@ -180,6 +180,15 @@ export class CollectionManagerPlugin extends Plugin {
         return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
       },
     );
+
+    this.app.resourcer.use(async (ctx, next) => {
+      if (ctx.action.resourceName === 'collections.fields' && ['create', 'update'].includes(ctx.action.actionName)) {
+        ctx.action.mergeParams({
+          updateAssociationValues: ['uiSchema', 'reverseField'],
+        });
+      }
+      await next();
+    });
   }
 }
 
