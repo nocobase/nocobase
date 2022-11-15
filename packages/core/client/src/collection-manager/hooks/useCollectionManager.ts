@@ -1,15 +1,12 @@
 import { clone } from '@formily/shared';
 import { useContext } from 'react';
-import { reduce ,unionBy} from 'lodash';
+import { reduce, unionBy } from 'lodash';
 import { CollectionManagerContext } from '../context';
 import { CollectionFieldOptions } from '../types';
 
-
 export const useCollectionManager = () => {
   const { refreshCM, service, interfaces, collections } = useContext(CollectionManagerContext);
-  
-  const getCollectionFields=(name: string):CollectionFieldOptions[]=> {
-    const currentFields = collections?.find((collection) => collection.name === name)?.fields;
+  const getInheritedFields = (name) => {
     const inheritKeys = getParentCollections(name);
     const inheritedFields = reduce(
       inheritKeys,
@@ -19,9 +16,15 @@ export const useCollectionManager = () => {
       },
       [],
     );
-    const totalFields = unionBy(currentFields?.concat(inheritedFields) || [],'name');
+    return inheritedFields;
+  };
+
+  const getCollectionFields = (name: string): CollectionFieldOptions[] => {
+    const currentFields = collections?.find((collection) => collection.name === name)?.fields;
+    const inheritedFields = getInheritedFields(name);
+    const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name');
     return totalFields;
-  }
+  };
   const getCollectionField = (name: string) => {
     const [collectionName, fieldName] = name.split('.');
     if (!fieldName) {
@@ -68,6 +71,10 @@ export const useCollectionManager = () => {
     };
     return getChildrens(name);
   };
+  const getCurrentCollectionFields = (name: string) => {
+    const collection = collections?.find((collection) => collection.name === name);
+    return collection?.fields || [];
+  };
 
   return {
     service,
@@ -79,8 +86,10 @@ export const useCollectionManager = () => {
     get(name: string) {
       return collections?.find((collection) => collection.name === name);
     },
+    getInheritedFields,
     getCollectionField,
     getCollectionFields,
+    getCurrentCollectionFields,
     getCollection(name: any) {
       if (typeof name !== 'string') {
         return name;
@@ -114,15 +123,20 @@ export const useCollectionManager = () => {
     getParentCollectionFields: (parentCollection, currentCollection) => {
       const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields;
       const parentFields = collections?.find((collection) => collection.name === parentCollection)?.fields;
+      const inheritKeys = getParentCollections(currentCollection);
+      const index = inheritKeys.indexOf(parentCollection);
+      let filterFields = currentFields;
+      if (index > 0) {
+        inheritKeys.splice(index);
+        inheritKeys.forEach((v) => {
+          filterFields = filterFields.concat(getCurrentCollectionFields(v));
+        });
+      }
       return parentFields.filter((v) => {
-        return !currentFields.find((k) => {
+        return !filterFields.find((k) => {
           return k.name === v.name;
         });
       });
-    },
-    getCurrentCollectionFields(name: string) {
-      const collection = collections?.find((collection) => collection.name === name);
-      return collection?.fields || [];
     },
   };
 };
