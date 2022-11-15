@@ -3,7 +3,8 @@ import { ArrayField, Field } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
 import { default as classNames } from 'classnames';
-import React, { useEffect, useState } from 'react';
+import { ISchema } from '@formily/react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { findIndex } from 'lodash';
 import {
@@ -184,7 +185,46 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const expandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
     const columns = useTableColumns();
     if (inherits.includes(record.key)) {
+      const overridingSchema: ISchema = {
+        type: 'void',
+        title: '{{ t("Actions") }}',
+        'x-component': 'Table.Column',
+        properties: {
+          actions: {
+            type: 'void',
+            'x-component': 'Space',
+            'x-component-props': {
+              split: '|',
+            },
+            properties: {
+              overriding: {
+                type: 'void',
+                title: '{{ t("Overriding") }}',
+                'x-component': 'OverridingCollectionField',
+                'x-component-props': {
+                  type: 'primary',
+                },
+              },
+            },
+          },
+        },
+      };
       columns.pop();
+      columns.push({
+        title: <RecursionField name={'column4'} schema={overridingSchema as Schema} onlyRenderSelf />,
+        dataIndex: 'column4',
+        key: 'column4',
+        render: (v, record) => {
+          const index = findIndex(field.value, record);
+          return (
+            <RecordIndexProvider index={index}>
+              <RecordProvider record={record}>
+                <RecursionField schema={overridingSchema as Schema} name={index} onlyRenderProperties />
+              </RecordProvider>
+            </RecordIndexProvider>
+          );
+        },
+      });
     }
     const restProps = {
       rowSelection:
@@ -231,11 +271,11 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
           expandedRowKeys: expandedKeys,
         }}
         onExpand={(expanded, record) => {
-          let keys=[]
+          let keys = [];
           if (expanded) {
-            keys = expandedKeys.concat([record.key])
+            keys = expandedKeys.concat([record.key]);
           } else {
-             keys = expandedKeys.filter((v) => {
+            keys = expandedKeys.filter((v) => {
               return v !== record.key;
             });
           }

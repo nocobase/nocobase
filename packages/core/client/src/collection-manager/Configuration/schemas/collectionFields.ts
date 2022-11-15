@@ -80,10 +80,6 @@ export const collectionFieldSchema: ISchema = {
       },
     },
   },
-  // 'x-component': 'CollectionProvider',
-  // 'x-component-props': {
-  //   collection,
-  // },
   properties: {
     summary: {
       type: 'void',

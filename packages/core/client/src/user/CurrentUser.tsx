@@ -12,14 +12,7 @@ import {useCurrentDatabase} from '../database/CurrentDatabaseProvider'
 
 
 const ApplicationVersion = () => {
-  // const { data, loading } = useRequest({
-  //   url: 'app:getInfo',
-  // });
-  // if (loading) {
-  //   return null;
-  // }
   const data=useCurrentDatabase();
-  console.log(data)
   return (
       <Menu.Item key="version" disabled>
         Version {data?.data?.version}
