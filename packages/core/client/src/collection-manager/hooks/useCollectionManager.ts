@@ -1,6 +1,6 @@
 import { clone } from '@formily/shared';
 import { useContext } from 'react';
-import { reduce, unionBy } from 'lodash';
+import { reduce, unionBy,uniq } from 'lodash';
 import { CollectionManagerContext } from '../context';
 import { CollectionFieldOptions } from '../types';
 
@@ -52,7 +52,7 @@ export const useCollectionManager = () => {
           }
         }
       }
-      return parents;
+      return uniq(parents);
     };
 
     return getParents(name);
