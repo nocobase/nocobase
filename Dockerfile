@@ -44,7 +44,7 @@ COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 
 WORKDIR /app/nocobase
 
-RUN echo "$COMIT_HASH" >> storage/uploads/COMIT_HASH
+RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMIT_HASH" >> /app/nocobase/storage/uploads/COMIT_HASH
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 
