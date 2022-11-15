@@ -22,7 +22,6 @@ export const KanbanBlockInitializer = (props) => {
         componentType={'Kanban'}
         icon={<FormOutlined />}
         onCreateBlockSchema={async ({ item }) => {
-          const collection = getCollection(item.name);
           const collectionFields = getCollectionFields(item.name);
           const fields = collectionFields
             ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))
@@ -65,7 +64,7 @@ export const KanbanBlockInitializer = (props) => {
             initialValues: {},
           });
           const sortName = `${values.groupField.value}_sort`;
-          const exists = collection?.fields?.find((field) => field.name === sortName);
+          const exists = collectionFields?.find((field) => field.name === sortName);
           if (!exists) {
             await api.resource('collections.fields', item.name).create({
               values: {

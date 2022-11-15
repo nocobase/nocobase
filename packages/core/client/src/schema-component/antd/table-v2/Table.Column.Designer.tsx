@@ -13,7 +13,7 @@ const useLabelFields = (collectionName?: any) => {
   const { getCollectionFields } = useCollectionManager();
   const targetFields = getCollectionFields(collectionName);
   return targetFields
-    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean')
+    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean'&&!field.isForeignKey)
     ?.map?.((field) => {
       return {
         value: field.name,
