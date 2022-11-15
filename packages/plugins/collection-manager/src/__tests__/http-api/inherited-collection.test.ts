@@ -25,6 +25,23 @@ pgOnly()('Inherited Collection', () => {
     await app.destroy();
   });
 
+  it('should not replace field with difference type', async () => {
+    const response = await agent.resource('collections').create({
+      context: {},
+      values: {
+        name: 'students',
+        inherits: ['person'],
+        fields: [
+          {
+            name: 'name',
+            type: 'integer',
+          },
+        ],
+      },
+    });
+    expect(response.statusCode).toBe(500);
+  });
+
   it('can  create relation with child table', async () => {
     await agent.resource('collections').create({
       values: {
