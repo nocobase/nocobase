@@ -262,6 +262,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
         transaction: options.transaction,
       });
     });
+
+    this.on('afterRemoveCollection', (collection) => {
+      this.inheritanceMap.removeNode(collection.name);
+    });
   }
 
   addMigration(item: MigrationItem) {
