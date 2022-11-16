@@ -13,6 +13,7 @@ import {
   useRequest,
   useSchemaInitializer,
   useRecord,
+  useCompile
 } from '../..';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
@@ -82,6 +83,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const field = useField<ArrayField>();
   const { name } = useRecord();
   const { t } = useTranslation();
+  const compile = useCompile();
   const { getInterface, getParentCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
     useCollectionManager();
   const {
@@ -140,7 +142,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
           const parentCollection = getCollection(key);
           tmpData.push({
             key,
-            name: t(CategorizeKeyNameMap.get(key)) || t(`Parent collection fields`) + `(${t(parentCollection.title)})`,
+            name: t(CategorizeKeyNameMap.get(key)) || t(`Parent collection fields`) + `(${compile(parentCollection.title)})`,
             data: categorizeMap.get(key),
           });
         }

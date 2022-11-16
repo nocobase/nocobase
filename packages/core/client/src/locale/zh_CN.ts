@@ -125,6 +125,8 @@ export default {
   "Configure fields": "配置字段",
   "Configure columns": "配置字段",
   "Edit field": "编辑字段",
+  "Override":"重写",
+  "Override field":"重写字段",
   "Configure fields of {{title}}": "「{{title}}」的字段配置",
   "PK & FK fields": "主外键字段",
   "Association fields": "关系字段",

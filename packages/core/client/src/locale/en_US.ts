@@ -121,6 +121,8 @@ export default {
   "Configure fields": "Configure fields",
   "Configure columns": "Configure columns",
   "Edit field": "Edit field",
+  "Override":"Override",
+  "Override field":"Override field",
   "Configure fields of {{title}}": "Configure fields of {{title}}",
   "PK & FK fields": "PK & FK fields",
   "Association fields": "Association fields",

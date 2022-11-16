@@ -114,6 +114,8 @@ export default {
   "Configure fields": "フィールドの設定",
   "Configure columns": "カラムの設定",
   "Edit field": "フィールドの編集",
+  "Override":"書き換え",
+  "Override field":"フィールドの上書き",
   "Configure fields of {{title}}": "{{title}}のフィールド設定",
   "Basic": "基本タイプ",
   "Single line text": "一行テキスト",
