@@ -243,7 +243,6 @@ pgOnly()('Inherited Collection', () => {
     }
 
     expect(err).toBeDefined();
-    console.log(err.message);
     expect(err.message.includes('type conflict')).toBeTruthy();
   });
 

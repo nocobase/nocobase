@@ -463,7 +463,68 @@ pgOnly()('collection inherits', () => {
     expect(teacher.get('profile').get('age')).toBe(30);
   });
 
-  it('should inherit association field', async () => {
+  it('should replace hasOne association field', async () => {
+    const person = db.collection({
+      name: 'person',
+      fields: [
+        { name: 'name', type: 'string' },
+        { type: 'hasOne', name: 'profile', target: 'profiles' },
+      ],
+    });
+
+    const profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { name: 'age', type: 'integer' },
+        {
+          type: 'belongsTo',
+          name: 'person',
+        },
+      ],
+    });
+
+    const student = db.collection({
+      name: 'students',
+      inherits: 'person',
+      fields: [{ name: 'profile', type: 'hasOne', target: 'studentProfiles' }],
+    });
+
+    const studentProfile = db.collection({
+      name: 'studentProfiles',
+      fields: [{ name: 'score', type: 'integer' }],
+    });
+
+    await db.sync();
+
+    const student1 = await student.repository.create({
+      values: {
+        name: 'student-1',
+        profile: {
+          score: '100',
+        },
+      },
+    });
+
+    let person1 = await person.repository.findOne();
+    await person.repository
+      .relation('profile')
+      .of(person1.get('id'))
+      .create({
+        values: {
+          age: 30,
+        },
+      });
+
+    person1 = await person.repository.findOne({
+      appends: ['profile'],
+    });
+
+    expect(person1.get('profile').get('age')).toBe(30);
+
+    expect(student1.get('profile').get('score')).toBe(100);
+  });
+
+  it('should inherit hasOne association field', async () => {
     const person = db.collection({
       name: 'person',
       fields: [
