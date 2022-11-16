@@ -468,7 +468,7 @@ pgOnly()('collection inherits', () => {
       name: 'person',
       fields: [
         { name: 'name', type: 'string' },
-        { type: 'hasOne', name: 'profile', target: 'profiles' },
+        { type: 'hasOne', name: 'profile', target: 'profiles', foreignKey: 'person_id' },
       ],
     });
 
@@ -486,7 +486,7 @@ pgOnly()('collection inherits', () => {
     const student = db.collection({
       name: 'students',
       inherits: 'person',
-      fields: [{ name: 'profile', type: 'hasOne', target: 'studentProfiles' }],
+      fields: [{ name: 'profile', type: 'hasOne', target: 'studentProfiles', foreignKey: 'student_id' }],
     });
 
     const studentProfile = db.collection({
