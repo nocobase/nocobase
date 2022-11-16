@@ -10,6 +10,7 @@ import {
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { ModelEventTypes } from '../types';
+import { InheritedCollection } from '../inherited-collection';
 
 export interface FieldContext {
   database: Database;
@@ -19,6 +20,7 @@ export interface FieldContext {
 export interface BaseFieldOptions {
   name?: string;
   hidden?: boolean;
+
   [key: string]: any;
 }
 
@@ -32,7 +34,16 @@ export abstract class Field {
   context: FieldContext;
   database: Database;
   collection: Collection;
+
   [key: string]: any;
+
+  constructor(options?: any, context?: FieldContext) {
+    this.context = context;
+    this.database = context.database;
+    this.collection = context.collection;
+    this.options = options || {};
+    this.init();
+  }
 
   get name() {
     return this.options.name;
@@ -44,14 +55,6 @@ export abstract class Field {
 
   get dataType() {
     return this.options.dataType;
-  }
-
-  constructor(options?: any, context?: FieldContext) {
-    this.context = context;
-    this.database = context.database;
-    this.collection = context.collection;
-    this.options = options || {};
-    this.init();
   }
 
   async sync(syncOptions: SyncOptions) {
@@ -88,11 +91,18 @@ export abstract class Field {
   }
 
   async removeFromDb(options?: QueryInterfaceOptions) {
-    if (!this.collection.model.rawAttributes[this.name]) {
+    const attribute = this.collection.model.rawAttributes[this.name];
+
+    if (!attribute) {
       this.remove();
       // console.log('field is not attribute');
       return;
     }
+
+    if (this.collection.isInherited() && (<InheritedCollection>this.collection).parentFields().has(this.name)) {
+      return;
+    }
+
     if ((this.collection.model as any)._virtualAttributes.has(this.name)) {
       this.remove();
       // console.log('field is virtual attribute');
@@ -168,7 +178,7 @@ export abstract class Field {
   }
 
   bind() {
-    const { model } = this.context.collection;
+    const {model} = this.context.collection;
     model.rawAttributes[this.name] = this.toSequelize();
     // @ts-ignore
     model.refreshAttributes();
@@ -178,7 +188,7 @@ export abstract class Field {
   }
 
   unbind() {
-    const { model } = this.context.collection;
+    const {model} = this.context.collection;
     model.removeAttribute(this.name);
     if (this.options.index || this.options.unique) {
       this.context.collection.removeIndex([this.name]);
@@ -188,7 +198,7 @@ export abstract class Field {
   toSequelize(): any {
     const opts = _.omit(this.options, ['name']);
     if (this.dataType) {
-      Object.assign(opts, { type: this.dataType });
+      Object.assign(opts, {type: this.dataType});
     }
     return opts;
   }

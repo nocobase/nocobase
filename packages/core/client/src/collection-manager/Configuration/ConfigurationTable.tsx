@@ -1,17 +1,19 @@
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { CollectionFieldsTable } from '.';
 import { useRequest } from '../../api-client';
+import { useCurrentDatabase } from '../../database';
 import { useRecord } from '../../record-provider';
 import { SchemaComponent, SchemaComponentContext, useActionContext, useCompile } from '../../schema-component';
+import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
-import { CollectionFieldsTable } from ".";
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
@@ -173,9 +175,14 @@ const useNewId = (prefix) => {
 
 export const ConfigurationTable = () => {
   const { collections = [] } = useCollectionManager();
+  const {
+    data: { database },
+  } = useCurrentDatabase();
+  const collectonsRef: any = useRef();
+  collectonsRef.current = collections;
   const compile = useCompile();
   const loadCollections = async (field: any) => {
-    return collections
+    return collectonsRef.current
       ?.filter((item) => !(item.autoCreate && item.isThrough))
       .map((item: any) => ({
         label: compile(item.title),
@@ -187,14 +194,15 @@ export const ConfigurationTable = () => {
     <div>
       <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
         <SchemaComponent
-          schema={collectionSchema}
+          schema={collectionSchema(database?.dialect)}
           components={{
             AddSubFieldAction,
             EditSubFieldAction,
             FieldSummary,
-            CollectionFieldsTable
+            CollectionFieldsTable,
           }}
           scope={{
+            enableInherits: database?.dialect === 'postgres', 
             useDestroySubField,
             useBulkDestroySubField,
             useSelectedRowKeys,
@@ -203,6 +211,8 @@ export const ConfigurationTable = () => {
             loadCollections,
             useCurrentFields,
             useNewId,
+            useCancelAction,
+            useUpdateCollectionActionAndRefreshCM,
           }}
         />
       </SchemaComponentContext.Provider>

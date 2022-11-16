@@ -232,6 +232,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       ...this.buildQueryOptions(options),
     };
 
+    let rows;
+
     if (opts.include && opts.include.length > 0) {
       // @ts-ignore
       const primaryKeyField = model.primaryKeyField || model.primaryKeyAttribute;
@@ -258,27 +260,38 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         },
       };
 
-      return await handleAppendsQuery({
+      rows = await handleAppendsQuery({
         queryPromises: opts.include.map((include) => {
-          return model
-            .findAll({
-              ...omit(opts, ['limit', 'offset']),
-              include: include,
-              where,
-              transaction,
-            })
-            .then((rows) => {
-              return { rows, include };
-            });
+          const options = {
+            ...omit(opts, ['limit', 'offset']),
+            include: include,
+            where,
+            transaction,
+          };
+
+          return model.findAll(options).then((rows) => {
+            return { rows, include };
+          });
         }),
         templateModel: ids[0].row,
       });
+    } else {
+      rows = await model.findAll({
+        ...opts,
+        transaction,
+      });
     }
 
-    return await model.findAll({
-      ...opts,
-      transaction,
-    });
+    if (this.collection.isParent()) {
+      for (const row of rows) {
+        const rowCollectionName = this.database.tableNameCollectionMap.get(row.get('__tableName')).name;
+        row.set('__collection', rowCollectionName, {
+          raw: true,
+        });
+      }
+    }
+
+    return rows;
   }
 
   /**

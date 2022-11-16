@@ -104,6 +104,23 @@ const useRelationFields = () => {
   return relationFields;
 };
 
+const useInheritFields = () => {
+  const collection = useCollection();
+  const { getChildrenCollections } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collection.name);
+  return childrenCollections.map((c) => {
+    return {
+      key: c.key,
+      type: 'item',
+      title: c?.title || c.name,
+      component: 'RecordReadPrettyFormBlockInitializer',
+      icon: false,
+      targetCollection: c,
+      actionInitializers: 'CalendarFormActionInitializers',
+    };
+  });
+};
+
 export const RecordBlockInitializers = (props: any) => {
   const { t } = useTranslation();
   const { insertPosition, component } = props;
@@ -133,6 +150,11 @@ export const RecordBlockInitializers = (props: any) => {
               component: 'RecordFormBlockInitializer',
             },
           ],
+        },
+        {
+          type: 'itemGroup',
+          title: '{{t("Children collection blocks")}}',
+          children: useInheritFields(),
         },
         {
           type: 'itemGroup',

@@ -1,34 +1,65 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../SchemaInitializer';
-import { itemsMerge, useAssociatedTableColumnInitializerFields, useTableColumnInitializerFields } from '../utils';
+import {
+  itemsMerge,
+  useAssociatedTableColumnInitializerFields,
+  useTableColumnInitializerFields,
+  useInheritsTableColumnInitializerFields,
+} from '../utils';
+import { useCompile } from '../../schema-component';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
   const { items = [] } = props;
   const { t } = useTranslation();
   const associatedFields = useAssociatedTableColumnInitializerFields();
-  const fieldItems: any[] = [{
-    type: 'itemGroup',
-    title: t('Display fields'),
-    children: useTableColumnInitializerFields(),
-  }];
-  if (associatedFields?.length > 0) {
-    fieldItems.push({
-      type: 'divider',
-    }, {
+  const inheritFields = useInheritsTableColumnInitializerFields();
+  const compile = useCompile();
+  const fieldItems: any[] = [
+    {
       type: 'itemGroup',
-      title: t('Display association fields'),
-      children: associatedFields,
-    })
+      title: t('Display fields'),
+      children: useTableColumnInitializerFields(),
+    },
+  ];
+  if (inheritFields?.length > 0) {
+    inheritFields.forEach((inherit) => {
+      Object.values(inherit)[0].length &&
+        fieldItems.push(
+          {
+            type: 'divider',
+          },
+          {
+            type: 'itemGroup',
+            title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
+            children: Object.values(inherit)[0],
+          },
+        );
+    });
   }
-  fieldItems.push({
-    type: 'divider',
-  }, {
-    type: 'item',
-    title: t('Action column'),
-    component: 'TableActionColumnInitializer',
-  })
+  if (associatedFields?.length > 0) {
+    fieldItems.push(
+      {
+        type: 'divider',
+      },
+      {
+        type: 'itemGroup',
+        title: t('Display association fields'),
+        children: associatedFields,
+      },
+    );
+  }
+  fieldItems.push(
+    {
+      type: 'divider',
+    },
+    {
+      type: 'item',
+      title: t('Action column'),
+      component: 'TableActionColumnInitializer',
+    },
+  );
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -49,10 +80,7 @@ export const TableColumnInitializers = (props: any) => {
           },
         };
       }}
-      items={itemsMerge(
-        fieldItems,
-        items,
-      )}
+      items={itemsMerge(fieldItems, items)}
     >
       {t('Configure columns')}
     </SchemaInitializer.Button>

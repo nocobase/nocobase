@@ -7,7 +7,17 @@ import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { PluginManager } from '../plugin-manager';
 import { ActionContext, SchemaComponent } from '../schema-component';
-import { AddCollectionField, AddFieldAction, ConfigurationTable, EditFieldAction,EditCollectionField } from './Configuration';
+import {
+  AddCollectionField,
+  AddFieldAction,
+  ConfigurationTable,
+  EditFieldAction,
+  EditCollectionField,
+  OverridingFieldAction,
+  OverridingCollectionField,
+  ViewCollectionField,
+  ViewFieldAction,
+} from './Configuration';
 
 const schema: ISchema = {
   type: 'object',
@@ -37,7 +47,20 @@ const schema2: ISchema = {
 export const CollectionManagerPane = () => {
   return (
     <Card bordered={false}>
-      <SchemaComponent schema={schema2} components={{ ConfigurationTable, AddFieldAction, AddCollectionField, EditFieldAction,EditCollectionField }} />
+      <SchemaComponent
+        schema={schema2}
+        components={{
+          ConfigurationTable,
+          AddFieldAction,
+          AddCollectionField,
+          EditFieldAction,
+          EditCollectionField,
+          OverridingCollectionField,
+          OverridingFieldAction,
+          ViewCollectionField,
+          ViewFieldAction,
+        }}
+      />
     </Card>
   );
 };
@@ -68,7 +91,16 @@ export const CollectionManagerShortcut2 = () => {
           setVisible(true);
         }}
       />
-      <SchemaComponent schema={schema} components={{ ConfigurationTable, AddFieldAction, EditFieldAction }} />
+      <SchemaComponent
+        schema={schema}
+        components={{
+          ConfigurationTable,
+          AddFieldAction,
+          EditFieldAction,
+          OverridingFieldAction,
+          ViewFieldAction,
+        }}
+      />
     </ActionContext.Provider>
   );
 };

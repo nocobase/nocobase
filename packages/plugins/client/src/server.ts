@@ -22,6 +22,7 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('app', 'getInfo');
     this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
+    const dialect = this.app.db.sequelize.getDialect();
     this.app.resource({
       name: 'app',
       actions: {
@@ -35,6 +36,9 @@ export class ClientPlugin extends Plugin {
             lang = currentUser?.appLang;
           }
           ctx.body = {
+            database: {
+              dialect,
+            },
             version: await ctx.app.version.get(),
             lang,
           };
