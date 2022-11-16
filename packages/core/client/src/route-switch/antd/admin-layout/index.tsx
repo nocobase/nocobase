@@ -7,7 +7,7 @@ import {
   ACLRolesCheckProvider,
   CurrentUser,
   CurrentUserProvider,
-  CurrentDatabaseProvider,
+  CurrentAppInfoProvider,
   findByUid,
   findMenuItem,
   RemoteCollectionManagerProvider,
@@ -207,7 +207,7 @@ const InternalAdminLayout = (props: any) => {
 
 export const AdminLayout = (props) => {
   return (
-    <CurrentDatabaseProvider>
+    <CurrentAppInfoProvider>
       <CurrentUserProvider>
         <RemoteSchemaTemplateManagerProvider>
           <RemoteCollectionManagerProvider>
@@ -217,7 +217,7 @@ export const AdminLayout = (props) => {
           </RemoteCollectionManagerProvider>
         </RemoteSchemaTemplateManagerProvider>
       </CurrentUserProvider>
-    </CurrentDatabaseProvider>
+    </CurrentAppInfoProvider>
   );
 };
 

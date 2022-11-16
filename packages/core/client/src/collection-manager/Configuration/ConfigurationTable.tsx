@@ -11,7 +11,7 @@ import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
-import { useCurrentDatabase } from '../../database';
+import { useCurrentAppInfo } from '../../appInfo';
 import { CollectionFieldsTable } from '.';
 import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
 
@@ -177,7 +177,7 @@ export const ConfigurationTable = () => {
   const { collections = [] } = useCollectionManager();
   const {
     data: { database },
-  } = useCurrentDatabase();
+  } = useCurrentAppInfo();
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
