@@ -194,7 +194,7 @@ export const ConfigurationTable = () => {
     <div>
       <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
         <SchemaComponent
-          schema={collectionSchema(database?.dialect)}
+          schema={collectionSchema}
           components={{
             AddSubFieldAction,
             EditSubFieldAction,
@@ -212,6 +212,7 @@ export const ConfigurationTable = () => {
             useNewId,
             useCancelAction,
             useUpdateCollectionActionAndRefreshCM,
+            enableInherits: database?.dialect === 'postgres',
           }}
         />
       </SchemaComponentContext.Provider>
