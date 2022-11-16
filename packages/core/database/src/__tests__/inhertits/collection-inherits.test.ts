@@ -15,6 +15,20 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should pass empty inherits params', async () => {
+    const table1 = db.collection({
+      name: 'table1',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    const table2 = db.collection({
+      name: 'table2',
+      inherits: [],
+    });
+
+    expect(table2).not.toBeInstanceOf(InheritedCollection);
+  });
+
   it('should remove Node after collection destroy', async () => {
     const table1 = db.collection({
       name: 'table1',
