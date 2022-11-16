@@ -1,7 +1,7 @@
 import { IDatabaseOptions } from '@nocobase/database';
 
 export default {
-  logging: process.env.DB_LOGGING ? customLogger : false,
+  logging: process.env.DB_LOGGING == 'on' ? customLogger : false,
   dialect: process.env.DB_DIALECT as any,
   storage: process.env.DB_STORAGE,
   username: process.env.DB_USER,
