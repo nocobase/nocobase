@@ -302,13 +302,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     this.emit('beforeDefineCollection', options);
 
-    const collection = options.inherits
-      ? new InheritedCollection(options, {
-          database: this,
-        })
-      : new Collection(options, {
-          database: this,
-        });
+    const collection =
+      options.inherits && lodash.castArray(options.inherits).length > 0
+        ? new InheritedCollection(options, {
+            database: this,
+          })
+        : new Collection(options, {
+            database: this,
+          });
 
     this.collections.set(collection.name, collection);
 
