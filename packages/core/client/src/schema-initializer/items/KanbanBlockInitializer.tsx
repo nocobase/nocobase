@@ -13,7 +13,7 @@ import { SchemaComponent, SchemaComponentOptions } from "../../schema-component"
 export const KanbanBlockInitializer = (props) => {
     const { insert } = props;
     const { t } = useTranslation();
-    const { getCollection } = useCollectionManager();
+    const { getCollectionFields,getCollection } = useCollectionManager();
     const options = useContext(SchemaOptionsContext);
     const api = useAPIClient();
     return (
@@ -22,8 +22,8 @@ export const KanbanBlockInitializer = (props) => {
         componentType={'Kanban'}
         icon={<FormOutlined />}
         onCreateBlockSchema={async ({ item }) => {
-          const collection = getCollection(item.name);
-          const fields = collection?.fields
+          const collectionFields = getCollectionFields(item.name);
+          const fields = collectionFields
             ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))
             ?.map((field) => {
               return {
@@ -64,7 +64,7 @@ export const KanbanBlockInitializer = (props) => {
             initialValues: {},
           });
           const sortName = `${values.groupField.value}_sort`;
-          const exists = collection?.fields?.find((field) => field.name === sortName);
+          const exists = collectionFields?.find((field) => field.name === sortName);
           if (!exists) {
             await api.resource('collections.fields', item.name).create({
               values: {

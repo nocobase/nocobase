@@ -10,7 +10,7 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps
+  SchemaInitializerItemProps,
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -99,12 +99,11 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       }
     });
   };
-  const menu = <Menu>{renderItems(items)}</Menu>;
+  const menu = <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>{renderItems(items)}</Menu>;
 
   if (!designable && props.designable !== true) {
     return null;
   }
-
   return (
     <Dropdown
       className={classNames('nb-schema-initializer-button')}

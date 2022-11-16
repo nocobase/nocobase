@@ -7,6 +7,7 @@ import {
   ACLRolesCheckProvider,
   CurrentUser,
   CurrentUserProvider,
+  CurrentDatabaseProvider,
   findByUid,
   findMenuItem,
   RemoteCollectionManagerProvider,
@@ -17,7 +18,7 @@ import {
   useDocumentTitle,
   useRequest,
   useRoute,
-  useSystemSettings
+  useSystemSettings,
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
 import { PoweredBy } from '../../../powered-by';
@@ -206,15 +207,17 @@ const InternalAdminLayout = (props: any) => {
 
 export const AdminLayout = (props) => {
   return (
-    <CurrentUserProvider>
-      <RemoteSchemaTemplateManagerProvider>
-        <RemoteCollectionManagerProvider>
-          <ACLRolesCheckProvider>
-            <InternalAdminLayout {...props} />
-          </ACLRolesCheckProvider>
-        </RemoteCollectionManagerProvider>
-      </RemoteSchemaTemplateManagerProvider>
-    </CurrentUserProvider>
+    <CurrentDatabaseProvider>
+      <CurrentUserProvider>
+        <RemoteSchemaTemplateManagerProvider>
+          <RemoteCollectionManagerProvider>
+            <ACLRolesCheckProvider>
+              <InternalAdminLayout {...props} />
+            </ACLRolesCheckProvider>
+          </RemoteCollectionManagerProvider>
+        </RemoteSchemaTemplateManagerProvider>
+      </CurrentUserProvider>
+    </CurrentDatabaseProvider>
   );
 };
 

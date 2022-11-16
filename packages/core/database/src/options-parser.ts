@@ -104,6 +104,13 @@ export class OptionsParser {
     return filterParams;
   }
 
+  protected inheritFromSubQuery(): any {
+    return [
+      Sequelize.literal(`(select relname from pg_class where pg_class.oid = "${this.collection.name}".tableoid)`),
+      '__tableName',
+    ];
+  }
+
   protected parseFields(filterParams: any) {
     const appends = this.options?.appends || [];
     const except = [];
@@ -112,6 +119,10 @@ export class OptionsParser {
       include: [],
       exclude: [],
     }; // out put all fields by default
+
+    if (this.collection.isParent()) {
+      attributes.include.push(this.inheritFromSubQuery());
+    }
 
     if (this.options?.fields) {
       // 将fields拆分为 attributes 和 appends

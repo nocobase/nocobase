@@ -22,6 +22,7 @@ export type CollectionSortable = string | boolean | { name?: string; scopeKey?: 
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   tableName?: string;
+  inherits?: string[] | string;
   filterTargetKey?: string;
   fields?: FieldOptions[];
   model?: string | ModelCtor<Model>;
@@ -74,7 +75,9 @@ export class Collection<
 
     this.bindFieldEventListener();
     this.modelInit();
+
     this.db.modelCollection.set(this.model, this);
+    this.db.tableNameCollectionMap.set(this.model.tableName, this);
 
     this.setFields(options.fields);
     this.setRepository(options.repository);
@@ -181,9 +184,34 @@ export class Collection<
       },
     );
 
+    const oldField = this.fields.get(name);
+
+    if (oldField && oldField.options.inherit && options.type != oldField.options.type) {
+      throw new Error(
+        `Field type conflict: cannot set "${name}" to ${options.type}, parent "${name}" type is ${oldField.options.type}`,
+      );
+    }
+
     this.removeField(name);
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
+
+    if (this.isParent()) {
+      for (const child of this.context.database.inheritanceMap.getChildren(this.name, {
+        deep: false,
+      })) {
+        const childCollection = this.db.getCollection(child);
+        const existField = childCollection.getField(name);
+
+        if (!existField || existField.options.inherit) {
+          childCollection.setField(name, {
+            ...options,
+            inherit: true,
+          });
+        }
+      }
+    }
+
     return field;
   }
 
@@ -371,6 +399,7 @@ export class Collection<
     for (const associationKey in associations) {
       const association = associations[associationKey];
       modelNames.add(association.target.name);
+
       if ((<any>association).through) {
         modelNames.add((<any>association).through.model.name);
       }
@@ -387,5 +416,13 @@ export class Collection<
     for (const model of models) {
       await model.sync(syncOptions);
     }
+  }
+
+  public isInherited() {
+    return false;
+  }
+
+  public isParent() {
+    return this.context.database.inheritanceMap.isParentNode(this.name);
   }
 }
