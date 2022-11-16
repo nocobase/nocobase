@@ -3,8 +3,7 @@ import { ArrayField, Field } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
 import { default as classNames } from 'classnames';
-import { ISchema } from '@formily/react';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { findIndex } from 'lodash';
 import {
@@ -81,9 +80,10 @@ interface CategorizeDataItem {
 export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'basic', 'systemInfo'];
   const field = useField<ArrayField>();
-  const record = useRecord();
+  const { name } = useRecord();
   const { t } = useTranslation();
-  const { getInterface, getParentCollections, getCollection, getCurrentCollectionFields } = useCollectionManager();
+  const { getInterface, getParentCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
+    useCollectionManager();
   const {
     showIndex = true,
     useSelectedRowKeys = useDef,
@@ -94,8 +94,8 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const [selectedRowKeys, setSelectedRowKeys] = useSelectedRowKeys();
   const [categorizeData, setCategorizeData] = useState<Array<CategorizeDataItem>>([]);
   const [expandedKeys, setExpendedKeys] = useState(selectedRowKeys);
-  const inherits = getParentCollections(record.name);
-  const totalFields = getCurrentCollectionFields(record.name);
+  const inherits = getParentCollections(name);
+  const currentFields = getCurrentCollectionFields(name);
   useDataSource({
     onSuccess(data) {
       field.value = data?.data || [];
@@ -184,6 +184,14 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
       key: 'TABLE_COLUMN_INITIALIZER',
     });
   };
+
+  const getIsOverriding = (record) => { 
+    const flag = currentFields.find((v) => {
+      return v.name === record.name;
+    });
+    return !flag;
+  };
+
   const expandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
     const columns = useTableColumns();
     if (inherits.includes(record.key)) {
@@ -194,9 +202,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         key: 'column4',
         render: (v, record) => {
           const index = findIndex(field.value, record);
-          const flag = totalFields.find((v) => {
-            return v.name !== record.name;
-          });
+          const flag = getIsOverriding(record);
           return (
             flag && (
               <RecordIndexProvider index={index}>

@@ -26,7 +26,6 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
-
   return {
     type: 'object',
     properties: {
@@ -45,7 +44,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
             );
           },
         },
-        title: `${compile(record.__parent?.title)} - ${compile('{{ t("Edit field") }}')}`,
+        title: `${compile(record.__parent?.title)} - ${compile('{{ t("Override field") }}')}`,
         properties: {
           summary: {
             type: 'void',
@@ -98,8 +97,15 @@ const useOverridingCollectionField = () => {
         delete values.reverseField;
       }
       delete values.autoCreateReverseField;
-      const {  name, type, uiSchema } = values;
-      await resource.create({ values: { interface:values.interface, name, type, uiSchema:{title:uiSchema.title,type:uiSchema.type,'x-component':uiSchema['x-component']} } });
+      const { uiSchema } = values;
+      delete values.collectionName;
+      delete values.key;
+      await resource.create({
+        values: {
+          ...values,
+          uiSchema: { title: uiSchema.title, type: uiSchema.type, 'x-component': uiSchema['x-component'] },
+        },
+      });
       ctx.setVisible(false);
       await form.reset();
       refresh();
@@ -164,6 +170,7 @@ export const OverridingFieldAction = (props) => {
             useOverridingCollectionField,
             useCancelAction,
             showReverseFieldConfig: !data?.reverseField,
+            createOnly: true,
             ...scope,
           }}
         />
