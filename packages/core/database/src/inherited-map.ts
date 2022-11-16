@@ -1,4 +1,5 @@
 import lodash from 'lodash';
+import Database from './database';
 
 class TableNode {
   name: string;
@@ -13,6 +14,21 @@ class TableNode {
 
 export default class InheritanceMap {
   nodes: Map<string, TableNode> = new Map<string, TableNode>();
+
+  removeNode(name: string) {
+    const node = this.nodes.get(name);
+    if (!node) return;
+
+    for (const parent of node.parents) {
+      parent.children.delete(node);
+    }
+
+    for (const child of node.children) {
+      child.parents.delete(node);
+    }
+
+    this.nodes.delete(name);
+  }
 
   getOrCreateNode(name: string) {
     if (!this.nodes.has(name)) {
