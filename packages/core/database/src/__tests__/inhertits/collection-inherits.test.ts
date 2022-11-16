@@ -15,6 +15,28 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should remove Node after collection destroy', async () => {
+    const table1 = db.collection({
+      name: 'table1',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    db.collection({
+      name: 'table2',
+      fields: [{ type: 'string', name: 'integer' }],
+    });
+
+    const collection3 = db.collection({
+      name: 'table3',
+      inherits: ['table1', 'table2'],
+    });
+
+    await db.removeCollection(collection3.name);
+
+    expect(db.inheritanceMap.getNode('table3')).toBeUndefined();
+    expect(table1.isParent()).toBeFalsy();
+  });
+
   it('can update relation with child table', async () => {
     const A = db.collection({
       name: 'a',
