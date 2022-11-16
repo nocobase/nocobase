@@ -1,6 +1,6 @@
+import { BaseFieldOptions, Field } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field } from './field';
-import { getHotExcelParser } from '@nocobase/utils';
+import { getHotExcelParser } from '../utils/getHotExcelParser';
 
 export class ExcelFunctionField extends Field {
   get dataType() {
@@ -105,8 +105,7 @@ export class ExcelFunctionField extends Field {
   }
 }
 
-export interface ExcelFunctionFieldOptions extends BaseColumnFieldOptions {
+export interface ExcelFunctionFieldOptions extends BaseFieldOptions {
   type: 'excelFunction';
-
   expression: string;
 }

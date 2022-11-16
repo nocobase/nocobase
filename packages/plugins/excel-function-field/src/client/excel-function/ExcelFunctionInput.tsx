@@ -1,10 +1,10 @@
 import { Field, onFormSubmitValidateStart } from '@formily/core';
 import { connect, mapProps, useField, useFormEffects } from '@formily/react';
-import { getHotExcelParser } from '@nocobase/utils/client';
 import { Dropdown, Menu } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useTranslation } from 'react-i18next';
+import { getHotExcelParser } from '../../utils/getHotExcelParser';
 
 const AntdExcelFormula = (props) => {
   const { value, onChange, supports, useCurrentFields } = props;
@@ -14,29 +14,32 @@ const AntdExcelFormula = (props) => {
 
   const inputRef = useRef();
   const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [formula, setFormula] = useState(null);
-  const [html, setHtml] = useState(null);
+  const [formula, setFormula] = useState<any>(null);
+  const [html, setHtml] = useState<any>(null);
 
   const numColumns = new Map<string, string>();
   const scope = {};
-  fields.forEach(field => {
+  fields.forEach((field) => {
     numColumns.set(field.name, field.uiSchema?.title);
-    if (["string", "select", "text"].includes(field.type)) {
-      scope[field.name] = "";
-    } else if (["hasOne", "hasMany", "belongsTo", "belongsToMany"].includes(field.type)) {
+    if (['string', 'select', 'text'].includes(field.type)) {
+      scope[field.name] = '';
+    } else if (['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(field.type)) {
       scope[field.name] = {};
     } else {
       scope[field.name] = 1;
     }
-  })
+  });
   const keys = Array.from(numColumns.keys());
 
   let initHtml;
   if (value) {
     initHtml = value;
     numColumns.forEach((value, key) => {
-      initHtml = initHtml.replaceAll(` ${key} `, `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;"><i style="opacity:0">:</i>${value}<i style="opacity:0">:</i></span>`)
-    })    
+      initHtml = initHtml.replaceAll(
+        ` ${key} `,
+        `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;"><i style="opacity:0">:</i>${value}<i style="opacity:0">:</i></span>`,
+      );
+    });
   }
 
   useEffect(() => {
@@ -44,25 +47,32 @@ const AntdExcelFormula = (props) => {
       let v = formula || '';
       numColumns.forEach((value, key) => {
         v = v.replaceAll(`:${value}:`, ` ${key} `);
-      })
-      
-      if (v  != value) {
+      });
+
+      if (v != value) {
         onChange(v);
       }
     }
-  }, [formula])
+  }, [formula]);
 
   const menu = (
-    <Menu onClick={async (args) => {
-      const replaceFormula = formula.replace('@', `:${numColumns.get(args.key)}:`);
-      const replaceHtml = html.replace('@', `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;"><i style="opacity:0">:</i>${numColumns.get(args.key)}<i style="opacity:0">:</i></span>`);
-      setFormula(replaceFormula);
-      setHtml(replaceHtml);
-      setDropdownVisible(false);
-    }}>
-      {
-        keys.map(key => (<Menu.Item key={key}>{numColumns.get(key)}</Menu.Item>))
-      }
+    <Menu
+      onClick={async (args) => {
+        const replaceFormula = formula.replace('@', `:${numColumns.get(args.key)}:`);
+        const replaceHtml = html.replace(
+          '@',
+          `<span contentEditable="false" style="border: 1px solid #aaa; padding: 2px 5px;"><i style="opacity:0">:</i>${numColumns.get(
+            args.key,
+          )}<i style="opacity:0">:</i></span>`,
+        );
+        setFormula(replaceFormula);
+        setHtml(replaceHtml);
+        setDropdownVisible(false);
+      }}
+    >
+      {keys.map((key) => (
+        <Menu.Item key={key}>{numColumns.get(key)}</Menu.Item>
+      ))}
     </Menu>
   );
 
@@ -73,10 +83,10 @@ const AntdExcelFormula = (props) => {
     if (e.currentTarget.textContent == '' && onChange) {
       onChange(null);
     }
-  }
+  };
 
   const handleKeyDown = (e) => {
-    const {key} = e;
+    const { key } = e;
     switch (key) {
       case 'Enter':
         e.preventDefault();
@@ -89,15 +99,16 @@ const AntdExcelFormula = (props) => {
         setDropdownVisible(false);
         break;
     }
-  }
+  };
 
   useFormEffects(() => {
     onFormSubmitValidateStart(() => {
       try {
         let parser = getHotExcelParser(scope);
         let data = parser.parse(field.value);
-        if (data.error) { //this is made non blocking due to unknown value results.
-          console.warn("Possible error", data.error);
+        if (data.error) {
+          //this is made non blocking due to unknown value results.
+          console.warn('Possible error', data.error);
         }
         field.feedbacks = [];
       } catch {
@@ -107,26 +118,22 @@ const AntdExcelFormula = (props) => {
           messages: [t('Excel error.')],
         });
       }
-    })
-  })
+    });
+  });
 
   return (
     <Dropdown overlay={menu} visible={dropdownVisible}>
       <ContentEditable
-        innerRef={inputRef}
+        innerRef={inputRef as any}
         className="ant-input"
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         html={html || initHtml || ''}
       />
     </Dropdown>
-  )
-}
+  );
+};
 
-export const ExcelFunctionInput = connect(
-  AntdExcelFormula,
-  mapProps({
-  }),
-);
+export const ExcelFunctionInput = connect(AntdExcelFormula, mapProps({}));
 
 export default ExcelFunctionInput;

@@ -1,5 +1,4 @@
 export * from './date';
-export * from './getHotExcelParser';
 export * from './merge';
 export * from './mixin';
 export * from './mixin/AsyncEmitter';
