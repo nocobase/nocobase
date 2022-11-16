@@ -1,0 +1,1 @@
+export { default } from '@nocobase/plugin-excel-function-field/client';
