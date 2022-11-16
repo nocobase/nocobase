@@ -209,14 +209,14 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         render: (v, record) => {
           const index = findIndex(field.value, record);
           const flag = getIsOverriding(record);
+          //@ts-ignore
+          overridingSchema.properties.actions.properties.overriding['x-visible'] = flag;
           return (
-            flag && (
-              <RecordIndexProvider index={index}>
-                <RecordProvider record={record}>
-                  <RecursionField schema={overridingSchema as Schema} name={index} onlyRenderProperties />
-                </RecordProvider>
-              </RecordIndexProvider>
-            )
+            <RecordIndexProvider index={index}>
+              <RecordProvider record={record}>
+                <RecursionField schema={overridingSchema as Schema} name={index} onlyRenderProperties />
+              </RecordProvider>
+            </RecordIndexProvider>
           );
         },
       });

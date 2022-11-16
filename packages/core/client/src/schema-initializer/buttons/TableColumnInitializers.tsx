@@ -7,6 +7,7 @@ import {
   useTableColumnInitializerFields,
   useInheritsTableColumnInitializerFields,
 } from '../utils';
+import { useCompile } from '../../schema-component';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
@@ -14,6 +15,7 @@ export const TableColumnInitializers = (props: any) => {
   const { t } = useTranslation();
   const associatedFields = useAssociatedTableColumnInitializerFields();
   const inheritFields = useInheritsTableColumnInitializerFields();
+  const compile = useCompile();
   const fieldItems: any[] = [
     {
       type: 'itemGroup',
@@ -23,16 +25,17 @@ export const TableColumnInitializers = (props: any) => {
   ];
   if (inheritFields?.length > 0) {
     inheritFields.forEach((inherit) => {
-      Object.values(inherit)[0].length&&fieldItems.push(
-        {
-          type: 'divider',
-        },
-        {
-          type: 'itemGroup',
-          title: t(`Parent collection fields(${Object.keys(inherit)[0]})`),
-          children: Object.values(inherit)[0],
-        },
-      );
+      Object.values(inherit)[0].length &&
+        fieldItems.push(
+          {
+            type: 'divider',
+          },
+          {
+            type: 'itemGroup',
+            title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
+            children: Object.values(inherit)[0],
+          },
+        );
     });
   }
   if (associatedFields?.length > 0) {

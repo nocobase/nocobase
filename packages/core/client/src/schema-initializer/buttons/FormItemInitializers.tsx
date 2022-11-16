@@ -8,6 +8,8 @@ import {
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
+import { useCompile } from '../../schema-component';
+
 
 // 表单里配置字段
 export const FormItemInitializers = (props: any) => {
@@ -15,6 +17,7 @@ export const FormItemInitializers = (props: any) => {
   const { insertPosition, component } = props;
   const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Form' });
   const inheritFields = useInheritsFormItemInitializerFields();
+  const compile = useCompile();
   const fieldItems: any[] = [
     {
       type: 'itemGroup',
@@ -30,7 +33,7 @@ export const FormItemInitializers = (props: any) => {
         },
         {
           type: 'itemGroup',
-          title: t(`Parent collection fields(${Object.keys(inherit)[0]})`),
+          title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
           children: Object.values(inherit)[0],
         },
       );

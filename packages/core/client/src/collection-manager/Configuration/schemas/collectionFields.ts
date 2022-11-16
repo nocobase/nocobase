@@ -223,7 +223,16 @@ export const overridingSchema: ISchema = {
             type: 'primary',
           },
         },
+        view:{
+          type: 'void',
+          title: '{{ t("View") }}',
+          'x-component': 'ViewCollectionField',
+          'x-component-props': {
+            type: 'primary',
+          },
+        }
       },
     },
   },
 };
+

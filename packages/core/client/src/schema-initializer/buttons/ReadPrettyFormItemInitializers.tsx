@@ -3,13 +3,14 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../SchemaInitializer';
 import { gridRowColWrap, useAssociatedFormItemInitializerFields, useFormItemInitializerFields ,useInheritsFormItemInitializerFields} from '../utils';
+import { useCompile } from '../../schema-component';
 
 export const ReadPrettyFormItemInitializers = (props: any) => {
   const { t } = useTranslation();
   const { insertPosition, component } = props;
   const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Form' });
   const inheritFields = useInheritsFormItemInitializerFields();
-
+  const compile = useCompile();
   const fieldItems: any[] = [
     {
       type: 'itemGroup',
@@ -25,7 +26,7 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
         },
         {
           type: 'itemGroup',
-          title: t(`Parent collection fields(${Object.keys(inherit)[0]})`),
+          title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
           children: Object.values(inherit)[0],
         },
       );
