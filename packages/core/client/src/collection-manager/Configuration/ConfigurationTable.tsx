@@ -2,18 +2,18 @@ import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useEffect, useRef, useState } from 'react';
+import { CollectionFieldsTable } from '.';
 import { useRequest } from '../../api-client';
+import { useCurrentDatabase } from '../../database';
 import { useRecord } from '../../record-provider';
 import { SchemaComponent, SchemaComponentContext, useActionContext, useCompile } from '../../schema-component';
+import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
-import { useCurrentDatabase } from '../../database';
-import { CollectionFieldsTable } from '.';
-import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
@@ -202,6 +202,7 @@ export const ConfigurationTable = () => {
             CollectionFieldsTable,
           }}
           scope={{
+            enableInherits: database?.dialect === 'postgres', 
             useDestroySubField,
             useBulkDestroySubField,
             useSelectedRowKeys,

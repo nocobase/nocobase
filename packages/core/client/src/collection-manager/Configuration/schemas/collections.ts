@@ -75,6 +75,7 @@ export const createCollectionProperties = {
   inherits: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
+    'x-visible': '{{ enableInherits }}',
     'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
   },
   footer: {
