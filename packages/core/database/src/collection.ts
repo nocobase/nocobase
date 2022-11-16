@@ -188,7 +188,7 @@ export class Collection<
 
     if (oldField && oldField.options.inherit && options.type != oldField.options.type) {
       throw new Error(
-        `Field type conflict: cannot set "${name}" to ${options.type}, parent "${name}" type is ${oldField.options.type}`,
+        `Field type conflict: cannot set "${name}" on "${this.name}" to ${options.type}, parent "${name}" type is ${oldField.options.type}`,
       );
     }
 
