@@ -243,7 +243,8 @@ pgOnly()('Inherited Collection', () => {
     }
 
     expect(err).toBeDefined();
-    expect(err.message.includes('Type conflict')).toBeTruthy();
+    console.log(err.message);
+    expect(err.message.includes('type conflict')).toBeTruthy();
   });
 
   it('should replace parent collection field', async () => {
