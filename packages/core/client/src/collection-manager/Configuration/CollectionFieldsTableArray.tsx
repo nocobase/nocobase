@@ -13,7 +13,7 @@ import {
   useRequest,
   useSchemaInitializer,
   useRecord,
-  useCompile
+  useCompile,
 } from '../..';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
@@ -132,8 +132,10 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
           sortKeyArr.push(v);
           const parentCollection = getCollection(v);
           parentCollection.fields.map((k) => {
-            addCategorizeVal(v, new Proxy(k, {}));
-            field.value.push(new Proxy(k, {}));
+            if (k.interface) {
+              addCategorizeVal(v, new Proxy(k, {}));
+              field.value.push(new Proxy(k, {}));
+            }
           });
         });
       }
@@ -142,7 +144,9 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
           const parentCollection = getCollection(key);
           tmpData.push({
             key,
-            name: t(CategorizeKeyNameMap.get(key)) || t(`Parent collection fields`) + `(${compile(parentCollection.title)})`,
+            name:
+              t(CategorizeKeyNameMap.get(key)) ||
+              t(`Parent collection fields`) + `(${compile(parentCollection.title)})`,
             data: categorizeMap.get(key),
           });
         }
@@ -187,7 +191,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
     });
   };
 
-  const getIsOverriding = (record) => { 
+  const getIsOverriding = (record) => {
     const flag = currentFields.find((v) => {
       return v.name === record.name;
     });
