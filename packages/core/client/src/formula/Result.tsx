@@ -1,38 +1,53 @@
 import { onFormValuesChange } from '@formily/core';
-import { useFieldSchema, useFormEffects } from '@formily/react';
+import { useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
+import { toFixedByStep } from '@nocobase/utils/client';
 import cloneDeep from 'lodash/cloneDeep';
 import * as math from 'mathjs';
 import { isNumber } from 'mathjs';
-import React from 'react';
+import React, { useState } from 'react';
 import { useCollection } from '../collection-manager';
-import { Input, InputNumber } from '../schema-component';
 
-export const Result = (props) => {
-  const { onChange, evaluate, ...others } = props;
+const ReadPretty = (props) => {
+  if (props?.options?.dataType !== 'string') {
+    return <div>{toFixedByStep(props.value, props.step)}</div>;
+  }
+  return <div>{props.value}</div>;
+};
+
+const Input = (props) => {
+  const { evaluate, options } = props;
+  const { dataType, expression } = options;
+  const form = useForm();
+  const val = () => {
+    const scope = cloneDeep(form.values);
+    try {
+      let result = evaluate(expression, scope);
+      result = isNumber(result) && Number.isFinite(result) ? math.round(result, 9) : result;
+      return result;
+    } catch (error) {
+      return null;
+    }
+  };
+  const [value, setVal] = useState(() => {
+    return val();
+  });
+  useFormEffects(() => {
+    onFormValuesChange(() => {
+      setVal(val());
+    });
+  });
+  if (dataType !== 'string') {
+    return <div>{toFixedByStep(value, props.step)}</div>;
+  }
+  return <div>{value}</div>;
+};
+
+export const Result = (props: any) => {
+  const field = useField();
   const { getField } = useCollection();
   const fieldSchema = useFieldSchema();
   const options = getField(fieldSchema.name as string);
-  const { expression } = options;
-
-  useFormEffects(() => {
-    onFormValuesChange((form) => {
-      const scope = cloneDeep(form.values);
-      let result;
-      try {
-        result = evaluate(expression, scope);
-        result = isNumber(result) && Number.isFinite(result) ? math.round(result, 9) : result;
-      } catch {}
-      if (onChange) {
-        onChange(result);
-      }
-    });
-  });
-
-  if (isNumber(props.value)) {
-    return <InputNumber {...others} disabled stringMode={true} />;
-  }
-
-  return <Input {...others} disabled />;
+  return field.readPretty ? <ReadPretty {...props} options={options} /> : <Input {...props} options={options} />;
 };
 
 export default Result;

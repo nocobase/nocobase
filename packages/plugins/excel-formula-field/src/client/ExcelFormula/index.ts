@@ -1,11 +1,11 @@
-import { connect } from '@formily/react';
+import { connect, observer } from '@formily/react';
 import { Formula } from '@nocobase/client';
 import React from 'react';
 import { evaluate } from '../../utils/evaluate';
 
 export const ExcelFormula: any = () => null;
 
-ExcelFormula.Result = connect((props) =>
+ExcelFormula.Result = observer((props) =>
   React.createElement(Formula.Result, {
     ...props,
     evaluate,
