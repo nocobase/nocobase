@@ -5,7 +5,6 @@ import { BooleanFieldOptions } from './boolean-field';
 import { ContextFieldOptions } from './context-field';
 import { DateFieldOptions } from './date-field';
 import { BaseFieldOptions } from './field';
-import { FormulaFieldOptions } from './formula-field';
 import { HasManyFieldOptions } from './has-many-field';
 import { HasOneFieldOptions } from './has-one-field';
 import { JsonbFieldOptions, JsonFieldOptions } from './json-field';
@@ -34,7 +33,6 @@ export * from './boolean-field';
 export * from './context-field';
 export * from './date-field';
 export * from './field';
-export * from './formula-field';
 export * from './has-many-field';
 export * from './has-one-field';
 export * from './json-field';
@@ -66,7 +64,6 @@ export type FieldOptions =
   | SortFieldOptions
   | TextFieldOptions
   | VirtualFieldOptions
-  | FormulaFieldOptions
   | ArrayFieldOptions
   | TimeFieldOptions
   | DateFieldOptions
