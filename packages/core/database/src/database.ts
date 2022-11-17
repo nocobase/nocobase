@@ -74,6 +74,7 @@ interface MapOf<T> {
 export interface IDatabaseOptions extends Options {
   tablePrefix?: string;
   migrator?: any;
+  usingBigIntForId?: boolean;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -164,8 +165,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
   constructor(options: DatabaseOptions) {
     super();
 
-    // this.setMaxListeners(100);
-
     this.version = new DatabaseVersion(this);
 
     const opts = {
@@ -188,6 +187,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
       delete opts.timezone;
     } else if (!opts.timezone) {
       opts.timezone = '+00:00';
+    }
+
+    if (options.dialect === 'postgres') {
+      // https://github.com/sequelize/sequelize/issues/1774
+      require('pg').defaults.parseInt8 = true;
     }
 
     this.sequelize = new Sequelize(opts);
@@ -269,9 +273,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     this.on('afterDefine', (model) => {
-      const idAttribute = model.rawAttributes['id'];
-      if (idAttribute && idAttribute.primaryKey) {
-        model.rawAttributes['id'].type = DataTypes.BIGINT;
+      if (lodash.get(this.options, 'usingBigIntForId', true)) {
+        const idAttribute = model.rawAttributes['id'];
+        if (idAttribute && idAttribute.primaryKey) {
+          model.rawAttributes['id'].type = DataTypes.BIGINT;
+        }
       }
     });
   }
