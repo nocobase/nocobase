@@ -154,19 +154,27 @@ export class HasOneField extends RelationField {
     database.removePendingField(this);
     // 如果关系表内没有显式的创建外键字段，删除关系时，外键也删除掉
     const tcoll = database.collections.get(this.target);
-    const foreignKey = this.options.foreignKey;
-    const field = tcoll.findField((field) => {
-      if (field.name === foreignKey) {
-        return true;
+
+    if (tcoll) {
+      const foreignKey = this.options.foreignKey;
+
+      const field = tcoll.findField((field) => {
+        if (field.name === foreignKey) {
+          return true;
+        }
+        return field.type === 'belongsTo' && field.foreignKey === foreignKey;
+      });
+
+      if (!field) {
+        tcoll.model.removeAttribute(foreignKey);
       }
-      return field.type === 'belongsTo' && field.foreignKey === foreignKey;
-    });
-    if (!field) {
-      tcoll.model.removeAttribute(foreignKey);
     }
 
     const association = collection.model.associations[this.name];
-    this.database.referenceMap.removeReference(this.reference(association));
+
+    if (association) {
+      this.database.referenceMap.removeReference(this.reference(association));
+    }
 
     this.clearAccessors();
     // 删掉 model 的关联字段

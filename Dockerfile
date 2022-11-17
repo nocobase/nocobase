@@ -1,5 +1,6 @@
 FROM node:16 as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
+ARG COMIT_HASH
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
@@ -42,6 +43,8 @@ COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 
 WORKDIR /app/nocobase
+
+RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMIT_HASH" >> /app/nocobase/storage/uploads/COMIT_HASH
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 

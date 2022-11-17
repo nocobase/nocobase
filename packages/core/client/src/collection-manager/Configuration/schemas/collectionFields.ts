@@ -81,10 +81,6 @@ export const collectionFieldSchema: ISchema = {
       },
     },
   },
-  // 'x-component': 'CollectionProvider',
-  // 'x-component-props': {
-  //   collection,
-  // },
   properties: {
     summary: {
       type: 'void',
@@ -208,3 +204,37 @@ export const collectionFieldSchema: ISchema = {
     },
   },
 };
+
+export const overridingSchema: ISchema = {
+  type: 'void',
+  title: '{{ t("Actions") }}',
+  'x-component': 'Table.Column',
+  properties: {
+    actions: {
+      type: 'void',
+      'x-component': 'Space',
+      'x-component-props': {
+        split: '|',
+      },
+      properties: {
+        overriding: {
+          type: 'void',
+          title: '{{ t("Overriding") }}',
+          'x-component': 'OverridingCollectionField',
+          'x-component-props': {
+            type: 'primary',
+          },
+        },
+        view:{
+          type: 'void',
+          title: '{{ t("View") }}',
+          'x-component': 'ViewCollectionField',
+          'x-component-props': {
+            type: 'primary',
+          },
+        }
+      },
+    },
+  },
+};
+

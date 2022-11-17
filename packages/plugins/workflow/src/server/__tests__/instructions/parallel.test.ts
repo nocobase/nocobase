@@ -1,6 +1,6 @@
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { getApp } from '..';
+import { getApp, sleep } from '..';
 import { EXECUTION_STATUS } from '../../constants';
 
 
@@ -51,6 +51,8 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -73,6 +75,8 @@ describe('workflow > instructions > parallel', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
@@ -98,6 +102,8 @@ describe('workflow > instructions > parallel', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
@@ -127,6 +133,8 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -153,6 +161,8 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -178,6 +188,8 @@ describe('workflow > instructions > parallel', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
@@ -207,6 +219,8 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -232,6 +246,8 @@ describe('workflow > instructions > parallel', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
@@ -262,6 +278,8 @@ describe('workflow > instructions > parallel', () => {
       await n1.setDownstream(n3);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -298,6 +316,8 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -324,6 +344,8 @@ describe('workflow > instructions > parallel', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -360,13 +382,17 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
 
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
       pending.set('result', 123);
-      const processor = plugin.createProcessor(execution);
-      await processor.resume(pending);
+      pending.execution = execution;
+      await plugin.resume(pending);
+
+      await sleep(500);
 
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -405,6 +431,8 @@ describe('workflow > instructions > parallel', () => {
       await n1.setDownstream(n5);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);

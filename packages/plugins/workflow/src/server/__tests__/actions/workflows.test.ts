@@ -1,6 +1,6 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
-import { getApp } from '..';
+import { getApp, sleep } from '..';
 
 
 
@@ -61,6 +61,9 @@ describe('workflow > actions > workflows', () => {
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const c1 = await workflow.countExecutions();
       expect(c1).toBe(1);
 
@@ -87,6 +90,9 @@ describe('workflow > actions > workflows', () => {
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const c1 = await workflow.countExecutions();
       expect(c1).toBe(1);
 
@@ -100,6 +106,9 @@ describe('workflow > actions > workflows', () => {
       expect(status).toBe(200);
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
     });
@@ -129,6 +138,8 @@ describe('workflow > actions > workflows', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       await WorkflowModel.update({
         enabled: true
       }, {
@@ -148,6 +159,8 @@ describe('workflow > actions > workflows', () => {
       expect(w2next.current).toBe(true);
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();
@@ -229,6 +242,8 @@ describe('workflow > actions > workflows', () => {
       await PostRepo.create({
         values: { title: 't1', read: 1 }
       });
+
+      await sleep(500);
 
       const [execution] = await w2.getExecutions();
       const [echo, calculation] = await execution.getJobs({ order: [['id', 'ASC']] });

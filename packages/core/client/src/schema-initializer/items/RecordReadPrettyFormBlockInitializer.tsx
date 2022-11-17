@@ -7,10 +7,17 @@ import { SchemaInitializer } from '../SchemaInitializer';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 
 export const RecordReadPrettyFormBlockInitializer = (props) => {
-  const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
-
+  const {
+    onCreateBlockSchema,
+    componentType,
+    createBlockSchema,
+    insert,
+    icon = true,
+    targetCollection,
+    ...others
+  } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const collection = useCollection();
+  const collection = targetCollection || useCollection();
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =
@@ -18,7 +25,7 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
 
   return (
     <SchemaInitializer.Item
-      icon={<FormOutlined />}
+      icon={icon && <FormOutlined />}
       {...others}
       key={'123'}
       onClick={async ({ item }) => {
