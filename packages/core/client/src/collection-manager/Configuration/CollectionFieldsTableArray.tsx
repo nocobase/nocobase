@@ -84,7 +84,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const { name } = useRecord();
   const { t } = useTranslation();
   const compile = useCompile();
-  const { getInterface, getParentCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
+  const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
     useCollectionManager();
   const {
     showIndex = true,
@@ -96,7 +96,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const [selectedRowKeys, setSelectedRowKeys] = useSelectedRowKeys();
   const [categorizeData, setCategorizeData] = useState<Array<CategorizeDataItem>>([]);
   const [expandedKeys, setExpendedKeys] = useState(selectedRowKeys);
-  const inherits = getParentCollections(name);
+  const inherits = getInheritCollections(name);
   const currentFields = getCurrentCollectionFields(name);
   useDataSource({
     onSuccess(data) {
