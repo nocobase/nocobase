@@ -1,6 +1,9 @@
 import { Database } from '../database';
 import { mockDatabase } from './index';
-describe('collection', () => {
+
+const excludeSqlite = () => (process.env.DB_DIALECT != 'sqlite' ? describe : describe.skip);
+
+excludeSqlite()('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -40,8 +43,5 @@ describe('collection', () => {
     const profileTableInfo = await db.sequelize.getQueryInterface().describeTable(profile.model.tableName);
 
     expect(profileTableInfo['userId'].type).toBe('BIGINT');
-    const u1 = await db.getCollection('users').repository.create({});
-
-    console.log(u1.toJSON());
   });
 });
