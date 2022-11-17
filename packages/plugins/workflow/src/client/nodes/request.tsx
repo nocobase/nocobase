@@ -5,7 +5,7 @@ import React from "react";
 import {RequestVarFieldSet} from "../components/RequestVarFieldSet";
 
 export default {
-  title: `{{t("Http request", { ns: "${NAMESPACE}" })}}`,
+  title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
   type: 'request',
   group: 'extended',
   fieldset: {
@@ -13,7 +13,7 @@ export default {
       type: 'string',
       name: 'config.requestUrl',
       required: true,
-      title: `{{t("Http Request Url", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("HTTP request url", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {
         className: css`
@@ -24,7 +24,7 @@ export default {
       },
       'x-component': 'Input',
       'x-component-props': {
-        placeholder: `{{t("Input http request url", { ns: "${NAMESPACE}" })}}`,
+        placeholder: `{{t("Input HTTP request url", { ns: "${NAMESPACE}" })}}`,
         style: {
           width: '100%',
         },
@@ -35,7 +35,7 @@ export default {
       name: 'config.headers',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
-      title: `{{t("Http Request Headers", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("HTTP request headers", { ns: "${NAMESPACE}" })}}`,
       items: {
         type: 'object',
         properties: {
@@ -71,7 +71,7 @@ export default {
       properties: {
         add: {
           type: 'void',
-          title:  `{{t("Add Http Request Header", { ns: "${NAMESPACE}" })}}`,
+          title:  `{{t("Add HTTP request header", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'ArrayItems.Addition',
         },
       },
@@ -80,7 +80,7 @@ export default {
       type: 'string',
       name: 'config.httpMethod',
       required: true,
-      title: `{{t("Http Method", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("HTTP method", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
@@ -95,7 +95,7 @@ export default {
     },
     'variables': {
       type: 'object',
-      title: `{{t("Available Variables", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Available variables", { ns: "${NAMESPACE}" })}}`,
       name: 'variables',
       'x-decorator': 'FormItem',
       'x-decorator-props': {
@@ -106,7 +106,7 @@ export default {
       type: 'string',
       name: 'config.postMethodData',
       'x-hidden': false,
-      title: `{{t("Post Method Request Data", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("POST method request Data", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {
         className: css`
@@ -143,7 +143,7 @@ export default {
     'config.getMethodParam': {
       type: 'object',
       name: 'config.getMethodParam',
-      title: `{{t("Get Method Request Param", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("GET method request param", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {
         className: css`
