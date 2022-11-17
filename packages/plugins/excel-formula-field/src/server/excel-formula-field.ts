@@ -4,7 +4,8 @@ import { evaluate } from '../utils/evaluate';
 
 export class ExcelFormulaField extends Field {
   get dataType() {
-    return DataTypes.STRING;
+    const { dataType } = this.options;
+    return dataType === 'string' ? DataTypes.STRING : DataTypes.NUMBER;
   }
 
   calculate(expression, scope) {
@@ -95,5 +96,6 @@ export class ExcelFormulaField extends Field {
 
 export interface ExcelFormulaFieldOptions extends BaseFieldOptions {
   type: 'excelFormula';
+  dataType?: 'number' | 'string';
   expression: string;
 }

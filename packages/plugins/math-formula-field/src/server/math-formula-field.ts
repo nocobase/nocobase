@@ -4,7 +4,7 @@ import { DataTypes } from 'sequelize';
 
 export class MathFormulaField extends Field {
   get dataType() {
-    return DataTypes.FLOAT;
+    return DataTypes.DOUBLE;
   }
 
   calculate(expression, scope) {

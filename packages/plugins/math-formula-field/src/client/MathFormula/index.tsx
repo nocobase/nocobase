@@ -5,9 +5,12 @@ import React from 'react';
 
 export const MathFormula: any = () => null;
 
-MathFormula.Result = React.createElement(Formula.Result, {
-  evaluate,
-});
+MathFormula.Result = connect((props) =>
+  React.createElement(Formula.Result, {
+    ...props,
+    evaluate,
+  }),
+);
 
 MathFormula.Expression = connect((props) => {
   return React.createElement(Formula.Expression, {

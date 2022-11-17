@@ -5,9 +5,12 @@ import { evaluate } from '../../utils/evaluate';
 
 export const ExcelFormula: any = () => null;
 
-ExcelFormula.Result = React.createElement(Formula.Result, {
-  evaluate,
-});
+ExcelFormula.Result = connect((props) =>
+  React.createElement(Formula.Result, {
+    ...props,
+    evaluate,
+  }),
+);
 
 ExcelFormula.Expression = connect((props) => {
   return React.createElement(Formula.Expression, {

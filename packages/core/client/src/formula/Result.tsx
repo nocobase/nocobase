@@ -1,13 +1,14 @@
 import { onFormValuesChange } from '@formily/core';
 import { useFieldSchema, useFormEffects } from '@formily/react';
 import { useCollection } from '@nocobase/client';
-import { InputNumber } from 'antd';
-import _ from 'lodash';
+import { Input, InputNumber } from 'antd';
+import cloneDeep from 'lodash/cloneDeep';
 import * as math from 'mathjs';
+import { isNumber } from 'mathjs';
 import React from 'react';
 
-const Result = (props) => {
-  const { onChange, ...others } = props;
+export const Result = (props) => {
+  const { onChange, evaluate, ...others } = props;
   const { getField } = useCollection();
   const fieldSchema = useFieldSchema();
   const options = getField(fieldSchema.name as string);
@@ -15,19 +16,23 @@ const Result = (props) => {
 
   useFormEffects(() => {
     onFormValuesChange((form) => {
-      const scope = _.cloneDeep(form.values);
+      const scope = cloneDeep(form.values);
       let result;
       try {
-        result = math.evaluate(expression, scope);
+        result = evaluate(expression, scope);
         result = Number.isFinite(result) ? math.round(result, 9) : null;
-      } catch{}
+      } catch {}
       if (onChange) {
         onChange(result);
       }
     });
   });
 
-  return <InputNumber {...others} readOnly stringMode={true} />;
+  if (isNumber(props.value)) {
+    return <InputNumber {...others} disabled stringMode={true} />;
+  }
+
+  return <Input {...others} disabled />;
 };
 
 export default Result;

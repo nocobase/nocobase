@@ -7,7 +7,7 @@ export const mathFormula: IField = {
   group: 'advanced',
   order: 1,
   title: '{{t("Math formula")}}',
-  description: '{{t("Math formula description")}}',
+  description: '{{t("Compute a value based on the other fields using mathjs")}}',
   sortable: true,
   default: {
     type: 'mathFormula',

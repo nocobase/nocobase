@@ -5,9 +5,9 @@ export const excelFormula: IField = {
   name: 'excelFormula',
   type: 'object',
   group: 'advanced',
-  order: 3,
+  order: 2,
   title: '{{t("Excel formula")}}',
-  description: '{{t("Compute a value based on the other fields using Excel formula functions")}}',
+  description: '{{t("Compute a value based on the other fields using excel formula functions")}}',
   sortable: true,
   default: {
     type: 'excelFormula',
@@ -25,6 +25,18 @@ export const excelFormula: IField = {
   },
   properties: {
     ...defaultProps,
+    dataType: {
+      type: 'string',
+      title: '{{t("Data type")}}',
+      'x-component': 'Select',
+      'x-decorator': 'FormItem',
+      default: 'number',
+      'x-disabled': '{{ !createOnly }}',
+      enum: [
+        { value: 'string', label: '{{t("String")}}' },
+        { value: 'number', label: '{{t("Number")}}' },
+      ],
+    },
     expression: {
       type: 'string',
       title: '{{t("Expression")}}',
