@@ -9,10 +9,13 @@ export default class UpdateIdToBigIntMigrator extends Migration {
 
     const transaction = await db.sequelize.transaction();
 
-    const updateToBigInt = async (tableName, fieldName) => {
-      await this.sequelize.query(`ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`, {
-        transaction,
-      });
+    const updateToBigInt = async (model, fieldName) => {
+      const tableName = model.tableName;
+      if (model.rawAttributes[fieldName].type instanceof DataTypes.INTEGER) {
+        await this.sequelize.query(`ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`, {
+          transaction,
+        });
+      }
     };
 
     //@ts-ignore
@@ -24,8 +27,8 @@ export default class UpdateIdToBigIntMigrator extends Migration {
       for (const model of models) {
         const primaryKeyField = model.tableAttributes[model.primaryKeyField];
 
-        if (primaryKeyField && primaryKeyField.type.key === 'INTEGER' && primaryKeyField.primaryKey) {
-          await updateToBigInt(model.tableName, model.primaryKeyField);
+        if (primaryKeyField && primaryKeyField.primaryKey) {
+          await updateToBigInt(model, model.primaryKeyField);
         }
 
         const associations = model.associations;
@@ -51,8 +54,8 @@ export default class UpdateIdToBigIntMigrator extends Migration {
             fieldName = association.foreignKey;
           }
 
-          if (foreignModel && fieldName && foreignModel.tableAttributes[fieldName].type.key === 'INTEGER') {
-            await updateToBigInt(foreignModel.tableName, fieldName);
+          if (foreignModel && fieldName) {
+            await updateToBigInt(foreignModel, fieldName);
           }
 
           if (type === 'BelongsToMany') {
@@ -60,8 +63,8 @@ export default class UpdateIdToBigIntMigrator extends Migration {
             const otherKey = association.otherKey;
             const foreignKey = association.foreignKey;
 
-            await updateToBigInt(throughModel.tableName, otherKey);
-            await updateToBigInt(throughModel.tableName, foreignKey);
+            await updateToBigInt(throughModel, otherKey);
+            await updateToBigInt(throughModel, foreignKey);
           }
         }
       }
