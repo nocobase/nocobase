@@ -152,8 +152,8 @@ export const useAssociatedTableColumnInitializerFields = () => {
 
 export const useInheritsTableColumnInitializerFields = () => {
   const { name } = useCollection();
-  const { getInterface, getParentCollections, getCollection, getParentCollectionFields } = useCollectionManager();
-  const inherits = getParentCollections(name);
+  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
+  const inherits = getInheritCollections(name);
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
     const targetCollection = getCollection(v);
@@ -278,8 +278,8 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
 
 export const useInheritsFormItemInitializerFields = (options?) => {
   const { name } = useCollection();
-  const { getInterface, getParentCollections, getCollection, getParentCollectionFields } = useCollectionManager();
-  const inherits = getParentCollections(name);
+  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
+  const inherits = getInheritCollections(name);
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
     const form = useForm();

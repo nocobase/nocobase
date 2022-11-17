@@ -8,11 +8,11 @@ import { ChangePassword } from './ChangePassword';
 import { EditProfile } from './EditProfile';
 import { LanguageSettings } from './LanguageSettings';
 import { SwitchRole } from './SwitchRole';
-import {useCurrentDatabase} from '../database/CurrentDatabaseProvider'
+import {useCurrentAppInfo} from '../appInfo/CurrentAppInfoProvider'
 
 
 const ApplicationVersion = () => {
-  const data=useCurrentDatabase();
+  const data=useCurrentAppInfo();
   return (
       <Menu.Item key="version" disabled>
         Version {data?.data?.version}

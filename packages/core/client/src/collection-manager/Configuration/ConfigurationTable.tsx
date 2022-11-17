@@ -2,18 +2,18 @@ import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { CollectionFieldsTable } from '.';
 import { useRequest } from '../../api-client';
-import { useCurrentDatabase } from '../../database';
 import { useRecord } from '../../record-provider';
 import { SchemaComponent, SchemaComponentContext, useActionContext, useCompile } from '../../schema-component';
-import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
+import { useCurrentAppInfo } from '../../appInfo';
+import { CollectionFieldsTable } from '.';
+import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
@@ -177,7 +177,7 @@ export const ConfigurationTable = () => {
   const { collections = [] } = useCollectionManager();
   const {
     data: { database },
-  } = useCurrentDatabase();
+  } = useCurrentAppInfo();
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
@@ -194,7 +194,7 @@ export const ConfigurationTable = () => {
     <div>
       <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
         <SchemaComponent
-          schema={collectionSchema(database?.dialect)}
+          schema={collectionSchema}
           components={{
             AddSubFieldAction,
             EditSubFieldAction,
@@ -202,7 +202,6 @@ export const ConfigurationTable = () => {
             CollectionFieldsTable,
           }}
           scope={{
-            enableInherits: database?.dialect === 'postgres', 
             useDestroySubField,
             useBulkDestroySubField,
             useSelectedRowKeys,
@@ -213,6 +212,7 @@ export const ConfigurationTable = () => {
             useNewId,
             useCancelAction,
             useUpdateCollectionActionAndRefreshCM,
+            enableInherits: database?.dialect === 'postgres',
           }}
         />
       </SchemaComponentContext.Provider>

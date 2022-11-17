@@ -50,8 +50,8 @@ const InternalFormBlockProvider = (props) => {
 export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { __tableName } = record;
-  const { getParentCollections } = useCollectionManager();
-  const inheritCollections = getParentCollections(__tableName);
+  const { getInheritCollections } = useCollectionManager();
+  const inheritCollections = getInheritCollections(__tableName);
   const { designable } = useDesignable();
   const flag =
     !designable && __tableName && !inheritCollections.includes(props.collection) && __tableName !== props.collection;
