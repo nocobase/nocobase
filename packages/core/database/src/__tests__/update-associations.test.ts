@@ -83,7 +83,12 @@ describe('update associations', () => {
         },
       });
 
-      expect(post4.toJSON()).toMatchObject({
+      const p4 = await db.getRepository('posts').findOne({
+        filterByTk: post4.id,
+        appends: ['user'],
+      });
+
+      expect(p4?.toJSON()).toMatchObject({
         id: 4,
         name: 'post4',
         userId: 1,

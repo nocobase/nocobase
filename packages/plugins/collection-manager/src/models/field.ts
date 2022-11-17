@@ -67,15 +67,21 @@ export class FieldModel extends MagicAttributeModel {
     return (<any>this.constructor).database;
   }
 
+  isAssociationField() {
+    return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(this.get('type'));
+  }
+
   async load(loadOptions?: LoadOptions) {
     const { skipExist = false } = loadOptions || {};
     const collectionName = this.get('collectionName');
+
     if (!this.db.hasCollection(collectionName)) {
       return;
     }
 
     const collection = this.db.getCollection(collectionName);
     const name = this.get('name');
+
     if (skipExist && collection.hasField(name)) {
       return collection.getField(name);
     }
@@ -123,6 +129,7 @@ export class FieldModel extends MagicAttributeModel {
     if (!field) {
       return;
     }
+
     return field.removeFromDb({
       transaction: options.transaction,
     });

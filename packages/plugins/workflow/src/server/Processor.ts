@@ -13,8 +13,6 @@ import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 
 
 export interface ProcessorOptions extends Transactionable {
-  // TODO(temp): pass request context here for $isVar and other operators
-  _context?: any;
   plugin: Plugin
 }
 

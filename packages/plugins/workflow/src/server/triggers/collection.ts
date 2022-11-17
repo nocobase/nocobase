@@ -70,16 +70,10 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     }
   }
 
-  // TODO(bug): use setTimeout here test case will not exit (only work in SQLite)?
-  // setTimeout(() => {
-  //   this.plugin.trigger(workflow, { data: data.get() }, {
-  //     context
-  //   });
-  // }, 0);
-
-  await this.plugin.trigger(workflow, { data: data.get() }, {
-    context,
-    transaction
+  setTimeout(() => {
+    this.plugin.trigger(workflow, { data: data.get() }, {
+      context
+    });
   });
 }
 
