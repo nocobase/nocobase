@@ -43,7 +43,8 @@ export default function<T extends Instruction>(
     'query',
     'create',
     'update',
-    'destroy'
+    'destroy',
+    'request'
   ].reduce((result, key) => Object.assign(result, {
     [key]: requireModule(path.isAbsolute(key) ? key : path.join(__dirname, key))
   }), {});
