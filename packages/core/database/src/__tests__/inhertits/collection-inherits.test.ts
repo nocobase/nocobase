@@ -387,6 +387,13 @@ pgOnly()('collection inherits', () => {
     });
 
     expect(a2.get('id')).toEqual(2);
+
+    db.collection({
+      name: 'd',
+      inherits: ['c'],
+    });
+
+    await db.sync();
   });
 
   it('should update inherit field when parent field update', async () => {
