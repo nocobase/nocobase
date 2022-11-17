@@ -6,6 +6,7 @@ import lodash from 'lodash';
 import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
 import {
+  DataTypes,
   ModelCtor,
   Op,
   Options,
@@ -265,6 +266,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.on('afterRemoveCollection', (collection) => {
       this.inheritanceMap.removeNode(collection.name);
+    });
+
+    this.on('afterDefine', (model) => {
+      const idAttribute = model.rawAttributes['id'];
+      if (idAttribute && idAttribute.primaryKey) {
+        model.rawAttributes['id'].type = DataTypes.BIGINT;
+      }
     });
   }
 
