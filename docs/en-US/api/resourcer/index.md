@@ -1,25 +1,57 @@
 # Resourcer
 
-Resourcer 主要用于管理 API 资源与路由，也是 NocoBase 的内置模块，app 默认会自动创建一个 Resourcer 实例，大部分情况你可以通过 `app.resourcer` 访问。
+## 概览
 
-资源路由管理器主要通过 [资源](/api/server/resourcer/resource) + [操作](/api/server/resourcer/action) 的概念定义服务端 API 接口，与 RESTful 的概念相似。大部分资源通过映射数据库表生成，包含常规的 CRUD 操作，以覆盖常见场景。但如果有额外需求，也可以在此基础上扩展更多的资源类型和操作类型。
+Nocobase 中的接口遵循面向资源的设计模式。Resourcer 主要用于管理 API 资源与路由。
 
-## 包结构
+```javascript
+const Koa = require('koa');
+const { Resourcer } = require('@nocobase/resourcer');
 
-可通过以下方式引入相关实体：
+const resourcer = new Resourcer();
 
-```ts
-import Resourcer, {
-  Resource,
-  Action,
-  Middleware,
-  branch
-} from '@nocobase/resourcer';
+// 定义一个资源接口
+resourcer.define({
+  name: 'users',
+  actions: {
+    async list(ctx) {
+      ctx.body = [
+        {
+          name: "u1",
+          age: 18
+        },
+        {
+          name: "u2",
+          age: 20
+        }
+      ]  
+    }
+  },
+});
+
+const app = new Koa();
+
+// 可在 koa 实例中使用
+app.use(
+  resourcer.middleware({
+    prefix: '/api', // resourcer 路由前缀
+  }),
+);
+
+app.listen(3000);
 ```
+
+启动服务后，使用`curl`发起请求：
+```bash
+>$ curl localhost:3000/api/users
+[{"name":"u1","age":18},{"name":"u2","age":20}]
+```
+更多 Resourcer 的使用说明可参考[资源与操作](/development/guide/resources-actions)。 Resourcer 内置于 [NocoBase Application](/api/server/application#resourcer) ，可以通过 `app.resourcer` 访问。
+
 
 ## 构造函数
 
-用于创建 Resourcer 管理器实例。由于 app 默认创建一个内置实例，所以通常不会直接使用构造函数。
+用于创建 Resourcer 管理器实例。
 
 **签名**
 

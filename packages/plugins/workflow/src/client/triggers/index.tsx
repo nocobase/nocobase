@@ -12,6 +12,7 @@ import { nodeCardClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from ".
 import { useFlowContext } from "../FlowContext";
 import collection from './collection';
 import schedule from "./schedule/";
+import { lang, NAMESPACE } from "../locale";
 
 
 function useUpdateConfigAction() {
@@ -28,7 +29,7 @@ function useUpdateConfigAction() {
         return;
       }
       await form.submit();
-      await api.resource('workflows').update({
+      await api.resource('workflows').update?.({
         filterByTk: workflow.id,
         values: form.values
       });
@@ -97,7 +98,7 @@ function TriggerExecution() {
                 properties: {
                   createdAt: {
                     type: 'string',
-                    title: '{{t("Triggered at")}}',
+                    title: `{{t("Triggered at", { ns: "${NAMESPACE}" })}}`,
                     'x-decorator': 'FormItem',
                     'x-component': 'DatePicker',
                     'x-component-props': {
@@ -107,7 +108,7 @@ function TriggerExecution() {
                   },
                   context: {
                     type: 'object',
-                    title: '{{t("Trigger context")}}',
+                    title: `{{t("Trigger context", { ns: "${NAMESPACE}" })}}`,
                     'x-decorator': 'FormItem',
                     'x-component': 'Input.JSON',
                     'x-component-props': {
@@ -138,13 +139,13 @@ export const TriggerConfig = () => {
   const { type, config, executed } = workflow;
   const { title, fieldset, scope, components } = triggers.get(type);
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
-  const titleText = `${t('Trigger')}: ${compile(title)}`;
+  const titleText = `${lang('Trigger')}: ${compile(title)}`;
 
   return (
     <div className={cx(nodeCardClass)}>
       <div className={cx(nodeHeaderClass)}>
         <div className={cx(nodeMetaClass)}>
-          <Tag color="gold">{t('Trigger')}</Tag>
+          <Tag color="gold">{lang('Trigger')}</Tag>
         </div>
         <h4>{compile(title)}</h4>
         <TriggerExecution />

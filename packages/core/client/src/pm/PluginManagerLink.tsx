@@ -63,7 +63,7 @@ export const SettingsCenterDropdown = () => {
       path: 'system-settings/system-settings',
     },
     {
-      title: t('Workflow'),
+      title: t('workflow:Workflow'),
       path: 'workflow/workflows',
     },
     // {

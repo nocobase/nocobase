@@ -15,6 +15,42 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should pass empty inherits params', async () => {
+    const table1 = db.collection({
+      name: 'table1',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    const table2 = db.collection({
+      name: 'table2',
+      inherits: [],
+    });
+
+    expect(table2).not.toBeInstanceOf(InheritedCollection);
+  });
+
+  it('should remove Node after collection destroy', async () => {
+    const table1 = db.collection({
+      name: 'table1',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    db.collection({
+      name: 'table2',
+      fields: [{ type: 'string', name: 'integer' }],
+    });
+
+    const collection3 = db.collection({
+      name: 'table3',
+      inherits: ['table1', 'table2'],
+    });
+
+    await db.removeCollection(collection3.name);
+
+    expect(db.inheritanceMap.getNode('table3')).toBeUndefined();
+    expect(table1.isParent()).toBeFalsy();
+  });
+
   it('can update relation with child table', async () => {
     const A = db.collection({
       name: 'a',
@@ -468,7 +504,7 @@ pgOnly()('collection inherits', () => {
       name: 'person',
       fields: [
         { name: 'name', type: 'string' },
-        { type: 'hasOne', name: 'profile', target: 'profiles' },
+        { type: 'hasOne', name: 'profile', target: 'profiles', foreignKey: 'person_id' },
       ],
     });
 
@@ -486,7 +522,7 @@ pgOnly()('collection inherits', () => {
     const student = db.collection({
       name: 'students',
       inherits: 'person',
-      fields: [{ name: 'profile', type: 'hasOne', target: 'studentProfiles' }],
+      fields: [{ name: 'profile', type: 'hasOne', target: 'studentProfiles', foreignKey: 'student_id' }],
     });
 
     const studentProfile = db.collection({

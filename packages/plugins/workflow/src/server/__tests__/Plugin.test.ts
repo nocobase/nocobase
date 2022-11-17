@@ -1,6 +1,6 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
-import { getApp } from '.';
+import { getApp, sleep } from '.';
 
 
 
@@ -61,6 +61,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const count = await workflow.countExecutions();
       expect(count).toBe(0);
 
@@ -68,6 +71,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
     });
@@ -82,7 +88,11 @@ describe('workflow > Plugin', () => {
         }
       });
       expect(workflow.current).toBe(true);
+
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const c1 = await workflow.countExecutions();
       expect(c1).toBe(1);
 
@@ -90,6 +100,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
     });
@@ -105,6 +118,9 @@ describe('workflow > Plugin', () => {
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const c1 = await workflow.countExecutions();
       expect(c1).toBe(1);
 
@@ -114,6 +130,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
 
@@ -123,6 +142,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       const p3 = await PostRepo.create({ values: { title: 't3' } });
+
+      await sleep(500);
+
       const c3 = await workflow.countExecutions();
       expect(c3).toBe(2);
     });
@@ -138,6 +160,9 @@ describe('workflow > Plugin', () => {
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const c1 = await workflow.countExecutions();
       expect(c1).toBe(1);
 
@@ -149,6 +174,9 @@ describe('workflow > Plugin', () => {
       });
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
     });

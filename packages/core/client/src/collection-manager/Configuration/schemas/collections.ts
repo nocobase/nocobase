@@ -59,6 +59,7 @@ export const collection: CollectionOptions = {
     },
   ],
 };
+};
 
 export const createCollectionProperties = {
   title: {

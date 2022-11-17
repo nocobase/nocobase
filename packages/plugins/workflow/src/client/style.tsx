@@ -15,19 +15,19 @@ export const workflowPageClass = css`
     header{
       display: flex;
       align-items: center;
-
-      > *:not(:last-child) {
-        &:after{
-          content: ">";
-          margin: 0 .5em;
-        }
-      }
+      min-height: 2rem;
     }
 
     aside{
       display: flex;
       align-items: center;
       gap: .5em;
+    }
+
+    .workflow-versions{
+      label{
+        margin-right: .5em;
+      }
     }
   }
 

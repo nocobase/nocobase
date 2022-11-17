@@ -38,6 +38,7 @@ function getFieldRawName(collection: Collection, name: string) {
 async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: Model, options) {
   const { collection: collectionName, condition, changed } = workflow.config;
   const collection = (<typeof Model>data.constructor).database.getCollection(collectionName);
+  const { transaction, context } = options;
 
   // NOTE: if no configured fields changed, do not trigger
   if (changed
@@ -46,7 +47,6 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
         .filter(name => !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collection.getField(name).type))
         .every(name => !data.changedWithAssociations(getFieldRawName(collection, name)))
   ) {
-    // TODO: temp comment out
     return;
   }
   // NOTE: if no configured condition match, do not trigger
@@ -54,7 +54,6 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     // TODO: change to map filter format to calculation format
     // const calculation = toCalculation(condition);
     const { repository, model } = collection;
-    const { transaction, context } = options;
     const count = await repository.count({
       filter: {
         $and: [
@@ -71,9 +70,10 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     }
   }
 
-  return this.plugin.trigger(workflow, { data: data.get() }, {
-    context: options.context,
-    transaction: options.transaction
+  setTimeout(() => {
+    this.plugin.trigger(workflow, { data: data.get() }, {
+      context
+    });
   });
 }
 

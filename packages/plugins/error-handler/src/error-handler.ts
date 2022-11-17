@@ -30,6 +30,8 @@ export class ErrorHandler {
       try {
         await next();
       } catch (err) {
+        ctx.log.error(err);
+
         for (const handler of self.handlers) {
           if (handler.guard(err)) {
             return handler.render(err, ctx);

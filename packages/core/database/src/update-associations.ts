@@ -6,7 +6,7 @@ import {
   HasOne,
   Hookable,
   ModelCtor,
-  Transactionable,
+  Transactionable
 } from 'sequelize';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
@@ -452,6 +452,9 @@ export async function updateMultipleAssociation(
         const instance = await association.target.findByPk<any>(item[pk], {
           transaction,
         });
+        if (!instance) {
+          continue;
+        }
         const addAccessor = association.accessors.add;
 
         await model[addAccessor](item[pk], accessorOptions);

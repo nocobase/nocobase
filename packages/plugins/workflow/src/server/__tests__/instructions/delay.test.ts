@@ -36,12 +36,14 @@ describe('workflow > instructions > delay', () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
-          duration: 1000,
+          duration: 2000,
           endStatus: JOB_STATUS.RESOLVED
         }
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -60,12 +62,14 @@ describe('workflow > instructions > delay', () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
-          duration: 1000,
+          duration: 2000,
           endStatus: JOB_STATUS.REJECTED
         }
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -84,7 +88,7 @@ describe('workflow > instructions > delay', () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
-          duration: 1000,
+          duration: 2000,
           endStatus: JOB_STATUS.RESOLVED
         }
       });
@@ -103,6 +107,8 @@ describe('workflow > instructions > delay', () => {
       await n1.setDownstream(n2);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
@@ -133,6 +139,8 @@ describe('workflow > instructions > delay', () => {
     it('restart app should trigger delayed job', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
       const [j1] = await e1.getJobs();
@@ -152,6 +160,8 @@ describe('workflow > instructions > delay', () => {
 
     it('restart app should trigger missed delayed job', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);

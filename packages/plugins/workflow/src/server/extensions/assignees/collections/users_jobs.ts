@@ -10,6 +10,16 @@ export default {
       autoIncrement: true
     },
     {
+      type: 'integer',
+      name: 'userId',
+      primaryKey: false,
+    },
+    {
+      type: 'integer',
+      name: 'jobId',
+      primaryKey: false,
+    },
+    {
       type: 'belongsTo',
       name: 'job'
     },

@@ -1,6 +1,6 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
-import { getApp } from '..';
+import { getApp, sleep } from '..';
 
 
 
@@ -46,6 +46,8 @@ describe('workflow > instructions > query', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.title).toBe(post.title);
@@ -65,6 +67,8 @@ describe('workflow > instructions > query', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -86,6 +90,8 @@ describe('workflow > instructions > query', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(null);
@@ -105,6 +111,8 @@ describe('workflow > instructions > query', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -131,6 +139,8 @@ describe('workflow > instructions > query', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs[1].result.title).toBe(post.title);
@@ -154,6 +164,8 @@ describe('workflow > instructions > query', () => {
         values: { title: 't1', tags: [tag.id] }
       });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.id).toBe(tag.id);
@@ -175,6 +187,8 @@ describe('workflow > instructions > query', () => {
         values: { title: 't1', tags: [tag.id] }
       });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.posts.length).toBe(1);
@@ -193,7 +207,12 @@ describe('workflow > instructions > query', () => {
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
 
       // get the 2nd execution
       const [execution] = await workflow.getExecutions({ order: [['id', 'DESC']] });
@@ -214,6 +233,8 @@ describe('workflow > instructions > query', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -237,6 +258,8 @@ describe('workflow > instructions > query', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.length).toBe(1);
@@ -258,6 +281,8 @@ describe('workflow > instructions > query', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
