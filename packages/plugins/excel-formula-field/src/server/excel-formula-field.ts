@@ -5,7 +5,7 @@ import { evaluate } from '../utils/evaluate';
 export class ExcelFormulaField extends Field {
   get dataType() {
     const { dataType } = this.options;
-    return dataType === 'string' ? DataTypes.STRING : DataTypes.NUMBER;
+    return dataType === 'string' ? DataTypes.STRING : DataTypes.DOUBLE;
   }
 
   calculate(expression, scope) {
@@ -92,6 +92,13 @@ export class ExcelFormulaField extends Field {
     this.database.off('fields.afterUpdate', this.updateFieldData);
     this.off('afterSync', this.initFieldData);
   }
+
+  toSequelize() {
+    const opts = super.toSequelize();
+    delete opts.dataType;
+    return opts;
+  }
+
 }
 
 export interface ExcelFormulaFieldOptions extends BaseFieldOptions {
