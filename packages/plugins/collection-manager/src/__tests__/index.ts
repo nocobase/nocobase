@@ -6,6 +6,7 @@ import Plugin from '../';
 export async function createApp(options = {}) {
   const app = mockServer({
     acl: false,
+    ...options,
   });
 
   app.plugin(PluginErrorHandler, { name: 'error-handler' });

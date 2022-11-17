@@ -23,6 +23,7 @@ excludeSqlite()('collection', () => {
       name: 'users',
       fields: [{ type: 'hasOne', name: 'profile' }],
     });
+
     await db.sync();
     const tableInfo = await db.sequelize.getQueryInterface().describeTable(collection.model.tableName);
 

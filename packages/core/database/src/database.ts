@@ -277,6 +277,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         const idAttribute = model.rawAttributes['id'];
         if (idAttribute && idAttribute.primaryKey) {
           model.rawAttributes['id'].type = DataTypes.BIGINT;
+          model.refreshAttributes();
         }
       }
     });
