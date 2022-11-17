@@ -2,12 +2,12 @@ import React, { createContext,  useContext } from 'react';
 import { Spin } from 'antd';
 import { useRequest } from '../api-client';
 
-export const CurrentDatabaseContext = createContext(null);
+export const CurrentAppInfoContext = createContext(null);
 
-export const useCurrentDatabase = () => {
-  return useContext(CurrentDatabaseContext);
+export const useCurrentAppInfo = () => {
+  return useContext(CurrentAppInfoContext);
 };
-export const CurrentDatabaseProvider = (props) => {
+export const CurrentAppInfoProvider = (props) => {
     const result = useRequest({
         url: 'app:getInfo',
       });
@@ -15,10 +15,10 @@ export const CurrentDatabaseProvider = (props) => {
         return <Spin />;
       }
   return (
-    <CurrentDatabaseContext.Provider
+    <CurrentAppInfoContext.Provider
       value={result.data}
     >
       {props.children}
-    </CurrentDatabaseContext.Provider>
+    </CurrentAppInfoContext.Provider>
   );
 };
