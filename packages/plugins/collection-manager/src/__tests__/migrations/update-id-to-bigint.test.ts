@@ -72,14 +72,23 @@ excludeSqlite()('update id to bigint  test', () => {
         .describeTable(
           db.getCollection(collectionName) ? db.getCollection(collectionName).model.tableName : collectionName,
         );
+      console.log(`${collectionName}, ${fieldName}`, tableInfo[fieldName].type);
       expect(tableInfo[fieldName].type).toBe('BIGINT');
+    };
+
+    const assertInteger = (val) => {
+      if (db.inDialect('postgres')) {
+        expect(val).toBe('INTEGER');
+      } else {
+        expect(val).toBe('INT');
+      }
     };
 
     let usersTableInfo = await db.sequelize
       .getQueryInterface()
       .describeTable(db.getCollection('users').model.tableName);
 
-    expect(usersTableInfo.id.type).toBe('INTEGER');
+    assertInteger(usersTableInfo.id.type);
 
     const migration = new Migrator({ db } as MigrationContext);
     migration.context.app = app;

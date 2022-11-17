@@ -5,16 +5,47 @@ export default class UpdateIdToBigIntMigrator extends Migration {
   async up() {
     const db = this.app.db;
 
+    if (!db.inDialect('postgres', 'mysql')) {
+      return;
+    }
+
     const models = [];
 
     const transaction = await db.sequelize.transaction();
 
+    const queryInterface = db.sequelize.getQueryInterface() as any;
+
+    const queryGenerator = queryInterface.queryGenerator as any;
+
     const updateToBigInt = async (model, fieldName) => {
       const tableName = model.tableName;
       if (model.rawAttributes[fieldName].type instanceof DataTypes.INTEGER) {
-        await this.sequelize.query(`ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`, {
-          transaction,
-        });
+        if (db.inDialect('postgres')) {
+          await this.sequelize.query(`ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`, {
+            transaction,
+          });
+        } else if (db.inDialect('mysql')) {
+          const dataTypeOrOptions = model.rawAttributes[fieldName];
+          const attributeName = fieldName;
+
+          const query = queryGenerator.attributesToSQL(
+            {
+              [attributeName]: queryInterface.normalizeAttribute({
+                ...dataTypeOrOptions,
+                type: DataTypes.BIGINT,
+              }),
+            },
+            {
+              context: 'changeColumn',
+              table: tableName,
+            },
+          );
+          const sql = queryGenerator.changeColumnQuery(tableName, query);
+
+          await this.sequelize.query(sql.replace(' PRIMARY KEY;', ' ;'), {
+            transaction,
+          });
+        }
       }
     };
 
