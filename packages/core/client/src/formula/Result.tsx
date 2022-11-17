@@ -1,11 +1,11 @@
 import { onFormValuesChange } from '@formily/core';
 import { useFieldSchema, useFormEffects } from '@formily/react';
-import { useCollection } from '@nocobase/client';
 import { Input, InputNumber } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import * as math from 'mathjs';
 import { isNumber } from 'mathjs';
 import React from 'react';
+import { useCollection } from '../collection-manager';
 
 export const Result = (props) => {
   const { onChange, evaluate, ...others } = props;
