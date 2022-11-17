@@ -6,7 +6,6 @@ export * from './createdAt';
 export * from './createdBy';
 export * from './datetime';
 export * from './email';
-export * from './formula';
 export * from './icon';
 export * from './id';
 export * from './input';

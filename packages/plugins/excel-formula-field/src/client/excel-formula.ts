@@ -1,22 +1,22 @@
 import { IField, interfacesProperties } from '@nocobase/client';
 const { defaultProps, operators } = interfacesProperties;
 
-export const excelFunction: IField = {
-  name: 'excelFunction',
+export const excelFormula: IField = {
+  name: 'excelFormula',
   type: 'object',
   group: 'advanced',
   order: 3,
-  title: '{{t("Excel Function")}}',
-  description: '{{t("Compute a value based on the other fields using Excel functions")}}',
+  title: '{{t("Excel formula")}}',
+  description: '{{t("Compute a value based on the other fields using Excel formula functions")}}',
   sortable: true,
   default: {
-    type: 'excelFunction',
+    type: 'excelFormula',
     // name,
     uiSchema: {
       type: 'string',
       // title,
       'x-disabled': true,
-      'x-component': 'ExcelFunction.Result',
+      'x-component': 'ExcelFormula.Result',
       'x-component-props': {
         stringMode: true,
         step: '1',
@@ -30,15 +30,15 @@ export const excelFunction: IField = {
       title: '{{t("Expression")}}',
       required: true,
       description: '{{t("Input @ to open field variables.")}}',
-      'x-component': 'ExcelFunction.Expression',
+      'x-component': 'ExcelFormula.Expression',
       'x-decorator': 'FormItem',
       'x-component-props': {
-        supports: ['number', 'percent', 'integer'],
+        supports: ['number', 'percent', 'integer', 'string'],
         useCurrentFields: '{{ useCurrentFields }}',
       },
     },
   },
   filterable: {
-    operators: operators.number,
+    operators: operators.string,
   },
 };

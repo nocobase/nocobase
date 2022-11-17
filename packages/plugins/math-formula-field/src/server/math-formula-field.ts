@@ -1,20 +1,17 @@
 import { BaseFieldOptions, Field } from '@nocobase/database';
+import * as math from 'mathjs';
 import { DataTypes } from 'sequelize';
-import { getHotExcelParser } from '../utils/getHotExcelParser';
 
-export class ExcelFunctionField extends Field {
+export class MathFormulaField extends Field {
   get dataType() {
-    return DataTypes.STRING;
+    return DataTypes.FLOAT;
   }
 
-  caculate(expression, scope) {
-    let result = null;
-    let parser = getHotExcelParser(scope)
+  calculate(expression, scope) {
+    let result: any = null;
     try {
-      let response = parser.parse(expression);
-      if (!response?.error) {
-        result = response.result;
-      }
+      result = math.evaluate(expression, scope);
+      result = math.round(result, 9);
     } catch {}
     return result;
   }
@@ -29,7 +26,7 @@ export class ExcelFunctionField extends Field {
 
     for (const record of records) {
       const scope = record.toJSON();
-      const result = this.caculate(expression, scope);
+      const result = this.calculate(expression, scope);
       if (result) {
         await record.update(
           {
@@ -45,18 +42,15 @@ export class ExcelFunctionField extends Field {
     }
   };
 
-  caculateField = async (instance) => {
+  calculateField = async (instance) => {
     const { expression, name } = this.options;
     const scope = instance.toJSON();
     let result;
-    let parser = getHotExcelParser(scope)
     try {
-      let response = parser.parse(expression);
-      if (!response?.error) {
-        result = response.result;
-      }
+      result = math.evaluate(expression, scope);
+      result = math.round(result, 9);
     } catch {}
-    if (result) {
+    if (result === 0 || result) {
       instance.set(name, result);
     }
   };
@@ -73,7 +67,7 @@ export class ExcelFunctionField extends Field {
 
       for (const record of records) {
         const scope = record.toJSON();
-        const result = this.caculate(expression, scope);
+        const result = this.calculate(expression, scope);
         await record.update(
           {
             [name]: result,
@@ -93,19 +87,19 @@ export class ExcelFunctionField extends Field {
     this.on('afterSync', this.initFieldData);
     // TODO: should not depends on fields table (which is defined by other plugin)
     this.database.on('fields.afterUpdate', this.updateFieldData);
-    this.on('beforeSave', this.caculateField);
+    this.on('beforeSave', this.calculateField);
   }
 
   unbind() {
     super.unbind();
-    this.off('beforeSave', this.caculateField);
+    this.off('beforeSave', this.calculateField);
     // TODO: should not depends on fields table
     this.database.off('fields.afterUpdate', this.updateFieldData);
     this.off('afterSync', this.initFieldData);
   }
 }
 
-export interface ExcelFunctionFieldOptions extends BaseFieldOptions {
-  type: 'excelFunction';
+export interface MathFormulaFieldOptions extends BaseFieldOptions {
+  type: 'mathFormula';
   expression: string;
 }

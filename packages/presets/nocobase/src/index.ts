@@ -19,7 +19,8 @@ export class PresetNocoBase extends Plugin {
       'export',
       'import',
       'audit-logs',
-      'excel-function-field',
+      'math-formula-field',
+      'excel-formula-field',
     ];
     await this.app.pm.add(plugins, {
       enabled: true,

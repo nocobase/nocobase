@@ -1,17 +1,16 @@
 import { onFormValuesChange } from '@formily/core';
-import { connect, mapReadPretty, useFieldSchema, useFormEffects } from '@formily/react';
+import { useFieldSchema, useFormEffects } from '@formily/react';
+import { useCollection } from '@nocobase/client';
 import { InputNumber } from 'antd';
 import _ from 'lodash';
 import * as math from 'mathjs';
 import React from 'react';
-import { useCollection } from '../../../collection-manager/hooks';
-import { ReadPretty } from '../input-number/ReadPretty';
 
-const AntdCompute = (props) => {
+const Result = (props) => {
   const { onChange, ...others } = props;
   const { getField } = useCollection();
   const fieldSchema = useFieldSchema();
-  const options = getField(fieldSchema.name);
+  const options = getField(fieldSchema.name as string);
   const { expression } = options;
 
   useFormEffects(() => {
@@ -31,6 +30,4 @@ const AntdCompute = (props) => {
   return <InputNumber {...others} readOnly stringMode={true} />;
 };
 
-export const Compute = connect(AntdCompute, mapReadPretty(ReadPretty));
-
-export default Compute;
+export default Result;

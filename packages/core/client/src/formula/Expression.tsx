@@ -1,20 +1,19 @@
 import { Field, onFormSubmitValidateStart } from '@formily/core';
-import { connect, mapProps, useField, useFormEffects } from '@formily/react';
-import { Menu, Dropdown } from 'antd';
+import { useField, useFormEffects } from '@formily/react';
+import { Dropdown, Menu } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { useTranslation } from 'react-i18next';
-import * as math from 'mathjs';
 
-const AntdFormulaInput = (props) => {
-  const { value, onChange, supports, useCurrentFields } = props;
+export const Expression = (props) => {
+  const { evaluate, value, onChange, supports, useCurrentFields } = props;
   const field = useField<Field>();
   const { t } = useTranslation();
   const fields = useCurrentFields();
 
   const inputRef = useRef();
   const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [html, setHtml] = useState(null);
+  const [html, setHtml] = useState<any>(null);
 
   const numColumns = new Map<string, string>();
   const scope = {};
@@ -90,7 +89,7 @@ const AntdFormulaInput = (props) => {
   useFormEffects(() => {
     onFormSubmitValidateStart(() => {
       try {
-        math.evaluate(field.value, scope);
+        evaluate(field.value, scope);
         field.feedbacks = [];
       } catch (e) {
         console.error(field.value, scope, (e as Error).message);
@@ -106,7 +105,7 @@ const AntdFormulaInput = (props) => {
   return (
     <Dropdown overlay={menu} visible={dropdownVisible}>
       <ContentEditable
-        innerRef={inputRef}
+        innerRef={inputRef as any}
         className="ant-input"
         onChange={handleChange}
         onKeyDown={handleKeyDown}
@@ -116,6 +115,4 @@ const AntdFormulaInput = (props) => {
   );
 };
 
-export const FormulaInput = connect(AntdFormulaInput, mapProps({}));
-
-export default FormulaInput;
+export default Expression;

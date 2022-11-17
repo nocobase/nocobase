@@ -1,12 +1,12 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { ExcelFunctionField } from './excel-function-field';
+import { ExcelFormulaField } from './excel-formula-field';
 
-export class ExcelFunctionFieldPlugin extends Plugin {
+export class ExcelFormulaFieldPlugin extends Plugin {
   afterAdd() {}
 
   beforeLoad() {
     this.db.registerFieldTypes({
-      excelFunction: ExcelFunctionField,
+      excelFormula: ExcelFormulaField,
     });
   }
 
@@ -21,4 +21,4 @@ export class ExcelFunctionFieldPlugin extends Plugin {
   async remove() {}
 }
 
-export default ExcelFunctionFieldPlugin;
+export default ExcelFormulaFieldPlugin;

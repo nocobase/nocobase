@@ -1,9 +1,9 @@
 {
-  "name": "@nocobase/plugin-excel-function-field",
+  "name": "@nocobase/plugin-math-formula-field",
   "version": "0.8.0-alpha.13",
   "main": "lib/server/index.js",
   "dependencies": {
-    "hot-formula-parser": "^4.0.0"
+    "mathjs": "^10.6.0"
   },
   "devDependencies": {
     "@nocobase/server": "0.8.0-alpha.13",
