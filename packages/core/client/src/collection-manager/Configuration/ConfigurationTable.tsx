@@ -3,10 +3,8 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useRequest } from '../../api-client';
-import { useCurrentDatabase } from '../../database';
 import { useRecord } from '../../record-provider';
 import { SchemaComponent, SchemaComponentContext, useActionContext, useCompile } from '../../schema-component';
-import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
@@ -196,15 +194,14 @@ export const ConfigurationTable = () => {
     <div>
       <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
         <SchemaComponent
-          schema={collectionSchema(database?.dialect)}
+          schema={collectionSchema}
           components={{
             AddSubFieldAction,
             EditSubFieldAction,
             FieldSummary,
-            CollectionFieldsTable,,
+            CollectionFieldsTable,
           }}
           scope={{
-            enableInherits: database?.dialect === 'postgres', 
             useDestroySubField,
             useBulkDestroySubField,
             useSelectedRowKeys,
