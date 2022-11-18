@@ -270,6 +270,25 @@ export default {
     },
   ],
   '/plugins': [
-    '/plugins/workflow/index',
+    {
+      title: 'Workflow',
+      'title.zh-CN': '工作流',
+      type: 'subMenu',
+      children: [
+        '/plugins/workflow/index',
+        '/plugins/workflow/manual',
+        {
+          title: 'Development',
+          'title.zh-CN': '扩展开发',
+          type: 'group',
+          children: [
+            '/plugins/workflow/development/index',
+            '/plugins/workflow/development/triggers',
+            '/plugins/workflow/development/instructions',
+          ],
+        },
+        '/plugins/workflow/api',
+      ]
+    },
   ]
 };
