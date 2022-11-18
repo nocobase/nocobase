@@ -365,35 +365,36 @@ FormItem.Designer = (props) => {
         <SchemaSettings.SelectItem
           title={t('Field component')}
           options={[
-            { label: t('Record picker'), value: 'RecordPicker' },
-            { label: t('Subtable'), value: 'RemoteSelect' },
+            { label: t('Record picker'), value: 'CollectionField' },
+            { label: t('Select'), value: 'RemoteSelect' },
           ]}
-          value={field.componentProps.type || 'RecordPicker'}
+          value={fieldSchema['x-component']}
           onChange={(type) => {
             const schema: ISchema = {
               name: collectionField.name,
               type: 'string',
-              // title: compile(collectionField.uiSchema?.title),
+              required: fieldSchema['required'],
+              title: fieldSchema['title'],
+              description: fieldSchema['description'],
+              default: fieldSchema['default'],
               'x-decorator': 'FormItem',
               'x-designer': 'FormItem.Designer',
-              'x-component': 'CollectionField',
-              'x-component-props': {
-                type,
-              },
+              'x-component': type,
+              'x-validator': fieldSchema['x-validator'],
               'x-collection-field': fieldSchema['x-collection-field'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+              'x-component-props': {
+                ...collectionField?.uiSchema?.['x-component-props'],
+                ...fieldSchema['x-component-props'],
+              },
             };
-
-            if (type === 'RemoteSelect') {
-              schema['x-component'] = null;
-            }
-
             interfaceConfig?.schemaInitialize?.(schema, {
               field: collectionField,
               block: 'Form',
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
             });
-            console.log('🚀 ~ file: FormItem.tsx ~ line 404 ~ schema', schema);
+            console.log('🚀 ~ file: FormItem.tsx ~ line 406 ~ schema', schema);
 
             insertAdjacent('beforeBegin', divWrap(schema), {
               onSuccess: () => {
@@ -427,13 +428,16 @@ FormItem.Designer = (props) => {
             const schema: ISchema = {
               name: collectionField.name,
               type: 'void',
-              // title: compile(collectionField.uiSchema?.title),
+              title: compile(collectionField.uiSchema?.title),
               'x-decorator': 'FormItem',
               'x-designer': 'FormItem.Designer',
               'x-component': v,
-              'x-component-props': {},
+              'x-component-props': {
+                ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
+              },
               'x-collection-field': fieldSchema['x-collection-field'],
             };
+            console.log('🚀 ~ file: FormItem.tsx ~ line 429 ~ collectionField?.uiSchema', collectionField?.uiSchema);
 
             interfaceConfig?.schemaInitialize?.(schema, {
               field: collectionField,

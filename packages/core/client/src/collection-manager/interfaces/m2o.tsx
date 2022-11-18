@@ -51,15 +51,15 @@ export const m2o: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    if (block === 'Form' && schema['x-component-props']?.type === 'RemoteSelect') {
-      schema.properties = {
-        select: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'RemoteSelect',
-          'x-designer': 'RemoteSelect.Designer',
+    if (block === 'Form' && schema['x-component'] === 'RemoteSelect') {
+      return Object.assign(schema, {
+        'x-decorator': 'FormItem',
+        'x-designer': 'RemoteSelect.Designer',
+        'x-component-props': {
+          target: field.target,
+          ...schema['x-component-props'],
         },
-      };
+      });
     } else {
       schema.type = 'string';
       if (block === 'Form') {

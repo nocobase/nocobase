@@ -2,7 +2,6 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayCollapse, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
 import { connect, ISchema, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
-import { isValid, toArr } from '@formily/shared';
 import {
   GeneralSchemaDesigner,
   SchemaSettings,
@@ -14,56 +13,91 @@ import {
   useFilterByTk,
   useFormBlockContext,
 } from '@nocobase/client';
+import { uid } from '@formily/shared';
 import type { SelectProps } from 'antd';
 import { Select as AntdSelect } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty } from './ReadPretty';
-import { defaultFieldNames, getCurrentOptions } from './shared';
+import { defaultFieldNames } from './shared';
+import { useDebounceFn } from 'ahooks';
 
-type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; target: string };
+type Props = SelectProps<any, any> & {
+  objectValue?: boolean;
+  onChange?: (v: any) => void;
+  target: string;
+  wait?: number;
+};
+
+const divWrap = (schema: ISchema) => {
+  return {
+    type: 'void',
+    'x-component': 'div',
+    properties: {
+      [schema.name || uid()]: schema,
+    },
+  };
+};
 
 export const InternalRemoteSelect = connect(
   (props: Props) => {
-    const { target, fieldNames, ...others } = props;
-    const api = useAPIClient();
+    const { target, fieldNames, wait = 500, ...others } = props;
+    console.log('🚀 ~ file: RemoteSelect.tsx ~ line 46 ~ fieldNames', fieldNames);
 
+    const api = useAPIClient();
     const resource = useMemo(() => {
+      if (!target) return;
       return api.resource((props as any).target);
     }, [props.target, api]);
-    const [options, setOptions] = useState<SelectProps['options']>();
+    const [options, setOptions] = useState<SelectProps['options']>([]);
+
+    const trigger = useCallback(
+      (params?: any) => {
+        if (!target) return;
+        resource
+          .list({
+            paginate: false,
+            ...params,
+          })
+          .then((res) => {
+            const data: Array<any> = res.data.data;
+            setOptions(data);
+          });
+      },
+      [resource, setOptions],
+    );
 
     useEffect(() => {
-      resource.list().then((res) => {
-        const data: Array<any> = res.data.data;
-        console.log('🚀 ~ file: RemoteSelect.tsx ~ line 44 ~ data.map ~ fieldNames', fieldNames);
-        setOptions(
-          data.map((item) => {
-            return {
-              label: item[fieldNames.label],
-              value: item[fieldNames.value],
-            };
-          }),
-        );
-        console.log('🚀 ~ file: RemoteSelect.tsx ~ line 40 ~ resource.list ~ res.data');
-      });
-    }, [resource]);
+      trigger();
+    }, [target]);
 
-    const {} = useCollection();
-
-    const onSearch = useCallback((res) => {
-      console.log('🚀 ~ file: RemoteSelect.tsx ~ line 99 ~ onSearch ~ res', res);
-    }, []);
+    const onSearch = useDebounceFn(
+      async (search) => {
+        trigger({
+          filter: {
+            [fieldNames.label]: {
+              $includes: search,
+            },
+          },
+        });
+      },
+      {
+        wait,
+      },
+    );
 
     return (
       <AntdSelect
         showSearch
-        filterOption={(input, option) => (option?.label ?? '').includes(input)}
+        filterOption={false}
         filterSort={(optionA, optionB) =>
-          (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
+          String(optionA[fieldNames.label] ?? '')
+            .toLowerCase()
+            .localeCompare(String(optionB[fieldNames.label] ?? '').toLowerCase())
         }
-        onSearch={onSearch}
+        fieldNames={fieldNames}
+        onSearch={onSearch.run}
         allowClear
         {...others}
         options={options}
@@ -79,7 +113,7 @@ export const InternalRemoteSelect = connect(
     (props, field) => {
       return {
         ...props,
-        fieldNames: { ...defaultFieldNames, ...props.fieldNames },
+        fieldNames: { ...defaultFieldNames, ...props.fieldNames, ...field.componentProps.fieldNames },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
     },
@@ -94,15 +128,16 @@ interface RemoteSelectInterface {
 
 const RemoteSelect = InternalRemoteSelect as unknown as RemoteSelectInterface;
 
-RemoteSelect.Designer = (props) => {
-  console.log('Designer');
+RemoteSelect.Designer = () => {
   const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { dn, refresh } = useDesignable();
+  const tk = useFilterByTk();
+  const {} = useCollection();
+  const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -413,23 +448,47 @@ RemoteSelect.Designer = (props) => {
         <SchemaSettings.SelectItem
           title={t('Field component')}
           options={[
-            { label: t('Record picker'), value: 'RecordPicker' },
-            { label: t('Subtable'), value: 'RemoteSelect' },
+            { label: t('Record picker'), value: 'CollectionField' },
+            { label: t('Select'), value: 'RemoteSelect' },
           ]}
-          value={field?.componentProps.type}
+          value={fieldSchema['x-component']}
           onChange={(type) => {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
+            const schema: ISchema = {
+              name: collectionField.name,
+              type: 'string',
+              required: fieldSchema['required'],
+              title: fieldSchema['title'],
+              description: fieldSchema['description'],
+              default: fieldSchema['default'],
+              'x-decorator': 'FormItem',
+              'x-designer': 'FormItem.Designer',
+              'x-component': type,
+              'x-validator': fieldSchema['x-validator'],
+              'x-collection-field': fieldSchema['x-collection-field'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+              'x-component-props': {
+                ...collectionField?.uiSchema?.['x-component-props'],
+                ...fieldSchema['x-component-props'],
+              },
             };
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['fieldNames'] = {
-              type,
-            };
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            dn.emit('patch', {
-              schema,
+
+            interfaceConfig?.schemaInitialize?.(schema, {
+              field: collectionField,
+              block: 'Form',
+              readPretty: field.readPretty,
+              action: tk ? 'get' : null,
             });
-            dn.refresh();
+
+            insertAdjacent('beforeBegin', divWrap(schema), {
+              onSuccess: () => {
+                dn.remove(null, {
+                  removeParentsIfNoChildren: true,
+                  breakRemoveOn: {
+                    'x-component': 'Grid',
+                  },
+                });
+              },
+            });
           }}
         />
       )}
@@ -488,31 +547,33 @@ RemoteSelect.Designer = (props) => {
             }}
           />
         )}
-      {collectionField?.target && fieldSchema['x-component'] === 'CollectionField' && (
-        <SchemaSettings.SelectItem
-          key="title-field"
-          title={t('Title field')}
-          options={options}
-          value={field?.componentProps?.fieldNames?.label}
-          onChange={(label) => {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            const fieldNames = {
-              ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-              ...field.componentProps.fieldNames,
-              label,
-            };
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          }}
-        />
-      )}
+      {collectionField?.target &&
+        (fieldSchema['x-component'] === 'CollectionField' || ['m2o'].includes(collectionField.interface)) && (
+          <SchemaSettings.SelectItem
+            key="title-field"
+            title={t('Title field')}
+            options={options}
+            value={field?.componentProps?.fieldNames?.label}
+            onChange={(label) => {
+              const schema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
+              const fieldNames = {
+                ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
+                ...field.componentProps.fieldNames,
+                label,
+              };
+              field.componentProps.fieldNames = fieldNames;
+              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+              fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+              schema['x-component-props'] = fieldSchema['x-component-props'];
+              dn.emit('patch', {
+                schema,
+              });
+              dn.refresh();
+            }}
+          />
+        )}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         key="remove"
@@ -527,7 +588,5 @@ RemoteSelect.Designer = (props) => {
     </GeneralSchemaDesigner>
   );
 };
-
-console.log('🚀 ~ file: RemoteSelect.tsx ~ line 127 ~ RemoteSelect', RemoteSelect);
 
 export default RemoteSelect;
