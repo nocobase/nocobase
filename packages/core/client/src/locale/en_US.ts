@@ -500,4 +500,16 @@ export default {
   "Selector": "Selector",
   "Inner": "Inner",
   "Search and select collection": "Search and select collection",
+  // OIDC
+  'Provider name': 'Provider name',
+  'Client ID': 'Client ID',
+  'Client secret': 'Client secret',
+  'Issuer': 'Issuer',
+  'Openid configuration': 'Openid configuration',
+  'Authorization endpoint': 'Authorization endpoint',
+  'Access token endpot':   'Access token endpoint',
+  'JWKS endpoint': 'JWKS endpoint',
+  'Userinfo endpoint': 'Userinfo endpoint',
+  'Enable': 'Enable',
+  'Add provider': 'Add provider',
 }
