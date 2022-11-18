@@ -6,6 +6,7 @@ import { isValid, toArr } from '@formily/shared';
 import {
   GeneralSchemaDesigner,
   SchemaSettings,
+  useAPIClient,
   useCollection,
   useCollectionManager,
   useCompile,
@@ -16,78 +17,44 @@ import {
 import type { SelectProps } from 'antd';
 import { Select as AntdSelect } from 'antd';
 import _ from 'lodash';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames, getCurrentOptions } from './shared';
 
-type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void };
-
-const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
-
-const ObjectSelect = (props: Props) => {
-  const { value, options, onChange, fieldNames, mode, ...others } = props;
-  const toValue = (v: any) => {
-    if (isEmptyObject(v)) {
-      return;
-    }
-    const values = toArr(v)
-      .filter((item) => item)
-      .map((val) => {
-        return typeof val === 'object' ? val[fieldNames.value] : val;
-      });
-    const current = getCurrentOptions(values, options, fieldNames)?.map((val) => {
-      return {
-        label: val[fieldNames.label],
-        value: val[fieldNames.value],
-      };
-    });
-    if (['tags', 'multiple'].includes(mode)) {
-      return current;
-    }
-    return current.shift();
-  };
-  return (
-    <AntdSelect
-      value={toValue(value)}
-      allowClear
-      labelInValue
-      options={options}
-      fieldNames={fieldNames}
-      showSearch
-      filterOption={(input, option) => (option?.[fieldNames.label || 'label'] ?? '').includes(input)}
-      filterSort={(optionA, optionB) =>
-        (optionA?.[fieldNames.label || 'label'] ?? '')
-          .toLowerCase()
-          .localeCompare((optionB?.[fieldNames.label || 'label'] ?? '').toLowerCase())
-      }
-      onChange={(changed) => {
-        const current = getCurrentOptions(
-          toArr(changed).map((v) => v.value),
-          options,
-          fieldNames,
-        );
-        if (['tags', 'multiple'].includes(mode)) {
-          onChange(current);
-        } else {
-          onChange(current.shift());
-        }
-      }}
-      mode={mode}
-      {...others}
-    />
-  );
-};
+type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; target: string };
 
 export const InternalRemoteSelect = connect(
   (props: Props) => {
-    console.log('🚀 ~ file: RemoteSelect.tsx ~ line 85 ~ props', props);
-    const { objectValue, ...others } = props;
-    if (objectValue) {
-      return <ObjectSelect {...others} />;
-    }
+    const { target, fieldNames, ...others } = props;
+    const api = useAPIClient();
+
+    const resource = useMemo(() => {
+      return api.resource((props as any).target);
+    }, [props.target, api]);
+    const [options, setOptions] = useState<SelectProps['options']>();
+
+    useEffect(() => {
+      resource.list().then((res) => {
+        const data: Array<any> = res.data.data;
+        console.log('🚀 ~ file: RemoteSelect.tsx ~ line 44 ~ data.map ~ fieldNames', fieldNames);
+        setOptions(
+          data.map((item) => {
+            return {
+              label: item[fieldNames.label],
+              value: item[fieldNames.value],
+            };
+          }),
+        );
+        console.log('🚀 ~ file: RemoteSelect.tsx ~ line 40 ~ resource.list ~ res.data');
+      });
+    }, [resource]);
 
     const {} = useCollection();
+
+    const onSearch = useCallback((res) => {
+      console.log('🚀 ~ file: RemoteSelect.tsx ~ line 99 ~ onSearch ~ res', res);
+    }, []);
 
     return (
       <AntdSelect
@@ -96,8 +63,10 @@ export const InternalRemoteSelect = connect(
         filterSort={(optionA, optionB) =>
           (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
         }
+        onSearch={onSearch}
         allowClear
         {...others}
+        options={options}
         value={others.value || undefined}
       />
     );
@@ -558,5 +527,7 @@ RemoteSelect.Designer = (props) => {
     </GeneralSchemaDesigner>
   );
 };
+
+console.log('🚀 ~ file: RemoteSelect.tsx ~ line 127 ~ RemoteSelect', RemoteSelect);
 
 export default RemoteSelect;

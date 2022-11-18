@@ -368,7 +368,7 @@ FormItem.Designer = (props) => {
             { label: t('Record picker'), value: 'RecordPicker' },
             { label: t('Subtable'), value: 'RemoteSelect' },
           ]}
-          value={field?.componentProps.type || 'RecordPicker'}
+          value={field.componentProps.type || 'RecordPicker'}
           onChange={(type) => {
             const schema: ISchema = {
               name: collectionField.name,
@@ -383,12 +383,17 @@ FormItem.Designer = (props) => {
               'x-collection-field': fieldSchema['x-collection-field'],
             };
 
+            if (type === 'RemoteSelect') {
+              schema['x-component'] = null;
+            }
+
             interfaceConfig?.schemaInitialize?.(schema, {
               field: collectionField,
               block: 'Form',
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
             });
+            console.log('🚀 ~ file: FormItem.tsx ~ line 404 ~ schema', schema);
 
             insertAdjacent('beforeBegin', divWrap(schema), {
               onSuccess: () => {

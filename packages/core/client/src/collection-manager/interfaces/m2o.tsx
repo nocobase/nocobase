@@ -52,27 +52,12 @@ export const m2o: IField = {
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
     if (block === 'Form' && schema['x-component-props']?.type === 'RemoteSelect') {
-      const association = `${field.collectionName}.${field.name}`;
       schema.properties = {
-        block: {
-          type: 'void',
-          'x-decorator': 'FormFieldProvider',
-          'x-decorator-props': {
-            collection: field.target,
-            association: association,
-            resource: association,
-            action,
-            fieldName: field.name,
-            readPretty,
-          },
-          properties: {
-            [field.name]: {
-              type: 'string',
-              'x-decorator': 'FormItem',
-              'x-component': 'RemoteSelect',
-              'x-designer': 'RemoteSelect.Designer',
-            },
-          },
+        select: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'RemoteSelect',
+          'x-designer': 'RemoteSelect.Designer',
         },
       };
     } else {
