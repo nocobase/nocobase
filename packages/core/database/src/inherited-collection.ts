@@ -17,7 +17,15 @@ export class InheritedCollection extends Collection {
   }
 
   protected setParents(inherits: string | string[]) {
-    this.parents = lodash.castArray(inherits).map((name) => this.context.database.collections.get(name));
+    this.parents = lodash.castArray(inherits).map((name) => {
+      const parentCollection = this.context.database.collections.get(name);
+
+      if (!parentCollection) {
+        throw new Error(`Can't find parent collection ${name} of ${this.name}`);
+      }
+
+      return parentCollection;
+    });
   }
 
   protected setParentFields() {

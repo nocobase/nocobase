@@ -18,6 +18,10 @@ export class SyncRunner {
 
     const parents = inheritedCollection.parents;
 
+    if (!parents) {
+      throw new Error(`Can't find parent collection of ${inheritedCollection.name}`);
+    }
+
     const parentTables = parents.map((parent) => parent.model.tableName);
 
     const tableName = model.getTableName();
