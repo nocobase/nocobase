@@ -13,7 +13,7 @@ export default {
       type: 'string',
       name: 'config.requestUrl',
       required: true,
-      title: `{{t("HTTP request url", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {
         className: css`
@@ -24,7 +24,7 @@ export default {
       },
       'x-component': 'Input',
       'x-component-props': {
-        placeholder: `{{t("Input HTTP request url", { ns: "${NAMESPACE}" })}}`,
+        placeholder: "https://xxxxxx",
         style: {
           width: '100%',
         },
@@ -35,7 +35,7 @@ export default {
       name: 'config.headers',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
-      title: `{{t("HTTP request headers", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Request headers", { ns: "${NAMESPACE}" })}}`,
       items: {
         type: 'object',
         properties: {
@@ -71,7 +71,7 @@ export default {
       properties: {
         add: {
           type: 'void',
-          title:  `{{t("Add HTTP request header", { ns: "${NAMESPACE}" })}}`,
+          title:  `{{t("Add request header", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'ArrayItems.Addition',
         },
       },
@@ -106,7 +106,7 @@ export default {
       type: 'string',
       name: 'config.postMethodData',
       'x-hidden': false,
-      title: `{{t("POST method request Data", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("POST method request data", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {
         className: css`
