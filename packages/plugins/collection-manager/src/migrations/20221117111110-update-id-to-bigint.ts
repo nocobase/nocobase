@@ -1,5 +1,5 @@
 import { Migration } from '@nocobase/server';
-import { DataTypes } from '../../../../core/database/lib';
+import { DataTypes } from '@nocobase/database';
 
 export default class UpdateIdToBigIntMigrator extends Migration {
   async up() {
