@@ -62,6 +62,58 @@ export default {
       ],
     },
   ],
+  '/user-manual': [
+    {
+      title: 'Getting started',
+      'title.zh-CN': '快速开始',
+      type: 'group',
+      children: [
+        '/user-manual/getting-started/the-first-app',
+        '/user-manual/getting-started/core',
+        '/user-manual/getting-started/flow',
+      ],
+    },
+    {
+      title: 'UI design',
+      'title.zh-CN': '界面设计',
+      type: 'group',
+      children: [
+        '/user-manual/ui-design/index',
+        '/user-manual/ui-design/menu',
+        '/user-manual/ui-design/grid',
+        '/user-manual/ui-design/blocks',
+        '/user-manual/ui-design/fields',
+        '/user-manual/ui-design/actions',
+        '/user-manual/ui-design/tabs',
+      ],
+    },
+    {
+      title: 'Settings center',
+      'title.zh-CN': '配置中心',
+      type: 'group',
+      children: [
+        '/user-manual/settings-center/index',
+        '/user-manual/settings-center/collection-manager',
+        '/user-manual/settings-center/acl',
+        '/user-manual/settings-center/workflow',
+        '/user-manual/settings-center/file-manager',
+        '/user-manual/settings-center/system-settings',
+        '/user-manual/settings-center/block-templates',
+      ],
+    },
+    {
+      title: 'UI design resources',
+      'title.zh-CN': '界面设计组件库',
+      type: 'group',
+      children: [
+        '/user-manual/ui-design-resources/index',
+        '/user-manual/ui-design-resources/blocks',
+        '/user-manual/ui-design-resources/fields',
+        '/user-manual/ui-design-resources/actions',
+        '/user-manual/ui-design-resources/others',
+      ],
+    },
+  ],
   '/manual': [
     {
       title: 'Quick Start',
