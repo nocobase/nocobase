@@ -11,8 +11,6 @@ export default class UpdateIdToBigIntMigrator extends Migration {
 
     const models = [];
 
-    const transaction = await db.sequelize.transaction();
-
     const queryInterface = db.sequelize.getQueryInterface() as any;
 
     const queryGenerator = queryInterface.queryGenerator as any;
@@ -21,9 +19,10 @@ export default class UpdateIdToBigIntMigrator extends Migration {
       const tableName = model.tableName;
       if (model.rawAttributes[fieldName].type instanceof DataTypes.INTEGER) {
         if (db.inDialect('postgres')) {
-          await this.sequelize.query(`ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`, {
-            transaction,
-          });
+          await this.sequelize.query(
+            `ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`,
+            {},
+          );
         } else if (db.inDialect('mysql')) {
           const dataTypeOrOptions = model.rawAttributes[fieldName];
           const attributeName = fieldName;
@@ -42,10 +41,10 @@ export default class UpdateIdToBigIntMigrator extends Migration {
           );
           const sql = queryGenerator.changeColumnQuery(tableName, query);
 
-          await this.sequelize.query(sql.replace(' PRIMARY KEY;', ' ;'), {
-            transaction,
-          });
+          await this.sequelize.query(sql.replace(' PRIMARY KEY;', ' ;'), {});
         }
+
+        this.app.log.info(`updated ${tableName}.${fieldName} to BIGINT`, tableName, fieldName);
       }
     };
 
@@ -54,12 +53,16 @@ export default class UpdateIdToBigIntMigrator extends Migration {
       models.push(model);
     });
 
-    try {
-      for (const model of models) {
+    for (const model of models) {
+      try {
         const primaryKeyField = model.tableAttributes[model.primaryKeyField];
 
         if (primaryKeyField && primaryKeyField.primaryKey) {
           await updateToBigInt(model, model.primaryKeyField);
+        }
+
+        if (model.tableAttributes['sort'] && model.tableAttributes['sort'].type instanceof DataTypes.INTEGER) {
+          await updateToBigInt(model, 'sort');
         }
 
         const associations = model.associations;
@@ -98,11 +101,13 @@ export default class UpdateIdToBigIntMigrator extends Migration {
             await updateToBigInt(throughModel, foreignKey);
           }
         }
+      } catch (error) {
+        if (error.message.includes('cannot alter inherited column')) {
+          continue;
+        }
+
+        throw error;
       }
-      await transaction.commit();
-    } catch (error) {
-      await transaction.rollback();
-      this.app.log.error(error);
     }
   }
 }
