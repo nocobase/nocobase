@@ -1,81 +1,160 @@
-import { css } from '@emotion/css';
-import { ArrayCollapse, FormItem as Item, FormLayout } from '@formily/antd';
+import { LoadingOutlined } from '@ant-design/icons';
+import { ArrayCollapse, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { uid } from '@formily/shared';
+import { connect, ISchema, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { isValid, toArr } from '@formily/shared';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettings,
+  useCollection,
+  useCollectionManager,
+  useCompile,
+  useDesignable,
+  useFilterByTk,
+  useFormBlockContext,
+} from '@nocobase/client';
+import type { SelectProps } from 'antd';
+import { Select as AntdSelect } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useDesignable } from '../..';
-import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { BlockItem } from '../block-item';
-import { HTMLEncode } from '../input/shared';
+import { ReadPretty } from './ReadPretty';
+import { defaultFieldNames, getCurrentOptions } from './shared';
 
-const divWrap = (schema: ISchema) => {
-  return {
-    type: 'void',
-    'x-component': 'div',
-    properties: {
-      [schema.name || uid()]: schema,
-    },
+type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void };
+
+const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
+
+const ObjectSelect = (props: Props) => {
+  const { value, options, onChange, fieldNames, mode, ...others } = props;
+  const toValue = (v: any) => {
+    if (isEmptyObject(v)) {
+      return;
+    }
+    const values = toArr(v)
+      .filter((item) => item)
+      .map((val) => {
+        return typeof val === 'object' ? val[fieldNames.value] : val;
+      });
+    const current = getCurrentOptions(values, options, fieldNames)?.map((val) => {
+      return {
+        label: val[fieldNames.label],
+        value: val[fieldNames.value],
+      };
+    });
+    if (['tags', 'multiple'].includes(mode)) {
+      return current;
+    }
+    return current.shift();
   };
-};
-
-export const FormItem: any = (props) => {
-  const field = useField();
   return (
-    <BlockItem className={'nb-form-item'}>
-      <Item
-        className={`${css`
-          & .ant-space {
-            flex-wrap: wrap;
-          }
-        `}`}
-        {...props}
-        extra={
-          field.description ? (
-            <div
-              dangerouslySetInnerHTML={{
-                __html: HTMLEncode(field.description).split('\n').join('<br/>'),
-              }}
-            />
-          ) : null
+    <AntdSelect
+      value={toValue(value)}
+      allowClear
+      labelInValue
+      options={options}
+      fieldNames={fieldNames}
+      showSearch
+      filterOption={(input, option) => (option?.[fieldNames.label || 'label'] ?? '').includes(input)}
+      filterSort={(optionA, optionB) =>
+        (optionA?.[fieldNames.label || 'label'] ?? '')
+          .toLowerCase()
+          .localeCompare((optionB?.[fieldNames.label || 'label'] ?? '').toLowerCase())
+      }
+      onChange={(changed) => {
+        const current = getCurrentOptions(
+          toArr(changed).map((v) => v.value),
+          options,
+          fieldNames,
+        );
+        if (['tags', 'multiple'].includes(mode)) {
+          onChange(current);
+        } else {
+          onChange(current.shift());
         }
-      />
-    </BlockItem>
+      }}
+      mode={mode}
+      {...others}
+    />
   );
 };
 
-FormItem.Designer = (props) => {
-  const { getCollectionFields, getCollection, getInterface, getCollectionJoinField } = useCollectionManager();
+export const InternalRemoteSelect = connect(
+  (props: Props) => {
+    console.log('🚀 ~ file: RemoteSelect.tsx ~ line 85 ~ props', props);
+    const { objectValue, ...others } = props;
+    if (objectValue) {
+      return <ObjectSelect {...others} />;
+    }
+
+    const {} = useCollection();
+
+    return (
+      <AntdSelect
+        showSearch
+        filterOption={(input, option) => (option?.label ?? '').includes(input)}
+        filterSort={(optionA, optionB) =>
+          (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
+        }
+        allowClear
+        {...others}
+        value={others.value || undefined}
+      />
+    );
+  },
+  mapProps(
+    {
+      dataSource: 'options',
+      loading: true,
+    },
+    (props, field) => {
+      return {
+        ...props,
+        fieldNames: { ...defaultFieldNames, ...props.fieldNames },
+        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
+      };
+    },
+  ),
+  mapReadPretty(ReadPretty),
+);
+
+interface RemoteSelectInterface {
+  (props: any): React.ReactElement;
+  Designer: React.FC;
+}
+
+const RemoteSelect = InternalRemoteSelect as unknown as RemoteSelectInterface;
+
+RemoteSelect.Designer = (props) => {
+  console.log('Designer');
+  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
-  const tk = useFilterByTk();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { dn, refresh, insertAdjacent, insertBeforeBegin } = useDesignable();
+  const { dn, refresh } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
-  const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
+
   if (!field.readPretty) {
     initialValue['required'] = field.required;
   }
+
   const options = targetFields
     .filter((field) => !field?.target && field.type !== 'boolean')
     .map((field) => ({
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -185,7 +264,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {!field.readPretty && fieldSchema['x-component'] !== 'FormField' && (
+      {!field.readPretty && (
         <SchemaSettings.SwitchItem
           key="required"
           title={t('Required')}
@@ -368,89 +447,20 @@ FormItem.Designer = (props) => {
             { label: t('Record picker'), value: 'RecordPicker' },
             { label: t('Subtable'), value: 'RemoteSelect' },
           ]}
-          value={field?.componentProps.type || 'RecordPicker'}
+          value={field?.componentProps.type}
           onChange={(type) => {
-            const schema: ISchema = {
-              name: collectionField.name,
-              type: 'string',
-              // title: compile(collectionField.uiSchema?.title),
-              'x-decorator': 'FormItem',
-              'x-designer': 'FormItem.Designer',
-              'x-component': 'CollectionField',
-              'x-component-props': {
-                type,
-              },
-              'x-collection-field': fieldSchema['x-collection-field'],
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
             };
-
-            interfaceConfig?.schemaInitialize?.(schema, {
-              field: collectionField,
-              block: 'Form',
-              readPretty: field.readPretty,
-              action: tk ? 'get' : null,
-            });
-
-            insertAdjacent('beforeBegin', divWrap(schema), {
-              onSuccess: () => {
-                dn.remove(null, {
-                  removeParentsIfNoChildren: true,
-                  breakRemoveOn: {
-                    'x-component': 'Grid',
-                  },
-                });
-              },
-            });
-          }}
-        />
-      )}
-      {form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
-        <SchemaSettings.SelectItem
-          title={t('Field component')}
-          options={
-            collectionField?.interface === 'o2m'
-              ? [
-                  { label: t('Record picker'), value: 'CollectionField' },
-                  { label: t('Subtable'), value: 'TableField' },
-                ]
-              : [
-                  { label: t('Record picker'), value: 'CollectionField' },
-                  { label: t('Subform'), value: 'FormField' },
-                ]
-          }
-          value={fieldSchema['x-component']}
-          onChange={(v) => {
-            const schema: ISchema = {
-              name: collectionField.name,
-              type: 'void',
-              // title: compile(collectionField.uiSchema?.title),
-              'x-decorator': 'FormItem',
-              'x-designer': 'FormItem.Designer',
-              'x-component': v,
-              'x-component-props': {},
-              'x-collection-field': fieldSchema['x-collection-field'],
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['fieldNames'] = {
+              type,
             };
-
-            interfaceConfig?.schemaInitialize?.(schema, {
-              field: collectionField,
-              block: 'Form',
-              readPretty: field.readPretty,
-              action: tk ? 'get' : null,
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
             });
-
-            if (v === 'CollectionField') {
-              schema['type'] = 'string';
-            }
-
-            insertAdjacent('beforeBegin', divWrap(schema), {
-              onSuccess: () => {
-                dn.remove(null, {
-                  removeParentsIfNoChildren: true,
-                  breakRemoveOn: {
-                    'x-component': 'Grid',
-                  },
-                });
-              },
-            });
+            dn.refresh();
           }}
         />
       )}
@@ -548,3 +558,5 @@ FormItem.Designer = (props) => {
     </GeneralSchemaDesigner>
   );
 };
+
+export default RemoteSelect;

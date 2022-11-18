@@ -1,6 +1,12 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { constraintsProps, recordPickerSelector, recordPickerViewer, relationshipType, reverseFieldProperties } from './properties';
+import {
+  constraintsProps,
+  recordPickerSelector,
+  recordPickerViewer,
+  relationshipType,
+  reverseFieldProperties,
+} from './properties';
 import { IField } from './types';
 
 export const m2o: IField = {
@@ -45,9 +51,8 @@ export const m2o: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    if (block === 'Form' && schema['x-component'] === 'FormField') {
+    if (block === 'Form' && schema['x-component-props']?.type === 'RemoteSelect') {
       const association = `${field.collectionName}.${field.name}`;
-      schema.type = 'void';
       schema.properties = {
         block: {
           type: 'void',
@@ -58,31 +63,18 @@ export const m2o: IField = {
             resource: association,
             action,
             fieldName: field.name,
-            readPretty
-          },
-          'x-component': 'CardItem',
-          'x-component-props': {
-            bordered: true,
+            readPretty,
           },
           properties: {
             [field.name]: {
-              type: 'object',
-              'x-component': 'FormV2',
-              'x-component-props': {
-                useProps: '{{ useFormFieldProps }}',
-              },
-              properties: {
-                __form_grid: {
-                  type: 'void',
-                  'x-component': 'Grid',
-                  'x-initializer': 'FormItemInitializers',
-                  properties: {},
-                },
-              }
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'RemoteSelect',
+              'x-designer': 'RemoteSelect.Designer',
             },
           },
         },
-      }
+      };
     } else {
       schema.type = 'string';
       if (block === 'Form') {
@@ -98,7 +90,7 @@ export const m2o: IField = {
         } else {
           schema['properties'] = {
             selector: cloneDeep(recordPickerSelector),
-          }
+          };
         }
       }
     }
