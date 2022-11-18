@@ -40,6 +40,12 @@ export class SyncRunner {
             transaction,
           },
         );
+
+        if (!sequenceNameResult[0].length) {
+          continue;
+        }
+
+        console.log({ sequenceNameResult });
         const columnDefault = sequenceNameResult[0][0]['column_default'];
 
         if (!columnDefault) {
