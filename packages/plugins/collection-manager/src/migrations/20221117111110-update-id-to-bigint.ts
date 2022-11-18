@@ -5,7 +5,17 @@ export default class UpdateIdToBigIntMigrator extends Migration {
   async up() {
     const db = this.app.db;
 
-    if (!db.inDialect('postgres', 'mysql')) {
+    await db.getCollection('fields').repository.update({
+      filter: {
+        name: 'id',
+        type: 'integer',
+      },
+      values: {
+        type: 'bigInt',
+      },
+    });
+
+    if (!db.inDialect('mysql', 'postgres')) {
       return;
     }
 

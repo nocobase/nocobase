@@ -77,7 +77,7 @@ excludeSqlite()('update id to bigint  test', () => {
     };
 
     const assertInteger = (val) => {
-      if (db.inDialect('postgres')) {
+      if (db.inDialect('postgres', 'sqlite')) {
         expect(val).toBe('INTEGER');
       } else {
         expect(val).toBe('INT');
