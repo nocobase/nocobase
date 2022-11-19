@@ -31,23 +31,19 @@ registerGroupLabel('advanced', '{{t("Advanced type")}}');
 registerGroupLabel('systemInfo', '{{t("System info")}}');
 registerGroupLabel('others', '{{t("Others")}}');
 
-export const getOptions = () => {
-  return Object.keys(groupLabels).map((groupName) => {
-    return {
-      label: groupLabels[groupName],
-      children: Object.keys(fields[groupName] || {})
-        .map((type) => {
-          const field = fields[groupName][type];
-          return {
-            value: type,
-            label: field.title,
-            name: type,
-            ...fields[groupName][type],
-          };
-        })
-        .sort((a, b) => a.order - b.order),
-    };
-  });
-};
-
-export const options = getOptions();
+export const options = Object.keys(groupLabels).map((groupName) => {
+  return {
+    label: groupLabels[groupName],
+    children: Object.keys(fields[groupName] || {})
+      .map((type) => {
+        const field = fields[groupName][type];
+        return {
+          value: type,
+          label: field.title,
+          name: type,
+          ...fields[groupName][type],
+        };
+      })
+      .sort((a, b) => a.order - b.order),
+  };
+});
