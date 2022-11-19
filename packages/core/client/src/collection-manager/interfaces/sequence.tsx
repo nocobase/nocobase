@@ -1,14 +1,14 @@
-import React, { useContext } from 'react';
-import { Button, Select } from 'antd';
+import { css } from '@emotion/css';
+import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
 import { onFieldValueChange } from '@formily/core';
 import { SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
-import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
+import { Button, Select } from 'antd';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { css } from '@emotion/css';
 
 import { Cron, SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
-import { IField } from './types';
 import { defaultProps, operators, unique } from './properties';
+import { IField } from './types';
 
 function RuleTypeSelect(props) {
   const compile = useCompile();
@@ -252,7 +252,7 @@ export const sequence: IField = {
   name: 'sequence',
   type: 'object',
   group: 'advanced',
-  order: 2,
+  order: 3,
   title: '{{t("Sequence")}}',
   sortable: true,
   default: {

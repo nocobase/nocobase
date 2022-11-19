@@ -1,6 +1,6 @@
-import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
 import { registerValidateRules } from '@formily/core';
+import { defaultProps } from './properties';
+import { IField } from './types';
 
 registerValidateRules({
   json(value) {
@@ -20,7 +20,7 @@ export const json: IField = {
   name: 'json',
   type: 'object',
   group: 'advanced',
-  order: 3,
+  order: 4,
   title: '{{t("JSON")}}',
   sortable: true,
   default: {
