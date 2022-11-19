@@ -1,19 +1,80 @@
+import { css } from '@emotion/css';
 import { Field, onFormSubmitValidateStart } from '@formily/core';
 import { useField, useFormEffects } from '@formily/react';
 import { Dropdown, Menu } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-import ContentEditable from 'react-contenteditable';
 import { useTranslation } from 'react-i18next';
 
+function pasteHtml(html, selectPastedContent = false) {
+  var sel, range;
+  if (window.getSelection) {
+    // IE9 and non-IE
+    sel = window.getSelection();
+    if (sel.getRangeAt && sel.rangeCount) {
+      range = sel.getRangeAt(0);
+      range.deleteContents();
+
+      // Range.createContextualFragment() would be useful here but is
+      // only relatively recently standardized and is not supported in
+      // some browsers (IE9, for one)
+      var el = document.createElement('div');
+      el.innerHTML = html;
+      var frag = document.createDocumentFragment(),
+        node,
+        lastNode;
+      while ((node = el.firstChild)) {
+        lastNode = frag.appendChild(node);
+      }
+      var firstNode = frag.firstChild;
+      range.insertNode(frag);
+
+      // Preserve the selection
+      if (lastNode) {
+        range = range.cloneRange();
+        range.setStartAfter(lastNode);
+        if (selectPastedContent) {
+          range.setStartBefore(firstNode);
+        } else {
+          range.collapse(true);
+        }
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+  }
+}
+
+const getValue = (el) => {
+  const values: any[] = [];
+  for (const node of el.childNodes) {
+    if (node.nodeName === 'SPAN') {
+      values.push(`{{${node['dataset']['key']}}}`);
+    } else {
+      values.push(node.textContent?.trim?.());
+    }
+  }
+  const text = values.join(' ')?.replace(/\s+/g, ' ').trim();
+  return text;
+};
+
+const renderExp = (exp: string, scope = {}) => {
+  return exp.replace(/{{([^}]+)}}/g, (_, i) => {
+    return scope[i.trim()] || '';
+  });
+};
+
 export const Expression = (props) => {
-  const { evaluate, value, onChange, supports, useCurrentFields } = props;
+  const { evaluate, value, supports, useCurrentFields } = props;
   const field = useField<Field>();
   const { t } = useTranslation();
   const fields = useCurrentFields();
+  const inputRef = useRef<any>();
+  const [changed, setChanged] = useState(false);
 
-  const inputRef = useRef();
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [html, setHtml] = useState<any>(null);
+  const onChange = (value) => {
+    setChanged(true);
+    props.onChange(value);
+  };
 
   const numColumns = new Map<string, string>();
   const scope = {};
@@ -24,67 +85,58 @@ export const Expression = (props) => {
       scope[field.name] = 1;
     });
   const keys = Array.from(numColumns.keys());
-
-  useEffect(() => {
-    if (value) {
-      let newHtml = value;
-      numColumns.forEach((value, key) => {
-        newHtml = newHtml.replaceAll(
-          key,
-          `<span contentEditable="false" ><input disabled="disabled" style="width:${
-            18 * value.length
-          }px;max-width: 120px" value="${value}"/><span hidden>${key}</span></span>`,
-        );
-      });
-      newHtml = `${newHtml}<span style="padding-left: 5px"></span>`; // set extra span for cursor focus on last position
-      setHtml(newHtml);
-    } else {
-      setHtml('');
+  const [html, setHtml] = useState(() => {
+    const scope = {};
+    for (const key of keys) {
+      const val = numColumns.get(key);
+      scope[
+        key
+      ] = `  <span class="ant-tag" style="margin: 0 3px;" contentEditable="false" data-key="${key}">${val}</span>  `;
     }
+    return renderExp(value || '', scope);
+  });
+  useEffect(() => {
+    if (changed) {
+      return;
+    }
+    const scope = {};
+    for (const key of keys) {
+      const val = numColumns.get(key);
+      scope[
+        key
+      ] = `  <span class="ant-tag" style="margin: 0 3px;" contentEditable="false" data-key="${key}">${val}</span>  `;
+    }
+    const val = renderExp(value || '', scope);
+    setHtml(val);
   }, [value]);
-
   const menu = (
-    <Menu
-      onClick={async (args) => {
-        const replaceFormula = field.value.replace('@', args.key);
-        if (onChange && replaceFormula != field.value) {
-          onChange(replaceFormula);
-        }
-        setDropdownVisible(false);
-        (inputRef.current as any).focus();
-      }}
-    >
-      {keys.map((key) => (
-        <Menu.Item key={key}>{numColumns.get(key)}</Menu.Item>
-      ))}
+    <Menu>
+      {keys.length > 0 ? (
+        keys.map((key) => (
+          <Menu.Item disabled key={key}>
+            <button
+              onClick={async (args) => {
+                (inputRef.current as any).focus();
+                const val = numColumns.get(key);
+                pasteHtml(
+                  `  <span class="ant-tag" style="margin: 0 3px;" contentEditable="false" data-key="${key}">${val}</span>  `,
+                );
+                const text = getValue(inputRef.current);
+                onChange(text);
+                console.log('onChange', text);
+              }}
+            >
+              {numColumns.get(key)}
+            </button>
+          </Menu.Item>
+        ))
+      ) : (
+        <Menu.Item disabled key={0}>
+          {t('No available fields')}
+        </Menu.Item>
+      )}
     </Menu>
   );
-
-  const handleChange = (e) => {
-    if (onChange) {
-      if (e.currentTarget.textContent == '') {
-        onChange(null);
-      } else {
-        onChange(e.currentTarget.textContent);
-      }
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    const { key } = e;
-    switch (key) {
-      case 'Enter':
-        e.preventDefault();
-        break;
-      case '@':
-      case 'Process':
-        setDropdownVisible(true);
-        break;
-      default:
-        setDropdownVisible(false);
-        break;
-    }
-  };
 
   useFormEffects(() => {
     onFormSubmitValidateStart(() => {
@@ -102,14 +154,68 @@ export const Expression = (props) => {
     });
   });
 
+  console.log('value, html', value, html);
+
   return (
-    <Dropdown overlay={menu} visible={dropdownVisible}>
-      <ContentEditable
-        innerRef={inputRef as any}
-        className="ant-input"
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        html={html || ''}
+    <Dropdown
+      overlay={menu}
+      overlayClassName={css`
+        .ant-dropdown-menu-item {
+          padding: 0;
+        }
+        button {
+          cursor: pointer;
+          padding: 5px 12px;
+          text-align: left;
+          color: rgba(0, 0, 0, 0.85);
+          width: 100%;
+          line-height: inherit;
+          height: auto;
+          border: 0px;
+          background-color: transparent;
+          &:hover {
+            background-color: #f5f5f5;
+          }
+        }
+      `}
+    >
+      <div
+        onKeyDown={(e) => {
+          const text = getValue(e.currentTarget);
+          if (e.key === 'Backspace') {
+            if (text && keys.map((k) => `{{${k}}}`).includes(text)) {
+              inputRef.current.innerHTML = '  ';
+            }
+          }
+        }}
+        onKeyUp={(e) => {
+          const text = getValue(e.currentTarget);
+          if (e.key === 'Backspace') {
+            // pasteHtml(' ');
+          }
+          console.log('onChange', text);
+          onChange(text);
+        }}
+        onClick={(e) => {
+          const text = getValue(e.currentTarget);
+          onChange(text);
+          console.log('onChange', text);
+        }}
+        onBlur={(e) => {
+          const text = getValue(e.currentTarget);
+          console.log('onChange', text);
+          onChange(text);
+        }}
+        onInput={(e) => {
+          const text = getValue(e.currentTarget);
+          console.log('onChange', text);
+          onChange(text);
+        }}
+        className={'ant-input'}
+        style={{ display: 'block' }}
+        ref={inputRef as any}
+        contentEditable
+        dangerouslySetInnerHTML={{ __html: html }}
       />
     </Dropdown>
   );

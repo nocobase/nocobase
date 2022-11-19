@@ -1,6 +1,7 @@
 import { BaseFieldOptions, Field } from '@nocobase/database';
 import * as math from 'mathjs';
 import { DataTypes } from 'sequelize';
+import { evaluate } from '../utils/evaluate';
 
 export class MathFormulaField extends Field {
   get dataType() {
@@ -10,7 +11,7 @@ export class MathFormulaField extends Field {
   calculate(expression, scope) {
     let result: any = null;
     try {
-      result = math.evaluate(expression, scope);
+      result = evaluate(expression, scope);
       result = math.round(result, 9);
     } catch {}
     return result;
@@ -47,7 +48,7 @@ export class MathFormulaField extends Field {
     const scope = instance.toJSON();
     let result;
     try {
-      result = math.evaluate(expression, scope);
+      result = evaluate(expression, scope);
       result = math.round(result, 9);
     } catch {}
     if (result === 0 || result) {
