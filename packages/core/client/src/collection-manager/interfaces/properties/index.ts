@@ -15,6 +15,7 @@ export const type: ISchema = {
     { label: 'String', value: 'string' },
     { label: 'Text', value: 'text' },
     { label: 'Integer', value: 'integer' },
+    { label: 'BigInteger', value: 'bigInt' },
     { label: 'Float', value: 'float' },
     { label: 'Double', value: 'double' },
     { label: 'Decimal', value: 'decimal' },
