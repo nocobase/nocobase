@@ -1,8 +1,7 @@
+import { registerValidateFormats } from '@formily/core';
+import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
-import { i18n } from '../../i18n';
-import { registerValidateFormats } from '@formily/core';
-import { ISchema } from '@formily/react';
 
 registerValidateFormats({
   odd: /^-?\d*[13579]$/,
@@ -17,7 +16,7 @@ export const integer: IField = {
   title: '{{t("Integer")}}',
   sortable: true,
   default: {
-    type: 'integer',
+    type: 'bigInt',
     // name,
     uiSchema: {
       type: 'number',

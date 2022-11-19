@@ -1,5 +1,5 @@
 import { Spin } from 'antd';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionManagerContext } from './context';
@@ -8,11 +8,13 @@ import { CollectionManagerOptions } from './types';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { service, interfaces, collections = [], refreshCM } = props;
+  const ctx = useContext(CollectionManagerContext);
   return (
     <CollectionManagerContext.Provider
       value={{
+        ...ctx,
         service,
-        interfaces: { ...defaultInterfaces, ...interfaces },
+        interfaces: { ...defaultInterfaces, ...interfaces, ...ctx.interfaces },
         collections,
         refreshCM,
       }}

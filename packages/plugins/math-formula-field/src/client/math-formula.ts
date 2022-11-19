@@ -1,22 +1,22 @@
-import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { IField, interfacesProperties } from '@nocobase/client';
+const { defaultProps, operators } = interfacesProperties;
 
-export const formula: IField = {
-  name: 'formula',
+export const mathFormula: IField = {
+  name: 'mathFormula',
   type: 'object',
   group: 'advanced',
   order: 1,
-  title: '{{t("Formula")}}',
-  description: '{{t("Formula description")}}',
+  title: '{{t("Math formula")}}',
+  description: '{{t("Compute a value based on the other fields using mathjs")}}',
   sortable: true,
   default: {
-    type: 'formula',
+    type: 'mathFormula',
     // name,
     uiSchema: {
       type: 'number',
       // title,
-      "x-disabled": true,
-      'x-component': 'Formula.Result',
+      'x-disabled': true,
+      'x-component': 'MathFormula.Result',
       'x-component-props': {
         stringMode: true,
         step: '1',
@@ -25,16 +25,16 @@ export const formula: IField = {
   },
   properties: {
     ...defaultProps,
-    'expression': {
+    expression: {
       type: 'string',
       title: '{{t("Expression")}}',
       required: true,
       description: '{{t("Input +, -, *, /, ( ) to calculate, input @ to open field variables.")}}',
-      'x-component': 'Formula.Expression',
+      'x-component': 'MathFormula.Expression',
       'x-decorator': 'FormItem',
       'x-component-props': {
-        'supports': ['number', 'percent', 'integer'],
-        'useCurrentFields': '{{ useCurrentFields }}'
+        supports: ['number', 'percent', 'integer'],
+        useCurrentFields: '{{ useCurrentFields }}',
       },
     },
     'uiSchema.x-component-props.step': {

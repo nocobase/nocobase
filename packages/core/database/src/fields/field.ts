@@ -5,12 +5,12 @@ import {
   ModelIndexesOptions,
   QueryInterfaceOptions,
   SyncOptions,
-  Transactionable,
+  Transactionable
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
-import { ModelEventTypes } from '../types';
 import { InheritedCollection } from '../inherited-collection';
+import { ModelEventTypes } from '../types';
 
 export interface FieldContext {
   database: Database;
