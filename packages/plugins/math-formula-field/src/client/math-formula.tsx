@@ -29,7 +29,7 @@ export const mathFormula: IField = {
       type: 'string',
       title: '{{t("Expression")}}',
       required: true,
-      description: '{{t("Input +, -, *, /, ( ) to calculate, input @ to open field variables.")}}',
+      description: '{{mathExpressionDescription}}',
       'x-component': 'MathFormula.Expression',
       'x-decorator': 'FormItem',
       'x-component-props': {

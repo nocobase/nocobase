@@ -54,7 +54,7 @@ const getValue = (el) => {
     }
   }
   const text = values.join(' ')?.replace(/\s+/g, ' ').trim();
-  return text;
+  return ` ${text} `;
 };
 
 const renderExp = (exp: string, scope = {}) => {
@@ -154,10 +154,9 @@ export const Expression = (props) => {
     });
   });
 
-  console.log('value, html', value, html);
-
   return (
     <Dropdown
+      trigger={['click']}
       overlay={menu}
       overlayClassName={css`
         .ant-dropdown-menu-item {
@@ -193,22 +192,19 @@ export const Expression = (props) => {
           if (e.key === 'Backspace') {
             // pasteHtml(' ');
           }
-          console.log('onChange', text);
           onChange(text);
         }}
-        onClick={(e) => {
-          const text = getValue(e.currentTarget);
-          onChange(text);
-          console.log('onChange', text);
-        }}
+        // onClick={(e) => {
+        //   const text = getValue(e.currentTarget);
+        //   onChange(text);
+        //   console.log('onChange', text);
+        // }}
         onBlur={(e) => {
           const text = getValue(e.currentTarget);
-          console.log('onChange', text);
           onChange(text);
         }}
         onInput={(e) => {
           const text = getValue(e.currentTarget);
-          console.log('onChange', text);
           onChange(text);
         }}
         className={'ant-input'}

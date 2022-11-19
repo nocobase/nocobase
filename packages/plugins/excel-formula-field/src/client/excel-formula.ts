@@ -41,7 +41,7 @@ export const excelFormula: IField = {
       type: 'string',
       title: '{{t("Expression")}}',
       required: true,
-      description: '{{t("Input @ to open field variables.")}}',
+      description: '{{excelExpressionDescription}}',
       'x-component': 'ExcelFormula.Expression',
       'x-decorator': 'FormItem',
       'x-component-props': {
