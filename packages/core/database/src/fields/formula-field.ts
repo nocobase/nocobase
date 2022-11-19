@@ -1,17 +1,16 @@
-import { BaseFieldOptions, Field } from '@nocobase/database';
-import * as math from 'mathjs';
 import { DataTypes } from 'sequelize';
-import { evaluate } from '../utils/evaluate';
+import { BaseColumnFieldOptions, Field } from './field';
+import * as math from 'mathjs';
 
-export class MathFormulaField extends Field {
+export class FormulaField extends Field {
   get dataType() {
-    return DataTypes.DOUBLE;
+    return DataTypes.FLOAT;
   }
 
-  calculate(expression, scope) {
-    let result: any = null;
+  caculate(expression, scope) {
+    let result = null;
     try {
-      result = evaluate(expression, scope);
+      result = math.evaluate(expression, scope);
       result = math.round(result, 9);
     } catch {}
     return result;
@@ -27,7 +26,7 @@ export class MathFormulaField extends Field {
 
     for (const record of records) {
       const scope = record.toJSON();
-      const result = this.calculate(expression, scope);
+      const result = this.caculate(expression, scope);
       if (result) {
         await record.update(
           {
@@ -43,12 +42,12 @@ export class MathFormulaField extends Field {
     }
   };
 
-  calculateField = async (instance) => {
+  caculateField = async (instance) => {
     const { expression, name } = this.options;
     const scope = instance.toJSON();
     let result;
     try {
-      result = evaluate(expression, scope);
+      result = math.evaluate(expression, scope);
       result = math.round(result, 9);
     } catch {}
     if (result === 0 || result) {
@@ -68,7 +67,7 @@ export class MathFormulaField extends Field {
 
       for (const record of records) {
         const scope = record.toJSON();
-        const result = this.calculate(expression, scope);
+        const result = this.caculate(expression, scope);
         await record.update(
           {
             [name]: result,
@@ -88,19 +87,20 @@ export class MathFormulaField extends Field {
     this.on('afterSync', this.initFieldData);
     // TODO: should not depends on fields table (which is defined by other plugin)
     this.database.on('fields.afterUpdate', this.updateFieldData);
-    this.on('beforeSave', this.calculateField);
+    this.on('beforeSave', this.caculateField);
   }
 
   unbind() {
     super.unbind();
-    this.off('beforeSave', this.calculateField);
+    this.off('beforeSave', this.caculateField);
     // TODO: should not depends on fields table
     this.database.off('fields.afterUpdate', this.updateFieldData);
     this.off('afterSync', this.initFieldData);
   }
 }
 
-export interface MathFormulaFieldOptions extends BaseFieldOptions {
-  type: 'mathFormula';
+export interface FormulaFieldOptions extends BaseColumnFieldOptions {
+  type: 'formula';
+
   expression: string;
 }
