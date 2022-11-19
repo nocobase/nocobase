@@ -2,26 +2,18 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayCollapse, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
 import { connect, ISchema, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
-import {
-  GeneralSchemaDesigner,
-  ResourceActionOptions,
-  SchemaSettings,
-  Select,
-  useCollection,
-  useCollectionManager,
-  useCompile,
-  useDesignable,
-  useFilterByTk,
-  useFormBlockContext,
-  useRequest,
-} from '@nocobase/client';
 import { uid } from '@formily/shared';
-import type { SelectProps } from 'antd';
+import { SelectProps } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ResourceActionOptions, useRequest } from '../../../api-client';
+import { useFormBlockContext, useFilterByTk } from '../../../block-provider';
+import { useCollectionManager, useCollection } from '../../../collection-manager';
+import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useDesignable, useCompile } from '../../hooks';
+import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
-import { defaultFieldNames } from './shared';
 
 type Props<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
