@@ -65,7 +65,7 @@ const ObjectSelect = (props: Props) => {
   );
 };
 
-export const Select = connect(
+const InternalSelect = connect(
   (props: Props) => {
     const { objectValue, ...others } = props;
     if (objectValue) {
@@ -99,5 +99,11 @@ export const Select = connect(
   ),
   mapReadPretty(ReadPretty),
 );
+
+export const Select = InternalSelect as unknown as typeof InternalSelect & {
+  ReadPretty: typeof ReadPretty;
+};
+
+Select.ReadPretty = ReadPretty;
 
 export default Select;

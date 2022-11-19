@@ -1,6 +1,12 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { constraintsProps, recordPickerSelector, recordPickerViewer, relationshipType, reverseFieldProperties } from './properties';
+import {
+  constraintsProps,
+  recordPickerSelector,
+  recordPickerViewer,
+  relationshipType,
+  reverseFieldProperties,
+} from './properties';
 import { IField } from './types';
 
 export const m2o: IField = {
@@ -45,44 +51,18 @@ export const m2o: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    if (block === 'Form' && schema['x-component'] === 'FormField') {
-      const association = `${field.collectionName}.${field.name}`;
-      schema.type = 'void';
-      schema.properties = {
-        block: {
-          type: 'void',
-          'x-decorator': 'FormFieldProvider',
-          'x-decorator-props': {
-            collection: field.target,
-            association: association,
-            resource: association,
-            action,
-            fieldName: field.name,
-            readPretty
+    if (block === 'Form' && schema['x-component'] === 'RemoteSelect') {
+      return Object.assign(schema, {
+        'x-decorator': 'FormItem',
+        'x-designer': 'RemoteSelect.Designer',
+        'x-component-props': {
+          service: {
+            resource: field.target,
+            action: 'list',
           },
-          'x-component': 'CardItem',
-          'x-component-props': {
-            bordered: true,
-          },
-          properties: {
-            [field.name]: {
-              type: 'object',
-              'x-component': 'FormV2',
-              'x-component-props': {
-                useProps: '{{ useFormFieldProps }}',
-              },
-              properties: {
-                __form_grid: {
-                  type: 'void',
-                  'x-component': 'Grid',
-                  'x-initializer': 'FormItemInitializers',
-                  properties: {},
-                },
-              }
-            },
-          },
+          ...schema['x-component-props'],
         },
-      }
+      });
     } else {
       schema.type = 'string';
       if (block === 'Form') {
@@ -98,7 +78,7 @@ export const m2o: IField = {
         } else {
           schema['properties'] = {
             selector: cloneDeep(recordPickerSelector),
-          }
+          };
         }
       }
     }
