@@ -4,30 +4,31 @@ import { Field } from '@formily/core';
 import { connect, ISchema, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
+  ResourceActionOptions,
   SchemaSettings,
-  useAPIClient,
+  Select,
   useCollection,
   useCollectionManager,
   useCompile,
   useDesignable,
   useFilterByTk,
   useFormBlockContext,
+  useRequest,
 } from '@nocobase/client';
 import { uid } from '@formily/shared';
 import type { SelectProps } from 'antd';
-import { Select as AntdSelect } from 'antd';
 import _ from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames } from './shared';
-import { useDebounceFn } from 'ahooks';
 
-type Props = SelectProps<any, any> & {
+type Props<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
   onChange?: (v: any) => void;
   target: string;
   wait?: number;
+  service: ResourceActionOptions<P>;
 };
 
 const divWrap = (schema: ISchema) => {
@@ -40,55 +41,36 @@ const divWrap = (schema: ISchema) => {
   };
 };
 
-export const InternalRemoteSelect = connect(
+const InternalRemoteSelect = connect(
   (props: Props) => {
-    const { target, fieldNames, wait = 500, ...others } = props;
+    const { fieldNames, service = {}, wait = 500, ...others } = props;
 
-    const api = useAPIClient();
-    const resource = useMemo(() => {
-      if (!target) return;
-      return api.resource((props as any).target);
-    }, [props.target, api]);
-    const [options, setOptions] = useState<SelectProps['options']>([]);
-
-    const trigger = useCallback(
-      (params?: any) => {
-        if (!target) return;
-        resource
-          .list({
-            paginate: false,
-            ...params,
-          })
-          .then((res) => {
-            const data: Array<any> = res.data.data;
-            setOptions(data);
-          });
-      },
-      [resource, setOptions],
-    );
-
-    useEffect(() => {
-      trigger();
-    }, [target]);
-
-    const onSearch = useDebounceFn(
-      async (search) => {
-        trigger({
-          filter: {
-            [fieldNames.label]: {
-              $includes: search,
-            },
-          },
-        });
+    const { data, run } = useRequest(
+      {
+        ...service,
+        params: {
+          pageSize: 30,
+          ...service?.params,
+        },
       },
       {
-        wait,
+        debounceWait: wait,
+        refreshDeps: [service],
       },
     );
 
+    const onSearch = async (search) => {
+      run({
+        filter: {
+          [fieldNames.label]: {
+            $includes: search,
+          },
+        },
+      });
+    };
+
     return (
-      <AntdSelect
-        showSearch
+      <Select
         filterOption={false}
         filterSort={(optionA, optionB) =>
           String(optionA[fieldNames.label] ?? '')
@@ -96,11 +78,9 @@ export const InternalRemoteSelect = connect(
             .localeCompare(String(optionB[fieldNames.label] ?? '').toLowerCase())
         }
         fieldNames={fieldNames}
-        onSearch={onSearch.run}
-        allowClear
+        onSearch={onSearch}
         {...others}
-        options={options}
-        value={others.value || undefined}
+        options={data?.data}
       />
     );
   },
@@ -125,7 +105,7 @@ interface RemoteSelectInterface {
   Designer: React.FC;
 }
 
-const RemoteSelect = InternalRemoteSelect as unknown as RemoteSelectInterface;
+export const RemoteSelect = InternalRemoteSelect as unknown as RemoteSelectInterface;
 
 RemoteSelect.Designer = () => {
   const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();

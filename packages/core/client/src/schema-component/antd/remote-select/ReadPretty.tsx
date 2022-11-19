@@ -2,50 +2,31 @@ import { isArrayField } from '@formily/core';
 import { observer, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Tag } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
-import { useAPIClient } from '../../../api-client';
+import React from 'react';
+import { useRequest } from '@nocobase/client';
 import { defaultFieldNames, getCurrentOptions } from './shared';
+import Select from '../select/Select';
 
 export const ReadPretty = observer((props: any) => {
   const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
-
-  const api = useAPIClient();
-  const resource = useMemo(() => {
-    return api.resource((props as any).target);
-  }, [props.target, api]);
-
   const field = useField<any>();
-  if (!isValid(props.value)) {
-    return <div />;
-  }
-  if (isArrayField(field) && field?.value?.length === 0) {
-    return <div />;
-  }
-  const [dataSource, setDataSource] = useState([]);
 
-  useEffect(() => {
-    resource
-      .list({
+  const { data } = useRequest(
+    {
+      ...props.service,
+      params: {
         paginate: false,
         filter: {
           [fieldNames.value]: {
-            $eq: field.value,
+            $in: [field.value],
           },
         },
-      })
-      .then((res) => {
-        setDataSource(res.data.data);
-      });
-  }, [field.value]);
-
-  const options = getCurrentOptions(field.value, dataSource, fieldNames);
-  return (
-    <div>
-      {options.map((option, key) => (
-        <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
-          {option[fieldNames.label]}
-        </Tag>
-      ))}
-    </div>
+      },
+    },
+    {
+      refreshDeps: [props.service, field.value],
+    },
   );
+
+  return <Select.ReadPretty {...props} options={data?.data}></Select.ReadPretty>;
 });

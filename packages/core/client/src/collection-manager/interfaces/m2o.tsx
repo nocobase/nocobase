@@ -56,7 +56,10 @@ export const m2o: IField = {
         'x-decorator': 'FormItem',
         'x-designer': 'RemoteSelect.Designer',
         'x-component-props': {
-          target: field.target,
+          service: {
+            resource: field.target,
+            action: 'list',
+          },
           ...schema['x-component-props'],
         },
       });
