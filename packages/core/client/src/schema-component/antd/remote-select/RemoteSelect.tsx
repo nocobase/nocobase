@@ -43,7 +43,6 @@ const divWrap = (schema: ISchema) => {
 export const InternalRemoteSelect = connect(
   (props: Props) => {
     const { target, fieldNames, wait = 500, ...others } = props;
-    console.log('🚀 ~ file: RemoteSelect.tsx ~ line 46 ~ fieldNames', fieldNames);
 
     const api = useAPIClient();
     const resource = useMemo(() => {
