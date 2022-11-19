@@ -394,7 +394,6 @@ FormItem.Designer = (props) => {
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
             });
-            console.log('🚀 ~ file: FormItem.tsx ~ line 406 ~ schema', schema);
 
             insertAdjacent('beforeBegin', divWrap(schema), {
               onSuccess: () => {
@@ -428,16 +427,13 @@ FormItem.Designer = (props) => {
             const schema: ISchema = {
               name: collectionField.name,
               type: 'void',
-              title: compile(collectionField.uiSchema?.title),
+              // title: compile(collectionField.uiSchema?.title),
               'x-decorator': 'FormItem',
               'x-designer': 'FormItem.Designer',
               'x-component': v,
-              'x-component-props': {
-                ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-              },
+              'x-component-props': {},
               'x-collection-field': fieldSchema['x-collection-field'],
             };
-            console.log('🚀 ~ file: FormItem.tsx ~ line 429 ~ collectionField?.uiSchema', collectionField?.uiSchema);
 
             interfaceConfig?.schemaInitialize?.(schema, {
               field: collectionField,
