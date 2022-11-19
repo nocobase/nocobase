@@ -35,13 +35,13 @@ export const FormItem: any = (props) => {
         `}`}
         {...props}
         extra={
-          field.description ? (
+          typeof field.description === 'string' ? (
             <div
               dangerouslySetInnerHTML={{
                 __html: HTMLEncode(field.description).split('\n').join('<br/>'),
               }}
             />
-          ) : null
+          ) : field.description
         }
       />
     </BlockItem>
