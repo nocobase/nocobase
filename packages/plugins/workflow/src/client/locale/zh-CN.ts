@@ -2,7 +2,6 @@ export default {
   'Workflow': '工作流',
   'Execution history': '执行历史',
   'Trigger type': '触发方式',
-  'Description': '描述',
   'Status': '状态',
   'On': '启用',
   'Off': '停用',
