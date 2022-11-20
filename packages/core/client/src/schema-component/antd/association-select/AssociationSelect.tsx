@@ -4,7 +4,7 @@ import { Field } from '@formily/core';
 import { connect, ISchema, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext, useFilterByTk } from '../../../block-provider';
 import { useCollectionManager, useCollection } from '../../../collection-manager';
@@ -17,6 +17,7 @@ import useServiceOptions from './useServiceOptions';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
+  multiple?: boolean;
 };
 
 const divWrap = (schema: ISchema) => {
@@ -31,6 +32,7 @@ const divWrap = (schema: ISchema) => {
 
 const InternalAssociationSelect = connect(
   (props: AssociationSelectProps) => {
+    const { fieldNames } = props;
     const service = useServiceOptions(props);
     const field = useField();
     const fieldSchema = useFieldSchema();
@@ -39,13 +41,35 @@ const InternalAssociationSelect = connect(
       return getField(fieldSchema.name);
     }, [fieldSchema.name]);
 
+    const normalizeValues = useCallback(
+      (obj) => {
+        if (!props.objectValue && typeof obj === 'object') {
+          return obj[fieldNames.value];
+        }
+        return obj;
+      },
+      [props.objectValue],
+    );
+
+    const value = useMemo(() => {
+      if (typeof props.value === 'undefined') {
+        return;
+      }
+
+      if (Array.isArray(props.value)) {
+        return props.value.map(normalizeValues);
+      } else {
+        return normalizeValues(props.value);
+      }
+    }, [props.value, normalizeValues]);
+
     useEffect(() => {
       if (!field.title) {
         field.title = collectionField.uiSchema.title;
       }
     }, collectionField.title);
 
-    return <RemoteSelect {...props} service={service}></RemoteSelect>;
+    return <RemoteSelect {...props} value={value} service={service}></RemoteSelect>;
   },
   mapProps(
     {

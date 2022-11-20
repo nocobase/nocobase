@@ -12,6 +12,7 @@ export const getCurrentOptions = (values, dataSource, fieldNames) => {
     .filter(item => item != null)
     .map((val) => (typeof val === 'object' ? val[fieldNames.value] : val));
   const findOptions = (options: any[]) => {
+    if (!options) return []
     let current = [];
     for (const option of options) {
       if (values.includes(option[fieldNames.value])) {
