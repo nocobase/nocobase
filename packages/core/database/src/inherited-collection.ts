@@ -18,7 +18,10 @@ export class InheritedCollection extends Collection {
     } catch (err) {
       if (err instanceof ParentCollectionNotFound) {
         const listener = (collection) => {
-          if (options.inherits.includes(collection.name)) {
+          if (
+            options.inherits.includes(collection.name) &&
+            lodash.every(options.inherits, (name) => this.context.database.collections.has(name))
+          ) {
             this.bindParents();
             this.db.removeListener('afterDefineCollection', listener);
           }
