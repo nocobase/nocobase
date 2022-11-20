@@ -7,7 +7,11 @@ describe('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = mockDatabase({
+      logging: console.log,
+    });
+
+    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
