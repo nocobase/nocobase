@@ -1,33 +1,44 @@
-import {NAMESPACE} from '../locale';
-import { css } from '@emotion/css';
+import { NAMESPACE } from '../locale';
 import { ArrayItems } from '@formily/antd';
-import React from "react";
-import {RequestVarFieldSet} from "../components/RequestVarFieldSet";
+import React from 'react';
+import EjsTextArea from '../components/EjsTextArea';
+
+
 
 export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
   type: 'request',
   group: 'extended',
   fieldset: {
-    'config.requestUrl': {
+    'config.url': {
       type: 'string',
-      name: 'config.requestUrl',
+      name: 'config.url',
       required: true,
       title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-decorator-props': {
-        className: css`
-          .ant-input-affix-wrapper {
-            width: 100%;
-          }
-        `,
-      },
-      'x-component': 'Input',
+      'x-decorator-props': {},
+      'x-component': 'EjsTextArea',
       'x-component-props': {
-        placeholder: "https://xxxxxx",
-        style: {
-          width: '100%',
+        autoSize: {
+          minRows: 1,
         },
+        placeholder: 'https://xxxxxx',
+        description: `{{t("You can use the above available variables in URL.", { ns: "${NAMESPACE}" })}}`,
+      },
+    },
+    'config.timeout': {
+      type: 'number',
+      name: 'config.timeout',
+      required: true,
+      title: `{{t("Timeout config", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-decorator-props': {},
+      'x-component': 'InputNumber',
+      'x-component-props': {
+        addonAfter: `{{t("ms", { ns: "${NAMESPACE}" })}}`,
+        min: 1,
+        step: 1000,
+        defaultValue: 5000,
       },
     },
     'config.headers': {
@@ -36,6 +47,7 @@ export default {
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
       title: `{{t("Request headers", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Default headers is Content-Type: application/json", { ns: "${NAMESPACE}" })}}`,
       items: {
         type: 'object',
         properties: {
@@ -71,14 +83,14 @@ export default {
       properties: {
         add: {
           type: 'void',
-          title:  `{{t("Add request header", { ns: "${NAMESPACE}" })}}`,
+          title: `{{t("Add request header", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'ArrayItems.Addition',
         },
       },
     },
-    'config.httpMethod': {
+    'config.method': {
       type: 'string',
-      name: 'config.httpMethod',
+      name: 'config.method',
       required: true,
       title: `{{t("HTTP method", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
@@ -89,108 +101,42 @@ export default {
         allowClear: false,
       },
       enum: [
-        { label: 'POST', value: 'POST' },
         { label: 'GET', value: 'GET' },
+        { label: 'POST', value: 'POST' },
+        { label: 'PUT', value: 'PUT' },
+        { label: 'PATCH', value: 'PATCH' },
+        { label: 'DELETE', value: 'DELETE' },
       ],
     },
-    'variables': {
-      type: 'object',
-      title: `{{t("Available variables", { ns: "${NAMESPACE}" })}}`,
-      name: 'variables',
-      'x-decorator': 'FormItem',
-      'x-decorator-props': {
-      },
-      'x-component': 'RequestVarFieldSetConfig',
-    },
-    'config.postMethodData': {
+    'config.data': {
       type: 'string',
-      name: 'config.postMethodData',
+      name: 'config.data',
       'x-hidden': false,
-      title: `{{t("POST method request data", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Request data", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-decorator-props': {
-        className: css`
-          .ant-input-affix-wrapper {
-            width: 100%;
-          }
-        `,
-      },
-      'x-component': 'Input.TextArea',
-      'x-component-props': {
-        placeholder: `{{t("Input POST method request data", { ns: "${NAMESPACE}" })}}`,
-        style: {
-          width: '100%',
-        },
-      },
-      description: `{{t("You can use the above available variables in request data (supported by ejs https://ejs.co )", { ns: "${NAMESPACE}" })}}`,
-      'x-reactions': [
-        {
-          dependencies: ['config.httpMethod'],
-          when: "{{$deps[0]=='POST' || $deps[0]==null}}",
-          fulfill: {
-            schema: {
-              'x-hidden': false,
-            },
-          },
-          otherwise: {
-            schema: {
-              'x-hidden': true,
-            },
-          },
-        },
-      ],
-    },
-    'config.getMethodParam': {
-      type: 'object',
-      name: 'config.getMethodParam',
-      title: `{{t("GET method request param", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-decorator-props': {
-        className: css`
-          .ant-input-affix-wrapper {
-            width: 100%;
-          }
-        `,
-      },
-      default: null,
-      'x-component': 'Input.JSON',
+      'x-decorator-props': {},
+      'x-component': 'EjsTextArea',
       'x-component-props': {
         autoSize: {
           minRows: 5,
-          // maxRows: 20,
         },
-        placeholder: `{{t("Input GET method request param", { ns: "${NAMESPACE}" })}}`,
-        style: {
-          width: '100%',
-        },
+        placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("You can use the above available variables in request data.", { ns: "${NAMESPACE}" })}}`,
       },
-      description: `{{t("You can use the above available variables in request param (supported by ejs https://ejs.co )", { ns: "${NAMESPACE}" })}}`,
-      'x-reactions': [
-        {
-          dependencies: ['config.httpMethod'],
-          when: "{{$deps[0]=='GET'}}",
-          fulfill: {
-            schema: {
-              'x-hidden': false,
-            },
-          },
-          otherwise: {
-            schema: {
-              'x-hidden': true,
-            },
-          },
-        },
-      ],
+
     },
+    'config.ignoreFail': {
+      type: 'boolean',
+      name: 'config.ignoreFail',
+      title: `{{t("Ignore fail request and continue workflow", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+    }
   },
   view: {},
   scope: {},
   components: {
     ArrayItems,
-    RequestVarFieldSetConfig({ value, onChange }) {
-      return (
-        <RequestVarFieldSet {...value} onChange={onChange} />
-      );
-    }
-  }
+    EjsTextArea,
+  },
 };

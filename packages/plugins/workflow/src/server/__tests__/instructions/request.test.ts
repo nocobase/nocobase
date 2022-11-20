@@ -5,20 +5,28 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
-import { IRequestConfig } from '../../instructions/request';
-import axios from 'axios';
+import { RequestConfig } from '../../instructions/request';
+import axios, { AxiosRequestConfig } from 'axios';
+import { JOB_STATUS } from '../../constants';
 
+const testUrl = 'https://nocobase.com/test';
+const url_400 = 'https://nocobase.com/400';
+const timeoutUrl = 'https://nocobase.com/timeout';
 jest.mock('axios', () => {
   return {
-    get: async (url: string, config) => {
+    request: async (config: AxiosRequestConfig) => {
+      await sleep(1000);
+      if (config.url === url_400) {
+        return {
+          data: config,
+          status: 400,
+        };
+      }
+      if (config.url === timeoutUrl) {
+        throw new Error('timeout');
+      }
       return {
-        data: config.params,
-        status: 200,
-      };
-    },
-    post: async (url, data: string, config) => {
-      return {
-        data: JSON.parse(data),
+        data: config,
         status: 200,
       };
     },
@@ -50,66 +58,190 @@ describe('workflow > instructions > request', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.stop());
 
-  describe('request GET', () => {
-    it('GET', async () => {
-      const n1 = await workflow.createNode({
+  describe('request', () => {
+    it('request', async () => {
+      await workflow.createNode({
         type: 'request',
         config: {
-          getMethodParam: { name: 'lily', age: 20 },
-          requestUrl: 'https://www.baidu.com',
-          httpMethod: 'GET',
-        } as IRequestConfig,
+          url: 'https://www.baidu.com?name=lily&age=20',
+          method: 'GET',
+        } as RequestConfig,
       });
 
-      const post = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.create({ values: { title: 't1' } });
 
       await sleep(500);
 
-      const [execution] = await workflow.getExecutions();
-      const [job] = await execution.getJobs();
-      expect(job.result.data).toEqual({ name: 'lily', age: 20 });
+      let [execution] = await workflow.getExecutions();
+      let [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.PENDING);
+
+      await sleep(2000);
+
+      [execution] = await workflow.getExecutions();
+      [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
     });
 
-    it('GET with param template', async () => {
-      const n1 = await workflow.createNode({
+    it('request - url with variable template', async () => {
+      await workflow.createNode({
         type: 'request',
         config: {
-          getMethodParam: { title: '<%= ctx.data.title // 测试 %>' },
-          requestUrl: 'https://www.xxx.com',
-          httpMethod: 'GET',
-        } as IRequestConfig,
+          url: 'https://www.xxx.com?title=<%= ctx.data.title // 测试 %>',
+          method: 'GET',
+        } as RequestConfig,
       });
 
-      const post = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.create({ values: { title: 't1' } });
 
       await sleep(500);
 
-      const [execution] = await workflow.getExecutions();
-      const [job] = await execution.getJobs();
-      expect(job.result.data).toEqual({ title: 't1' });
+      let [execution] = await workflow.getExecutions();
+      let [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.PENDING);
+
+      await sleep(1000);
+
+      [execution] = await workflow.getExecutions();
+      [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(job.result.url).toEqual('https://www.xxx.com?title=t1');
     });
-  });
 
-  describe('request POST', () => {
-    it('post data', async () => {
-      const n1 = await workflow.createNode({
+    it('request - timeout', async () => {
+      await workflow.createNode({
         type: 'request',
         config: {
-          requestUrl: 'https://nocobase.com',
-          httpMethod: 'POST',
-          postMethodData: '{"title": "<%=ctx.data.title%>"}',
-        } as IRequestConfig,
+          url: timeoutUrl,
+          method: 'GET',
+          timeout: 1000,
+        } as RequestConfig,
       });
 
-      const post = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.create({ values: { title: 't1' } });
 
       await sleep(500);
 
-      const [execution] = await workflow.getExecutions();
-      const [job] = await execution.getJobs();
-      expect(job.result.data).toEqual({ title: 't1' });
+      let [execution] = await workflow.getExecutions();
+      let [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.PENDING);
+
+      await sleep(1000);
+
+      [execution] = await workflow.getExecutions();
+      [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.REJECTED);
+      expect(job.result).toMatch('timeout');
+
+    });
+
+    it('request - ignoreFail', async () => {
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: timeoutUrl,
+          method: 'GET',
+          timeout: 1000,
+          ignoreFail: true,
+        } as RequestConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      let [execution] = await workflow.getExecutions();
+      let [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.PENDING);
+
+      await sleep(1000);
+
+      [execution] = await workflow.getExecutions();
+      [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(job.result).toMatch('timeout');
+    });
+
+    it('response 400', async () => {
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: url_400,
+          method: 'GET',
+          timeout: 1000,
+          ignoreFail: false,
+        } as RequestConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      let [execution] = await workflow.getExecutions();
+      let [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.PENDING);
+
+      await sleep(1000);
+
+      [execution] = await workflow.getExecutions();
+      [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.REJECTED);
+      expect(job.result).toMatch('request fail! status code: 400');
+    });
+
+    it('response 400 ignoreFail', async () => {
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: url_400,
+          method: 'GET',
+          timeout: 1000,
+          ignoreFail: true,
+        } as RequestConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      let [execution] = await workflow.getExecutions();
+      let [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.PENDING);
+
+      await sleep(1000);
+
+      [execution] = await workflow.getExecutions();
+      [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(job.result).toMatch('request fail! status code: 400');
+    });
+
+    it('request with data', async () => {
+      const n1 = await workflow.createNode({
+        type: 'request',
+        config: {
+          url: testUrl,
+          method: 'POST',
+          data: '{"title": "<%=ctx.data.title%>"}',
+        } as RequestConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      let [execution] = await workflow.getExecutions();
+      let [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.PENDING);
+
+      await sleep(1000);
+
+      [execution] = await workflow.getExecutions();
+      [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(JSON.parse(job.result.data)).toEqual({ title: 't1' });
     });
   });
 });

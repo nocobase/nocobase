@@ -1,81 +1,96 @@
 import { JOB_STATUS } from '../constants';
 import { render } from 'ejs';
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import _ from 'lodash';
-import Processor from '../Processor';
+import { Instruction } from './index';
 
 export interface Header {
   name: string;
   value: any;
 }
 
-export interface IRequestConfig {
-  requestUrl: string;
-  httpMethod: 'GET' | 'POST';
+export type RequestConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'data' | 'timeout'> & {
   headers: Array<Header>;
-  getMethodParam?: any;
-  postMethodData?: string;
-}
+  ignoreFail: boolean;
+};
 
 async function renderData(templateStr: string, vars: any): Promise<string> {
+  if (_.isEmpty(templateStr)) {
+    return '';
+  }
   return render(templateStr, vars, { async: true });
 }
 
-export default {
-  async run(node, input, processor: Processor) {
+async function triggerResume(plugin, job, status, result) {
+  job.set('status', status);
+  job.set('result', result);
+  return plugin.resume(job);
+}
+
+export default class implements Instruction {
+  async run(node, input, processor) {
     const templateVars = {
       result: _.isEmpty(input?.result) ? '' : input.result,
       node: processor.jobsMapByNodeId,
       ctx: processor.execution.context,
     };
-    const requestConfig = node.config as IRequestConfig;
+    const requestConfig = node.config as RequestConfig;
 
     // default headers
     const headers = {
       'Content-Type': 'application/json',
     };
-    const { headers: headerArr = [],httpMethod = 'POST' } = requestConfig;
+    const { headers: headerArr = [], ignoreFail = false, method = 'POST', timeout = 5000 } = requestConfig;
     headerArr.forEach((header) => (headers[header.name] = header.value));
 
-    let resp: AxiosResponse;
-    switch (httpMethod) {
-      case 'GET':
-        let paramTmplStr = requestConfig.getMethodParam;
-        if (_.isObject(paramTmplStr)) {
-          paramTmplStr = JSON.stringify(paramTmplStr);
-        }
-        let params = {};
-        if (!_.isEmpty(paramTmplStr)) {
-          try {
-            const paramStr = await renderData(paramTmplStr, templateVars);
-            params = JSON.parse(paramStr);
-          } catch (e) {
-            console.warn(e)
-            throw new Error(`please check GET method request param format！${(e as Error)?.message}`);
-          }
-        }
-        resp = await axios.get(requestConfig.requestUrl, {
-          params,
-          headers,
-        });
-        break;
-      case 'POST':
-        let actualReqData = '';
-        if (!_.isEmpty(requestConfig.postMethodData)) {
-          try {
-            actualReqData = await renderData(requestConfig.postMethodData, templateVars);
-          } catch (e) {
-            console.warn(e)
-            throw new Error(`please check POST method request data format！${(e as Error)?.message}`);
-          }
-        }
-        resp = await axios.post(requestConfig.requestUrl, actualReqData, { headers });
-        break;
+    let url, data;
+    try {
+      url = await renderData(requestConfig.url, templateVars);
+    } catch (e) {
+      console.warn(e);
+      throw new Error(`ejs can't render url, please check url format！${(e as Error)?.message}`);
+    }
+    try {
+      data = await renderData(requestConfig.data, templateVars);
+    } catch (e) {
+      console.warn(e);
+      throw new Error(`ejs can't render request data, please check request data format！${(e as Error)?.message}`);
     }
 
-    return {
-      status: JOB_STATUS.RESOLVED,
-      result: { status: resp.status, data: resp.data },
-    };
-  },
-};
+    const job = await processor.saveJob({
+      status: JOB_STATUS.PENDING,
+      nodeId: node.id,
+    });
+
+    const plugin = processor.options.plugin;
+    axios
+      .request({
+        method,
+        timeout,
+        headers,
+        url,
+        data,
+      })
+      .then((resp) => {
+        if (resp.status == 200) {
+          triggerResume(plugin, job, JOB_STATUS.RESOLVED, resp.data);
+        } else {
+          triggerResume(plugin, job, JOB_STATUS.REJECTED, `request fail! status code: ${resp.status}`);
+        }
+      })
+      .catch((e) => {
+        console.warn(e);
+        triggerResume(plugin, job, JOB_STATUS.REJECTED, (e as Error)?.message);
+      });
+
+    return job;
+  }
+
+  async resume(node, job, processor) {
+    const { ignoreFail } = node.config as RequestConfig;
+    if (ignoreFail) {
+      job.set('status', JOB_STATUS.RESOLVED);
+    }
+    return job;
+  }
+}
