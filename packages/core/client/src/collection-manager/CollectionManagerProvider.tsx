@@ -4,15 +4,17 @@ import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionManagerContext } from './context';
 import * as defaultInterfaces from './interfaces';
+import * as defaultTemplates from './templates';
 import { CollectionManagerOptions } from './types';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
-  const { service, interfaces, collections = [], refreshCM } = props;
+  const { service, interfaces, collections = [], refreshCM, templates } = props;
   return (
     <CollectionManagerContext.Provider
       value={{
         service,
         interfaces: { ...defaultInterfaces, ...interfaces },
+        templates: { ...defaultTemplates, ...templates },
         collections,
         refreshCM,
       }}

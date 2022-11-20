@@ -10,6 +10,7 @@ export * from './CollectionFieldsTable';
 export * from './schemas/collections'
 export * from './OverridingCollectionField'
 export * from './ViewInheritedField'
+export * from './AddCollectionAction'
 
 registerValidateFormats({
   uid: /^[A-Za-z0-9][A-Za-z0-9_-]*$/,

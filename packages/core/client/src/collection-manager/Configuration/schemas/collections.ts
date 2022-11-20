@@ -200,23 +200,31 @@ export const collectionSchema: ISchema = {
             create: {
               type: 'void',
               title: '{{ t("Create collection") }}',
-              'x-component': 'Action',
+              'x-component': 'AddCollection',
               'x-component-props': {
                 type: 'primary',
               },
-              properties: {
-                drawer: {
-                  type: 'void',
-                  title: '{{ t("Create collection") }}',
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    useValues: '{{ useCollectionValues }}',
-                  },
-                  properties: createCollectionProperties,
-                },
-              },
             },
+            // create: {
+            //   type: 'void',
+            //   title: '{{ t("Create collection") }}',
+            //   'x-component': 'Action',
+            //   'x-component-props': {
+            //     type: 'primary',
+            //   },
+            //   properties: {
+            //     drawer: {
+            //       type: 'void',
+            //       title: '{{ t("Create collection") }}',
+            //       'x-component': 'Action.Drawer',
+            //       'x-decorator': 'Form',
+            //       'x-decorator-props': {
+            //         useValues: '{{ useCollectionValues }}',
+            //       },
+            //       properties: createCollectionProperties,
+            //     },
+            //   },
+            // },
           },
         },
         table: {
