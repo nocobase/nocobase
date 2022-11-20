@@ -120,10 +120,10 @@ export const TabPaneInitializers = (props?: any) => {
   );
 };
 
-export const TabPaneInitializersForCreateFormBlock = () => {
-  return <TabPaneInitializers isCreate />;
+export const TabPaneInitializersForCreateFormBlock = (props) => {
+  return <TabPaneInitializers {...props} isCreate />;
 };
 
-export const TabPaneInitializersForBulkEditFormBlock = () => {
-  return <TabPaneInitializers isBulkEdit />;
+export const TabPaneInitializersForBulkEditFormBlock = (props) => {
+  return <TabPaneInitializers {...props} isBulkEdit />;
 };
