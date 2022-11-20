@@ -428,7 +428,7 @@ RemoteSelect.Designer = () => {
               name: collectionField.name,
               type: 'string',
               required: fieldSchema['required'],
-              title: fieldSchema['title'],
+              title: field.title,
               description: fieldSchema['description'],
               default: fieldSchema['default'],
               'x-decorator': 'FormItem',

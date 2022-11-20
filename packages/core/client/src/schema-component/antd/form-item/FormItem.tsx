@@ -373,8 +373,8 @@ FormItem.Designer = (props) => {
             const schema: ISchema = {
               name: collectionField.name,
               type: 'string',
+              title: field.title,
               required: fieldSchema['required'],
-              title: fieldSchema['title'],
               description: fieldSchema['description'],
               default: fieldSchema['default'],
               'x-decorator': 'FormItem',
