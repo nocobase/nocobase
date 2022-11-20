@@ -15,6 +15,27 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should create inherits with topological sort', async () => {
+    const child = db.collection({
+      name: 'child',
+      inherits: ['delay-parents'],
+    });
+
+    expect(child.getField('parent-field')).toBeFalsy();
+
+    db.collection({
+      name: 'delay-parents',
+      fields: [
+        {
+          type: 'string',
+          name: 'parent-field',
+        },
+      ],
+    });
+
+    expect(child.getField('parent-field')).toBeTruthy();
+  });
+
   it('should inherit from no id table', async () => {
     const interfaceCollection = db.collection({
       name: 'a',
