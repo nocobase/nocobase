@@ -11,7 +11,7 @@ export default {
   fields: [
     {
       name: 'id',
-      type: 'integer',
+      type: 'bigInt',
       autoIncrement: true,
       primaryKey: true,
       allowNull: false,
