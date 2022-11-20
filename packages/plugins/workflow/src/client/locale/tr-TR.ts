@@ -2,7 +2,6 @@ export default {
   "Workflow": "İş Akışı",
   "Execution history": "Yürütme Geçmişi",
   "Trigger type": "Tetikleme türü",
-  "Description": "Açıklama",
   "Status": "Durum",
   "On": "Aç",
   "Off": "Kapa",
