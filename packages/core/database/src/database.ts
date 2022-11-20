@@ -303,8 +303,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.emit('beforeDefineCollection', options);
 
     const hasValidInheritsOptions = (() => {
-      const inheritsOptions = options.inherits && lodash.castArray(options.inherits);
-      return inheritsOptions;
+      return options.inherits && lodash.castArray(options.inherits).length > 0;
     })();
 
     const collection = hasValidInheritsOptions
