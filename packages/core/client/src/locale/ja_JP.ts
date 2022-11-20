@@ -255,6 +255,7 @@ export default {
   "End date field": "終了日フィールド",
   "Navigate": "ページネーション",
   "Title": "タイトル",
+  "Description": "説明",
   "Select view": "ビューの切り替え",
   "Reset": "リセット",
   "Exportable fields": "エクスポート可能なフィールド",

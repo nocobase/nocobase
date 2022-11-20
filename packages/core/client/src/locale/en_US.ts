@@ -267,6 +267,7 @@ export default {
   "End date field": "End date field",
   "Navigate": "Navigate",
   "Title": "Title",
+  "Description": "Description",
   "Select view": "Select view",
   "Reset": "Reset",
   "Exportable fields": "Exportable fields",
