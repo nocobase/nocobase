@@ -28,6 +28,8 @@ export class InheritedCollection extends Collection {
         };
 
         this.db.addListener('afterDefineCollection', listener);
+      } else {
+        throw err;
       }
     }
   }
