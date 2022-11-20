@@ -386,7 +386,7 @@ pgOnly()('collection inherits', () => {
       name: 'c',
       inherits: ['a', 'b'],
       fields: [
-        { type: 'integer', name: 'id', autoIncrement: true },
+        { type: 'bigInt', name: 'id', autoIncrement: true },
         { type: 'string', name: 'c1' },
       ],
     });
