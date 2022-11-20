@@ -15,6 +15,60 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should create inherits with lazy parents', async () => {
+    const child = db.collection({
+      name: 'child',
+      inherits: ['delay-parents'],
+    });
+
+    expect(child.getField('parent-field')).toBeFalsy();
+
+    db.collection({
+      name: 'delay-parents',
+      fields: [
+        {
+          type: 'string',
+          name: 'parent-field',
+        },
+      ],
+    });
+
+    expect(child.getField('parent-field')).toBeTruthy();
+  });
+
+  it('should create inherits with multiple lazy parents', async () => {
+    const child = db.collection({
+      name: 'child',
+      inherits: ['parent1', 'parent2'],
+    });
+
+    expect(child.getField('parent1-field')).toBeFalsy();
+
+    db.collection({
+      name: 'parent1',
+      fields: [
+        {
+          type: 'string',
+          name: 'parent1-field',
+        },
+      ],
+    });
+
+    expect(child.getField('parent1-field')).toBeFalsy();
+
+    db.collection({
+      name: 'parent2',
+      fields: [
+        {
+          type: 'string',
+          name: 'parent2-field',
+        },
+      ],
+    });
+
+    expect(child.getField('parent1-field')).toBeTruthy();
+  });
+
   it('should inherit from no id table', async () => {
     const interfaceCollection = db.collection({
       name: 'a',
