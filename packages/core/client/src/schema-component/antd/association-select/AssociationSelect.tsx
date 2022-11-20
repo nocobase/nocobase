@@ -1,17 +1,23 @@
-import { css } from '@emotion/css';
-import { ArrayCollapse, FormItem as Item, FormLayout } from '@formily/antd';
+import { LoadingOutlined } from '@ant-design/icons';
+import { ArrayCollapse, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { connect, ISchema, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useDesignable } from '../..';
-import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useFormBlockContext, useFilterByTk } from '../../../block-provider';
+import { useCollectionManager, useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { BlockItem } from '../block-item';
-import { HTMLEncode } from '../input/shared';
+import { useDesignable, useCompile } from '../../hooks';
+import { RemoteSelect, RemoteSelectProps } from '../remote-select';
+import { defaultFieldNames } from '../select';
+import { ReadPretty } from './ReadPretty';
+import useServiceOptions from './useServiceOptions';
+
+export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
+  action?: string;
+};
 
 const divWrap = (schema: ISchema) => {
   return {
@@ -23,59 +29,79 @@ const divWrap = (schema: ISchema) => {
   };
 };
 
-export const FormItem: any = (props) => {
-  const field = useField();
-  return (
-    <BlockItem className={'nb-form-item'}>
-      <Item
-        className={`${css`
-          & .ant-space {
-            flex-wrap: wrap;
-          }
-        `}`}
-        {...props}
-        extra={
-          field.description ? (
-            <div
-              dangerouslySetInnerHTML={{
-                __html: HTMLEncode(field.description).split('\n').join('<br/>'),
-              }}
-            />
-          ) : null
-        }
-      />
-    </BlockItem>
-  );
-};
+const InternalAssociationSelect = connect(
+  (props: AssociationSelectProps) => {
+    const service = useServiceOptions(props);
+    const field = useField();
+    const fieldSchema = useFieldSchema();
+    const { getField } = useCollection();
+    const collectionField = useMemo(() => {
+      return getField(fieldSchema.name);
+    }, [fieldSchema.name]);
 
-FormItem.Designer = (props) => {
-  const { getCollectionFields, getCollection, getInterface, getCollectionJoinField } = useCollectionManager();
+    useEffect(() => {
+      if (!field.title) {
+        field.title = collectionField.uiSchema.title;
+      }
+    }, collectionField.title);
+
+    return <RemoteSelect {...props} service={service}></RemoteSelect>;
+  },
+  mapProps(
+    {
+      dataSource: 'options',
+      loading: true,
+    },
+    (props, field) => {
+      return {
+        ...props,
+        fieldNames: { ...defaultFieldNames, ...props.fieldNames, ...field.componentProps.fieldNames },
+        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
+      };
+    },
+  ),
+  mapReadPretty(ReadPretty),
+);
+
+interface RemoteSelectInterface {
+  (props: any): React.ReactElement;
+  Designer: React.FC;
+}
+
+export const AssociationSelect = InternalAssociationSelect as unknown as RemoteSelectInterface;
+
+AssociationSelect.Designer = () => {
+  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
-  const tk = useFilterByTk();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { dn, refresh, insertAdjacent, insertBeforeBegin } = useDesignable();
+  const tk = useFilterByTk();
+  const {} = useCollection();
+  const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  console.log('🚀 ~ file: AssociationSelect.tsx ~ line 86 ~ collectionField', collectionField);
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
-  const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
+
   if (!field.readPretty) {
     initialValue['required'] = field.required;
   }
+
   const options = targetFields
     .filter((field) => !field?.target && field.type !== 'boolean')
     .map((field) => ({
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -185,7 +211,7 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {!field.readPretty && fieldSchema['x-component'] !== 'FormField' && (
+      {!field.readPretty && (
         <SchemaSettings.SwitchItem
           key="required"
           title={t('Required')}
@@ -387,52 +413,6 @@ FormItem.Designer = (props) => {
                 ...fieldSchema['x-component-props'],
               },
             };
-            interfaceConfig?.schemaInitialize?.(schema, {
-              field: collectionField,
-              block: 'Form',
-              readPretty: field.readPretty,
-              action: tk ? 'get' : null,
-            });
-
-            insertAdjacent('beforeBegin', divWrap(schema), {
-              onSuccess: () => {
-                dn.remove(null, {
-                  removeParentsIfNoChildren: true,
-                  breakRemoveOn: {
-                    'x-component': 'Grid',
-                  },
-                });
-              },
-            });
-          }}
-        />
-      )}
-      {form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
-        <SchemaSettings.SelectItem
-          title={t('Field component')}
-          options={
-            collectionField?.interface === 'o2m'
-              ? [
-                  { label: t('Record picker'), value: 'CollectionField' },
-                  { label: t('Subtable'), value: 'TableField' },
-                ]
-              : [
-                  { label: t('Record picker'), value: 'CollectionField' },
-                  { label: t('Subform'), value: 'FormField' },
-                ]
-          }
-          value={fieldSchema['x-component']}
-          onChange={(v) => {
-            const schema: ISchema = {
-              name: collectionField.name,
-              type: 'void',
-              // title: compile(collectionField.uiSchema?.title),
-              'x-decorator': 'FormItem',
-              'x-designer': 'FormItem.Designer',
-              'x-component': v,
-              'x-component-props': {},
-              'x-collection-field': fieldSchema['x-collection-field'],
-            };
 
             interfaceConfig?.schemaInitialize?.(schema, {
               field: collectionField,
@@ -440,10 +420,6 @@ FormItem.Designer = (props) => {
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
             });
-
-            if (v === 'CollectionField') {
-              schema['type'] = 'string';
-            }
 
             insertAdjacent('beforeBegin', divWrap(schema), {
               onSuccess: () => {
@@ -513,31 +489,33 @@ FormItem.Designer = (props) => {
             }}
           />
         )}
-      {collectionField?.target && fieldSchema['x-component'] === 'CollectionField' && (
-        <SchemaSettings.SelectItem
-          key="title-field"
-          title={t('Title field')}
-          options={options}
-          value={field?.componentProps?.fieldNames?.label}
-          onChange={(label) => {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            const fieldNames = {
-              ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-              ...field.componentProps.fieldNames,
-              label,
-            };
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          }}
-        />
-      )}
+      {collectionField?.target &&
+        (fieldSchema['x-component'] === 'CollectionField' || ['m2o'].includes(collectionField.interface)) && (
+          <SchemaSettings.SelectItem
+            key="title-field"
+            title={t('Title field')}
+            options={options}
+            value={field?.componentProps?.fieldNames?.label}
+            onChange={(label) => {
+              const schema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
+              const fieldNames = {
+                ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
+                ...field.componentProps.fieldNames,
+                label,
+              };
+              field.componentProps.fieldNames = fieldNames;
+              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+              fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+              schema['x-component-props'] = fieldSchema['x-component-props'];
+              dn.emit('patch', {
+                schema,
+              });
+              dn.refresh();
+            }}
+          />
+        )}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         key="remove"
@@ -552,3 +530,5 @@ FormItem.Designer = (props) => {
     </GeneralSchemaDesigner>
   );
 };
+
+export default AssociationSelect;

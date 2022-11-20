@@ -10,6 +10,7 @@ export const ReadPretty = observer((props: any) => {
 
   const { data } = useRequest(
     {
+      action: 'list',
       ...props.service,
       params: {
         paginate: false,

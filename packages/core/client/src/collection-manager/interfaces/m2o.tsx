@@ -50,18 +50,10 @@ export const m2o: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    if (block === 'Form' && schema['x-component'] === 'RemoteSelect') {
+  schemaInitialize(schema: ISchema, { block, readPretty }) {
+    if (block === 'Form' && schema['x-component'] === 'AssociationSelect') {
       return Object.assign(schema, {
-        'x-decorator': 'FormItem',
-        'x-designer': 'RemoteSelect.Designer',
-        'x-component-props': {
-          service: {
-            resource: field.target,
-            action: 'list',
-          },
-          ...schema['x-component-props'],
-        },
+        'x-designer': 'AssociationSelect.Designer',
       });
     } else {
       schema.type = 'string';
