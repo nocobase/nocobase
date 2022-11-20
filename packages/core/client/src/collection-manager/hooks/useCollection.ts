@@ -10,9 +10,9 @@ export const useCollection = () => {
   const collection = useContext(CollectionContext);
   const api = useAPIClient();
   const resource = api?.resource(collection?.name);
-  const { getParentCollections, getCurrentCollectionFields } = useCollectionManager();
+  const { getInheritCollections, getCurrentCollectionFields } = useCollectionManager();
   const currentFields = collection.fields;
-  const inheritKeys = getParentCollections(collection.name);
+  const inheritKeys = getInheritCollections(collection.name);
   const inheritedFields = reduce(
     inheritKeys,
     (result, value) => {

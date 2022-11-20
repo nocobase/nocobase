@@ -7,7 +7,7 @@ import { CollectionFieldOptions } from '../types';
 export const useCollectionManager = () => {
   const { refreshCM, service, interfaces, collections } = useContext(CollectionManagerContext);
   const getInheritedFields = (name) => {
-    const inheritKeys = getParentCollections(name);
+    const inheritKeys = getInheritCollections(name);
     const inheritedFields = reduce(
       inheritKeys,
       (result, value) => {
@@ -38,7 +38,7 @@ export const useCollectionManager = () => {
     }
     return getCollectionFields(collectionName)?.find((field) => field.name === fieldName);
   };
-  const getParentCollections = (name) => {
+  const getInheritCollections = (name) => {
     const parents = [];
     const getParents = (name) => {
       const collection = collections?.find((collection) => collection.name === name);
@@ -82,7 +82,7 @@ export const useCollectionManager = () => {
     service,
     interfaces,
     collections,
-    getParentCollections,
+    getInheritCollections,
     getChildrenCollections,
     refreshCM: () => refreshCM?.(),
     get(name: string) {
@@ -106,7 +106,7 @@ export const useCollectionManager = () => {
       if (!fieldNames?.length) {
         return;
       }
-      let cName = collectionName;
+      let cName: any = collectionName;
       let collectionField;
       while (cName && fieldNames.length > 0) {
         const fileName = fieldNames.shift();
@@ -125,7 +125,7 @@ export const useCollectionManager = () => {
     getParentCollectionFields: (parentCollection, currentCollection) => {
       const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields;
       const parentFields = collections?.find((collection) => collection.name === parentCollection)?.fields;
-      const inheritKeys = getParentCollections(currentCollection);
+      const inheritKeys = getInheritCollections(currentCollection);
       const index = inheritKeys.indexOf(parentCollection);
       let filterFields = currentFields;
       if (index > 0) {

@@ -15,6 +15,35 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should inherit from no id table', async () => {
+    const interfaceCollection = db.collection({
+      name: 'a',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+      timestamps: false,
+    });
+
+    interfaceCollection.model.removeAttribute('id');
+    const child = db.collection({
+      name: 'b',
+      inherits: ['a'],
+    });
+
+    await db.sync();
+
+    const childInstance = await child.repository.create({
+      values: {
+        name: 'test',
+      },
+    });
+
+    expect(childInstance.get('name')).toBe('test');
+  });
+
   it('should pass empty inherits params', async () => {
     const table1 = db.collection({
       name: 'table1',
@@ -387,6 +416,13 @@ pgOnly()('collection inherits', () => {
     });
 
     expect(a2.get('id')).toEqual(2);
+
+    db.collection({
+      name: 'd',
+      inherits: ['c'],
+    });
+
+    await db.sync();
   });
 
   it('should update inherit field when parent field update', async () => {
