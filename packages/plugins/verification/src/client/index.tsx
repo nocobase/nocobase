@@ -27,7 +27,6 @@ export default function(props) {
         value={{
           components: {
             ...ctx?.components,
-            VerificationShortcut,
           },
         }}
       >
