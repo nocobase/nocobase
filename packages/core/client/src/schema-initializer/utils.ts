@@ -419,7 +419,6 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   }
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
-  console.log(fieldSchema, key, action);
   return {
     schema,
     exists: !!schema,
@@ -522,8 +521,12 @@ export const useCollectionDataSourceItems = (componentName) => {
       }),
       children: collections
         ?.filter((item) => {
+          console.log(item);
           const b = !value || selected.includes(item.name);
+          console.log(b);
           if (item.inherit) {
+            return false;
+          } else if (!item.fields.find((v) => v.name === 'id')) {
             return false;
           } else {
             return b && !(item?.isThrough && item?.autoCreate);
