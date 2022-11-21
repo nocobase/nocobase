@@ -221,7 +221,7 @@ export const overridingSchema: ISchema = {
           'x-component': 'OverridingCollectionField',
           'x-component-props': {
             type: 'primary',
-            'disabled': '{{ enabledOveride }}',
+            'currentCollection': '{{ currentCollection }}',
           },
         },
         view: {
