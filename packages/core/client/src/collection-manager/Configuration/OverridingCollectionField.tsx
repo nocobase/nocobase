@@ -2,7 +2,7 @@ import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
-import set from 'lodash/set';
+import { set, omit } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
@@ -92,23 +92,17 @@ const useOverridingCollectionField = () => {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
-      if (values.autoCreateReverseField) {
-      } else {
-        delete values.reverseField;
-      }
-      delete values.autoCreateReverseField;
-      const { uiSchema } = values;
-      delete values.collectionName;
-      delete values.key;
-      delete uiSchema.id;
-      delete uiSchema['x-uid'];
-      delete uiSchema['uiSchemaUid'];
-
+      const data = omit(values, [
+        'key',
+        'uiSchemaUid',
+        'collectionName',
+        'autoCreateReverseField',
+        'uiSchema.x-uid',
+        'reverseField.key',
+        'reverseField.uiSchemaUid',
+      ]);
       await resource.create({
-        values: {
-          ...values,
-          uiSchema,
-        },
+        values: data,
       });
       ctx.setVisible(false);
       await form.reset();
