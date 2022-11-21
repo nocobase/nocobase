@@ -257,6 +257,7 @@ export const MenuDesigner = () => {
     <GeneralSchemaDesigner>
       <SchemaSettings.ModalItem
         title={t('Edit')}
+        eventKey="edit"
         schema={schema as ISchema}
         initialValues={initialValues}
         onSubmit={({ title, icon, href }) => {
@@ -282,6 +283,7 @@ export const MenuDesigner = () => {
       />
       <SchemaSettings.ModalItem
         title={t('Move to')}
+        eventKey="move-to"
         components={{ TreeSelect }}
         effects={effects}
         schema={

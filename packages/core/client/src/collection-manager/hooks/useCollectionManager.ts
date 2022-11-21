@@ -106,7 +106,7 @@ export const useCollectionManager = () => {
       if (!fieldNames?.length) {
         return;
       }
-      let cName = collectionName;
+      let cName: any = collectionName;
       let collectionField;
       while (cName && fieldNames.length > 0) {
         const fileName = fieldNames.shift();

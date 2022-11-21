@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
-import { ISchema, useForm } from '@formily/react';
+import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -14,9 +14,9 @@ import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
-import { options } from './interfaces';
+import { getOptions } from './interfaces';
 
-const getSchema = (schema: IField, record: any, compile): ISchema => {
+const getSchema = (schema: IField, record: any, compile) => {
   if (!schema) {
     return;
   }
@@ -24,7 +24,7 @@ const getSchema = (schema: IField, record: any, compile): ISchema => {
   const properties = cloneDeep(schema.properties) as any;
 
   if (schema.hasDefaultValue === true) {
-    properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
+    properties['defaultValue'] = cloneDeep(schema?.default?.uiSchema);
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
@@ -108,9 +108,9 @@ export const useCollectionFieldFormValues = () => {
       }
       delete values.autoCreateReverseField;
       return values;
-    }
-  }
-}
+    },
+  };
+};
 
 const useCreateCollectionField = () => {
   const form = useForm();
@@ -143,7 +143,7 @@ export const AddCollectionField = (props) => {
 };
 
 export const AddFieldAction = (props) => {
-  const { scope, getContainer, item: record, children,trigger ,align} = props;
+  const { scope, getContainer, item: record, children, trigger, align } = props;
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -164,11 +164,13 @@ export const AddFieldAction = (props) => {
               }}
               onClick={(info) => {
                 const schema = getSchema(getInterface(info.key), record, compile);
-                setSchema(schema);
-                setVisible(true);
+                if (schema) {
+                  setSchema(schema);
+                  setVisible(true);
+                }
               }}
             >
-              {options.map((option) => {
+              {getOptions().map((option) => {
                 return (
                   option.children.length > 0 && (
                     <Menu.ItemGroup key={option.label} title={compile(option.label)}>

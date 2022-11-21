@@ -1,5 +1,5 @@
 import { Spin } from 'antd';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionManagerContext } from './context';
@@ -12,6 +12,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
   return (
     <CollectionManagerContext.Provider
       value={{
+        ...ctx,
         service,
         interfaces: { ...defaultInterfaces, ...interfaces },
         templates: { ...defaultTemplates, ...templates },

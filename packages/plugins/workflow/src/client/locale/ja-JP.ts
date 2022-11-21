@@ -2,7 +2,6 @@ export default {
   "Workflow": "ワークフロー",
   "Execution history": "実行履歴",
   "Trigger type": "トリガータイプ",
-  "Description": "説明",
   "Status": "状態",
   "On": "有効",
   "Off": "無効",

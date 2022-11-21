@@ -7,7 +7,7 @@ const sortFieldMutex = new Mutex();
 
 export class SortField extends Field {
   get dataType() {
-    return DataTypes.INTEGER;
+    return DataTypes.BIGINT;
   }
 
   setSortValue = async (instance, options) => {
@@ -32,14 +32,14 @@ export class SortField extends Field {
       const newValue = (max || 0) + 1;
       instance.set(name, newValue);
     });
-  }
+  };
 
   onScopeChange = async (instance, options) => {
     const { scopeKey } = this.options;
     if (scopeKey && !instance.isNewRecord && instance._previousDataValues[scopeKey] != instance[scopeKey]) {
       await this.setSortValue(instance, options);
     }
-  }
+  };
 
   initRecordsSortValue = async ({ transaction }) => {
     const totalCount = await this.collection.repository.count({
@@ -73,7 +73,7 @@ export class SortField extends Field {
         start += 1;
       }
     }
-  }
+  };
 
   bind() {
     super.bind();

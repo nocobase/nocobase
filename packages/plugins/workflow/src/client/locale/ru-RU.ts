@@ -2,7 +2,6 @@ export default {
   "Workflow": "Рабочий процесс",
   "Execution history": "История запусков",
   "Trigger type": "Тип триггера",
-  "Description": "Описание",
   "Status": "Статус",
   "On": "Вкл.",
   "Off": "Выкл.",
