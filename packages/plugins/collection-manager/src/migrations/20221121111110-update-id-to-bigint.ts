@@ -61,7 +61,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
         try {
           await this.sequelize.query(sql, {});
         } catch (err) {
-          if (err.message.includes('does not exist')) {
+          if (err.message.includes('does not exist') || err.message.includes('cannot alter inherited column')) {
             return;
           }
           throw err;
@@ -104,7 +104,11 @@ export default class UpdateIdToBigIntMigrator extends Migration {
     });
 
     for (const field of singleForeignFields) {
-      const collection = db.modelCollection.get(field.get('collectionName'));
+      const collection = db.getCollection(field.get('collectionName'));
+      if (!collection) {
+        console.log('collection not found', field.get('collectionName'));
+      }
+
       await updateToBigInt(collection.model, field.get('name'));
     }
 
