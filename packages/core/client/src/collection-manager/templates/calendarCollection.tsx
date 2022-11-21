@@ -9,6 +9,7 @@ export const calendarCollection: IField = {
   title: '{{t("Calendar collection")}}',
   isAssociation: true,
   order: 1,
+  color: 'orange',
   presetFields: [
     {
       name: 'cron',

@@ -9,10 +9,11 @@ export const listCollection: IField = {
   title: '{{t("List collection")}}',
   isAssociation: true,
   order: 1,
+  color: 'blue',
   presetFields: [
     {
       name: 'id',
-      type: 'integer',
+      type: 'bigInt',
       autoIncrement: true,
       primaryKey: true,
       allowNull: false,
