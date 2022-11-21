@@ -124,7 +124,7 @@ export const OverridingCollectionField = (props) => {
 };
 
 export const OverridingFieldAction = (props) => {
-  const { scope, getContainer, item: record, children } = props;
+  const { scope, getContainer, item: record, children, disabled } = props;
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -137,6 +137,8 @@ export const OverridingFieldAction = (props) => {
     <RecordProvider record={record}>
       <ActionContext.Provider value={{ visible, setVisible }}>
         <a
+          //@ts-ignore
+          disabled={disabled}
           onClick={async () => {
             const { data } = await api.resource('collections.fields', record.collectionName).get({
               filterByTk: record.name,

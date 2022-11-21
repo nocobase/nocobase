@@ -14,6 +14,7 @@ import {
   useSchemaInitializer,
   useRecord,
   useCompile,
+  SchemaComponent,
 } from '../..';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
@@ -209,12 +210,15 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         render: (v, record) => {
           const index = findIndex(field.value, record);
           const flag = getIsOverriding(record);
-          //@ts-ignore
-          overridingSchema.properties.actions.properties.overriding['x-visible'] = flag;
           return (
             <RecordIndexProvider index={index}>
               <RecordProvider record={record}>
-                <RecursionField schema={overridingSchema as Schema} name={index} onlyRenderProperties />
+                <SchemaComponent
+                  scope={{ enabledOveride: !flag }}
+                  schema={overridingSchema as Schema}
+                  name={index}
+                  onlyRenderProperties
+                />
               </RecordProvider>
             </RecordIndexProvider>
           );
