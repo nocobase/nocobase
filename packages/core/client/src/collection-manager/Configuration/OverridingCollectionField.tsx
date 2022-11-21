@@ -133,37 +133,40 @@ export const OverridingFieldAction = (props) => {
   const compile = useCompile();
   const [data, setData] = useState<any>({});
   const currentFields = getCurrentCollectionFields(currentCollection);
+  const disabled = getIsOverriding(currentFields, record);
   return (
     <RecordProvider record={record}>
       <ActionContext.Provider value={{ visible, setVisible }}>
         <a
           //@ts-ignore
-          disabled={getIsOverriding(currentFields, record)}
+          disabled={disabled}
           onClick={async () => {
-            const { data } = await api.resource('collections.fields', record.collectionName).get({
-              filterByTk: record.name,
-              appends: ['uiSchema', 'reverseField'],
-            });
-            setData(data?.data);
-            const interfaceConf = getInterface(record.interface);
-            const defaultValues: any = cloneDeep(data?.data) || {};
-            if (!defaultValues?.reverseField) {
-              defaultValues.autoCreateReverseField = false;
-              defaultValues.reverseField = interfaceConf.default?.reverseField;
-              set(defaultValues.reverseField, 'name', `f_${uid()}`);
-              set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
+            if (!disabled) {
+              const { data } = await api.resource('collections.fields', record.collectionName).get({
+                filterByTk: record.name,
+                appends: ['uiSchema', 'reverseField'],
+              });
+              setData(data?.data);
+              const interfaceConf = getInterface(record.interface);
+              const defaultValues: any = cloneDeep(data?.data) || {};
+              if (!defaultValues?.reverseField) {
+                defaultValues.autoCreateReverseField = false;
+                defaultValues.reverseField = interfaceConf.default?.reverseField;
+                set(defaultValues.reverseField, 'name', `f_${uid()}`);
+                set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
+              }
+              const schema = getSchema(
+                {
+                  ...interfaceConf,
+                  default: defaultValues,
+                },
+                record,
+                compile,
+                getContainer,
+              );
+              setSchema(schema);
+              setVisible(true);
             }
-            const schema = getSchema(
-              {
-                ...interfaceConf,
-                default: defaultValues,
-              },
-              record,
-              compile,
-              getContainer,
-            );
-            setSchema(schema);
-            setVisible(true);
           }}
         >
           {children || t('Override')}
