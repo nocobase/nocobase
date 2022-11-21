@@ -12,12 +12,6 @@ export default class UpdateIdToBigIntMigrator extends Migration {
             name: 'id',
             type: 'integer',
           },
-          {
-            options: {
-              isForeignKey: true,
-            },
-            type: 'integer',
-          },
         ],
       },
       values: {
@@ -39,6 +33,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
       let sql;
 
       const tableName = model.tableName;
+
       if (model.rawAttributes[fieldName].type instanceof DataTypes.INTEGER) {
         if (db.inDialect('postgres')) {
           sql = `ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`;
@@ -66,7 +61,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
         try {
           await this.sequelize.query(sql, {});
         } catch (err) {
-          if (err.message.includes('does not exist')) {
+          if (err.message.includes('does not exist') || err.message.includes('cannot alter inherited column')) {
             return;
           }
           throw err;
@@ -98,6 +93,24 @@ export default class UpdateIdToBigIntMigrator extends Migration {
         this.app.log.info(`updated ${tableName}.${fieldName} to BIGINT`, tableName, fieldName);
       }
     };
+
+    const singleForeignFields = await db.getCollection('fields').repository.find({
+      filter: {
+        options: {
+          isForeignKey: true,
+        },
+        type: 'integer',
+      },
+    });
+
+    for (const field of singleForeignFields) {
+      const collection = db.getCollection(field.get('collectionName'));
+      if (!collection) {
+        console.log('collection not found', field.get('collectionName'));
+      }
+
+      await updateToBigInt(collection.model, field.get('name'));
+    }
 
     //@ts-ignore
     this.app.db.sequelize.modelManager.forEachModel((model) => {
