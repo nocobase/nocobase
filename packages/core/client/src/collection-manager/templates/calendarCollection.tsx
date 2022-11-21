@@ -1,6 +1,5 @@
 import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
-import { defaultProps, operators } from './properties';
+import { defaultProps, defaultSystemFields, defaultCollectionOptions } from './properties';
 import { IField } from './types';
 
 export const calendarCollection: IField = {
@@ -11,6 +10,7 @@ export const calendarCollection: IField = {
   order: 1,
   color: 'orange',
   presetFields: [
+    ...defaultSystemFields,
     {
       name: 'cron',
       type: 'string',
@@ -53,13 +53,6 @@ export const calendarCollection: IField = {
   },
   properties: {
     ...defaultProps,
-    sortable: {
-      type: 'boolean',
-      title: '{{t("Sortable")}}',
-      default: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-disabled': '{{ !createOnly }}',
-    },
+    ...defaultCollectionOptions,
   },
 };
