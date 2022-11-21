@@ -12,12 +12,6 @@ export default class UpdateIdToBigIntMigrator extends Migration {
             name: 'id',
             type: 'integer',
           },
-          {
-            options: {
-              isForeignKey: true,
-            },
-            type: 'integer',
-          },
         ],
       },
       values: {
@@ -39,6 +33,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
       let sql;
 
       const tableName = model.tableName;
+
       if (model.rawAttributes[fieldName].type instanceof DataTypes.INTEGER) {
         if (db.inDialect('postgres')) {
           sql = `ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`;
@@ -98,6 +93,20 @@ export default class UpdateIdToBigIntMigrator extends Migration {
         this.app.log.info(`updated ${tableName}.${fieldName} to BIGINT`, tableName, fieldName);
       }
     };
+
+    const singleForeignFields = await db.getCollection('fields').repository.find({
+      filter: {
+        options: {
+          isForeignKey: true,
+        },
+        type: 'integer',
+      },
+    });
+
+    for (const field of singleForeignFields) {
+      const collection = db.modelCollection.get(field.get('collectionName'));
+      await updateToBigInt(collection.model, field.get('name'));
+    }
 
     //@ts-ignore
     this.app.db.sequelize.modelManager.forEachModel((model) => {
