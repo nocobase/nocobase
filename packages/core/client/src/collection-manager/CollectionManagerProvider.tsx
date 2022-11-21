@@ -9,6 +9,7 @@ import { CollectionManagerOptions } from './types';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { service, interfaces, collections = [], refreshCM, templates } = props;
+  const ctx = useContext(CollectionManagerContext);
   return (
     <CollectionManagerContext.Provider
       value={{
