@@ -100,10 +100,12 @@ const useOverridingCollectionField = () => {
       const { uiSchema } = values;
       delete values.collectionName;
       delete values.key;
+      delete uiSchema.id;
+      delete uiSchema.key;
       await resource.create({
         values: {
           ...values,
-          uiSchema: { title: uiSchema.title, type: uiSchema.type, 'x-component': uiSchema['x-component'] },
+          uiSchema,
         },
       });
       ctx.setVisible(false);
