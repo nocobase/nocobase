@@ -123,7 +123,7 @@ const useCreateCollection = (defaultFields) => {
       delete values.autoCreateReverseField;
       await resource.create({
         values: {
-        //   autoGenId: false,
+          autoGenId: false,
           logging: true,
           createdAt: false,
           createdBy: false,
