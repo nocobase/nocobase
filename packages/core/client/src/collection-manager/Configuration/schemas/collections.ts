@@ -302,23 +302,33 @@ export const collectionSchema: ISchema = {
                     update: {
                       type: 'void',
                       title: '{{ t("Edit") }}',
-                      'x-component': 'Action.Link',
+                      'x-component': 'EditCollection',
                       'x-component-props': {
                         type: 'primary',
                       },
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useValues: '{{ cm.useValuesFromRecord }}',
-                          },
-                          title: '{{ t("Edit collection") }}',
-                          properties: editCollectionProperties,
-                        },
-                      },
+                      // 'x-component': 'Action.Link',
+                      // 'x-component-props': {
+                      //   type: 'primary',
+                      // },
+                      // properties: {
+                      //   drawer: {
+                      //     type: 'void',
+                      //     'x-component': 'Action.Drawer',
+                      //     'x-decorator': 'Form',
+                      //     'x-decorator-props': {
+                      //       useValues: '{{ cm.useValuesFromRecord }}',
+                      //     },
+                      //     title: '{{ t("Edit collection") }}',
+                      //     properties: editCollectionProperties,
+                      //   },
+                      // },
+
+                      // type: 'void',
+                    // title: '{{ t("Create collection") }}',
+                   
                     },
+
+                    
                     delete: {
                       type: 'void',
                       title: '{{ t("Delete") }}',

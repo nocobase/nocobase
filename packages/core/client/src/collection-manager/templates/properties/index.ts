@@ -330,7 +330,6 @@ export const defaultProps = {
     description:
       "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
   },
-  type,
 };
 
 export const recordPickerSelector: ISchema = {

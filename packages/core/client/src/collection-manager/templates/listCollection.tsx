@@ -84,42 +84,27 @@ export const listCollection: IField = {
       },
     },
   ],
-  default: {
-    type: 'belongsToMany',
-    target: 'attachments',
-    uiSchema: {
-      type: 'array',
-      'x-component': 'Upload.Attachment',
-      'x-component-props': {
-        action: 'attachments:upload',
-      },
-    },
-  },
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['size'] = 'small';
     }
   },
-  initialize: (values: any) => {
-    if (!values.through) {
-      values.through = `t_${uid()}`;
-    }
-    if (!values.foreignKey) {
-      values.foreignKey = `f_${uid()}`;
-    }
-    if (!values.otherKey) {
-      values.otherKey = `f_${uid()}`;
-    }
-    if (!values.sourceKey) {
-      values.sourceKey = 'id';
-    }
-    if (!values.targetKey) {
-      values.targetKey = 'id';
-    }
-  },
   properties: {
     ...defaultProps,
+    inherits: {
+      title: '{{t("Inherits")}}',
+      type: 'hasMany',
+      name: 'inherits',
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      'x-component-props': {
+        mode: 'multiple',
+      },
+      'x-disabled': '{{ !createOnly }}',
+      'x-visible': '{{ enableInherits}}',
+      'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+    },
     id: {
       type: 'boolean',
       title: '{{t("AutoGenId")}}',
@@ -160,6 +145,7 @@ export const listCollection: IField = {
       'x-component': 'Checkbox',
       'x-disabled': '{{ !createOnly }}',
     },
+
     sortable: {
       type: 'boolean',
       title: '{{t("Sortable")}}',
@@ -168,14 +154,5 @@ export const listCollection: IField = {
       'x-component': 'Checkbox',
       'x-disabled': '{{ !createOnly }}',
     },
-    inherits: {
-      type: 'boolean',
-      title: '{{t("Allow inherits")}}',
-      default: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-disabled': '{{ !createOnly }}',
-    },
   },
-
 };

@@ -28,9 +28,9 @@ const getSchema = (schema, record: any, compile): ISchema => {
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
-
   const initialValue: any = {
     name: `f_${uid()}`,
+    template: schema.name,
     ...cloneDeep(schema.default),
   };
   if (initialValue.reverseField) {
@@ -124,6 +124,7 @@ const useCreateCollection = (defaultFields) => {
       await resource.create({
         values: {
         //   autoGenId: false,
+          logging: true,
           createdAt: false,
           createdBy: false,
           updatedBy: false,

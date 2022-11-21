@@ -12,22 +12,35 @@ export const calendarCollection: IField = {
   presetFields: [
     {
       name: 'cron',
-      type: 'boolean',
+      type: 'string',
       allowNull: false,
-      uiSchema: { type: 'boolean', title: '{{t("Cron")}}', 'x-component': 'CheckBox', 'x-read-pretty': true },
-      interface: 'checkbox',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Cron")}}',
+        'x-component': 'Select',
+        enum: [
+          { value: '0 0 * * *', label: '每天' },
+          { value: '0 0 ? * 1', label: '每个星期一' },
+          { value: '0 0 12 * * ?', label: '每天中午12点' },
+          { value: '0 0 10,14,16 * * ?', label: '每天上午10点,下午2点,4点 ' },
+        ],
+      },
+      interface: 'select',
     },
     {
       name: 'exclude',
-      type: 'date',
+      type: 'json',
       allowNull: false,
-      interface: 'datetime',
+      interface: 'json',
       uiSchema: {
-        type: 'datetime',
+        type: 'string',
         title: '{{t("Exclude")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {},
-        'x-read-pretty': true,
+        'x-component': 'Input.JSON',
+        'x-component-props': {
+          autoSize: {
+            minRows: 5,
+          },
+        },
       },
     },
   ],
@@ -37,36 +50,11 @@ export const calendarCollection: IField = {
       schema['x-component-props']['size'] = 'small';
     }
   },
-  initialize: (values: any) => {
-    if (!values.through) {
-      values.through = `t_${uid()}`;
-    }
-    if (!values.foreignKey) {
-      values.foreignKey = `f_${uid()}`;
-    }
-    if (!values.otherKey) {
-      values.otherKey = `f_${uid()}`;
-    }
-    if (!values.sourceKey) {
-      values.sourceKey = 'id';
-    }
-    if (!values.targetKey) {
-      values.targetKey = 'id';
-    }
-  },
   properties: {
     ...defaultProps,
     sortable: {
       type: 'boolean',
       title: '{{t("Sortable")}}',
-      default: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-disabled': '{{ !createOnly }}',
-    },
-    inherits: {
-      type: 'boolean',
-      title: '{{t("Allow inherits")}}',
       default: true,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
