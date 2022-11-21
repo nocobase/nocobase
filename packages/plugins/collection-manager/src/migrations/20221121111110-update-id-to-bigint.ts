@@ -7,8 +7,18 @@ export default class UpdateIdToBigIntMigrator extends Migration {
 
     await db.getCollection('fields').repository.update({
       filter: {
-        name: 'id',
-        type: 'integer',
+        $or: [
+          {
+            name: 'id',
+            type: 'integer',
+          },
+          {
+            options: {
+              isForeignKey: true,
+            },
+            type: 'integer',
+          },
+        ],
       },
       values: {
         type: 'bigInt',
@@ -62,6 +72,29 @@ export default class UpdateIdToBigIntMigrator extends Migration {
           throw err;
         }
 
+        const collection = db.modelCollection.get(model);
+        const fieldRecord = await db.getCollection('fields').repository.findOne({
+          filter: {
+            collectionName: collection.name,
+            name: fieldName,
+            type: 'integer',
+          },
+        });
+
+        if (fieldRecord) {
+          fieldRecord.set('type', 'bigInt');
+          await fieldRecord.save();
+        }
+
+        if (db.inDialect('postgres')) {
+          const sequenceQuery = `SELECT pg_get_serial_sequence('"${model.tableName}"', '${fieldName}');`;
+          const [result] = await this.sequelize.query(sequenceQuery, {});
+          const sequenceName = result[0]['pg_get_serial_sequence'];
+
+          if (sequenceName) {
+            await this.sequelize.query(`ALTER SEQUENCE ${sequenceName} AS BIGINT;`, {});
+          }
+        }
         this.app.log.info(`updated ${tableName}.${fieldName} to BIGINT`, tableName, fieldName);
       }
     };
@@ -90,6 +123,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
         }
 
         const associations = model.associations;
+
         for (const associationName of Object.keys(associations)) {
           const association = associations[associationName];
 
