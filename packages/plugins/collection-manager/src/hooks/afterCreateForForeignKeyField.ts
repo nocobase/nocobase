@@ -19,7 +19,12 @@ export function afterCreateForForeignKeyField(db: Database) {
 
   // Foreign key types are only integer and string
   function attribute2field(attribute: any) {
-    const type = attribute.type.constructor.name === 'INTEGER' ? 'integer' : 'string';
+    let type = 'bigInt';
+    if (attribute.type.constructor.name === 'INTEGER') {
+      type = 'integer';
+    } else if (attribute.type.constructor.name === 'STRING') {
+      type = 'string';
+    }
     const name = attribute.fieldName;
     const data = {
       interface: 'integer',
