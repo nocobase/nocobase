@@ -30,7 +30,6 @@ async function triggerResume(plugin, job, status, result) {
 export default class implements Instruction {
   async run(node, input, processor) {
     const templateVars = {
-      result: _.isEmpty(input?.result) ? '' : input.result,
       node: processor.jobsMapByNodeId,
       ctx: processor.execution.context,
     };
