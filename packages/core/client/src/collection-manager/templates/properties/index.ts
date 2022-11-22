@@ -429,6 +429,25 @@ export const defaultCollectionOptions = {
     'x-decorator': 'FormItem',
     'x-component': 'Checkbox',
     'x-disabled': '{{ !createOnly }}',
+    'x-reactions': [
+      {
+        target: 'sortable',
+        when: '{{createOnly&&!$self.value}}',
+        fulfill: {
+          state: {
+            value: false,
+          },
+          schema: {
+            'x-disabled': true,
+          },
+        },
+        otherwise: {
+          schema: {
+            'x-disabled': false,
+          },
+        },
+      },
+    ],
   },
   createdBy: {
     type: 'boolean',
@@ -469,17 +488,6 @@ export const defaultCollectionOptions = {
     'x-decorator': 'FormItem',
     'x-component': 'Checkbox',
     'x-disabled': '{{ !createOnly }}',
-    'x-reactions': {
-      dependencies: ['autoGenId'],
-      fulfill: {
-        state: {
-          value: '{{$deps[0] === true}}',
-        },
-        schema: {
-          'x-disabled': '{{createOnly&&$deps[0] === false}}',
-        },
-      },
-    },
   },
 };
 export const recordPickerSelector: ISchema = {

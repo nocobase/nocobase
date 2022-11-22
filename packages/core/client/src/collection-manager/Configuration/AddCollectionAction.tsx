@@ -94,9 +94,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
 };
 
 const useDefaltCollectionFields = (fields, values) => {
-  console.log(values);
   return fields?.filter((v) => {
-    console.log(v.name);
     if (v.name === 'id') {
       return values['autoGenId'];
     } else {
