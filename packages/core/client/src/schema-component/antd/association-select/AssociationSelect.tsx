@@ -1,5 +1,5 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { ArrayCollapse, FormLayout } from '@formily/antd';
+import { ArrayCollapse, ArrayItems, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
 import { connect, ISchema, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -7,7 +7,7 @@ import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext, useFilterByTk } from '../../../block-provider';
-import { useCollectionManager, useCollection } from '../../../collection-manager';
+import { useCollectionManager, useCollection, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useDesignable, useCompile } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -69,7 +69,7 @@ const InternalAssociationSelect = connect(
       }
     }, collectionField.title);
 
-    return <RemoteSelect {...props} value={value} service={service}></RemoteSelect>;
+    return <RemoteSelect filterSort={null} {...props} value={value} service={service}></RemoteSelect>;
   },
   mapProps(
     {
@@ -106,7 +106,7 @@ AssociationSelect.Designer = () => {
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  console.log('🚀 ~ file: AssociationSelect.tsx ~ line 86 ~ collectionField', collectionField);
+
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
@@ -114,7 +114,19 @@ AssociationSelect.Designer = () => {
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
-
+  const sortFields = useSortFields(collectionField.target);
+  const defaultSort = field.componentProps?.service?.params?.sort || [];
+  const sort = defaultSort?.map((item: string) => {
+    return item.startsWith('-')
+      ? {
+          field: item.substring(1),
+          direction: 'desc',
+        }
+      : {
+          field: item,
+          direction: 'asc',
+        };
+  });
   if (!field.readPretty) {
     initialValue['required'] = field.required;
   }
@@ -458,6 +470,94 @@ AssociationSelect.Designer = () => {
           }}
         />
       )}
+      <SchemaSettings.ModalItem
+        title={t('Set default sorting rules')}
+        components={{ ArrayItems }}
+        schema={
+          {
+            type: 'object',
+            title: t('Set default sorting rules'),
+            properties: {
+              sort: {
+                type: 'array',
+                default: sort,
+                'x-component': 'ArrayItems',
+                'x-decorator': 'FormItem',
+                items: {
+                  type: 'object',
+                  properties: {
+                    space: {
+                      type: 'void',
+                      'x-component': 'Space',
+                      properties: {
+                        sort: {
+                          type: 'void',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'ArrayItems.SortHandle',
+                        },
+                        field: {
+                          type: 'string',
+                          enum: sortFields,
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            style: {
+                              width: 260,
+                            },
+                          },
+                        },
+                        direction: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Radio.Group',
+                          'x-component-props': {
+                            optionType: 'button',
+                          },
+                          enum: [
+                            {
+                              label: t('ASC'),
+                              value: 'asc',
+                            },
+                            {
+                              label: t('DESC'),
+                              value: 'desc',
+                            },
+                          ],
+                        },
+                        remove: {
+                          type: 'void',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'ArrayItems.Remove',
+                        },
+                      },
+                    },
+                  },
+                },
+                properties: {
+                  add: {
+                    type: 'void',
+                    title: t('Add sort field'),
+                    'x-component': 'ArrayItems.Addition',
+                  },
+                },
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={({ sort }) => {
+          const sortArr = sort.map((item) => {
+            return item.direction === 'desc' ? `-${item.field}` : item.field;
+          });
+
+          _.set(field.componentProps, 'service.params.sort', sortArr);
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-component-props': field.componentProps,
+            },
+          });
+        }}
+      />
       {form &&
         !form?.readPretty &&
         collectionField?.interface !== 'o2m' &&
