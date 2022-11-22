@@ -108,6 +108,17 @@ export const AuditLogs: any = () => {
       },
     }
   }
+  ext['column32'] = {
+    type: 'void',
+    'x-component': 'TableV2.Column',
+    title: '{{t("Title")}}',
+    properties: {
+      title: {
+        'x-component': 'Input',
+        'x-read-pretty': true,
+      },
+    },
+  }
   return (
     <SchemaComponent
       memoized
