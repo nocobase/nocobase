@@ -1,13 +1,6 @@
-// import React from 'react';
-
-// export default React.memo((props) => {
-//   return <>{props.children}</>;
-// });
-
 import { PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { OIDCPanel } from './OIDCPanel';
-// import { FileStorageShortcut } from './FileStorageShortcut';
 
 export default function (props) {
   const ctx = useContext(PluginManagerContext);
@@ -30,7 +23,6 @@ export default function (props) {
         value={{
           components: {
             ...ctx?.components,
-            // FileStorageShortcut,
           },
         }}
       >
