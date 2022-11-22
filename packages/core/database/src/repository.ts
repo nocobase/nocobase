@@ -210,12 +210,21 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       };
     }
 
-    const count = await this.collection.model.count({
+    const queryOptions: any = {
       ...options,
-      distinct: true,
+      distinct: Boolean(this.collection.model.primaryKeyAttribute),
+    };
+
+    if (queryOptions.include?.length === 0) {
+      delete queryOptions.include;
+    }
+
+    const count = await this.collection.model.count({
+      ...queryOptions,
       transaction,
     });
 
+    // @ts-ignore
     return count;
   }
 
