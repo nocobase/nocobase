@@ -12,6 +12,7 @@ describe('belongs to many with target key', function () {
   beforeEach(async () => {
     db = mockDatabase();
 
+    await db.clean({ drop: true });
     Post = db.collection({
       name: 'posts',
       filterTargetKey: 'title',
@@ -121,6 +122,7 @@ describe('belongs to many', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     PostTag = db.collection({
       name: 'posts_tags',
       fields: [{ type: 'string', name: 'tagged_at' }],

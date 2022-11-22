@@ -2,7 +2,7 @@ import parse from 'json-templates';
 import { resolve } from 'path';
 
 import { Collection, Op } from '@nocobase/database';
-import { HandlerType, Middleware } from '@nocobase/resourcer';
+import { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -56,7 +56,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       if (createdBy === true) {
         collection.setField('createdById', {
           type: 'context',
-          dataType: 'integer',
+          dataType: 'bigInt',
           dataIndex: 'state.currentUser.id',
           createOnly: true,
           visible: true,
@@ -72,7 +72,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       if (updatedBy === true) {
         collection.setField('updatedById', {
           type: 'context',
-          dataType: 'integer',
+          dataType: 'bigInt',
           dataIndex: 'state.currentUser.id',
           visible: true,
           index: true,

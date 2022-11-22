@@ -2,7 +2,6 @@ export default {
   "Workflow": "Workflow",
   "Execution history": "Execution history",
   "Trigger type": "Trigger type",
-  "Description": "Description",
   "Status": "Status",
   "On": "On",
   "Off": "Off",

@@ -253,6 +253,7 @@ export default {
   "End date field": "Bitiş tarihi alanı",
   "Navigate": "Navigate",
   "Title": "Başlık",
+  "Description": "Açıklama",
   "Select view": "Görünüm seç",
   "Reset": "Sıfırla",
   "Exportable fields": "Dışa aktarılabilir alanlar",

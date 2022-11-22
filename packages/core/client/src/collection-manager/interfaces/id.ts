@@ -10,7 +10,7 @@ export const id: IField = {
   sortable: true,
   default: {
     name: 'id',
-    type: 'integer',
+    type: 'bigInt',
     autoIncrement: true,
     primaryKey: true,
     allowNull: false,

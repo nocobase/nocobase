@@ -1,10 +1,12 @@
 import lodash from 'lodash';
-import { Model as SequelizeModel, ModelCtor } from 'sequelize';
+import { DataTypes, Model as SequelizeModel, ModelCtor } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
 import type { InheritedCollection } from './inherited-collection';
 import { SyncRunner } from './sync-runner';
+
+const _ = lodash;
 
 interface IModel {
   [key: string]: any;
