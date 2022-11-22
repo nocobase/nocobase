@@ -501,6 +501,7 @@ export default {
   "Inner": "Inner",
   "Search and select collection": "Search and select collection",
   // OIDC plugin
+  'OIDC manager': 'OIDC manager',
   'OIDC Providers': 'OIDC Providers',
   'Provider name': 'Provider name',
   'Client id': 'Client id',

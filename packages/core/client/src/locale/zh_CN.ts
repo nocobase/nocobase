@@ -615,7 +615,8 @@ export default {
   "Inner": "里面",
   "Search and select collection": "搜索并选择数据表",
   // OIDC plugin
-  'OIDC Providers': 'OIDC 提供者',
+  'OIDC manager': 'OIDC 管理',
+  'OIDC Providers': 'OIDC 身份提供者',
   'Provider name': '身份提供者名称',
   'Client id': 'Client id',
   'Client secret': 'Client secret',
