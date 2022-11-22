@@ -49,6 +49,7 @@ export default class extends Provider {
           console.error(body);
           return Promise.reject(err);
 
+        // case 'isp.RAM_PERMISSION_DENY':
         default:
           // should not let user to know
           console.error(body);

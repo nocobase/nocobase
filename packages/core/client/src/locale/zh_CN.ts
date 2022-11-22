@@ -425,6 +425,7 @@ export default {
   'DESC': '降序',
   'Add sort field': '添加排序字段',
   'ID': 'ID',
+  'Identifier for program usage. Support letters, numbers and underscores, must start with an letter.': '用于程序使用的标识符，支持字母、数字和下划线，必须以字母开头。',
   'Drawer': '抽屉',
   'Dialog': '对话框',
   'Delete action': '删除操作',

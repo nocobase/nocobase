@@ -2,8 +2,10 @@ import React, { useContext } from 'react';
 
 import { PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
 
-import { Shortcut as VerificationShortcut } from './Shortcut';
+import { NAMESPACE } from './locale';
+
 import { VerificationProviders } from './VerificationProviders';
+
 export { default as verificationProviderTypes } from './providerTypes';
 
 export default function(props) {
@@ -13,10 +15,10 @@ export default function(props) {
       settings={{
         verification: {
           icon: 'CheckCircleOutlined',
-          title: '{{t("Verification")}}',
+          title: `{{t("Verification", { ns: "${NAMESPACE}" })}}`,
           tabs: {
             providers: {
-              title: '{{t("Verification providers")}}',
+              title: `{{t("Verification providers", { ns: "${NAMESPACE}" })}}`,
               component: VerificationProviders,
             },
           },

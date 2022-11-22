@@ -103,6 +103,7 @@ export default class VerificationPlugin extends Plugin {
             sign: INIT_ALI_SMS_VERIFY_CODE_SIGN,
             template: INIT_ALI_SMS_VERIFY_CODE_TEMPLATE,
           },
+          default: true
         },
       });
     }
@@ -134,5 +135,14 @@ export default class VerificationPlugin extends Plugin {
 
     app.acl.allow('verifications', 'create');
     app.acl.allow('verifications_providers', '*', 'allowConfigure');
+  }
+
+  async getDefault() {
+    const providerRepo = this.db.getRepository('verifications_providers');
+    return providerRepo.findOne({
+      filter: {
+        default: true,
+      }
+    });
   }
 }

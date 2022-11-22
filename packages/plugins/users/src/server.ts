@@ -114,78 +114,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
     initAuthenticators(this);
 
-    // TODO(module): should move to preset
-    const verificationPlugin = this.app.getPlugin('verification') as any;
-    if (verificationPlugin && process.env.DEFAULT_SMS_VERIFY_CODE_PROVIDER) {
-      verificationPlugin.interceptors.register('users:signin', {
-        manual: true,
-        provider: process.env.DEFAULT_SMS_VERIFY_CODE_PROVIDER,
-        getReceiver(ctx) {
-          return ctx.action.params.values.phone;
-        },
-        expiresIn: 120,
-        validate: async (ctx, phone) => {
-          if (!phone) {
-            throw new Error(ctx.t('Not a valid cellphone number, please re-enter'));
-          }
-          const User = this.db.getCollection('users');
-          const exists = await User.model.count({
-            where: {
-              phone,
-            },
-          });
-          if (!exists) {
-            throw new Error(ctx.t('The phone number is not registered, please register first', { ns: namespace }));
-          }
-
-          return true;
-        },
-      });
-
-      verificationPlugin.interceptors.register('users:signup', {
-        provider: process.env.DEFAULT_SMS_VERIFY_CODE_PROVIDER,
-        getReceiver(ctx) {
-          return ctx.action.params.values.phone;
-        },
-        expiresIn: 120,
-        validate: async (ctx, phone) => {
-          if (!phone) {
-            throw new Error(ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }));
-          }
-          const User = this.db.getCollection('users');
-          const exists = await User.model.count({
-            where: {
-              phone,
-            },
-          });
-          if (exists) {
-            throw new Error(ctx.t('The phone number has been registered, please login directly', { ns: namespace }));
-          }
-
-          return true;
-        },
-      });
-
-      this.authenticators.register('sms', (ctx, next) =>
-        verificationPlugin.intercept(ctx, async () => {
-          const { values } = ctx.action.params;
-
-          const User = ctx.db.getCollection('users');
-          const user = await User.model.findOne({
-            where: {
-              phone: values.phone,
-            },
-          });
-          if (!user) {
-            return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
-          }
-
-          ctx.state.currentUser = user;
-
-          return next();
-        }),
-      );
-    }
+    await this.initVerification();
   }
 
   getInstallingData(options: any = {}) {
@@ -217,5 +146,86 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     if (repo) {
       await repo.db2cm('users');
     }
+  }
+
+  // TODO(module): should move to preset or dynamic configuration panel
+  async initVerification() {
+    const verificationPlugin = this.app.getPlugin('verification') as any;
+    if (!verificationPlugin) {
+      return;
+    }
+    const defaultProvider = await verificationPlugin.getDefault();
+    if (!defaultProvider) {
+      return;
+    }
+
+    verificationPlugin.interceptors.register('users:signin', {
+      manual: true,
+      provider: defaultProvider.id,
+      getReceiver(ctx) {
+        return ctx.action.params.values.phone;
+      },
+      expiresIn: 120,
+      validate: async (ctx, phone) => {
+        if (!phone) {
+          throw new Error(ctx.t('Not a valid cellphone number, please re-enter'));
+        }
+        const User = this.db.getCollection('users');
+        const exists = await User.model.count({
+          where: {
+            phone,
+          },
+        });
+        if (!exists) {
+          throw new Error(ctx.t('The phone number is not registered, please register first', { ns: namespace }));
+        }
+
+        return true;
+      },
+    });
+
+    verificationPlugin.interceptors.register('users:signup', {
+      provider: defaultProvider.id,
+      getReceiver(ctx) {
+        return ctx.action.params.values.phone;
+      },
+      expiresIn: 120,
+      validate: async (ctx, phone) => {
+        if (!phone) {
+          throw new Error(ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }));
+        }
+        const User = this.db.getCollection('users');
+        const exists = await User.model.count({
+          where: {
+            phone,
+          },
+        });
+        if (exists) {
+          throw new Error(ctx.t('The phone number has been registered, please login directly', { ns: namespace }));
+        }
+
+        return true;
+      },
+    });
+
+    this.authenticators.register('sms', (ctx, next) =>
+      verificationPlugin.intercept(ctx, async () => {
+        const { values } = ctx.action.params;
+
+        const User = ctx.db.getCollection('users');
+        const user = await User.model.findOne({
+          where: {
+            phone: values.phone,
+          },
+        });
+        if (!user) {
+          return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
+        }
+
+        ctx.state.currentUser = user;
+
+        return next();
+      }),
+    );
   }
 }
