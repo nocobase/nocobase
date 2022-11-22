@@ -28,7 +28,7 @@ const InternalRemoteSelect = connect(
           ...service?.params,
           // search needs
           filter: {
-            $and: [service.params?.filter],
+            $and: [service?.params?.filter].filter(Boolean),
           },
         },
       },
@@ -48,7 +48,7 @@ const InternalRemoteSelect = connect(
               },
             },
             service?.params?.filter,
-          ],
+          ].filter(Boolean),
         },
       });
     };

@@ -121,7 +121,7 @@ AssociationSelect.Designer = () => {
   };
   const sortFields = useSortFields(collectionField.target);
   const defaultSort = field.componentProps?.service?.params?.sort || [];
-  const defaultFilter = field.componentProps?.service.params?.filter || {};
+  const defaultFilter = field.componentProps?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField.target);
 
   const sort = defaultSort?.map((item: string) => {
