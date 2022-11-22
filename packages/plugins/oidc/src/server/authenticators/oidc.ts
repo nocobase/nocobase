@@ -1,6 +1,6 @@
 import { Context } from '@nocobase/actions';
-import { Issuer } from 'openid-client';
 import { createOIDCClient } from '../shared/createOIDCClient';
+import { OIDCProvider } from '../shared/types';
 
 export const oidc = async (ctx: Context, next) => {
   const {
@@ -13,9 +13,8 @@ export const oidc = async (ctx: Context, next) => {
       'clientId.$eq': values.clientId,
     },
   });
-  const provider = record.toJSON();
-  const issuer = await Issuer.discover(provider.issuer);
-  const client = createOIDCClient(issuer, provider.clientId, provider.clientSecret);
+  const provider: OIDCProvider = record.toJSON();
+  const client = await createOIDCClient(provider);
 
   const tokens = await client.callback(
     provider.redirectUrl,

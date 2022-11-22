@@ -1,9 +1,11 @@
 import { Issuer } from 'openid-client';
+import { OIDCProvider } from './types';
 
-export const createOIDCClient = (issuer: Issuer, clientId: string, clientSecret: string) => {
+export const createOIDCClient = async (provider: OIDCProvider) => {
+  const issuer = await Issuer.discover(provider.issuer);
   return new issuer.Client({
-    client_id: clientId,
-    client_secret: clientSecret,
+    client_id: provider.clientId,
+    client_secret: provider.clientSecret,
     response_types: ['code'],
   });
 };
