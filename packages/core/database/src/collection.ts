@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -379,6 +379,7 @@ export class Collection<
         }
         return item;
       });
+    this.refreshIndexes();
   }
 
   removeIndex(fields: any) {
@@ -390,6 +391,21 @@ export class Collection<
     // @ts-ignore
     this.model._indexes = indexes.filter((item) => {
       return !lodash.isEqual(item.fields, fields);
+    });
+    this.refreshIndexes();
+  }
+
+  refreshIndexes() {
+    // @ts-ignore
+    const indexes: any[] = this.model._indexes;
+    // @ts-ignore
+    this.model._indexes = indexes.filter((item) => {
+      for (const field of item.fields) {
+        if (!this.model.rawAttributes[field]) {
+          return false;
+        }
+      }
+      return true;
     });
   }
 
