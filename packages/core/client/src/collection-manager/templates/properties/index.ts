@@ -332,7 +332,7 @@ export const defaultProps = {
   },
 };
 
-export const defaultSystemFields= [
+export const defaultSystemFields = [
   {
     name: 'id',
     type: 'bigInt',
@@ -408,7 +408,7 @@ export const defaultSystemFields= [
   },
 ];
 
-export const defaultCollectionOptions={
+export const defaultCollectionOptions = {
   inherits: {
     title: '{{t("Inherits")}}',
     type: 'hasMany',
@@ -469,8 +469,19 @@ export const defaultCollectionOptions={
     'x-decorator': 'FormItem',
     'x-component': 'Checkbox',
     'x-disabled': '{{ !createOnly }}',
+    'x-reactions': {
+      dependencies: ['id'],
+      fulfill: {
+        state: {
+          value: '{{$deps[0] === true}}',
+        },
+        schema: {
+          'x-disabled': '{{$deps[0] === false}}',
+        },
+      },
+    },
   },
-}
+};
 export const recordPickerSelector: ISchema = {
   type: 'void',
   title: '{{ t("Select record") }}',
