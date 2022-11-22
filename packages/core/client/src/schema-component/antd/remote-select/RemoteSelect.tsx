@@ -26,6 +26,10 @@ const InternalRemoteSelect = connect(
         params: {
           pageSize: 30,
           ...service?.params,
+          // search needs
+          filter: {
+            $and: [service.params?.filter],
+          },
         },
       },
       {
@@ -37,9 +41,14 @@ const InternalRemoteSelect = connect(
     const onSearch = async (search) => {
       run({
         filter: {
-          [fieldNames.label]: {
-            $includes: search,
-          },
+          $and: [
+            {
+              [fieldNames.label]: {
+                $includes: search,
+              },
+            },
+            service?.params?.filter,
+          ],
         },
       });
     };

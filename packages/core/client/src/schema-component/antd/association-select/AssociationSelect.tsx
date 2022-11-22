@@ -7,7 +7,12 @@ import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext, useFilterByTk } from '../../../block-provider';
-import { useCollectionManager, useCollection, useSortFields } from '../../../collection-manager';
+import {
+  useCollectionManager,
+  useCollection,
+  useSortFields,
+  useCollectionFilterOptions,
+} from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useDesignable, useCompile } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -116,6 +121,9 @@ AssociationSelect.Designer = () => {
   };
   const sortFields = useSortFields(collectionField.target);
   const defaultSort = field.componentProps?.service?.params?.sort || [];
+  const defaultFilter = field.componentProps?.service.params?.filter || {};
+  const dataSource = useCollectionFilterOptions(collectionField.target);
+
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -470,6 +478,33 @@ AssociationSelect.Designer = () => {
           }}
         />
       )}
+      <SchemaSettings.ModalItem
+        title={t('Set the data scope')}
+        schema={
+          {
+            type: 'object',
+            title: t('Set the data scope'),
+            properties: {
+              filter: {
+                default: defaultFilter,
+                // title: '数据范围',
+                enum: dataSource,
+                'x-component': 'Filter',
+                'x-component-props': {},
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={({ filter }) => {
+          _.set(field.componentProps, 'service.params.filter', filter);
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-component-props': field.componentProps,
+            },
+          });
+        }}
+      />
       <SchemaSettings.ModalItem
         title={t('Set default sorting rules')}
         components={{ ArrayItems }}
