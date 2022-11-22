@@ -1,3 +1,8 @@
+export enum IDTOKEN_SIGN_ALG {
+  HS256 = 'HS256',
+  RS256 = 'RS256',
+}
+
 export interface OIDCProvider {
   providerName?: string;
   clientId?: string;
@@ -12,5 +17,6 @@ export interface OIDCProvider {
   enable?: string;
   redirectUrl?: string;
   logoutUrl?: string;
+  idTokenSignAlg?: string;
   attrsMap?: Record<string, string>;
 }

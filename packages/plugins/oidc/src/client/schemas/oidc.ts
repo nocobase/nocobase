@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useActionContext, useRequest } from '@nocobase/client';
+import { IDTOKEN_SIGN_ALG } from '../../server/shared/types';
 
 const collection = {
   name: 'oidcProviders',
@@ -117,6 +118,32 @@ const collection = {
     },
     {
       type: 'string',
+      name: 'idTokenSignAlg',
+      interface: 'select',
+      uiSchema: {
+        title: '{{ t("Id token sign alg") }}',
+        type: 'string',
+        'x-component': 'Select',
+        'x-component-props': {
+          defaultValue: IDTOKEN_SIGN_ALG.RS256,
+          showSearch: false,
+          filterSort: false,
+          options: [
+            {
+              label: IDTOKEN_SIGN_ALG.RS256,
+              value: IDTOKEN_SIGN_ALG.RS256,
+            },
+            {
+              label: IDTOKEN_SIGN_ALG.HS256,
+              value: IDTOKEN_SIGN_ALG.HS256,
+            },
+          ],
+        },
+        required: true,
+      } as ISchema,
+    },
+    {
+      type: 'string',
       name: 'redirectUrl',
       interface: 'input',
       uiSchema: {
@@ -176,6 +203,10 @@ export const formProperties = {
     'x-decorator': 'FormItem',
   },
   logoutUrl: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  idTokenSignAlg: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },

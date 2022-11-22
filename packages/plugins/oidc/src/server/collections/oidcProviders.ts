@@ -73,6 +73,11 @@ export default {
       name: 'logoutUrl',
     },
     {
+      comment: 'id token 加密方式',
+      type: 'string',
+      name: 'idTokenSignAlg',
+    },
+    {
       comment: '获取用户信息的接口',
       type: 'json',
       name: 'attrsMap',
