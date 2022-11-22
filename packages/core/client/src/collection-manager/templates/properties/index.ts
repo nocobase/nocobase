@@ -422,7 +422,7 @@ export const defaultCollectionOptions = {
     'x-visible': '{{ enableInherits}}',
     'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
   },
-  id: {
+  autoGenId: {
     type: 'boolean',
     'x-content': '{{t("AutoGenId")}}',
     default: true,
@@ -470,7 +470,7 @@ export const defaultCollectionOptions = {
     'x-component': 'Checkbox',
     'x-disabled': '{{ !createOnly }}',
     'x-reactions': {
-      dependencies: ['id'],
+      dependencies: ['autoGenId'],
       fulfill: {
         state: {
           value: '{{$deps[0] === true}}',

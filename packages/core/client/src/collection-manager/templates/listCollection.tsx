@@ -13,6 +13,6 @@ export const listCollection: IField = {
     ...defaultProps,
     ...defaultCollectionOptions,
   },
-  Include:[],
+  include:[],
   exclude:[]
 };

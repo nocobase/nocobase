@@ -94,11 +94,14 @@ const getSchema = (schema, record: any, compile): ISchema => {
 };
 
 const useDefaltCollectionFields = (fields, values) => {
+  console.log(values);
   return fields?.filter((v) => {
-    if (typeof values[v.name] === 'boolean') {
+    console.log(v.name);
+    if (v.name === 'id') {
+      return values['autoGenId'];
+    } else {
       return values[v.name];
     }
-    return true;
   });
 };
 
@@ -113,6 +116,7 @@ const useCreateCollection = (defaultFields) => {
       await form.submit();
       const values = cloneDeep(form.values);
       const fields = useDefaltCollectionFields(defaultFields, values);
+      console.log(fields);
       if (values.autoCreateReverseField) {
       } else {
         delete values.reverseField;
@@ -121,13 +125,7 @@ const useCreateCollection = (defaultFields) => {
       delete values.autoCreateReverseField;
       await resource.create({
         values: {
-          autoGenId: false,
           logging: true,
-          createdAt: false,
-          createdBy: false,
-          updatedBy: false,
-          updatedAt: false,
-          sortable: false,
           ...values,
           fields,
         },

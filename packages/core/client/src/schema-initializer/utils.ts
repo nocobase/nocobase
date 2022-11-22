@@ -521,9 +521,7 @@ export const useCollectionDataSourceItems = (componentName) => {
       }),
       children: collections
         ?.filter((item) => {
-          console.log(item);
           const b = !value || selected.includes(item.name);
-          console.log(b);
           if (item.inherit) {
             return false;
           } else if (!item.fields.find((v) => v.name === 'id')) {
