@@ -60,84 +60,7 @@ export const collection: CollectionOptions = {
   ],
 };
 
-export const createCollectionProperties = {
-  title: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-  },
-  name: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-    'x-validator': 'uid',
-  },
-  inherits: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-    'x-visible': '{{ enableInherits}}',
-    'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
-  },
-  footer: {
-    type: 'void',
-    'x-component': 'Action.Drawer.Footer',
-    properties: {
-      action1: {
-        title: '{{ t("Cancel") }}',
-        'x-component': 'Action',
-        'x-component-props': {
-          useAction: '{{ cm.useCancelAction }}',
-        },
-      },
-      action2: {
-        title: '{{ t("Submit") }}',
-        'x-component': 'Action',
-        'x-component-props': {
-          type: 'primary',
-          useAction: '{{ cm.useCreateActionAndRefreshCM }}',
-        },
-      },
-    },
-  },
-};
 
-export const editCollectionProperties = {
-  title: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-  },
-  name: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-    'x-disabled': true,
-  },
-  inherits: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-    'x-disabled': true,
-    'x-visible': '{{ enableInherits}}',
-    'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
-  },
-  footer: {
-    type: 'void',
-    'x-component': 'Action.Drawer.Footer',
-    properties: {
-      action1: {
-        title: '{{ t("Cancel") }}',
-        'x-component': 'Action',
-        'x-component-props': {
-          useAction: '{{ useCancelAction }}',
-        },
-      },
-      action2: {
-        title: '{{ t("Submit") }}',
-        'x-component': 'Action',
-        'x-component-props': {
-          type: 'primary',
-          useAction: '{{ useUpdateCollectionActionAndRefreshCM }}',
-        },
-      },
-    },
-  },
-};
 
 export const collectionSchema: ISchema = {
   type: 'object',
@@ -205,26 +128,6 @@ export const collectionSchema: ISchema = {
                 type: 'primary',
               },
             },
-            // create: {
-            //   type: 'void',
-            //   title: '{{ t("Create collection") }}',
-            //   'x-component': 'Action',
-            //   'x-component-props': {
-            //     type: 'primary',
-            //   },
-            //   properties: {
-            //     drawer: {
-            //       type: 'void',
-            //       title: '{{ t("Create collection") }}',
-            //       'x-component': 'Action.Drawer',
-            //       'x-decorator': 'Form',
-            //       'x-decorator-props': {
-            //         useValues: '{{ useCollectionValues }}',
-            //       },
-            //       properties: createCollectionProperties,
-            //     },
-            //   },
-            // },
           },
         },
         table: {
@@ -306,29 +209,8 @@ export const collectionSchema: ISchema = {
                       'x-component-props': {
                         type: 'primary',
                       },
-                      // 'x-component': 'Action.Link',
-                      // 'x-component-props': {
-                      //   type: 'primary',
-                      // },
-                      // properties: {
-                      //   drawer: {
-                      //     type: 'void',
-                      //     'x-component': 'Action.Drawer',
-                      //     'x-decorator': 'Form',
-                      //     'x-decorator-props': {
-                      //       useValues: '{{ cm.useValuesFromRecord }}',
-                      //     },
-                      //     title: '{{ t("Edit collection") }}',
-                      //     properties: editCollectionProperties,
-                      //   },
-                      // },
-
-                      // type: 'void',
-                    // title: '{{ t("Create collection") }}',
-                   
                     },
 
-                    
                     delete: {
                       type: 'void',
                       title: '{{ t("Delete") }}',

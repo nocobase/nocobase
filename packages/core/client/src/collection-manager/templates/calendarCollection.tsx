@@ -45,14 +45,10 @@ export const calendarCollection: IField = {
       },
     },
   ],
-  schemaInitialize(schema: ISchema, { block }) {
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['size'] = 'small';
-    }
-  },
   properties: {
     ...defaultProps,
     ...defaultCollectionOptions,
   },
+  include:[],
+  exclude:[]
 };

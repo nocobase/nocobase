@@ -476,7 +476,7 @@ export const defaultCollectionOptions = {
           value: '{{$deps[0] === true}}',
         },
         schema: {
-          'x-disabled': '{{$deps[0] === false}}',
+          'x-disabled': '{{createOnly&&$deps[0] === false}}',
         },
       },
     },

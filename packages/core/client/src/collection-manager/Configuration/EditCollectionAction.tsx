@@ -2,10 +2,10 @@ import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
-import { set, omit } from 'lodash';
+import { omit } from 'lodash';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useRequest } from '../../api-client';
+import { useRequest } from '../../api-client';
 import { useRecord, RecordProvider } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
@@ -18,9 +18,18 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
   if (!schema) {
     return;
   }
-  const properties = cloneDeep(schema.properties) as any;
+  const properties = (cloneDeep(schema.properties) as any) || {
+    title: {
+      'x-component': 'CollectionField',
+      'x-decorator': 'FormItem',
+    },
+    name: {
+      'x-component': 'CollectionField',
+      'x-decorator': 'FormItem',
+      'x-disabled': true,
+    },
+  };
   properties.name['x-disabled'] = true;
-
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
@@ -111,10 +120,8 @@ export const EditCollectionAction = (props) => {
   const { getTemplate } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
-  const api = useAPIClient();
   const { t } = useTranslation();
   const compile = useCompile();
-  const [data, setData] = useState<any>({});
 
   return (
     <RecordProvider record={record}>
