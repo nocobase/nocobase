@@ -75,6 +75,18 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should create collection without id', async () => {
+    const response = await agent.resource('collections').create({
+      values: {
+        name: 'test',
+        autoGenId: false,
+        sortable: true,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+  });
+
   it('case 1', async () => {
     const response1 = await app.agent().resource('posts').create();
     const postId = response1.body.data.id;

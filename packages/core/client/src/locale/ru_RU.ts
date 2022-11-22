@@ -253,6 +253,7 @@ export default {
   "End date field": "Поле даты окончания",
   "Navigate": "Навигация",
   "Title": "Заголовок",
+  "Description": "Описание",
   "Select view": "Выбрать вид",
   "Reset": "Сбросить",
   "Exportable fields": "Экспортируемые поля",

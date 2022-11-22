@@ -6,6 +6,7 @@ import lodash from 'lodash';
 import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
 import {
+  DataTypes,
   ModelCtor,
   Op,
   Options,
@@ -73,6 +74,7 @@ interface MapOf<T> {
 export interface IDatabaseOptions extends Options {
   tablePrefix?: string;
   migrator?: any;
+  usingBigIntForId?: boolean;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -163,8 +165,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
   constructor(options: DatabaseOptions) {
     super();
 
-    // this.setMaxListeners(100);
-
     this.version = new DatabaseVersion(this);
 
     const opts = {
@@ -187,6 +187,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
       delete opts.timezone;
     } else if (!opts.timezone) {
       opts.timezone = '+00:00';
+    }
+
+    if (options.dialect === 'postgres') {
+      // https://github.com/sequelize/sequelize/issues/1774
+      require('pg').defaults.parseInt8 = true;
     }
 
     this.sequelize = new Sequelize(opts);
@@ -266,6 +271,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.on('afterRemoveCollection', (collection) => {
       this.inheritanceMap.removeNode(collection.name);
     });
+
+    this.on('afterDefine', (model) => {
+      if (lodash.get(this.options, 'usingBigIntForId', true)) {
+        const idAttribute = model.rawAttributes['id'];
+        if (idAttribute && idAttribute.primaryKey) {
+          model.rawAttributes['id'].type = DataTypes.BIGINT;
+          model.refreshAttributes();
+        }
+      }
+    });
   }
 
   addMigration(item: MigrationItem) {
@@ -302,14 +317,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     this.emit('beforeDefineCollection', options);
 
-    const collection =
-      options.inherits && lodash.castArray(options.inherits).length > 0
-        ? new InheritedCollection(options, {
-            database: this,
-          })
-        : new Collection(options, {
-            database: this,
-          });
+    const hasValidInheritsOptions = (() => {
+      return options.inherits && lodash.castArray(options.inherits).length > 0;
+    })();
+
+    const collection = hasValidInheritsOptions
+      ? new InheritedCollection(options, {
+          database: this,
+        })
+      : new Collection(options, {
+          database: this,
+        });
 
     this.collections.set(collection.name, collection);
 
@@ -337,6 +355,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   removeCollection(name: string) {
     const collection = this.collections.get(name);
     this.emit('beforeRemoveCollection', collection);
+
+    collection.resetFields();
 
     const result = this.collections.delete(name);
 

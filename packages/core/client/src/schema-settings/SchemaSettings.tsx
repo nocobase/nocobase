@@ -385,6 +385,7 @@ SchemaSettings.Remove = (props: any) => {
   const form = useForm();
   return (
     <SchemaSettings.Item
+      eventKey="remove"
       onClick={() => {
         Modal.confirm({
           title: t('Delete block'),

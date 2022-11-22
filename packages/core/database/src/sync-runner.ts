@@ -18,6 +18,10 @@ export class SyncRunner {
 
     const parents = inheritedCollection.parents;
 
+    if (!parents) {
+      throw new Error("Inherit model can't be created without parents");
+    }
+
     const parentTables = parents.map((parent) => parent.model.tableName);
 
     const tableName = model.getTableName();
@@ -40,6 +44,11 @@ export class SyncRunner {
             transaction,
           },
         );
+
+        if (!sequenceNameResult[0].length) {
+          continue;
+        }
+
         const columnDefault = sequenceNameResult[0][0]['column_default'];
 
         if (!columnDefault) {

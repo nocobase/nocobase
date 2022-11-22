@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { CollectionOptions } from '../../types';
+import { CollectionFieldInterface } from '../components/CollectionFieldInterface';
 import { options } from '../interfaces';
 
 const collection: CollectionOptions = {
@@ -155,9 +156,10 @@ export const collectionFieldSchema: ISchema = {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
           'x-component': 'Table.Column',
+          title: '{{t("Field interface")}}',
           properties: {
             interface: {
-              'x-component': 'CollectionField',
+              'x-component': CollectionFieldInterface,
               'x-read-pretty': true,
             },
           },
@@ -221,18 +223,18 @@ export const overridingSchema: ISchema = {
           'x-component': 'OverridingCollectionField',
           'x-component-props': {
             type: 'primary',
+            'currentCollection': '{{ currentCollection }}',
           },
         },
-        view:{
+        view: {
           type: 'void',
           title: '{{ t("View") }}',
           'x-component': 'ViewCollectionField',
           'x-component-props': {
             type: 'primary',
           },
-        }
+        },
       },
     },
   },
 };
-
