@@ -163,6 +163,17 @@ export const AddFieldAction = (props) => {
             }
           }),
         });
+      } else if (v.key === 'relation') {
+        optionArr.push({
+          ...v,
+          children: v.children.filter((v) => {
+            if (!record['autoGenId']) {
+              return ['obo', 'm2o'].includes(v.value) 
+            } else {
+              return true;
+            }
+          }),
+        });
       } else {
         const children = v.children.filter((v) => {
           if (include?.length) {

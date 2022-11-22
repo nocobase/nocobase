@@ -24,7 +24,6 @@ const useAsyncDataSource = (service: any) => (field: any) => {
   );
 };
 
-
 const useSelectedRowKeys = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   return [selectedRowKeys, setSelectedRowKeys];
@@ -81,6 +80,13 @@ export const ConfigurationTable = () => {
   const loadCollections = async (field: any) => {
     return collectonsRef.current
       ?.filter((item) => !(item.autoCreate && item.isThrough))
+      .filter((v) => {
+        const { type } = field?.form?.values;
+        if (['belongsTo', 'belongsToMany'].includes(type)) {
+          return v['autoGenId'];
+        }
+        return true;
+      })
       .map((item: any) => ({
         label: compile(item.title),
         value: item.name,
