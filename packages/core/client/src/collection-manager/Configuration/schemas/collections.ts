@@ -36,6 +36,16 @@ export const collection: CollectionOptions = {
       },
     },
     {
+      type: 'string',
+      name: 'titleField',
+      interface: 'select',
+      uiSchema: {
+        title: '{{ t("Title field") }}',
+        type: 'string',
+        'x-component': 'Select',
+      },
+    },
+    {
       type: 'hasMany',
       name: 'fields',
       target: 'fields',
@@ -108,6 +118,12 @@ export const editCollectionProperties = {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
     'x-disabled': true,
+  },
+  titleField: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    required: true,
+    'x-reactions':  ['{{useAsyncDataSource(loadTitleCollectionFields)}}'],
   },
   inherits: {
     'x-component': 'CollectionField',
