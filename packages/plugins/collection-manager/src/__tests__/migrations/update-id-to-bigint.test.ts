@@ -1,5 +1,5 @@
 import { Database, MigrationContext } from '@nocobase/database';
-import Migrator from '../../migrations/20221121111110-update-id-to-bigint';
+import Migrator from '../../migrations/20221121111112-update-id-to-bigint';
 
 const excludeSqlite = () => (process.env.DB_DIALECT != 'sqlite' ? describe : describe.skip);
 
