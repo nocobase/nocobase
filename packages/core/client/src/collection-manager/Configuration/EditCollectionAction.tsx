@@ -78,7 +78,6 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  console.log(record)
   const result = useRequest(() => Promise.resolve({ data: record }), {
     ...options,
     manual: true,

@@ -1,4 +1,3 @@
-import { ISchema } from '@formily/react';
 import { defaultProps, defaultSystemFields, defaultCollectionOptions } from './properties';
 import { IField } from './types';
 
@@ -6,8 +5,7 @@ export const calendarCollection: IField = {
   name: 'calendarCollection',
   type: 'object',
   title: '{{t("Calendar collection")}}',
-  isAssociation: true,
-  order: 1,
+  order: 2,
   color: 'orange',
   presetFields: [
     ...defaultSystemFields,
@@ -49,6 +47,8 @@ export const calendarCollection: IField = {
     ...defaultProps,
     ...defaultCollectionOptions,
   },
-  include:[],
-  exclude:[]
+  //包含的interface类型
+  include: [],
+  // 排除的interface类型
+  exclude: [],
 };

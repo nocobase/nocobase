@@ -5,7 +5,6 @@ export const listCollection: IField = {
   name: 'listCollection',
   type: 'object',
   title: '{{t("List collection")}}',
-  isAssociation: true,
   order: 1,
   color: 'blue',
   presetFields: [...defaultSystemFields],
@@ -13,6 +12,8 @@ export const listCollection: IField = {
     ...defaultProps,
     ...defaultCollectionOptions,
   },
-  include:[],
-  exclude:[]
+  //包含的interface类型
+  include: [],
+  // 排除的interface类型
+  exclude: [],
 };
