@@ -500,16 +500,22 @@ export default {
   "Selector": "Selector",
   "Inner": "Inner",
   "Search and select collection": "Search and select collection",
-  // OIDC
+  // OIDC plugin
+  'OIDC Providers': 'OIDC Providers',
   'Provider name': 'Provider name',
-  'Client ID': 'Client ID',
+  'Client id': 'Client id',
   'Client secret': 'Client secret',
   'Issuer': 'Issuer',
   'Openid configuration': 'Openid configuration',
   'Authorization endpoint': 'Authorization endpoint',
-  'Access token endpot':   'Access token endpoint',
+  'Access token endpoint': 'Access token endpoint',
   'JWKS endpoint': 'JWKS endpoint',
   'Userinfo endpoint': 'Userinfo endpoint',
+  'Redirect url': 'Redirect url',
+  'Logout endpoint': 'Logout endpoint',
+  'Id token sign alg': 'Id token sign alg',
   'Enable': 'Enable',
   'Add provider': 'Add provider',
+  'Edit provider': 'Edit provider',
+  'Delete provider': 'Delete provider'
 }

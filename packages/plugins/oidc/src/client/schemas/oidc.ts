@@ -22,7 +22,7 @@ const collection = {
       name: 'clientId',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Client ID")}}',
+        title: '{{t("Client id")}}',
         type: 'string',
         'x-component': 'Input',
         required: true,
@@ -110,7 +110,7 @@ const collection = {
       name: 'logoutUrl',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Logout url")}}',
+        title: '{{t("Logout endpoint")}}',
         type: 'string',
         'x-component': 'Input',
         required: true,
@@ -125,7 +125,6 @@ const collection = {
         type: 'string',
         'x-component': 'Select',
         'x-component-props': {
-          defaultValue: IDTOKEN_SIGN_ALG.RS256,
           showSearch: false,
           filterSort: false,
           options: [
@@ -255,6 +254,18 @@ export const oidcSchema: ISchema = {
             },
           },
           properties: {
+            delete: {
+              type: 'void',
+              title: '{{ t("Delete") }}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ cm.useBulkDestroyAction }}',
+                confirm: {
+                  title: "{{t('Delete provider')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
+            },
             create: {
               type: 'void',
               title: '{{t("Add provider")}}',
@@ -275,7 +286,8 @@ export const oidcSchema: ISchema = {
                         () =>
                           Promise.resolve({
                             data: {
-                              name: `s_${uid()}`,
+                              enable: true,
+                              idTokenSignAlg: IDTOKEN_SIGN_ALG.RS256,
                             },
                           }),
                         { ...options, refreshDeps: [ctx.visible] },
@@ -350,6 +362,18 @@ export const oidcSchema: ISchema = {
             },
             column3: {
               type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                enable: {
+                  type: 'boolean',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column4: {
+              type: 'void',
               title: '{{t("Actions")}}',
               'x-component': 'Table.Column',
               properties: {
@@ -375,7 +399,7 @@ export const oidcSchema: ISchema = {
                           'x-decorator-props': {
                             useValues: '{{ cm.useValuesFromRecord }}',
                           },
-                          title: '{{t("Edit storage")}}',
+                          title: '{{t("Edit provider")}}',
                           properties: {
                             ...formProperties,
                             footer: {

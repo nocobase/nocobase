@@ -614,4 +614,22 @@ export default {
   "Selector": "选择器",
   "Inner": "里面",
   "Search and select collection": "搜索并选择数据表",
+  // OIDC plugin
+  'OIDC Providers': 'OIDC 提供者',
+  'Provider name': '身份提供者名称',
+  'Client id': 'Client id',
+  'Client secret': 'Client secret',
+  'Issuer': 'Issuer',
+  'Openid configuration': '服务发现地址',
+  'Authorization endpoint': '授权端点',
+  'Access token endpoint': '令牌端点',
+  'JWKS endpoint': 'JWKS 公钥端点',
+  'Userinfo endpoint': '用户信息端点',
+  'Redirect url': '重定向地址',
+  'Logout endpoint': '登出端点',
+  'Id token sign alg': 'Id token 签名算法',
+  'Enable': '启用',
+  'Add provider': '添加身份提供者',
+  'Edit provider': '编辑身份提供者',
+  'Delete provider': '删除身份提供者'
 }

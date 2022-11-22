@@ -2,7 +2,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'oidcProviders',
-  title: 'OIDC Providers',
+  title: '{{t("OIDC Providers")}}',
   fields: [
     {
       title: 'Provider 名称',

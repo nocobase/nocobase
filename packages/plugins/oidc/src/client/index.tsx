@@ -12,7 +12,7 @@ export default function (props) {
           icon: 'FileOutlined',
           tabs: {
             storages: {
-              title: '{{t("OIDC storages")}}',
+              title: '{{t("OIDC Providers")}}',
               component: OIDCPanel,
             },
           },
