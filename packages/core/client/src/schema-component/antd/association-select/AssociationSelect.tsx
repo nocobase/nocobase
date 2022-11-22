@@ -497,6 +497,7 @@ AssociationSelect.Designer = () => {
         }
         onSubmit={({ filter }) => {
           _.set(field.componentProps, 'service.params.filter', filter);
+          fieldSchema['x-component-props'] = field.componentProps
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -585,6 +586,7 @@ AssociationSelect.Designer = () => {
           });
 
           _.set(field.componentProps, 'service.params.sort', sortArr);
+          fieldSchema['x-component-props'] = field.componentProps
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
