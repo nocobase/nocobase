@@ -45,6 +45,7 @@ export class SortField extends Field {
     const totalCount = await this.collection.repository.count({
       transaction,
     });
+
     const emptyCount = await this.collection.repository.count({
       filter: {
         [this.name]: null,
