@@ -260,7 +260,9 @@ export class Collection<
     if (!this.fields.has(name)) {
       return;
     }
+
     const field = this.fields.get(name);
+
     const bool = this.fields.delete(name);
     if (bool) {
       this.emit('field.afterRemove', field);
