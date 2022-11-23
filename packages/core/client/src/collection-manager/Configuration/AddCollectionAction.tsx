@@ -98,7 +98,7 @@ const useDefaltCollectionFields = (fields, values) => {
     if (v.name === 'id') {
       return values['autoGenId'];
     } else {
-      return values[v.name];
+      return typeof values[v.name] === 'boolean' ? values[v.name] : true;
     }
   });
 };
@@ -114,7 +114,6 @@ const useCreateCollection = (defaultFields) => {
       await form.submit();
       const values = cloneDeep(form.values);
       const fields = useDefaltCollectionFields(defaultFields, values);
-      console.log(fields);
       if (values.autoCreateReverseField) {
       } else {
         delete values.reverseField;
