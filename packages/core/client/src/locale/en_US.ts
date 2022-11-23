@@ -120,6 +120,7 @@ export default {
   "CreatedAt":"CreatedAt",
   "UpdatedAt":"UpdatedAt",
   "Sortable":"Sortable",
+  "Collection template":"Collection template",
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.",
   "Storage type": "Storage type",
   "Edit": "Edit",

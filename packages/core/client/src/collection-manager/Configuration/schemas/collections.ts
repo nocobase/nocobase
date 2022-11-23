@@ -2,6 +2,7 @@ import { ISchema, Schema } from '@formily/react';
 import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
 import { collectionFieldSchema } from './collectionFields';
+import { CollectionTemplate } from '../components/CollectionTemplate';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
@@ -36,6 +37,16 @@ export const collection: CollectionOptions = {
       },
     },
     {
+      type: 'string',
+      name: 'template',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Collection Template") }}',
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
       type: 'hasMany',
       name: 'fields',
       target: 'fields',
@@ -59,8 +70,6 @@ export const collection: CollectionOptions = {
     },
   ],
 };
-
-
 
 export const collectionSchema: ISchema = {
   type: 'object',
@@ -167,6 +176,18 @@ export const collectionSchema: ISchema = {
             },
             column3: {
               type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              title: '{{t("Collection template")}}',
+              properties: {
+                template: {
+                  'x-component': CollectionTemplate,
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column4: {
+              type: 'void',
               title: '{{ t("Actions") }}',
               'x-component': 'Table.Column',
               properties: {
@@ -210,7 +231,6 @@ export const collectionSchema: ISchema = {
                         type: 'primary',
                       },
                     },
-
                     delete: {
                       type: 'void',
                       title: '{{ t("Delete") }}',

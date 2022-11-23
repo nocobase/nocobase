@@ -114,6 +114,7 @@ export default {
   "CreatedAt":"作成日",
   "UpdatedAt":"更新日",
   "Sortable":"ソート可能",
+  "Collection template":"データテーブルテンプレート",
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "ランダムに生成され、変更可能です。 アルファベット、数字、アンダースコアをサポートし、アルファベットから始まる必要があります。",
   "Storage type": "ストレージタイプ",
   "Edit": "編集",
