@@ -97,6 +97,8 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
     publicActions.forEach((action) => this.app.acl.allow('users', action));
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
+
+    this.app.on('afterLoad', () => this.initVerification());
   }
 
   async load() {
@@ -113,8 +115,6 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     });
 
     initAuthenticators(this);
-
-    await this.initVerification();
   }
 
   getInstallingData(options: any = {}) {
