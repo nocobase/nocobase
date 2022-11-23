@@ -65,6 +65,8 @@ const ObjectSelect = (props: Props) => {
   );
 };
 
+const filterOption = (input, option) => (option?.label ?? '').toLowerCase().includes((input || '').toLowerCase());
+
 const InternalSelect = connect(
   (props: Props) => {
     const { objectValue, ...others } = props;
@@ -74,12 +76,12 @@ const InternalSelect = connect(
     return (
       <AntdSelect
         showSearch
-        filterOption={(input, option) => (option?.label ?? '').includes(input)}
-        filterSort={(optionA, optionB) =>
-          (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
-        }
+        filterOption={filterOption}
         allowClear
         {...others}
+        onChange={(changed) => {
+          props.onChange(changed === undefined ? null : changed);
+        }}
         value={others.value || undefined}
         mode={props.mode || props.multiple ? 'multiple' : undefined}
       />

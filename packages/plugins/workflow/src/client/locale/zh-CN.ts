@@ -125,4 +125,22 @@ export default {
   'Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.': '未被赋值的字段将被设置为默认值，没有默认值的设置为空值。',
   'Trigger in executed workflow cannot be modified': '已经执行过工作流的触发器不能被修改',
   'Node in executed workflow cannot be modified': '已经执行过工作流中的节点不能被修改',
+
+  'HTTP request': 'HTTP 请求',
+  'URL': '地址',
+  'You can use the above available variables in URL.': '您可以在地址中使用使用上面的可用变量。',
+  'Request headers': '请求头',
+  'Name(e.g. Content-Type)': '名称(例如 Content-Type)',
+  'Value(e.g. Application/json)': '值(例如 Application/json)',
+  'Add request header': '添加请求头',
+  'HTTP method': 'HTTP 方法',
+  'Request data': '请求数据',
+  'Input request data': '输入请求数据',
+  'You can use the above available variables in request data.': '您可以在请求数据中使用上面的可用变量。',
+  'Copy success!': '拷贝成功！',
+  'Copy variable output template statement': '拷贝变量输出模版语句',
+  'Default headers is Content-Type: application/json': '默认请求头是 Content-Type: application/json',
+  'Ignore fail request and continue workflow': '忽略失败请求并继续工作流',
+  'Syntax see': '语法参考',
+  'Show available variable tool':'显示可用变量工具'
 };
