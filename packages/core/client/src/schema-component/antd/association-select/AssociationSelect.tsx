@@ -14,7 +14,7 @@ import {
   useCollectionFilterOptions,
 } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { useDesignable, useCompile } from '../../hooks';
+import { useDesignable, useCompile, useFieldComponentOptions } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
@@ -37,6 +37,7 @@ const divWrap = (schema: ISchema) => {
 
 const InternalAssociationSelect = connect(
   (props: AssociationSelectProps) => {
+    console.log('🚀 ~ file: AssociationSelect.tsx ~ line 40 ~ props', props);
     const { fieldNames } = props;
     const service = useServiceOptions(props);
     const field = useField();
@@ -111,7 +112,8 @@ AssociationSelect.Designer = () => {
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-
+  const fieldComponentOptions = useFieldComponentOptions();
+  const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
@@ -123,6 +125,7 @@ AssociationSelect.Designer = () => {
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const defaultFilter = field.componentProps?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField.target);
+  console.log(collectionField?.target, ['CollectionField', 'AssociationSelect'].includes(fieldSchema['x-component']));
 
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
@@ -431,18 +434,15 @@ AssociationSelect.Designer = () => {
           }}
         />
       )}
-      {form && ['m2o'].includes(collectionField?.interface) && (
+      {form && !isSubFormAssocitionField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
-          options={[
-            { label: t('Record picker'), value: 'CollectionField' },
-            { label: t('Select'), value: 'AssociationSelect' },
-          ]}
+          options={fieldComponentOptions}
           value={fieldSchema['x-component']}
           onChange={(type) => {
             const schema: ISchema = {
               name: collectionField.name,
-              type: 'string',
+              type: 'void',
               required: fieldSchema['required'],
               description: fieldSchema['description'],
               default: fieldSchema['default'],
@@ -464,6 +464,10 @@ AssociationSelect.Designer = () => {
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
             });
+
+            if (type === 'CollectionField') {
+              schema['type'] = 'string';
+            }
 
             insertAdjacent('beforeBegin', divWrap(schema), {
               onSuccess: () => {
@@ -497,7 +501,7 @@ AssociationSelect.Designer = () => {
         }
         onSubmit={({ filter }) => {
           _.set(field.componentProps, 'service.params.filter', filter);
-          fieldSchema['x-component-props'] = field.componentProps
+          fieldSchema['x-component-props'] = field.componentProps;
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -586,7 +590,7 @@ AssociationSelect.Designer = () => {
           });
 
           _.set(field.componentProps, 'service.params.sort', sortArr);
-          fieldSchema['x-component-props'] = field.componentProps
+          fieldSchema['x-component-props'] = field.componentProps;
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -650,33 +654,32 @@ AssociationSelect.Designer = () => {
             }}
           />
         )}
-      {collectionField?.target &&
-        (fieldSchema['x-component'] === 'CollectionField' || ['m2o'].includes(collectionField.interface)) && (
-          <SchemaSettings.SelectItem
-            key="title-field"
-            title={t('Title field')}
-            options={options}
-            value={field?.componentProps?.fieldNames?.label}
-            onChange={(label) => {
-              const schema = {
-                ['x-uid']: fieldSchema['x-uid'],
-              };
-              const fieldNames = {
-                ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-                ...field.componentProps.fieldNames,
-                label,
-              };
-              field.componentProps.fieldNames = fieldNames;
-              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-              fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-              schema['x-component-props'] = fieldSchema['x-component-props'];
-              dn.emit('patch', {
-                schema,
-              });
-              dn.refresh();
-            }}
-          />
-        )}
+      {collectionField?.target && ['CollectionField', 'AssociationSelect'].includes(fieldSchema['x-component']) && (
+        <SchemaSettings.SelectItem
+          key="title-field"
+          title={t('Title field')}
+          options={options}
+          value={field?.componentProps?.fieldNames?.label}
+          onChange={(label) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            const fieldNames = {
+              ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
+              ...field.componentProps.fieldNames,
+              label,
+            };
+            field.componentProps.fieldNames = fieldNames;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         key="remove"

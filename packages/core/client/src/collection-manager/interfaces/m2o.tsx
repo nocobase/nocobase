@@ -53,6 +53,7 @@ export const m2o: IField = {
   schemaInitialize(schema: ISchema, { block, readPretty }) {
     if (block === 'Form' && schema['x-component'] === 'AssociationSelect') {
       return Object.assign(schema, {
+        type: 'string',
         'x-designer': 'AssociationSelect.Designer',
       });
     } else {
