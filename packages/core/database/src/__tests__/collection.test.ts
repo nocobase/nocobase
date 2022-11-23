@@ -17,23 +17,6 @@ describe('collection', () => {
   afterEach(async () => {
     await db.close();
   });
-
-  test.skip('indexes', async () => {
-    await db.clean({ drop: true });
-    const collection = db.collection({
-      name: 'test',
-      fields: [
-        {
-          type: 'string',
-          name: 'name',
-          index: true,
-        },
-      ],
-    });
-    collection.removeField('name');
-    await db.sync();
-  });
-
   test('removeFromDb', async () => {
     await db.clean({ drop: true });
     const collection = db.collection({

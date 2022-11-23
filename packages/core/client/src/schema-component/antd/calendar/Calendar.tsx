@@ -84,8 +84,8 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
         startDate.startOf('week');
         endDate.endOf('week');
       }
-      const push = (eventStart: moment.Moment = start) => {
-        // 必须在这个月的开始时间和结束时间，切在日程的开始时间之后
+      const push = (eventStart: moment.Moment = start.clone()) => {
+        // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
         if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
           return;
         }

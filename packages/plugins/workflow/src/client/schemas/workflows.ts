@@ -271,6 +271,10 @@ export const workflowSchema: ISchema = {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                             },
+                            description: {
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                            },
                             footer: {
                               type: 'void',
                               'x-component': 'Action.Modal.Footer',
