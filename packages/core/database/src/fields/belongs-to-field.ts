@@ -83,15 +83,19 @@ export class BelongsToField extends RelationField {
     const tcoll = database.collections.get(this.target);
     const foreignKey = this.options.foreignKey;
     const field1 = collection.getField(foreignKey);
+
     const field2 = tcoll.findField((field) => {
       return field.type === 'hasMany' && field.foreignKey === foreignKey;
     });
+
     if (!field1 && !field2) {
       collection.model.removeAttribute(foreignKey);
     }
 
     const association = collection.model.associations[this.name];
-    this.database.referenceMap.removeReference(this.reference(association));
+    const reference = this.reference(association);
+
+    this.database.referenceMap.removeReference(reference);
 
     this.clearAccessors();
     // 删掉 model 的关联字段
