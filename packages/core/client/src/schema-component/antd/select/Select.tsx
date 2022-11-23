@@ -7,7 +7,7 @@ import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames, getCurrentOptions } from './shared';
 
-type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void };
+type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; multiple: boolean };
 
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
 
@@ -81,6 +81,7 @@ const InternalSelect = connect(
         allowClear
         {...others}
         value={others.value || undefined}
+        mode={props.mode || props.multiple ? 'multiple' : undefined}
       />
     );
   },
