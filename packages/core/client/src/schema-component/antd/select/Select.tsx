@@ -80,6 +80,9 @@ const InternalSelect = connect(
         }
         allowClear
         {...others}
+        onChange={(changed) => {
+          props.onChange(changed === undefined ? null : changed);
+        }}
         value={others.value || undefined}
         mode={props.mode || props.multiple ? 'multiple' : undefined}
       />
