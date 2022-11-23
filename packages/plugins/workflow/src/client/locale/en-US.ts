@@ -92,7 +92,7 @@ export default {
   'Request headers': 'Request headers',
   'Name(e.g. Content-Type)': 'Name(e.g. Content-Type)',
   'Value(e.g. Application/json)': 'Value(e.g. Application/json)',
-  'Add request header': 'dd request header',
+  'Add request header': 'Add request header',
   'HTTP method': 'HTTP method',
   'Request data': 'Request data',
   'Input request data': 'Input request data',
