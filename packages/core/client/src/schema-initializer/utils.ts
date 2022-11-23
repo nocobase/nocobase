@@ -73,7 +73,7 @@ export const findTableColumn = (schema: Schema, key: string, action: string, dee
 };
 
 export const useTableColumnInitializerFields = () => {
-  const { name,currentFields = [] } = useCollection();
+  const { name, currentFields = [] } = useCollection();
   const { getInterface } = useCollectionManager();
   return currentFields
     .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey)
@@ -168,7 +168,7 @@ export const useInheritsTableColumnInitializerFields = () => {
             name: `${k.name}`,
             'x-component': 'CollectionField',
             'x-read-pretty': true,
-            'x-collection-field': `${k.name}`,
+            'x-collection-field': `${name}.${k.name}`,
             'x-component-props': {},
           };
           return {
@@ -386,7 +386,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
 const findSchema = (schema: Schema, key: string, action: string) => {
   if (!Schema.isSchemaInstance(schema)) return null;
   return schema.reduceProperties((buf, s) => {
-    if (s[key] === action) {
+    if (s[key]?.split('.')[1] === action?.split('.')[1]) {
       return s;
     }
     const c = findSchema(s, key, action);
@@ -419,7 +419,6 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   }
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
-  console.log(fieldSchema, key, action);
   return {
     schema,
     exists: !!schema,
