@@ -1,7 +1,6 @@
-import UsersPlugin from 'packages/plugins/users/src/server';
+import UsersPlugin from '@nocobase/plugin-users';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { Context } from '@nocobase/actions';
 import { zhCN, enUS } from '../locale';
 import { namespace } from '..';
 import { oidc } from './authenticators/oidc';
