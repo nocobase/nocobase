@@ -71,10 +71,10 @@ export default class implements Instruction {
         data,
       })
       .then((resp) => {
-        if (resp.status == 200) {
+        if (resp.status >= 200 && resp.status < 300) {
           triggerResume(plugin, job, JOB_STATUS.RESOLVED, resp.data);
         } else {
-          triggerResume(plugin, job, JOB_STATUS.REJECTED, `request fail! status code: ${resp.status}`);
+          triggerResume(plugin, job, JOB_STATUS.REJECTED, resp);
         }
       })
       .catch((e) => {

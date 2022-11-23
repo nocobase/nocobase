@@ -188,7 +188,7 @@ describe('workflow > instructions > request', () => {
       [execution] = await workflow.getExecutions();
       [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.REJECTED);
-      expect(job.result).toMatch('request fail! status code: 400');
+      expect(job.result.status).toBe(400);
     });
 
     it('response 400 ignoreFail', async () => {
@@ -215,7 +215,7 @@ describe('workflow > instructions > request', () => {
       [execution] = await workflow.getExecutions();
       [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
-      expect(job.result).toMatch('request fail! status code: 400');
+      expect(job.result.status).toBe(400);
     });
 
     it('request with data', async () => {
