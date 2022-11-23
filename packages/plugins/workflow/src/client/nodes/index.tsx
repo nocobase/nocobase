@@ -25,6 +25,7 @@ import update from './update';
 import destroy from './destroy';
 import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
 import { lang, NAMESPACE } from '../locale';
+import request from "./request";
 
 export interface Instruction {
   title: string;
@@ -51,6 +52,7 @@ instructions.register('query', query);
 instructions.register('create', create);
 instructions.register('update', update);
 instructions.register('destroy', destroy);
+instructions.register('request', request);
 
 function useUpdateAction() {
   const form = useForm();
