@@ -12,7 +12,7 @@ export const calendarCollection: IField = {
     {
       name: 'cron',
       type: 'string',
-      allowNull: false,
+      allowNull: true,
       uiSchema: {
         type: 'string',
         title: '{{t("Cron")}}',
@@ -29,7 +29,7 @@ export const calendarCollection: IField = {
     {
       name: 'exclude',
       type: 'json',
-      allowNull: false,
+      allowNull: true,
       interface: 'json',
       uiSchema: {
         type: 'string',
