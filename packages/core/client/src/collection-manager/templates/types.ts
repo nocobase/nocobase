@@ -1,14 +1,13 @@
 import { ISchema } from '@formily/react';
 
-interface IDefault {
-  type: string;
-  uiSchema?: ISchema;
-  [key: string]: any;
-}
 
-export interface IField extends ISchema {
-  default?: IDefault;
-  operators?: any[];
-  filterable?: any,
+
+export interface ICollectionTemplate extends ISchema {
+  name:string;
+  order?: number;
+  presetFields?: any[];
+  color?: string,
+  include?:string[],
+  exclude?:string[],
   [key: string]: any;
 }

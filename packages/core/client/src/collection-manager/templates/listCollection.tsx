@@ -1,7 +1,7 @@
 import { defaultProps, defaultSystemFields, defaultCollectionOptions } from './properties';
-import { IField } from './types';
+import { ICollectionTemplate } from './types';
 
-export const listCollection: IField = {
+export const listCollection: ICollectionTemplate = {
   name: 'listCollection',
   type: 'object',
   title: '{{t("List collection")}}',
