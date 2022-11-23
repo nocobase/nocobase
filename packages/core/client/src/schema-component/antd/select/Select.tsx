@@ -28,7 +28,7 @@ const ObjectSelect = (props: Props) => {
         value: val[fieldNames.value],
       };
     });
-    if (['tags', 'multiple'].includes(mode)) {
+    if (['tags', 'multiple'].includes(mode) || props.multiple) {
       return current;
     }
     return current.shift();
@@ -53,7 +53,7 @@ const ObjectSelect = (props: Props) => {
           options,
           fieldNames,
         );
-        if (['tags', 'multiple'].includes(mode)) {
+        if (['tags', 'multiple'].includes(mode) || props.multiple) {
           onChange(current);
         } else {
           onChange(current.shift());
