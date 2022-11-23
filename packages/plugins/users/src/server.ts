@@ -98,7 +98,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     publicActions.forEach((action) => this.app.acl.allow('users', action));
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
 
-    this.app.on('afterLoad', () => this.initVerification());
+    this.app.on('beforeStart', () => this.initVerification());
   }
 
   async load() {
