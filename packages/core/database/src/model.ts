@@ -156,7 +156,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     // fix sequelize sync with model that not have any column
     if (Object.keys(model.tableAttributes).length === 0) {
       if (this.database.inDialect('sqlite', 'mysql')) {
-        throw new Error(`Zero-column tables aren't supported in SQLite ${this.database.sequelize.getDialect()}`);
+        throw new Error(`Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`);
       }
 
       options.alter = false;

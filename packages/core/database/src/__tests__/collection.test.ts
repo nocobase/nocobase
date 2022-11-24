@@ -43,7 +43,7 @@ describe('collection', () => {
       error = e;
     }
 
-    expect(error.message).toBe("Zero-column tables aren't supported in SQLite");
+    expect(error.message.includes("Zero-column tables aren't supported in")).toBeTruthy();
   });
 
   it('can create empty collection', async () => {
