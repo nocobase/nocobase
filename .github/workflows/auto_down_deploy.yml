@@ -1,28 +1,34 @@
-name: manual_down_deploy_pr
+name: Auto down deploy
 # deploy_host
 # deploy_host_username
 # deploy_host_password
+# Create file in advance: /home/ecs-user/nocobase/pr-docker-compose-template.yml
+# https://docs.github.com/cn/actions/using-workflows/events-that-trigger-workflows#workflow_run
 on:
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'pr number is '
-        required: true
+  pull_request:
+    types:
+      - closed
+    branches:
+      - '**'
+    paths:
+      - 'packages/**'
 
 jobs:
   down_deploy:
     runs-on: ubuntu-latest
     steps:
       - name: ssh down deploy
+        if: github.event.pull_request.merged == true
         uses: appleboy/ssh-action@master
         env:
-          pr_number: ${{ inputs.pr_number }}
-          pr_compose_dir: pr-${{ inputs.pr_number }}
+          pr_number: ${{ github.event.number }}
+          pr_compose_dir: pr-${{ github.event.number }}
         with:
           host: ${{ secrets.deploy_host }}
           username: ${{ secrets.deploy_host_username }}
           password: ${{ secrets.deploy_host_password }}
           script: |
             cd /home/ecs-user/nocobase/${{ env.pr_compose_dir }}
+            export pr_number=${{ env.pr_number }}
             sudo docker compose down
             sudo docker rmi registry.cn-hongkong.aliyuncs.com/nocobase/nocobase:pr-${{ env.pr_number }}

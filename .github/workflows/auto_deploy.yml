@@ -1,0 +1,62 @@
+name: Auto Deploy
+# deploy_host
+# deploy_host_username
+# deploy_host_password
+# Create file in advance: /home/ecs-user/nocobase/pr-docker-compose-template.yml
+# https://docs.github.com/cn/actions/using-workflows/events-that-trigger-workflows#workflow_run
+on:
+  workflow_run:
+    workflows: [ "Aliyun Container Registry" ]
+    types:
+      - "completed"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Download pr number artifact'
+        uses: actions/github-script@v6
+        with:
+          script: |
+              let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                 owner: context.repo.owner,
+                 repo: context.repo.repo,
+                 run_id: context.payload.workflow_run.id,
+              });
+              let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
+                return artifact.name == "pr_number"
+              })[0];
+              let download = await github.rest.actions.downloadArtifact({
+                 owner: context.repo.owner,
+                 repo: context.repo.repo,
+                 artifact_id: matchArtifact.id,
+                 archive_format: 'zip',
+              });
+              let fs = require('fs');
+              fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/pr_number.zip`, Buffer.from(download.data));
+
+      - name: 'Unzip pr number artifact'
+        run: unzip pr_number.zip
+
+      - name: 'set pr_number to env'
+        run: |
+          pr_number=`cat ./pr_number`
+          echo "pr_number=$pr_number" >> $GITHUB_ENV
+
+      - name: ssh deploy
+        if: ${{ env.pr_number }}
+        uses: appleboy/ssh-action@master
+        env:
+          pr_compose_dir: pr-${{ env.pr_number }}
+        with:
+          host: ${{ secrets.deploy_host }}
+          username: ${{ secrets.deploy_host_username }}
+          password: ${{ secrets.deploy_host_password }}
+          script: |
+            mkdir -p /home/ecs-user/nocobase/${{ env.pr_compose_dir }}
+            cp /home/ecs-user/nocobase/pr-docker-compose-template.yml /home/ecs-user/nocobase/${{ env.pr_compose_dir }}/docker-compose.yml
+            cd /home/ecs-user/nocobase/${{ env.pr_compose_dir }}
+            export pr_number=${{ env.pr_number }}
+            sudo docker compose down || true
+            sudo docker rmi registry.cn-hongkong.aliyuncs.com/nocobase/nocobase:pr-${{ env.pr_number }} || true
+            sudo docker compose up -d
