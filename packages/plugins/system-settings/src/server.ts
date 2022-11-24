@@ -35,12 +35,17 @@ export class SystemSettingsPlugin extends Plugin {
     await this.app.db.import({
       directory: resolve(__dirname, 'collections'),
     });
-    this.app.acl.use(
-      skip({
-        resourceName: 'systemSettings',
-        actionName: 'get',
-      }),
-    );
+
+    const systemSetting = await this.app.db.getRepository('systemSettings').findOne();
+
+    this.app.acl.addFixedParams('systemSettings', 'destroy', () => {
+      return {
+        id: systemSetting.get('id'),
+      };
+    });
+
+    this.app.acl.allow('systemSettings', 'get');
+    this.app.acl.allow('systemSettings', 'update', 'allowConfigure');
   }
 }
 

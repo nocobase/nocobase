@@ -42,7 +42,10 @@ export class PluginManager {
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
+
     this.app.acl.allow('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
+    this.app.acl.allow('applicationPlugins', '*', 'allowConfigure');
+
     this.server = net.createServer((socket) => {
       socket.on('data', async (data) => {
         const { method, plugins } = JSON.parse(data.toString());
@@ -329,7 +332,9 @@ export class PluginManager {
   }
 
   static getPluginPkgPrefix() {
-    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(',');
+    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
+      ',',
+    );
   }
 
   static async findPackage(name: string) {
