@@ -1,7 +1,7 @@
 import { defaultProps, defaultSystemFields, defaultCollectionOptions } from './properties';
-import { IField } from './types';
+import { ICollectionTemplate } from './types';
 
-export const calendarCollection: IField = {
+export const calendarCollection: ICollectionTemplate = {
   name: 'calendarCollection',
   type: 'object',
   title: '{{t("Calendar collection")}}',
