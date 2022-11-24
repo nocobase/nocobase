@@ -3,7 +3,6 @@ import { Button, Space } from 'antd';
 import { LoginOutlined } from '@ant-design/icons';
 import { useMemoizedFn } from 'ahooks';
 import { css } from '@emotion/css';
-import { useLocation } from 'react-router-dom';
 import { useAPIClient } from '../api-client';
 import { useRedirect } from './SigninPage';
 
@@ -13,21 +12,8 @@ export interface OIDCProvider {
   authorizeUrl: string;
 }
 
-export interface OIDCLocation {
-  hash: string;
-  pathname: string;
-  query: {
-    authenticator: string;
-    clientId: string;
-    code: string;
-  };
-  search: string;
-  state: any;
-}
-
 export const OIDCList = () => {
   const [list, setList] = useState<OIDCProvider[]>([]);
-  const { query } = useLocation() as OIDCLocation;
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
   const redirect = useRedirect();
@@ -78,9 +64,9 @@ export const OIDCList = () => {
    * 从弹出窗口，发消息回来进行登录
    */
   const handleOIDCLogin = useMemoizedFn(async (event: MessageEvent) => {
+    await api.auth.signIn(event.data, 'oidc');
     windowHandler.close();
     setWindowHandler(undefined);
-    await api.auth.signIn(event.data, 'oidc');
     redirect();
   });
 
@@ -95,15 +81,6 @@ export const OIDCList = () => {
     };
   }, [windowHandler]);
 
-  /**
-   * 弹出窗口中重定向回来时触发
-   * 回来的 url 会带上 authenticator、code、clientId
-   */
-  useEffect(() => {
-    if (query.authenticator !== 'oidc') return;
-    window.opener.postMessage(query, '*');
-  }, [query.authenticator]);
-
   useEffect(() => {
     getOidcList();
   }, []);
@@ -117,7 +94,7 @@ export const OIDCList = () => {
     >
       {list.map((item) => (
         <Button shape="round" block key={item.clientId} icon={<LoginOutlined />} onClick={() => handleOpen(item)}>
-          OIDC {item.providerName}
+          OIDC: {item.providerName}
         </Button>
       ))}
     </Space>

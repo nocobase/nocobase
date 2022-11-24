@@ -1,18 +1,15 @@
 import UsersPlugin from '@nocobase/plugin-users';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { zhCN, enUS } from '../locale';
 import { namespace } from '..';
 import { oidc } from './authenticators/oidc';
 import { getAuthUrl } from './actions/getAuthUrl';
+import { redirect } from './actions/redirect';
 
 export class OidcPlugin extends Plugin {
   afterAdd() {}
 
-  beforeLoad() {
-    this.app.i18n.addResources('zh-CN', namespace, zhCN);
-    this.app.i18n.addResources('en-US', namespace, enUS);
-  }
+  beforeLoad() {}
 
   async load() {
     // 导入 collection
@@ -31,6 +28,7 @@ export class OidcPlugin extends Plugin {
       name: 'oidc',
       actions: {
         getAuthUrl,
+        redirect,
       },
     });
 

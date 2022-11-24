@@ -14,7 +14,7 @@ export const RedirectURLInput = observer(() => {
 
   useEffect(() => {
     const { protocol, host } = window.location;
-    field.setValue(`${protocol}//${host}/signin?authenticator=oidc&clientId=${clientId}`);
+    field.setValue(`${protocol}//${host}/api/oidc:redirect?clientId=${clientId}`);
   }, [clientId]);
 
   return (
