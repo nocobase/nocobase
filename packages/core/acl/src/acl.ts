@@ -1,5 +1,5 @@
 import { Action } from '@nocobase/resourcer';
-import { Toposort, ToposortOptions } from '@nocobase/utils';
+import { assign, Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
 import parse from 'json-templates';
 import compose from 'koa-compose';
@@ -8,6 +8,7 @@ import { ACLAvailableAction, AvailableActionOptions } from './acl-available-acti
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
+import FixedParamsManager, { Merger } from './fixed-params-manager';
 
 interface CanResult {
   role: string;
@@ -44,6 +45,8 @@ interface CanArgs {
 export class ACL extends EventEmitter {
   protected availableActions = new Map<string, ACLAvailableAction>();
   protected availableStrategy = new Map<string, ACLAvailableStrategy>();
+  protected fixedParamsManager = new FixedParamsManager();
+
   protected middlewares: Toposort<any>;
 
   public allowManager = new AllowManager(this);
@@ -159,24 +162,38 @@ export class ACL extends EventEmitter {
   can(options: CanArgs): CanResult | null {
     const { role, resource, action } = options;
     const aclRole = this.roles.get(role);
+    const fixedParams = this.fixedParamsManager.getParams(resource, action);
+
+    const mergeParams = (result: CanResult) => {
+      const params = result['params'] || {};
+
+      const mergedParams = assign(params, fixedParams);
+
+      if (Object.keys(mergedParams).length) {
+        result['params'] = mergedParams;
+      } else {
+        delete result['params'];
+      }
+
+      return result;
+    };
 
     if (!aclRole) {
       return null;
     }
 
     const aclResource = aclRole.getResource(resource);
-
     if (aclResource) {
       const actionParams = aclResource.getAction(action);
 
       if (actionParams) {
         // handle single action config
-        return {
+        return mergeParams({
           role,
           resource,
           action,
           params: actionParams,
-        };
+        });
       } else {
         return null;
       }
@@ -197,13 +214,13 @@ export class ACL extends EventEmitter {
     const roleStrategyParams = roleStrategy.allow(resource, this.resolveActionAlias(action));
 
     if (roleStrategyParams) {
-      const result = { role, resource, action };
+      const result = { role, resource, action, params: {} };
 
       if (lodash.isPlainObject(roleStrategyParams)) {
         result['params'] = roleStrategyParams;
       }
 
-      return result;
+      return mergeParams(result);
     }
 
     return null;
@@ -290,5 +307,9 @@ export class ACL extends EventEmitter {
         await next();
       });
     };
+  }
+
+  addFixedParams(resource: string, action: string, merger: Merger) {
+    this.fixedParamsManager.addParams(resource, action, merger);
   }
 }
