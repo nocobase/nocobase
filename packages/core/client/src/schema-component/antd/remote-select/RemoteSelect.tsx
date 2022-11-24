@@ -6,7 +6,6 @@ import React from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
-import { getValues } from './shared';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
