@@ -98,6 +98,7 @@ export const o2m: IField = {
           'x-designer': 'AssociationSelect.Designer',
         });
       } else {
+        schema.type = 'string';
         schema['properties'] = {
           viewer: cloneDeep(recordPickerViewer),
           selector: cloneDeep(recordPickerSelector),

@@ -17,6 +17,14 @@ export const useFieldComponentOptions = () => {
         { label: t('Record picker'), value: 'CollectionField' },
         { label: t('Select'), value: 'AssociationSelect' },
       ],
+      linkTo: [
+        { label: t('Record picker'), value: 'CollectionField' },
+        { label: t('Select'), value: 'AssociationSelect' },
+      ],
+      m2m: [
+        { label: t('Record picker'), value: 'CollectionField' },
+        { label: t('Select'), value: 'AssociationSelect' },
+      ],
       o2m: [
         { label: t('Record picker'), value: 'CollectionField' },
         { label: t('Subtable'), value: 'TableField' },

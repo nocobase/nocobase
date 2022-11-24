@@ -51,29 +51,29 @@ export const m2o: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { block, readPretty }) {
-    if (block === 'Form' && schema['x-component'] === 'AssociationSelect') {
-      return Object.assign(schema, {
-        type: 'string',
-        'x-designer': 'AssociationSelect.Designer',
-      });
-    } else {
-      schema.type = 'string';
-      if (block === 'Form') {
+    if (block === 'Form') {
+      if (schema['x-component'] === 'AssociationSelect') {
+        Object.assign(schema, {
+          type: 'string',
+          'x-designer': 'AssociationSelect.Designer',
+        });
+      } else {
+        schema.type = 'string';
         schema['properties'] = {
           viewer: cloneDeep(recordPickerViewer),
           selector: cloneDeep(recordPickerSelector),
         };
-      } else {
-        if (readPretty) {
-          schema['properties'] = {
-            viewer: cloneDeep(recordPickerViewer),
-          };
-        } else {
-          schema['properties'] = {
-            selector: cloneDeep(recordPickerSelector),
-          };
-        }
       }
+      return schema;
+    }
+    if (readPretty) {
+      schema['properties'] = {
+        viewer: cloneDeep(recordPickerViewer),
+      };
+    } else {
+      schema['properties'] = {
+        selector: cloneDeep(recordPickerSelector),
+      };
     }
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};

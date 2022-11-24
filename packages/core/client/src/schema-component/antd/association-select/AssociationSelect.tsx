@@ -58,7 +58,7 @@ const InternalAssociationSelect = connect(
     );
 
     const value = useMemo(() => {
-      if (typeof props.value === 'undefined') {
+      if (props.value === undefined || props.value === null) {
         return;
       }
 
