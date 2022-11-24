@@ -386,7 +386,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
 const findSchema = (schema: Schema, key: string, action: string) => {
   if (!Schema.isSchemaInstance(schema)) return null;
   return schema.reduceProperties((buf, s) => {
-    if (s[key]?.split('.')[1] === action?.split('.')[1]) {
+    if (s[key] === action) {
       return s;
     }
     const c = findSchema(s, key, action);
