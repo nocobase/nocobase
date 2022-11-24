@@ -18,6 +18,34 @@ describe('collection', () => {
     await db.close();
   });
 
+  it('should throw error when create empty collection in sqlite', async () => {
+    if (!db.inDialect('sqlite')) {
+      return;
+    }
+
+    db.collection({
+      name: 'empty',
+      timestamps: false,
+      autoGenId: false,
+      fields: [],
+    });
+
+    let error;
+
+    try {
+      await db.sync({
+        force: false,
+        alter: {
+          drop: false,
+        },
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error.message).toBe("Zero-column tables aren't supported in SQLite");
+  });
+
   it('can create empty collection', async () => {
     db.collection({
       name: 'empty',
