@@ -18,20 +18,54 @@ describe('collection', () => {
     await db.close();
   });
 
-  test.skip('indexes', async () => {
-    await db.clean({ drop: true });
-    const collection = db.collection({
-      name: 'test',
-      fields: [
-        {
-          type: 'string',
-          name: 'name',
-          index: true,
-        },
-      ],
+  it('should throw error when create empty collection in sqlite and mysql', async () => {
+    if (!db.inDialect('sqlite', 'mysql')) {
+      return;
+    }
+
+    db.collection({
+      name: 'empty',
+      timestamps: false,
+      autoGenId: false,
+      fields: [],
     });
-    collection.removeField('name');
-    await db.sync();
+
+    let error;
+
+    try {
+      await db.sync({
+        force: false,
+        alter: {
+          drop: false,
+        },
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error.message.includes("Zero-column tables aren't supported in")).toBeTruthy();
+  });
+
+  it('can create empty collection', async () => {
+    if (db.inDialect('sqlite', 'mysql')) {
+      return;
+    }
+
+    db.collection({
+      name: 'empty',
+      timestamps: false,
+      autoGenId: false,
+      fields: [],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    expect(db.getCollection('empty')).toBeInstanceOf(Collection);
   });
 
   test('removeFromDb', async () => {

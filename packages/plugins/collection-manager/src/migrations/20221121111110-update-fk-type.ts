@@ -1,5 +1,5 @@
-import { Migration } from '@nocobase/server';
 import { DataTypes } from '@nocobase/database';
+import { Migration } from '@nocobase/server';
 
 export default class UpdateIdToBigIntMigrator extends Migration {
   async up() {
@@ -113,6 +113,14 @@ export default class UpdateIdToBigIntMigrator extends Migration {
           }
 
           if (foreignModel && fieldName) {
+            const cf = await db.getRepository<any>('collections.fields', foreignModel.name).findOne({
+              filterByTk: fieldName,
+            });
+            if (cf) {
+              cf.interface = 'integer';
+              cf.type = 'bigInt';
+              await cf.save();
+            }
             await updateToBigInt(foreignModel, fieldName);
           }
 

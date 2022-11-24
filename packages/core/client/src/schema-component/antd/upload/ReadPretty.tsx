@@ -28,15 +28,16 @@ ReadPretty.Attachment = (props: UploadProps) => {
         <div className={'ant-upload-list ant-upload-list-picture-card'}>
           {images.map((file) => {
             const handleClick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
               const index = images.indexOf(file);
               if (isImage(file.extname)) {
+                e.preventDefault();
+                e.stopPropagation();
                 setVisible(true);
                 setPhotoIndex(index);
-              } else {
-                saveAs(file.url, `${file.title}${file.extname}`);
               }
+              // else {
+              //   saveAs(file.url, `${file.title}${file.extname}`);
+              // }
             };
             return (
               <div className={'ant-upload-list-picture-card-container'}>
