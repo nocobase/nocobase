@@ -32,6 +32,7 @@ export default {
   'Based on date field of collection': '根据数据表时间字段',
   'Starts on': '开始于',
   'Ends on': '结束于',
+  'No end': '不结束',
   'Exactly at': '当时',
   'Repeat mode': '重复模式',
   'Repeat limit': '重复次数',
