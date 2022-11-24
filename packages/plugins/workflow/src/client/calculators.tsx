@@ -119,7 +119,7 @@ calculators.register('concat', {
 const calculatorGroups = [
   {
     value: 'boolean',
-    title: `{{t("Comparision", { ns: "${NAMESPACE}" })}}`,
+    title: '{{t("Comparision")}}',
   },
   {
     value: 'number',
@@ -318,7 +318,7 @@ export const VariableTypes = {
   // calculation: Calculation
 };
 
-export const VariableTypesContext = React.createContext(null);
+export const VariableTypesContext = React.createContext({});
 
 export function useVariableTypes() {
   return React.useContext(VariableTypesContext);
