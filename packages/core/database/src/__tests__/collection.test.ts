@@ -18,8 +18,8 @@ describe('collection', () => {
     await db.close();
   });
 
-  it('should throw error when create empty collection in sqlite', async () => {
-    if (!db.inDialect('sqlite')) {
+  it('should throw error when create empty collection in sqlite and mysql', async () => {
+    if (!db.inDialect('sqlite', 'mysql')) {
       return;
     }
 
@@ -47,6 +47,10 @@ describe('collection', () => {
   });
 
   it('can create empty collection', async () => {
+    if (db.inDialect('sqlite', 'mysql')) {
+      return;
+    }
+
     db.collection({
       name: 'empty',
       timestamps: false,
