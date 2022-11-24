@@ -12,32 +12,30 @@ export const useFieldComponentOptions = () => {
 
   const fieldComponentOptions = useMemo(() => {
     if (!collectionField?.interface) return;
-    const specialComponents = {
-      m2o: [
-        { label: t('Record picker'), value: 'CollectionField' },
-        { label: t('Select'), value: 'AssociationSelect' },
-      ],
-      linkTo: [
-        { label: t('Record picker'), value: 'CollectionField' },
-        { label: t('Select'), value: 'AssociationSelect' },
-      ],
-      m2m: [
-        { label: t('Record picker'), value: 'CollectionField' },
-        { label: t('Select'), value: 'AssociationSelect' },
-      ],
-      o2m: [
-        { label: t('Record picker'), value: 'CollectionField' },
-        { label: t('Subtable'), value: 'TableField' },
-        { label: t('Select'), value: 'AssociationSelect' },
-      ],
-    };
-    return (
-      specialComponents[collectionField.interface] ?? [
-        { label: t('Record picker'), value: 'CollectionField' },
-        { label: t('Subform'), value: 'FormField' },
-        { label: t('Select'), value: 'AssociationSelect' },
-      ]
-    );
+    switch (collectionField.interface) {
+      case 'o2m':
+        return [
+          { label: t('Record picker'), value: 'CollectionField' },
+          { label: t('Subtable'), value: 'TableField' },
+          { label: t('Select'), value: 'AssociationSelect' },
+        ];
+
+      case 'm2o':
+      case 'm2m':
+      case 'linkTo':
+        return [
+          { label: t('Record picker'), value: 'CollectionField' },
+          { label: t('Select'), value: 'AssociationSelect' },
+        ]
+
+      default:
+        return [
+          { label: t('Record picker'), value: 'CollectionField' },
+          { label: t('Subform'), value: 'FormField' },
+          { label: t('Select'), value: 'AssociationSelect' },
+        ];
+
+    }
   }, [t, collectionField?.interface]);
 
   return fieldComponentOptions;
