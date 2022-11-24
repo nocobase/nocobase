@@ -596,61 +596,58 @@ AssociationSelect.Designer = () => {
           });
         }}
       />
-      {form &&
-        !form?.readPretty &&
-        collectionField?.interface !== 'o2m' &&
-        fieldSchema?.['x-component-props']?.['pattern-disable'] != true && (
-          <SchemaSettings.SelectItem
-            key="pattern"
-            title={t('Pattern')}
-            options={[
-              { label: t('Editable'), value: 'editable' },
-              { label: t('Readonly'), value: 'readonly' },
-              { label: t('Easy-reading'), value: 'read-pretty' },
-            ]}
-            value={readOnlyMode}
-            onChange={(v) => {
-              const schema: ISchema = {
-                ['x-uid']: fieldSchema['x-uid'],
-              };
+      {form && !form?.readPretty && fieldSchema?.['x-component-props']?.['pattern-disable'] != true && (
+        <SchemaSettings.SelectItem
+          key="pattern"
+          title={t('Pattern')}
+          options={[
+            { label: t('Editable'), value: 'editable' },
+            { label: t('Readonly'), value: 'readonly' },
+            { label: t('Easy-reading'), value: 'read-pretty' },
+          ]}
+          value={readOnlyMode}
+          onChange={(v) => {
+            const schema: ISchema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
 
-              switch (v) {
-                case 'readonly': {
-                  fieldSchema['x-read-pretty'] = false;
-                  fieldSchema['x-disabled'] = true;
-                  schema['x-read-pretty'] = false;
-                  schema['x-disabled'] = true;
-                  field.readPretty = false;
-                  field.disabled = true;
-                  break;
-                }
-                case 'read-pretty': {
-                  fieldSchema['x-read-pretty'] = true;
-                  fieldSchema['x-disabled'] = false;
-                  schema['x-read-pretty'] = true;
-                  schema['x-disabled'] = false;
-                  field.readPretty = true;
-                  break;
-                }
-                default: {
-                  fieldSchema['x-read-pretty'] = false;
-                  fieldSchema['x-disabled'] = false;
-                  schema['x-read-pretty'] = false;
-                  schema['x-disabled'] = false;
-                  field.readPretty = false;
-                  field.disabled = false;
-                  break;
-                }
+            switch (v) {
+              case 'readonly': {
+                fieldSchema['x-read-pretty'] = false;
+                fieldSchema['x-disabled'] = true;
+                schema['x-read-pretty'] = false;
+                schema['x-disabled'] = true;
+                field.readPretty = false;
+                field.disabled = true;
+                break;
               }
+              case 'read-pretty': {
+                fieldSchema['x-read-pretty'] = true;
+                fieldSchema['x-disabled'] = false;
+                schema['x-read-pretty'] = true;
+                schema['x-disabled'] = false;
+                field.readPretty = true;
+                break;
+              }
+              default: {
+                fieldSchema['x-read-pretty'] = false;
+                fieldSchema['x-disabled'] = false;
+                schema['x-read-pretty'] = false;
+                schema['x-disabled'] = false;
+                field.readPretty = false;
+                field.disabled = false;
+                break;
+              }
+            }
 
-              dn.emit('patch', {
-                schema,
-              });
+            dn.emit('patch', {
+              schema,
+            });
 
-              dn.refresh();
-            }}
-          />
-        )}
+            dn.refresh();
+          }}
+        />
+      )}
       {collectionField?.target && ['CollectionField', 'AssociationSelect'].includes(fieldSchema['x-component']) && (
         <SchemaSettings.SelectItem
           key="title-field"
