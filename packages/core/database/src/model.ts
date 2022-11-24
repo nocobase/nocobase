@@ -153,6 +153,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   static async sync(options) {
     const model = this as any;
 
+    // fix sequelize sync with model that not have any column
     if (Object.keys(model.tableAttributes).length === 0) {
       options.alter = false;
     }
