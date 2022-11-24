@@ -36,11 +36,9 @@ export class SystemSettingsPlugin extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
-    const systemSetting = await this.app.db.getRepository('systemSettings').findOne();
-
     this.app.acl.addFixedParams('systemSettings', 'destroy', () => {
       return {
-        id: systemSetting.get('id'),
+        id: 1,
       };
     });
 
