@@ -1,8 +1,8 @@
 import { omit } from 'lodash';
 import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
+import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
-import { Reference } from '../features/ReferencesMap';
 
 export class BelongsToField extends RelationField {
   static type = 'belongsTo';
@@ -84,9 +84,9 @@ export class BelongsToField extends RelationField {
     const foreignKey = this.options.foreignKey;
     const field1 = collection.getField(foreignKey);
 
-    const field2 = tcoll.findField((field) => {
+    const field2 = tcoll ? tcoll.findField((field) => {
       return field.type === 'hasMany' && field.foreignKey === foreignKey;
-    });
+    }) : null;
 
     if (!field1 && !field2) {
       collection.model.removeAttribute(foreignKey);
