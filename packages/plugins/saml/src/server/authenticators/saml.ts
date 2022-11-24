@@ -1,5 +1,6 @@
 import { Context } from '@nocobase/actions';
 import { SAML, SamlConfig } from '@node-saml/node-saml';
+import { SAMLProvider } from '../shared/types';
 
 export const saml = async (ctx: Context, next) => {
   const {
@@ -9,7 +10,7 @@ export const saml = async (ctx: Context, next) => {
   } = ctx.action;
 
   const providerRepo = ctx.db.getRepository('samlProviders');
-  const record = await providerRepo.findOne({
+  const record: SAMLProvider = await providerRepo.findOne({
     filter: {
       'clientId.$eq': clientId,
     },
@@ -27,11 +28,13 @@ export const saml = async (ctx: Context, next) => {
 
   const usersRepo = ctx.db.getRepository('users');
 
-  const { nameID, email } = profile;
+  const { nameID, nickname, email } = profile as Record<string, string>;
+
+  const name = nickname ?? nameID;
 
   let user = await usersRepo.findOne({
     filter: {
-      'nickname.$eq': nameID,
+      'nickname.$eq': name,
       'email.$eq': email ?? null,
     },
   });
@@ -39,7 +42,7 @@ export const saml = async (ctx: Context, next) => {
   if (!user) {
     user = await usersRepo.create({
       values: {
-        nickname: nameID,
+        nickname: name,
       },
     });
   }
