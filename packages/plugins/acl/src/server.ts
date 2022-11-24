@@ -1,5 +1,5 @@
 import { Context } from '@nocobase/actions';
-import { Collection } from '@nocobase/database';
+import { Collection, ImporterReader } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
@@ -359,9 +359,15 @@ export class PluginACL extends Plugin {
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'parseToken' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
-
     this.app.acl.allow('roles', 'check', 'loggedIn');
-    this.app.acl.allow('roles', ['create', 'update', 'destroy'], 'allowConfigure');
+
+    const importReader = new ImporterReader(resolve(__dirname, 'collections'));
+    const modules = await importReader.read();
+    for (const collectionDefinition of modules) {
+      if (collectionDefinition.name) {
+        this.app.acl.allow(collectionDefinition.name, ['create', 'update', 'destroy'], 'allowConfigure');
+      }
+    }
 
     this.app.acl.allow('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
 
@@ -405,6 +411,7 @@ export class PluginACL extends Plugin {
           });
         }
       }
+
       if (actionName === 'update' && resourceName === 'roles.resources') {
         ctx.action.mergeParams({
           updateAssociationValues: ['actions'],
