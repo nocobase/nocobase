@@ -6,6 +6,7 @@ import React from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
+import { getValues } from './shared';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
@@ -17,7 +18,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
 
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
-    const { fieldNames, service = {}, wait = 500, ...others } = props;
+    const { fieldNames, service = {}, wait = 300, value, ...others } = props;
 
     const { data, run } = useRequest(
       {
@@ -55,12 +56,9 @@ const InternalRemoteSelect = connect(
 
     return (
       <Select
+        autoClearSearchValue
         filterOption={false}
-        filterSort={(optionA, optionB) =>
-          String(optionA[fieldNames.label] ?? '')
-            .toLowerCase()
-            .localeCompare(String(optionB[fieldNames.label] ?? '').toLowerCase())
-        }
+        filterSort={null}
         fieldNames={fieldNames}
         onSearch={onSearch}
         {...others}
@@ -84,12 +82,9 @@ const InternalRemoteSelect = connect(
   mapReadPretty(ReadPretty),
 );
 
-export interface RemoteSelectInterface {
-  (props: any): React.ReactElement;
+export const RemoteSelect = InternalRemoteSelect as unknown as typeof InternalRemoteSelect & {
   ReadPretty: typeof ReadPretty;
-}
-
-export const RemoteSelect = InternalRemoteSelect as unknown as RemoteSelectInterface;
+};
 
 RemoteSelect.ReadPretty = ReadPretty;
 export default RemoteSelect;

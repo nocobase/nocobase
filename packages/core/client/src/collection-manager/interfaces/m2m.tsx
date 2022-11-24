@@ -57,10 +57,6 @@ export const m2m: IField = {
         Object.assign(schema, {
           type: 'string',
           'x-designer': 'AssociationSelect.Designer',
-          'x-component-props': {
-            ...schema['x-component-props'],
-            objectValue: true,
-          },
         });
       } else {
         schema.type = 'string';

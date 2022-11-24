@@ -37,15 +37,12 @@ const divWrap = (schema: ISchema) => {
 
 const InternalAssociationSelect = connect(
   (props: AssociationSelectProps) => {
-    console.log('🚀 ~ file: AssociationSelect.tsx ~ line 40 ~ props', props);
     const { fieldNames } = props;
     const service = useServiceOptions(props);
     const field = useField();
     const fieldSchema = useFieldSchema();
     const { getField } = useCollection();
-    const collectionField = useMemo(() => {
-      return getField(fieldSchema.name);
-    }, [fieldSchema.name]);
+    const collectionField = getField(fieldSchema.name);
 
     const normalizeValues = useCallback(
       (obj) => {
@@ -54,7 +51,7 @@ const InternalAssociationSelect = connect(
         }
         return obj;
       },
-      [props.objectValue],
+      [props.objectValue, fieldNames.value],
     );
 
     const value = useMemo(() => {
@@ -75,7 +72,7 @@ const InternalAssociationSelect = connect(
       }
     }, collectionField.title);
 
-    return <RemoteSelect filterSort={null} {...props} value={value} service={service}></RemoteSelect>;
+    return <RemoteSelect objectValue {...props} value={value} service={service}></RemoteSelect>;
   },
   mapProps(
     {
