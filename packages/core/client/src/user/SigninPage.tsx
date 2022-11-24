@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Link, useHistory, useLocation } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 import VerificationCode from './VerificationCode';
-import { OIDCButtonList } from './OIDCList';
+import { OIDCList } from './OIDCList';
+import { SAMLList } from './SAMLList';
 
 const passwordForm: ISchema = {
   type: 'object',
@@ -164,7 +165,8 @@ export const SigninPage = (props: SigninPageProps) => {
           schema={schema || passwordForm}
         />
       )}
-      <OIDCButtonList />
+      <OIDCList />
+      <SAMLList />
       {allowSignUp && (
         <div>
           <Link to="/signup">{t('Create an account')}</Link>

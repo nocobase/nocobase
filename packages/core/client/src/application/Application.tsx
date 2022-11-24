@@ -30,7 +30,6 @@ import { SchemaInitializerProvider } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage, SchemaTemplateShortcut } from '../schema-templates';
 import { SystemSettingsProvider, SystemSettingsShortcut } from '../system-settings';
 import { SigninPage, SignupPage } from '../user';
-import { SSODataProvider } from '../user/SSOIdPsProvider';
 import { compose } from './compose';
 
 export interface ApplicationOptions {
@@ -105,7 +104,6 @@ export class Application {
         SettingsCenterDropdown,
       },
     });
-    this.use(SSODataProvider);
     this.use(SchemaComponentProvider, { components: { Link, NavLink } });
     this.use(SchemaInitializerProvider, {
       initializers: {
