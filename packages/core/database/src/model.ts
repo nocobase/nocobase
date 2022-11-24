@@ -153,6 +153,10 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   static async sync(options) {
     const model = this as any;
 
+    if (Object.keys(model.tableAttributes).length === 0) {
+      options.alter = false;
+    }
+
     if (this.collection.isInherited()) {
       return SyncRunner.syncInheritModel(model, options);
     }

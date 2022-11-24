@@ -17,6 +17,25 @@ describe('collection', () => {
   afterEach(async () => {
     await db.close();
   });
+
+  it('can create empty collection', async () => {
+    db.collection({
+      name: 'empty',
+      timestamps: false,
+      autoGenId: false,
+      fields: [],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    expect(db.getCollection('empty')).toBeInstanceOf(Collection);
+  });
+
   test('removeFromDb', async () => {
     await db.clean({ drop: true });
     const collection = db.collection({
