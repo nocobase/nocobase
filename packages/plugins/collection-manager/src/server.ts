@@ -13,7 +13,7 @@ import {
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 
 import { CollectionModel, FieldModel } from './models';
@@ -212,6 +212,8 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.acl.allow('collections', 'list', 'loggedIn');
     this.app.acl.allow('collections', ['create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.allow('collections.fields', ['create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.allow('fields', ['create', 'update', 'destroy'], 'allowConfigure');
   }
 
   async load() {
