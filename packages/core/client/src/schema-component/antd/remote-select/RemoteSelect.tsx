@@ -64,7 +64,7 @@ const InternalRemoteSelect = connect(
         fieldNames={fieldNames}
         onSearch={onSearch}
         {...others}
-        options={data?.data}
+        options={data?.data || []}
       />
     );
   },

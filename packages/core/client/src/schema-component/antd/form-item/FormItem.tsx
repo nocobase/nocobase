@@ -364,52 +364,6 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {form && ['m2o'].includes(collectionField?.interface) && (
-        <SchemaSettings.SelectItem
-          title={t('Field component')}
-          options={[
-            { label: t('Record picker'), value: 'CollectionField' },
-            { label: t('Select'), value: 'AssociationSelect' },
-          ]}
-          value={fieldSchema['x-component']}
-          onChange={(type) => {
-            const schema: ISchema = {
-              name: collectionField.name,
-              type: 'string',
-              required: fieldSchema['required'],
-              description: fieldSchema['description'],
-              default: fieldSchema['default'],
-              'x-decorator': 'FormItem',
-              'x-designer': 'FormItem.Designer',
-              'x-component': type,
-              'x-validator': fieldSchema['x-validator'],
-              'x-collection-field': fieldSchema['x-collection-field'],
-              'x-decorator-props': fieldSchema['x-decorator-props'],
-              'x-component-props': {
-                ...collectionField?.uiSchema?.['x-component-props'],
-                ...fieldSchema['x-component-props'],
-              },
-            };
-            interfaceConfig?.schemaInitialize?.(schema, {
-              field: collectionField,
-              block: 'Form',
-              readPretty: field.readPretty,
-              action: tk ? 'get' : null,
-            });
-
-            insertAdjacent('beforeBegin', divWrap(schema), {
-              onSuccess: () => {
-                dn.remove(null, {
-                  removeParentsIfNoChildren: true,
-                  breakRemoveOn: {
-                    'x-component': 'Grid',
-                  },
-                });
-              },
-            });
-          }}
-        />
-      )}
       {form && !isSubFormAssocitionField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
@@ -440,10 +394,6 @@ FormItem.Designer = (props) => {
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
             });
-
-            if (type === 'CollectionField') {
-              schema['type'] = 'string';
-            }
 
             insertAdjacent('beforeBegin', divWrap(schema), {
               onSuccess: () => {

@@ -70,8 +70,10 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 const InternalSelect = connect(
   (props: Props) => {
     const { objectValue, ...others } = props;
+    const mode = props.mode || props.multiple ? 'multiple' : undefined;
+
     if (objectValue) {
-      return <ObjectSelect {...others} />;
+      return <ObjectSelect {...others} mode={mode} />;
     }
     return (
       <AntdSelect
@@ -80,10 +82,9 @@ const InternalSelect = connect(
         allowClear
         {...others}
         onChange={(changed) => {
-          props.onChange(changed === undefined ? null : changed);
+          props.onChange?.(changed === undefined ? null : changed);
         }}
-        value={others.value || undefined}
-        mode={props.mode || props.multiple ? 'multiple' : undefined}
+        mode={mode}
       />
     );
   },
