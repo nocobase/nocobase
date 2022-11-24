@@ -1,0 +1,18 @@
+export default {
+  Edit: 'Edit',
+  Delete: 'Delete',
+  Cancel: 'Cancel',
+  Submit: 'Submit',
+  Actions: 'Actions',
+  Title: 'Title',
+  'SAML manager': 'SAML manager',
+  'SAML Providers': 'SAML Providers',
+  'Redirect url': 'Redirect url',
+  'SP entity id': 'SP entity id',
+  'Add provider': 'Add provider',
+  'Edit provider': 'Edit provider',
+  'Client id': 'Client id',
+  'Entity id or issuer': 'Entity id or issuer',
+  'Login Url': 'Login Url',
+  'Public cert': 'Public cert',
+};
