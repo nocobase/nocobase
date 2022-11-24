@@ -23,13 +23,11 @@ export const ReadPretty = observer((props: any) => {
   const options = getCurrentOptions(field.value, dataSource, fieldNames);
   return (
     <div>
-      {options.length
-        ? options.map((option, key) => (
-            <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
-              {option[fieldNames.label]}
-            </Tag>
-          ))
-        : props.value}
+      {options.map((option, key) => (
+        <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
+          {option[fieldNames.label]}
+        </Tag>
+      ))}
     </div>
   );
 });

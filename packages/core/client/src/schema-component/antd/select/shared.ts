@@ -9,14 +9,15 @@ export const defaultFieldNames = {
 
 export const getCurrentOptions = (values, dataSource, fieldNames) => {
   values = castArray(values)
-    .filter(item => item != null)
+    .filter((item) => item != null)
     .map((val) => (typeof val === 'object' ? val[fieldNames.value] : val));
   const findOptions = (options: any[]) => {
     let current = [];
+    for (const value of values) {
+      const option = options.find((v) => v[fieldNames.value] === value) || { value: value, label: value };
+      current.push(option);
+    }
     for (const option of options) {
-      if (values.includes(option[fieldNames.value])) {
-        current.push(option);
-      }
       const children = option[fieldNames.options];
       if (Array.isArray(children)) {
         current.push(...findOptions(children));
