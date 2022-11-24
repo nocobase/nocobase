@@ -5,6 +5,7 @@ import { Card } from 'antd';
 import { samlSchema } from './schemas/saml';
 import { RedirectURLInput } from './RedirectURLInput';
 import { SpEntityIdInput } from './SpEntityIdInput';
+import { useSamlTranslation } from './locale';
 
 const schema = {
   type: 'object',
@@ -14,9 +15,11 @@ const schema = {
 };
 
 export const SAMLPanel = () => {
+  const { t } = useSamlTranslation();
+
   return (
     <Card bordered={false}>
-      <SchemaComponent components={{ RedirectURLInput, SpEntityIdInput }} schema={schema} />
+      <SchemaComponent components={{ RedirectURLInput, SpEntityIdInput }} schema={schema} scope={{ t }} />
     </Card>
   );
 };
