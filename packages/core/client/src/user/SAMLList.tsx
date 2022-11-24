@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Space } from 'antd';
 import { LoginOutlined } from '@ant-design/icons';
-import { useMemoizedFn } from 'ahooks';
 import { css } from '@emotion/css';
-import { useLocation } from 'react-router-dom';
 import { useAPIClient } from '../api-client';
 import { useRedirect } from './SigninPage';
 
-export interface OIDCProvider {
+export interface SAMLProvider {
+  title: string;
   clientId: string;
-  providerName: string;
-  authorizeUrl: string;
+  loginUrl: string;
 }
 
 export interface OIDCLocation {
@@ -25,23 +23,22 @@ export interface OIDCLocation {
   state: any;
 }
 
-export const OIDCList = () => {
-  const [list, setList] = useState<OIDCProvider[]>([]);
-  const { query } = useLocation() as OIDCLocation;
+export const SAMLList = () => {
+  const [list, setList] = useState<SAMLProvider[]>([]);
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
   const redirect = useRedirect();
 
-  const getOidcList = async () => {
+  const getSamlList = async () => {
     const { data: pluginsRes } = await api.request({
       url: 'app:getPlugins',
     });
-    if (!(pluginsRes.data as string[]).includes('oidc')) return;
+    if (!(pluginsRes.data as string[]).includes('saml')) return;
     const { data: providersRes } = await api.request({
-      url: 'oidcProviders:list',
+      url: 'samlProviders:list',
       params: {
         filter: {
-          'enable.$eq': true,
+          'enabled.$eq': true,
         },
       },
     });
@@ -51,10 +48,10 @@ export const OIDCList = () => {
   /**
    * 打开登录弹出框
    */
-  const handleOpen = useMemoizedFn(async (item: OIDCProvider) => {
+  const handleOpen = async (item: SAMLProvider) => {
     const response = await api.request({
       method: 'post',
-      url: 'oidc:getAuthUrl',
+      url: 'saml:getAuthUrl',
       data: {
         clientId: item.clientId,
       },
@@ -72,17 +69,17 @@ export const OIDCList = () => {
     );
 
     setWindowHandler(win);
-  });
+  };
 
   /**
    * 从弹出窗口，发消息回来进行登录
    */
-  const handleOIDCLogin = useMemoizedFn(async (event: MessageEvent) => {
+  const handleOIDCLogin = async (event: MessageEvent) => {
+    await api.auth.signIn(event.data, 'saml');
     windowHandler.close();
     setWindowHandler(undefined);
-    await api.auth.signIn(event.data, 'oidc');
     redirect();
-  });
+  };
 
   /**
    * 监听弹出窗口的消息
@@ -95,17 +92,8 @@ export const OIDCList = () => {
     };
   }, [windowHandler]);
 
-  /**
-   * 弹出窗口中重定向回来时触发
-   * 回来的 url 会带上 authenticator、code、clientId
-   */
   useEffect(() => {
-    if (query.authenticator !== 'oidc') return;
-    window.opener.postMessage(query, '*');
-  }, [query.authenticator]);
-
-  useEffect(() => {
-    getOidcList();
+    getSamlList();
   }, []);
 
   return (
@@ -117,7 +105,7 @@ export const OIDCList = () => {
     >
       {list.map((item) => (
         <Button shape="round" block key={item.clientId} icon={<LoginOutlined />} onClick={() => handleOpen(item)}>
-          OIDC {item.providerName}
+          SAML: {item.title}
         </Button>
       ))}
     </Space>
