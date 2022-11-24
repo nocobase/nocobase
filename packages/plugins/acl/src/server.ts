@@ -369,6 +369,30 @@ export class PluginACL extends Plugin {
       return ctx.state.currentRole === 'root';
     });
 
+    this.app.acl.addFixedParams('collections', 'destroy', () => {
+      return {
+        filter: {
+          'name.$ne': 'roles',
+        },
+      };
+    });
+
+    this.app.acl.addFixedParams('rolesResourcesScopes', 'destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'key.$ne': 'all' }, { 'key.$ne': 'own' }],
+        },
+      };
+    });
+
+    this.app.acl.addFixedParams('roles', 'destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'name.$ne': 'root' }, { 'name.$ne': 'admin' }, { 'name.$ne': 'member' }],
+        },
+      };
+    });
+
     this.app.resourcer.use(async (ctx, next) => {
       const { actionName, resourceName, params } = ctx.action;
       const { showAnonymous } = params || {};
@@ -386,6 +410,7 @@ export class PluginACL extends Plugin {
           updateAssociationValues: ['actions'],
         });
       }
+
       await next();
     });
 
@@ -405,6 +430,7 @@ export class PluginACL extends Plugin {
         } else {
           collection = ctx.db.getCollection(resourceName);
         }
+
         if (collection && collection.hasField('createdById')) {
           ctx.permission.can.params.fields.push('createdById');
         }
@@ -413,6 +439,7 @@ export class PluginACL extends Plugin {
     });
 
     const parseJsonTemplate = this.app.acl.parseJsonTemplate;
+
     this.app.acl.use(async (ctx: Context, next) => {
       const { actionName, resourceName, resourceOf } = ctx.action;
       if (resourceName.includes('.') && resourceOf) {

@@ -42,6 +42,48 @@ describe('acl', () => {
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
+  it('should not destroy all scope', async () => {
+    let allScope = await adminAgent.resource('rolesResourcesScopes').get({
+      filter: {
+        key: 'all',
+      },
+    });
+
+    expect(allScope.body.data).toBeDefined();
+
+    await adminAgent.resource('rolesResourcesScopes').destroy({
+      filter: {
+        key: 'all',
+      },
+    });
+
+    allScope = await adminAgent.resource('rolesResourcesScopes').get({
+      filter: {
+        key: 'all',
+      },
+    });
+
+    expect(allScope.body.data).toBeDefined();
+  });
+
+  it('should not destroy roles collections', async () => {
+    let rolesCollection = await adminAgent.resource('collections').get({
+      filterByTk: 'roles',
+    });
+
+    expect(rolesCollection.body.data).toBeDefined();
+
+    await adminAgent.resource('collections').destroy({
+      filterByTk: 'roles',
+    });
+
+    rolesCollection = await adminAgent.resource('collections').get({
+      filterByTk: 'roles',
+    });
+
+    expect(rolesCollection.body.data).toBeDefined();
+  });
+
   it('should works with universal actions', async () => {
     await db.getRepository('roles').create({
       values: {

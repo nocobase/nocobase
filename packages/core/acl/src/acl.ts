@@ -183,6 +183,7 @@ export class ACL extends EventEmitter {
     }
 
     const aclResource = aclRole.getResource(resource);
+
     if (aclResource) {
       const actionParams = aclResource.getAction(action);
 
@@ -287,16 +288,12 @@ export class ACL extends EventEmitter {
       return compose(acl.middlewares.nodes)(ctx, async () => {
         const permission = ctx.permission;
 
-        if (permission.skip) {
-          return next();
-        }
-
-        if (!permission.can || typeof permission.can !== 'object') {
+        if ((!permission.can || typeof permission.can !== 'object') && !permission.skip) {
           ctx.throw(403, 'No permissions');
           return;
         }
 
-        const { params } = permission.can;
+        const params = permission.can?.params;
 
         if (params) {
           const filteredParams = filterParams(ctx, resourceName, params);

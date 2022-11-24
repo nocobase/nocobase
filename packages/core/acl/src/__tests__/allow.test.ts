@@ -49,6 +49,7 @@ describe('skip', () => {
     const nextFunc = jest.fn();
 
     let skip = false;
+
     acl.allow('users', 'login', (ctx) => {
       return skip;
     });

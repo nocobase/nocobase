@@ -82,9 +82,11 @@ export class AllowManager {
 
       if (skip) {
         ctx.permission = {
+          ...(ctx.permission || {}),
           skip: true,
         };
       }
+
       await next();
     };
   }
