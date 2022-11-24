@@ -292,6 +292,18 @@ export const samlSchema: ISchema = {
             },
             column4: {
               type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                enabled: {
+                  type: 'boolean',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column5: {
+              type: 'void',
               title: '{{t("Actions")}}',
               'x-component': 'Table.Column',
               properties: {

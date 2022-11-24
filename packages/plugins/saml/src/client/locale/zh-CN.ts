@@ -5,6 +5,7 @@ export default {
   Submit: '提交',
   Actions: '操作',
   Title: '身份提供者名称',
+  Enable: '启用',
   'SAML manager': 'SAML 管理',
   'SAML Providers': 'SAML 身份提供者',
   'Redirect url': '重定向地址',
@@ -15,4 +16,6 @@ export default {
   'Entity id or issuer': 'IdP 唯一标识',
   'Login Url': '登录地址',
   'Public cert': '公钥',
+  'Delete provider': '删除身份提供者',
+  'Are you sure you want to delete it?': '你确定要删除它吗？',
 };

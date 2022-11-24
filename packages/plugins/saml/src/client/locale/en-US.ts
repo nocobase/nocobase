@@ -5,6 +5,7 @@ export default {
   Submit: 'Submit',
   Actions: 'Actions',
   Title: 'Title',
+  Enable: 'Enable',
   'SAML manager': 'SAML manager',
   'SAML Providers': 'SAML Providers',
   'Redirect url': 'Redirect url',
@@ -15,4 +16,5 @@ export default {
   'Entity id or issuer': 'Entity id or issuer',
   'Login Url': 'Login Url',
   'Public cert': 'Public cert',
+  'Are you sure you want to delete it?': 'Are you sure you want to delete it?',
 };

@@ -1,9 +1,10 @@
 import { ISchema, useForm } from '@formily/react';
-import { Tabs } from 'antd';
+import { Space, Tabs } from 'antd';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useHistory, useLocation } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
+import { SAMLList } from './SAMLList';
 import VerificationCode from './VerificationCode';
 
 const passwordForm: ISchema = {
@@ -47,7 +48,7 @@ const passwordForm: ISchema = {
   },
 };
 
-function useRedirect(next = '/admin') {
+export function useRedirect(next = '/admin') {
   const location = useLocation<any>();
   const history = useHistory();
   const redirect = location?.['query']?.redirect;
@@ -133,7 +134,7 @@ export const SigninPage = (props: SigninPageProps) => {
   const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   const { schema, components, scope } = props;
   return (
-    <div>
+    <Space direction="vertical" style={{ display: 'flex' }}>
       {smsAuthEnabled ? (
         <Tabs defaultActiveKey="password">
           <Tabs.TabPane tab={t('Sign in via account')} key="password">
@@ -157,11 +158,12 @@ export const SigninPage = (props: SigninPageProps) => {
           schema={schema || passwordForm}
         />
       )}
+      <SAMLList />
       {allowSignUp && (
         <div>
           <Link to="/signup">{t('Create an account')}</Link>
         </div>
       )}
-    </div>
+    </Space>
   );
 };
