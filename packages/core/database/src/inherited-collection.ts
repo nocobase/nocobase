@@ -53,9 +53,9 @@ export class InheritedCollection extends Collection {
   }
 
   protected setParentFields() {
-    for (const [name, field] of this.parentFields()) {
+    for (const [name, fieldOptions] of this.parentFields()) {
       this.setField(name, {
-        ...field.options,
+        ...fieldOptions,
         inherit: true,
       });
     }
@@ -70,15 +70,16 @@ export class InheritedCollection extends Collection {
     for (const parent of this.parents) {
       if (parent.isInherited()) {
         for (const [name, field] of (<InheritedCollection>parent).parentFields()) {
-          fields.set(name, field);
+          fields.set(name, field.options);
         }
       }
 
       const parentFields = parent.fields;
       for (const [name, field] of parentFields) {
-        fields.set(name, field);
+        fields.set(name, field.options);
       }
     }
+
     return fields;
   }
 

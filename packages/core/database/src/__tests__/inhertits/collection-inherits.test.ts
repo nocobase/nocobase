@@ -586,25 +586,20 @@ pgOnly()('collection inherits', () => {
       name: 'person',
       fields: [
         { name: 'name', type: 'string' },
-        { type: 'hasOne', name: 'profile' },
+        { type: 'hasOne', name: 'profile', foreignKey: 'personId' },
       ],
     });
 
-    db.collection({
+    const Profile = db.collection({
       name: 'profiles',
       fields: [
         { name: 'age', type: 'integer' },
         {
           type: 'belongsTo',
           name: 'person',
+          foreignKey: 'personId',
         },
       ],
-    });
-
-    db.collection({
-      name: 'teachers',
-      inherits: 'person',
-      fields: [{ name: 'salary', type: 'integer' }],
     });
 
     db.collection({
@@ -618,6 +613,12 @@ pgOnly()('collection inherits', () => {
           target: 'studentProfiles',
         },
       ],
+    });
+
+    db.collection({
+      name: 'teachers',
+      inherits: 'person',
+      fields: [{ name: 'salary', type: 'integer' }],
     });
 
     db.collection({

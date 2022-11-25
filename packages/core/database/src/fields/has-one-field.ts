@@ -166,6 +166,7 @@ export class HasOneField extends RelationField {
         if (field.name === foreignKey) {
           return true;
         }
+
         return field.type === 'belongsTo' && field.foreignKey === foreignKey;
       });
 

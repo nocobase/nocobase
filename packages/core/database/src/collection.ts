@@ -150,8 +150,13 @@ export class Collection<
   }
 
   private bindFieldEventListener() {
-    this.on('field.afterAdd', (field: Field) => field.bind());
-    this.on('field.afterRemove', (field: Field) => field.unbind());
+    this.on('field.afterAdd', (field: Field) => {
+      field.bind();
+    });
+
+    this.on('field.afterRemove', (field: Field) => {
+      field.unbind();
+    });
   }
 
   forEachField(callback: (field: Field) => void) {
@@ -268,9 +273,11 @@ export class Collection<
     const field = this.fields.get(name);
 
     const bool = this.fields.delete(name);
+
     if (bool) {
       this.emit('field.afterRemove', field);
     }
+
     return field as Field;
   }
 
