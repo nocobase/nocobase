@@ -1,0 +1,1 @@
+export { default } from '@nocobase/plugin-sample-custom-collection-template/client';

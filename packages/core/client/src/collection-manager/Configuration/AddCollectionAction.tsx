@@ -12,7 +12,7 @@ import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
-import { options } from './templates';
+import { templateOptions } from './templates';
 
 const getSchema = (schema, record: any, compile): ISchema => {
   if (!schema) {
@@ -166,8 +166,8 @@ export const AddCollectionAction = (props) => {
                 setVisible(true);
               }}
             >
-              {options.map((option) => {
-                return <Menu.Item key={option.key}>{compile(option.label)}</Menu.Item>;
+              {templateOptions().map((option) => {
+                return <Menu.Item key={option.name}>{compile(option.title)}</Menu.Item>;
               })}
             </Menu>
           }
