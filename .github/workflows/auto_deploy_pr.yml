@@ -1,9 +1,11 @@
-name: Auto Deploy
+name: Auto Deploy Pr
 # deploy_host
 # deploy_host_username
 # deploy_host_password
-# Create file in advance: /home/ecs-user/nocobase/pr-docker-compose-template.yml
+
 # https://docs.github.com/cn/actions/using-workflows/events-that-trigger-workflows#workflow_run
+env:
+  nocobase_deploy_sh: /home/ecs-user/nocobase/auto-deploy-pr/nocobase-deploy.sh
 on:
   workflow_run:
     workflows: [ "Aliyun Container Registry" ]
@@ -46,17 +48,9 @@ jobs:
       - name: ssh deploy
         if: ${{ env.pr_number }}
         uses: appleboy/ssh-action@master
-        env:
-          pr_compose_dir: pr-${{ env.pr_number }}
         with:
           host: ${{ secrets.deploy_host }}
           username: ${{ secrets.deploy_host_username }}
           password: ${{ secrets.deploy_host_password }}
           script: |
-            mkdir -p /home/ecs-user/nocobase/${{ env.pr_compose_dir }}
-            cp /home/ecs-user/nocobase/pr-docker-compose-template.yml /home/ecs-user/nocobase/${{ env.pr_compose_dir }}/docker-compose.yml
-            cd /home/ecs-user/nocobase/${{ env.pr_compose_dir }}
-            export pr_number=${{ env.pr_number }}
-            sudo docker compose down || true
-            sudo docker rmi registry.cn-hongkong.aliyuncs.com/nocobase/nocobase:pr-${{ env.pr_number }} || true
-            sudo docker compose up -d
+            ${{ env.nocobase_deploy_sh }} start ${{ env.pr_number }}
