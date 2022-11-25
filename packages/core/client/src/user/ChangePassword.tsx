@@ -30,6 +30,7 @@ const useSaveCurrentUserValues = () => {
       await api.resource('users').changePassword({
         values: form.values,
       });
+      await form.reset();
       setVisible(false);
     },
   };
