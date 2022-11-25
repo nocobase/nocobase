@@ -1,5 +1,5 @@
 import { SchemaKey } from '@formily/react';
-import { reduce ,unionBy} from 'lodash';
+import { reduce, unionBy } from 'lodash';
 import { useContext } from 'react';
 import { useAPIClient } from '../../api-client';
 import { CollectionContext } from '../context';
@@ -11,8 +11,8 @@ export const useCollection = () => {
   const api = useAPIClient();
   const resource = api?.resource(collection?.name);
   const { getInheritCollections, getCurrentCollectionFields } = useCollectionManager();
-  const currentFields = collection.fields;
-  const inheritKeys = getInheritCollections(collection.name);
+  const currentFields = collection?.fields || [];
+  const inheritKeys = getInheritCollections(collection?.name) || [];
   const inheritedFields = reduce(
     inheritKeys,
     (result, value) => {

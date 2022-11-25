@@ -340,6 +340,7 @@ export default {
   "End date field": "结束日期字段",
   "Navigate": "分页",
   "Title": "标题",
+  "Description": "描述",
   "Select view": "切换视图",
   "Reset": "重置",
   "Importable fields": "可导入字段",

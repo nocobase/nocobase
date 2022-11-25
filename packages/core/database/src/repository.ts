@@ -10,7 +10,7 @@ import {
   ModelCtor,
   Op,
   Transactionable,
-  UpdateOptions as SequelizeUpdateOptions,
+  UpdateOptions as SequelizeUpdateOptions
 } from 'sequelize';
 import { WhereOperators } from 'sequelize/types/lib/model';
 import { Collection } from './collection';
@@ -135,6 +135,10 @@ export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
   context?: any;
 }
 
+interface UpdateManyOptions extends UpdateOptions {
+  records: Values[];
+}
+
 interface RelatedQueryOptions {
   database: Database;
   field: RelationField;
@@ -210,12 +214,21 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       };
     }
 
-    const count = await this.collection.model.count({
+    const queryOptions: any = {
       ...options,
-      distinct: true,
+      distinct: Boolean(this.collection.model.primaryKeyAttribute),
+    };
+
+    if (queryOptions.include?.length === 0) {
+      delete queryOptions.include;
+    }
+
+    const count = await this.collection.model.count({
+      ...queryOptions,
       transaction,
     });
 
+    // @ts-ignore
     return count;
   }
 
@@ -409,7 +422,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   @transaction()
   @mustHaveFilter()
   async update(options: UpdateOptions & { forceUpdate?: boolean }) {
+    if (Array.isArray(options.values)) {
+      return this.updateMany({
+        ...options,
+        records: options.values,
+      });
+    }
     const transaction = await this.getTransaction(options);
+
     const guard = UpdateGuard.fromOptions(this.model, options);
 
     const values = guard.sanitize(options.values);
@@ -441,6 +461,24 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         });
         instance.clearChangedWithAssociations();
       }
+    }
+
+    return instances;
+  }
+
+  @transaction()
+  async updateMany(options: UpdateManyOptions) {
+    const transaction = await this.getTransaction(options);
+    const { records } = options;
+    const instances = [];
+
+    for (const values of records) {
+      const filterByTk = values[this.model.primaryKeyAttribute];
+      if (!filterByTk) {
+        throw new Error('filterByTk invalid');
+      }
+      const instance = await this.update({ values, filterByTk, transaction });
+      instances.push(instance);
     }
 
     return instances;

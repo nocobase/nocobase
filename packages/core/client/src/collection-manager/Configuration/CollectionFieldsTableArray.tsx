@@ -14,6 +14,8 @@ import {
   useSchemaInitializer,
   useRecord,
   useCompile,
+  SchemaComponent,
+  useCollection,
 } from '../..';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
@@ -191,60 +193,59 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
     });
   };
 
-  const getIsOverriding = (record) => {
-    const flag = currentFields.find((v) => {
-      return v.name === record.name;
-    });
-    return !flag;
-  };
 
   const expandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
-    const columns = useTableColumns();
-    if (inherits.includes(record.key)) {
-      columns.pop();
-      columns.push({
-        title: <RecursionField name={'column4'} schema={overridingSchema as Schema} onlyRenderSelf />,
-        dataIndex: 'column4',
-        key: 'column4',
-        render: (v, record) => {
-          const index = findIndex(field.value, record);
-          const flag = getIsOverriding(record);
-          //@ts-ignore
-          overridingSchema.properties.actions.properties.overriding['x-visible'] = flag;
-          return (
-            <RecordIndexProvider index={index}>
-              <RecordProvider record={record}>
-                <RecursionField schema={overridingSchema as Schema} name={index} onlyRenderProperties />
-              </RecordProvider>
-            </RecordIndexProvider>
-          );
-        },
-      });
+    if(!props.loading){
+      const columns = useTableColumns();
+      if (inherits.includes(record.key)) {
+        columns.pop();
+        columns.push({
+          title: <RecursionField name={'column4'} schema={overridingSchema as Schema} onlyRenderSelf />,
+          dataIndex: 'column4',
+          key: 'column4',
+          render: (v, record) => {
+            const index = findIndex(field.value, record);
+            return (
+              <RecordIndexProvider index={index}>
+                <RecordProvider record={record}>
+                  <SchemaComponent
+                    scope={{ currentCollection: name }}
+                    schema={overridingSchema as Schema}
+                    name={index}
+                    onlyRenderProperties
+                  />
+                </RecordProvider>
+              </RecordIndexProvider>
+            );
+          },
+        });
+      }
+      const restProps = {
+        rowSelection:
+          props.rowSelection && !inherits.includes(record.key)
+            ? {
+                type: 'checkbox',
+                selectedRowKeys,
+                onChange(selectedRowKeys: any[]) {
+                  setSelectedRowKeys(selectedRowKeys);
+                },
+                ...props.rowSelection,
+              }
+            : undefined,
+      };
+      return (
+        <Table
+          {...others}
+          {...restProps}
+          components={components}
+          showHeader={true}
+          columns={columns}
+          dataSource={record.data}
+          pagination={false}
+        />
+      );
     }
-    const restProps = {
-      rowSelection:
-        props.rowSelection && !inherits.includes(record.key)
-          ? {
-              type: 'checkbox',
-              selectedRowKeys,
-              onChange(selectedRowKeys: any[]) {
-                setSelectedRowKeys(selectedRowKeys);
-              },
-              ...props.rowSelection,
-            }
-          : undefined,
-    };
-    return (
-      <Table
-        {...others}
-        {...restProps}
-        components={components}
-        showHeader={true}
-        columns={columns}
-        dataSource={record.data}
-        pagination={false}
-      />
-    );
+   
   };
   return (
     <div

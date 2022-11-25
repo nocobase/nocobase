@@ -4,27 +4,50 @@ import { Field } from '.';
 
 export class InheritedCollection extends Collection {
   parents?: Collection[];
-
   constructor(options: CollectionOptions, context: CollectionContext) {
     if (!options.inherits) {
       throw new Error('InheritedCollection must have inherits option');
     }
 
+    options.inherits = lodash.castArray(options.inherits);
+
     super(options, context);
-    this.setParents(options.inherits);
-    this.context.database.inheritanceMap.setInheritance(this.name, options.inherits);
+
+    try {
+      this.bindParents();
+    } catch (err) {
+      if (err instanceof ParentCollectionNotFound) {
+        const listener = (collection) => {
+          if (
+            options.inherits.includes(collection.name) &&
+            lodash.every(options.inherits, (name) => this.context.database.collections.has(name))
+          ) {
+            this.bindParents();
+            this.db.removeListener('afterDefineCollection', listener);
+          }
+        };
+
+        this.db.addListener('afterDefineCollection', listener);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  protected bindParents() {
+    this.setParents(this.options.inherits);
+    this.context.database.inheritanceMap.setInheritance(this.name, this.options.inherits);
     this.setParentFields();
   }
 
   protected setParents(inherits: string | string[]) {
     this.parents = lodash.castArray(inherits).map((name) => {
-      const parentCollection = this.context.database.collections.get(name);
-
-      if (!parentCollection) {
-        throw new Error(`Can't find parent collection ${name} of ${this.name}`);
+      const existCollection = this.context.database.collections.get(name);
+      if (!existCollection) {
+        throw new ParentCollectionNotFound(name);
       }
 
-      return parentCollection;
+      return existCollection;
     });
   }
 
@@ -77,5 +100,11 @@ export class InheritedCollection extends Collection {
 
   isInherited() {
     return true;
+  }
+}
+
+class ParentCollectionNotFound extends Error {
+  constructor(name: string) {
+    super(`parent collection ${name} not found`);
   }
 }

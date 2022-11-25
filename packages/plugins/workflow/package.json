@@ -18,9 +18,12 @@
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
     "json-templates": "^4.2.0",
-    "react-js-cron": "^1.4.0"
+    "react-js-cron": "^1.4.0",
+    "ejs": "^3.1.8",
+    "react-copy-to-clipboard": "^5.1.0"
   },
   "devDependencies": {
+    "@types/ejs": "^3.1.1",
     "@nocobase/test": "0.8.0-alpha.13"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
