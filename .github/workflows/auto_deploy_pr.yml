@@ -53,4 +53,4 @@ jobs:
           username: ${{ secrets.deploy_host_username }}
           password: ${{ secrets.deploy_host_password }}
           script: |
-            ${{ env.nocobase_deploy_sh }} start ${{ env.pr_number }}
+            ${{ env.nocobase_deploy_sh }} up ${{ env.pr_number }}
