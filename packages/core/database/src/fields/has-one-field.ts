@@ -159,7 +159,7 @@ export class HasOneField extends RelationField {
     // 如果关系表内没有显式的创建外键字段，删除关系时，外键也删除掉
     const tcoll = database.collections.get(this.target);
 
-    if (tcoll) {
+    if (tcoll && !this.options.inherit) {
       const foreignKey = this.options.foreignKey;
 
       const field = tcoll.findField((field) => {
