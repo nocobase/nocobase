@@ -78,7 +78,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: record }), {
+  const result = useRequest(() => Promise.resolve({ data: { autoGenId: true, ...record } }), {
     ...options,
     manual: true,
   });
@@ -128,7 +128,7 @@ export const EditCollectionAction = (props) => {
       <ActionContext.Provider value={{ visible, setVisible }}>
         <a
           onClick={async () => {
-            const templateConf = getTemplate(record.template||'listCollection');
+            const templateConf = getTemplate(record.template || 'listCollection');
             const schema = getSchema(
               {
                 ...templateConf,
