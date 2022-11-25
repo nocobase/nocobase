@@ -15,6 +15,69 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should not throw error when fields have same type with parent', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'date' }],
+    });
+
+    expect(() => {
+      db.collection({
+        name: 'child',
+        inherits: ['parent'],
+        fields: [
+          {
+            name: 'field1',
+            type: 'date',
+            otherOptions: true,
+          },
+        ],
+      });
+    }).not.toThrowError();
+  });
+
+  it('should throw error when fields conflict with parent ', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'string' }],
+    });
+
+    expect(() => {
+      db.collection({
+        name: 'child',
+        inherits: ['parent'],
+        fields: [{ name: 'field1', type: 'integer' }],
+      });
+    }).toThrowError();
+
+    await db.sync();
+  });
+
+  it('should not conflict when fields have same DateType', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'string' }],
+    });
+
+    expect(() => {
+      db.collection({
+        name: 'child',
+        inherits: ['parent'],
+        fields: [
+          {
+            name: 'field1',
+            type: 'sequence',
+            patterns: [
+              {
+                type: 'integer',
+              },
+            ],
+          },
+        ],
+      });
+    }).not.toThrowError();
+  });
+
   it('should create inherits with lazy parents', async () => {
     const child = db.collection({
       name: 'child',

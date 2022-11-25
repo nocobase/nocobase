@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -79,7 +79,10 @@ export class Collection<
     this.db.modelCollection.set(this.model, this);
     this.db.tableNameCollectionMap.set(this.model.tableName, this);
 
-    this.setFields(options.fields);
+    if (!options.inherits) {
+      this.setFields(options.fields);
+    }
+
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
   }
@@ -186,7 +189,7 @@ export class Collection<
 
     const oldField = this.fields.get(name);
 
-    if (oldField && oldField.options.inherit && options.type != oldField.options.type) {
+    if (oldField && oldField.options.inherit && field.typeToString() != oldField.typeToString()) {
       throw new Error(
         `Field type conflict: cannot set "${name}" on "${this.name}" to ${options.type}, parent "${name}" type is ${oldField.options.type}`,
       );
@@ -196,6 +199,7 @@ export class Collection<
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
 
+    // refresh children models
     if (this.isParent()) {
       for (const child of this.context.database.inheritanceMap.getChildren(this.name, {
         deep: false,

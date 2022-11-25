@@ -74,6 +74,10 @@ export interface HasOneFieldOptions extends HasOneOptions {
 }
 
 export class HasOneField extends RelationField {
+  get dataType(): any {
+    return 'HasOne';
+  }
+
   get target() {
     const { target, name } = this.options;
     return target || Utils.pluralize(name);

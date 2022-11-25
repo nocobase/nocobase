@@ -36,13 +36,14 @@ export class InheritedCollection extends Collection {
 
   protected bindParents() {
     this.setParents(this.options.inherits);
-    this.context.database.inheritanceMap.setInheritance(this.name, this.options.inherits);
+    this.db.inheritanceMap.setInheritance(this.name, this.options.inherits);
     this.setParentFields();
+    this.setFields(this.options.fields, false);
   }
 
   protected setParents(inherits: string | string[]) {
     this.parents = lodash.castArray(inherits).map((name) => {
-      const existCollection = this.context.database.collections.get(name);
+      const existCollection = this.db.collections.get(name);
       if (!existCollection) {
         throw new ParentCollectionNotFound(name);
       }
@@ -53,12 +54,10 @@ export class InheritedCollection extends Collection {
 
   protected setParentFields() {
     for (const [name, field] of this.parentFields()) {
-      if (!this.hasField(name)) {
-        this.setField(name, {
-          ...field.options,
-          inherit: true,
-        });
-      }
+      this.setField(name, {
+        ...field.options,
+        inherit: true,
+      });
     }
   }
 
