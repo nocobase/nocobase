@@ -130,7 +130,7 @@ export const defaultCollectionOptions = {
         },
         otherwise: {
           schema: {
-            'x-disabled': false,
+            'x-disabled': '{{!createOnly}}',
           },
         },
       },

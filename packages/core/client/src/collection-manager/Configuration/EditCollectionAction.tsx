@@ -151,6 +151,7 @@ export const EditCollectionAction = (props) => {
             useValuesFromRecord,
             useUpdateCollectionActionAndRefreshCM,
             useCancelAction,
+            createOnly:false,
             ...scope,
           }}
         />
