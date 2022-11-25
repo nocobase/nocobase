@@ -149,7 +149,7 @@ export const AddFieldAction = (props) => {
   const compile = useCompile();
   const { t } = useTranslation();
   const getFieldOptions = () => {
-    const { exclude, include } = getTemplate(record.template)||{}
+    const { exclude, include } = getTemplate(record.template) || {};
     const optionArr = [];
     options.forEach((v) => {
       if (v.key === 'systemInfo') {
@@ -157,20 +157,9 @@ export const AddFieldAction = (props) => {
           ...v,
           children: v.children.filter((v) => {
             if (v.value === 'id') {
-              return record['autoGenId'];
+              return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
             } else {
-              return record[v.value];
-            }
-          }),
-        });
-      } else if (v.key === 'relation') {
-        optionArr.push({
-          ...v,
-          children: v.children.filter((v) => {
-            if (!record['autoGenId']) {
-              return ['obo', 'm2o'].includes(v.value) 
-            } else {
-              return true;
+              return typeof record[v.value] === 'boolean' ? record[v.value] : true;
             }
           }),
         });

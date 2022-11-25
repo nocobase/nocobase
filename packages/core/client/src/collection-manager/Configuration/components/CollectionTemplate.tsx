@@ -10,7 +10,5 @@ export const CollectionTemplate = observer((props: any) => {
   const compile = useCompile();
   const schema = getTemplate(value);
 
-  if (!schema) return null;
-
-  return <Tag>{compile(schema.title)}</Tag>;
+  return <Tag>{compile(schema?.title||'{{t("List collection")}}')}</Tag>;
 });

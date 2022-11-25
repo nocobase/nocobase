@@ -128,7 +128,7 @@ export const EditCollectionAction = (props) => {
       <ActionContext.Provider value={{ visible, setVisible }}>
         <a
           onClick={async () => {
-            const templateConf = getTemplate(record.template);
+            const templateConf = getTemplate(record.template||'listCollection');
             const schema = getSchema(
               {
                 ...templateConf,

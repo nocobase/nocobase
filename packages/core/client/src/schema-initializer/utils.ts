@@ -524,7 +524,7 @@ export const useCollectionDataSourceItems = (componentName) => {
           const b = !value || selected.includes(item.name);
           if (item.inherit) {
             return false;
-          } else if (!item.fields.find((v) => v.name === 'id')) {
+          } else if (!item.fields.find((v) => v.primaryKey)) {
             return false;
           } else {
             return b && !(item?.isThrough && item?.autoCreate);
