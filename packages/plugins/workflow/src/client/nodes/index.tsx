@@ -148,7 +148,7 @@ export function RemoveButton() {
 
     const hasBranches = !nodes.find(item => item.upstream === current && item.branchIndex != null);
     const message = hasBranches
-      ? lang('Are you sure you want to delete it?')
+      ? t('Are you sure you want to delete it?')
       : lang('This node contains branches, deleting will also be preformed to them, are you sure?');
 
     Modal.confirm({
