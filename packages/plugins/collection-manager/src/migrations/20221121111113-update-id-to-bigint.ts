@@ -32,19 +32,6 @@ export default class UpdateIdToBigIntMigrator extends Migration {
     const updateToBigInt = async (model, fieldName) => {
       let sql;
 
-      const fieldRecord = await db.getCollection('fields').repository.findOne({
-        filter: {
-          collectionName: model.name,
-          name: fieldName,
-          type: 'integer',
-        },
-      });
-
-      if (fieldRecord) {
-        fieldRecord.set('type', 'bigInt');
-        await fieldRecord.save();
-      }
-
       const tableName = model.tableName;
 
       const collection = db.modelCollection.get(model);
