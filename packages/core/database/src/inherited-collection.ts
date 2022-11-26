@@ -36,6 +36,7 @@ export class InheritedCollection extends Collection {
 
   protected bindParents() {
     this.setParents(this.options.inherits);
+    this.db.inheritanceMap.setInheritance(this.name, this.options.inherits);
     this.setParentFields();
     this.setFields(this.options.fields, false);
   }
