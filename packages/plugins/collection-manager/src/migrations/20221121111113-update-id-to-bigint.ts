@@ -32,9 +32,13 @@ export default class UpdateIdToBigIntMigrator extends Migration {
     const updateToBigInt = async (model, fieldName) => {
       let sql;
 
+      const tableName = model.tableName;
+
+      const collection = db.modelCollection.get(model);
+
       const fieldRecord = await db.getCollection('fields').repository.findOne({
         filter: {
-          collectionName: model.name,
+          collectionName: collection.name,
           name: fieldName,
           type: 'integer',
         },
@@ -44,8 +48,6 @@ export default class UpdateIdToBigIntMigrator extends Migration {
         fieldRecord.set('type', 'bigInt');
         await fieldRecord.save();
       }
-
-      const tableName = model.tableName;
 
       if (model.rawAttributes[fieldName].type instanceof DataTypes.INTEGER) {
         if (db.inDialect('postgres')) {
@@ -89,6 +91,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
             await this.sequelize.query(`ALTER SEQUENCE ${sequenceName} AS BIGINT;`, {});
           }
         }
+
         this.app.log.info(`updated ${tableName}.${fieldName} to BIGINT`, tableName, fieldName);
       }
     };

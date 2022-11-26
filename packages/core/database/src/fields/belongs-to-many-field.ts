@@ -5,6 +5,10 @@ import { checkIdentifier } from '../utils';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 
 export class BelongsToManyField extends RelationField {
+  get dataType() {
+    return 'BelongsToMany';
+  }
+
   get through() {
     return (
       this.options.through ||
