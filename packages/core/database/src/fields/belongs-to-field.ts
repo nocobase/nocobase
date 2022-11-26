@@ -5,6 +5,10 @@ import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
 
 export class BelongsToField extends RelationField {
+  get dataType() {
+    return 'BelongsTo';
+  }
+
   static type = 'belongsTo';
 
   get target() {
