@@ -270,7 +270,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.on('afterDefineCollection', (collection) => {
       if (collection.options.inherits) {
-        this.inheritanceMap.setInheritance(collection, collection.options.inherits);
+        this.inheritanceMap.setInheritance(collection.name, collection.options.inherits);
       }
     });
 
