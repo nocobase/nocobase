@@ -20,7 +20,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
     return;
   }
 
-  const properties = cloneDeep(schema.properties) as any;
+  const properties = cloneDeep(schema.configurableProperties) as any;
 
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
