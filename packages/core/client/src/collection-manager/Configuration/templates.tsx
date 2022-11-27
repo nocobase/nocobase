@@ -5,13 +5,13 @@ export const templates = new Map<string, ISchema>();
 
 const collectionTemplates: any = {};
 
-export function registerTemplace(key: string, schema: any) {
+export function registerTemplate(key: string, schema: any) {
   collectionTemplates[key] = schema;
 }
 
 Object.keys(types).forEach((type) => {
   const schema = types[type];
-  registerTemplace(schema.name || 'others', { order: 0, ...schema });
+  registerTemplate(schema.name || 'others', { order: 0, ...schema });
 });
 export const templateOptions = () =>
   Object.keys(collectionTemplates)

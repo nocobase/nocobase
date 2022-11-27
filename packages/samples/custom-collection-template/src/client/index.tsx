@@ -1,4 +1,4 @@
-import { registerTemplace } from '@nocobase/client';
+import { registerTemplate } from '@nocobase/client';
 import { SchemaComponentOptions, SchemaInitializerContext } from '@nocobase/client';
 import React, { useContext } from 'react';
 
@@ -132,14 +132,8 @@ const myCollectionTemplate = {
   exclude: ['linkTo', 'o2o'],
 };
 
+registerTemplate('myCollection', myCollectionTemplate);
+
 export default React.memo((props) => {
-  const items = useContext(SchemaInitializerContext);
-
-  registerTemplace('myCollection', myCollectionTemplate);
-
-  return (
-    <SchemaComponentOptions>
-      <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
-    </SchemaComponentOptions>
-  );
+  return <>{props.children}</>;
 });
