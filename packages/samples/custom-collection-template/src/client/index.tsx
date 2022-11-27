@@ -1,9 +1,8 @@
-import { registerTemplate } from '@nocobase/client';
+import { registerTemplate, ICollectionTemplate } from '@nocobase/client';
 import React from 'react';
 
-const myCollectionTemplate = {
+const myCollectionTemplate: ICollectionTemplate = {
   name: 'myCollection',
-  type: 'object',
   title: '{{t("Custom template")}}',
   order: 6,
   color: 'blue',

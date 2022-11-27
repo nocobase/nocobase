@@ -13,4 +13,5 @@ export * as interfacesProperties from './interfaces/properties';
 export * from './interfaces/types';
 export * from './ResourceActionProvider';
 export * from './types';
+export * from './templates/types'
 
