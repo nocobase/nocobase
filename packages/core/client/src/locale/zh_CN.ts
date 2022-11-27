@@ -125,6 +125,8 @@ export default {
   "UpdatedAt":"记录最后更新时间",
   "Sortable":"可排序",
   "Collection template":"数据表模板",
+  "Calendar collection":"日历数据表",
+  "General collection":"普通数据表",
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头。",
   "Storage type": "存储类型",
   "Edit": "编辑",

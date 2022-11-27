@@ -115,6 +115,8 @@ export default {
   "UpdatedAt":"レコード最終更新時間",
   "Sortable":"ソート可能",
   "Collection template":"データテーブルテンプレート",
+  "Calendar collection":"カレンダデータテーブル",
+  "General collection":"一般データテーブル",
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "ランダムに生成され、変更可能です。 アルファベット、数字、アンダースコアをサポートし、アルファベットから始まる必要があります。",
   "Storage type": "ストレージタイプ",
   "Edit": "編集",

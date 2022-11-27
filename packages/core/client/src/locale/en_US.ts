@@ -121,6 +121,8 @@ export default {
   "UpdatedAt":"Recording a row's last updated user",
   "Sortable":"Sortable",
   "Collection template":"Collection template",
+  "Calendar collection":"Calendar collection",
+  "General collection":"General collection",
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.",
   "Storage type": "Storage type",
   "Edit": "Edit",
