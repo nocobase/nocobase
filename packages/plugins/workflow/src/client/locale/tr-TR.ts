@@ -46,7 +46,7 @@ export default {
   "Advanced": "Gelişmiş",
   "Advanced type": "Gelişmiş",
   "End": "Son",
-  "Trigger context": "Tetikleyici bağlamı",
+  "Trigger variables": "Tetikleyici bağlamı",
   "Node result": "Düğüm sonucu",
   "Constant": "Devamlı",
   "Boolean": "Boolean",
