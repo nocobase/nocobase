@@ -93,14 +93,97 @@ const getSchema = (schema, record: any, compile): ISchema => {
   };
 };
 
-const useDefaltCollectionFields = (fields, values) => {
-  return fields?.filter((v) => {
-    if (v.name === 'id') {
-      return values['autoGenId'];
-    } else {
-      return typeof values[v.name] === 'boolean' ? values[v.name] : true;
+const useDefaultCollectionFields = (fields, options) => {
+  let defaults = [];
+  const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = options;
+  if (autoGenId) {
+    const pk = fields.find((f) => f.primaryKey);
+    if (!pk) {
+      defaults.push({
+        name: 'id',
+        type: 'bigInt',
+        autoIncrement: true,
+        primaryKey: true,
+        allowNull: false,
+        uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
+        interface: 'id',
+      });
     }
-  });
+  }
+  if (createdAt) {
+    defaults.push({
+      name: 'createdAt',
+      interface: 'createdAt',
+      type: 'date',
+      field: 'createdAt',
+      uiSchema: {
+        type: 'datetime',
+        title: '{{t("Created at")}}',
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    });
+  }
+  if (createdBy) {
+    defaults.push({
+      name: 'createdBy',
+      interface: 'createdBy',
+      type: 'belongsTo',
+      target: 'users',
+      foreignKey: 'createdById',
+      uiSchema: {
+        type: 'object',
+        title: '{{t("Created by")}}',
+        'x-component': 'RecordPicker',
+        'x-component-props': {
+          fieldNames: {
+            value: 'id',
+            label: 'nickname',
+          },
+        },
+        'x-read-pretty': true,
+      },
+    });
+  }
+  if (updatedAt) {
+    defaults.push({
+      type: 'date',
+      field: 'updatedAt',
+      name: 'updatedAt',
+      interface: 'updatedAt',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Last updated at")}}',
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    });
+  }
+  if (updatedBy) {
+    defaults.push({
+      type: 'belongsTo',
+      target: 'users',
+      foreignKey: 'updatedById',
+      name: 'updatedBy',
+      interface: 'updatedBy',
+      uiSchema: {
+        type: 'object',
+        title: '{{t("Last updated by")}}',
+        'x-component': 'RecordPicker',
+        'x-component-props': {
+          fieldNames: {
+            value: 'id',
+            label: 'nickname',
+          },
+        },
+        'x-read-pretty': true,
+      },
+    });
+  }
+  // 其他
+  return defaults.concat(fields);
 };
 
 const useCreateCollection = (defaultFields) => {
@@ -113,7 +196,8 @@ const useCreateCollection = (defaultFields) => {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
-      const fields = useDefaltCollectionFields(defaultFields, values);
+      const fields = useDefaultCollectionFields(defaultFields, values);
+      console.log(fields);
       if (values.autoCreateReverseField) {
       } else {
         delete values.reverseField;

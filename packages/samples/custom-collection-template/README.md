@@ -3,13 +3,13 @@
 ## Register
 
 ```ts
-yarn pm add custom-collection-template
+yarn pm add sample-custom-collection-template
 ```
 
 ## Activate
 
 ```bash
-yarn pm enable scustom-collection-template
+yarn pm enable sample-custom-collection-template
 ```
 
 ## Launch the app

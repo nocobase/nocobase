@@ -1,4 +1,4 @@
-import { defaultProps, defaultSystemFields, defaultCollectionOptions } from './properties';
+import { defaultProps, defaultCollectionOptions } from './properties';
 import { ICollectionTemplate } from './types';
 
 export const calendarCollection: ICollectionTemplate = {
@@ -8,7 +8,6 @@ export const calendarCollection: ICollectionTemplate = {
   order: 2,
   color: 'orange',
   presetFields: [
-    ...defaultSystemFields,
     {
       name: 'cron',
       type: 'string',

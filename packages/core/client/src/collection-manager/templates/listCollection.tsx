@@ -1,4 +1,4 @@
-import { defaultProps, defaultSystemFields, defaultCollectionOptions } from './properties';
+import { defaultProps, defaultCollectionOptions } from './properties';
 import { ICollectionTemplate } from './types';
 
 export const listCollection: ICollectionTemplate = {
@@ -7,7 +7,7 @@ export const listCollection: ICollectionTemplate = {
   title: '{{t("List collection")}}',
   order: 1,
   color: 'blue',
-  presetFields: [...defaultSystemFields],
+  presetFields: [],
   properties: {
     ...defaultProps,
     ...defaultCollectionOptions,
