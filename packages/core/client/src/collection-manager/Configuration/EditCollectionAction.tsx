@@ -18,7 +18,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
   if (!schema) {
     return;
   }
-  const properties = (cloneDeep(schema.properties) as any) || {
+  const properties = (cloneDeep(schema.configurableProperties) as any) || {
     title: {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
