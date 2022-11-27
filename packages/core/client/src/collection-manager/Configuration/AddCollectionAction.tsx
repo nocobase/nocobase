@@ -83,7 +83,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: () => useCreateCollection(schema.presetFields),
+                  useAction: () => useCreateCollection(),
                 },
               },
             },
@@ -94,11 +94,11 @@ const getSchema = (schema, record: any, compile): ISchema => {
   };
 };
 
-const useDefaultCollectionFields = (fields, options) => {
-  let defaults = [];
-  const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = options;
+const useDefaultCollectionFields = (values) => {
+  let defaults = values.fields ? [...values.fields] : [];
+  const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = values;
   if (autoGenId) {
-    const pk = fields.find((f) => f.primaryKey);
+    const pk = values.fields.find((f) => f.primaryKey);
     if (!pk) {
       defaults.push({
         name: 'id',
@@ -184,10 +184,10 @@ const useDefaultCollectionFields = (fields, options) => {
     });
   }
   // 其他
-  return defaults.concat(fields);
+  return defaults;
 };
 
-const useCreateCollection = (defaultFields) => {
+const useCreateCollection = () => {
   const form = useForm();
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
@@ -197,7 +197,7 @@ const useCreateCollection = (defaultFields) => {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
-      const fields = useDefaultCollectionFields(defaultFields, values);
+      const fields = useDefaultCollectionFields(values);
       console.log(fields);
       if (values.autoCreateReverseField) {
       } else {
@@ -259,7 +259,7 @@ export const AddCollectionAction = (props) => {
         >
           {children || (
             <Button icon={<PlusOutlined />} type={'primary'}>
-              {t('Create collection')}{' '}<DownOutlined />
+              {t('Create collection')} <DownOutlined />
             </Button>
           )}
         </Dropdown>

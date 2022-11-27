@@ -149,9 +149,8 @@ export const AddFieldAction = (props) => {
   const compile = useCompile();
   const { t } = useTranslation();
   const getFieldOptions = () => {
-    const {
-      availableFieldInterfaces: { exclude, include },
-    } = getTemplate(record.template) || {};
+    const { availableFieldInterfaces } = getTemplate(record.template) || {};
+    const { exclude, include } = availableFieldInterfaces || {};
     const optionArr = [];
     options.forEach((v) => {
       if (v.key === 'systemInfo') {
