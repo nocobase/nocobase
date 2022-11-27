@@ -1,11 +1,10 @@
 import { registerTemplate } from '@nocobase/client';
-import { SchemaComponentOptions, SchemaInitializerContext } from '@nocobase/client';
-import React, { useContext } from 'react';
+import React from 'react';
 
 const myCollectionTemplate = {
   name: 'myCollection',
   type: 'object',
-  title: '{{t("Customer collection")}}',
+  title: '{{t("Custom template")}}',
   order: 6,
   color: 'blue',
   presetFields: [

@@ -1,8 +1,8 @@
 import { ISchema, Schema } from '@formily/react';
 import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
-import { collectionFieldSchema } from './collectionFields';
 import { CollectionTemplate } from '../components/CollectionTemplate';
+import { collectionFieldSchema } from './collectionFields';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
@@ -122,6 +122,7 @@ export const collectionSchema: ISchema = {
               title: '{{ t("Delete") }}',
               'x-component': 'Action',
               'x-component-props': {
+                icon: 'DeleteOutlined',
                 useAction: '{{ cm.useBulkDestroyActionAndRefreshCM }}',
                 confirm: {
                   title: "{{t('Delete record')}}",

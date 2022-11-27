@@ -1,3 +1,4 @@
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -256,7 +257,11 @@ export const AddCollectionAction = (props) => {
             </Menu>
           }
         >
-          {children || <Button type={'primary'}>{t('Create collection')}</Button>}
+          {children || (
+            <Button icon={<PlusOutlined />} type={'primary'}>
+              {t('Create collection')}{' '}<DownOutlined />
+            </Button>
+          )}
         </Dropdown>
         <SchemaComponent
           schema={schema}

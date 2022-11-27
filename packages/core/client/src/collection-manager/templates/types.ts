@@ -1,7 +1,5 @@
 import { ISchema } from '@formily/react';
 
-
-
 export interface ICollectionTemplate extends ISchema {
   name:string;
   order?: number;
