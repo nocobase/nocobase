@@ -7,17 +7,19 @@ const myCollectionTemplate = {
   title: '{{t("Custom template")}}',
   order: 6,
   color: 'blue',
-  presetFields: [
-    {
-      name: 'uuid',
-      type: 'string',
-      primaryKey: true,
-      allowNull: false,
-      uiSchema: { type: 'number', title: '{{t("UUID")}}', 'x-component': 'Input', 'x-read-pretty': true },
-      interface: 'input',
-    },
-  ],
-  properties: {
+  default: {
+    fields: [
+      {
+        name: 'uuid',
+        type: 'string',
+        primaryKey: true,
+        allowNull: false,
+        uiSchema: { type: 'number', title: '{{t("UUID")}}', 'x-component': 'Input', 'x-read-pretty': true },
+        interface: 'input',
+      },
+    ],
+  },
+  configurableProperties: {
     title: {
       type: 'string',
       title: '{{ t("Collection display name") }}',
@@ -61,10 +63,9 @@ const myCollectionTemplate = {
       'x-disabled': '{{ !createOnly }}',
     },
   },
-  //包含的interface类型
-  include: [],
-  // 排除的interface类型
-  exclude: ['linkTo', 'o2o'],
+  availableFieldInterfaces: {
+    exclude: ['linkTo', 'o2o'],
+  },
 };
 
 registerTemplate('myCollection', myCollectionTemplate);
