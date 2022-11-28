@@ -110,7 +110,7 @@ export class Designable {
 
   loadAPIClientEvents() {
     const { refresh: refreshDn, api, t = translate, refreshMI } = this.options;
-    const isMenu = ['Menu.SubMenu', 'Menu'].includes(this.current?.['x-component']);
+    const isMenu = ['Menu.SubMenu', 'Menu','Menu.Item'].includes(this.current?.['x-component']);
     const refresh = async () => {
       await refreshDn();
       if (isMenu) {
@@ -201,6 +201,7 @@ export class Designable {
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('remove', async ({ removed }) => {
+      console.log(removed)
       let schemas = [];
       if (removed?.['x-component'] === 'Grid.Col') {
         schemas = updateColumnSize(removed.parent);

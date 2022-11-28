@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
+import { uniq } from 'lodash';
 import { useCompile } from '../../schema-component';
 import { useMenuItems } from './MenuItemsProvider';
 
@@ -67,23 +68,21 @@ export const MenuConfigure = () => {
     const parentUids = getParentUids(items, (data) => data.uid === schema.uid);
     const childrenUids = getChildrenUids(schema?.children, []);
     if (checked) {
-      const totalUids=childrenUids.concat(schema.uid);
-      const newUids=uids.filter((v)=>!totalUids.includes(v.uid));
+      const totalUids = childrenUids.concat(schema.uid);
+      const newUids = uids.filter((v) => !totalUids.includes(v));
       setUids([...newUids]);
       await resource.remove({
         values: totalUids,
       });
-
     } else {
-      const totalUids=childrenUids.concat(parentUids)
+      const totalUids = childrenUids.concat(parentUids);
       setUids((prev) => {
-        return [...prev, ...totalUids];
+        return uniq([...prev, ...totalUids]);
       });
       await resource.add({
         values: totalUids,
       });
     }
-
     message.success(t('Saved successfully'));
   };
   return (
@@ -118,7 +117,7 @@ export const MenuConfigure = () => {
                   refresh();
                   message.success(t('Saved successfully'));
                 }}
-              />{' '}
+              />
               {t('Accessible')}
             </>
           ),
