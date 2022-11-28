@@ -14,7 +14,6 @@ import initProviders, { Provider } from './providers';
 
 export interface Interceptor {
   manual?: boolean;
-  provider: string;
   expiresIn?: number;
   getReceiver(ctx): string;
   getCode?(ctx): string;
@@ -56,7 +55,7 @@ export default class VerificationPlugin extends Plugin {
     });
 
     if (!item) {
-      return context.throw(400, { code: 'InvalidSMSCode', message: 'verify by sms code failed' });
+      return context.throw(400, { code: 'InvalidVerificationCode', message: context.t('Verification code is invalid', { ns: namespace }) });
     }
 
     // TODO: code should be removed if exists in values
@@ -103,6 +102,7 @@ export default class VerificationPlugin extends Plugin {
             sign: INIT_ALI_SMS_VERIFY_CODE_SIGN,
             template: INIT_ALI_SMS_VERIFY_CODE_TEMPLATE,
           },
+          default: true
         },
       });
     }
@@ -133,5 +133,15 @@ export default class VerificationPlugin extends Plugin {
     });
 
     app.acl.allow('verifications', 'create');
+    app.acl.allow('verifications_providers', '*', 'allowConfigure');
+  }
+
+  async getDefault() {
+    const providerRepo = this.db.getRepository('verifications_providers');
+    return providerRepo.findOne({
+      filter: {
+        default: true,
+      }
+    });
   }
 }
