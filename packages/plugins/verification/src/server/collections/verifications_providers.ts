@@ -17,6 +17,10 @@ export default {
     {
       type: 'jsonb',
       name: 'options'
+    },
+    {
+      type: 'radio',
+      name: 'default'
     }
   ]
 };
