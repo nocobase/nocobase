@@ -114,7 +114,7 @@ export const AuditLogs: any = () => {
     title: '{{t("Title")}}',
     properties: {
       title: {
-        'x-component': 'Input',
+        'x-component': 'RichText',
         'x-read-pretty': true,
       },
     },
@@ -304,6 +304,25 @@ export const AuditLogs: any = () => {
                                                                 type: 'string',
                                                                 title: '{{t("User")}}',
                                                                 'x-component': 'Username',
+                                                                'x-decorator': 'FormItem',
+                                                                'x-read-pretty': true,
+                                                              },
+                                                            },
+                                                          },
+                                                        },
+                                                      },
+                                                      row41: {
+                                                        type: 'void',
+                                                        'x-component': 'Grid.Row',
+                                                        properties: {
+                                                          col411: {
+                                                            type: 'void',
+                                                            'x-component': 'Grid.Col',
+                                                            properties: {
+                                                              title: {
+                                                                type: 'string',
+                                                                title: '{{t("Title")}}',
+                                                                'x-component': 'RichText',
                                                                 'x-decorator': 'FormItem',
                                                                 'x-read-pretty': true,
                                                               },

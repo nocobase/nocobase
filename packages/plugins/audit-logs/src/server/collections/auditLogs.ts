@@ -24,7 +24,7 @@ export default defineCollection({
       name: 'collectionName',
     },
     {
-      type: 'string',
+      type: 'text',
       name: 'title',
     },
     {
