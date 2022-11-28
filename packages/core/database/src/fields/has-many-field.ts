@@ -5,7 +5,7 @@ import {
   ForeignKeyOptions,
   HasManyOptions,
   HasManyOptions as SequelizeHasManyOptions,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Reference } from '../features/ReferencesMap';
@@ -74,6 +74,10 @@ export interface HasManyFieldOptions extends HasManyOptions {
 }
 
 export class HasManyField extends RelationField {
+  get dataType(): any {
+    return 'HasMany';
+  }
+
   get foreignKey() {
     if (this.options.foreignKey) {
       return this.options.foreignKey;

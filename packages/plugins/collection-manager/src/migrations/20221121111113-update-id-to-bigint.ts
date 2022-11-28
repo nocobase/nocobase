@@ -1,5 +1,5 @@
-import { Migration } from '@nocobase/server';
 import { DataTypes } from '@nocobase/database';
+import { Migration } from '@nocobase/server';
 
 export default class UpdateIdToBigIntMigrator extends Migration {
   async up() {
@@ -34,6 +34,21 @@ export default class UpdateIdToBigIntMigrator extends Migration {
 
       const tableName = model.tableName;
 
+      const collection = db.modelCollection.get(model);
+
+      const fieldRecord = await db.getCollection('fields').repository.findOne({
+        filter: {
+          collectionName: collection.name,
+          name: fieldName,
+          type: 'integer',
+        },
+      });
+
+      if (fieldRecord) {
+        fieldRecord.set('type', 'bigInt');
+        await fieldRecord.save();
+      }
+
       if (model.rawAttributes[fieldName].type instanceof DataTypes.INTEGER) {
         if (db.inDialect('postgres')) {
           sql = `ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`;
@@ -67,20 +82,6 @@ export default class UpdateIdToBigIntMigrator extends Migration {
           throw err;
         }
 
-        const collection = db.modelCollection.get(model);
-        const fieldRecord = await db.getCollection('fields').repository.findOne({
-          filter: {
-            collectionName: collection.name,
-            name: fieldName,
-            type: 'integer',
-          },
-        });
-
-        if (fieldRecord) {
-          fieldRecord.set('type', 'bigInt');
-          await fieldRecord.save();
-        }
-
         if (db.inDialect('postgres')) {
           const sequenceQuery = `SELECT pg_get_serial_sequence('"${model.tableName}"', '${fieldName}');`;
           const [result] = await this.sequelize.query(sequenceQuery, {});
@@ -90,6 +91,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
             await this.sequelize.query(`ALTER SEQUENCE ${sequenceName} AS BIGINT;`, {});
           }
         }
+
         this.app.log.info(`updated ${tableName}.${fieldName} to BIGINT`, tableName, fieldName);
       }
     };

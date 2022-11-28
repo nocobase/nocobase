@@ -1,12 +1,12 @@
 import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import { omit, set } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
-import { set, omit } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useRecord, RecordProvider } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
@@ -98,8 +98,11 @@ const useOverridingCollectionField = () => {
         'collectionName',
         'autoCreateReverseField',
         'uiSchema.x-uid',
-        'reverseField.key',
-        'reverseField.uiSchemaUid',
+        'reverseField',
+        'reverseKey',
+        'parentKey',
+        // 'reverseField.key',
+        // 'reverseField.uiSchemaUid',
       ]);
       await resource.create({
         values: data,
