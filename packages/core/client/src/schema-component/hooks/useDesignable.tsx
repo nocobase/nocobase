@@ -8,6 +8,7 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
 import { SchemaComponentContext } from '../context';
+import { useMenuItems } from '../../acl/Configuration/MenuItemsProvider';
 
 interface CreateDesignableProps {
   current: Schema;
@@ -16,6 +17,7 @@ interface CreateDesignableProps {
   onSuccess?: any;
   i18n?: any;
   t?: any;
+  refreshMI?: () => void;
 }
 
 export function createDesignable(options: CreateDesignableProps) {
@@ -107,7 +109,14 @@ export class Designable {
   }
 
   loadAPIClientEvents() {
-    const { refresh, api, t = translate } = this.options;
+    const { refresh: refreshDn, api, t = translate, refreshMI } = this.options;
+    const isMenu = ['Menu.SubMenu', 'Menu'].includes(this.current?.['x-component']);
+    const refresh = async () => {
+      await refreshDn();
+      if (isMenu) {
+        setTimeout(() => refreshMI(), 100);
+      }
+    };
     if (!api) {
       return;
     }
@@ -584,7 +593,8 @@ export function useDesignable() {
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const { t } = useTranslation();
-  const dn = createDesignable({ t, api, refresh, current: fieldSchema });
+  const { refreshMI } = useMenuItems() || {};
+  const dn = createDesignable({ t, api, refresh, current: fieldSchema, refreshMI });
   dn.loadAPIClientEvents();
   return {
     dn,

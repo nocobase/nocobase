@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
-import { useMenuItems } from './RoleTable';
+import { useMenuItems } from './MenuItemsProvider';
 
 const findUids = (items) => {
   if (!Array.isArray(items)) {
@@ -21,8 +21,7 @@ const findUids = (items) => {
 export const MenuConfigure = () => {
   const record = useRecord();
   const api = useAPIClient();
-  const items = useMenuItems();
-  const compile = useCompile();
+  const {items} = useMenuItems();
   const { t } = useTranslation();
   const allUids = findUids(items);
   const [uids, setUids] = useState([]);
