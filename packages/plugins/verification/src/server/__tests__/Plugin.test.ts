@@ -32,6 +32,7 @@ describe('verification > Plugin', () => {
     provider = await VerificationProviderModel.create({
       id: 'fake1',
       type: 'fake',
+      default: true
     });
   });
 
@@ -40,7 +41,6 @@ describe('verification > Plugin', () => {
   describe('auto intercept', () => {
     beforeEach(async () => {
       plugin.interceptors.register('authors:create', {
-        provider: 'fake1',
         getReceiver(ctx) {
           return ctx.action.params.values.phone;
         },
@@ -103,7 +103,6 @@ describe('verification > Plugin', () => {
     beforeEach(async () => {
       plugin.interceptors.register('authors:create', {
         manual: true,
-        provider: 'fake1',
         getReceiver(ctx) {
           return ctx.action.params.values.phone;
         },
@@ -131,7 +130,6 @@ describe('verification > Plugin', () => {
   describe('validate', () => {
     beforeEach(async () => {
       plugin.interceptors.register('authors:create', {
-        provider: 'fake1',
         getReceiver(ctx) {
           return ctx.action.params.values.phone;
         },
