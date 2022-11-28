@@ -1,4 +1,4 @@
-import { registerTemplate, ICollectionTemplate } from '@nocobase/client';
+import { getConfigurableProperties, ICollectionTemplate, registerTemplate } from '@nocobase/client';
 import React from 'react';
 
 const myCollectionTemplate: ICollectionTemplate = {
@@ -18,50 +18,7 @@ const myCollectionTemplate: ICollectionTemplate = {
       },
     ],
   },
-  configurableProperties: {
-    title: {
-      type: 'string',
-      title: '{{ t("Collection display name") }}',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-    name: {
-      type: 'string',
-      title: '{{t("Collection name")}}',
-      required: true,
-      'x-disabled': '{{ !createOnly }}',
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-      'x-validator': 'uid',
-      description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
-    },
-    createdAt: {
-      type: 'boolean',
-      'x-content': '{{t("CreatedAt")}}',
-      default: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-disabled': '{{ !createOnly }}',
-    },
-    updatedAt: {
-      type: 'boolean',
-      'x-content': '{{t("UpdatedAt")}}',
-      default: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-disabled': '{{ !createOnly }}',
-    },
-    sortable: {
-      type: 'boolean',
-      'x-content': '{{t("Sortable")}}',
-      default: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-disabled': '{{ !createOnly }}',
-    },
-  },
+  configurableProperties: getConfigurableProperties('name', 'title', 'inherits', 'createdAt', 'updatedAt'),
   availableFieldInterfaces: {
     exclude: ['linkTo', 'o2o'],
   },

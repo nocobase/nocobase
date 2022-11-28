@@ -1,17 +1,16 @@
-import { defaultProps, defaultCollectionOptions } from './properties';
+import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
 
-export const calendarCollection: ICollectionTemplate = {
-  name: 'calendarCollection',
+export const calendar: ICollectionTemplate = {
+  name: 'calendar',
   title: '{{t("Calendar collection")}}',
   order: 2,
   color: 'orange',
-  default:{
-    fields:[
+  default: {
+    fields: [
       {
         name: 'cron',
         type: 'string',
-        allowNull: true,
         uiSchema: {
           type: 'string',
           title: '{{t("Cron")}}',
@@ -28,26 +27,11 @@ export const calendarCollection: ICollectionTemplate = {
       {
         name: 'exclude',
         type: 'json',
-        allowNull: true,
-        interface: 'json',
-        uiSchema: {
-          type: 'string',
-          title: '{{t("Exclude")}}',
-          'x-component': 'Input.JSON',
-          'x-component-props': {
-            autoSize: {
-              minRows: 5,
-            },
-          },
-        },
       },
-    ]
+    ],
   },
-  availableFieldInterfaces:{
+  availableFieldInterfaces: {
     include: [],
   },
-  configurableProperties: {
-    ...defaultProps,
-    ...defaultCollectionOptions,
-  },
+  configurableProperties: getConfigurableProperties('title', 'name', 'inherits'),
 };

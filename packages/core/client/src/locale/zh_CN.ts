@@ -123,7 +123,7 @@ export default {
   "UpdatedBy":"记录最后更新人",
   "CreatedAt":"记录创建时间",
   "UpdatedAt":"记录最后更新时间",
-  "Sortable":"可排序",
+  "Records can be sorted":"可以对行记录进行排序",
   "Collection template":"数据表模板",
   "Calendar collection":"日历数据表",
   "General collection":"普通数据表",

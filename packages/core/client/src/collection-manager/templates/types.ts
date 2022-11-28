@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import {FieldOptions} from '../../collection-manager/types'
+import { FieldOptions } from '../../collection-manager/types';
 
 
 

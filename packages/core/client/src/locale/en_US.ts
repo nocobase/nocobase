@@ -119,7 +119,7 @@ export default {
   "UpdatedBy":"Recording a row's last updated user",
   "CreatedAt":"Recording a row's created time ",
   "UpdatedAt":"Recording a row's last updated user",
-  "Sortable":"Sortable",
+  "Records can be sorted": "Records can be sorted",
   "Collection template":"Collection template",
   "Calendar collection":"Calendar collection",
   "General collection":"General collection",

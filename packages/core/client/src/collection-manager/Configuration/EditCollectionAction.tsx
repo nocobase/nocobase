@@ -1,12 +1,12 @@
 import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import cloneDeep from 'lodash/cloneDeep';
 import { omit } from 'lodash';
-import React, { useState, useEffect } from 'react';
+import cloneDeep from 'lodash/cloneDeep';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { useRecord, RecordProvider } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
@@ -128,7 +128,7 @@ export const EditCollectionAction = (props) => {
       <ActionContext.Provider value={{ visible, setVisible }}>
         <a
           onClick={async () => {
-            const templateConf = getTemplate(record.template || 'listCollection');
+            const templateConf = getTemplate(record.template);
             const schema = getSchema(
               {
                 ...templateConf,
@@ -151,7 +151,7 @@ export const EditCollectionAction = (props) => {
             useValuesFromRecord,
             useUpdateCollectionActionAndRefreshCM,
             useCancelAction,
-            createOnly:false,
+            createOnly: false,
             ...scope,
           }}
         />

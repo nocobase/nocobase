@@ -113,7 +113,7 @@ export default {
   "UpdatedBy":"レコード最終更新者",
   "CreatedAt":"レコード作成時間",
   "UpdatedAt":"レコード最終更新時間",
-  "Sortable":"ソート可能",
+  "Records can be sorted":"ソート可能",
   "Collection template":"データテーブルテンプレート",
   "Calendar collection":"カレンダデータテーブル",
   "General collection":"一般データテーブル",

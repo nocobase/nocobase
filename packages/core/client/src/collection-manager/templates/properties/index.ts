@@ -1,4 +1,4 @@
-export const defaultProps = {
+export const defaultConfigurableProperties = {
   title: {
     type: 'string',
     title: '{{ t("Collection display name") }}',
@@ -17,10 +17,6 @@ export const defaultProps = {
     description:
       "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
   },
-};
-
-
-export const defaultCollectionOptions = {
   inherits: {
     title: '{{t("Inherits")}}',
     type: 'hasMany',
@@ -95,10 +91,31 @@ export const defaultCollectionOptions = {
   },
   sortable: {
     type: 'boolean',
-    'x-content': '{{t("Sortable")}}',
+    'x-content': '{{t("Records can be sorted")}}',
     default: true,
     'x-decorator': 'FormItem',
     'x-component': 'Checkbox',
     'x-disabled': '{{ !createOnly }}',
   },
+};
+
+export type DefaultConfigurableKeys =
+  | 'name'
+  | 'title'
+  | 'inherits'
+  | 'autoGenId'
+  | 'createdBy'
+  | 'updatedBy'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'sortable';
+
+export const getConfigurableProperties = (...keys: DefaultConfigurableKeys[]) => {
+  const props = {};
+  for (const key of keys) {
+    if (defaultConfigurableProperties[key]) {
+      props[key] = defaultConfigurableProperties[key];
+    }
+  }
+  return props;
 };
