@@ -14,7 +14,6 @@ import initProviders, { Provider } from './providers';
 
 export interface Interceptor {
   manual?: boolean;
-  provider: string;
   expiresIn?: number;
   getReceiver(ctx): string;
   getCode?(ctx): string;

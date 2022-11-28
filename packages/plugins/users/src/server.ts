@@ -154,14 +154,9 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     if (!verificationPlugin) {
       return;
     }
-    const defaultProvider = await verificationPlugin.getDefault();
-    if (!defaultProvider) {
-      return;
-    }
 
     verificationPlugin.interceptors.register('users:signin', {
       manual: true,
-      provider: defaultProvider.id,
       getReceiver(ctx) {
         return ctx.action.params.values.phone;
       },
@@ -185,7 +180,6 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     });
 
     verificationPlugin.interceptors.register('users:signup', {
-      provider: defaultProvider.id,
       getReceiver(ctx) {
         return ctx.action.params.values.phone;
       },
