@@ -27,6 +27,7 @@ export async function referentialIntegrityCheck(options: ReferentialIntegrityChe
     const filter = {
       [sourceField]: referencedInstance[targetField],
     };
+
     const referencingExists = await sourceRepository.count({
       filter,
       transaction,

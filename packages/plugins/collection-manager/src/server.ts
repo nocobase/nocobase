@@ -188,7 +188,9 @@ export class CollectionManagerPlugin extends Plugin {
         try {
           await this.app.db.getRepository<CollectionRepository>('collections').load();
         } catch (error) {
+          this.app.logger.warn(error);
           await this.app.db.sync();
+
           try {
             await this.app.db.getRepository<CollectionRepository>('collections').load();
           } catch (error) {
