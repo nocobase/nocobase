@@ -23,7 +23,7 @@
     "lint": "eslint .",
     "clean": "nocobase clean",
     "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
-    "release:force": "lerna publish from-package --yes --no-verify-access",
+    "release:force": "lerna publish from-package --yes",
     "release": "lerna publish",
     "run:example": "ts-node-dev -r dotenv/config -r tsconfig-paths/register ./examples/index.ts"
   },
