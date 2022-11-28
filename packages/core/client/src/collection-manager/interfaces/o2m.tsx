@@ -1,6 +1,12 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { constraintsProps, recordPickerSelector, recordPickerViewer, relationshipType, reverseFieldProperties } from './properties';
+import {
+  constraintsProps,
+  recordPickerSelector,
+  recordPickerViewer,
+  relationshipType,
+  reverseFieldProperties,
+} from './properties';
 import { IField } from './types';
 
 export const o2m: IField = {
@@ -45,76 +51,72 @@ export const o2m: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty }) {
-    if (block === 'Form' && schema['x-component'] === 'TableField') {
-      const association = `${field.collectionName}.${field.name}`;
-      schema['type'] = 'void';
-      schema['properties'] = {
-        block: {
-          type: 'void',
-          'x-decorator': 'TableFieldProvider',
-          'x-decorator-props': {
-            collection: field.target,
-            association: association,
-            resource: association,
-            action: 'list',
-            params: {
-              paginate: false,
+    if (block === 'Form') {
+      if (schema['x-component'] === 'TableField') {
+        const association = `${field.collectionName}.${field.name}`;
+        schema['type'] = 'void';
+        schema['properties'] = {
+          block: {
+            type: 'void',
+            'x-decorator': 'TableFieldProvider',
+            'x-decorator-props': {
+              collection: field.target,
+              association: association,
+              resource: association,
+              action: 'list',
+              params: {
+                paginate: false,
+              },
+              showIndex: true,
+              dragSort: false,
+              fieldName: field.name,
             },
-            showIndex: true,
-            dragSort: false,
-            fieldName: field.name,
-          },
-          properties: {
-            actions: {
-              type: 'void',
-              'x-initializer': 'SubTableActionInitializers',
-              'x-component': 'TableField.ActionBar',
-              'x-component-props': {},
-            },
-            [field.name]: {
-              type: 'array',
-              'x-initializer': 'TableColumnInitializers',
-              'x-component': 'TableV2',
-              'x-component-props': {
-                rowSelection: {
-                  type: 'checkbox',
+            properties: {
+              actions: {
+                type: 'void',
+                'x-initializer': 'SubTableActionInitializers',
+                'x-component': 'TableField.ActionBar',
+                'x-component-props': {},
+              },
+              [field.name]: {
+                type: 'array',
+                'x-initializer': 'TableColumnInitializers',
+                'x-component': 'TableV2',
+                'x-component-props': {
+                  rowSelection: {
+                    type: 'checkbox',
+                  },
+                  useProps: '{{ useTableFieldProps }}',
                 },
-                useProps: '{{ useTableFieldProps }}',
               },
             },
           },
-        },
-      };
-    } else {
-      // schema['x-component'] = 'CollectionField';
-      // schema.type = 'array';
-
-      if (block === 'Form') {
+        };
+      } else if (schema['x-component'] === 'AssociationSelect') {
+        Object.assign(schema, {
+          type: 'string',
+          'x-designer': 'AssociationSelect.Designer',
+        });
+      } else {
+        schema.type = 'string';
         schema['properties'] = {
           viewer: cloneDeep(recordPickerViewer),
           selector: cloneDeep(recordPickerSelector),
         };
-      } else {
-        if (readPretty) {
-          schema['properties'] = {
-            viewer: cloneDeep(recordPickerViewer),
-          };
-        } else {
-          schema['properties'] = {
-            selector: cloneDeep(recordPickerSelector),
-          };
-        }
       }
+      return schema;
     }
-    // if (readPretty) {
-    //   schema['properties'] = {
-    //     viewer: cloneDeep(recordPickerViewer),
-    //   };
-    // } else {
-    //   schema['properties'] = {
-    //     selector: cloneDeep(recordPickerSelector),
-    //   };
-    // }
+
+    if (readPretty) {
+      schema['properties'] = {
+        viewer: cloneDeep(recordPickerViewer),
+      };
+    } else {
+      schema['properties'] = {
+        selector: cloneDeep(recordPickerSelector),
+      };
+    }
+
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
