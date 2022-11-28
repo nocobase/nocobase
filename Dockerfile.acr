@@ -15,11 +15,9 @@ RUN  yarn install && yarn nocobase install && yarn pm add graph-collection-manag
 RUN rm -rf .gitmodules packages/pro-plugins/.git
 
 RUN git checkout -b release \
-    && yarn version:alpha -y
-
-RUN git config user.email "test@mail.com"  \
-    && git config user.name "test" \
-    && git add .  \
+    && yarn version:alpha -y  \
+    && git config user.email "test@mail.com"  \
+    && git config user.name "test" && git add .  \
     && git commit -m "chore(versions): test publish packages xxx" \
     && yarn release:force --registry $VERDACCIO_URL
 
