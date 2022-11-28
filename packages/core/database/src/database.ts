@@ -356,6 +356,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const collection = this.collections.get(name);
     this.emit('beforeRemoveCollection', collection);
 
+    collection.resetFields();
+
     const result = this.collections.delete(name);
 
     this.sequelize.modelManager.removeModel(collection.model);
@@ -457,7 +459,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (isMySQL) {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', null);
     }
+
     const result = await this.sequelize.sync(options);
+
     if (isMySQL) {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', null);
     }

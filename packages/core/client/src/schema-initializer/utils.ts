@@ -73,7 +73,7 @@ export const findTableColumn = (schema: Schema, key: string, action: string, dee
 };
 
 export const useTableColumnInitializerFields = () => {
-  const { currentFields = [] } = useCollection();
+  const { name, currentFields = [] } = useCollection();
   const { getInterface } = useCollectionManager();
   return currentFields
     .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey)
@@ -81,7 +81,7 @@ export const useTableColumnInitializerFields = () => {
       const interfaceConfig = getInterface(field.interface);
       const schema = {
         name: field.name,
-        'x-collection-field': `${field.name}`,
+        'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
         'x-read-pretty': true,
         'x-component-props': {},
@@ -168,7 +168,7 @@ export const useInheritsTableColumnInitializerFields = () => {
             name: `${k.name}`,
             'x-component': 'CollectionField',
             'x-read-pretty': true,
-            'x-collection-field': `${k.name}`,
+            'x-collection-field': `${name}.${k.name}`,
             'x-component-props': {},
           };
           return {
@@ -206,7 +206,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-designer': 'FormItem.Designer',
         'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
-        'x-collection-field': `${field.name}`,
+        'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
@@ -297,7 +297,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             'x-designer': 'FormItem.Designer',
             'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
             'x-decorator': 'FormItem',
-            'x-collection-field': `${field.name}`,
+            'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {},
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
@@ -334,7 +334,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
         'x-designer': 'FormItem.Designer',
         'x-component': 'AssignedField',
         'x-decorator': 'FormItem',
-        'x-collection-field': `${field.name}`,
+        'x-collection-field': `${name}.${field.name}`,
       };
       return {
         type: 'item',
@@ -368,7 +368,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
         'x-designer': 'FormItem.Designer',
         'x-component': 'BulkEditField',
         'x-decorator': 'FormItem',
-        'x-collection-field': `${field.name}`,
+        'x-collection-field': `${name}.${field.name}`,
       };
       return {
         type: 'item',

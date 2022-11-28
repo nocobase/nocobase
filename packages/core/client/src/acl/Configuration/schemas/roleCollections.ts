@@ -70,7 +70,7 @@ export const roleCollectionsSchema: ISchema = {
       action: 'list',
       params: {
         pageSize: 20,
-        filter: { inherit: false },
+        filter: { hidden: { $isFalsy: true } },
         sort: ['sort'],
         appends: [],
       },

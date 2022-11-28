@@ -74,6 +74,10 @@ export interface HasOneFieldOptions extends HasOneOptions {
 }
 
 export class HasOneField extends RelationField {
+  get dataType(): any {
+    return 'HasOne';
+  }
+
   get target() {
     const { target, name } = this.options;
     return target || Utils.pluralize(name);
@@ -155,13 +159,14 @@ export class HasOneField extends RelationField {
     // 如果关系表内没有显式的创建外键字段，删除关系时，外键也删除掉
     const tcoll = database.collections.get(this.target);
 
-    if (tcoll) {
+    if (tcoll && !this.options.inherit) {
       const foreignKey = this.options.foreignKey;
 
       const field = tcoll.findField((field) => {
         if (field.name === foreignKey) {
           return true;
         }
+
         return field.type === 'belongsTo' && field.foreignKey === foreignKey;
       });
 

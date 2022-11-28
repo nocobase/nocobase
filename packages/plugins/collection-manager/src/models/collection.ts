@@ -87,6 +87,11 @@ export class CollectionModel extends MagicAttributeModel {
       transaction: options?.transaction,
     });
 
+    // @ts-ignore
+    if (Object.keys(collection.model.tableAttributes).length == 0) {
+      return;
+    }
+
     try {
       await collection.sync({
         force: false,

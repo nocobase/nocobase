@@ -46,7 +46,7 @@ export default {
   "Advanced": "Продвинутый",
   "Advanced type": "Продвинутый",
   "End": "Окончание",
-  "Trigger context": "Контекст триггера",
+  "Trigger variables": "Контекст триггера",
   "Node result": "Результат Узла",
   "Constant": "Константа",
   "Boolean": "Логический",

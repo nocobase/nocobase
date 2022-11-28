@@ -19,7 +19,11 @@ export class SyncRunner {
     const parents = inheritedCollection.parents;
 
     if (!parents) {
-      throw new Error("Inherit model can't be created without parents");
+      throw new Error(
+        `Inherit model ${inheritedCollection.name} can't be created without parents, parents option is ${lodash
+          .castArray(inheritedCollection.options.inherits)
+          .join(', ')}`,
+      );
     }
 
     const parentTables = parents.map((parent) => parent.model.tableName);
