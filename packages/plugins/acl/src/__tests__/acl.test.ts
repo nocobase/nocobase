@@ -42,6 +42,41 @@ describe('acl', () => {
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
+  it('should not destroy default roles when user is root user', async () => {
+    const rootUser = await db.getRepository('users').findOne({
+      filter: {
+        email: process.env.INIT_ROOT_EMAIL,
+      },
+    });
+    const userPlugin = app.getPlugin('users') as UsersPlugin;
+
+    const adminAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: rootUser.get('id'),
+      }),
+      { type: 'bearer' },
+    );
+
+    expect(await db.getCollection('roles').repository.count()).toBe(3);
+
+    //@ts-ignore
+    await adminAgent.resource('roles').destroy({
+      filterByTk: 'root',
+    });
+
+    expect(await db.getCollection('roles').repository.count()).toBe(3);
+  });
+
+  it('should not destroy default roles', async () => {
+    expect(await db.getCollection('roles').repository.count()).toBe(3);
+
+    await adminAgent.resource('roles').destroy({
+      filterByTk: 'root',
+    });
+
+    expect(await db.getCollection('roles').repository.count()).toBe(3);
+  });
+
   it('should not destroy all scope', async () => {
     let allScope = await adminAgent.resource('rolesResourcesScopes').get({
       filter: {

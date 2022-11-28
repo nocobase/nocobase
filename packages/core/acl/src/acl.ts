@@ -293,7 +293,7 @@ export class ACL extends EventEmitter {
           return;
         }
 
-        const params = permission.can?.params;
+        const params = permission.can?.params || acl.fixedParamsManager.getParams(resourceName, actionName);
 
         if (params) {
           const filteredParams = filterParams(ctx, resourceName, params);

@@ -24,11 +24,16 @@ export default class FixedParamsManager {
     return `${resource}${SPLIT}${action}`;
   }
 
-  getParams(resource: string, action: string) {
+  getParams(resource: string, action: string, extraParams: any = {}) {
     const results = {};
     for (const merger of this.getParamsMerger(resource, action)) {
       FixedParamsManager.mergeParams(results, merger());
     }
+
+    if (extraParams) {
+      FixedParamsManager.mergeParams(results, extraParams);
+    }
+
     return results;
   }
 

@@ -245,6 +245,14 @@ export class Action {
   }
 
   mergeParams(params: ActionParams, strategies: MergeStrategies = {}) {
+    if (!this.params) {
+      this.params = {};
+    }
+
+    if (!params) {
+      return;
+    }
+
     assign(this.params, params, {
       filter: 'andMerge',
       fields: 'intersect',
