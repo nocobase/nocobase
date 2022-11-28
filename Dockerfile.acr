@@ -18,8 +18,9 @@ RUN git checkout -b release \
     && yarn version:alpha -y  \
     && git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
-    && git commit -m "chore(versions): test publish packages xxx" \
-    && yarn release:force --registry $VERDACCIO_URL
+    && git commit -m "chore(versions): test publish packages xxx"
+
+RUN  yarn release:force --registry $VERDACCIO_URL
 
 RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
