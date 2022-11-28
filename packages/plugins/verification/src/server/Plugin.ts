@@ -55,7 +55,7 @@ export default class VerificationPlugin extends Plugin {
     });
 
     if (!item) {
-      return context.throw(400, { code: 'InvalidSMSCode', message: 'verify by sms code failed' });
+      return context.throw(400, { code: 'InvalidVerificationCode', message: context.t('Verification code is invalid', { ns: namespace }) });
     }
 
     // TODO: code should be removed if exists in values
