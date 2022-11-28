@@ -39,6 +39,7 @@ export interface Instruction {
   render?(props): React.ReactElement;
   endding?: boolean;
   getter?(node: any): React.ReactElement;
+  getRefNodes?(config: any): any[]
 };
 
 export const instructions = new Registry<Instruction>();
@@ -144,6 +145,17 @@ export function RemoveButton() {
         filterByTk: current.id
       });
       onNodeRemoved(node);
+    }
+
+    if (nodes.some(node => {
+      const instruction = instructions.get(node.type);
+      return Boolean(instruction.getRefNodes?.(node.config).length);
+    })) {
+      Modal.error({
+        title: lang('Can not delete'),
+        content: lang('The result of this node is been used by other nodes'),
+      });
+      return;
     }
 
     const hasBranches = !nodes.find(item => item.upstream === current && item.branchIndex != null);
