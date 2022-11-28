@@ -2,7 +2,11 @@
 
 <img src="./v08-1-collection-templates/v08-1-collection-templates.jpg">
 
-## ICollectionTemplate
+## 为什么需要 Collection 模板？
+
+待补充
+
+## 配置参数说明
 
 ```ts
 interface ICollectionTemplate {
@@ -71,73 +75,5 @@ import { collectionConfigurableProperties } from '@nocobase/client';
 }
 ```
 
-```ts
-import { registerTemplate } from '@nocobase/client';
+完整插件示例参考：[samples/custom-collection-template](https://github.com/nocobase/nocobase/tree/feat/collection-templates/packages/samples/custom-collection-template)
 
-const customTemplate = {
-  name: 'customTemplate',
-  title: '{{t("Custom template")}}',
-  order: 6,
-  color: 'blue',
-  presetFields: [
-    {
-      name: 'uuid',
-      type: 'string',
-      primaryKey: true,
-      allowNull: false,
-      uiSchema: { type: 'number', title: '{{t("UUID")}}', 'x-component': 'Input', 'x-read-pretty': true },
-      interface: 'input',
-    },
-  ],
-  properties: {
-    title: {
-      type: 'string',
-      title: '{{ t("Collection display name") }}',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-    name: {
-      type: 'string',
-      title: '{{t("Collection name")}}',
-      required: true,
-      'x-disabled': '{{ !createOnly }}',
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-      'x-validator': 'uid',
-      description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
-    },
-    createdAt: {
-      type: 'boolean',
-      'x-content': '{{t("CreatedAt")}}',
-      default: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-disabled': '{{ !createOnly }}',
-    },
-    updatedAt: {
-      type: 'boolean',
-      'x-content': '{{t("UpdatedAt")}}',
-      default: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-disabled': '{{ !createOnly }}',
-    },
-    sortable: {
-      type: 'boolean',
-      'x-content': '{{t("Sortable")}}',
-      default: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-disabled': '{{ !createOnly }}',
-    },
-  },
-  //包含的 field interface
-  include: [],
-  // 排除的 field interface
-  exclude: ['linkTo', 'o2o'],
-};
-
-registerTemplate('customTemplate', customTemplate);
-```
