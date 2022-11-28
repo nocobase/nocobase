@@ -12,15 +12,20 @@ RUN cd /tmp && \
         && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
 RUN  yarn install && yarn nocobase install && yarn pm add graph-collection-manager && yarn build
 
-RUN rm -rf .gitmodules packages/pro-plugins/.git
-
 RUN git checkout -b release \
-    && yarn version:alpha -y  \
+    && yarn version:alpha -y
+
+RUN cd packages/pro-plugins && git checkout -b release \
     && git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
     && git commit -m "chore(versions): test publish packages xxx"
 
-RUN  yarn release:force --registry $VERDACCIO_URL
+RUN git config user.email "test@mail.com"  \
+    && git config user.name "test" && git add .  \
+    && git commit -m "chore(versions): test publish packages xxx" \
+    && git submodule update --init --recursive -- packages/pro-plugins
+
+RUN  yarn release:force --no-verify-access --no-git-reset --registry $VERDACCIO_URL
 
 RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
