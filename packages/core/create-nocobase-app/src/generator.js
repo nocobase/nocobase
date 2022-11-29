@@ -105,7 +105,7 @@ class AppGenerator extends Generator {
         break;
     }
 
-    const keys = ['DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USER', 'DB_PASSWORD', 'DB_STORAGE'];
+    const keys = ['PLUGIN_PACKAGE_PREFIX', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USER', 'DB_PASSWORD', 'DB_STORAGE'];
 
     for (const key in env) {
       if (keys.includes(key)) {
