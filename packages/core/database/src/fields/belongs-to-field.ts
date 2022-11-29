@@ -1,5 +1,5 @@
 import { omit } from 'lodash';
-import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
+import { BelongsTo, BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
@@ -16,16 +16,20 @@ export class BelongsToField extends RelationField {
     return target || Utils.pluralize(name);
   }
 
-  reference(association): Reference {
+  static toReference(db, association, onDelete) {
     const targetKey = association.targetKey;
 
     return {
-      sourceCollectionName: this.database.modelCollection.get(association.source).name,
+      sourceCollectionName: db.modelCollection.get(association.source).name,
       sourceField: association.foreignKey,
       targetField: targetKey,
-      targetCollectionName: this.database.modelCollection.get(association.target).name,
-      onDelete: this.options.onDelete,
+      targetCollectionName: db.modelCollection.get(association.target).name,
+      onDelete: onDelete,
     };
+  }
+
+  reference(association): Reference {
+    return BelongsToField.toReference(this.database, association, this.options.onDelete);
   }
 
   bind() {
