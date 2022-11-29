@@ -33,6 +33,8 @@ export async function checkAction(ctx, next) {
       allowMenuItemIds: roleInstance.get('menuUiSchemas').map((uiSchema) => uiSchema.get('x-uid')),
       allowAnonymous: !!anonymous,
     };
+  } else {
+    throw new Error('Role not found');
   }
 
   await next();

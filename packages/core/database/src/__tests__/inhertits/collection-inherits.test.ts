@@ -15,6 +15,69 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should not throw error when fields have same type with parent', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'date' }],
+    });
+
+    expect(() => {
+      db.collection({
+        name: 'child',
+        inherits: ['parent'],
+        fields: [
+          {
+            name: 'field1',
+            type: 'date',
+            otherOptions: true,
+          },
+        ],
+      });
+    }).not.toThrowError();
+  });
+
+  it('should throw error when fields conflict with parent ', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'string' }],
+    });
+
+    expect(() => {
+      db.collection({
+        name: 'child',
+        inherits: ['parent'],
+        fields: [{ name: 'field1', type: 'integer' }],
+      });
+    }).toThrowError();
+
+    await db.sync();
+  });
+
+  it('should not conflict when fields have same DateType', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'string' }],
+    });
+
+    expect(() => {
+      db.collection({
+        name: 'child',
+        inherits: ['parent'],
+        fields: [
+          {
+            name: 'field1',
+            type: 'sequence',
+            patterns: [
+              {
+                type: 'integer',
+              },
+            ],
+          },
+        ],
+      });
+    }).not.toThrowError();
+  });
+
   it('should create inherits with lazy parents', async () => {
     const child = db.collection({
       name: 'child',
@@ -523,25 +586,20 @@ pgOnly()('collection inherits', () => {
       name: 'person',
       fields: [
         { name: 'name', type: 'string' },
-        { type: 'hasOne', name: 'profile' },
+        { type: 'hasOne', name: 'profile', foreignKey: 'personId' },
       ],
     });
 
-    db.collection({
+    const Profile = db.collection({
       name: 'profiles',
       fields: [
         { name: 'age', type: 'integer' },
         {
           type: 'belongsTo',
           name: 'person',
+          foreignKey: 'personId',
         },
       ],
-    });
-
-    db.collection({
-      name: 'teachers',
-      inherits: 'person',
-      fields: [{ name: 'salary', type: 'integer' }],
     });
 
     db.collection({
@@ -555,6 +613,12 @@ pgOnly()('collection inherits', () => {
           target: 'studentProfiles',
         },
       ],
+    });
+
+    db.collection({
+      name: 'teachers',
+      inherits: 'person',
+      fields: [{ name: 'salary', type: 'integer' }],
     });
 
     db.collection({

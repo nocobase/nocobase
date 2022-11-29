@@ -75,6 +75,33 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should skip sync when create empty collection', async () => {
+    const response = await agent.resource('collections').create({
+      values: {
+        name: 'test',
+        autoGenId: false,
+        sortable: false,
+        timestamps: false,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    await agent.resource('fields').create({
+      values: {
+        name: 'field',
+        type: 'string',
+        collectionName: 'test',
+      },
+    });
+
+    const testCollection = app.db.getCollection('test');
+
+    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(testCollection.model.tableName);
+
+    expect(tableInfo['field']).toBeDefined();
+  });
+
   it('should create collection without id', async () => {
     const response = await agent.resource('collections').create({
       values: {

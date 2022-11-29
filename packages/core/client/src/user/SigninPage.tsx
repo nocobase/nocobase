@@ -1,6 +1,7 @@
 import { ISchema, useForm } from '@formily/react';
 import { Space, Tabs } from 'antd';
 import React, { useCallback, useContext } from 'react';
+import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { Link, useHistory, useLocation } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
@@ -135,7 +136,12 @@ export const SigninPage = (props: SigninPageProps) => {
   const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   const { schema, components, scope } = props;
   return (
-    <Space direction="vertical" style={{ display: 'flex' }}>
+    <Space
+      direction="vertical"
+      className={css`
+        display: flex;
+      `}
+    >
       {smsAuthEnabled ? (
         <Tabs defaultActiveKey="password">
           <Tabs.TabPane tab={t('Sign in via account')} key="password">
