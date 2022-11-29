@@ -43,7 +43,7 @@ export interface Trigger {
   title: string;
   type: string;
   // group: string;
-  options?: { label: string; value: any; key: string }[];
+  getOptions?(config: any): { label: string; value: any; key: string }[];
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
@@ -108,7 +108,7 @@ function TriggerExecution() {
                   },
                   context: {
                     type: 'object',
-                    title: `{{t("Trigger context", { ns: "${NAMESPACE}" })}}`,
+                    title: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
                     'x-decorator': 'FormItem',
                     'x-component': 'Input.JSON',
                     'x-component-props': {

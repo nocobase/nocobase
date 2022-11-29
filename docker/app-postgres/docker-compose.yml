@@ -1,7 +1,4 @@
 version: "3"
-networks:
-  nocobase:
-    driver: bridge
 services:
   app:
     image: nocobase/nocobase:0.8.0-alpha.13
@@ -23,8 +20,6 @@ services:
   postgres:
     image: postgres:10
     restart: always
-    networks:
-      - nocobase
     command: postgres -c wal_level=logical
     environment:
       POSTGRES_USER: nocobase

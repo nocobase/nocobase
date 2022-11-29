@@ -60,6 +60,7 @@ export const constraintsProps = {
     title: '{{t("ON DELETE")}}',
     required: true,
     default: 'SET NULL',
+    'x-disabled': '{{ !createOnly }}',
     'x-decorator': 'FormItem',
     'x-component': 'Select',
     enum: [

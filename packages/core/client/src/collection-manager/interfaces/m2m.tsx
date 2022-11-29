@@ -1,7 +1,13 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
-import { defaultProps, recordPickerSelector, recordPickerViewer, relationshipType, reverseFieldProperties } from './properties';
+import {
+  defaultProps,
+  recordPickerSelector,
+  recordPickerViewer,
+  relationshipType,
+  reverseFieldProperties,
+} from './properties';
 import { IField } from './types';
 
 export const m2m: IField = {
@@ -47,20 +53,28 @@ export const m2m: IField = {
   },
   schemaInitialize(schema: ISchema, { readPretty, block }) {
     if (block === 'Form') {
-      schema['properties'] = {
-        viewer: cloneDeep(recordPickerViewer),
-        selector: cloneDeep(recordPickerSelector),
-      };
-    } else {
-      if (readPretty) {
+      if (schema['x-component'] === 'AssociationSelect') {
+        Object.assign(schema, {
+          type: 'string',
+          'x-designer': 'AssociationSelect.Designer',
+        });
+      } else {
+        schema.type = 'string';
         schema['properties'] = {
           viewer: cloneDeep(recordPickerViewer),
-        };
-      } else {
-        schema['properties'] = {
           selector: cloneDeep(recordPickerSelector),
-        }
+        };
       }
+      return schema;
+    }
+    if (readPretty) {
+      schema['properties'] = {
+        viewer: cloneDeep(recordPickerViewer),
+      };
+    } else {
+      schema['properties'] = {
+        selector: cloneDeep(recordPickerSelector),
+      };
     }
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};

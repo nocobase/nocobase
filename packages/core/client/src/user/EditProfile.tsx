@@ -72,6 +72,22 @@ const schema: ISchema = {
           'x-component': 'Input',
           required: true,
         },
+        email: {
+          type: 'string',
+          title: '{{t("Email")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          'x-validator': 'email',
+          required: true,
+        },
+        phone: {
+          type: 'string',
+          title: '{{t("Phone")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          'x-validator': 'phone',
+          required: true,
+        },
         footer: {
           'x-component': 'Action.Drawer.Footer',
           type: 'void',

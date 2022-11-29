@@ -13,7 +13,6 @@ import { ExecutionLink } from './ExecutionLink';
 import { lang } from './locale';
 
 
-
 export const WorkflowPane = () => {
   return (
     <Card bordered={false}>

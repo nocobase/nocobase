@@ -9,7 +9,7 @@ import { collection, filter } from '../schemas/collection';
 import { css } from '@emotion/css';
 import { onFieldValueChange } from '@formily/core';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
-import { NAMESPACE } from '../locale';
+import { NAMESPACE, useWorkflowTranslation } from '../locale';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
@@ -139,17 +139,23 @@ export default {
   components: {
     FieldsSelect
   },
+  getOptions(config) {
+    const { t } = useWorkflowTranslation();
+    const options: any[] = [
+      { value: 'data', label: t('Trigger data') },
+    ];
+    return options;
+  },
   getter(props) {
     const { type, options, onChange } = props;
     const { workflow } = useFlowContext();
-    const value = options?.path?.replace(/^data\./, '');
 
     return (
       <CollectionFieldSelect
         collection={workflow.config.collection}
-        value={value}
-        onChange={(value) => {
-          onChange({ type, options: { ...options, path: `data.${value}` } });
+        value={options?.path}
+        onChange={(path) => {
+          onChange({ type, options: { ...options, path } });
         }}
       />
     );

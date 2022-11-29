@@ -28,6 +28,8 @@ export * from './radio';
 export * from './record-picker';
 export * from './rich-text';
 export * from './select';
+export * from './remote-select';
+export * from './association-select';
 export * from './space';
 export * from './table';
 export * from './table-v2';
