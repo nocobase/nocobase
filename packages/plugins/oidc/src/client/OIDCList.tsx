@@ -50,7 +50,7 @@ export const OIDCList = () => {
 
     const win = window.open(
       authUrl,
-      '__blank',
+      '_blank',
       `width=800,height=600,left=${(width - 800) / 2},top=${
         (height - 600) / 2
       },toolbar=no,menubar=no,location=no,status=no`,
