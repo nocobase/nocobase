@@ -3,7 +3,7 @@ import path from 'path';
 
 export class PresetNocoBase extends Plugin {
   async addBuiltInPlugins() {
-    const plugins = process.env.PRESET_NOCOBASE_PLUGINS
+    const builtInPlugins = process.env.PRESET_NOCOBASE_PLUGINS
       ? process.env.PRESET_NOCOBASE_PLUGINS.split(',')
       : [
           'error-handler',
@@ -22,13 +22,13 @@ export class PresetNocoBase extends Plugin {
           'import',
           'audit-logs',
         ];
-    await this.app.pm.add(plugins, {
+    await this.app.pm.add(builtInPlugins, {
       enabled: true,
       builtIn: true,
       installed: true,
     });
-    const samples = ['sample-hello'];
-    await this.app.pm.add(samples, {});
+    const localPlugins = ['sample-hello', 'oidc', 'saml'];
+    await this.app.pm.add(localPlugins, {});
     await this.app.reload();
   }
 
