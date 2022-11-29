@@ -101,4 +101,39 @@ describe('actions', () => {
     expect(rolesCheckResponse2.status).toEqual(500);
     expect(rolesCheckResponse2.body.errors[0].message).toEqual('Role not found');
   });
+
+  it('should destroy through table record when destroy role', async () => {
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test',
+      },
+    });
+
+    const users2 = await db.getRepository('users').create({
+      values: {
+        email: 'test2@nocobase.com',
+        name: 'test2',
+        password: '123456',
+        roles: [
+          {
+            name: 'test',
+          },
+        ],
+      },
+    });
+
+    await db.getRepository('roles').destroy({
+      filterByTk: 'test',
+    });
+
+    expect(await users2.countRoles()).toEqual(0);
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test',
+      },
+    });
+
+    expect(await users2.countRoles()).toEqual(0);
+  });
 });
