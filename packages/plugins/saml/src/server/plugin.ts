@@ -1,10 +1,10 @@
-import UsersPlugin from 'packages/plugins/users/src/server';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { saml } from './authenticators/saml';
-import { redirect } from './actions/redirect';
-import { metadata } from './actions/metadata';
 import { getAuthUrl } from './actions/getAuthUrl';
+import { getEnabledProviders } from './actions/getEnabledProviders';
+import { metadata } from './actions/metadata';
+import { redirect } from './actions/redirect';
+import { saml } from './authenticators/saml';
 
 export class SAMLPlugin extends Plugin {
   afterAdd() {}
@@ -18,7 +18,7 @@ export class SAMLPlugin extends Plugin {
     });
 
     // 获取 User 插件
-    const userPlugin = this.app.getPlugin('users') as UsersPlugin;
+    const userPlugin = this.app.getPlugin<any>('users');
 
     // 注册 SAML 验证器
     userPlugin.authenticators.register('saml', saml);
@@ -30,11 +30,12 @@ export class SAMLPlugin extends Plugin {
         redirect,
         metadata,
         getAuthUrl,
+        getEnabledProviders,
       },
     });
 
     // 开放访问权限
-    this.app.acl.allow('samlProviders', '*');
+    this.app.acl.allow('samlProviders', '*', 'allowConfigure');
     this.app.acl.allow('saml', '*');
   }
 

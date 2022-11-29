@@ -1,5 +1,4 @@
 import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
 import { useActionContext, useRequest } from '@nocobase/client';
 import { IDTOKEN_SIGN_ALG } from '../../server/shared/types';
 
@@ -12,6 +11,17 @@ const collection = {
       interface: 'input',
       uiSchema: {
         title: '{{t("Provider name")}}',
+        type: 'string',
+        'x-component': 'Input',
+        required: true,
+      } as ISchema,
+    },
+    {
+      type: 'string',
+      name: 'buttonTitle',
+      interface: 'input',
+      uiSchema: {
+        title: '{{t("Button title")}}',
         type: 'string',
         'x-component': 'Input',
         required: true,
@@ -166,6 +176,10 @@ const collection = {
 
 export const formProperties = {
   title: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  buttonTitle: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },

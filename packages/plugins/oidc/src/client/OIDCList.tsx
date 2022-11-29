@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Button, Space } from 'antd';
 import { LoginOutlined } from '@ant-design/icons';
-import { useMemoizedFn } from 'ahooks';
 import { css } from '@emotion/css';
-import { useAPIClient, useRedirect } from '@nocobase/client';
+import { useAPIClient, useRedirect, useRequest } from '@nocobase/client';
+import { useMemoizedFn } from 'ahooks';
+import { Button, Space } from 'antd';
+import React, { useEffect, useState } from 'react';
 
 export interface OIDCProvider {
   clientId: string;
@@ -12,26 +12,14 @@ export interface OIDCProvider {
 }
 
 export const OIDCList = () => {
-  const [list, setList] = useState<OIDCProvider[]>([]);
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
   const redirect = useRedirect();
 
-  const getOidcList = async () => {
-    const { data: pluginsRes } = await api.request({
-      url: 'app:getPlugins',
-    });
-    if (!(pluginsRes.data as string[]).includes('oidc')) return;
-    const { data: providersRes } = await api.request({
-      url: 'oidcProviders:list',
-      params: {
-        filter: {
-          enabled: true,
-        },
-      },
-    });
-    setList(providersRes.data);
-  };
+  const { data, loading } = useRequest({
+    resource: 'oidc',
+    action: 'getEnabledProviders',
+  });
 
   /**
    * 打开登录弹出框
@@ -80,10 +68,6 @@ export const OIDCList = () => {
     };
   }, [windowHandler]);
 
-  useEffect(() => {
-    getOidcList();
-  }, []);
-
   return (
     <Space
       direction="vertical"
@@ -91,9 +75,9 @@ export const OIDCList = () => {
         display: flex;
       `}
     >
-      {list.map((item) => (
+      {data?.data?.map?.((item) => (
         <Button shape="round" block key={item.clientId} icon={<LoginOutlined />} onClick={() => handleOpen(item)}>
-          OIDC: {item.title}
+          {item.buttonTitle}
         </Button>
       ))}
     </Space>

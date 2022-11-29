@@ -4,6 +4,7 @@ export default {
   Actions: '操作',
   Delete: '删除',
   Edit: '编辑',
+  'Button title': '登录按钮标题',
   'OIDC manager': 'OIDC 管理',
   'OIDC Providers': 'OIDC 身份提供者',
   'Provider name': '名称',
