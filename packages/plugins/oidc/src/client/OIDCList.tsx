@@ -14,7 +14,6 @@ export interface OIDCProvider {
 export const OIDCList = () => {
   const [list, setList] = useState<OIDCProvider[]>([]);
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
-  const cancelTokenRef = useRef(new AbortController());
   const api = useAPIClient();
   const redirect = useRedirect();
 
@@ -44,7 +43,6 @@ export const OIDCList = () => {
       data: {
         clientId: item.clientId,
       },
-      signal: cancelTokenRef.current.signal,
     });
 
     const authUrl = response?.data?.data;
@@ -84,9 +82,6 @@ export const OIDCList = () => {
 
   useEffect(() => {
     getOidcList();
-    return () => {
-      cancelTokenRef.current.abort();
-    };
   }, []);
 
   return (
