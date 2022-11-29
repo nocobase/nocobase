@@ -6,6 +6,7 @@ export default {
   Actions: '操作',
   Title: '身份提供者名称',
   Enable: '启用',
+  'Button title': '登录按钮标题',
   'SAML manager': 'SAML 管理',
   'SAML Providers': 'SAML 身份提供者',
   'Redirect url': '重定向地址',

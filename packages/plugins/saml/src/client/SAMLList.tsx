@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Button, Space } from 'antd';
 import { LoginOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { useAPIClient, useRedirect } from '@nocobase/client';
+import { useAPIClient, useRedirect, useRequest } from '@nocobase/client';
+import { Button, Space } from 'antd';
+import React, { useEffect, useState } from 'react';
 
 export interface SAMLProvider {
   title: string;
@@ -11,26 +11,14 @@ export interface SAMLProvider {
 }
 
 export const SAMLList = () => {
-  const [list, setList] = useState<SAMLProvider[]>([]);
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
   const redirect = useRedirect();
 
-  const getSamlList = async () => {
-    const { data: pluginsRes } = await api.request({
-      url: 'app:getPlugins',
-    });
-    if (!(pluginsRes.data as string[]).includes('saml')) return;
-    const { data: providersRes } = await api.request({
-      url: 'samlProviders:list',
-      params: {
-        filter: {
-          enabled: true,
-        },
-      },
-    });
-    setList(providersRes.data);
-  };
+  const { data, loading } = useRequest({
+    resource: 'saml',
+    action: 'getEnabledProviders',
+  });
 
   /**
    * 打开登录弹出框
@@ -79,10 +67,6 @@ export const SAMLList = () => {
     };
   }, [windowHandler]);
 
-  useEffect(() => {
-    getSamlList();
-  }, []);
-
   return (
     <Space
       direction="vertical"
@@ -90,9 +74,9 @@ export const SAMLList = () => {
         display: flex;
       `}
     >
-      {list.map((item) => (
+      {data?.data?.map?.((item) => (
         <Button shape="round" block key={item.clientId} icon={<LoginOutlined />} onClick={() => handleOpen(item)}>
-          SAML: {item.title}
+          {item.buttonTitle}
         </Button>
       ))}
     </Space>

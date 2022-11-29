@@ -1,10 +1,10 @@
-import UsersPlugin from '@nocobase/plugin-users';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
 import { generators } from 'openid-client';
-import { oidc } from './authenticators/oidc';
+import { resolve } from 'path';
 import { getAuthUrl } from './actions/getAuthUrl';
+import { getEnabledProviders } from './actions/getEnabledProviders';
 import { redirect } from './actions/redirect';
+import { oidc } from './authenticators/oidc';
 
 export class OidcPlugin extends Plugin {
   #OIDC_NONCE = null;
@@ -20,7 +20,7 @@ export class OidcPlugin extends Plugin {
     });
 
     // 获取 User 插件
-    const userPlugin = this.app.getPlugin('users') as UsersPlugin;
+    const userPlugin = this.app.getPlugin<any>('users');
 
     // 注册 OIDC 验证器
     userPlugin.authenticators.register('oidc', oidc);
@@ -31,6 +31,7 @@ export class OidcPlugin extends Plugin {
       actions: {
         getAuthUrl,
         redirect,
+        getEnabledProviders,
       },
     });
 
@@ -46,7 +47,7 @@ export class OidcPlugin extends Plugin {
     });
 
     // 开放访问权限
-    this.app.acl.allow('oidcProviders', '*');
+    this.app.acl.allow('oidcProviders', '*', 'allowConfigure');
     this.app.acl.allow('oidc', '*');
   }
 
