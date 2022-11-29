@@ -147,6 +147,7 @@ export class PluginACL extends Plugin {
         },
         transaction,
       });
+
       if (defaultRole && (await model.countRoles({ transaction })) == 0) {
         await model.addRoles(defaultRole, { transaction });
       }

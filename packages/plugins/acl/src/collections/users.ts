@@ -25,6 +25,6 @@ export default extend({
           },
         },
       },
-    }
+    },
   ],
 });
