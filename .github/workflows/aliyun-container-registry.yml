@@ -24,6 +24,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          submodules: true
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -51,7 +54,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile
+          file: Dockerfile.acr
           build-args: |
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}

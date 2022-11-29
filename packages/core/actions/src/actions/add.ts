@@ -10,5 +10,8 @@ export async function add(ctx: Context, next) {
   }
 
   await (<HasManyRepository | BelongsToManyRepository>repository).add(ctx.action.params.values);
+
+  ctx.status = 200;
+
   await next();
 }
