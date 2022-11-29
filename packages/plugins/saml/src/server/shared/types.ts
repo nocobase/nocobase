@@ -5,6 +5,5 @@ export interface SAMLProvider {
   loginUrl?: string;
   certificate?: string;
   redirectUrl?: string;
-  spEntityId?: string;
   enabled?: boolean;
 }

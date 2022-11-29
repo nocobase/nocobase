@@ -6,6 +6,8 @@ export const getSaml = (provider: SAMLProvider) => {
     entryPoint: provider.loginUrl,
     issuer: provider.issuer,
     cert: provider.certificate,
+    audience: false,
+    wantAuthnResponseSigned: false,
   };
 
   return new SAML(options);

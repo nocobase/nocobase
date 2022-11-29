@@ -4,7 +4,6 @@ import { SchemaComponent, useRecord } from '@nocobase/client';
 import { Card } from 'antd';
 import { samlSchema } from './schemas/saml';
 import { RedirectURLInput } from './RedirectURLInput';
-import { SpEntityIdInput } from './SpEntityIdInput';
 import { useSamlTranslation } from './locale';
 
 const schema = {
@@ -19,7 +18,7 @@ export const SAMLPanel = () => {
 
   return (
     <Card bordered={false}>
-      <SchemaComponent components={{ RedirectURLInput, SpEntityIdInput }} schema={schema} scope={{ t }} />
+      <SchemaComponent components={{ RedirectURLInput }} schema={schema} scope={{ t }} />
     </Card>
   );
 };

@@ -1,5 +1,6 @@
 import { Context } from '@nocobase/actions';
 import { SAML, SamlConfig } from '@node-saml/node-saml';
+import { getSaml } from '../shared/getSaml';
 import { SAMLProvider } from '../shared/types';
 
 export const saml = async (ctx: Context, next) => {
@@ -16,21 +17,15 @@ export const saml = async (ctx: Context, next) => {
     },
   });
 
-  const options: SamlConfig = {
-    issuer: record.issuer,
-    cert: record.certificate,
-    audience: record.spEntityId,
-  };
-
-  const saml = new SAML(options);
+  const saml = getSaml(record);
 
   const { profile } = await saml.validatePostResponseAsync(samlResponse);
 
   const usersRepo = ctx.db.getRepository('users');
 
-  const { nameID, nickname, email } = profile as Record<string, string>;
+  const { nameID, nickname, username, email } = profile as Record<string, string>;
 
-  const name = nickname ?? nameID;
+  const name = nickname ?? username ?? nameID;
 
   let user = await usersRepo.findOne({
     filter: {

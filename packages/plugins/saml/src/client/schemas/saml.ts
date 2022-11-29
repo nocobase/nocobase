@@ -81,16 +81,6 @@ const collection = {
       } as ISchema,
     },
     {
-      type: 'string',
-      name: 'spEntityId',
-      interface: 'input',
-      uiSchema: {
-        title: '{{t("SP entity id")}}',
-        type: 'string',
-        'x-component': 'SpEntityIdInput',
-      } as ISchema,
-    },
-    {
       type: 'boolean',
       name: 'enabled',
       interface: 'boolean',
@@ -125,10 +115,6 @@ export const formProperties = {
     'x-decorator': 'FormItem',
   },
   redirectUrl: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-  },
-  spEntityId: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },
@@ -272,18 +258,6 @@ export const samlSchema: ISchema = {
               'x-component': 'Table.Column',
               properties: {
                 redirectUrl: {
-                  type: 'string',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            column3: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                spEntityId: {
                   type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,

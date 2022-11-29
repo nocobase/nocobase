@@ -35,11 +35,6 @@ export default {
       name: 'redirectUrl',
     },
     {
-      comment: 'SP 唯一标识(Entity Id/audience)',
-      type: 'string',
-      name: 'spEntityId',
-    },
-    {
       comment: '启用',
       type: 'boolean',
       name: 'enabled',
