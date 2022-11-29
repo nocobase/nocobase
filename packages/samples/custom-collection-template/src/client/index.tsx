@@ -22,6 +22,9 @@ const myCollectionTemplate: ICollectionTemplate = {
   availableFieldInterfaces: {
     exclude: ['linkTo', 'o2o'],
   },
+  availableTargetCollections: {
+    include: ['calendar','myCollection'],
+  },
 };
 
 registerTemplate('myCollection', myCollectionTemplate);

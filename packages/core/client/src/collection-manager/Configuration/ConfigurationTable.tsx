@@ -14,14 +14,19 @@ import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
 
-const useAsyncDataSource = (service: any) => (field: any) => {
-  field.loading = true;
-  service(field).then(
-    action.bound((data: any) => {
-      field.dataSource = data;
-      field.loading = false;
-    }),
-  );
+const useAsyncDataSource = (service: any) => {
+  const { getTemplate } = useCollectionManager();
+  const record = useRecord();
+  const { availableTargetCollections } = getTemplate(record.template) || {};
+  return (field: any) => {
+    field.loading = true;
+    service(availableTargetCollections).then(
+      action.bound((data: any) => {
+        field.dataSource = data;
+        field.loading = false;
+      }),
+    );
+  };
 };
 
 const useSelectedRowKeys = () => {
@@ -77,9 +82,18 @@ export const ConfigurationTable = () => {
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
-  const loadCollections = async (field: any) => {
+  const loadCollections = async (availableTargetCollections) => {
+    const { include, exclude } = availableTargetCollections || {};
     return collectonsRef.current
       ?.filter((item) => !(item.autoCreate && item.isThrough))
+      .filter((v) => {
+        if (include?.length) {
+          return include.includes(v.template);
+        } else if (exclude?.length) {
+          return !exclude.includes(v.template);
+        }
+        return true;
+      })
       .map((item: any) => ({
         label: compile(item.title),
         value: item.name,

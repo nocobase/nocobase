@@ -1,12 +1,10 @@
 import { ISchema } from '@formily/react';
 import { FieldOptions } from '../../collection-manager/types';
 
-
-
 export interface ICollectionTemplate {
   name: string;
   title?: string;
-  color?:string;
+  color?: string;
   /** 排序 */
   order?: number;
   /** 默认配置 */
@@ -15,6 +13,8 @@ export interface ICollectionTemplate {
   configurableProperties?: Record<string, ISchema>;
   /** 当前模板可用的字段类型 */
   availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
+  /** 当前模板可建立关联关系表的模板类型 */
+  availableTargetCollections?: AvailableTargetCollectionsInclude | AvailableTargetCollectionsExclude;
 }
 
 interface AvailableFieldInterfacesInclude {
@@ -25,8 +25,16 @@ interface AvailableFieldInterfacesExclude {
   exclude?: any[];
 }
 
+interface AvailableTargetCollectionsInclude {
+  include?: any[];
+}
+
+interface AvailableTargetCollectionsExclude {
+  exclude?: any[];
+}
+
 interface CollectionOptions {
-  /** 
+  /**
    * 自动生成 id
    * @default true
    * */
