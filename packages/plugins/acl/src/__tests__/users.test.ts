@@ -122,6 +122,8 @@ describe('actions', () => {
       },
     });
 
+    expect(await users2.countRoles()).toEqual(1);
+
     await db.getRepository('roles').destroy({
       filterByTk: 'test',
     });
