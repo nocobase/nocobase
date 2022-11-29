@@ -16,7 +16,7 @@ export const getAuthUrl = async (ctx: Context, next) => {
   const client = await createOIDCClient(provider);
 
   ctx.body = client.authorizationUrl({
-    nonce: provider.clientId,
+    nonce: ctx.OIDC_NONCE,
     scope: 'openid profile',
   });
 

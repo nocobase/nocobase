@@ -22,7 +22,7 @@ export const oidc = async (ctx: Context, next) => {
       code: values.code,
     },
     {
-      nonce: provider.clientId,
+      nonce: ctx.OIDC_NONCE,
     },
   );
 
