@@ -17,6 +17,17 @@ const collection = {
     },
     {
       type: 'string',
+      name: 'buttonTitle',
+      interface: 'input',
+      uiSchema: {
+        title: '{{t("Button title")}}',
+        type: 'string',
+        'x-component': 'Input',
+        required: true,
+      } as ISchema,
+    },
+    {
+      type: 'string',
       name: 'clientId',
       interface: 'input',
       uiSchema: {
@@ -95,6 +106,10 @@ const collection = {
 
 export const formProperties = {
   title: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  buttonTitle: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },
