@@ -13,7 +13,6 @@ export interface SAMLProvider {
 export const SAMLList = () => {
   const [list, setList] = useState<SAMLProvider[]>([]);
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
-  const cancelTokenRef = useRef(new AbortController());
   const api = useAPIClient();
   const redirect = useRedirect();
 
@@ -43,7 +42,6 @@ export const SAMLList = () => {
       data: {
         clientId: item.clientId,
       },
-      signal: cancelTokenRef.current.signal,
     });
 
     const authUrl = response?.data?.data;
@@ -83,9 +81,6 @@ export const SAMLList = () => {
 
   useEffect(() => {
     getSamlList();
-    return () => {
-      cancelTokenRef.current.abort();
-    };
   }, []);
 
   return (
