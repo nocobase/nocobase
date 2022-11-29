@@ -81,9 +81,10 @@ describe('actions', () => {
 
     const loggedAgent = app.agent().auth(token, { type: 'bearer' });
 
-    const rolesCheckResponse = await loggedAgent.get('/roles:check');
+    const rolesCheckResponse = (await loggedAgent.set('Accept', 'application/json').get('/roles:check')) as any;
 
-    console.log(rolesCheckResponse);
+    expect(rolesCheckResponse.statusCode).toEqual(200);
+
     await db.getRepository('roles').destroy({
       filterByTk: 'test',
     });
@@ -95,7 +96,9 @@ describe('actions', () => {
 
     expect(response.statusCode).toEqual(200);
 
-    const roles = await users2.getRoles();
-    console.log({ roles });
+    const rolesCheckResponse2 = (await loggedAgent.set('Accept', 'application/json').get('/roles:check')) as any;
+
+    expect(rolesCheckResponse2.status).toEqual(500);
+    expect(rolesCheckResponse2.body.errors[0].message).toEqual('Role not found');
   });
 });
