@@ -8,7 +8,7 @@ export default function (props) {
   const { t } = useOidcTranslation();
   const ctx = useContext(PluginManagerContext);
   return (
-    <SigninPageExtensionProvider component={<OIDCList />}>
+    <SigninPageExtensionProvider component={OIDCList}>
       <SettingsCenterProvider
         settings={{
           'oidc-manager': {
