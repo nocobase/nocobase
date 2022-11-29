@@ -4,7 +4,7 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useHistory, useLocation } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
-import { SigninPageExtensionContext } from './SigninPageExtension';
+import { useSigninPageExtension } from './SigninPageExtension';
 import VerificationCode from './VerificationCode';
 
 const passwordForm: ISchema = {
@@ -131,7 +131,7 @@ export const SigninPage = (props: SigninPageProps) => {
   const { t } = useTranslation();
   useCurrentDocumentTitle('Signin');
   const ctx = useSystemSettings();
-  const { components: signinExtension } = useContext(SigninPageExtensionContext);
+  const signinExtension = useSigninPageExtension();
   const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   const { schema, components, scope } = props;
   return (
@@ -159,7 +159,7 @@ export const SigninPage = (props: SigninPageProps) => {
           schema={schema || passwordForm}
         />
       )}
-      {signinExtension}
+      <div>{signinExtension}</div>
       {allowSignUp && (
         <div>
           <Link to="/signup">{t('Create an account')}</Link>

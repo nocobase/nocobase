@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Button, Space } from 'antd';
 import { LoginOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
@@ -13,6 +13,7 @@ export interface SAMLProvider {
 export const SAMLList = () => {
   const [list, setList] = useState<SAMLProvider[]>([]);
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
+  const cancelTokenRef = useRef(new AbortController());
   const api = useAPIClient();
   const redirect = useRedirect();
 
@@ -42,6 +43,7 @@ export const SAMLList = () => {
       data: {
         clientId: item.clientId,
       },
+      signal: cancelTokenRef.current.signal,
     });
 
     const authUrl = response?.data?.data;
@@ -49,7 +51,7 @@ export const SAMLList = () => {
 
     const win = window.open(
       authUrl,
-      '__blank',
+      '_blank',
       `width=800,height=600,left=${(width - 800) / 2},top=${
         (height - 600) / 2
       },toolbar=no,menubar=no,location=no,status=no`,
@@ -81,6 +83,9 @@ export const SAMLList = () => {
 
   useEffect(() => {
     getSamlList();
+    return () => {
+      cancelTokenRef.current.abort();
+    };
   }, []);
 
   return (

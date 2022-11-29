@@ -10,7 +10,7 @@ export default function (props) {
   const { t } = useSamlTranslation();
 
   return (
-    <SigninPageExtensionProvider component={<SAMLList />}>
+    <SigninPageExtensionProvider component={SAMLList}>
       <SettingsCenterProvider
         settings={{
           'saml-manager': {
