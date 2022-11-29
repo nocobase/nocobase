@@ -9,7 +9,7 @@ export const getAuthUrl = async (ctx: Context, next) => {
   const providerRepo = ctx.db.getRepository('oidcProviders');
   const record = await providerRepo.findOne({
     filter: {
-      'clientId.$eq': values.clientId,
+      clientId: values.clientId,
     },
   });
   const provider: OIDCProvider = record.toJSON();

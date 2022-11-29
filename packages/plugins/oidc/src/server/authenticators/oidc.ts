@@ -10,7 +10,7 @@ export const oidc = async (ctx: Context, next) => {
   const providerRepo = ctx.db.getRepository('oidcProviders');
   const record = await providerRepo.findOne({
     filter: {
-      'clientId.$eq': values.clientId,
+      clientId: values.clientId,
     },
   });
   const provider: OIDCProvider = record.toJSON();
@@ -33,8 +33,8 @@ export const oidc = async (ctx: Context, next) => {
 
   let user = await usersRepo.findOne({
     filter: {
-      'nickname.$eq': name,
-      'email.$eq': userinfo.email ?? null,
+      nickname: name,
+      email: userinfo.email ?? null,
     },
   });
 
