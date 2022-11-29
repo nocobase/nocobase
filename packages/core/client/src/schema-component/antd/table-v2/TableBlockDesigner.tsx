@@ -37,7 +37,7 @@ export const TableBlockDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.SwitchItem
+      {sortable&& <SchemaSettings.SwitchItem
         title={t('Enable drag and drop sorting')}
         checked={field.decoratorProps.dragSort}
         onChange={(dragSort) => {
@@ -51,7 +51,7 @@ export const TableBlockDesigner = () => {
             },
           });
         }}
-      />
+      />}
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={

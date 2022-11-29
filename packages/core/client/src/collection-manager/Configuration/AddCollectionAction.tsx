@@ -1,6 +1,6 @@
-import { PlusOutlined } from '@ant-design/icons';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
-import { useForm } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -11,33 +11,30 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
-import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
-import { options } from './interfaces';
+import { templateOptions } from './templates';
 
-const getSchema = (schema: IField, record: any, compile) => {
+const getSchema = (schema, record: any, compile): ISchema => {
   if (!schema) {
     return;
   }
 
-  const properties = cloneDeep(schema.properties) as any;
+  const properties = cloneDeep(schema.configurableProperties) as any;
 
   if (schema.hasDefaultValue === true) {
-    properties['defaultValue'] = cloneDeep(schema?.default?.uiSchema);
+    properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
-
   const initialValue: any = {
     name: `f_${uid()}`,
+    template: schema.name,
     ...cloneDeep(schema.default),
-    interface: schema.name,
   };
   if (initialValue.reverseField) {
     initialValue.reverseField.name = `f_${uid()}`;
   }
-  // initialValue.uiSchema.title = schema.title;
   return {
     type: 'object',
     properties: {
@@ -59,7 +56,7 @@ const getSchema = (schema: IField, record: any, compile) => {
             );
           },
         },
-        title: `${compile(record.title)} - ${compile('{{ t("Add field") }}')}`,
+        title: '{{ t("Create collection") }}',
         properties: {
           summary: {
             type: 'void',
@@ -86,7 +83,7 @@ const getSchema = (schema: IField, record: any, compile) => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: '{{ useCreateCollectionField }}',
+                  useAction: () => useCreateCollection(),
                 },
               },
             },
@@ -97,22 +94,100 @@ const getSchema = (schema: IField, record: any, compile) => {
   };
 };
 
-export const useCollectionFieldFormValues = () => {
-  const form = useForm();
-  return {
-    getValues() {
-      const values = cloneDeep(form.values);
-      if (values.autoCreateReverseField) {
-      } else {
-        delete values.reverseField;
-      }
-      delete values.autoCreateReverseField;
-      return values;
-    },
-  };
+const useDefaultCollectionFields = (values) => {
+  let defaults = values.fields ? [...values.fields] : [];
+  const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = values;
+  if (autoGenId) {
+    const pk = values.fields.find((f) => f.primaryKey);
+    if (!pk) {
+      defaults.push({
+        name: 'id',
+        type: 'bigInt',
+        autoIncrement: true,
+        primaryKey: true,
+        allowNull: false,
+        uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
+        interface: 'id',
+      });
+    }
+  }
+  if (createdAt) {
+    defaults.push({
+      name: 'createdAt',
+      interface: 'createdAt',
+      type: 'date',
+      field: 'createdAt',
+      uiSchema: {
+        type: 'datetime',
+        title: '{{t("Created at")}}',
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    });
+  }
+  if (createdBy) {
+    defaults.push({
+      name: 'createdBy',
+      interface: 'createdBy',
+      type: 'belongsTo',
+      target: 'users',
+      foreignKey: 'createdById',
+      uiSchema: {
+        type: 'object',
+        title: '{{t("Created by")}}',
+        'x-component': 'RecordPicker',
+        'x-component-props': {
+          fieldNames: {
+            value: 'id',
+            label: 'nickname',
+          },
+        },
+        'x-read-pretty': true,
+      },
+    });
+  }
+  if (updatedAt) {
+    defaults.push({
+      type: 'date',
+      field: 'updatedAt',
+      name: 'updatedAt',
+      interface: 'updatedAt',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Last updated at")}}',
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    });
+  }
+  if (updatedBy) {
+    defaults.push({
+      type: 'belongsTo',
+      target: 'users',
+      foreignKey: 'updatedById',
+      name: 'updatedBy',
+      interface: 'updatedBy',
+      uiSchema: {
+        type: 'object',
+        title: '{{t("Last updated by")}}',
+        'x-component': 'RecordPicker',
+        'x-component-props': {
+          fieldNames: {
+            value: 'id',
+            label: 'nickname',
+          },
+        },
+        'x-read-pretty': true,
+      },
+    });
+  }
+  // 其他
+  return defaults;
 };
 
-const useCreateCollectionField = () => {
+const useCreateCollection = () => {
   const form = useForm();
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
@@ -122,12 +197,21 @@ const useCreateCollectionField = () => {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
+      const fields = useDefaultCollectionFields(values);
+      console.log(fields);
       if (values.autoCreateReverseField) {
       } else {
         delete values.reverseField;
       }
+      delete values.id;
       delete values.autoCreateReverseField;
-      await resource.create({ values });
+      await resource.create({
+        values: {
+          logging: true,
+          ...values,
+          fields,
+        },
+      });
       ctx.setVisible(false);
       await form.reset();
       refresh();
@@ -136,51 +220,18 @@ const useCreateCollectionField = () => {
   };
 };
 
-export const AddCollectionField = (props) => {
+export const AddCollection = (props) => {
   const record = useRecord();
-  return <AddFieldAction item={record} {...props} />;
+  return <AddCollectionAction item={record} {...props} />;
 };
 
-export const AddFieldAction = (props) => {
+export const AddCollectionAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align } = props;
-  const { getInterface, getTemplate } = useCollectionManager();
+  const { getTemplate } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const getFieldOptions = () => {
-    const { availableFieldInterfaces } = getTemplate(record.template) || {};
-    const { exclude, include } = availableFieldInterfaces || {};
-    const optionArr = [];
-    options.forEach((v) => {
-      if (v.key === 'systemInfo') {
-        optionArr.push({
-          ...v,
-          children: v.children.filter((v) => {
-            if (v.value === 'id') {
-              return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
-            } else {
-              return typeof record[v.value] === 'boolean' ? record[v.value] : true;
-            }
-          }),
-        });
-      } else {
-        const children = v.children.filter((v) => {
-          if (include?.length) {
-            return include.includes(v.value);
-          } else if (exclude?.length) {
-            return !exclude.includes(v.value);
-          }
-          return true;
-        });
-        optionArr.push({
-          ...v,
-          children,
-        });
-      }
-    });
-    return optionArr;
-  };
   return (
     <RecordProvider record={record}>
       <ActionContext.Provider value={{ visible, setVisible }}>
@@ -195,32 +246,20 @@ export const AddFieldAction = (props) => {
                 overflow: 'auto',
               }}
               onClick={(info) => {
-                const schema = getSchema(getInterface(info.key), record, compile);
-                if (schema) {
-                  setSchema(schema);
-                  setVisible(true);
-                }
+                const schema = getSchema(getTemplate(info.key), record, compile);
+                setSchema(schema);
+                setVisible(true);
               }}
             >
-              {getFieldOptions().map((option) => {
-                return (
-                  option.children.length > 0 && (
-                    <Menu.ItemGroup key={option.label} title={compile(option.label)}>
-                      {option.children
-                        .filter((child) => !['o2o', 'subTable'].includes(child.name))
-                        .map((child) => {
-                          return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
-                        })}
-                    </Menu.ItemGroup>
-                  )
-                );
+              {templateOptions().map((option) => {
+                return <Menu.Item key={option.name}>{compile(option.title)}</Menu.Item>;
               })}
             </Menu>
           }
         >
           {children || (
             <Button icon={<PlusOutlined />} type={'primary'}>
-              {t('Add field')}
+              {t('Create collection')} <DownOutlined />
             </Button>
           )}
         </Dropdown>
@@ -231,7 +270,7 @@ export const AddFieldAction = (props) => {
             getContainer,
             useCancelAction,
             createOnly: true,
-            useCreateCollectionField,
+            useCreateCollection,
             record,
             showReverseFieldConfig: true,
             ...scope,
