@@ -1,10 +1,10 @@
 import { ISchema, useForm } from '@formily/react';
 import { Space, Tabs } from 'antd';
-import React, { useCallback } from 'react';
+import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useHistory, useLocation } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
-import { SAMLList } from './SAMLList';
+import { SigninPageExtensionContext } from './SigninPageExtension';
 import VerificationCode from './VerificationCode';
 
 const passwordForm: ISchema = {
@@ -131,6 +131,7 @@ export const SigninPage = (props: SigninPageProps) => {
   const { t } = useTranslation();
   useCurrentDocumentTitle('Signin');
   const ctx = useSystemSettings();
+  const { components: signinExtension } = useContext(SigninPageExtensionContext);
   const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   const { schema, components, scope } = props;
   return (
@@ -158,7 +159,7 @@ export const SigninPage = (props: SigninPageProps) => {
           schema={schema || passwordForm}
         />
       )}
-      <SAMLList />
+      {signinExtension}
       {allowSignUp && (
         <div>
           <Link to="/signup">{t('Create an account')}</Link>
