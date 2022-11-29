@@ -8,7 +8,7 @@ const collection = {
   fields: [
     {
       type: 'string',
-      name: 'providerName',
+      name: 'title',
       interface: 'input',
       uiSchema: {
         title: '{{t("Provider name")}}',
@@ -153,7 +153,7 @@ const collection = {
     },
     {
       type: 'boolean',
-      name: 'enable',
+      name: 'enabled',
       interface: 'boolean',
       uiSchema: {
         title: '{{t("Enable")}}',
@@ -165,7 +165,7 @@ const collection = {
 };
 
 export const formProperties = {
-  providerName: {
+  title: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },
@@ -213,7 +213,7 @@ export const formProperties = {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },
-  enable: {
+  enabled: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
     title: '',
@@ -341,7 +341,7 @@ export const oidcSchema: ISchema = {
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
-                providerName: {
+                title: {
                   type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
@@ -365,7 +365,7 @@ export const oidcSchema: ISchema = {
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
-                enable: {
+                enabled: {
                   type: 'boolean',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,

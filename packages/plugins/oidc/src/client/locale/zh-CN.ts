@@ -6,7 +6,7 @@ export default {
   Edit: '编辑',
   'OIDC manager': 'OIDC 管理',
   'OIDC Providers': 'OIDC 身份提供者',
-  'Provider name': '身份提供者名称',
+  'Provider name': '名称',
   'Client id': '客户端 id',
   'Client secret': '客户端 secret',
   'Openid configuration': '服务发现地址',

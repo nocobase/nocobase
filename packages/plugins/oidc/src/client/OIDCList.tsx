@@ -3,12 +3,11 @@ import { Button, Space } from 'antd';
 import { LoginOutlined } from '@ant-design/icons';
 import { useMemoizedFn } from 'ahooks';
 import { css } from '@emotion/css';
-import { useAPIClient } from '../api-client';
-import { useRedirect } from './SigninPage';
+import { useAPIClient, useRedirect } from '@nocobase/client';
 
 export interface OIDCProvider {
   clientId: string;
-  providerName: string;
+  title: string;
   authorizeUrl: string;
 }
 
@@ -27,7 +26,7 @@ export const OIDCList = () => {
       url: 'oidcProviders:list',
       params: {
         filter: {
-          'enable.$eq': true,
+          enabled: true,
         },
       },
     });
@@ -94,7 +93,7 @@ export const OIDCList = () => {
     >
       {list.map((item) => (
         <Button shape="round" block key={item.clientId} icon={<LoginOutlined />} onClick={() => handleOpen(item)}>
-          OIDC: {item.providerName}
+          OIDC: {item.title}
         </Button>
       ))}
     </Space>

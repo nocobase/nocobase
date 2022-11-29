@@ -4,7 +4,7 @@ export enum IDTOKEN_SIGN_ALG {
 }
 
 export interface OIDCProvider {
-  providerName?: string;
+  title?: string;
   clientId?: string;
   clientSecret?: string;
   issuer?: string;

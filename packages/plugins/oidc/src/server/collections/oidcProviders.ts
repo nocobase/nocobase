@@ -8,7 +8,7 @@ export default {
       title: 'Provider 名称',
       comment: 'Provider 名称',
       type: 'string',
-      name: 'providerName',
+      name: 'title',
     },
     {
       comment: '客户端id',
@@ -45,7 +45,7 @@ export default {
     {
       comment: '令牌吊销 token 的接口',
       type: 'string',
-      name: 'revodeUrl',
+      name: 'revokeUrl',
     },
     {
       comment: '验证 id_token 的接口',
@@ -60,7 +60,7 @@ export default {
     {
       comment: '是否启用',
       type: 'boolean',
-      name: 'enable',
+      name: 'enabled',
     },
     {
       comment: '重定向回调地址',

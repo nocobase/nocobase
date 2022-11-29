@@ -3,7 +3,7 @@ export default {
   Issuer: 'Issuer',
   'OIDC manager': 'OIDC manager',
   'OIDC Providers': 'OIDC Providers',
-  'Provider name': 'Provider name',
+  'Provider name': 'Name',
   'Client id': 'Client id',
   'Client secret': 'Client secret',
   'Openid configuration': 'Openid configuration',
