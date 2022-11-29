@@ -12,7 +12,7 @@ export const saml = async (ctx: Context, next) => {
   const providerRepo = ctx.db.getRepository('samlProviders');
   const record: SAMLProvider = await providerRepo.findOne({
     filter: {
-      'clientId.$eq': clientId,
+      clientId: clientId,
     },
   });
 
@@ -34,8 +34,8 @@ export const saml = async (ctx: Context, next) => {
 
   let user = await usersRepo.findOne({
     filter: {
-      'nickname.$eq': name,
-      'email.$eq': email ?? null,
+      nickname: name,
+      email: email ?? null,
     },
   });
 

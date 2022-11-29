@@ -25,7 +25,7 @@ export const SAMLList = () => {
       url: 'samlProviders:list',
       params: {
         filter: {
-          'enabled.$eq': true,
+          enabled: true,
         },
       },
     });

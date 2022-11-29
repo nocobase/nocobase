@@ -10,7 +10,7 @@ export const getAuthUrl = async (ctx: Context, next) => {
 
   const record: SAMLProvider = await providerRepo.findOne({
     filter: {
-      'clientId.$eq': values.clientId,
+      clientId: values.clientId,
     },
   });
 

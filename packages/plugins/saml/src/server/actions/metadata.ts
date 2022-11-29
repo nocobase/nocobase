@@ -9,7 +9,7 @@ export const metadata = async (ctx: Context, next) => {
 
   const record = await providerRepo.findOne({
     filter: {
-      'clientId.$eq': clientId,
+      clientId: clientId,
     },
   });
 
