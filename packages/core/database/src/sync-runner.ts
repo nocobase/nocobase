@@ -70,6 +70,7 @@ export class SyncRunner {
             transaction,
           },
         );
+
         const sequenceCurrentVal = parseInt(sequenceCurrentValResult[0][0]['last_value']);
 
         if (sequenceCurrentVal > maxSequenceVal) {
@@ -89,12 +90,20 @@ export class SyncRunner {
       const sequenceTables = [...parentsDeep, tableName];
 
       for (const sequenceTable of sequenceTables) {
-        await queryInterface.sequelize.query(
-          `alter table "${sequenceTable}" alter column id set default nextval('${maxSequenceName}')`,
-          {
-            transaction,
-          },
-        );
+        try {
+          await queryInterface.sequelize.query(
+            `alter table "${sequenceTable}" alter column id set default nextval('${maxSequenceName}')`,
+            {
+              transaction,
+            },
+          );
+        } catch (err) {
+          if (err.message.match(/column "id" of relation "\w+" does not exist/)) {
+            continue;
+          }
+
+          throw err;
+        }
       }
     }
 

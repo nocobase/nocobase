@@ -3,6 +3,7 @@ import { Database } from '../database';
 import { mockDatabase } from './index';
 import { IdentifierError } from '../errors/identifier-error';
 
+const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? it : it.skip);
 describe('collection', () => {
   let db: Database;
 
@@ -46,11 +47,7 @@ describe('collection', () => {
     expect(error.message.includes("Zero-column tables aren't supported in")).toBeTruthy();
   });
 
-  it('can create empty collection', async () => {
-    if (db.inDialect('sqlite', 'mysql')) {
-      return;
-    }
-
+  pgOnly()('can create empty collection', async () => {
     db.collection({
       name: 'empty',
       timestamps: false,
