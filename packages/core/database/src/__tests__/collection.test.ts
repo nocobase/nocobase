@@ -68,6 +68,14 @@ describe('collection', () => {
         drop: false,
       },
     });
+
+    const row = await empty.repository.create({
+      values: {
+        test: 'test',
+      },
+    });
+
+    expect(row.get('test')).toEqual('test');
   });
 
   it('can create empty collection', async () => {
