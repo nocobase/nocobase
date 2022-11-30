@@ -21,11 +21,23 @@ const myCollectionTemplate: ICollectionTemplate = {
   configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'createdAt', 'updatedAt'),
   availableFieldInterfaces: {
     include: [
-      'linkTo',
+      'input',
       {
         interface: 'o2m',
         targetScope: {
           template: ['calendar'],
+        },
+      },
+      {
+        interface: 'm2m',
+        targetScope: {
+          template: ['calendar', 'myCollection'],
+        },
+      },
+      {
+        interface: 'linkTo',
+        targetScope: {
+          template: ['myCollection'],
         },
       },
     ],

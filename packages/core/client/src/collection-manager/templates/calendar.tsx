@@ -27,6 +27,19 @@ export const calendar: ICollectionTemplate = {
       {
         name: 'exclude',
         type: 'json',
+        uiSchema: {
+          type: 'object',
+          title: '{{t("Exclude")}}',
+          'x-component': 'Input.JSON',
+          'x-component-props': {
+            autoSize: {
+              minRows: 5,
+              // maxRows: 20,
+            },
+          },
+          default: null
+        },
+        interface:'json'
       },
     ],
   },
