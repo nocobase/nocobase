@@ -6,7 +6,7 @@ export const getEnabledProviders = async (ctx: Context, next) => {
     filter: {
       enabled: true,
     },
-    fields: ['buttonTitle', 'clientId'],
+    fields: ['title', 'clientId'],
   });
   return next();
 };

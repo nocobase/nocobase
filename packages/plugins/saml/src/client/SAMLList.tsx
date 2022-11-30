@@ -76,7 +76,7 @@ export const SAMLList = () => {
     >
       {data?.data?.map?.((item) => (
         <Button shape="round" block key={item.clientId} icon={<LoginOutlined />} onClick={() => handleOpen(item)}>
-          {item.buttonTitle}
+          {item.title}
         </Button>
       ))}
     </Space>

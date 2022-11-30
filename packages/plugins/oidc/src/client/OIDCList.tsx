@@ -8,7 +8,6 @@ import React, { useEffect, useState } from 'react';
 export interface OIDCProvider {
   clientId: string;
   title: string;
-  authorizeUrl: string;
 }
 
 export const OIDCList = () => {
@@ -75,9 +74,9 @@ export const OIDCList = () => {
         display: flex;
       `}
     >
-      {data?.data?.map?.((item) => (
+      {data?.data?.map?.((item: OIDCProvider) => (
         <Button shape="round" block key={item.clientId} icon={<LoginOutlined />} onClick={() => handleOpen(item)}>
-          {item.buttonTitle}
+          {item.title}
         </Button>
       ))}
     </Space>
