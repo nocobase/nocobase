@@ -1,4 +1,4 @@
-import { useForm } from '@formily/react';
+import { useForm, useFieldSchema, useField } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useRef, useState } from 'react';
@@ -15,12 +15,9 @@ import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
 
 const useAsyncDataSource = (service: any) => {
-  const { getTemplate } = useCollectionManager();
-  const record = useRecord();
-  const { availableTargetCollections } = getTemplate(record.template) || {};
-  return (field: any) => {
+  return (field: any, { targetScope }) => {
     field.loading = true;
-    service(availableTargetCollections).then(
+    service(targetScope).then(
       action.bound((data: any) => {
         field.dataSource = data;
         field.loading = false;
@@ -82,18 +79,14 @@ export const ConfigurationTable = () => {
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
-  const loadCollections = async (availableTargetCollections) => {
-    const { include, exclude } = availableTargetCollections || {};
+  const loadCollections = async (targetScope) => {
     return collectonsRef.current
       ?.filter((item) => !(item.autoCreate && item.isThrough))
-      .filter((v) => {
-        if (include?.length) {
-          return include.includes(v.template);
-        } else if (exclude?.length) {
-          return !exclude.includes(v.template);
-        }
-        return true;
-      })
+      .filter((item) =>
+        targetScope
+          ? targetScope['template']?.includes(item.template) || targetScope['name']?.includes(item.name)
+          : true,
+      )
       .map((item: any) => ({
         label: compile(item.title),
         value: item.name,

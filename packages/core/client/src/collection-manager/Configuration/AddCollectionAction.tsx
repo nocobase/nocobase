@@ -28,12 +28,12 @@ const getSchema = (schema, record: any, compile): ISchema => {
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
   const initialValue: any = {
-    name: `f_${uid()}`,
+    name: `t_${uid()}`,
     template: schema.name,
     ...cloneDeep(schema.default),
   };
   if (initialValue.reverseField) {
-    initialValue.reverseField.name = `f_${uid()}`;
+    initialValue.reverseField.name = `t_${uid()}`;
   }
   return {
     type: 'object',
