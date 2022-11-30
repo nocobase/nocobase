@@ -4,8 +4,6 @@ import { Button, Select } from "antd";
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { Trans, useTranslation } from "react-i18next";
 
-import { parse } from "json-templates";
-
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
 import { useFlowContext } from '../FlowContext';
@@ -140,25 +138,6 @@ function CalculationConfig({ value, onChange }) {
   );
 }
 
-function findCalculationNodes(calculation, nodes) {
-  if (calculation.group) {
-    calculation.group.calculations?.forEach(c => findCalculationNodes(c, nodes));
-  } else {
-    calculation.operands?.forEach(o => {
-      if (o.type === '$jobsMapByNodeId' && o.options.nodeId) {
-        nodes.add(o.options.nodeId);
-      } else if (!o.type) {
-        const template = parse(o.value);
-        template.parameters.forEach(p => {
-          if (p.key.startsWith('$jobsMapByNodeId.')) {
-            nodes.add(p.key.split('.')[1]);
-          }
-        });
-      }
-    });
-  }
-}
-
 export default {
   title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
   type: 'condition',
@@ -246,16 +225,5 @@ export default {
   },
   components: {
     CalculationConfig
-  },
-  getRefNodes({ calculation }) {
-    if (!calculation) {
-      return [];
-    }
-
-    const nodes = new Set();
-
-    findCalculationNodes(calculation, nodes);
-
-    return Array.from(nodes);
   }
 };

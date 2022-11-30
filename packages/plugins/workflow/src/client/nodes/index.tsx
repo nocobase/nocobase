@@ -130,25 +130,6 @@ export function Node({ data }) {
   );
 }
 
-function findNodeRefs(config, id, result = []) {
-  if (!config) {
-    return;
-  }
-  if (Array.isArray(config)) {
-    return config.forEach(item => findNodeRefs(item, id, result));
-  }
-  if (typeof config === 'object') {
-    return Object.keys(config).forEach((key) => {
-      findNodeRefs(config[key], id, result);
-    });
-  }
-  if (typeof config === 'string') {
-    const template = parse(config);
-    result.push(...template.parameters.filter(({ key }) => key.startsWith(`$jobsMapByNodeId.${id}.`) || key === `$jobsMapByNodeId.${id}`));
-  }
-  return;
-}
-
 export function RemoveButton() {
   const { t } = useTranslation();
   const api = useAPIClient();
@@ -171,8 +152,9 @@ export function RemoveButton() {
       if (node === current) {
         return false;
       }
-      const refs = [];
-      findNodeRefs(node.config, current.id, refs);
+
+      const template = parse(node.config);
+      const refs = template.parameters.filter(({ key }) => key.startsWith(`$jobsMapByNodeId.${current.id}.`) || key === `$jobsMapByNodeId.${current.id}`);
       return refs.length;
     });
 
