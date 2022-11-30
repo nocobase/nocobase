@@ -1,0 +1,56 @@
+name: Auto Deploy Pr
+# deploy_host
+# deploy_host_username
+# deploy_host_password
+
+# https://docs.github.com/cn/actions/using-workflows/events-that-trigger-workflows#workflow_run
+env:
+  nocobase_deploy_sh: /home/ecs-user/nocobase/auto-deploy-pr/nocobase-deploy.sh
+on:
+  workflow_run:
+    workflows: [ "Aliyun Container Registry" ]
+    types:
+      - "completed"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Download pr number artifact'
+        uses: actions/github-script@v6
+        with:
+          script: |
+              let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                 owner: context.repo.owner,
+                 repo: context.repo.repo,
+                 run_id: context.payload.workflow_run.id,
+              });
+              let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
+                return artifact.name == "pr_number"
+              })[0];
+              let download = await github.rest.actions.downloadArtifact({
+                 owner: context.repo.owner,
+                 repo: context.repo.repo,
+                 artifact_id: matchArtifact.id,
+                 archive_format: 'zip',
+              });
+              let fs = require('fs');
+              fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/pr_number.zip`, Buffer.from(download.data));
+
+      - name: 'Unzip pr number artifact'
+        run: unzip pr_number.zip
+
+      - name: 'set pr_number to env'
+        run: |
+          pr_number=`cat ./pr_number`
+          echo "pr_number=$pr_number" >> $GITHUB_ENV
+
+      - name: ssh deploy
+        if: ${{ env.pr_number }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.deploy_host }}
+          username: ${{ secrets.deploy_host_username }}
+          password: ${{ secrets.deploy_host_password }}
+          script: |
+            ${{ env.nocobase_deploy_sh }} up ${{ env.pr_number }}
