@@ -115,6 +115,7 @@ export const AuditLogs: any = () => {
     properties: {
       title: {
         'x-component': 'RichText',
+        'x-component-props': {ellipsis: true},
         'x-read-pretty': true,
       },
     },
