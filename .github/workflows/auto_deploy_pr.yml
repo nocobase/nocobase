@@ -5,7 +5,7 @@ name: Auto Deploy Pr
 
 # https://docs.github.com/cn/actions/using-workflows/events-that-trigger-workflows#workflow_run
 env:
-  nocobase_deploy_sh: /home/ecs-user/nocobase/auto-deploy-pr/nocobase-deploy.sh
+  nocobase_deploy_sh_dir: /home/ecs-user/nocobase/auto-deploy-pr/
 on:
   workflow_run:
     workflows: [ "Aliyun Container Registry" ]
@@ -53,4 +53,5 @@ jobs:
           username: ${{ secrets.deploy_host_username }}
           password: ${{ secrets.deploy_host_password }}
           script: |
-            ${{ env.nocobase_deploy_sh }} up ${{ env.pr_number }}
+            cd ${{ env.nocobase_deploy_sh_dir }}
+            ./nocobase-deploy.sh up ${{ env.pr_number }}
