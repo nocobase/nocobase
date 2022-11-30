@@ -79,6 +79,9 @@ describe('collection', () => {
   });
 
   it('can create empty collection', async () => {
+    if (db.inDialect('sqlite', 'mysql')) {
+      return;
+    }
     db.collection({
       name: 'empty',
       timestamps: false,
