@@ -15,6 +15,49 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should create inherits from empty table', async () => {
+    const empty = db.collection({
+      name: 'empty',
+      timestamps: false,
+      autoGenId: false,
+      fields: [],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    const parent2 = db.collection({
+      name: 'parent2',
+    });
+
+    const inherits = db.collection({
+      name: 'inherits',
+      inherits: ['empty', 'parent2'],
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    expect(inherits instanceof InheritedCollection).toBeTruthy();
+
+    const record = await inherits.repository.create({
+      values: {
+        name: 'test',
+      },
+    });
+
+    expect(record.get('name')).toEqual('test');
+  });
+
   it('should not throw error when fields have same type with parent', async () => {
     db.collection({
       name: 'parent',

@@ -69,6 +69,7 @@ export class PluginManager {
       if (options?.method !== 'install' || options.reload) {
         await this.repository.load();
       }
+      this.app.acl.allow('applicationPlugins', 'list');
     });
     this.addStaticMultiple(options.plugins);
   }
