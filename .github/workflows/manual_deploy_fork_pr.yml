@@ -2,7 +2,8 @@ name: manual_down_deploy_pr
 # deploy_host
 # deploy_host_username
 # deploy_host_password
-
+env:
+  nocobase_deploy_sh_dir: /home/ecs-user/nocobase/auto-deploy-pr/
 on:
   workflow_dispatch:
     inputs:
@@ -108,4 +109,5 @@ jobs:
           username: ${{ secrets.deploy_host_username }}
           password: ${{ secrets.deploy_host_password }}
           script: |
-            ${{ env.nocobase_deploy_sh }} up ${{ env.pr_number }}
+            cd ${{ env.nocobase_deploy_sh_dir }}
+            ./nocobase-deploy.sh up ${{ env.pr_number }}
