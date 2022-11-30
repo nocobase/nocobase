@@ -90,20 +90,29 @@ export class SyncRunner {
       const sequenceTables = [...parentsDeep, tableName];
 
       for (const sequenceTable of sequenceTables) {
-        try {
-          await queryInterface.sequelize.query(
-            `alter table "${sequenceTable}" alter column id set default nextval('${maxSequenceName}')`,
-            {
-              transaction,
-            },
-          );
-        } catch (err) {
-          if (err.message.match(/column "id" of relation "\w+" does not exist/)) {
-            continue;
-          }
+        const idColumnQuery = await queryInterface.sequelize.query(
+          `
+        SELECT true
+FROM   pg_attribute 
+WHERE  attrelid = '${sequenceTable}'::regclass  -- cast to a registered class (table)
+AND    attname = 'id'
+AND    NOT attisdropped 
+`,
+          {
+            transaction,
+          },
+        );
 
-          throw err;
+        if (idColumnQuery[0].length == 0) {
+          continue;
         }
+
+        await queryInterface.sequelize.query(
+          `alter table "${sequenceTable}" alter column id set default nextval('${maxSequenceName}')`,
+          {
+            transaction,
+          },
+        );
       }
     }
 
