@@ -46,11 +46,31 @@ describe('collection', () => {
     expect(error.message.includes("Zero-column tables aren't supported in")).toBeTruthy();
   });
 
-  it('can create empty collection', async () => {
-    if (db.inDialect('sqlite', 'mysql')) {
-      return;
-    }
+  it('can add field to empty collection', async () => {
+    const empty = db.collection({
+      name: 'empty',
+      timestamps: false,
+      autoGenId: false,
+      fields: [],
+    });
 
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    empty.setField('test', { type: 'string' });
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+  });
+
+  it('can create empty collection', async () => {
     db.collection({
       name: 'empty',
       timestamps: false,

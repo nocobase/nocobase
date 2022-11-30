@@ -159,7 +159,19 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
         throw new Error(`Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`);
       }
 
-      options.alter = false;
+      // @ts-ignore
+      const queryInterface = this.sequelize.queryInterface;
+
+      if (!queryInterface.patched) {
+        const oldDescribeTable = queryInterface.describeTable;
+        queryInterface.describeTable = async function (...args) {
+          try {
+            oldDescribeTable.apply(this, ...args);
+          } catch (err) {
+            throw err;
+          }
+        };
+      }
     }
 
     if (this.collection.isInherited()) {
