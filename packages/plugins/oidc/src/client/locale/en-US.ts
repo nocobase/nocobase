@@ -14,7 +14,9 @@ export default {
   'Redirect url': 'Redirect url',
   'Logout endpoint': 'Logout endpoint',
   'Id token sign alg': 'Id token sign alg',
-  'Add provider': 'Add provider',
-  'Edit provider': 'Edit provider',
-  'Delete provider': 'Delete provider',
+  'Add provider': 'Add',
+  'Edit provider': 'Edit',
+  'Delete provider': 'Delete',
+  'Sign in button name, which will be displayed on the sign in page':
+    'Sign in button name, which will be displayed on the sign in page',
 };
