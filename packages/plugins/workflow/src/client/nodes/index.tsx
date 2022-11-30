@@ -7,6 +7,8 @@ import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
 import { Button, message, Modal, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
+import parse from 'json-templates';
+
 import { Registry } from '@nocobase/utils/client';
 import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
 
@@ -39,7 +41,6 @@ export interface Instruction {
   render?(props): React.ReactElement;
   endding?: boolean;
   getter?(node: any): React.ReactElement;
-  getRefNodes?(config: any): any[]
 };
 
 export const instructions = new Registry<Instruction>();
@@ -129,6 +130,25 @@ export function Node({ data }) {
   );
 }
 
+function findNodeRefs(config, id, result = []) {
+  if (!config) {
+    return;
+  }
+  if (Array.isArray(config)) {
+    return config.forEach(item => findNodeRefs(item, id, result));
+  }
+  if (typeof config === 'object') {
+    return Object.keys(config).forEach((key) => {
+      findNodeRefs(config[key], id, result);
+    });
+  }
+  if (typeof config === 'string') {
+    const template = parse(config);
+    result.push(...template.parameters.filter(({ key }) => key.startsWith(`$jobsMapByNodeId.${id}.`) || key === `$jobsMapByNodeId.${id}`));
+  }
+  return;
+}
+
 export function RemoveButton() {
   const { t } = useTranslation();
   const api = useAPIClient();
@@ -147,13 +167,19 @@ export function RemoveButton() {
       onNodeRemoved(node);
     }
 
-    if (nodes.some(node => {
-      const instruction = instructions.get(node.type);
-      return Boolean(instruction.getRefNodes?.(node.config).length);
-    })) {
+    const usingNodes = nodes.filter(node => {
+      if (node === current) {
+        return false;
+      }
+      const refs = [];
+      findNodeRefs(node.config, current.id, refs);
+      return refs.length;
+    });
+
+    if (usingNodes.length) {
       Modal.error({
         title: lang('Can not delete'),
-        content: lang('The result of this node is been used by other nodes'),
+        content: lang('The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.', { nodes: usingNodes.map(item => `#${item.id}`).join(', ') }),
       });
       return;
     }

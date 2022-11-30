@@ -24,6 +24,8 @@ export type CalculationOptions = {
   operands: Operand[]
 };
 
+export type ValueOperand = string | number | boolean | null | Date;
+
 export type ConstantOperand = {
   type?: 'constant';
   value: any
@@ -50,7 +52,7 @@ export type Calculation = {
 };
 
 // TODO(type): union type here is wrong
-export type Operand = ContextOperand | InputOperand | JobOperand | ConstantOperand | Calculation;
+export type Operand = ValueOperand | ContextOperand | InputOperand | JobOperand | ConstantOperand | Calculation;
 
 // @deprecated
 // HACK: if no path provided, return self
@@ -64,19 +66,20 @@ function get(object, path?: string | Array<string>) {
 //  this method could only be used in executing nodes.
 //  because type of 'job' need loaded jobs in runtime execution.
 //  or the execution should be prepared first.
-export function calculate(operand: Operand, lastJob: JobModel, processor: Processor) {
+export function calculate(operand, lastJob: JobModel, processor: Processor) {
+  if (typeof operand !== 'object' || operand == null) {
+    return operand;
+  }
+  // @Deprecated
   switch (operand.type) {
-    // @Deprecated
     // from execution context
     case '$context':
       return get(processor.execution.context, operand.options.path);
 
-    // @Deprecated
     // from last job (or input job)
     case '$input':
       return lastJob ?? get(lastJob.result, operand.options.path);
 
-    // @Deprecated
     // from job in execution
     case '$jobsMapByNodeId':
       // assume jobs have been fetched from execution before

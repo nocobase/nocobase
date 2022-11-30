@@ -64,6 +64,7 @@ export default {
   'Node result': '节点数据',
   'Constant': '常量',
 
+  'Null': '空值',
   'Boolean': '逻辑值',
   'String': '字符串',
 
@@ -126,6 +127,8 @@ export default {
   'Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.': '未被赋值的字段将被设置为默认值，没有默认值的设置为空值。',
   'Trigger in executed workflow cannot be modified': '已经执行过工作流的触发器不能被修改',
   'Node in executed workflow cannot be modified': '已经执行过工作流中的节点不能被修改',
+  'Can not delete': '无法删除',
+  'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.': '该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。',
 
   'HTTP request': 'HTTP 请求',
   'URL': '地址',

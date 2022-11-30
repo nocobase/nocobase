@@ -20,7 +20,7 @@ function CalculationItem({ value, onChange, onRemove }) {
     return null;
   }
 
-  const { calculator, operands = [] } = value;
+  const { calculator, operands = [null] } = value;
 
   return (
     <div className={css`
