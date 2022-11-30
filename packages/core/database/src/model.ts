@@ -166,11 +166,16 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
         const oldDescribeTable = queryInterface.describeTable;
         queryInterface.describeTable = async function (...args) {
           try {
-            oldDescribeTable.apply(this, ...args);
+            return await oldDescribeTable.call(this, ...args);
           } catch (err) {
-            throw err;
+            if (err.message.includes('No description found for')) {
+              return [];
+            } else {
+              throw err;
+            }
           }
         };
+        queryInterface.patched = true;
       }
     }
 
