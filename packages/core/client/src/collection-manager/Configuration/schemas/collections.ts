@@ -1,6 +1,7 @@
 import { ISchema, Schema } from '@formily/react';
 import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
+import { CollectionTemplate } from '../components/CollectionTemplate';
 import { collectionFieldSchema } from './collectionFields';
 
 const compile = (source) => {
@@ -37,12 +38,12 @@ export const collection: CollectionOptions = {
     },
     {
       type: 'string',
-      name: 'titleField',
-      interface: 'select',
+      name: 'template',
+      interface: 'input',
       uiSchema: {
-        title: '{{ t("Title field") }}',
+        title: '{{ t("Collection Template") }}',
         type: 'string',
-        'x-component': 'Select',
+        'x-component': 'Input',
       },
     },
     {
@@ -68,91 +69,6 @@ export const collection: CollectionOptions = {
       },
     },
   ],
-};
-
-export const createCollectionProperties = {
-  title: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-  },
-  name: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-    'x-validator': 'uid',
-  },
-  inherits: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-    'x-visible': '{{ enableInherits}}',
-    'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
-  },
-  footer: {
-    type: 'void',
-    'x-component': 'Action.Drawer.Footer',
-    properties: {
-      action1: {
-        title: '{{ t("Cancel") }}',
-        'x-component': 'Action',
-        'x-component-props': {
-          useAction: '{{ cm.useCancelAction }}',
-        },
-      },
-      action2: {
-        title: '{{ t("Submit") }}',
-        'x-component': 'Action',
-        'x-component-props': {
-          type: 'primary',
-          useAction: '{{ cm.useCreateActionAndRefreshCM }}',
-        },
-      },
-    },
-  },
-};
-
-export const editCollectionProperties = {
-  title: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-  },
-  name: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-    'x-disabled': true,
-  },
-  titleField: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-    required: true,
-    'x-reactions':  ['{{useAsyncDataSource(loadTitleCollectionFields)}}'],
-  },
-  inherits: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-    'x-disabled': true,
-    'x-visible': '{{ enableInherits}}',
-    'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
-  },
-  footer: {
-    type: 'void',
-    'x-component': 'Action.Drawer.Footer',
-    properties: {
-      action1: {
-        title: '{{ t("Cancel") }}',
-        'x-component': 'Action',
-        'x-component-props': {
-          useAction: '{{ useCancelAction }}',
-        },
-      },
-      action2: {
-        title: '{{ t("Submit") }}',
-        'x-component': 'Action',
-        'x-component-props': {
-          type: 'primary',
-          useAction: '{{ useUpdateCollectionActionAndRefreshCM }}',
-        },
-      },
-    },
-  },
 };
 
 export const collectionSchema: ISchema = {
@@ -206,6 +122,7 @@ export const collectionSchema: ISchema = {
               title: '{{ t("Delete") }}',
               'x-component': 'Action',
               'x-component-props': {
+                icon: 'DeleteOutlined',
                 useAction: '{{ cm.useBulkDestroyActionAndRefreshCM }}',
                 confirm: {
                   title: "{{t('Delete record')}}",
@@ -216,21 +133,9 @@ export const collectionSchema: ISchema = {
             create: {
               type: 'void',
               title: '{{ t("Create collection") }}',
-              'x-component': 'Action',
+              'x-component': 'AddCollection',
               'x-component-props': {
                 type: 'primary',
-              },
-              properties: {
-                drawer: {
-                  type: 'void',
-                  title: '{{ t("Create collection") }}',
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    useValues: '{{ useCollectionValues }}',
-                  },
-                  properties: createCollectionProperties,
-                },
               },
             },
           },
@@ -272,6 +177,18 @@ export const collectionSchema: ISchema = {
             },
             column3: {
               type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              title: '{{t("Collection template")}}',
+              properties: {
+                template: {
+                  'x-component': CollectionTemplate,
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column4: {
+              type: 'void',
               title: '{{ t("Actions") }}',
               'x-component': 'Table.Column',
               properties: {
@@ -310,21 +227,9 @@ export const collectionSchema: ISchema = {
                     update: {
                       type: 'void',
                       title: '{{ t("Edit") }}',
-                      'x-component': 'Action.Link',
+                      'x-component': 'EditCollection',
                       'x-component-props': {
                         type: 'primary',
-                      },
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useValues: '{{ cm.useValuesFromRecord }}',
-                          },
-                          title: '{{ t("Edit collection") }}',
-                          properties: editCollectionProperties,
-                        },
                       },
                     },
                     delete: {

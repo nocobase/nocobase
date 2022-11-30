@@ -46,7 +46,7 @@ export default {
   "Advanced": "アドバンスド",
   "Advanced type": "アドバンスタイプ",
   "End": "終了",
-  "Trigger context": "トリガーフィールド",
+  "Trigger variables": "トリガーフィールド",
   "Node result": "ノードの結果",
   "Constant": "定数",
   "Boolean": "論理値",

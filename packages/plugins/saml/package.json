@@ -1,0 +1,12 @@
+{
+  "name": "@nocobase/plugin-saml",
+  "version": "0.8.0-alpha.13",
+  "main": "lib/server/index.js",
+  "devDependencies": {
+    "@nocobase/server": "0.8.0-alpha.13",
+    "@nocobase/test": "0.8.0-alpha.13"
+  },
+  "dependencies": {
+    "@node-saml/node-saml": "^4.0.2"
+  }
+}

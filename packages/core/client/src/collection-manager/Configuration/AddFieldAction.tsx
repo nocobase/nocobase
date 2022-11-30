@@ -9,12 +9,12 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useCancelAction, useCreateAction } from '../action-hooks';
+import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
-import { getOptions } from './interfaces';
+import { options } from './interfaces';
 
 const getSchema = (schema: IField, record: any, compile) => {
   if (!schema) {
@@ -114,7 +114,6 @@ export const useCollectionFieldFormValues = () => {
 
 const useCreateCollectionField = () => {
   const form = useForm();
-  const { run } = useCreateAction();
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
@@ -144,11 +143,44 @@ export const AddCollectionField = (props) => {
 
 export const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align } = props;
-  const { getInterface } = useCollectionManager();
+  const { getInterface, getTemplate } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const getFieldOptions = () => {
+    const { availableFieldInterfaces } = getTemplate(record.template) || {};
+    const { exclude, include } = availableFieldInterfaces || {};
+    const optionArr = [];
+    options.forEach((v) => {
+      if (v.key === 'systemInfo') {
+        optionArr.push({
+          ...v,
+          children: v.children.filter((v) => {
+            if (v.value === 'id') {
+              return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
+            } else {
+              return typeof record[v.value] === 'boolean' ? record[v.value] : true;
+            }
+          }),
+        });
+      } else {
+        const children = v.children.filter((v) => {
+          if (include?.length) {
+            return include.includes(v.value);
+          } else if (exclude?.length) {
+            return !exclude.includes(v.value);
+          }
+          return true;
+        });
+        optionArr.push({
+          ...v,
+          children,
+        });
+      }
+    });
+    return optionArr;
+  };
   return (
     <RecordProvider record={record}>
       <ActionContext.Provider value={{ visible, setVisible }}>
@@ -170,7 +202,7 @@ export const AddFieldAction = (props) => {
                 }
               }}
             >
-              {getOptions().map((option) => {
+              {getFieldOptions().map((option) => {
                 return (
                   option.children.length > 0 && (
                     <Menu.ItemGroup key={option.label} title={compile(option.label)}>

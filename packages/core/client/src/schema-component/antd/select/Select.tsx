@@ -7,7 +7,7 @@ import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames, getCurrentOptions } from './shared';
 
-type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void };
+type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; multiple: boolean };
 
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
 
@@ -28,7 +28,7 @@ const ObjectSelect = (props: Props) => {
         value: val[fieldNames.value],
       };
     });
-    if (['tags', 'multiple'].includes(mode)) {
+    if (['tags', 'multiple'].includes(mode) || props.multiple) {
       return current;
     }
     return current.shift();
@@ -53,7 +53,7 @@ const ObjectSelect = (props: Props) => {
           options,
           fieldNames,
         );
-        if (['tags', 'multiple'].includes(mode)) {
+        if (['tags', 'multiple'].includes(mode) || props.multiple) {
           onChange(current);
         } else {
           onChange(current.shift());
@@ -67,11 +67,13 @@ const ObjectSelect = (props: Props) => {
 
 const filterOption = (input, option) => (option?.label ?? '').toLowerCase().includes((input || '').toLowerCase());
 
-export const Select = connect(
+const InternalSelect = connect(
   (props: Props) => {
     const { objectValue, ...others } = props;
+    const mode = props.mode || props.multiple ? 'multiple' : undefined;
+
     if (objectValue) {
-      return <ObjectSelect {...others} />;
+      return <ObjectSelect {...others} mode={mode} />;
     }
     return (
       <AntdSelect
@@ -80,9 +82,9 @@ export const Select = connect(
         allowClear
         {...others}
         onChange={(changed) => {
-          props.onChange(changed === undefined ? null : changed);
+          props.onChange?.(changed === undefined ? null : changed);
         }}
-        value={others.value || undefined}
+        mode={mode}
       />
     );
   },
@@ -101,5 +103,11 @@ export const Select = connect(
   ),
   mapReadPretty(ReadPretty),
 );
+
+export const Select = InternalSelect as unknown as typeof InternalSelect & {
+  ReadPretty: typeof ReadPretty;
+};
+
+Select.ReadPretty = ReadPretty;
 
 export default Select;

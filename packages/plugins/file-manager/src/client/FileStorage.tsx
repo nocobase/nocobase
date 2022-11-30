@@ -6,19 +6,12 @@ import { useTranslation } from 'react-i18next';
 import { storageSchema } from './schemas/storage';
 import { StorageOptions } from './StorageOptions';
 
-const schema = {
-  type: 'object',
-  properties: {
-    [uid()]: storageSchema,
-  },
-};
-
 export const FileStoragePane = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   return (
     <Card bordered={false}>
-      <SchemaComponent components={{ StorageOptions }} schema={schema} />
+      <SchemaComponent components={{ StorageOptions }} schema={storageSchema} />
     </Card>
   );
 };

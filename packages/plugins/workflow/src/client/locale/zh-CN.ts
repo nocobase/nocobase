@@ -12,7 +12,7 @@ export default {
   'Load failed': '加载失败',
 
   'Trigger': '触发器',
-  'Trigger context': '触发数据',
+  'Trigger variables': '触发器变量',
   'Trigger data': '触发数据',
   'Trigger time': '触发时间',
   'Triggered at': '触发时间',
@@ -32,6 +32,7 @@ export default {
   'Based on date field of collection': '根据数据表时间字段',
   'Starts on': '开始于',
   'Ends on': '结束于',
+  'No end': '不结束',
   'Exactly at': '当时',
   'Repeat mode': '重复模式',
   'Repeat limit': '重复次数',

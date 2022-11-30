@@ -297,18 +297,32 @@ export const VariableTypes = {
     }
   },
   $context: {
-    title: `{{t("Trigger context", { ns: "${NAMESPACE}" })}}`,
+    title: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
     value: '$context',
+    options() {
+      const { workflow } = useFlowContext();
+      const trigger = triggers.get(workflow.type);
+      return trigger?.getOptions?.(workflow.config) ?? null;
+    },
     component() {
       const { workflow } = useFlowContext();
       const trigger = triggers.get(workflow.type);
       return trigger?.getter ?? NullRender;
     },
-    parse([prefix, ...path]) {
-      return { path: path.join('.') };
+    appendTypeValue({ options }) {
+      return options.type ? [options.type] : [];
+    },
+    onTypeChange(old, [type, optionType], onChange) {
+      onChange({ type, options: { type: optionType } });
+    },
+    parse([type, ...path]) {
+      return { type, ...( path?.length ? { path: path.join('.') } : {}) };
     },
     stringify({ options }) {
       const stack = ['$context'];
+      if (options?.type) {
+        stack.push(options.type);
+      }
       if (options?.path) {
         stack.push(options.path);
       }
@@ -345,7 +359,7 @@ export function Operand({
   const { type } = operand;
 
   const { component, appendTypeValue } = Types[type] || {};
-  const VariableComponent = typeof component === 'function' ? component(operand) : NullRender;
+  const Variable = typeof component === 'function' ? component(operand) : NullRender;
 
   return (
     <div className={css`
@@ -377,7 +391,7 @@ export function Operand({
           }
         }}
       />
-      {children ?? <VariableComponent {...operand} onChange={op => onChange({ ...op })} />}
+      {children ?? <Variable {...operand} onChange={op => onChange({ ...op })} />}
     </div>
   );
 }

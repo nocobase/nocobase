@@ -1,0 +1,69 @@
+name: Auto Deploy Main
+# deploy_host
+# deploy_host_username
+# deploy_host_password
+
+# https://docs.github.com/cn/actions/using-workflows/events-that-trigger-workflows#workflow_run
+env:
+  nocobase_main_deploy_path: /home/ecs-user/nocobase/main
+  nocobase_develop_deploy_path: /home/ecs-user/nocobase/develop
+on:
+  workflow_run:
+    workflows: [ "Aliyun Container Registry" ]
+    types:
+      - "completed"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Download image tag artifact'
+        uses: actions/github-script@v6
+        with:
+          script: |
+              let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                 owner: context.repo.owner,
+                 repo: context.repo.repo,
+                 run_id: context.payload.workflow_run.id,
+              });
+              let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
+                return artifact.name == "image_tag"
+              })[0];
+              let download = await github.rest.actions.downloadArtifact({
+                 owner: context.repo.owner,
+                 repo: context.repo.repo,
+                 artifact_id: matchArtifact.id,
+                 archive_format: 'zip',
+              });
+              let fs = require('fs');
+              fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/image_tag.zip`, Buffer.from(download.data));
+
+      - name: 'Unzip image tag artifact'
+        run: unzip image_tag.zip
+
+      - name: 'set image_tag to env'
+        run: |
+          image_tag=`cat ./image_tag`
+          echo "image_tag=$image_tag" >> $GITHUB_ENV
+
+      - name: ssh deploy main
+        if: env.image_tag == 'nocobase/nocobase:main'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.deploy_host }}
+          username: ${{ secrets.deploy_host_username }}
+          password: ${{ secrets.deploy_host_password }}
+          script: |
+            cd ${{ env.nocobase_main_deploy_path }}
+            sudo docker compose pull && sudo docker compose up -d
+
+      - name: ssh deploy develop
+        if: env.image_tag == 'nocobase/nocobase:develop'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.deploy_host }}
+          username: ${{ secrets.deploy_host_username }}
+          password: ${{ secrets.deploy_host_password }}
+          script: |
+            cd ${{ env.nocobase_develop_deploy_path }}
+            sudo docker compose pull && sudo docker compose up -d

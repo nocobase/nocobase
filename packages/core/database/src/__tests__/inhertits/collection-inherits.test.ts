@@ -15,6 +15,112 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should create inherits from empty table', async () => {
+    const empty = db.collection({
+      name: 'empty',
+      timestamps: false,
+      autoGenId: false,
+      fields: [],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    const parent2 = db.collection({
+      name: 'parent2',
+    });
+
+    const inherits = db.collection({
+      name: 'inherits',
+      inherits: ['empty', 'parent2'],
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    expect(inherits instanceof InheritedCollection).toBeTruthy();
+
+    const record = await inherits.repository.create({
+      values: {
+        name: 'test',
+      },
+    });
+
+    expect(record.get('name')).toEqual('test');
+  });
+
+  it('should not throw error when fields have same type with parent', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'date' }],
+    });
+
+    expect(() => {
+      db.collection({
+        name: 'child',
+        inherits: ['parent'],
+        fields: [
+          {
+            name: 'field1',
+            type: 'date',
+            otherOptions: true,
+          },
+        ],
+      });
+    }).not.toThrowError();
+  });
+
+  it('should throw error when fields conflict with parent ', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'string' }],
+    });
+
+    expect(() => {
+      db.collection({
+        name: 'child',
+        inherits: ['parent'],
+        fields: [{ name: 'field1', type: 'integer' }],
+      });
+    }).toThrowError();
+
+    await db.sync();
+  });
+
+  it('should not conflict when fields have same DateType', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'string' }],
+    });
+
+    expect(() => {
+      db.collection({
+        name: 'child',
+        inherits: ['parent'],
+        fields: [
+          {
+            name: 'field1',
+            type: 'sequence',
+            patterns: [
+              {
+                type: 'integer',
+              },
+            ],
+          },
+        ],
+      });
+    }).not.toThrowError();
+  });
+
   it('should create inherits with lazy parents', async () => {
     const child = db.collection({
       name: 'child',
@@ -523,25 +629,20 @@ pgOnly()('collection inherits', () => {
       name: 'person',
       fields: [
         { name: 'name', type: 'string' },
-        { type: 'hasOne', name: 'profile' },
+        { type: 'hasOne', name: 'profile', foreignKey: 'personId' },
       ],
     });
 
-    db.collection({
+    const Profile = db.collection({
       name: 'profiles',
       fields: [
         { name: 'age', type: 'integer' },
         {
           type: 'belongsTo',
           name: 'person',
+          foreignKey: 'personId',
         },
       ],
-    });
-
-    db.collection({
-      name: 'teachers',
-      inherits: 'person',
-      fields: [{ name: 'salary', type: 'integer' }],
     });
 
     db.collection({
@@ -555,6 +656,12 @@ pgOnly()('collection inherits', () => {
           target: 'studentProfiles',
         },
       ],
+    });
+
+    db.collection({
+      name: 'teachers',
+      inherits: 'person',
+      fields: [{ name: 'salary', type: 'integer' }],
     });
 
     db.collection({

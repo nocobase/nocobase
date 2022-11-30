@@ -46,7 +46,7 @@ export default {
   "Advanced": "Advanced",
   "Advanced type": "Advanced",
   "End": "End",
-  "Trigger context": "Trigger context",
+  "Trigger variables": "Trigger variables",
   "Node result": "Node result",
   "Constant": "Constant",
   "Boolean": "Boolean",
