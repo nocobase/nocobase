@@ -28,7 +28,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
   const initialValue: any = {
-    name: `f_${uid()}`,
+    name: `t_${uid()}`,
     template: schema.name,
     ...cloneDeep(schema.default),
   };
@@ -198,7 +198,6 @@ const useCreateCollection = () => {
       await form.submit();
       const values = cloneDeep(form.values);
       const fields = useDefaultCollectionFields(values);
-      console.log(fields);
       if (values.autoCreateReverseField) {
       } else {
         delete values.reverseField;
