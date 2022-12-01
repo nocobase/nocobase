@@ -288,6 +288,8 @@ export class ACL extends EventEmitter {
       return compose(acl.middlewares.nodes)(ctx, async () => {
         const permission = ctx.permission;
 
+        ctx.log.info('permission', { permission });
+
         if ((!permission.can || typeof permission.can !== 'object') && !permission.skip) {
           ctx.throw(403, 'No permissions');
           return;
