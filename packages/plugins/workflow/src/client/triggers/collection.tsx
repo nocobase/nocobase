@@ -155,7 +155,7 @@ export default {
         collection={workflow.config.collection}
         value={options?.path}
         onChange={(path) => {
-          onChange({ type, options: { ...options, path } });
+          onChange({ type, options: { ...options, type: 'data', path } });
         }}
       />
     );
