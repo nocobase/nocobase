@@ -379,7 +379,7 @@ export class PluginACL extends Plugin {
     this.app.acl.addFixedParams('collections', 'destroy', () => {
       return {
         filter: {
-          'name.$ne': 'roles',
+          $and: [{ 'name.$ne': 'roles' }, { 'name.$ne': 'rolesUsers' }],
         },
       };
     });
