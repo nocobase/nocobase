@@ -1,0 +1,28 @@
+name: Auto send feishu bot msg
+
+on:
+  workflow_run:
+    workflows: [ "Aliyun Container Registry" ]
+    types:
+      - "completed"
+
+jobs:
+  send_feishu_bot_msg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: pr deploy text message
+        if: github.event_name == 'pull_request'
+        uses: foxundermoon/feishu-action@v2
+        with:
+          url: ${{ secrets.PR_FEISHU_BOT_WEBHOOK_URL }}
+          msg_type: text
+          content: |
+            text: |
+              地址：${{ github.event.pull_request.html_url }}
+              标题：${{ github.event.pull_request.title }}
+              分支：${{ github.event.pull_request.head.ref }}
+              触发者：${{ github.triggering_actor }}
+              ----------------------------------------------
+              正在自动部署环境-稍后访问地址：http://${{ secrets.deploy_host }}:1${{ github.event.number }}
+              -----------------------------------------------
+              请及时更新任务系统的任务状态：https://tasks.nocobase.com/

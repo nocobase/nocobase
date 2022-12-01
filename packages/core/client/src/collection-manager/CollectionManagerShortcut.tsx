@@ -17,6 +17,10 @@ import {
   OverridingCollectionField,
   ViewCollectionField,
   ViewFieldAction,
+  AddCollection,
+  AddCollectionAction,
+  EditCollection,
+  EditCollectionAction,
 } from './Configuration';
 
 const schema: ISchema = {
@@ -53,6 +57,10 @@ export const CollectionManagerPane = () => {
           ConfigurationTable,
           AddFieldAction,
           AddCollectionField,
+          AddCollection,
+          AddCollectionAction,
+          EditCollection,
+          EditCollectionAction,
           EditFieldAction,
           EditCollectionField,
           OverridingCollectionField,
@@ -99,6 +107,8 @@ export const CollectionManagerShortcut2 = () => {
           EditFieldAction,
           OverridingFieldAction,
           ViewFieldAction,
+          AddCollectionAction,
+          EditCollectionAction,
         }}
       />
     </ActionContext.Provider>
