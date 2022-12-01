@@ -20,7 +20,6 @@ jobs:
             text: |
               地址：${{ github.event.pull_request.html_url }}
               标题：${{ github.event.pull_request.title }}
-              内容：${{ github.event.pull_request.body }}
               分支：${{ github.event.pull_request.head.ref }}
               触发者：${{ github.triggering_actor }}
               ----------------------------------------------
