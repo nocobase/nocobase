@@ -1,4 +1,8 @@
+import React from 'react';
 import { ISchema } from '@formily/react';
+import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 import { triggers } from '../triggers';
 import { executionSchema } from './executions';
@@ -61,7 +65,18 @@ const collection = {
         'x-decorator': 'FormItem',
         default: false
       } as ISchema
-    }
+    },
+    {
+      type: 'number',
+      name: 'allExecuted',
+      interface: 'integer',
+      uiSchema: {
+        title: `{{t("Executed", { ns: "${NAMESPACE}" })}}`,
+        type: 'number',
+        'x-component': 'InputNumber',
+        'x-decorator': 'FormItem',
+      } as ISchema
+    },
   ],
 };
 
@@ -219,6 +234,18 @@ export const workflowSchema: ISchema = {
                 },
               }
             },
+            allExecuted: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                allExecuted: {
+                  type: 'number',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              }
+            },
             actions: {
               type: 'void',
               title: '{{ t("Actions") }}',
@@ -239,9 +266,6 @@ export const workflowSchema: ISchema = {
                       type: 'void',
                       title: `{{t("Execution history", { ns: "${NAMESPACE}" })}}`,
                       'x-component': 'Action.Link',
-                      'x-component-props': {
-                        type: 'primary',
-                      },
                       properties: {
                         drawer: executionSchema
                       }
@@ -300,6 +324,26 @@ export const workflowSchema: ISchema = {
                         },
                       },
                     },
+                    revision: {
+                      type: 'void',
+                      title: `{{t("Duplicate", { ns: "${NAMESPACE}" })}}`,
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        useAction() {
+                          const { t } = useTranslation();
+                          const { refresh } = useResourceActionContext();
+                          const { resource, targetKey } = useResourceContext();
+                          const { [targetKey]: filterByTk } = useRecord();
+                          return {
+                            async run() {
+                              await resource.revision({ filterByTk });
+                              message.success(t('Operation succeeded'));
+                              refresh();
+                            },
+                          };
+                        }
+                      }
+                    }
                     // delete: {
                     //   type: 'void',
                     //   title: '{{ t("Delete") }}',

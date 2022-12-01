@@ -64,23 +64,30 @@ function migrateConfig(config, oldToNew) {
 export async function revision(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context);
-  const { filterByTk } = context.action.params;
+  const { filterByTk, filter = {} } = context.action.params;
 
   context.body = await db.sequelize.transaction(async transaction => {
     const origin = await repository.findOne({
       filterByTk,
+      filter,
       appends: ['nodes'],
       context,
       transaction
     });
 
+    const revisionData = filter.key ? {
+      key: filter.key,
+      title: origin.title,
+      allExecuted: origin.allExecuted
+    } : {};
+
     const instance = await repository.create({
       values: {
-        key: origin.key,
-        title: origin.title,
+        title: `${origin.title} copy`,
         description: origin.description,
         type: origin.type,
-        config: origin.config
+        config: origin.config,
+        ...revisionData
       },
       transaction
     });
