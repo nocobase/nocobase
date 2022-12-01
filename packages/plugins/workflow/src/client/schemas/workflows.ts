@@ -1,4 +1,3 @@
-import React from 'react';
 import { ISchema } from '@formily/react';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -241,8 +240,15 @@ export const workflowSchema: ISchema = {
               properties: {
                 allExecuted: {
                   type: 'number',
+                  'x-decorator': 'OpenDrawer',
+                  'x-decorator-props': {
+                    component: 'a',
+                  },
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
+                  properties: {
+                    drawer: executionSchema
+                  }
                 },
               }
             },
@@ -261,14 +267,6 @@ export const workflowSchema: ISchema = {
                     config: {
                       type: 'void',
                       'x-component': 'WorkflowLink'
-                    },
-                    executions: {
-                      type: 'void',
-                      title: `{{t("Execution history", { ns: "${NAMESPACE}" })}}`,
-                      'x-component': 'Action.Link',
-                      properties: {
-                        drawer: executionSchema
-                      }
                     },
                     update: {
                       type: 'void',
