@@ -1,5 +1,5 @@
 const { existsSync } = require('fs');
-const { resolve } = require('path');
+const { resolve, sep } = require('path');
 const packageJson = require('./package.json');
 const fs = require('fs');
 const glob = require('glob');
@@ -69,7 +69,8 @@ function getPackagePaths() {
           const dirname = resolve(process.cwd(), file);
           if (existsSync(dirname)) {
             const re = new RegExp(dir.replace('*', '(.+)'));
-            const match = re.exec(dirname.substring(process.cwd().length + 1));
+            const p = dirname.substring(process.cwd().length + 1).split(sep).join('/');
+            const match = re.exec(p);
             pkgs.push([key.replace('*', match?.[1]), dirname]);
           }
         }
