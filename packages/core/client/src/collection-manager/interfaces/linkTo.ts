@@ -97,7 +97,7 @@ export const linkTo: IField = {
       type: 'string',
       title: '{{t("Related collection")}}',
       required: true,
-      'x-reactions': ['{{useAsyncDataSource(useAsyncDataSource)}}'],
+      'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-disabled': '{{ !createOnly }}',
