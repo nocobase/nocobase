@@ -128,7 +128,7 @@ export const m2o: IField = {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource((arg)=>loadCollections(arg,targetScope))}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',

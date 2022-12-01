@@ -15,9 +15,9 @@ import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
 
 const useAsyncDataSource = (service: any) => {
-  return (field: any, { targetScope }) => {
+  return (field: any, options?: any) => {
     field.loading = true;
-    service(targetScope).then(
+    service(field, options).then(
       action.bound((data: any) => {
         field.dataSource = data;
         field.loading = false;
@@ -79,7 +79,8 @@ export const ConfigurationTable = () => {
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
-  const loadCollections = async (targetScope) => {
+  const loadCollections = async (field, options) => {
+    const { targetScope } = options;
     return collectonsRef.current
       ?.filter((item) => !(item.autoCreate && item.isThrough))
       .filter((item) =>

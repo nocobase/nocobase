@@ -33,7 +33,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
     ...cloneDeep(schema.default),
   };
   if (initialValue.reverseField) {
-    initialValue.reverseField.name = `t_${uid()}`;
+    initialValue.reverseField.name = `f_${uid()}`;
   }
   return {
     type: 'object',
