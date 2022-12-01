@@ -16,6 +16,8 @@ export function RelationRepositoryActionBuilder(method: 'remove' | 'set') {
     const repository = getRepositoryFromParams(ctx);
 
     await repository[method](ctx.action.params.values);
+
+    ctx.status = 200;
     await next();
   };
 }

@@ -1,0 +1,20 @@
+name: Upload fork pr files
+
+on:
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'packages/**'
+
+jobs:
+  upload-fork-pr-files:
+    if: github.event.pull_request.head.repo.fork == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pr_files
+          path: ./

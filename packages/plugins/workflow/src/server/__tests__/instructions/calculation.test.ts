@@ -82,20 +82,20 @@ describe('workflow > instructions > calculation', () => {
           calculation: {
             calculator: 'add',
             operands: [
-              { value: 1 },
+              { type: '$context', options: { type: 'data', path: 'read' } },
               { type: '$context', options: { path: 'data.read' } }
             ]
           }
         }
       });
 
-      const post = await PostRepo.create({ values: { title: 't1' } });
+      const post = await PostRepo.create({ values: { title: 't1', read: 1 } });
 
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.result).toBe(1);
+      expect(job.result).toBe(2);
     });
 
     it('context by json-template', async () => {

@@ -1,11 +1,11 @@
 import { clone } from '@formily/shared';
+import { reduce, unionBy, uniq } from 'lodash';
 import { useContext } from 'react';
-import { reduce, unionBy,uniq } from 'lodash';
 import { CollectionManagerContext } from '../context';
 import { CollectionFieldOptions } from '../types';
 
 export const useCollectionManager = () => {
-  const { refreshCM, service, interfaces, collections } = useContext(CollectionManagerContext);
+  const { refreshCM, service, interfaces, collections, templates } = useContext(CollectionManagerContext);
   const getInheritedFields = (name) => {
     const inheritKeys = getInheritCollections(name);
     const inheritedFields = reduce(
@@ -22,7 +22,7 @@ export const useCollectionManager = () => {
   const getCollectionFields = (name: string): CollectionFieldOptions[] => {
     const currentFields = collections?.find((collection) => collection.name === name)?.fields;
     const inheritedFields = getInheritedFields(name);
-    const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v:any) => {
+    const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v: any) => {
       return !v.isForeignKey;
     });
     return totalFields;
@@ -121,6 +121,9 @@ export const useCollectionManager = () => {
     },
     getInterface(name: string) {
       return interfaces[name] ? clone(interfaces[name]) : null;
+    },
+    getTemplate(name: string = 'general') {
+      return templates[name] ? clone(templates[name] || templates['general']) : null;
     },
     getParentCollectionFields: (parentCollection, currentCollection) => {
       const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields;

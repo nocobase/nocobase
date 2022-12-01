@@ -4,6 +4,7 @@ export interface CollectionManagerOptions {
   service?: any;
   interfaces?: any;
   collections?: any[];
+  templates?: any;
   refreshCM?: () => Promise<void>;
 }
 

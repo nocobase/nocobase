@@ -179,8 +179,9 @@ export default {
     { label: lang('Branch into "Yes" and "No"'), key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
-    const { id, config: { rejectOnFalse } } = data;
+    const { t } = useTranslation();
     const { nodes } = useFlowContext();
+    const { id, config: { rejectOnFalse } } = data;
     const trueEntry = nodes.find(item => item.upstreamId === id && item.branchIndex === 1);
     const falseEntry = nodes.find(item => item.upstreamId === id && item.branchIndex === 0);
     return (
@@ -215,8 +216,8 @@ export default {
                 }
               `}
             >
-              <span className={css`right: 4em;`}>{lang('No')}</span>
-              <span className={css`left: 4em;`}>{lang('Yes')}</span>
+              <span className={css`right: 4em;`}>{t('No')}</span>
+              <span className={css`left: 4em;`}>{t('Yes')}</span>
             </div>
           </div>
         )}

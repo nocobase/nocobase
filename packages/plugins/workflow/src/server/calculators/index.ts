@@ -12,7 +12,8 @@ export default calculators;
 export type OperandType = '$context' | '$input' | '$jobsMapByNodeId' | '$calculation';
 
 export type ObjectGetterOptions = {
-  path?: string
+  type?: string;
+  path?: string;
 };
 
 export type JobGetterOptions = ObjectGetterOptions & {
@@ -74,7 +75,7 @@ export function calculate(operand, lastJob: JobModel, processor: Processor) {
   switch (operand.type) {
     // from execution context
     case '$context':
-      return get(processor.execution.context, operand.options.path);
+      return get(processor.execution.context, [operand.options.type, operand.options.path].filter(Boolean).join('.'));
 
     // from last job (or input job)
     case '$input':

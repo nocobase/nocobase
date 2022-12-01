@@ -1,12 +1,14 @@
 export default {
   'Workflow': '工作流',
   'Execution history': '执行历史',
+  'Executed': '已执行',
   'Trigger type': '触发方式',
   'Status': '状态',
   'On': '启用',
   'Off': '停用',
   'Version': '版本',
   'Copy to new version': '复制到新版本',
+  'Duplicate': '复制',
 
   'Loading': '加载中',
   'Load failed': '加载失败',
