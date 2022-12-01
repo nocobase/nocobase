@@ -328,6 +328,16 @@ describe('workflow > actions > workflows', () => {
       expect(w2.enabled).toBe(false);
       expect(w2.allExecuted).toBe(0);
 
+      // stop w1
+      await WorkflowModel.update({
+        enabled: false
+      }, {
+        where: {
+          id: w1.id
+        },
+        individualHooks: true
+      });
+
       await WorkflowModel.update({
         enabled: true
       }, {
@@ -345,10 +355,10 @@ describe('workflow > actions > workflows', () => {
         order: [['id', 'ASC']]
       });
 
-      expect(w1next.enabled).toBe(true);
+      expect(w1next.enabled).toBe(false);
       expect(w1next.current).toBe(true);
-      expect(w1next.executed).toBe(2);
-      expect(w1next.allExecuted).toBe(2);
+      expect(w1next.executed).toBe(1);
+      expect(w1next.allExecuted).toBe(1);
       expect(w2next.enabled).toBe(true);
       expect(w2next.executed).toBe(1);
       expect(w2next.allExecuted).toBe(1);
@@ -356,7 +366,6 @@ describe('workflow > actions > workflows', () => {
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();
       expect(e1.key).not.toBe(e2.key);
-      expect(e1.workflowId).toBe(w1.id);
       expect(e2.workflowId).toBe(w2.id);
     });
   });
