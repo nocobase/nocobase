@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -198,6 +198,10 @@ export class Collection<
       throw new Error(
         `Field type conflict: cannot set "${name}" on "${this.name}" to ${options.type}, parent "${name}" type is ${oldField.options.type}`,
       );
+    }
+
+    if (this.options.autoGenId !== false && options.primaryKey) {
+      this.model.removeAttribute('id');
     }
 
     this.removeField(name);
