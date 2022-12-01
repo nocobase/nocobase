@@ -47,6 +47,10 @@ export function dataWrapping() {
           data: ctx.body,
         };
       }
+    } else if (ctx.action) {
+      ctx.body = {
+        data: ctx.body,
+      };
     }
   };
 }
