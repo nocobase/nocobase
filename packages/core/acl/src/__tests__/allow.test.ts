@@ -40,6 +40,9 @@ describe('skip', () => {
         resourceName: 'users',
         actionName: 'login',
       },
+      log: {
+        info() {},
+      },
       app: {
         acl,
       },
@@ -76,6 +79,9 @@ describe('skip', () => {
       action: {
         resourceName: 'users',
         actionName: 'login',
+      },
+      log: {
+        info() {},
       },
       app: {
         acl,
