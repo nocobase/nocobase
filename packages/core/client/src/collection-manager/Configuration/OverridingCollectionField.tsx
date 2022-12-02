@@ -128,12 +128,18 @@ const getIsOverriding = (currentFields, record) => {
 };
 export const OverridingFieldAction = (props) => {
   const { scope, getContainer, item: record, children, currentCollection } = props;
-  const { getInterface, getCurrentCollectionFields } = useCollectionManager();
+  const { target } = record;
+  const { getInterface, getCurrentCollectionFields, getChildrenCollections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
   const { t } = useTranslation();
   const compile = useCompile();
+  const childCollections =
+    target &&
+    getChildrenCollections(target)
+      ?.map((v) => v.name)
+      .concat([target]);
   const [data, setData] = useState<any>({});
   const currentFields = getCurrentCollectionFields(currentCollection);
   const disabled = getIsOverriding(currentFields, record);
@@ -183,6 +189,7 @@ export const OverridingFieldAction = (props) => {
             useCancelAction,
             showReverseFieldConfig: !data?.reverseField,
             createOnly: true,
+            targetScope: { name: childCollections },
             ...scope,
           }}
         />

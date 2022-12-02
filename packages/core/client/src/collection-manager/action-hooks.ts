@@ -1,13 +1,12 @@
-import { message } from 'antd';
-import omit from 'lodash/omit';
-import { useEffect } from 'react';
 import { useForm } from '@formily/react';
+import { message } from 'antd';
+import { useEffect } from 'react';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
 import { useActionContext } from '../schema-component';
+import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
-import { useFilterFieldProps, useFilterFieldOptions } from '../schema-component/antd/filter/useFilterActionProps';
 
 export const useCancelAction = () => {
   const form = useForm();
@@ -18,6 +17,21 @@ export const useCancelAction = () => {
       form.reset();
     },
   };
+};
+
+export const useValuesFromRecord = (options) => {
+  const record = useRecord();
+  const result = useRequest(() => Promise.resolve({ data: record }), {
+    ...options,
+    manual: true,
+  });
+  const ctx = useActionContext();
+  useEffect(() => {
+    if (ctx.visible) {
+      result.run();
+    }
+  }, [ctx.visible]);
+  return result;
 };
 
 export const useResetFilterAction = () => {
@@ -166,7 +180,7 @@ export const useCreateAction = () => {
   return {
     async run() {
       await form.submit();
-      await resource.create({ values: form.values});
+      await resource.create({ values: form.values });
       ctx.setVisible(false);
       await form.reset();
       refresh();
@@ -258,7 +272,6 @@ export const useBulkDestroyAction = () => {
     },
   };
 };
-
 
 export const useValuesFromRA = (options) => {
   const ctx = useResourceActionContext();

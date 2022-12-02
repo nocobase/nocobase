@@ -1,10 +1,10 @@
-import lodash, { omit } from 'lodash';
+import lodash from 'lodash';
 import { SingleAssociationAccessors, Transactionable } from 'sequelize';
 import { Model } from '../model';
 import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
-import { RelationRepository, transaction } from './relation-repository';
 import { handleAppendsQuery } from '../utils';
+import { RelationRepository, transaction } from './relation-repository';
 
 export interface SingleRelationFindOption extends Transactionable {
   fields?: Fields;
