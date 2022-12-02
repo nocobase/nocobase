@@ -28,7 +28,6 @@ export const useMenuItems = () => {
 };
 
 export const MenuItemsProvider = (props) => {
-  const api = useAPIClient();
   const route = useRoute();
   const options = {
     url: `uiSchemas:getProperties/${route.uiSchemaUid}`,
@@ -43,11 +42,6 @@ export const MenuItemsProvider = (props) => {
       value={{
         service: service,
         items,
-        refreshMI: async () => {
-          const { data } = await api.request(options);
-          service.mutate(data);
-          return data?.data || [];
-        },
       }}
     >
       {props.children}

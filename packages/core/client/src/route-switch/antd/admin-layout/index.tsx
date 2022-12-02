@@ -19,7 +19,6 @@ import {
   useRequest,
   useRoute,
   useSystemSettings,
-  MenuItemsProvider,
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
 import { PoweredBy } from '../../../powered-by';
@@ -213,9 +212,7 @@ export const AdminLayout = (props) => {
         <RemoteSchemaTemplateManagerProvider>
           <RemoteCollectionManagerProvider>
             <ACLRolesCheckProvider>
-              <MenuItemsProvider>
-                <InternalAdminLayout {...props} />
-              </MenuItemsProvider>
+              <InternalAdminLayout {...props} />
             </ACLRolesCheckProvider>
           </RemoteCollectionManagerProvider>
         </RemoteSchemaTemplateManagerProvider>

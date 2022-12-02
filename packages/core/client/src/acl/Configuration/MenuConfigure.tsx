@@ -5,7 +5,7 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
 import { uniq } from 'lodash';
 import { useCompile } from '../../schema-component';
-import { useMenuItems } from './MenuItemsProvider';
+import { MenuItemsProvider, useMenuItems } from './MenuItemsProvider';
 
 const findUids = (items) => {
   if (!Array.isArray(items)) {
