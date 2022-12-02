@@ -203,6 +203,15 @@ describe('workflow > Plugin', () => {
         }
       });
 
+      const w3 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
       await sleep(500);
@@ -212,6 +221,9 @@ describe('workflow > Plugin', () => {
 
       const [e2] = await w2.getExecutions();
       expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const [e3] = await w3.getExecutions();
+      expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
 
     it('when server starts, process all created executions', async () => {

@@ -24,6 +24,7 @@ export default class WorkflowPlugin extends Plugin {
   extensions = extensions;
   executing: Promise<any> = null;
   pending: [ExecutionModel, JobModel][] = [];
+  events: [workflow: WorkflowModel, context: any, options: { context?: any }][] = [];
 
   onBeforeSave = async (instance: WorkflowModel, options) => {
     const Model = <typeof WorkflowModel>instance.constructor;
@@ -132,11 +133,27 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  public async trigger(workflow: WorkflowModel, context: Object, options: Transactionable & { context?: any } = {}): Promise<void> {
+  public trigger(workflow: WorkflowModel, context: Object, options: { context?: any } = {}): Promise<void> {
     // `null` means not to trigger
     if (context == null) {
-      return null;
+      return;
     }
+
+    this.events.push([workflow, context, options]);
+
+    if (this.events.length > 1) {
+      return;
+    }
+
+    this.prepare();
+  }
+
+  private async prepare() {
+    if (!this.events.length) {
+      return;
+    }
+
+    const [workflow, context, options] = this.events[0];
 
     if (options.context?.executionId) {
       // NOTE: no transaction here for read-uncommitted execution
@@ -152,43 +169,47 @@ export default class WorkflowPlugin extends Plugin {
       }
     }
 
-    const transaction = await (<typeof WorkflowModel>workflow.constructor).database.sequelize.transaction();
+    const execution = await this.db.sequelize.transaction(async transaction => {
+      const execution = await workflow.createExecution({
+        context,
+        key: workflow.key,
+        status: EXECUTION_STATUS.CREATED,
+        useTransaction: workflow.useTransaction,
+      }, { transaction });
 
-    const execution = await workflow.createExecution({
-      context,
-      key: workflow.key,
-      status: EXECUTION_STATUS.CREATED,
-      useTransaction: workflow.useTransaction,
-    }, { transaction });
+      console.log('workflow triggered:', new Date(), workflow.id, execution.id);
 
-    console.log('workflow triggered:', new Date(), workflow.id, execution.id);
+      const executed = await workflow.countExecutions({ transaction });
 
-    const executed = await workflow.countExecutions({ transaction });
+      // NOTE: not to trigger afterUpdate hook here
+      await workflow.update({ executed }, { transaction, hooks: false });
 
-    // NOTE: not to trigger afterUpdate hook here
-    await workflow.update({ executed }, { transaction, hooks: false });
+      const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
+        where: {
+          key: workflow.key
+        },
+        transaction
+      });
+      await (<typeof WorkflowModel>workflow.constructor).update({
+        allExecuted
+      }, {
+        where: {
+          key: workflow.key
+        },
+        individualHooks: true,
+        transaction
+      });
 
-    const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
-      where: {
-        key: workflow.key
-      },
-      transaction
+      execution.workflow = workflow;
+
+      return execution;
     });
-    await (<typeof WorkflowModel>workflow.constructor).update({
-      allExecuted
-    }, {
-      where: {
-        key: workflow.key
-      },
-      individualHooks: true,
-      transaction
-    });
-
-    execution.workflow = workflow;
-
-    await transaction.commit();
 
     setTimeout(() => this.dispatch(execution));
+
+    this.events.shift();
+
+    this.prepare();
   }
 
   public async resume(job) {
