@@ -66,6 +66,7 @@ export class PluginManager {
       if (options?.method !== 'install' || options.reload) {
         await this.repository.load();
       }
+      this.app.acl.allow('applicationPlugins', 'list');
     });
     this.addStaticMultiple(options.plugins);
   }
@@ -329,7 +330,9 @@ export class PluginManager {
   }
 
   static getPluginPkgPrefix() {
-    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(',');
+    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
+      ',',
+    );
   }
 
   static async findPackage(name: string) {

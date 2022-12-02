@@ -70,6 +70,7 @@ export class SyncRunner {
             transaction,
           },
         );
+
         const sequenceCurrentVal = parseInt(sequenceCurrentValResult[0][0]['last_value']);
 
         if (sequenceCurrentVal > maxSequenceVal) {
@@ -89,6 +90,23 @@ export class SyncRunner {
       const sequenceTables = [...parentsDeep, tableName];
 
       for (const sequenceTable of sequenceTables) {
+        const idColumnQuery = await queryInterface.sequelize.query(
+          `
+        SELECT true
+FROM   pg_attribute 
+WHERE  attrelid = '${sequenceTable}'::regclass  -- cast to a registered class (table)
+AND    attname = 'id'
+AND    NOT attisdropped 
+`,
+          {
+            transaction,
+          },
+        );
+
+        if (idColumnQuery[0].length == 0) {
+          continue;
+        }
+
         await queryInterface.sequelize.query(
           `alter table "${sequenceTable}" alter column id set default nextval('${maxSequenceName}')`,
           {

@@ -4,6 +4,7 @@ import { Dropdown, Menu, Button, Tag, Switch, message, Breadcrumb } from 'antd';
 import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import classnames from 'classnames';
+import { useTranslation } from 'react-i18next';
 
 import {
   ActionContext,
@@ -40,6 +41,7 @@ function makeNodes(nodes): void {
 
 export function WorkflowCanvas() {
   const history = useHistory();
+  const { t } = useTranslation();
   const { data, refresh, loading } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
   const { setTitle } = useDocumentTitle();
@@ -79,9 +81,12 @@ export function WorkflowCanvas() {
 
   async function onRevision() {
     const { data: { data: revision } } = await resource.revision({
-      filterByTk: workflow[targetKey]
+      filterByTk: workflow[targetKey],
+      filter: {
+        key: workflow.key
+      }
     });
-    message.success(lang('Operation succeeded'));
+    message.success(t('Operation succeeded'));
 
     history.push(`${revision.id}`);
   }

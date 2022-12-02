@@ -12,5 +12,7 @@ export * from './hooks';
 export * as interfacesProperties from './interfaces/properties';
 export * from './interfaces/types';
 export * from './ResourceActionProvider';
+export { getConfigurableProperties } from './templates/properties';
+export * from './templates/types';
 export * from './types';
 
