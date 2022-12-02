@@ -1,6 +1,7 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '.';
+import { EXECUTION_STATUS } from '../constants';
 
 
 
@@ -179,6 +180,72 @@ describe('workflow > Plugin', () => {
 
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
+    });
+  });
+
+  describe('dispatcher', () => {
+    it('multiple triggers in same event', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [e1] = await w1.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const [e2] = await w2.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('when server starts, process all created executions', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      await app.stop();
+
+      await db.reconnect();
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      const ExecutionModel = db.getCollection('executions').model;
+      const e1 = await ExecutionModel.create({
+        workflowId: w1.id,
+        key: w1.key,
+        useTransaction: w1.useTransaction,
+        context: {
+          data: p1.get()
+        }
+      });
+
+      await app.start();
+
+      await sleep(500);
+
+      const [e2] = await w1.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
   });
 });
