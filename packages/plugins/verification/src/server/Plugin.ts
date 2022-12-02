@@ -84,6 +84,7 @@ export default class VerificationPlugin extends Plugin {
     } = process.env;
 
     if (
+      DEFAULT_SMS_VERIFY_CODE_PROVIDER &&
       INIT_ALI_SMS_ACCESS_KEY &&
       INIT_ALI_SMS_ACCESS_KEY_SECRET &&
       INIT_ALI_SMS_VERIFY_CODE_TEMPLATE &&
