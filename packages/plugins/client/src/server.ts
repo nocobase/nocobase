@@ -101,16 +101,19 @@ export class ClientPlugin extends Plugin {
       root = resolve(process.cwd(), root);
     }
     if (process.env.APP_ENV !== 'production' && root) {
-      this.app.middleware.nodes.unshift(async (ctx, next) => {
-        if (ctx.path.startsWith(this.app.resourcer.options.prefix)) {
-          return next();
-        }
-        await serve(root)(ctx, next);
-        // console.log('koa-send', root, ctx.status);
-        if (ctx.status == 404) {
-          return send(ctx, 'index.html', { root });
-        }
-      });
+      this.app.use(
+        async (ctx, next) => {
+          if (ctx.path.startsWith(this.app.resourcer.options.prefix)) {
+            return next();
+          }
+          await serve(root)(ctx, next);
+          // console.log('koa-send', root, ctx.status);
+          if (ctx.status == 404) {
+            return send(ctx, 'index.html', { root });
+          }
+        },
+        { tag: 'clientStatic', before: 'cors' },
+      );
     }
   }
 }
