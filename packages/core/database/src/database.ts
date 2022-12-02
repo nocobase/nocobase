@@ -15,13 +15,17 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
+import ReferencesMap from './features/ReferencesMap';
+import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
+import { InheritedCollection } from './inherited-collection';
+import InheritanceMap from './inherited-map';
 import { MigrationItem, Migrations } from './migration';
 import { Model } from './model';
 import { ModelHook } from './model-hook';
@@ -53,12 +57,8 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener,
+  ValidateListener
 } from './types';
-import { referentialIntegrityCheck } from './features/referential-integrity-check';
-import ReferencesMap from './features/ReferencesMap';
-import { InheritedCollection } from './inherited-collection';
-import InheritanceMap from './inherited-map';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -498,7 +498,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         return true;
       } catch (error) {
         if (count >= retry) {
-          throw error;
+          throw new Error('Connection failed, please check your database connection credentials and try again.');
         }
         console.log('reconnecting...', count);
         ++count;
