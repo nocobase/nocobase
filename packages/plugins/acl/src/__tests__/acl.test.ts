@@ -42,6 +42,77 @@ describe('acl', () => {
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
+  it('should not have permission to list comments', async () => {
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'comments',
+        fields: [
+          {
+            name: 'content',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'comments',
+            type: 'hasMany',
+            target: 'comments',
+            interface: 'linkTo',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test-role',
+      },
+    });
+
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['comments'],
+          },
+        ],
+      },
+    });
+
+    const acl = app.acl;
+
+    expect(
+      acl.can({
+        role: 'test-role',
+        resource: 'posts.comments',
+        action: 'list',
+      }),
+    ).not.toBeNull();
+
+    expect(
+      acl.can({
+        role: 'test-role',
+        resource: 'comments',
+        action: 'list',
+      }),
+    ).toBeNull();
+  });
+
   it('should not destroy default roles when user is root user', async () => {
     const rootUser = await db.getRepository('users').findOne({
       filter: {

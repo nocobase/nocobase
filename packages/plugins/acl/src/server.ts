@@ -55,11 +55,11 @@ export class PluginACL extends Plugin {
       },
       create: {
         associationActions: ['add'],
-        targetActions: ['view'],
+        // targetActions: ['view'],
       },
       update: {
         associationActions: ['add', 'remove', 'toggle'],
-        targetActions: ['view'],
+        // targetActions: ['view'],
       },
     });
 

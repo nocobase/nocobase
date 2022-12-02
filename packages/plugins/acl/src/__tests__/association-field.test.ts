@@ -26,7 +26,6 @@ describe('association field acl', () => {
     await db.getRepository('roles').create({
       values: {
         name: 'new',
-        allowConfigure: true,
       },
     });
 
@@ -36,12 +35,14 @@ describe('association field acl', () => {
         allowConfigure: true,
       },
     });
+
     const UserRepo = db.getCollection('users').repository;
     user = await UserRepo.create({
       values: {
         roles: ['new'],
       },
     });
+
     admin = await UserRepo.create({
       values: {
         roles: ['testAdmin'],
@@ -55,6 +56,7 @@ describe('association field acl', () => {
       }),
       { type: 'bearer' },
     );
+
     adminAgent = app.agent().auth(
       userPlugin.jwtService.sign({
         userId: admin.get('id'),
@@ -119,9 +121,22 @@ describe('association field acl', () => {
         ],
       },
     });
+
+    await adminAgent.resource('roles.resources', 'new').create({
+      values: {
+        name: 'orders',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+          },
+        ],
+      },
+    });
   });
 
-  it('should revoke target action on association action revoke', async () => {
+  // skip because of disable grant associations target action
+  it.skip('should revoke target action on association action revoke', async () => {
     expect(
       acl.can({
         role: 'new',
@@ -173,6 +188,7 @@ describe('association field acl', () => {
     const actionId = viewAction.get('id') as number;
 
     const response = await adminAgent.resource('roles.resources', 'new').update({
+      filterByTk: 'users',
       values: {
         name: 'users',
         usingActionsConfig: true,
@@ -197,6 +213,7 @@ describe('association field acl', () => {
 
   it('should revoke association action on field deleted', async () => {
     await adminAgent.resource('roles.resources', 'new').update({
+      filterByTk: 'users',
       values: {
         name: 'users',
         usingActionsConfig: true,
@@ -208,6 +225,7 @@ describe('association field acl', () => {
         ],
       },
     });
+
     expect(
       acl.can({
         role: 'new',
@@ -222,6 +240,7 @@ describe('association field acl', () => {
         whitelist: ['age', 'name'],
       },
     });
+
     const roleResource = await db.getRepository('rolesResources').findOne({
       filter: {
         name: 'users',
