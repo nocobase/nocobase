@@ -48,7 +48,6 @@ export const TableActionInitializers = {
           component: 'RefreshActionInitializer',
           schema: {
             'x-align': 'right',
-            'x-decorator': 'ACLActionProvider',
             'x-acl-action-props': {
               skipScopeCheck: true,
             },
