@@ -2,6 +2,10 @@
 
 测试基于 [Jest](https://jestjs.io/) 测试框架。为了方便的编写测试，提供了 `mockDatabase()` 和 `mockServer()` 用于数据库和服务端应用的测试。
 
+<Alert>
+避免破坏生产环境数据，建议使用 `.env.test` 文件来配置测试环境的环境变量，并使用独立的测试数据库进行测试。
+</Alert>
+
 ## `mockDatabase()`
 
 默认提供一种完全隔离的 db 测试环境
