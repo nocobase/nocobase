@@ -266,6 +266,7 @@ export const roleSchema: ISchema = {
                                   'x-component-props': {},
                                   properties: {
                                     menu: {
+                                      'x-decorator': 'MenuItemsProvider',
                                       'x-component': 'MenuConfigure',
                                     },
                                   },
