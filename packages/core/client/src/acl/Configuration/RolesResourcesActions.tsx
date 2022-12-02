@@ -36,8 +36,9 @@ export const RolesResourcesActions = connect((props) => {
   const form = useForm();
   const roleCollection = useRecord();
   const availableActions = useAvailableActions();
-  const { getCollection } = useCollectionManager();
+  const { getCollection, getCollectionFields } = useCollectionManager();
   const collection = getCollection(roleCollection.name);
+  const collectionFields = getCollectionFields(roleCollection.name);
   const compile = useCompile();
   const { t } = useTranslation();
   const field = useField<ArrayField>();
@@ -50,20 +51,22 @@ export const RolesResourcesActions = connect((props) => {
     return action?.fields?.includes(fieldName);
   };
   const availableActionsWithFields = availableActions.filter((action) => action.allowConfigureFields);
-  const fieldPermissions = collection?.fields?.filter(field => field.interface)?.map((field) => {
-    const permission = { ...field };
-    for (const action of availableActionsWithFields) {
-      permission[action.name] = inAction(action.name, field.name);
-    }
-    return permission;
-  });
+  const fieldPermissions = collectionFields
+    ?.filter((field) => field.interface)
+    ?.map((field) => {
+      const permission = { ...field };
+      for (const action of availableActionsWithFields) {
+        permission[action.name] = inAction(action.name, field.name);
+      }
+      return permission;
+    });
   const toggleAction = (actionName: string) => {
     if (actionMap[actionName]) {
       delete actionMap[actionName];
     } else {
       actionMap[actionName] = {
         name: actionName,
-        fields: collection?.fields?.filter(field => field.interface)?.map?.((item) => item.name),
+        fields: collectionFields?.filter((field) => field.interface)?.map?.((item) => item.name),
       };
     }
     onChange(Object.values(actionMap));
@@ -79,7 +82,8 @@ export const RolesResourcesActions = connect((props) => {
   };
   const allChecked = {};
   for (const action of availableActionsWithFields) {
-    allChecked[action.name] = collection?.fields?.filter(field => field.interface)?.length === actionMap?.[action.name]?.fields?.length;
+    allChecked[action.name] =
+      collectionFields?.filter((field) => field.interface)?.length === actionMap?.[action.name]?.fields?.length;
   }
   return (
     <div>
@@ -107,7 +111,7 @@ export const RolesResourcesActions = connect((props) => {
                 },
                 {
                   dataIndex: 'enabled',
-                  title: t("Allow"),
+                  title: t('Allow'),
                   render: (enabled, action) => (
                     <Checkbox
                       checked={enabled}
@@ -119,7 +123,7 @@ export const RolesResourcesActions = connect((props) => {
                 },
                 {
                   dataIndex: 'scope',
-                  title: t("Data scope"),
+                  title: t('Data scope'),
                   render: (value, action) =>
                     !action.onNewRecord && (
                       <ScopeSelect
@@ -173,7 +177,7 @@ export const RolesResourcesActions = connect((props) => {
                             if (checked) {
                               item.fields = [];
                             } else {
-                              item.fields = collection?.fields?.map?.((item) => item.name);
+                              item.fields = collectionFields?.map?.((item) => item.name);
                             }
                             actionMap[action.name] = item;
                             onChange(Object.values(actionMap));

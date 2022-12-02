@@ -100,6 +100,9 @@ export default class WorkflowPlugin extends Plugin {
       workflows.forEach((workflow: WorkflowModel) => {
         this.toggle(workflow);
       });
+
+      // check for not started executions
+      await this.dispatch();
     });
 
     this.app.on('beforeStop', async () => {
@@ -149,10 +152,7 @@ export default class WorkflowPlugin extends Plugin {
       }
     }
 
-    // @ts-ignore
-    const transaction = options.transaction && !options.transaction.finished
-      ? options.transaction
-      : await (<typeof WorkflowModel>workflow.constructor).database.sequelize.transaction();
+    const transaction = await (<typeof WorkflowModel>workflow.constructor).database.sequelize.transaction();
 
     const execution = await workflow.createExecution({
       context,
@@ -186,10 +186,7 @@ export default class WorkflowPlugin extends Plugin {
 
     execution.workflow = workflow;
 
-    // @ts-ignore
-    if (transaction && (!options.transaction || options.transaction.finished)) {
-      await transaction.commit();
-    }
+    await transaction.commit();
 
     setTimeout(() => this.dispatch(execution));
   }
