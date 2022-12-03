@@ -49,17 +49,52 @@ export class PluginACL extends Plugin {
   registerAssociationFieldsActions() {
     // if grant create action to role, it should
     // also grant add action and association target's view action
-    this.registerAssociationFieldAction('linkTo', {
+
+    this.registerAssociationFieldAction('hasOne', {
       view: {
         associationActions: ['list', 'get'],
       },
       create: {
-        associationActions: ['add'],
-        // targetActions: ['view'],
+        associationActions: ['create', 'set'],
       },
       update: {
-        associationActions: ['add', 'remove', 'toggle'],
-        // targetActions: ['view'],
+        associationActions: ['update', 'remove', 'set'],
+      },
+    });
+
+    this.registerAssociationFieldAction('hasMany', {
+      view: {
+        associationActions: ['list', 'get'],
+      },
+      create: {
+        associationActions: ['create', 'set', 'add'],
+      },
+      update: {
+        associationActions: ['update', 'remove', 'set'],
+      },
+    });
+
+    this.registerAssociationFieldAction('belongsTo', {
+      view: {
+        associationActions: ['list', 'get'],
+      },
+      create: {
+        associationActions: ['create', 'set'],
+      },
+      update: {
+        associationActions: ['update', 'remove', 'set'],
+      },
+    });
+
+    this.registerAssociationFieldAction('belongsToMany', {
+      view: {
+        associationActions: ['list', 'get'],
+      },
+      create: {
+        associationActions: ['create', 'set', 'add'],
+      },
+      update: {
+        associationActions: ['update', 'remove', 'set', 'toggle'],
       },
     });
 
@@ -72,18 +107,6 @@ export class PluginACL extends Plugin {
       },
       update: {
         associationActions: ['update', 'add', 'remove', 'toggle'],
-      },
-    });
-
-    this.registerAssociationFieldAction('subTable', {
-      view: {
-        associationActions: ['list', 'get'],
-      },
-      create: {
-        associationActions: ['create'],
-      },
-      update: {
-        associationActions: ['update', 'destroy'],
       },
     });
   }

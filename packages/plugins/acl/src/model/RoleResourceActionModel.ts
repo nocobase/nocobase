@@ -50,7 +50,7 @@ export class RoleResourceActionModel extends Model {
         continue;
       }
 
-      const fieldType = collectionField.get('interface') as string;
+      const fieldType = collectionField.get('type') as string;
 
       const fieldActions: AssociationFieldAction = associationFieldsActions?.[fieldType]?.[availableAction];
 
