@@ -37,7 +37,6 @@ export const ReadPrettyFormActionInitializers = {
           component: 'PrintActionInitializer',
           schema: {
             'x-component': 'Action',
-            'x-decorator': 'ACLActionProvider',
           },
         },
       ],
