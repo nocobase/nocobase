@@ -70,15 +70,13 @@ export default class Processor {
 
     const { options } = this;
 
-    const { sequelize } = (<typeof ExecutionModel>this.execution.constructor).database;
-
     // @ts-ignore
     return options.transaction && !options.transaction.finished
       ? options.transaction
-      : await sequelize.transaction();
+      : await options.plugin.db.sequelize.transaction();
   }
 
-  async prepare(commit?: boolean) {
+  private async prepare() {
     const transaction = await this.getTransaction();
     this.transaction = transaction;
 
@@ -97,10 +95,6 @@ export default class Processor {
     });
 
     this.makeJobs(jobs);
-
-    if (commit) {
-      await this.commit();
-    }
   }
 
   public async start() {
