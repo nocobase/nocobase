@@ -4,6 +4,79 @@ import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 
+describe('association test', () => {
+  let app: MockServer;
+  let db: Database;
+  let acl: ACL;
+
+  let user;
+  let userAgent;
+  let admin;
+  let adminAgent;
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  beforeEach(async () => {
+    app = await prepareApp();
+    db = app.db;
+    acl = app.acl;
+  });
+
+  it('should set association actions', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          { name: 'title', type: 'string' },
+          { name: 'userComments', type: 'hasMany', target: 'comments', interface: 'linkTo' },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'comments',
+        fields: [{ name: 'content', type: 'string' }],
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test-role',
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles.resources', 'test-role').create({
+      values: {
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['userComments'],
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const role = acl.getRole('test-role');
+
+    expect(
+      acl.can({
+        role: 'test-role',
+        action: 'list',
+        resource: 'posts.userComments',
+      }),
+    ).not.toBeNull();
+  });
+});
+
 describe('association field acl', () => {
   let app: MockServer;
   let db: Database;

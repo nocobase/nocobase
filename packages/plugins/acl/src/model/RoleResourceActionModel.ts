@@ -61,7 +61,7 @@ export class RoleResourceActionModel extends Model {
         const associationActions = fieldActions.associationActions || [];
 
         associationActions.forEach((associationAction) => {
-          const actionName = `${resourceName}.${fieldTarget}:${associationAction}`;
+          const actionName = `${resourceName}.${collectionField.get('name')}:${associationAction}`;
           role.grantAction(actionName);
         });
 
@@ -86,8 +86,6 @@ export class RoleResourceActionModel extends Model {
             ...(grantHelper.targetActionResourceMap.get(targetActionPath) || []),
             `${role.name}.${resourceName}`,
           ]);
-
-          console.log({ existsAction });
 
           role.grantAction(targetActionPath);
         });

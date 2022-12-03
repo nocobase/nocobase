@@ -113,7 +113,6 @@ export class OptionsParser {
 
   protected parseFields(filterParams: any) {
     const appends = this.options?.appends || [];
-    console.log({ options: this.options });
     const except = [];
 
     let attributes: FindAttributeOptions = {
