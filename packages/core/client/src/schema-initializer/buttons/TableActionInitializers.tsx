@@ -37,9 +37,6 @@ export const TableActionInitializers = {
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
           },
         },
         {
@@ -48,9 +45,6 @@ export const TableActionInitializers = {
           component: 'RefreshActionInitializer',
           schema: {
             'x-align': 'right',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
           },
         },
       ],
@@ -71,6 +65,7 @@ export const TableActionInitializers = {
             title: '{{ t("Bulk update") }}',
             'x-component': 'Action',
             'x-align': 'right',
+            'x-acl-action': 'update',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action-props': {
               skipScopeCheck: true,
@@ -87,6 +82,7 @@ export const TableActionInitializers = {
               },
             },
             'x-component-props': {
+              icon: 'EditOutlined',
               useProps: '{{ useCustomizeBulkUpdateActionProps }}',
             },
           },
@@ -98,6 +94,7 @@ export const TableActionInitializers = {
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
+            'x-acl-action': 'update',
             'x-acl-action-props': {
               skipScopeCheck: true,
             },
