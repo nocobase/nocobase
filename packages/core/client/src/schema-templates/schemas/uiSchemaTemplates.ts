@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useUpdateActionProps } from '../../block-provider/hooks';
+import { useBulkDestroyActionProps, useDestroyActionProps, useUpdateActionProps } from '../../block-provider/hooks';
 import { useSchemaTemplateManager } from '../SchemaTemplateManagerProvider';
 
 const useUpdateSchemaTemplateActionProps = () => {
@@ -10,9 +10,31 @@ const useUpdateSchemaTemplateActionProps = () => {
     async onClick() {
       await props.onClick();
       refresh();
-    }
-  }
-}
+    },
+  };
+};
+
+const useBulkDestroyTemplateProps = () => {
+  const props = useBulkDestroyActionProps();
+  const { refresh } = useSchemaTemplateManager();
+  return {
+    async onClick() {
+      await props.onClick();
+      refresh();
+    },
+  };
+};
+
+const useDestroyTemplateProps = () => {
+  const props = useDestroyActionProps();
+  const { refresh } = useSchemaTemplateManager();
+  return {
+    async onClick() {
+      await props.onClick();
+      refresh();
+    },
+  };
+};
 
 export const uiSchemaTemplatesSchema: ISchema = {
   type: 'object',
@@ -55,7 +77,7 @@ export const uiSchemaTemplatesSchema: ISchema = {
                   title: "{{t('Delete record')}}",
                   content: "{{t('Are you sure you want to delete it?')}}",
                 },
-                useProps: '{{ useBulkDestroyActionProps }}',
+                useProps: useBulkDestroyTemplateProps,
               },
             },
           },
@@ -175,7 +197,7 @@ export const uiSchemaTemplatesSchema: ISchema = {
                           title: "{{t('Delete record')}}",
                           content: "{{t('Are you sure you want to delete it?')}}",
                         },
-                        useProps: '{{ useDestroyActionProps }}',
+                        useProps: useDestroyTemplateProps,
                       },
                     },
                   },
