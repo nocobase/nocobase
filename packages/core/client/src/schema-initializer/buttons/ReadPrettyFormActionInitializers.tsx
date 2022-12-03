@@ -37,7 +37,6 @@ export const ReadPrettyFormActionInitializers = {
           component: 'PrintActionInitializer',
           schema: {
             'x-component': 'Action',
-            'x-decorator': 'ACLActionProvider',
           },
         },
       ],
@@ -109,6 +108,7 @@ export const ReadPrettyFormActionInitializers = {
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-action': 'customize:update',
+            'x-acl-action': 'update',
             'x-action-settings': {
               assignedValues: {},
               onSuccess: {
