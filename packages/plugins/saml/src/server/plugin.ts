@@ -1,10 +1,10 @@
-import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
-import { getAuthUrl } from './actions/getAuthUrl';
-import { getEnabledProviders } from './actions/getEnabledProviders';
-import { metadata } from './actions/metadata';
-import { redirect } from './actions/redirect';
-import { saml } from './authenticators/saml';
+import {InstallOptions, Plugin} from '@nocobase/server';
+import {resolve} from 'path';
+import {getAuthUrl} from './actions/getAuthUrl';
+import {getEnabledProviders} from './actions/getEnabledProviders';
+import {metadata} from './actions/metadata';
+import {redirect} from './actions/redirect';
+import {saml} from './authenticators/saml';
 
 export class SAMLPlugin extends Plugin {
   afterAdd() {}
@@ -35,8 +35,8 @@ export class SAMLPlugin extends Plugin {
     });
 
     // 开放访问权限
-    this.app.acl.allow('samlProviders', '*', 'allowConfigure');
-    this.app.acl.allow('saml', '*');
+    this.app.acl.skip('samlProviders', '*', 'allowConfigure');
+    this.app.acl.skip('saml', '*');
   }
 
   async install(options?: InstallOptions) {}

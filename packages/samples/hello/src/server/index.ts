@@ -1,4 +1,4 @@
-import { InstallOptions, Plugin } from '@nocobase/server';
+import {InstallOptions, Plugin} from '@nocobase/server';
 
 export class HelloPlugin extends Plugin {
 
@@ -18,7 +18,7 @@ export class HelloPlugin extends Plugin {
         },
       },
     });
-    this.app.acl.allow('testHello', 'getInfo');
+    this.app.acl.skip('testHello', 'getInfo');
   }
 
   async disable() {

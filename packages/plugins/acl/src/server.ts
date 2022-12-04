@@ -1,15 +1,15 @@
-import { Context } from '@nocobase/actions';
-import { Collection, ImporterReader } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
-import { resolve } from 'path';
-import { availableActionResource } from './actions/available-actions';
-import { checkAction } from './actions/role-check';
-import { roleCollectionsResource } from './actions/role-collections';
-import { setDefaultRole } from './actions/user-setDefaultRole';
-import { setCurrentRole } from './middlewares/setCurrentRole';
-import { RoleModel } from './model/RoleModel';
-import { RoleResourceActionModel } from './model/RoleResourceActionModel';
-import { RoleResourceModel } from './model/RoleResourceModel';
+import {Context} from '@nocobase/actions';
+import {Collection, ImporterReader} from '@nocobase/database';
+import {Plugin} from '@nocobase/server';
+import {resolve} from 'path';
+import {availableActionResource} from './actions/available-actions';
+import {checkAction} from './actions/role-check';
+import {roleCollectionsResource} from './actions/role-collections';
+import {setDefaultRole} from './actions/user-setDefaultRole';
+import {setCurrentRole} from './middlewares/setCurrentRole';
+import {RoleModel} from './model/RoleModel';
+import {RoleResourceActionModel} from './model/RoleResourceActionModel';
+import {RoleResourceModel} from './model/RoleResourceModel';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -382,20 +382,20 @@ export class PluginACL extends Plugin {
 
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'parseToken' });
 
-    this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
-    this.app.acl.allow('roles', 'check', 'loggedIn');
+    this.app.acl.skip('users', 'setDefaultRole', 'loggedIn');
+    this.app.acl.skip('roles', 'check', 'loggedIn');
 
     const importReader = new ImporterReader(resolve(__dirname, 'collections'));
     const modules = await importReader.read();
     for (const collectionDefinition of modules) {
       if (collectionDefinition.name) {
-        this.app.acl.allow(collectionDefinition.name, ['create', 'update', 'destroy'], 'allowConfigure');
+        this.app.acl.skip(collectionDefinition.name, ['create', 'update', 'destroy'], 'allowConfigure');
       }
     }
 
-    this.app.acl.allow('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
+    this.app.acl.skip('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
 
-    this.app.acl.allow('*', '*', (ctx) => {
+    this.app.acl.skip('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';
     });
 

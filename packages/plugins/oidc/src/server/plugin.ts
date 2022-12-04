@@ -1,10 +1,10 @@
-import { InstallOptions, Plugin } from '@nocobase/server';
-import { generators } from 'openid-client';
-import { resolve } from 'path';
-import { getAuthUrl } from './actions/getAuthUrl';
-import { getEnabledProviders } from './actions/getEnabledProviders';
-import { redirect } from './actions/redirect';
-import { oidc } from './authenticators/oidc';
+import {InstallOptions, Plugin} from '@nocobase/server';
+import {generators} from 'openid-client';
+import {resolve} from 'path';
+import {getAuthUrl} from './actions/getAuthUrl';
+import {getEnabledProviders} from './actions/getEnabledProviders';
+import {redirect} from './actions/redirect';
+import {oidc} from './authenticators/oidc';
 
 export class OidcPlugin extends Plugin {
   #OIDC_NONCE = null;
@@ -47,8 +47,8 @@ export class OidcPlugin extends Plugin {
     });
 
     // 开放访问权限
-    this.app.acl.allow('oidcProviders', '*', 'allowConfigure');
-    this.app.acl.allow('oidc', '*');
+    this.app.acl.skip('oidcProviders', '*', 'allowConfigure');
+    this.app.acl.skip('oidc', '*');
   }
 
   async install(options?: InstallOptions) {}

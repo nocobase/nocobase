@@ -1,14 +1,14 @@
-import { Action } from '@nocobase/resourcer';
-import { assign, Toposort, ToposortOptions } from '@nocobase/utils';
+import {Action} from '@nocobase/resourcer';
+import {assign, Toposort, ToposortOptions} from '@nocobase/utils';
 import EventEmitter from 'events';
 import parse from 'json-templates';
 import compose from 'koa-compose';
 import lodash from 'lodash';
-import { ACLAvailableAction, AvailableActionOptions } from './acl-available-action';
-import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
-import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
-import { AllowManager, ConditionFunc } from './allow-manager';
-import FixedParamsManager, { Merger } from './fixed-params-manager';
+import {ACLAvailableAction, AvailableActionOptions} from './acl-available-action';
+import {ACLAvailableStrategy, AvailableStrategyOptions, predicate} from './acl-available-strategy';
+import {ACLRole, ResourceActionsOptions, RoleActionParams} from './acl-role';
+import {AllowManager, ConditionFunc} from './allow-manager';
+import FixedParamsManager, {Merger} from './fixed-params-manager';
 
 interface CanResult {
   role: string;
@@ -239,7 +239,7 @@ export class ACL extends EventEmitter {
     this.middlewares.add(fn, options);
   }
 
-  allow(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
+  skip(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
     if (!Array.isArray(actionNames)) {
       actionNames = [actionNames];
     }

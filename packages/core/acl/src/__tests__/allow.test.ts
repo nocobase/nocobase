@@ -1,4 +1,4 @@
-import { ACL } from '..';
+import {ACL} from '..';
 
 describe('skip', () => {
   let acl: ACL;
@@ -26,7 +26,7 @@ describe('skip', () => {
     await middlewareFunc(ctx, nextFunc);
     expect(nextFunc).toHaveBeenCalledTimes(0);
 
-    acl.allow('users', 'login');
+    acl.skip('users', 'login');
 
     await middlewareFunc(ctx, nextFunc);
     expect(nextFunc).toHaveBeenCalledTimes(1);
@@ -53,7 +53,7 @@ describe('skip', () => {
 
     let skip = false;
 
-    acl.allow('users', 'login', (ctx) => {
+    acl.skip('users', 'login', (ctx) => {
       return skip;
     });
 
@@ -91,7 +91,7 @@ describe('skip', () => {
 
     const nextFunc = jest.fn();
 
-    acl.allow('users', 'login', 'superUser');
+    acl.skip('users', 'login', 'superUser');
 
     await middlewareFunc(ctx, nextFunc);
     expect(nextFunc).toHaveBeenCalledTimes(1);

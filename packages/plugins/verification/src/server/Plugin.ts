@@ -1,16 +1,16 @@
 import path from 'path';
 
-import { Context } from '@nocobase/actions';
-import { Op } from '@nocobase/database';
-import { HandlerType } from '@nocobase/resourcer';
-import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
+import {Context} from '@nocobase/actions';
+import {Op} from '@nocobase/database';
+import {HandlerType} from '@nocobase/resourcer';
+import {Plugin} from '@nocobase/server';
+import {Registry} from '@nocobase/utils';
 
-import { namespace } from '.';
+import {namespace} from '.';
 import initActions from './actions';
-import { CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
-import { zhCN } from './locale';
-import initProviders, { Provider } from './providers';
+import {CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN} from './constants';
+import {zhCN} from './locale';
+import initProviders, {Provider} from './providers';
 
 export interface Interceptor {
   manual?: boolean;
@@ -133,8 +133,8 @@ export default class VerificationPlugin extends Plugin {
       return this.intercept(context, next);
     });
 
-    app.acl.allow('verifications', 'create');
-    app.acl.allow('verifications_providers', '*', 'allowConfigure');
+    app.acl.skip('verifications', 'create');
+    app.acl.skip('verifications_providers', '*', 'allowConfigure');
   }
 
   async getDefault() {

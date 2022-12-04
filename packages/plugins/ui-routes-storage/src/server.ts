@@ -1,8 +1,7 @@
-import { skip } from '@nocobase/acl';
-import { MagicAttributeModel } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
-import { resolve } from 'path';
-import { getAccessible } from './actions/getAccessible';
+import {MagicAttributeModel} from '@nocobase/database';
+import {Plugin} from '@nocobase/server';
+import {resolve} from 'path';
+import {getAccessible} from './actions/getAccessible';
 
 export class UiRoutesStoragePlugin extends Plugin {
   async install() {
@@ -89,7 +88,7 @@ export class UiRoutesStoragePlugin extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
-    this.app.acl.allow('uiRoutes', 'getAccessible');
+    this.app.acl.skip('uiRoutes', 'getAccessible');
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action.params;

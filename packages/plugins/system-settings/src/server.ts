@@ -1,6 +1,5 @@
-import { skip } from '@nocobase/acl';
-import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
+import {InstallOptions, Plugin} from '@nocobase/server';
+import {resolve} from 'path';
 
 export class SystemSettingsPlugin extends Plugin {
   getInitAppLang(options) {
@@ -42,8 +41,8 @@ export class SystemSettingsPlugin extends Plugin {
       };
     });
 
-    this.app.acl.allow('systemSettings', 'get');
-    this.app.acl.allow('systemSettings', 'update', 'allowConfigure');
+    this.app.acl.skip('systemSettings', 'get');
+    this.app.acl.skip('systemSettings', 'update', 'allowConfigure');
   }
 }
 

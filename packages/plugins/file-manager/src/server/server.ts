@@ -1,8 +1,8 @@
-import { Plugin } from '@nocobase/server';
-import { resolve } from 'path';
-import { action as uploadAction, middleware as uploadMiddleware } from './actions/upload';
-import { STORAGE_TYPE_LOCAL } from './constants';
-import { getStorageConfig } from './storages';
+import {Plugin} from '@nocobase/server';
+import {resolve} from 'path';
+import {action as uploadAction, middleware as uploadMiddleware} from './actions/upload';
+import {STORAGE_TYPE_LOCAL} from './constants';
+import {getStorageConfig} from './storages';
 
 export default class PluginFileManager extends Plugin {
   storageType() {
@@ -36,8 +36,8 @@ export default class PluginFileManager extends Plugin {
       await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
     }
 
-    this.app.acl.allow('attachments', 'upload', 'loggedIn');
-    this.app.acl.allow('storages', ['list', 'create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.skip('attachments', 'upload', 'loggedIn');
+    this.app.acl.skip('storages', ['list', 'create', 'update', 'destroy'], 'allowConfigure');
 
     const defaultStorageName = getStorageConfig(this.storageType()).defaults().name;
 

@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { InstallOptions, Plugin } from '@nocobase/server';
+import {InstallOptions, Plugin} from '@nocobase/server';
 
 export class ShopPlugin extends Plugin {
   timer = null;
@@ -71,9 +71,9 @@ export class ShopPlugin extends Plugin {
       this.timer = null;
     });
 
-    this.app.acl.allow('products', '*');
-    this.app.acl.allow('categories', '*');
-    this.app.acl.allow('orders', '*');
+    this.app.acl.skip('products', '*');
+    this.app.acl.skip('categories', '*');
+    this.app.acl.skip('orders', '*');
   }
 
   async install(options: InstallOptions) {

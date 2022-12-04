@@ -1,15 +1,15 @@
-import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { requireModule } from '@nocobase/utils';
+import {CleanOptions, Collection, SyncOptions} from '@nocobase/database';
+import {requireModule} from '@nocobase/utils';
 import execa from 'execa';
 import fs from 'fs';
 import net from 'net';
-import { resolve } from 'path';
+import {resolve} from 'path';
 import xpipe from 'xpipe';
 import Application from '../application';
-import { Plugin } from '../plugin';
+import {Plugin} from '../plugin';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
-import { PluginManagerRepository } from './PluginManagerRepository';
+import {PluginManagerRepository} from './PluginManagerRepository';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -43,8 +43,8 @@ export class PluginManager {
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
 
-    this.app.acl.allow('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
-    this.app.acl.allow('applicationPlugins', '*', 'allowConfigure');
+    this.app.acl.skip('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
+    this.app.acl.skip('applicationPlugins', '*', 'allowConfigure');
 
     this.server = net.createServer((socket) => {
       socket.on('data', async (data) => {
@@ -69,7 +69,7 @@ export class PluginManager {
       if (options?.method !== 'install' || options.reload) {
         await this.repository.load();
       }
-      this.app.acl.allow('applicationPlugins', 'list');
+      this.app.acl.skip('applicationPlugins', 'list');
     });
     this.addStaticMultiple(options.plugins);
   }

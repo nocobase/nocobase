@@ -1,6 +1,6 @@
-import { Plugin } from '@nocobase/server';
-import { areas, cities, provinces } from 'china-division';
-import { resolve } from 'path';
+import {Plugin} from '@nocobase/server';
+import {areas, cities, provinces} from 'china-division';
+import {resolve} from 'path';
 
 export class PluginChinaRegion extends Plugin {
   async install() {
@@ -12,7 +12,7 @@ export class PluginChinaRegion extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
-    this.app.acl.allow('chinaRegions', 'list', 'loggedIn');
+    this.app.acl.skip('chinaRegions', 'list', 'loggedIn');
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action.params;
