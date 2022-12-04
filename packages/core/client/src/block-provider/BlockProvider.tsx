@@ -10,7 +10,7 @@ import { useRecordIndex } from '../record-provider';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
-const BlockRequestContext = createContext<any>(null);
+export const BlockRequestContext = createContext<any>(null);
 
 export const useBlockResource = () => {
   return useContext(BlockResourceContext);
@@ -78,7 +78,7 @@ const useActionParams = (props) => {
 export const useResourceAction = (props, opts = {}) => {
   const { resource, action } = props;
   const { fields } = useCollection();
-  const appends = fields?.filter((field) => field.target).map((field) => field.name);
+  const appends = fields?.filter((field) => field.target && field.interface !== 'snapshot').map((field) => field.name);
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
@@ -111,7 +111,7 @@ export const useResourceAction = (props, opts = {}) => {
   return result;
 };
 
-const MaybeCollectionProvider = (props) => {
+export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
     <CollectionProvider collection={collection}>

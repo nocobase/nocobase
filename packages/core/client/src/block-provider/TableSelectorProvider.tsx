@@ -59,7 +59,6 @@ export const TableSelectorProvider = (props) => {
   // const value = ctx.form.query(collectionFieldSchema?.name).value();
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
 
-  console.log('TableSelectorProvider', collectionFieldSchema, collectionField, record);
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
   if (props.dragSort) {

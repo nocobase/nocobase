@@ -21,7 +21,8 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const recordCtx = useRecord();
   const { getCollectionJoinField } = useCollectionManager();
-  const field = useField<Field>();
+  // value 做了转换，但 props.value 和原来 useField().value 的值不一致
+  // const field = useField<Field>();
   const fieldNames = useFieldNames(props);
   const [visible, setVisible] = useState(false);
   const [popoverVisible, setPopoverVisible] = useState<boolean>();
@@ -33,7 +34,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
 
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
   const renderRecords = () =>
-    toArr(field.value).map((record, index, arr) => {
+    toArr(props.value).map((record, index, arr) => {
       const val =
         compile(record?.[fieldNames?.label || 'label']) || record?.[fieldNames?.value || 'value'] || record?.id;
       return (

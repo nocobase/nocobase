@@ -1,9 +1,10 @@
 import { createContext } from 'react';
+import * as defaultInterfaces from './interfaces';
 import { CollectionFieldOptions, CollectionManagerOptions, CollectionOptions } from './types';
 
 export const CollectionManagerContext = createContext<CollectionManagerOptions>({
   collections: [],
-  interfaces: {},
+  interfaces: defaultInterfaces,
 });
 
 export const CollectionContext = createContext<CollectionOptions>({});
