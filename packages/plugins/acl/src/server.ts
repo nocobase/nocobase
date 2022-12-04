@@ -97,18 +97,6 @@ export class PluginACL extends Plugin {
         associationActions: ['update', 'remove', 'set', 'toggle'],
       },
     });
-
-    this.registerAssociationFieldAction('attachments', {
-      view: {
-        associationActions: ['list', 'get'],
-      },
-      add: {
-        associationActions: ['upload', 'add'],
-      },
-      update: {
-        associationActions: ['update', 'add', 'remove', 'toggle'],
-      },
-    });
   }
 
   async writeResourceToACL(resourceModel: RoleResourceModel, transaction) {
