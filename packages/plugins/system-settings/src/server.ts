@@ -38,7 +38,7 @@ export class SystemSettingsPlugin extends Plugin {
 
     this.app.acl.addFixedParams('systemSettings', 'destroy', () => {
       return {
-        id: 1,
+        'id.$ne': 1,
       };
     });
 
