@@ -1,12 +1,12 @@
-import {MagicAttributeModel} from '@nocobase/database';
-import {Plugin} from '@nocobase/server';
-import {uid} from '@nocobase/utils';
+import { MagicAttributeModel } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 import path from 'path';
-import {uiSchemaActions} from './actions/ui-schema-action';
-import {UiSchemaModel} from './model';
+import { uiSchemaActions } from './actions/ui-schema-action';
+import { UiSchemaModel } from './model';
 import UiSchemaRepository from './repository';
-import {ServerHooks} from './server-hooks';
-import {ServerHookModel} from './server-hooks/model';
+import { ServerHooks } from './server-hooks';
+import { ServerHookModel } from './server-hooks/model';
 
 export class UiSchemaStoragePlugin extends Plugin {
   serverHooks: ServerHooks;

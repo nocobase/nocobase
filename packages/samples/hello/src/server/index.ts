@@ -1,7 +1,6 @@
-import {InstallOptions, Plugin} from '@nocobase/server';
+import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class HelloPlugin extends Plugin {
-
   beforeLoad() {
     // TODO
   }

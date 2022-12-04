@@ -1,12 +1,12 @@
 import path from 'path';
 
 import lodash from 'lodash';
-import {UniqueConstraintError} from 'sequelize';
+import { UniqueConstraintError } from 'sequelize';
 
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
-import {Plugin} from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 
-import {CollectionRepository} from '.';
+import { CollectionRepository } from '.';
 import {
   afterCreateForForeignKeyField,
   afterCreateForReverseField,
@@ -16,8 +16,8 @@ import {
   beforeInitOptions,
 } from './hooks';
 
-import {CollectionModel, FieldModel} from './models';
-import {InheritedCollection} from '@nocobase/database';
+import { CollectionModel, FieldModel } from './models';
+import { InheritedCollection } from '@nocobase/database';
 
 export class CollectionManagerPlugin extends Plugin {
   async beforeLoad() {

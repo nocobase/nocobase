@@ -1,6 +1,6 @@
-import {Plugin} from '@nocobase/server';
-import {areas, cities, provinces} from 'china-division';
-import {resolve} from 'path';
+import { Plugin } from '@nocobase/server';
+import { areas, cities, provinces } from 'china-division';
+import { resolve } from 'path';
 
 export class PluginChinaRegion extends Plugin {
   async install() {

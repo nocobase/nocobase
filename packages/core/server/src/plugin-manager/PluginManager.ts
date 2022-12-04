@@ -1,15 +1,15 @@
-import {CleanOptions, Collection, SyncOptions} from '@nocobase/database';
-import {requireModule} from '@nocobase/utils';
+import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
+import { requireModule } from '@nocobase/utils';
 import execa from 'execa';
 import fs from 'fs';
 import net from 'net';
-import {resolve} from 'path';
+import { resolve } from 'path';
 import xpipe from 'xpipe';
 import Application from '../application';
-import {Plugin} from '../plugin';
+import { Plugin } from '../plugin';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
-import {PluginManagerRepository} from './PluginManagerRepository';
+import { PluginManagerRepository } from './PluginManagerRepository';
 
 export interface PluginManagerOptions {
   app: Application;

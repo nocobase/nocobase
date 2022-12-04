@@ -1,10 +1,10 @@
-import {InstallOptions, Plugin} from '@nocobase/server';
-import {generators} from 'openid-client';
-import {resolve} from 'path';
-import {getAuthUrl} from './actions/getAuthUrl';
-import {getEnabledProviders} from './actions/getEnabledProviders';
-import {redirect} from './actions/redirect';
-import {oidc} from './authenticators/oidc';
+import { InstallOptions, Plugin } from '@nocobase/server';
+import { generators } from 'openid-client';
+import { resolve } from 'path';
+import { getAuthUrl } from './actions/getAuthUrl';
+import { getEnabledProviders } from './actions/getEnabledProviders';
+import { redirect } from './actions/redirect';
+import { oidc } from './authenticators/oidc';
 
 export class OidcPlugin extends Plugin {
   #OIDC_NONCE = null;

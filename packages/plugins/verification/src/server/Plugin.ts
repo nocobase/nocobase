@@ -1,16 +1,16 @@
 import path from 'path';
 
-import {Context} from '@nocobase/actions';
-import {Op} from '@nocobase/database';
-import {HandlerType} from '@nocobase/resourcer';
-import {Plugin} from '@nocobase/server';
-import {Registry} from '@nocobase/utils';
+import { Context } from '@nocobase/actions';
+import { Op } from '@nocobase/database';
+import { HandlerType } from '@nocobase/resourcer';
+import { Plugin } from '@nocobase/server';
+import { Registry } from '@nocobase/utils';
 
-import {namespace} from '.';
+import { namespace } from '.';
 import initActions from './actions';
-import {CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN} from './constants';
-import {zhCN} from './locale';
-import initProviders, {Provider} from './providers';
+import { CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
+import { zhCN } from './locale';
+import initProviders, { Provider } from './providers';
 
 export interface Interceptor {
   manual?: boolean;
@@ -55,7 +55,10 @@ export default class VerificationPlugin extends Plugin {
     });
 
     if (!item) {
-      return context.throw(400, { code: 'InvalidVerificationCode', message: context.t('Verification code is invalid', { ns: namespace }) });
+      return context.throw(400, {
+        code: 'InvalidVerificationCode',
+        message: context.t('Verification code is invalid', { ns: namespace }),
+      });
     }
 
     // TODO: code should be removed if exists in values
@@ -103,7 +106,7 @@ export default class VerificationPlugin extends Plugin {
             sign: INIT_ALI_SMS_VERIFY_CODE_SIGN,
             template: INIT_ALI_SMS_VERIFY_CODE_TEMPLATE,
           },
-          default: true
+          default: true,
         },
       });
     }
@@ -142,7 +145,7 @@ export default class VerificationPlugin extends Plugin {
     return providerRepo.findOne({
       filter: {
         default: true,
-      }
+      },
     });
   }
 }

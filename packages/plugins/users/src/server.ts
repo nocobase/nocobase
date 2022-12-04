@@ -1,17 +1,17 @@
 import parse from 'json-templates';
-import {resolve} from 'path';
+import { resolve } from 'path';
 
-import {Collection, Op} from '@nocobase/database';
-import {HandlerType} from '@nocobase/resourcer';
-import {Plugin} from '@nocobase/server';
-import {Registry} from '@nocobase/utils';
+import { Collection, Op } from '@nocobase/database';
+import { HandlerType } from '@nocobase/resourcer';
+import { Plugin } from '@nocobase/server';
+import { Registry } from '@nocobase/utils';
 
-import {namespace} from './';
+import { namespace } from './';
 import * as actions from './actions/users';
 import initAuthenticators from './authenticators';
-import {JwtOptions, JwtService} from './jwt-service';
-import {enUS, zhCN} from './locale';
-import {parseToken} from './middlewares';
+import { JwtOptions, JwtService } from './jwt-service';
+import { enUS, zhCN } from './locale';
+import { parseToken } from './middlewares';
 
 export interface UserPluginConfig {
   name?: string;

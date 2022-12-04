@@ -1,5 +1,5 @@
-import {InstallOptions, Plugin} from '@nocobase/server';
-import {resolve} from 'path';
+import { InstallOptions, Plugin } from '@nocobase/server';
+import { resolve } from 'path';
 
 export class SystemSettingsPlugin extends Plugin {
   getInitAppLang(options) {

@@ -1,15 +1,15 @@
-import {Context} from '@nocobase/actions';
-import {Collection, ImporterReader} from '@nocobase/database';
-import {Plugin} from '@nocobase/server';
-import {resolve} from 'path';
-import {availableActionResource} from './actions/available-actions';
-import {checkAction} from './actions/role-check';
-import {roleCollectionsResource} from './actions/role-collections';
-import {setDefaultRole} from './actions/user-setDefaultRole';
-import {setCurrentRole} from './middlewares/setCurrentRole';
-import {RoleModel} from './model/RoleModel';
-import {RoleResourceActionModel} from './model/RoleResourceActionModel';
-import {RoleResourceModel} from './model/RoleResourceModel';
+import { Context } from '@nocobase/actions';
+import { Collection, ImporterReader } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
+import { resolve } from 'path';
+import { availableActionResource } from './actions/available-actions';
+import { checkAction } from './actions/role-check';
+import { roleCollectionsResource } from './actions/role-collections';
+import { setDefaultRole } from './actions/user-setDefaultRole';
+import { setCurrentRole } from './middlewares/setCurrentRole';
+import { RoleModel } from './model/RoleModel';
+import { RoleResourceActionModel } from './model/RoleResourceActionModel';
+import { RoleResourceModel } from './model/RoleResourceModel';
 
 export interface AssociationFieldAction {
   associationActions: string[];

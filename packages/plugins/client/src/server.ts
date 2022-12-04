@@ -1,7 +1,7 @@
-import {Plugin, PluginManager} from '@nocobase/server';
+import { Plugin, PluginManager } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
-import {isAbsolute, resolve} from 'path';
+import { isAbsolute, resolve } from 'path';
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {

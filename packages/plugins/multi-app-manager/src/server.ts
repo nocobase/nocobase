@@ -1,6 +1,6 @@
-import {AppManager, InstallOptions, Plugin} from '@nocobase/server';
-import {resolve} from 'path';
-import {ApplicationModel} from './models/application';
+import { AppManager, InstallOptions, Plugin } from '@nocobase/server';
+import { resolve } from 'path';
+import { ApplicationModel } from './models/application';
 
 export class PluginMultiAppManager extends Plugin {
   async install(options?: InstallOptions) {

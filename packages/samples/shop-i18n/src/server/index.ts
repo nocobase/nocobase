@@ -1,13 +1,12 @@
 import path from 'path';
 
-import {InstallOptions, Plugin} from '@nocobase/server';
+import { InstallOptions, Plugin } from '@nocobase/server';
 
 import zhCN from './locales/zh-CN';
 
 const ns = '@nocobase/plugin-sample-shop-i18n';
 
 export class ShopPlugin extends Plugin {
-
   beforeLoad() {
     // TODO
   }
@@ -44,13 +43,13 @@ export class ShopPlugin extends Plugin {
               productId: product.id,
               quantity: 1,
               totalPrice: product.price,
-              userId: ctx.state.currentUser.id
-            }
+              userId: ctx.state.currentUser.id,
+            },
           });
 
           next();
-        }
-      }
+        },
+      },
     });
 
     this.app.acl.skip('products', '*');

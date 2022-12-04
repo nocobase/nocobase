@@ -1,4 +1,4 @@
-import {ACL} from '..';
+import { ACL } from '..';
 
 describe('skip', () => {
   let acl: ACL;

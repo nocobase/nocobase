@@ -1,7 +1,7 @@
-import {MagicAttributeModel} from '@nocobase/database';
-import {Plugin} from '@nocobase/server';
-import {resolve} from 'path';
-import {getAccessible} from './actions/getAccessible';
+import { MagicAttributeModel } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
+import { resolve } from 'path';
+import { getAccessible } from './actions/getAccessible';
 
 export class UiRoutesStoragePlugin extends Plugin {
   async install() {
