@@ -219,7 +219,7 @@ describe('workflow > Plugin', () => {
   });
 
   describe('dispatcher', () => {
-    it.skip('multiple triggers in same event', async () => {
+    it('multiple triggers in same event', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'collection',
