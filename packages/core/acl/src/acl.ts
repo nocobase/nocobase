@@ -44,7 +44,7 @@ interface CanArgs {
 
 export class ACL extends EventEmitter {
   protected availableActions = new Map<string, ACLAvailableAction>();
-  protected availableStrategy = new Map<string, ACLAvailableStrategy>();
+  public availableStrategy = new Map<string, ACLAvailableStrategy>();
   protected fixedParamsManager = new FixedParamsManager();
 
   protected middlewares: Toposort<any>;
@@ -204,9 +204,7 @@ export class ACL extends EventEmitter {
       return null;
     }
 
-    const roleStrategy = lodash.isString(aclRole.strategy)
-      ? this.availableStrategy.get(aclRole.strategy)
-      : new ACLAvailableStrategy(this, aclRole.strategy);
+    const roleStrategy = aclRole.getStrategy();
 
     if (!roleStrategy) {
       return null;
