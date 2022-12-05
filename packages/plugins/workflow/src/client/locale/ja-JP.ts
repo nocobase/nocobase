@@ -44,7 +44,6 @@ export default {
   "By field": "フィールドごと",
   "By custom date": "カスタム時間",
   "Advanced": "アドバンスド",
-  "Advanced type": "アドバンスタイプ",
   "End": "終了",
   "Trigger variables": "トリガーフィールド",
   "Node result": "ノードの結果",
