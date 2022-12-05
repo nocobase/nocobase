@@ -1,5 +1,73 @@
-import { MockServer, mockServer } from './index';
+import { MockServer, mockServer } from '@nocobase/test';
 import { registerActions } from '@nocobase/actions';
+
+describe('destroy action with acl', () => {
+  let app: MockServer;
+  let Post;
+
+  beforeEach(async () => {
+    app = mockServer({
+      acl: true,
+    });
+
+    Post = app.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          type: 'bigInt',
+          name: 'createdById',
+        },
+      ],
+    });
+
+    await app.db.sync();
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('should throw error when user has no permission to destroy record', async () => {
+    const userRole = app.acl.define({
+      role: 'user',
+    });
+
+    userRole.grantAction('posts:destroy', {
+      own: true,
+    });
+
+    const p1 = await Post.repository.create({
+      values: {
+        title: 'p1',
+        createById: 2,
+      },
+    });
+
+    app.resourcer.use(
+      (ctx, next) => {
+        ctx.state.currentRole = 'user';
+        ctx.state.currentUser = {
+          id: 1,
+        };
+        return next();
+      },
+      {
+        before: 'acl',
+      },
+    );
+
+    const response = await app
+      .agent()
+      .resource('posts')
+      .destroy({
+        filterByTk: p1.get('id'),
+      });
+
+    // should throw error
+    expect(response.statusCode).toEqual(403);
+  });
+});
 
 describe('destroy action', () => {
   let app: MockServer;
@@ -10,7 +78,10 @@ describe('destroy action', () => {
   let Profile;
 
   beforeEach(async () => {
-    app = mockServer();
+    app = mockServer({
+      acl: true,
+    });
+
     registerActions(app);
 
     PostTag = app.collection({

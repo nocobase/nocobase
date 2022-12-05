@@ -239,7 +239,7 @@ export class ACL extends EventEmitter {
 
   /**
    * Please use skip instead
-   * 
+   *
    * @deprecated
    */
   allow(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
@@ -295,7 +295,7 @@ export class ACL extends EventEmitter {
       return compose(acl.middlewares.nodes)(ctx, async () => {
         const permission = ctx.permission;
 
-        ctx.log?.info && ctx.log.info('permission', { permission });
+        ctx.log?.info && ctx.log.info('ctx permission', permission);
 
         if ((!permission.can || typeof permission.can !== 'object') && !permission.skip) {
           ctx.throw(403, 'No permissions');
@@ -304,11 +304,15 @@ export class ACL extends EventEmitter {
 
         const params = permission.can?.params || acl.fixedParamsManager.getParams(resourceName, actionName);
 
-        ctx.log?.info && ctx.log.info('params', { params });
+        ctx.log?.info && ctx.log.info('acl params', params);
 
         if (params && resourcerAction.mergeParams) {
           const filteredParams = filterParams(ctx, resourceName, params);
           const parsedParams = acl.parseJsonTemplate(filteredParams, ctx);
+
+          ctx.permission.parsedParams = parsedParams;
+          ctx.log?.info && ctx.log.info('acl parsedParams', parsedParams);
+
           resourcerAction.mergeParams(parsedParams);
         }
 
