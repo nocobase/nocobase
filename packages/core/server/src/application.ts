@@ -478,6 +478,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return true;
   }
 
+  async isInstalled() {
+    return (
+      (await this.db.collectionExistsInDb('applicationVersion')) || (await this.db.collectionExistsInDb('collections'))
+    );
+  }
+
   async install(options: InstallOptions = {}) {
     console.log('Database dialect: ' + this.db.sequelize.getDialect());
 
