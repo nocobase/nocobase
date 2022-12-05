@@ -13,10 +13,7 @@ if [ ! -f "/app/nocobase/package.json" ]; then
   tar -zxf /app/nocobase.tar.gz --absolute-names -C /app/nocobase
 fi
 
-cd /app/nocobase && yarn nocobase db:auth --retry=30
-cd /app/nocobase && yarn nocobase install -s
-cd /app/nocobase && yarn nocobase upgrade -S
-cd /app/nocobase && yarn start
+cd /app/nocobase && yarn start --quickstart
 
 # Run command with node if the first argument contains a "-" or is not a system command. The last
 # part inside the "{}" is a workaround for the following bug in ash/dash:
