@@ -1,10 +1,14 @@
 import { omit } from 'lodash';
-import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
+import { BelongsTo, BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
+import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
-import { Reference } from '../features/ReferencesMap';
 
 export class BelongsToField extends RelationField {
+  get dataType() {
+    return 'BelongsTo';
+  }
+
   static type = 'belongsTo';
 
   get target() {
@@ -12,16 +16,20 @@ export class BelongsToField extends RelationField {
     return target || Utils.pluralize(name);
   }
 
-  reference(association): Reference {
+  static toReference(db, association, onDelete) {
     const targetKey = association.targetKey;
 
     return {
-      sourceCollectionName: this.database.modelCollection.get(association.source).name,
+      sourceCollectionName: db.modelCollection.get(association.source).name,
       sourceField: association.foreignKey,
       targetField: targetKey,
-      targetCollectionName: this.database.modelCollection.get(association.target).name,
-      onDelete: this.options.onDelete,
+      targetCollectionName: db.modelCollection.get(association.target).name,
+      onDelete: onDelete,
     };
+  }
+
+  reference(association): Reference {
+    return BelongsToField.toReference(this.database, association, this.options.onDelete);
   }
 
   bind() {
@@ -83,15 +91,22 @@ export class BelongsToField extends RelationField {
     const tcoll = database.collections.get(this.target);
     const foreignKey = this.options.foreignKey;
     const field1 = collection.getField(foreignKey);
-    const field2 = tcoll.findField((field) => {
-      return field.type === 'hasMany' && field.foreignKey === foreignKey;
-    });
+
+    const field2 = tcoll
+      ? tcoll.findField((field) => {
+          return field.type === 'hasMany' && field.foreignKey === foreignKey;
+        })
+      : null;
+
     if (!field1 && !field2) {
       collection.model.removeAttribute(foreignKey);
     }
 
     const association = collection.model.associations[this.name];
-    this.database.referenceMap.removeReference(this.reference(association));
+    if (association) {
+      const reference = this.reference(association);
+      this.database.referenceMap.removeReference(reference);
+    }
 
     this.clearAccessors();
     // 删掉 model 的关联字段

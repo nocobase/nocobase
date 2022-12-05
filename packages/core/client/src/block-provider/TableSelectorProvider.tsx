@@ -2,7 +2,7 @@ import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCollectionManager } from '../collection-manager';
-import { useRecord } from '../record-provider';
+import { RecordProvider, useRecord } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
@@ -16,18 +16,20 @@ const InternalTableSelectorProvider = (props) => {
   //   return <Spin />;
   // }
   return (
-    <TableSelectorContext.Provider
-      value={{
-        field,
-        service,
-        resource,
-        params,
-        extraFilter,
-        rowKey,
-      }}
-    >
-      {props.children}
-    </TableSelectorContext.Provider>
+    <RecordProvider record={{}}>
+      <TableSelectorContext.Provider
+        value={{
+          field,
+          service,
+          resource,
+          params,
+          extraFilter,
+          rowKey,
+        }}
+      >
+        {props.children}
+      </TableSelectorContext.Provider>
+    </RecordProvider>
   );
 };
 

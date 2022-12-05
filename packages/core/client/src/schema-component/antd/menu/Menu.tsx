@@ -269,7 +269,7 @@ export const Menu: ComposedMenu = observer((props) => {
             selectedKeys={defaultSelectedKeys}
           >
             {designable && (
-              <AntdMenu.Item disabled style={{ padding: '0 8px', order: 9999 }}>
+              <AntdMenu.Item disabled key="x-designer-button" style={{ padding: '0 8px', order: 9999 }}>
                 {render({ style: { background: 'none' } })}
               </AntdMenu.Item>
             )}

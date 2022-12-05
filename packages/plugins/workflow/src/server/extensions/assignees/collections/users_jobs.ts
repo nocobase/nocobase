@@ -4,49 +4,49 @@ export default {
   name: 'users_jobs',
   fields: [
     {
-      type: 'integer',
+      type: 'bigInt',
       name: 'id',
       primaryKey: true,
-      autoIncrement: true
+      autoIncrement: true,
     },
     {
-      type: 'integer',
+      type: 'bigInt',
       name: 'userId',
       primaryKey: false,
     },
     {
-      type: 'integer',
+      type: 'bigInt',
       name: 'jobId',
       primaryKey: false,
     },
     {
       type: 'belongsTo',
-      name: 'job'
+      name: 'job',
     },
     {
       type: 'belongsTo',
-      name: 'user'
+      name: 'user',
     },
     {
       type: 'belongsTo',
-      name: 'execution'
+      name: 'execution',
     },
     {
       type: 'belongsTo',
       name: 'node',
-      target: 'flow_nodes'
+      target: 'flow_nodes',
     },
     {
       type: 'belongsTo',
-      name: 'workflow'
+      name: 'workflow',
     },
     {
       type: 'integer',
-      name: 'status'
+      name: 'status',
     },
     {
       type: 'jsonb',
-      name: 'result'
-    }
-  ]
+      name: 'result',
+    },
+  ],
 } as CollectionOptions;

@@ -1,131 +1,29 @@
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { useRequest } from '../../api-client';
+import React, { useContext, useRef, useState } from 'react';
+import { CollectionFieldsTable } from '.';
+import { useCurrentAppInfo } from '../../appInfo';
 import { useRecord } from '../../record-provider';
-import { SchemaComponent, SchemaComponentContext, useActionContext, useCompile } from '../../schema-component';
+import { SchemaComponent, SchemaComponentContext, useCompile } from '../../schema-component';
+import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
-import { useCurrentAppInfo } from '../../appInfo';
-import { CollectionFieldsTable } from '.';
-import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
 
-const useAsyncDataSource = (service: any) => (field: any) => {
-  field.loading = true;
-  service(field).then(
-    action.bound((data: any) => {
-      field.dataSource = data;
-      field.loading = false;
-    }),
-  );
-};
-
-const useCollectionValues = (options) => {
-  const { visible } = useActionContext();
-  const result = useRequest(
-    () =>
-      Promise.resolve({
-        data: {
-          name: `t_${uid()}`,
-          createdBy: true,
-          updatedBy: true,
-          sortable: true,
-          logging: true,
-          fields: [
-            {
-              name: 'id',
-              type: 'integer',
-              autoIncrement: true,
-              primaryKey: true,
-              allowNull: false,
-              uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
-              interface: 'id',
-            },
-            {
-              interface: 'createdAt',
-              type: 'date',
-              field: 'createdAt',
-              name: 'createdAt',
-              uiSchema: {
-                type: 'datetime',
-                title: '{{t("Created at")}}',
-                'x-component': 'DatePicker',
-                'x-component-props': {},
-                'x-read-pretty': true,
-              },
-            },
-            {
-              interface: 'createdBy',
-              type: 'belongsTo',
-              target: 'users',
-              foreignKey: 'createdById',
-              name: 'createdBy',
-              uiSchema: {
-                type: 'object',
-                title: '{{t("Created by")}}',
-                'x-component': 'RecordPicker',
-                'x-component-props': {
-                  fieldNames: {
-                    value: 'id',
-                    label: 'nickname',
-                  },
-                },
-                'x-read-pretty': true,
-              },
-            },
-            {
-              type: 'date',
-              field: 'updatedAt',
-              name: 'updatedAt',
-              interface: 'updatedAt',
-              uiSchema: {
-                type: 'string',
-                title: '{{t("Last updated at")}}',
-                'x-component': 'DatePicker',
-                'x-component-props': {},
-                'x-read-pretty': true,
-              },
-            },
-            {
-              type: 'belongsTo',
-              target: 'users',
-              foreignKey: 'updatedById',
-              name: 'updatedBy',
-              interface: 'updatedBy',
-              uiSchema: {
-                type: 'object',
-                title: '{{t("Last updated by")}}',
-                'x-component': 'RecordPicker',
-                'x-component-props': {
-                  fieldNames: {
-                    value: 'id',
-                    label: 'nickname',
-                  },
-                },
-                'x-read-pretty': true,
-              },
-            },
-          ],
-        },
+const useAsyncDataSource = (service: any) => {
+  return (field: any, options?: any) => {
+    field.loading = true;
+    service(field, options).then(
+      action.bound((data: any) => {
+        field.dataSource = data;
+        field.loading = false;
       }),
-    {
-      ...options,
-      manual: true,
-    },
-  );
-
-  useEffect(() => {
-    if (visible) {
-      result.run();
-    }
-  }, [visible]);
-
-  return result;
+    );
+  };
 };
 
 const useSelectedRowKeys = () => {
@@ -181,9 +79,15 @@ export const ConfigurationTable = () => {
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
-  const loadCollections = async (field: any) => {
+  const loadCollections = async (field, options) => {
+    const { targetScope } = options;
     return collectonsRef.current
       ?.filter((item) => !(item.autoCreate && item.isThrough))
+      .filter((item) =>
+        targetScope
+          ? targetScope['template']?.includes(item.template) || targetScope['name']?.includes(item.name)
+          : true,
+      )
       .map((item: any) => ({
         label: compile(item.title),
         value: item.name,
@@ -205,13 +109,11 @@ export const ConfigurationTable = () => {
             useDestroySubField,
             useBulkDestroySubField,
             useSelectedRowKeys,
-            useCollectionValues,
             useAsyncDataSource,
             loadCollections,
             useCurrentFields,
             useNewId,
             useCancelAction,
-            useUpdateCollectionActionAndRefreshCM,
             enableInherits: database?.dialect === 'postgres',
           }}
         />

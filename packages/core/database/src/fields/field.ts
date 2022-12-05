@@ -1,4 +1,5 @@
 import _ from 'lodash';
+
 import {
   DataType,
   ModelAttributeColumnOptions,
@@ -53,9 +54,7 @@ export abstract class Field {
     return this.options.type;
   }
 
-  get dataType() {
-    return this.options.dataType;
-  }
+  abstract get dataType();
 
   async sync(syncOptions: SyncOptions) {
     await this.collection.sync({
@@ -178,7 +177,7 @@ export abstract class Field {
   }
 
   bind() {
-    const {model} = this.context.collection;
+    const { model } = this.context.collection;
     model.rawAttributes[this.name] = this.toSequelize();
     // @ts-ignore
     model.refreshAttributes();
@@ -188,7 +187,7 @@ export abstract class Field {
   }
 
   unbind() {
-    const {model} = this.context.collection;
+    const { model } = this.context.collection;
     model.removeAttribute(this.name);
     if (this.options.index || this.options.unique) {
       this.context.collection.removeIndex([this.name]);
@@ -198,12 +197,16 @@ export abstract class Field {
   toSequelize(): any {
     const opts = _.omit(this.options, ['name']);
     if (this.dataType) {
-      Object.assign(opts, {type: this.dataType});
+      Object.assign(opts, { type: this.dataType });
     }
     return opts;
   }
 
   isSqlite() {
     return this.database.sequelize.getDialect() === 'sqlite';
+  }
+
+  typeToString() {
+    return this.dataType.toString();
   }
 }

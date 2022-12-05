@@ -87,6 +87,12 @@ export class CollectionModel extends MagicAttributeModel {
       transaction: options?.transaction,
     });
 
+    // postgres support zero column table, other database should not sync it to database
+    // @ts-ignore
+    if (Object.keys(collection.model.tableAttributes).length == 0 && !this.db.inDialect('postgres')) {
+      return;
+    }
+
     try {
       await collection.sync({
         force: false,

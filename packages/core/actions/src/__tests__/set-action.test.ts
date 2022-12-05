@@ -85,6 +85,8 @@ describe('set action', () => {
         values: [t1.get('id'), t2.get('id')],
       });
 
+    expect(response.statusCode).toEqual(200);
+
     expect(await p1.countTags()).toEqual(2);
 
     // add with through values

@@ -46,7 +46,6 @@ export const CalendarFormActionInitializers = {
           component: 'PrintActionInitializer',
           schema: {
             'x-component': 'Action',
-            'x-decorator': 'ACLActionProvider',
           },
         },
       ],
@@ -117,6 +116,7 @@ export const CalendarFormActionInitializers = {
             title: '{{ t("Update record") }}',
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
+            'x-acl-action': 'update',
             'x-action': 'customize:update',
             'x-action-settings': {
               assignedValues: {},

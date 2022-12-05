@@ -168,7 +168,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
       const timestamp = now.getTime();
       const startTime = getDataOptionTime(data, startsOn);
       const endTime = getDataOptionTime(data, endsOn, -1);
-      if (!startTime && !repeat) {
+      if (!startTime) {
         return;
       }
       if (startTime && startTime > timestamp + this.cacheCycle) {
@@ -225,7 +225,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     // when repeat is number, means repeat after startsOn
     // (now - startsOn) % repeat <= cacheCycle
     if (repeat) {
-      const tsFn = DialectTimestampFnMap[db.options.dialect];
+      const tsFn = DialectTimestampFnMap[db.options.dialect!];
       if (typeof repeat === 'number'
         && repeat > this.cacheCycle
         && tsFn
@@ -295,7 +295,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
         }
       });
 
-      const tsFn = DialectTimestampFnMap[this.plugin.app.db.options.dialect];
+      const tsFn = DialectTimestampFnMap[this.plugin.app.db.options.dialect!];
       if (typeof repeat === 'number' && tsFn) {
         conditions.push(where(
           fn('MOD', literal(`${Math.round(timestamp / 1000)} - ${tsFn(startsOn.field)}`), Math.round(repeat / 1000)),
@@ -379,6 +379,9 @@ export default class ScheduleTrigger extends Trigger {
     function(workflow, now) {
       const { mode } = workflow.config;
       const modeHandlers = ScheduleModes.get(mode);
+      if (!modeHandlers) {
+        return false;
+      }
       return modeHandlers.shouldCache.call(this, workflow, now);
     }
   ];
@@ -392,7 +395,7 @@ export default class ScheduleTrigger extends Trigger {
 
   events = new Map();
 
-  private timer: NodeJS.Timeout = null;
+  private timer: NodeJS.Timeout | null = null;
 
   private cache: Map<number | string, any> = new Map();
 
@@ -420,13 +423,7 @@ export default class ScheduleTrigger extends Trigger {
 
     // NOTE: assign to this.timer to avoid duplicated initialization
     this.timer = setTimeout(
-      () => {
-        this.timer = setInterval(this.run, this.interval);
-
-        // initially trigger
-        // this.onTick(now);
-
-      },
+      this.run,
       // NOTE:
       //  try to align to system time on each second starts,
       //  after at least 1 second initialized for anything to get ready.
@@ -437,6 +434,8 @@ export default class ScheduleTrigger extends Trigger {
 
   run = () => {
     const now = new Date();
+    // 1001 to avoid 999
+    const nextInterval = 1_001 - now.getMilliseconds();
     now.setMilliseconds(0);
 
     // NOTE: trigger `onTick` for high interval jobs which are cached in last 1 min
@@ -446,6 +445,8 @@ export default class ScheduleTrigger extends Trigger {
     if (!(now.getTime() % this.cacheCycle)) {
       this.reload();
     }
+
+    this.timer = setTimeout(this.run, nextInterval);
   };
 
   async onTick(now) {
@@ -528,6 +529,9 @@ export default class ScheduleTrigger extends Trigger {
   async trigger(workflow, date: Date) {
     const { mode } = workflow.config;
     const modeHandlers = ScheduleModes.get(mode);
+    if (!modeHandlers) {
+      return;
+    }
     return modeHandlers.trigger.call(this, workflow, date);
   }
 

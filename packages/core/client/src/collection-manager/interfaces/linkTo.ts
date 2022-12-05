@@ -47,10 +47,19 @@ export const linkTo: IField = {
   },
   schemaInitialize(schema: ISchema, { readPretty, block }) {
     if (block === 'Form') {
-      schema['properties'] = {
-        viewer: cloneDeep(recordPickerViewer),
-        selector: cloneDeep(recordPickerSelector),
-      };
+      if (schema['x-component'] === 'AssociationSelect') {
+        Object.assign(schema, {
+          type: 'string',
+          'x-designer': 'AssociationSelect.Designer',
+        });
+      } else {
+        schema.type = 'string';
+        schema['properties'] = {
+          viewer: cloneDeep(recordPickerViewer),
+          selector: cloneDeep(recordPickerSelector),
+        };
+      }
+      return schema
     } else {
       if (readPretty) {
         schema['properties'] = {

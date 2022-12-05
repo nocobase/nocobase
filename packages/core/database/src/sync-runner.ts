@@ -18,6 +18,14 @@ export class SyncRunner {
 
     const parents = inheritedCollection.parents;
 
+    if (!parents) {
+      throw new Error(
+        `Inherit model ${inheritedCollection.name} can't be created without parents, parents option is ${lodash
+          .castArray(inheritedCollection.options.inherits)
+          .join(', ')}`,
+      );
+    }
+
     const parentTables = parents.map((parent) => parent.model.tableName);
 
     const tableName = model.getTableName();
@@ -34,12 +42,27 @@ export class SyncRunner {
     if (childAttributes.id && childAttributes.id.autoIncrement) {
       for (const parent of parentTables) {
         const sequenceNameResult = await queryInterface.sequelize.query(
-          `select pg_get_serial_sequence('"${parent}"', 'id')`,
+          `SELECT column_default FROM information_schema.columns WHERE 
+          table_name='${parent}' and "column_name" = 'id';`,
           {
             transaction,
           },
         );
-        const sequenceName = sequenceNameResult[0][0]['pg_get_serial_sequence'];
+
+        if (!sequenceNameResult[0].length) {
+          continue;
+        }
+
+        const columnDefault = sequenceNameResult[0][0]['column_default'];
+
+        if (!columnDefault) {
+          throw new Error(`Can't find sequence name of ${parent}`);
+        }
+
+        const regex = new RegExp(/nextval\('(\w+)\'.*\)/);
+        const match = regex.exec(columnDefault);
+
+        const sequenceName = match[1];
 
         const sequenceCurrentValResult = await queryInterface.sequelize.query(
           `select last_value from ${sequenceName}`,
@@ -47,7 +70,8 @@ export class SyncRunner {
             transaction,
           },
         );
-        const sequenceCurrentVal = sequenceCurrentValResult[0][0]['last_value'];
+
+        const sequenceCurrentVal = parseInt(sequenceCurrentValResult[0][0]['last_value']);
 
         if (sequenceCurrentVal > maxSequenceVal) {
           maxSequenceName = sequenceName;
@@ -58,19 +82,38 @@ export class SyncRunner {
 
     await this.createTable(tableName, childAttributes, options, model, parentTables);
 
-    const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map(
-      (parent) => db.getCollection(parent).model.tableName,
-    );
-
-    const sequenceTables = [...parentsDeep, tableName];
-
-    for (const sequenceTable of sequenceTables) {
-      await queryInterface.sequelize.query(
-        `alter table "${sequenceTable}" alter column id set default nextval('${maxSequenceName}')`,
-        {
-          transaction,
-        },
+    if (maxSequenceName) {
+      const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map(
+        (parent) => db.getCollection(parent).model.tableName,
       );
+
+      const sequenceTables = [...parentsDeep, tableName];
+
+      for (const sequenceTable of sequenceTables) {
+        const idColumnQuery = await queryInterface.sequelize.query(
+          `
+        SELECT true
+FROM   pg_attribute 
+WHERE  attrelid = '${sequenceTable}'::regclass  -- cast to a registered class (table)
+AND    attname = 'id'
+AND    NOT attisdropped 
+`,
+          {
+            transaction,
+          },
+        );
+
+        if (idColumnQuery[0].length == 0) {
+          continue;
+        }
+
+        await queryInterface.sequelize.query(
+          `alter table "${sequenceTable}" alter column id set default nextval('${maxSequenceName}')`,
+          {
+            transaction,
+          },
+        );
+      }
     }
 
     if (options.alter) {

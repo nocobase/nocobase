@@ -11,7 +11,7 @@ export default {
   fields: [
     {
       name: 'id',
-      type: 'integer',
+      type: 'bigInt',
       autoIncrement: true,
       primaryKey: true,
       allowNull: false,
@@ -38,7 +38,7 @@ export default {
         title: '{{t("Email")}}',
         'x-component': 'Input',
         'x-validator': 'email',
-        require: true,
+        required: true,
       },
     },
     {
@@ -51,7 +51,7 @@ export default {
         title: '{{t("Phone")}}',
         'x-component': 'Input',
         'x-validator': 'phone',
-        require: true,
+        required: true,
       },
     },
     {

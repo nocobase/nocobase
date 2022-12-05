@@ -1,3 +1,5 @@
+import lodash from 'lodash';
+
 export interface Reference {
   sourceCollectionName: string;
   sourceField: string;
@@ -21,7 +23,7 @@ class ReferencesMap {
         // using existing reference
         return;
       } else if (existReference.onDelete === 'SET NULL') {
-        this.removeReference(existReference);
+        existReference.onDelete = reference.onDelete;
       } else {
         throw new Error(
           `On Delete Conflict, exist reference ${JSON.stringify(existReference)}, new reference ${JSON.stringify(
@@ -31,7 +33,12 @@ class ReferencesMap {
       }
     }
 
-    this.map.set(reference.targetCollectionName, [...(this.map.get(reference.targetCollectionName) || []), reference]);
+    if (!existReference) {
+      this.map.set(reference.targetCollectionName, [
+        ...(this.map.get(reference.targetCollectionName) || []),
+        reference,
+      ]);
+    }
   }
 
   getReferences(collectionName) {
@@ -55,7 +62,8 @@ class ReferencesMap {
     if (!references) {
       return;
     }
-    const keys = Object.keys(reference);
+
+    const keys = ['sourceCollectionName', 'sourceField', 'targetField', 'targetCollectionName'];
 
     this.map.set(
       reference.targetCollectionName,

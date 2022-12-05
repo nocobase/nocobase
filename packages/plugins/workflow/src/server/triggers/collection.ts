@@ -42,10 +42,10 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
 
   // NOTE: if no configured fields changed, do not trigger
   if (changed
-      && changed.length
-      && changed
-        .filter(name => !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collection.getField(name).type))
-        .every(name => !data.changedWithAssociations(getFieldRawName(collection, name)))
+    && changed.length
+    && changed
+      .filter(name => !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collection.getField(name).type))
+      .every(name => !data.changedWithAssociations(getFieldRawName(collection, name)))
   ) {
     return;
   }
@@ -70,10 +70,8 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     }
   }
 
-  setTimeout(() => {
-    this.plugin.trigger(workflow, { data: data.get() }, {
-      context
-    });
+  this.plugin.trigger(workflow, { data: data.get() }, {
+    context
   });
 }
 
