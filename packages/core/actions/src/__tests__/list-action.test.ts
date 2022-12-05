@@ -8,7 +8,7 @@ describe('list action with acl', () => {
 
   beforeEach(async () => {
     app = mockServer({
-      acl: false,
+      acl: true,
     });
 
     registerActions(app);
@@ -36,15 +36,17 @@ describe('list action with acl', () => {
       role: 'user',
     });
 
-    userRole.grantAction('posts:view', {
+    userRole.grantAction('posts:view', {});
+
+    userRole.grantAction('posts:update', {
       own: true,
     });
 
-    Post.repository.create({
+    await Post.repository.create({
       values: [
-        { title: 'p1', createById: 1 },
-        { title: 'p2', createById: 1 },
-        { title: 'p3', createById: 2 },
+        { title: 'p1', createdById: 1 },
+        { title: 'p2', createdById: 1 },
+        { title: 'p3', createdById: 2 },
       ],
     });
 
@@ -54,6 +56,7 @@ describe('list action with acl', () => {
         ctx.state.currentUser = {
           id: 1,
         };
+
         return next();
       },
       {
