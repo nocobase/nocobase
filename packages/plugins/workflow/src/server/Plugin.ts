@@ -22,7 +22,7 @@ export default class WorkflowPlugin extends Plugin {
   triggers: Registry<Trigger> = new Registry();
   calculators = calculators;
   extensions = extensions;
-  executing: ExecutionModel = null;
+  executing: ExecutionModel | null = null;
   pending: Pending[] = [];
   events: [WorkflowModel, any, { context?: any }][] = [];
 
@@ -133,7 +133,7 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  public trigger(workflow: WorkflowModel, context: Object, options: { context?: any } = {}): Promise<void> {
+  public trigger(workflow: WorkflowModel, context: Object, options: { context?: any } = {}): void {
     // `null` means not to trigger
     if (context == null) {
       return;
@@ -166,7 +166,7 @@ export default class WorkflowPlugin extends Plugin {
       }
     }
 
-    await this.db.sequelize.transaction(async transaction => {
+    const execution = await this.db.sequelize.transaction(async transaction => {
       const execution = await workflow.createExecution({
         context,
         key: workflow.key,
@@ -200,6 +200,11 @@ export default class WorkflowPlugin extends Plugin {
       return execution;
     });
 
+    // NOTE: cache first execution for most cases
+    if (!this.executing && !this.pending.length) {
+      this.pending.push([execution]);
+    }
+
     this.events.shift();
 
     if (this.events.length) {
@@ -223,10 +228,10 @@ export default class WorkflowPlugin extends Plugin {
       return;
     }
 
-    let next: Pending;
+    let next: Pending | null = null;
     // resuming has high priority
     if (this.pending.length) {
-      next = this.pending.shift();
+      next = this.pending.shift() as Pending;
     } else {
       const execution = await this.db.getRepository('executions').findOne({
         filter: {
