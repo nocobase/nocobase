@@ -1,17 +1,17 @@
 name: Auto send feishu bot msg
 
 on:
-  workflow_run:
-    workflows: [ "Aliyun Container Registry" ]
-    types:
-      - "completed"
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'packages/**'
 
 jobs:
   send_feishu_bot_msg:
     runs-on: ubuntu-latest
     steps:
       - name: pr deploy text message
-        if: github.event_name == 'pull_request'
         uses: foxundermoon/feishu-action@v2
         with:
           url: ${{ secrets.PR_FEISHU_BOT_WEBHOOK_URL }}
