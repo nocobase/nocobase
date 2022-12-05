@@ -124,6 +124,7 @@ export default {
   "Integer": "Tamsayı",
   "Percent": "Yüzde",
   "Password": "Şifre",
+  "Advanced type": "Gelişmiş",
   "Formula": "Formül",
   "Formula description": "Aynı kayıttaki diğer alanlara dayalı olarak her kayıtta bir değer hesaplayın.",
   "Choices": "Seçimler",

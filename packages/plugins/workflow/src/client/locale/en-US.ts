@@ -44,7 +44,6 @@ export default {
   "By field": "By field",
   "By custom date": "By custom date",
   "Advanced": "Advanced",
-  "Advanced type": "Advanced",
   "End": "End",
   "Trigger variables": "Trigger variables",
   "Node result": "Node result",
