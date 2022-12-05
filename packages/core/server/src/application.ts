@@ -88,6 +88,7 @@ interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
   listen?: ListenOptions;
+  quickstart?: boolean;
 }
 
 export class ApplicationVersion {
@@ -386,6 +387,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.db.sync();
     }
 
+    if (options.quickstart) {
+      if (await this.isInstalled()) {
+        console.log('upgrading...');
+        await this.upgrade({ ...options, method: 'upgrade' });
+      } else {
+        console.log('installing...');
+        await this.install(options);
+      }
+      await this.reload({ ...options, method: 'load' });
+    }
+
     await this.emitAsync('beforeStart', this, options);
 
     if (options?.listen?.port) {
@@ -476,6 +488,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     return true;
+  }
+
+  async isInstalled() {
+    return (
+      (await this.db.collectionExistsInDb('applicationVersion')) || (await this.db.collectionExistsInDb('collections'))
+    );
   }
 
   async install(options: InstallOptions = {}) {

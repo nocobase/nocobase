@@ -15,6 +15,7 @@ module.exports = (cli) => {
     .option('-p, --port [port]')
     .option('-d, --daemon')
     .option('--db-sync')
+    .option('--quickstart')
     .allowUnknownOption()
     .action(async (opts) => {
       if (opts.port) {

@@ -15,6 +15,7 @@ module.exports = (cli) => {
     .option('--client')
     .option('--server')
     .option('--db-sync')
+    .option('--quickstart')
     .allowUnknownOption()
     .action(async (opts) => {
       promptForTs();
