@@ -79,7 +79,7 @@ describe('destroy action', () => {
 
   beforeEach(async () => {
     app = mockServer({
-      acl: true,
+      acl: false,
     });
 
     registerActions(app);

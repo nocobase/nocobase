@@ -1,5 +1,4 @@
-import { Context } from '..';
-import { getRepositoryFromParams } from '../utils';
+import { getRepositoryFromParams, Context } from '@nocobase/utils';
 
 export async function destroy(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
