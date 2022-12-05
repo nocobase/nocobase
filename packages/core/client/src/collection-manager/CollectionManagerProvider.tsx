@@ -17,7 +17,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
       value={{
         ...ctx,
         service,
-        interfaces: { ...defaultInterfaces, ...interfaces },
+        interfaces: { ...defaultInterfaces, ...ctx.interfaces, ...interfaces },
         templates: { ...defaultTemplates, ...templates },
         collections,
         refreshCM,
