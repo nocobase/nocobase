@@ -7,15 +7,12 @@ export default (app: Application) => {
     .option('-p, --port [post]')
     .option('-h, --host [host]')
     .option('--db-sync')
-    .option('--quickstart')
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
       const port = opts.port || process.env.APP_PORT || 13000;
       const host = opts.host || process.env.APP_HOST || '0.0.0.0';
-      const quickstart = opts.quickstart;
 
       await app.start({
-        quickstart,
         dbSync: opts?.dbSync,
         cliArgs,
         listen: {
