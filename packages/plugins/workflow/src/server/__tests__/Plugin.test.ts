@@ -183,8 +183,43 @@ describe('workflow > Plugin', () => {
     });
   });
 
+  describe('cycling trigger', () => {
+    it('trigger should not be triggered more than once in same execution', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          params: {
+            values: {
+              title: 't2'
+            }
+          }
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(2);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
   describe('dispatcher', () => {
-    it.skip('multiple triggers in same event', async () => {
+    it('multiple triggers in same event', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'collection',
@@ -203,15 +238,27 @@ describe('workflow > Plugin', () => {
         }
       });
 
+      const w3 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(1000);
 
       const [e1] = await w1.getExecutions();
       expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
 
       const [e2] = await w2.getExecutions();
       expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const [e3] = await w3.getExecutions();
+      expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
 
     it('when server starts, process all created executions', async () => {
