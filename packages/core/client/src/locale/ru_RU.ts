@@ -124,6 +124,7 @@ export default {
   "Integer": "Целое",
   "Percent": "Процент",
   "Password": "Пароль",
+  "Advanced type": "Продвинутый",
   "Formula": "Формула",
   "Formula description": "Вычисляет значение на базе значений других полей той же записи.",
   "Choices": "Выбор",

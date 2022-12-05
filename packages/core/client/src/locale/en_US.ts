@@ -147,6 +147,7 @@ export default {
   "Integer": "Integer",
   "Percent": "Percent",
   "Password": "Password",
+  "Advanced type": "Advanced",
   "Formula": "Formula",
   "Formula description": "Compute a value in each record based on other fields in the same record.",
   "Choices": "Choices",

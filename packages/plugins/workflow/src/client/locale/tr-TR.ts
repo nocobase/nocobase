@@ -44,7 +44,6 @@ export default {
   "By field": "Alanda",
   "By custom date": "Özel tarihe göre",
   "Advanced": "Gelişmiş",
-  "Advanced type": "Gelişmiş",
   "End": "Son",
   "Trigger variables": "Tetikleyici bağlamı",
   "Node result": "Düğüm sonucu",
