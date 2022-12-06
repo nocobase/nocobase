@@ -103,7 +103,7 @@ export class ACL extends EventEmitter {
 
         if (action == 'destroy') {
           const repository = getRepositoryFromParams(ctx);
-          const filteredCount = await repository.count(ctx.permission.parsedParams);
+          const filteredCount = await repository.count(ctx.permission.mergedParams);
           const queryCount = await repository.count(ctx.permission.rawParams);
 
           if (queryCount > filteredCount) {
@@ -172,8 +172,8 @@ export class ACL extends EventEmitter {
           ctx.permission.parsedParams = parsedParams;
           ctx.log?.info && ctx.log.info('acl parsedParams', parsedParams);
           ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
-
           resourcerAction.mergeParams(parsedParams);
+          ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
         }
 
         await next();
