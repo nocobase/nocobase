@@ -15,6 +15,7 @@ module.exports = (cli) => {
     .option('-p, --port [port]')
     .option('-d, --daemon')
     .option('--db-sync')
+    .option('--quickstart')
     .allowUnknownOption()
     .action(async (opts) => {
       if (opts.port) {
@@ -40,6 +41,10 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
+      if (opts.quickstart) {
+        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--ignore-installed']);
+        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'upgrade']);
+      }
       if (opts.dbSync) {
         await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
       }
