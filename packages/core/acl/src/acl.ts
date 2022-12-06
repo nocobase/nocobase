@@ -126,6 +126,7 @@ export class ACL extends EventEmitter {
       if (action == 'list') {
         const dataPath = ctx.paginate ? 'body.rows' : 'body';
         const listData = lodash.get(ctx, dataPath);
+        const actions = ['view', 'update', 'destroy'];
 
         console.log(listData);
       }
