@@ -6,9 +6,7 @@ import { Button, Select } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Cron, SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
-import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
+import { Cron, SchemaComponent, SchemaComponentOptions, useCompile, interfacesProperties, IField } from '@nocobase/client';
 
 function RuleTypeSelect(props) {
   const compile = useCompile();
@@ -193,7 +191,7 @@ const RuleTypes = {
   }
 };
 
-function RuleConfigForm() {
+export function RuleConfigForm() {
   const { t } = useTranslation();
   const compile = useCompile();
   const schemaOptions = useContext(SchemaOptionsContext);
@@ -269,8 +267,8 @@ export const sequence: IField = {
   },
   hasDefaultValue: false,
   properties: {
-    ...defaultProps,
-    unique,
+    ...interfacesProperties.defaultProps,
+    unique: interfacesProperties.unique,
     patterns: {
       type: 'array',
       title: '{{t("Sequence rules")}}',
@@ -412,9 +410,30 @@ export const sequence: IField = {
           title: "{{t('Add rule')}}",
         }
       }
+    },
+    inputable: {
+      type: 'boolean',
+      title: "{{t('Inputable')}}",
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+    },
+    match: {
+      type: 'boolean',
+      title: "{{t('Match rules')}}",
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-reactions': {
+        dependencies: ['inputable'],
+        fulfill: {
+          state: {
+            value: '{{$deps[0] && $self.value}}',
+            visible: '{{$deps[0] === true}}',
+          },
+        },
+      },
     }
   },
   filterable: {
-    operators: operators.string,
+    operators: interfacesProperties.operators.string,
   }
 };
