@@ -89,7 +89,7 @@ export class ACL extends EventEmitter {
       }
     });
 
-    this.middlewares.add(this.allowManager.aclMiddleware(), {
+    this.use(this.allowManager.aclMiddleware(), {
       tag: 'allow-manager',
       before: 'acl',
     });
@@ -97,7 +97,7 @@ export class ACL extends EventEmitter {
     this.addCoreMiddleware();
 
     // throw error when user has no fixed params permissions
-    this.middlewares.add(
+    this.use(
       async (ctx, next) => {
         const action = ctx.permission?.can?.action;
 
