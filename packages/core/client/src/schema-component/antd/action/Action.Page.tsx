@@ -1,74 +1,35 @@
-import { css } from '@emotion/css';
-import { observer, RecursionField, SchemaExpressionScopeContext, useField, useFieldSchema } from '@formily/react';
-import React, { useContext } from 'react';
-import { createPortal } from 'react-dom';
+import { observer, useFieldSchema } from '@formily/react';
+import React from 'react';
+import { useHistory } from 'react-router-dom';
 import { useActionContext } from '.';
 import { ComposedActionDrawer } from './types';
+import { useCollection, useCompile, useDocumentTitle, useRecord } from '../../../';
 
-const useScope = (key: string) => {
-  const scope = useContext(SchemaExpressionScopeContext);
-  return scope[key];
-};
+export const ActionPage: ComposedActionDrawer = observer((props) => {
+  const history = useHistory();
+  const { visible } = useActionContext();
 
-export const ActionPage: ComposedActionDrawer = observer((props: any) => {
-  const { footerNodeName = 'Action.Page.Footer', ...others } = props;
-  const { containerRefKey, visible, setVisible } = useActionContext();
-  const containerRef = useScope(containerRefKey);
   const schema = useFieldSchema();
-  const field = useField();
-  const footerSchema = schema.reduceProperties((buf, s) => {
-    if (s['x-component'] === footerNodeName) {
-      return s;
-    }
-    return buf;
-  });
-  return (
-    <>
-      {containerRef?.current &&
-        visible &&
-        createPortal(
-          <div>
-            <RecursionField
-              basePath={field.address}
-              schema={schema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s['x-component'] !== footerNodeName;
-              }}
-            />
-            {footerSchema && (
-              <div
-                className={css`
-                  display: flex;
-                  /* justify-content: flex-end; */
-                  /* flex-direction: row-reverse; */
-                  width: 100%;
-                  .ant-btn {
-                    margin-right: 8px;
-                  }
-                `}
-              >
-                <RecursionField
-                  basePath={field.address}
-                  schema={schema}
-                  onlyRenderProperties
-                  filterProperties={(s) => {
-                    return s['x-component'] === footerNodeName;
-                  }}
-                />
-              </div>
-            )}
-          </div>,
-          containerRef?.current,
-        )}
-    </>
-  );
-});
+  const collection = useCollection();
+  const record = useRecord();
+  const compile = useCompile();
+  const { title } = useDocumentTitle();
+  if (visible) {
+    const filterTargetKey = collection.filterTargetKey || 'id';
+    const filterTargetVal = record?.[filterTargetKey];
 
-ActionPage.Footer = observer(() => {
-  const field = useField();
-  const schema = useFieldSchema();
-  return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
+    const searchStr = `subXUid=${schema['x-uid']}&collectionName=${
+      collection.name
+    }&filterTargetKey=${filterTargetKey}&filterTargetVal=${filterTargetVal}&title=${compile(title)}&subTitle=${compile(
+      schema.title,
+    )}`;
+
+    history.push({
+      search: searchStr,
+    });
+    return null;
+  }
+  return null;
 });
 
 export default ActionPage;

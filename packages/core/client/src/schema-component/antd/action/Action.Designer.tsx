@@ -138,6 +138,7 @@ export const ActionDesigner = (props) => {
             options={[
               { label: t('Drawer'), value: 'drawer' },
               { label: t('Dialog'), value: 'modal' },
+              { label: t('Page'), value: 'page' },
             ]}
             value={fieldSchema?.['x-component-props']?.['openMode']}
             onChange={(value) => {
