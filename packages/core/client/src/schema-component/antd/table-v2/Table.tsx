@@ -21,11 +21,17 @@ const isCollectionFieldComponent = (schema: ISchema) => {
 };
 
 const useAclCheck = (schema: Schema) => {
-  const fieldName = Object.keys(schema.properties)?.[0];
-  const { name } = useCollection();
+  let fieldName = Object.keys(schema.properties)?.[0];
+  let collectionName;
+  if (fieldName.includes('.')) {
+    collectionName = schema.properties[fieldName]['x-collection-name'];
+    fieldName = fieldName.split('.')[1];
+  } else {
+    collectionName = useCollection().name;
+  }
   const { actions, resources } = useACLRoleContext();
-  if (resources.includes(name) && fieldName !== 'actions') {
-    const { fields } = actions[`${name}:view`];
+  if (resources.includes(collectionName) && fieldName !== 'actions') {
+    const { fields } = actions[`${collectionName}:view`];
     return fields.includes(fieldName);
   } else {
     return true;

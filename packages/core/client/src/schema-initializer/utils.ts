@@ -125,6 +125,7 @@ export const useAssociatedTableColumnInitializerFields = () => {
             'x-read-pretty': true,
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
             'x-component-props': {},
+            'x-collection-name': subField.collectionName,
           };
 
           return {
@@ -193,24 +194,20 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { getInterface } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
-
   return currentFields
     ?.filter((field) => field?.interface && !field?.isForeignKey)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
-
       const schema = {
         type: 'string',
         name: field.name,
-        // title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
         'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
-        'x-decorator': 'FormItem',
+        'x-decorator': 'ACLCollectionFieldProvider',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
-      // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       return {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
@@ -230,7 +227,6 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
-
   const groups = fields
     ?.filter((field) => {
       return interfaces.includes(field.interface);
@@ -244,17 +240,15 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
           const schema = {
             type: 'string',
             name: `${field.name}.${subField.name}`,
-            // title: subField?.uiSchema?.title || subField.name,
             'x-designer': 'FormItem.Designer',
             'x-component': 'CollectionField',
             'x-read-pretty': readPretty,
             'x-component-props': {
               'pattern-disable': block === 'Form' && readPretty,
             },
-            'x-decorator': 'FormItem',
+            'x-decorator': 'ACLCollectionFieldProvider',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
           };
-          // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
           return {
             type: 'item',
             title: subField?.uiSchema?.title || subField.name,
@@ -296,7 +290,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             title: field?.uiSchema?.title || field.name,
             'x-designer': 'FormItem.Designer',
             'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
-            'x-decorator': 'FormItem',
+            'x-decorator': 'ACLCollectionFieldProvider',
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {},
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
@@ -333,7 +327,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
         title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
         'x-component': 'AssignedField',
-        'x-decorator': 'FormItem',
+        'x-decorator': 'ACLCollectionFieldProvider',
         'x-collection-field': `${name}.${field.name}`,
       };
       return {
@@ -367,7 +361,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
         title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
         'x-component': 'BulkEditField',
-        'x-decorator': 'FormItem',
+        'x-decorator': 'ACLCollectionFieldProvider',
         'x-collection-field': `${name}.${field.name}`,
       };
       return {
@@ -716,6 +710,7 @@ export const createFormBlockSchema = (options) => {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': formItemInitializers,
+            'x-acl-action': action ? `${resourceName}:update` : `${resourceName}:create`,
             properties: {},
           },
           actions: {
@@ -788,6 +783,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': formItemInitializers,
+            'x-acl-action': `${resourceName}:view`,
             properties: {},
           },
         },

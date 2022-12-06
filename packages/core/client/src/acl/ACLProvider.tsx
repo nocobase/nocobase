@@ -5,7 +5,7 @@ import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useCollection } from '../collection-manager';
 import { useRecordIsOwn } from '../record-provider';
-import { SchemaComponentOptions, useDesignable } from '../schema-component';
+import { SchemaComponentOptions, useDesignable, FormItem } from '../schema-component';
 
 export const ACLContext = createContext(null);
 
@@ -146,7 +146,30 @@ export const ACLActionProvider = (props) => {
 };
 
 export const ACLCollectionFieldProvider = (props) => {
-  return <>{props.children}</>;
+  const { name } = useCollection();
+  const fieldSchema = useFieldSchema();
+  const { allowAll, allowConfigure, getActionParams, resources } = useACLRoleContext();
+  const actionName = fieldSchema['x-action'] || 'view';
+  const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
+  const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
+  const isOwn = useRecordIsOwn();
+  if (!name || allowAll || allowConfigure) {
+    return <FormItem>{props.children}</FormItem>;
+  }
+  if (resources.includes(name)) {
+    const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
+    const { whitelist, fields } = params;
+    const aclFieldCheck = (whitelist || fields).includes(fieldSchema.name);
+    if (!aclFieldCheck) {
+      return null;
+    }
+    return (
+      <ACLActionParamsContext.Provider value={params}>
+        <FormItem>{props.children}</FormItem>
+      </ACLActionParamsContext.Provider>
+    );
+  }
+  return <FormItem>{props.children}</FormItem>;
 };
 
 export const ACLMenuItemProvider = (props) => {
