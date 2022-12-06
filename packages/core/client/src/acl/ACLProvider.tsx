@@ -150,7 +150,17 @@ export const ACLCollectionFieldProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const { allowAll, allowConfigure, getActionParams, resources } = useACLRoleContext();
   const actionName = fieldSchema['x-action'] || 'view';
-  const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
+  const findAclAction = (schema) => {
+    if (schema?.['x-collection-field']?.includes(name)) {
+      if (schema['x-acl-action']) {
+        return schema['x-acl-action'];
+      } else {
+        return schema.parent ? findAclAction(schema.parent) : `${name}:${actionName}`;
+      }
+    }
+    return `${name}:${actionName}`;
+  };
+  const path = findAclAction(fieldSchema);
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
   const isOwn = useRecordIsOwn();
   if (!name || allowAll || allowConfigure) {
