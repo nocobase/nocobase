@@ -1,6 +1,5 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
-import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
@@ -10,9 +9,9 @@ const InternalCalendarBlockProvider = (props) => {
   const { fieldNames, showLunar } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
-  if (service.loading) {
-    return <Spin />;
-  }
+  // if (service.loading) {
+  //   return <Spin />;
+  // }
   return (
     <CalendarBlockContext.Provider
       value={{
