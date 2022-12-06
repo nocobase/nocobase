@@ -71,7 +71,7 @@ export const useACLRoleContext = () => {
       const [resourceName, act] = path.split(':');
       const currentAction = data?.actionAlias?.[act] || act;
       const hasResource = data?.resources?.includes(resourceName);
-      const params = data?.actions?.[`${resourceName}:${currentAction}`];
+      const params = data?.actions?.[`${resourceName}:${currentAction}`] || data?.actions?.[`${resourceName}:${act}`];
       if (hasResource) {
         if (!skipOwnCheck && params?.own) {
           return isOwn ? params : null;

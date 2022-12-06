@@ -18,13 +18,12 @@ export class AllowManager {
         return false;
       }
 
-      const roleInstance = await ctx.db.getRepository('roles').findOne({
-        filter: {
-          name: roleName,
-        },
-      });
+      const role = acl.getRole(roleName);
+      if (!role) {
+        return false;
+      }
 
-      return roleInstance?.get('allowConfigure');
+      return role.getStrategy()?.allowConfigure;
     });
   }
 
@@ -82,9 +81,11 @@ export class AllowManager {
 
       if (skip) {
         ctx.permission = {
+          ...(ctx.permission || {}),
           skip: true,
         };
       }
+
       await next();
     };
   }

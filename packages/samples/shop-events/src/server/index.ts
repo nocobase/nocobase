@@ -14,27 +14,27 @@ export class ShopPlugin extends Plugin {
       filter: {
         status: 0,
         createdAt: {
-          $lt: expiredDate
-        }
-      }
+          $lt: expiredDate,
+        },
+      },
     });
     await deliveryRepo.update({
       filter: {
-        id: expiredDeliveries.map(item => item.get('id')),
+        id: expiredDeliveries.map((item) => item.get('id')),
       },
       values: {
-        status: 1
-      }
+        status: 1,
+      },
     });
     const orderRepo = this.db.getRepository('orders');
     const [updated] = await orderRepo.update({
       filter: {
         status: 2,
-        id: expiredDeliveries.map(item => item.get('orderId'))
+        id: expiredDeliveries.map((item) => item.get('orderId')),
       },
       values: {
-        status: 3
-      }
+        status: 3,
+      },
     });
 
     console.log('%d orders expired', updated);
@@ -51,14 +51,17 @@ export class ShopPlugin extends Plugin {
 
     this.db.on('orders.afterCreate', async (order, options) => {
       const product = await order.getProduct({
-        transaction: options.transaction
+        transaction: options.transaction,
       });
 
-      await product.update({
-        inventory: product.inventory - order.quantity
-      }, {
-        transaction: options.transaction
-      });
+      await product.update(
+        {
+          inventory: product.inventory - order.quantity,
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
     this.app.on('beforeStart', () => {
@@ -71,9 +74,9 @@ export class ShopPlugin extends Plugin {
       this.timer = null;
     });
 
-    this.app.acl.allow('products', '*');
-    this.app.acl.allow('categories', '*');
-    this.app.acl.allow('orders', '*');
+    this.app.acl.skip('products', '*');
+    this.app.acl.skip('categories', '*');
+    this.app.acl.skip('orders', '*');
   }
 
   async install(options: InstallOptions) {

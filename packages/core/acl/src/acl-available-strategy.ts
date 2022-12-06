@@ -62,7 +62,7 @@ export class ACLAvailableStrategy {
   }
 
   allow(resourceName: string, actionName: string) {
-    if (this.acl.isConfigResource(resourceName) && this.allowConfigure) {
+    if (this.allowConfigure) {
       return true;
     }
 

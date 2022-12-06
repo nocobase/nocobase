@@ -4,6 +4,79 @@ import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 
+describe('association test', () => {
+  let app: MockServer;
+  let db: Database;
+  let acl: ACL;
+
+  let user;
+  let userAgent;
+  let admin;
+  let adminAgent;
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  beforeEach(async () => {
+    app = await prepareApp();
+    db = app.db;
+    acl = app.acl;
+  });
+
+  it('should set association actions', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          { name: 'title', type: 'string' },
+          { name: 'userComments', type: 'hasMany', target: 'comments', interface: 'linkTo' },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'comments',
+        fields: [{ name: 'content', type: 'string' }],
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test-role',
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles.resources', 'test-role').create({
+      values: {
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['userComments'],
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const role = acl.getRole('test-role');
+
+    expect(
+      acl.can({
+        role: 'test-role',
+        action: 'list',
+        resource: 'posts.userComments',
+      }),
+    ).not.toBeNull();
+  });
+});
+
 describe('association field acl', () => {
   let app: MockServer;
   let db: Database;
@@ -26,7 +99,6 @@ describe('association field acl', () => {
     await db.getRepository('roles').create({
       values: {
         name: 'new',
-        allowConfigure: true,
       },
     });
 
@@ -36,12 +108,14 @@ describe('association field acl', () => {
         allowConfigure: true,
       },
     });
+
     const UserRepo = db.getCollection('users').repository;
     user = await UserRepo.create({
       values: {
         roles: ['new'],
       },
     });
+
     admin = await UserRepo.create({
       values: {
         roles: ['testAdmin'],
@@ -55,6 +129,7 @@ describe('association field acl', () => {
       }),
       { type: 'bearer' },
     );
+
     adminAgent = app.agent().auth(
       userPlugin.jwtService.sign({
         userId: admin.get('id'),
@@ -119,9 +194,22 @@ describe('association field acl', () => {
         ],
       },
     });
+
+    await adminAgent.resource('roles.resources', 'new').create({
+      values: {
+        name: 'orders',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+          },
+        ],
+      },
+    });
   });
 
-  it('should revoke target action on association action revoke', async () => {
+  // skip because of disable grant associations target action
+  it.skip('should revoke target action on association action revoke', async () => {
     expect(
       acl.can({
         role: 'new',
@@ -173,6 +261,7 @@ describe('association field acl', () => {
     const actionId = viewAction.get('id') as number;
 
     const response = await adminAgent.resource('roles.resources', 'new').update({
+      filterByTk: 'users',
       values: {
         name: 'users',
         usingActionsConfig: true,
@@ -197,6 +286,7 @@ describe('association field acl', () => {
 
   it('should revoke association action on field deleted', async () => {
     await adminAgent.resource('roles.resources', 'new').update({
+      filterByTk: 'users',
       values: {
         name: 'users',
         usingActionsConfig: true,
@@ -208,6 +298,7 @@ describe('association field acl', () => {
         ],
       },
     });
+
     expect(
       acl.can({
         role: 'new',
@@ -222,6 +313,7 @@ describe('association field acl', () => {
         whitelist: ['age', 'name'],
       },
     });
+
     const roleResource = await db.getRepository('rolesResources').findOne({
       filter: {
         name: 'users',

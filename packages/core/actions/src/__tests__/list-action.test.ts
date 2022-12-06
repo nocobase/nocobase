@@ -1,10 +1,82 @@
 import { registerActions } from '@nocobase/actions';
-import { mockServer } from './index';
+import { mockServer } from '@nocobase/test';
+
+describe('list action with acl', () => {
+  let app;
+
+  let Post;
+
+  beforeEach(async () => {
+    app = mockServer({
+      acl: true,
+    });
+
+    registerActions(app);
+
+    Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          type: 'bigInt',
+          name: 'createdById',
+        },
+      ],
+    });
+
+    await app.db.sync();
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('should list items with meta permission', async () => {
+    const userRole = app.acl.define({
+      role: 'user',
+    });
+
+    userRole.grantAction('posts:view', {});
+
+    userRole.grantAction('posts:update', {
+      own: true,
+    });
+
+    await Post.repository.create({
+      values: [
+        { title: 'p1', createdById: 1 },
+        { title: 'p2', createdById: 1 },
+        { title: 'p3', createdById: 2 },
+      ],
+    });
+
+    app.resourcer.use(
+      (ctx, next) => {
+        ctx.state.currentRole = 'user';
+        ctx.state.currentUser = {
+          id: 1,
+        };
+
+        return next();
+      },
+      {
+        before: 'acl',
+      },
+    );
+
+    const response = await app.agent().resource('posts').list({});
+
+    const data = response.body.data;
+    console.log({ data });
+  });
+});
 
 describe('list action', () => {
   let app;
   beforeEach(async () => {
-    app = mockServer();
+    app = mockServer({
+      acl: false,
+    });
     registerActions(app);
 
     const Post = app.collection({

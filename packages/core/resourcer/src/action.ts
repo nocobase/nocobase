@@ -1,7 +1,6 @@
-import { requireModule } from '@nocobase/utils';
+import { requireModule, assign, MergeStrategies } from '@nocobase/utils';
 import compose from 'koa-compose';
 import _ from 'lodash';
-import { assign, MergeStrategies } from './assign';
 import Middleware, { MiddlewareType } from './middleware';
 import Resource from './resource';
 import { HandlerType } from './resourcer';
@@ -246,6 +245,14 @@ export class Action {
   }
 
   mergeParams(params: ActionParams, strategies: MergeStrategies = {}) {
+    if (!this.params) {
+      this.params = {};
+    }
+
+    if (!params) {
+      return;
+    }
+
     assign(this.params, params, {
       filter: 'andMerge',
       fields: 'intersect',

@@ -7,7 +7,7 @@ WORKDIR /tmp
 COPY . /tmp
 RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
 RUN cd /tmp && \
-  NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +%s)" \
+  NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date '+%Y%m%d%H%M%S')" \
   && tmp=$(mktemp) \
   && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
 RUN  yarn install && yarn nocobase install && yarn pm add graph-collection-manager && yarn build

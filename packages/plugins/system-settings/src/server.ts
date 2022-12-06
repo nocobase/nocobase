@@ -1,4 +1,3 @@
-import { skip } from '@nocobase/acl';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
@@ -35,12 +34,15 @@ export class SystemSettingsPlugin extends Plugin {
     await this.app.db.import({
       directory: resolve(__dirname, 'collections'),
     });
-    this.app.acl.use(
-      skip({
-        resourceName: 'systemSettings',
-        actionName: 'get',
-      }),
-    );
+
+    this.app.acl.addFixedParams('systemSettings', 'destroy', () => {
+      return {
+        'id.$ne': 1,
+      };
+    });
+
+    this.app.acl.skip('systemSettings', 'get');
+    this.app.acl.skip('systemSettings', 'update', 'allowConfigure');
   }
 }
 

@@ -1,5 +1,5 @@
 import { Context } from '@nocobase/actions';
-import { Collection } from '@nocobase/database';
+import { Collection, ImporterReader } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
@@ -49,41 +49,52 @@ export class PluginACL extends Plugin {
   registerAssociationFieldsActions() {
     // if grant create action to role, it should
     // also grant add action and association target's view action
-    this.registerAssociationFieldAction('linkTo', {
+
+    this.registerAssociationFieldAction('hasOne', {
       view: {
         associationActions: ['list', 'get'],
       },
       create: {
-        associationActions: ['add'],
-        targetActions: ['view'],
+        associationActions: ['create', 'set'],
       },
       update: {
-        associationActions: ['add', 'remove', 'toggle'],
-        targetActions: ['view'],
+        associationActions: ['update', 'remove', 'set'],
       },
     });
 
-    this.registerAssociationFieldAction('attachments', {
-      view: {
-        associationActions: ['list', 'get'],
-      },
-      add: {
-        associationActions: ['upload', 'add'],
-      },
-      update: {
-        associationActions: ['update', 'add', 'remove', 'toggle'],
-      },
-    });
-
-    this.registerAssociationFieldAction('subTable', {
+    this.registerAssociationFieldAction('hasMany', {
       view: {
         associationActions: ['list', 'get'],
       },
       create: {
-        associationActions: ['create'],
+        associationActions: ['create', 'set', 'add'],
       },
       update: {
-        associationActions: ['update', 'destroy'],
+        associationActions: ['update', 'remove', 'set'],
+      },
+    });
+
+    this.registerAssociationFieldAction('belongsTo', {
+      view: {
+        associationActions: ['list', 'get'],
+      },
+      create: {
+        associationActions: ['create', 'set'],
+      },
+      update: {
+        associationActions: ['update', 'remove', 'set'],
+      },
+    });
+
+    this.registerAssociationFieldAction('belongsToMany', {
+      view: {
+        associationActions: ['list', 'get'],
+      },
+      create: {
+        associationActions: ['create', 'set', 'add'],
+      },
+      update: {
+        associationActions: ['update', 'remove', 'set', 'toggle'],
       },
     });
   }
@@ -147,6 +158,7 @@ export class PluginACL extends Plugin {
         },
         transaction,
       });
+
       if (defaultRole && (await model.countRoles({ transaction })) == 0) {
         await model.addRoles(defaultRole, { transaction });
       }
@@ -358,15 +370,45 @@ export class PluginACL extends Plugin {
 
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'parseToken' });
 
-    this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
+    this.app.acl.skip('users', 'setDefaultRole', 'loggedIn');
+    this.app.acl.skip('roles', 'check', 'loggedIn');
 
-    this.app.acl.allow('roles', 'check', 'loggedIn');
-    this.app.acl.allow('roles', ['create', 'update', 'destroy'], 'allowConfigure');
+    const importReader = new ImporterReader(resolve(__dirname, 'collections'));
+    const modules = await importReader.read();
+    for (const collectionDefinition of modules) {
+      if (collectionDefinition.name) {
+        this.app.acl.skip(collectionDefinition.name, ['create', 'update', 'destroy'], 'allowConfigure');
+      }
+    }
 
-    this.app.acl.allow('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
+    this.app.acl.skip('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
 
-    this.app.acl.allow('*', '*', (ctx) => {
+    this.app.acl.skip('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';
+    });
+
+    this.app.acl.addFixedParams('collections', 'destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'name.$ne': 'roles' }, { 'name.$ne': 'rolesUsers' }],
+        },
+      };
+    });
+
+    this.app.acl.addFixedParams('rolesResourcesScopes', 'destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'key.$ne': 'all' }, { 'key.$ne': 'own' }],
+        },
+      };
+    });
+
+    this.app.acl.addFixedParams('roles', 'destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'name.$ne': 'root' }, { 'name.$ne': 'admin' }, { 'name.$ne': 'member' }],
+        },
+      };
     });
 
     this.app.resourcer.use(async (ctx, next) => {
@@ -381,11 +423,13 @@ export class PluginACL extends Plugin {
           });
         }
       }
+
       if (actionName === 'update' && resourceName === 'roles.resources') {
         ctx.action.mergeParams({
           updateAssociationValues: ['actions'],
         });
       }
+
       await next();
     });
 
@@ -405,6 +449,7 @@ export class PluginACL extends Plugin {
         } else {
           collection = ctx.db.getCollection(resourceName);
         }
+
         if (collection && collection.hasField('createdById')) {
           ctx.permission.can.params.fields.push('createdById');
         }
@@ -413,6 +458,7 @@ export class PluginACL extends Plugin {
     });
 
     const parseJsonTemplate = this.app.acl.parseJsonTemplate;
+
     this.app.acl.use(async (ctx: Context, next) => {
       const { actionName, resourceName, resourceOf } = ctx.action;
       if (resourceName.includes('.') && resourceOf) {
