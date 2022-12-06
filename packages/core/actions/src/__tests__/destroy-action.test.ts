@@ -126,6 +126,18 @@ describe('destroy action with acl', () => {
 
     // should throw error
     expect(response.statusCode).toEqual(403);
+
+    const response2 = await app
+      .agent()
+      .resource('posts')
+      .destroy({
+        filter: {
+          'title.$in': ['p1'],
+        },
+      });
+
+    // should throw error
+    expect(response2.statusCode).toEqual(200);
   });
 });
 
