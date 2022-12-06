@@ -6,6 +6,7 @@ import { useFlowContext } from '../FlowContext';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
 import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
+import { useOperandContext } from '../calculators';
 
 
 
@@ -39,8 +40,8 @@ export default {
   components: {
     CollectionFieldset
   },
-  getter(props) {
-    const { type, options, onChange } = props;
+  getter({ onChange }) {
+    const { options } = useOperandContext();
     const { nodes } = useFlowContext();
     const { config } = nodes.find(n => n.id == options.nodeId);
     const value = options?.path;
@@ -50,7 +51,7 @@ export default {
         collection={config.collection}
         value={value}
         onChange={(path) => {
-          onChange({ type, options: { ...options, path } });
+          onChange(`{{$jobsMapByNodeId.${options.nodeId}.${path}}}`);
         }}
       />
     );
