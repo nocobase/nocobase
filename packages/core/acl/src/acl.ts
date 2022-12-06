@@ -91,10 +91,12 @@ export class ACL extends EventEmitter {
 
     this.middlewares.add(this.allowManager.aclMiddleware(), {
       tag: 'allow-manager',
+      before: 'acl',
     });
 
     this.addCoreMiddleware();
 
+    // throw error when user has no fixed params permissions
     this.middlewares.add(
       async (ctx, next) => {
         const action = ctx.permission?.can?.action;
@@ -118,7 +120,20 @@ export class ACL extends EventEmitter {
     );
   }
 
-  addCoreMiddleware() {
+  public afterActionMiddleware() {
+    return async (ctx, next) => {
+      const action = ctx.action?.name;
+      if (action == 'list') {
+        const dataPath = ctx.paginate ? 'body.rows' : 'body';
+        const listData = lodash.get(ctx, dataPath);
+
+        console.log(listData);
+      }
+      await next();
+    };
+  }
+
+  protected addCoreMiddleware() {
     const acl = this;
 
     const filterParams = (ctx, resourceName, params) => {
@@ -168,6 +183,7 @@ export class ACL extends EventEmitter {
       },
     );
   }
+
   define(options: DefineOptions): ACLRole {
     const roleName = options.role;
     const role = new ACLRole(this, roleName);

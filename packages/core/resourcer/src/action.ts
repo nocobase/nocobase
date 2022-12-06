@@ -298,16 +298,18 @@ export class Action {
     if (typeof handler !== 'function') {
       throw new Error('Handler must be a function!');
     }
+
     return handler;
   }
 
   getHandlers() {
-    const handers = [
+    const handlers = [
       ...this.resource.resourcer.getMiddlewares(),
       ...this.getMiddlewareHandlers(),
       this.getHandler(),
     ].filter(Boolean);
-    return handers;
+
+    return handlers;
   }
 
   async execute(context: any, next?: any) {
