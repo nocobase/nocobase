@@ -1,7 +1,5 @@
 import { observer } from '@formily/react';
-import moment from 'moment';
 import React, { useContext, useMemo } from 'react';
-import solarLunar from 'solarlunar-es';
 import { useDesignable } from '../../hooks';
 import { CalendarToolbarContext } from './context';
 import { getLunarDay } from './utils';
