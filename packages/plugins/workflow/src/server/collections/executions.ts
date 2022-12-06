@@ -16,6 +16,7 @@ export default {
       name: 'useTransaction',
       defaultValue: false
     },
+    // @deprecated
     {
       type: 'uuid',
       name: 'transaction',

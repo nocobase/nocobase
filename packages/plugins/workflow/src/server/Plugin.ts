@@ -16,14 +16,15 @@ import initTriggers, { Trigger } from './triggers';
 import JobModel from './models/Job';
 
 
-
+type Pending = [ExecutionModel, JobModel?];
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   calculators = calculators;
   extensions = extensions;
-  executing: Promise<any> = null;
-  pending: [ExecutionModel, JobModel][] = [];
+  executing: ExecutionModel | null = null;
+  pending: Pending[] = [];
+  events: [WorkflowModel, any, { context?: any }][] = [];
 
   onBeforeSave = async (instance: WorkflowModel, options) => {
     const Model = <typeof WorkflowModel>instance.constructor;
@@ -100,6 +101,9 @@ export default class WorkflowPlugin extends Plugin {
       workflows.forEach((workflow: WorkflowModel) => {
         this.toggle(workflow);
       });
+
+      // check for not started executions
+      this.dispatch();
     });
 
     this.app.on('beforeStop', async () => {
@@ -129,11 +133,24 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  public async trigger(workflow: WorkflowModel, context: Object, options: Transactionable & { context?: any } = {}): Promise<void> {
+  public trigger(workflow: WorkflowModel, context: Object, options: { context?: any } = {}): void {
     // `null` means not to trigger
     if (context == null) {
-      return null;
+      return;
     }
+
+    this.events.push([workflow, context, options]);
+
+    if (this.events.length > 1) {
+      return;
+    }
+
+    // NOTE: no await for quick return
+    setTimeout(this.prepare);
+  }
+
+  private prepare = async () => {
+    const [workflow, context, options] = this.events[0];
 
     if (options.context?.executionId) {
       // NOTE: no transaction here for read-uncommitted execution
@@ -149,49 +166,52 @@ export default class WorkflowPlugin extends Plugin {
       }
     }
 
-    // @ts-ignore
-    const transaction = options.transaction && !options.transaction.finished
-      ? options.transaction
-      : await (<typeof WorkflowModel>workflow.constructor).database.sequelize.transaction();
+    const execution = await this.db.sequelize.transaction(async transaction => {
+      const execution = await workflow.createExecution({
+        context,
+        key: workflow.key,
+        status: EXECUTION_STATUS.CREATED,
+        useTransaction: workflow.useTransaction,
+      }, { transaction });
 
-    const execution = await workflow.createExecution({
-      context,
-      key: workflow.key,
-      status: EXECUTION_STATUS.CREATED,
-      useTransaction: workflow.useTransaction,
-    }, { transaction });
+      const executed = await workflow.countExecutions({ transaction });
 
-    console.log('workflow triggered:', new Date(), workflow.id, execution.id);
+      // NOTE: not to trigger afterUpdate hook here
+      await workflow.update({ executed }, { transaction, hooks: false });
 
-    const executed = await workflow.countExecutions({ transaction });
+      const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
+        where: {
+          key: workflow.key
+        },
+        transaction
+      });
+      await (<typeof WorkflowModel>workflow.constructor).update({
+        allExecuted
+      }, {
+        where: {
+          key: workflow.key
+        },
+        individualHooks: true,
+        transaction
+      });
 
-    // NOTE: not to trigger afterUpdate hook here
-    await workflow.update({ executed }, { transaction, hooks: false });
+      execution.workflow = workflow;
 
-    const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
-      where: {
-        key: workflow.key
-      },
-      transaction
+      return execution;
     });
-    await (<typeof WorkflowModel>workflow.constructor).update({
-      allExecuted
-    }, {
-      where: {
-        key: workflow.key
-      },
-      individualHooks: true,
-      transaction
-    });
 
-    execution.workflow = workflow;
-
-    // @ts-ignore
-    if (transaction && (!options.transaction || options.transaction.finished)) {
-      await transaction.commit();
+    // NOTE: cache first execution for most cases
+    if (!this.executing && !this.pending.length) {
+      this.pending.push([execution]);
     }
 
-    setTimeout(() => this.dispatch(execution));
+    this.events.shift();
+
+    if (this.events.length) {
+      await this.prepare();
+    } else {
+      this.dispatch();
+    }
   }
 
   public async resume(job) {
@@ -199,28 +219,37 @@ export default class WorkflowPlugin extends Plugin {
       job.execution = await job.getExecution();
     }
 
-    setTimeout(() => this.dispatch(job.execution, job));
+    this.pending.push([job.execution, job]);
+    this.dispatch();
   }
 
-  private async dispatch(execution?: ExecutionModel, job?: JobModel) {
+  private async dispatch() {
     if (this.executing) {
-      if (job) {
-        this.pending.push([execution, job]);
-      }
       return;
     }
 
-    if (!execution) {
-      execution = await this.db.getRepository('executions').findOne({
+    let next: Pending | null = null;
+    // resuming has high priority
+    if (this.pending.length) {
+      next = this.pending.shift() as Pending;
+    } else {
+      const execution = await this.db.getRepository('executions').findOne({
         filter: {
           status: EXECUTION_STATUS.CREATED
         },
         sort: 'createdAt'
       }) as ExecutionModel;
-      if (!execution) {
-        return;
+      if (execution) {
+        next = [execution];
       }
+    };
+    if (next) {
+      this.process(...next);
     }
+  }
+
+  private async process(execution: ExecutionModel, job?: JobModel) {
+    this.executing = execution;
 
     if (execution.status === EXECUTION_STATUS.CREATED) {
       await execution.update({ status: EXECUTION_STATUS.STARTED });
@@ -228,16 +257,13 @@ export default class WorkflowPlugin extends Plugin {
 
     const processor = this.createProcessor(execution);
 
-    this.executing = job ? processor.resume(job) : processor.start();
+    console.log('workflow processing:', new Date(), execution.workflowId, execution.id);
 
-    await this.executing;
+    await (job ? processor.resume(job) : processor.start());
 
     this.executing = null;
 
-    setTimeout(() => {
-      const args = this.pending.length ? this.pending.shift() : [];
-      this.dispatch(...args);
-    });
+    this.dispatch();
   }
 
   private createProcessor(execution: ExecutionModel, options = {}): Processor {

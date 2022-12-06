@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
-import { useCompile } from '../../schema-component';
-import { useMenuItems } from './RoleTable';
+import { uniq } from 'lodash';
+import { useMenuItems } from './MenuItemsProvider';
 
 const findUids = (items) => {
   if (!Array.isArray(items)) {
@@ -17,12 +17,31 @@ const findUids = (items) => {
   }
   return uids;
 };
+const getParentUids = (tree, func, path = []) => {
+  if (!tree) return [];
+  for (const data of tree) {
+    path.push(data.uid);
+    if (func(data)) return path;
+    if (data.children) {
+      const findChildren = getParentUids(data.children, func, path);
+      if (findChildren.length) return findChildren;
+    }
+    path.pop();
+  }
+  return [];
+};
+const getChildrenUids = (data = [], arr = []) => {
+  for (let item of data) {
+    arr.push(item.uid);
+    if (item.children && item.children.length) getChildrenUids(item.children, arr);
+  }
+  return arr;
+};
 
 export const MenuConfigure = () => {
   const record = useRecord();
   const api = useAPIClient();
-  const items = useMenuItems();
-  const compile = useCompile();
+  const { items } = useMenuItems();
   const { t } = useTranslation();
   const allUids = findUids(items);
   const [uids, setUids] = useState([]);
@@ -43,6 +62,28 @@ export const MenuConfigure = () => {
   );
   const resource = api.resource('roles.menuUiSchemas', record.name);
   const allChecked = allUids.length === uids.length;
+
+  const handleChange = async (checked, schema) => {
+    const parentUids = getParentUids(items, (data) => data.uid === schema.uid);
+    const childrenUids = getChildrenUids(schema?.children, []);
+    if (checked) {
+      const totalUids = childrenUids.concat(schema.uid);
+      const newUids = uids.filter((v) => !totalUids.includes(v));
+      setUids([...newUids]);
+      await resource.remove({
+        values: totalUids,
+      });
+    } else {
+      const totalUids = childrenUids.concat(parentUids);
+      setUids((prev) => {
+        return uniq([...prev, ...totalUids]);
+      });
+      await resource.add({
+        values: totalUids,
+      });
+    }
+    message.success(t('Saved successfully'));
+  };
   return (
     <Table
       loading={loading}
@@ -75,32 +116,13 @@ export const MenuConfigure = () => {
                   refresh();
                   message.success(t('Saved successfully'));
                 }}
-              />{' '}
+              />
               {t('Accessible')}
             </>
           ),
           render: (_, schema) => {
             const checked = uids.includes(schema.uid);
-            return (
-              <Checkbox
-                checked={checked}
-                onChange={async (e) => {
-                  if (checked) {
-                    const index = uids.indexOf(schema.uid);
-                    uids.splice(index, 1);
-                    setUids([...uids]);
-                  } else {
-                    setUids((prev) => [...prev, schema.uid]);
-                  }
-                  await resource.toggle({
-                    values: {
-                      tk: schema.uid,
-                    },
-                  });
-                  message.success(t('Saved successfully'));
-                }}
-              />
-            );
+            return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
           },
         },
       ]}

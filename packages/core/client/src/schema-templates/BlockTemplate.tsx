@@ -1,5 +1,6 @@
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RemoteSchemaComponent, useDesignable } from '..';
 import { useSchemaTemplateManager } from './SchemaTemplateManagerProvider';
 
@@ -15,12 +16,13 @@ export const BlockTemplate = observer((props: any) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
+  const { t } = useTranslation();
   const template = useMemo(() => getTemplateById(templateId), [templateId]);
-  return (
+  return template ? (
     <div>
       <BlockTemplateContext.Provider value={{ dn, field, fieldSchema, template }}>
         <RemoteSchemaComponent noForm uid={template?.uid} />
       </BlockTemplateContext.Provider>
     </div>
-  );
+  ) : null;
 });

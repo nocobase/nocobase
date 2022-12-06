@@ -14,14 +14,16 @@ import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
 
-const useAsyncDataSource = (service: any) => (field: any) => {
-  field.loading = true;
-  service(field).then(
-    action.bound((data: any) => {
-      field.dataSource = data;
-      field.loading = false;
-    }),
-  );
+const useAsyncDataSource = (service: any) => {
+  return (field: any, options?: any) => {
+    field.loading = true;
+    service(field, options).then(
+      action.bound((data: any) => {
+        field.dataSource = data;
+        field.loading = false;
+      }),
+    );
+  };
 };
 
 const useSelectedRowKeys = () => {
@@ -77,9 +79,15 @@ export const ConfigurationTable = () => {
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
-  const loadCollections = async (field: any) => {
+  const loadCollections = async (field, options) => {
+    const { targetScope } = options;
     return collectonsRef.current
       ?.filter((item) => !(item.autoCreate && item.isThrough))
+      .filter((item) =>
+        targetScope
+          ? targetScope['template']?.includes(item.template) || targetScope['name']?.includes(item.name)
+          : true,
+      )
       .map((item: any) => ({
         label: compile(item.title),
         value: item.name,

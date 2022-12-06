@@ -15,16 +15,11 @@ module.exports = (cli) => {
     .option('-p, --port [port]')
     .option('-d, --daemon')
     .option('--db-sync')
+    .option('--quickstart')
     .allowUnknownOption()
     .action(async (opts) => {
       if (opts.port) {
         process.env.APP_PORT = opts.port;
-      }
-      if (process.platform === 'win32') {
-        console.log(
-          chalk.yellow(`It is not supported on win platform, please use \`${chalk.green('yarn dev')}\` instead`),
-        );
-        return;
       }
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         promptForTs();
@@ -46,6 +41,10 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
+      if (opts.quickstart) {
+        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--ignore-installed']);
+        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'upgrade']);
+      }
       if (opts.dbSync) {
         await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
       }

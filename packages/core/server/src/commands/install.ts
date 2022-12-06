@@ -8,26 +8,20 @@ export default (app: Application) => {
     .option('-c, --clean')
     .option('-s, --silent')
     .option('-r, --retry [retry]')
+    .option('-I, --ignore-installed')
     .action(async (...cliArgs) => {
       let installed = false;
       const [opts] = cliArgs;
 
-      try {
-        await app.db.auth({ retry: opts.retry || 1 });
-      } catch (error) {
-        console.log(
-          chalk.red(
-            'Unable to connect to the database. Please check the database environment variables in the .env file.',
-          ),
-        );
-        return;
+      if (opts.ignoreInstalled) {
+        if (await app.isInstalled()) {
+          console.log('Application installed');
+          return;
+        }
       }
 
       if (!opts?.clean && !opts?.force) {
-        if (
-          (await app.db.collectionExistsInDb('applicationVersion')) ||
-          (await app.db.collectionExistsInDb('collections'))
-        ) {
+        if (await app.isInstalled()) {
           installed = true;
           if (!opts.silent) {
             console.log('NocoBase is already installed. To reinstall, please execute:');

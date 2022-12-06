@@ -425,30 +425,4 @@ describe('workflow > Processor', () => {
       expect(jobs.length).toEqual(5);
     });
   });
-
-  describe('cycling trigger', () => {
-    it('trigger should not be triggered more than once in same execution', async () => {
-      const n1 = await workflow.createNode({
-        type: 'create',
-        config: {
-          collection: 'posts',
-          params: {
-            values: {
-              title: 't2'
-            }
-          }
-        }
-      });
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      const posts = await PostRepo.find();
-      expect(posts.length).toBe(2);
-
-      const [execution] = await workflow.getExecutions();
-      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
-    });
-  });
 });

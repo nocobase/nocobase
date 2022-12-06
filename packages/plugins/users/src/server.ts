@@ -154,6 +154,11 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     if (!verificationPlugin) {
       return;
     }
+    const systemSettingsRepo = this.db.getRepository('systemSettings');
+    const settings = await systemSettingsRepo.findOne();
+    if (!settings.smsAuthEnabled) {
+      return;
+    }
 
     verificationPlugin.interceptors.register('users:signin', {
       manual: true,

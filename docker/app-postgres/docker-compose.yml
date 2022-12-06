@@ -1,7 +1,7 @@
 version: "3"
 services:
   app:
-    image: nocobase/nocobase:0.8.0-alpha.13
+    image: nocobase/nocobase:main
     networks:
       - nocobase
     environment:

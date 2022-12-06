@@ -44,7 +44,6 @@ export default {
   "By field": "По полю",
   "By custom date": "По пользовательской дате",
   "Advanced": "Продвинутый",
-  "Advanced type": "Продвинутый",
   "End": "Окончание",
   "Trigger variables": "Контекст триггера",
   "Node result": "Результат Узла",

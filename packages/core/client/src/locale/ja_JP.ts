@@ -136,6 +136,7 @@ export default {
   "Integer": "整数",
   "Percent": "パーセント",
   "Password": "パスワード",
+  "Advanced type": "アドバンスタイプ",
   "Formula": "式",
   "Formula description": "各レコードの値を、同じレコード内の他のフィールドを基に計算します。",
   "Choices": "選択",
