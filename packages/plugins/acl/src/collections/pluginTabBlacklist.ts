@@ -1,8 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  name: 'pluginTabBacklist',
-  title: '{{t("PluginTabBacklist")}}',
+  name: 'pluginTabBlacklist',
+  title: '{{t("PluginTabBlacklist")}}',
   autoGenId: true,
   fields: [
     {

@@ -78,7 +78,7 @@ export default {
     {
       type: 'hasMany',
       name: 'pluginTab',
-      target: 'pluginTabBacklist',
+      target: 'PluginTabBlacklist',
       sourceKey: 'name',
       targetKey: 'roleName',
     },
