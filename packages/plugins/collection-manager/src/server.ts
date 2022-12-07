@@ -52,6 +52,19 @@ export class CollectionManagerPlugin extends Plugin {
           throw new Error('cant update field without a reverseField key');
         }
       }
+
+      if (model.get('titleField')) {
+        await this.app.db.getRepository('fields').update({
+          values: {
+            titleField: false,
+          },
+          filter: {
+            'key.$ne': model.get("key"),
+            'collectionName': model.get("collectionName")
+          },
+          transaction: options.transaction,
+        });
+      }
     });
 
     // 要在 beforeInitOptions 之前处理

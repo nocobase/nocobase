@@ -17,15 +17,6 @@ export const defaultConfigurableProperties = {
     description:
       "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
   },
-  titleField:{
-    title: '{{t("Title field")}}',
-    type: 'string',
-    'x-component':'Select',
-    'x-decorator':'FormItem',
-    required:true,
-    'x-visible': '{{ !createOnly}}',
-    'x-reactions':['{{useAsyncDataSource(loadTitleCollectionFields)}}'],
-  },
   inherits: {
     title: '{{t("Inherits")}}',
     type: 'hasMany',
@@ -111,7 +102,6 @@ export const defaultConfigurableProperties = {
 export type DefaultConfigurableKeys =
   | 'name'
   | 'title'
-  | 'titleField'
   | 'inherits'
   | 'autoGenId'
   | 'createdBy'

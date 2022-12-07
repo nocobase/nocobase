@@ -38,16 +38,6 @@ export const collection: CollectionOptions = {
     },
     {
       type: 'string',
-      name: 'titleField',
-      interface: 'select',
-      uiSchema: {
-        title: '{{ t("Title field") }}',
-        type: 'string',
-        'x-component': 'Select',
-      },
-    },
-    {
-      type: 'string',
       name: 'template',
       interface: 'input',
       uiSchema: {

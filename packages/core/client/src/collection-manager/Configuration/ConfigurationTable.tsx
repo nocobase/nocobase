@@ -72,7 +72,7 @@ const useNewId = (prefix) => {
 };
 
 export const ConfigurationTable = () => {
-  const { collections = []} = useCollectionManager();
+  const { collections = [] } = useCollectionManager();
   const {
     data: { database },
   } = useCurrentAppInfo();
@@ -93,20 +93,6 @@ export const ConfigurationTable = () => {
         value: item.name,
       }));
   };
-
-  const loadTitleCollectionFields = async (field: any) => {
-    const collectionName = field.form.values.name;
-    const fields = collectonsRef.current?.find((collection) => collection.name === collectionName)?.fields;
-    return fields
-      ?.filter((item) => ['bigInt', 'string', 'uid',  'text', 'integer'].includes(item.type))
-      ?.map((field: any) => {
-        return {
-          value: field.name,
-          label: compile(field?.uiSchema?.title || field.name),
-        };
-      });
-  };
-
   const ctx = useContext(SchemaComponentContext);
   return (
     <div>
@@ -125,7 +111,6 @@ export const ConfigurationTable = () => {
             useSelectedRowKeys,
             useAsyncDataSource,
             loadCollections,
-            loadTitleCollectionFields,
             useCurrentFields,
             useNewId,
             useCancelAction,

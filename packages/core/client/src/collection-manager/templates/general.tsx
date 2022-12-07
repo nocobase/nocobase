@@ -12,7 +12,6 @@ export const general: ICollectionTemplate = {
   configurableProperties: getConfigurableProperties(
     'title',
     'name',
-    'titleField',
     'inherits',
     'autoGenId',
     'createdAt',

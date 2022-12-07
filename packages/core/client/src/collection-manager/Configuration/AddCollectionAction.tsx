@@ -105,6 +105,7 @@ const useDefaultCollectionFields = (values) => {
         type: 'bigInt',
         autoIncrement: true,
         primaryKey: true,
+        titleField: true,
         allowNull: false,
         uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
         interface: 'id',
