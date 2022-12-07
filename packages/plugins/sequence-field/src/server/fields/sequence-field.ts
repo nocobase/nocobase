@@ -1,6 +1,3 @@
-import { promisify } from 'util';
-import { randomInt } from 'crypto';
-
 import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from 'sequelize';
 import parser from 'cron-parser';
 import moment from 'moment';
@@ -9,7 +6,6 @@ import { escapeRegExp } from 'lodash';
 import { Registry } from '@nocobase/utils';
 import { Model, BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 
-const asyncRandomInt = promisify(randomInt);
 
 export interface Pattern {
   validate?(options): string | null;
@@ -41,22 +37,15 @@ sequencePatterns.register('string', {
 });
 
 sequencePatterns.register('integer', {
-  validate(options) {
-    if (!options?.key) {
-      return 'options.key should be configured as an integer';
-    }
-    return null;
-  },
+  // validate(options) {
+  //   if (!options?.key) {
+  //     return 'options.key should be configured as an integer';
+  //   }
+  //   return null;
+  // },
   async generate(this: SequenceField, instance: Model, index, { transaction }) {
     const recordTime = <Date>instance.get('createdAt');
     const { options = {} } = this.options.patterns[index];
-    if (options.key == null) {
-      options.key = await asyncRandomInt(1 << 16);
-    }
-    if (!this.options.patterns[index].options) {
-      // TODO(bug): should save options back to fields table in CM plugin
-      this.options.patterns[index].options = options;
-    }
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
     const max = Math.pow(base, digits) - 1;
     const SeqRepo = this.database.getRepository('sequences');
@@ -253,12 +242,7 @@ export class SequenceField extends Field {
     const { name, patterns, inputable, match } = this.options;
     const value = instance.get(name);
     if (value != null && inputable) {
-      const matched = this.match(value);
-      if (matched) {
-        await matched.slice(1)
-          .map((_, i) => sequencePatterns.get(patterns[i].type).update).filter(Boolean)
-          .reduce((promise, update, i) => promise.then(() => update.call(this, instance, matched[i + 1], patterns[i].options, options)), Promise.resolve());
-      }
+      this.update(instance, options);
       return;
     }
 
@@ -273,17 +257,14 @@ export class SequenceField extends Field {
     return typeof value === 'string' ? value.match(this.matcher) : null;
   }
 
-  parse(value: string, patternIndex: number): string {
-    for (let i = 0, index = 0; i < this.options.patterns.length; i += 1) {
-      const { type, options } = this.options.patterns[i];
-      const { getLength } = sequencePatterns.get(type);
-      const length = getLength(options);
-      if (i === patternIndex) {
-        return value.substring(index, index + length);
-      }
-      index += length;
+  async update(instance: Model, options) {
+    const { name, patterns } = this.options;
+    const matched = this.match(instance.get(name));
+    if (matched) {
+      await matched.slice(1)
+        .map((_, i) => sequencePatterns.get(patterns[i].type).update).filter(Boolean)
+        .reduce((promise, update, i) => promise.then(() => update.call(this, instance, matched[i + 1], patterns[i].options, options)), Promise.resolve());
     }
-    return '';
   }
 
   bind() {

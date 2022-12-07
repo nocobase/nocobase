@@ -16,7 +16,15 @@ export default class SequenceFieldPlugin extends Plugin {
 
     db.registerFieldTypes({
       sequence: SequenceField
-    })
+    });
+
+    db.addMigrations({
+      namespace: 'sequence-field',
+      directory: path.resolve(__dirname, 'migrations'),
+      context: {
+        plugin: this,
+      },
+    });
 
     await db.import({
       directory: path.resolve(__dirname, 'collections'),
@@ -46,20 +54,21 @@ export default class SequenceFieldPlugin extends Plugin {
         filter: {
           field: field.get('name'),
           collection: field.get('collectionName'),
-          key: patterns.map(p => p.key),
+          key: patterns.map(p => p.options.key),
         },
         transaction
       });
       await patterns.reduce((promise: Promise<any>, p) => promise.then(async () => {
-        if (!sequences.find(s => s.get('key') === p.key)) {
+        if (!sequences.find(s => s.get('key') === p.options.key)) {
           await SequenceRepo.create({
             values: {
               field: field.get('name'),
               collection: field.get('collectionName'),
-              key: p.key,
+              key: p.options.key,
             },
             transaction
           });
+          await field.load({ transaction });
         }
       }), Promise.resolve());
     });

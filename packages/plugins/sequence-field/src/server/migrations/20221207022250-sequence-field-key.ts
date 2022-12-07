@@ -1,0 +1,50 @@
+import { promisify } from 'util';
+import { randomInt } from 'crypto';
+
+import { Migration } from '@nocobase/server';
+
+const asyncRandomInt = promisify(randomInt);
+
+export default class extends Migration {
+  async up() {
+    const match = await this.app.version.satisfies('<=0.8.0-alpha.13');
+    if (!match) {
+      return;
+    }
+
+    const { db } = this.context;
+
+    const fieldRepo = db.getRepository('fields');
+    if (!fieldRepo) {
+      return;
+    }
+    await db.sequelize.transaction(async (transaction) => {
+      const fields = await fieldRepo.find({
+        filter: {
+          type: 'sequence'
+        }
+      });
+      await fields.reduce((promise, field) => promise.then(async () => {
+        const options = field.get('options');
+        const fieldName = field.get('name');
+        const collectionName = field.get('collectionName');
+        // NOTE: cannot use .update because no changes are made, only for forcing to trigger beforeSave hook.
+        field.set('patterns', options.patterns);
+        await field.save({ transaction });
+
+        const repo = db.getRepository(collectionName);
+        const item = await repo.findOne({
+          sort: ['-createdAt']
+        });
+        if (!item) {
+          return;
+        }
+        const collection = db.getCollection(collectionName);
+        const memField = collection.getField(fieldName);
+        await memField.update(item, { transaction });
+      }), Promise.resolve());
+    });
+  }
+
+  async down() {}
+}
