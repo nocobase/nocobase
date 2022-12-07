@@ -1,26 +1,15 @@
 import { Checkbox, message, Table } from 'antd';
-import React, { useState, useContext, useEffect, createContext } from 'react';
+import React, { useState, useContext, createContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
 import { uniq } from 'lodash';
 
-const findKeys = (items) => {
-  if (!Array.isArray(items)) {
-    return [];
-  }
-  const keys = [];
-  for (const item of items) {
-    keys.push(item.key);
-    keys.push(...findKeys(item.children));
-  }
-  return keys;
-};
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
   for (const data of tree) {
-    path.push(data.key);
+    path.push({ tabKey: data.key });
     if (func(data)) return path;
     if (data.children) {
       const findChildren = getParentKeys(data.children, func, path);
@@ -32,7 +21,7 @@ const getParentKeys = (tree, func, path = []) => {
 };
 const getChildrenKeys = (data = [], arr = []) => {
   for (let item of data) {
-    arr.push(item.key);
+    arr.push({ tabKey: item.key });
     if (item.children && item.children.length) getChildrenKeys(item.children, arr);
   }
   return arr;
@@ -81,11 +70,8 @@ export const SettingsCenterConfigure = () => {
   const api = useAPIClient();
   const pluginTags = useContext(SettingMenuContext);
   const items: any[] = (pluginTags && formatPluginTabs(pluginTags)) || [];
-  console.log(items);
   const { t } = useTranslation();
   const compile = useCompile();
-
-  const allUids = findKeys(items);
   const [keys, setkeys] = useState([]);
   const { loading, refresh, data } = useRequest(
     {
@@ -102,37 +88,40 @@ export const SettingsCenterConfigure = () => {
       },
     },
   );
-  const blackList = data?.data||[];
-  console.log(blackList);
+  const blackList = data?.data.map((v) => v.tabKey) || [];
   const resource = api.resource('roles.pluginTab', record.name);
-  const allChecked = allUids.length === keys.length;
 
   const handleChange = async (checked, record) => {
     const parentKeys = getParentKeys(items, (data) => data.key === record.key);
     const childrenKeys = getChildrenKeys(record?.children, []);
     if (!checked) {
-      const totalKeys = childrenKeys.concat(record.key);
+      const totalKeys = childrenKeys.concat({ tabKey: record.key });
       const newKeys = keys.filter((v) => !totalKeys.includes(v));
       setkeys([...newKeys]);
       await resource.destroy({
-        values: totalKeys,
+        filter: {
+          tabKey: {
+            $in: totalKeys.map((v) => v.tabKey),
+          },
+        },
       });
+      refresh();
     } else {
       const totalKeys = childrenKeys.concat(parentKeys);
-      console.log(totalKeys)
       setkeys((prev) => {
         return uniq([...prev, ...totalKeys]);
       });
       await resource.create({
         values: totalKeys,
       });
+      refresh();
     }
     message.success(t('Saved successfully'));
   };
 
   return (
     <Table
-      // loading={loading}
+      loading={loading}
       rowKey={'key'}
       pagination={false}
       expandable={{
@@ -148,27 +137,7 @@ export const SettingsCenterConfigure = () => {
         },
         {
           dataIndex: 'accessible',
-          title: (
-            <>
-              <Checkbox
-                checked={blackList.length===0}
-                onChange={async (value) => {
-                  if (allChecked) {
-                    await resource.set({
-                      values: allUids,
-                    });
-                  } else {
-                    await resource.set({
-                      values: [],
-                    });
-                  }
-                  // refresh();
-                  message.success(t('Saved successfully'));
-                }}
-              />
-              {t('Accessible')}
-            </>
-          ),
+          title: t('Accessible'),
           render: (_, record) => {
             const checked = !blackList?.includes(record.key);
             return <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
