@@ -114,15 +114,16 @@ export const SettingsCenterConfigure = () => {
       const totalKeys = childrenKeys.concat(record.key);
       const newKeys = keys.filter((v) => !totalKeys.includes(v));
       setkeys([...newKeys]);
-      await resource.remove({
+      await resource.destroy({
         values: totalKeys,
       });
     } else {
       const totalKeys = childrenKeys.concat(parentKeys);
+      console.log(totalKeys)
       setkeys((prev) => {
         return uniq([...prev, ...totalKeys]);
       });
-      await resource.add({
+      await resource.create({
         values: totalKeys,
       });
     }

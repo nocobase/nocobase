@@ -79,8 +79,7 @@ export default {
       type: 'hasMany',
       name: 'pluginTab',
       target: 'pluginTabBlacklist',
-      sourceKey: 'name',
-      targetKey: 'roleName',
+      foreignKey: 'roleName',
     },
   ],
 } as CollectionOptions;
