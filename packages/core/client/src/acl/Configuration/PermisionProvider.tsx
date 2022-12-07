@@ -1,0 +1,48 @@
+import React, { useContext, createContext, useState } from 'react';
+import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useRecord } from '../../record-provider';
+import { useAPIClient } from '../../api-client';
+
+export const SettingCenterPermissionProvider = (props) => {
+  const {
+    currentRecord: { allowConfigure },
+  } = useContext(PermissionContext);
+
+  if (!allowConfigure) {
+    return null;
+  }
+  return <div>{props.children}</div>;
+};
+
+export const PermissionContext = createContext<any>(null);
+
+export const PermissionProvider = (props) => {
+  const api = useAPIClient();
+  const record = useRecord();
+  const { t } = useTranslation();
+  const [currentRecord, setCurrentRecord] = useState(record);
+  return (
+    <PermissionContext.Provider
+      value={{
+        currentRecord,
+        update: async (form) => {
+        //   const { allowConfigure } = form.values;
+
+          const { data } = await api.resource('roles').update({
+            filterByTk: record.name,
+            values: form.values,
+          });
+        //   await api.resource('roles.pluginTab').add({
+        //     values: [],
+        //   });
+
+          setCurrentRecord(data?.data?.[0]);
+          message.success(t('Saved successfully'));
+        },
+      }}
+    >
+      {props.children}
+    </PermissionContext.Provider>
+  );
+};

@@ -75,5 +75,12 @@ export default {
       sourceKey: 'name',
       targetKey: 'name',
     },
+    {
+      type: 'hasMany',
+      name: 'pluginTab',
+      target: 'pluginTabBacklist',
+      sourceKey: 'name',
+      targetKey: 'roleName',
+    },
   ],
 } as CollectionOptions;

@@ -3,6 +3,7 @@ import { uid } from '@formily/shared';
 import { useRequest } from '../../../api-client';
 import { useActionContext } from '../../../schema-component';
 import { roleCollectionsSchema } from './roleCollections';
+import { useRecord } from '../../../record-provider';
 
 const collection = {
   name: 'roles',
@@ -232,6 +233,7 @@ export const roleSchema: ISchema = {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
+                          'x-decorator': 'PermissionProvider',
                           title: '{{t("Configure permissions")}}',
                           properties: {
                             tabs1: {
@@ -268,6 +270,19 @@ export const roleSchema: ISchema = {
                                     menu: {
                                       'x-decorator': 'MenuItemsProvider',
                                       'x-component': 'MenuConfigure',
+                                    },
+                                  },
+                                },
+                                tab4: {
+                                  type: 'void',
+                                  title: '{{t("Setting Center permissions")}}',
+                                  'x-decorator': 'SettingCenterPermissionProvider',
+                                  'x-component': 'Tabs.TabPane',
+                                  'x-component-props': {},
+                                  properties: {
+                                    menu: {
+                                      'x-decorator': 'SettingCenterProvider',
+                                      'x-component': 'SettingsCenterConfigure',
                                     },
                                   },
                                 },
