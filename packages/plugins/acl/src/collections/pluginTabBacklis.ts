@@ -6,6 +6,10 @@ export default {
   autoGenId: true,
   fields: [
     {
+      type: 'belongsTo',
+      name: 'role',
+    },
+    {
       type: 'string',
       name: 'roleName',
       uiSchema: {

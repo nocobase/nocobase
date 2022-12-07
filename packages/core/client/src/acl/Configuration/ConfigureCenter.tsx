@@ -150,15 +150,15 @@ export const SettingsCenterConfigure = () => {
           title: (
             <>
               <Checkbox
-                checked={allChecked}
+                checked={blackList.length===0}
                 onChange={async (value) => {
                   if (allChecked) {
                     await resource.set({
-                      values: [],
+                      values: allUids,
                     });
                   } else {
                     await resource.set({
-                      values: allUids,
+                      values: [],
                     });
                   }
                   // refresh();
