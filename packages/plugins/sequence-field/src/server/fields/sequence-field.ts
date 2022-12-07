@@ -225,7 +225,7 @@ export class SequenceField extends Field {
     const { name, inputable, match } = this.options;
     const value = instance.get(name);
     if (value != null && inputable && match && !this.match(value)) {
-      throw new ValidationError(null, [
+      throw new ValidationError('sequence pattern invalid', [
         new ValidationErrorItem(
           `input value of ${name} field not match the sequence pattern (${this.matcher.toString()}) which is required`,
           'Validation error',
@@ -263,7 +263,7 @@ export class SequenceField extends Field {
     if (matched) {
       await matched.slice(1)
         .map((_, i) => sequencePatterns.get(patterns[i].type).update).filter(Boolean)
-        .reduce((promise, update, i) => promise.then(() => update.call(this, instance, matched[i + 1], patterns[i].options, options)), Promise.resolve());
+        .reduce((promise, update, i) => promise.then(() => update!.call(this, instance, matched[i + 1], patterns[i].options, options)), Promise.resolve());
     }
   }
 

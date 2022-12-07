@@ -1,9 +1,4 @@
-import { promisify } from 'util';
-import { randomInt } from 'crypto';
-
 import { Migration } from '@nocobase/server';
-
-const asyncRandomInt = promisify(randomInt);
 
 export default class extends Migration {
   async up() {
@@ -34,7 +29,8 @@ export default class extends Migration {
 
         const repo = db.getRepository(collectionName);
         const item = await repo.findOne({
-          sort: ['-createdAt']
+          sort: ['-createdAt'],
+          transaction
         });
         if (!item) {
           return;
