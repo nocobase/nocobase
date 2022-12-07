@@ -59,7 +59,6 @@ export default {
   'By custom date': '自定义时间',
 
   'Advanced': '高级模式',
-  'Advanced type': '高级类型',
 
   'End': '结束',
 

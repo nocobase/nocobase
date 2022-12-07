@@ -92,7 +92,7 @@ NocoBase 版本（[点此查看最新版本](https://hub.docker.com/r/nocobase/n
 ```yml
 services:
   app:
-    image: nocobase/nocobase:0.7.0-alpha.78
+    image: nocobase/nocobase:main
 ```
 
 环境变量
@@ -100,14 +100,14 @@ services:
 ```yml
 services:
   app:
-    image: nocobase/nocobase:0.7.0-alpha.78
+    image: nocobase/nocobase:main
     environment:
       - DB_DIALECT=postgres
       - DB_HOST=postgres
       - DB_DATABASE=nocobase
       - DB_USER=nocobase
       - DB_PASSWORD=nocobase
-      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
+      - LOCAL_STORAGE_BASE_URL=/storage/uploads
 ```
 
 - `DB_*` 为数据库相关，如果不是例子默认的数据库服务，请根据实际情况修改；
@@ -118,6 +118,8 @@ services:
 安装过程可能需要等待几分钟
 
 ```bash
+# 拉取最新镜像
+$ docker-compose pull
 # 在后台运行
 $ docker-compose up -d
 # 查看 app 进程的情况

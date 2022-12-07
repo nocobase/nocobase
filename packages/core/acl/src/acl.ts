@@ -89,19 +89,21 @@ export class ACL extends EventEmitter {
       }
     });
 
-    this.middlewares.add(this.allowManager.aclMiddleware(), {
+    this.use(this.allowManager.aclMiddleware(), {
       tag: 'allow-manager',
+      before: 'acl',
     });
 
     this.addCoreMiddleware();
 
-    this.middlewares.add(
+    // throw error when user has no fixed params permissions
+    this.use(
       async (ctx, next) => {
         const action = ctx.permission?.can?.action;
 
         if (action == 'destroy') {
           const repository = getRepositoryFromParams(ctx);
-          const filteredCount = await repository.count(ctx.permission.parsedParams);
+          const filteredCount = await repository.count(ctx.permission.mergedParams);
           const queryCount = await repository.count(ctx.permission.rawParams);
 
           if (queryCount > filteredCount) {
@@ -118,7 +120,21 @@ export class ACL extends EventEmitter {
     );
   }
 
-  addCoreMiddleware() {
+  public afterActionMiddleware() {
+    return async (ctx, next) => {
+      const action = ctx.action?.name;
+      if (action == 'list') {
+        const dataPath = ctx.paginate ? 'body.rows' : 'body';
+        const listData = lodash.get(ctx, dataPath);
+        const actions = ['view', 'update', 'destroy'];
+
+        console.log(listData);
+      }
+      await next();
+    };
+  }
+
+  protected addCoreMiddleware() {
     const acl = this;
 
     const filterParams = (ctx, resourceName, params) => {
@@ -157,8 +173,8 @@ export class ACL extends EventEmitter {
           ctx.permission.parsedParams = parsedParams;
           ctx.log?.info && ctx.log.info('acl parsedParams', parsedParams);
           ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
-
           resourcerAction.mergeParams(parsedParams);
+          ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
         }
 
         await next();
@@ -168,6 +184,7 @@ export class ACL extends EventEmitter {
       },
     );
   }
+
   define(options: DefineOptions): ACLRole {
     const roleName = options.role;
     const role = new ACLRole(this, roleName);

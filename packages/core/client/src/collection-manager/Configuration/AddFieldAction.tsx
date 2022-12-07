@@ -14,7 +14,7 @@ import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
-import { options } from './interfaces';
+import { getOptions } from './interfaces';
 
 const getSchema = (schema: IField, record: any, compile) => {
   if (!schema) {
@@ -152,7 +152,7 @@ export const AddFieldAction = (props) => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = availableFieldInterfaces || {};
     const optionArr = [];
-    options.forEach((v) => {
+    getOptions().forEach((v) => {
       if (v.key === 'systemInfo') {
         optionArr.push({
           ...v,

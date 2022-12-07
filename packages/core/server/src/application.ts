@@ -260,6 +260,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (this.options.acl !== false) {
       this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
+      this.use(this.acl.afterActionMiddleware(), { after: 'restApi' });
     }
 
     registerMiddlewares(this, options);
@@ -476,6 +477,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     return true;
+  }
+
+  async isInstalled() {
+    return (
+      (await this.db.collectionExistsInDb('applicationVersion')) || (await this.db.collectionExistsInDb('collections'))
+    );
   }
 
   async install(options: InstallOptions = {}) {
