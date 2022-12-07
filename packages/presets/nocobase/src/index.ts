@@ -6,28 +6,28 @@ export class PresetNocoBase extends Plugin {
     const builtInPlugins = process.env.PRESET_NOCOBASE_PLUGINS
       ? process.env.PRESET_NOCOBASE_PLUGINS.split(',')
       : [
-          'error-handler',
-          'collection-manager',
-          'ui-schema-storage',
-          'ui-routes-storage',
-          'file-manager',
-          'system-settings',
-          'verification',
-          'users',
-          'acl',
-          'china-region',
-          'workflow',
-          'client',
-          'export',
-          'import',
-          'audit-logs',
-        ];
+        'error-handler',
+        'collection-manager',
+        'ui-schema-storage',
+        'ui-routes-storage',
+        'file-manager',
+        'system-settings',
+        'verification',
+        'users',
+        'acl',
+        'china-region',
+        'workflow',
+        'client',
+        'export',
+        'import',
+        'audit-logs',
+      ];
     await this.app.pm.add(builtInPlugins, {
       enabled: true,
       builtIn: true,
       installed: true,
     });
-    const localPlugins = ['sample-hello', 'oidc', 'saml'];
+    const localPlugins = ['sample-hello', 'oidc', 'saml', 'map'];
     await this.app.pm.add(localPlugins, {});
     await this.app.reload();
   }

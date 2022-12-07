@@ -27,6 +27,7 @@ registerGroupLabel('choices', '{{t("Choices")}}');
 registerGroupLabel('media', '{{t("Media")}}');
 registerGroupLabel('datetime', '{{t("Date & Time")}}');
 registerGroupLabel('relation', '{{t("Relation")}}');
+registerGroupLabel('relation', '{{t("Relation")}}');
 registerGroupLabel('advanced', '{{t("Advanced type")}}');
 registerGroupLabel('systemInfo', '{{t("System info")}}');
 registerGroupLabel('others', '{{t("Others")}}');
