@@ -31,10 +31,12 @@ export function afterUpdate(app: Application) {
     if (!changes.length) {
       return;
     }
+    const titleField = collection.findField((field) => {
+      return field.titleField || field.options.titleField;
+    });
     let title = model.get(
-      collection.options.titleField ? collection.options.titleField : model.constructor.primaryKeyAttribute,
-    );
-    title = title ? title : '';
+      titleField?.name ?? model.constructor.primaryKeyAttribute,
+    ) ?? '';
     if (typeof title == 'object') {
       title = title.toString();
     }

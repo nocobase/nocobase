@@ -24,10 +24,12 @@ export function afterDestroy(app: Application) {
           });
         }
       });
+      const titleField = collection.findField((field) => {
+        return field.titleField || field.options.titleField;
+      });
       let title = model.get(
-        collection.options.titleField ? collection.options.titleField : model.constructor.primaryKeyAttribute,
-      );
-      title = title ? title : '';
+        titleField?.name ?? model.constructor.primaryKeyAttribute,
+      ) ?? '';
       if (typeof title == 'object') {
         title = title.toString();
       }
