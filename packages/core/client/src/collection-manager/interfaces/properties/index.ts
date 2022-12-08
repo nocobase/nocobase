@@ -41,7 +41,7 @@ export const unique = {
 
 export const titleField = {
   type: 'boolean',
-  'x-content': '{{t("Title field")}}',
+  'x-content': '{{t("Used as the title field of the collection")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
 };

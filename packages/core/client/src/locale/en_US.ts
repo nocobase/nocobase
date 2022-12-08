@@ -125,6 +125,7 @@ export default {
   "General collection":"General collection",
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.",
   "Storage type": "Storage type",
+  "Used as the title field of the collection": "Used as the title field of the collection",
   "Edit": "Edit",
   "Edit collection": "Edit collection",
   "Configure fields": "Configure fields",
