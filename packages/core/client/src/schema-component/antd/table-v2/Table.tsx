@@ -21,6 +21,7 @@ const isCollectionFieldComponent = (schema: ISchema) => {
 };
 
 const useAclCheck = (schema: Schema) => {
+  const { actions, resources, allowAll } = useACLRoleContext();
   let fieldName = Object.keys(schema.properties)?.[0];
   let collectionName;
   if (fieldName.includes('.')) {
@@ -29,8 +30,7 @@ const useAclCheck = (schema: Schema) => {
   } else {
     collectionName = useCollection().name;
   }
-  const { actions, resources } = useACLRoleContext();
-  if (resources.includes(collectionName) && fieldName !== 'actions') {
+  if (resources.includes(collectionName) && fieldName !== 'actions' && !allowAll) {
     const { fields } = actions[`${collectionName}:view`];
     return fields.includes(fieldName);
   } else {
