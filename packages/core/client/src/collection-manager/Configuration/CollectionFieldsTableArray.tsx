@@ -15,7 +15,6 @@ import {
   useRecord,
   useCompile,
   SchemaComponent,
-  useCollection,
 } from '../..';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
@@ -34,7 +33,6 @@ export const components = {
         className={classNames(
           props.className,
           css`
-            max-width: 300px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -58,13 +56,6 @@ const useDefDataSource = (options, props) => {
     });
   }, options);
 };
-
-const groupColumns = [
-  {
-    dataIndex: 'name',
-    key: 'name',
-  },
-];
 
 type CategorizeKey = 'primaryAndForeignKey' | 'relation' | 'systemInfo' | 'basic';
 const CategorizeKeyNameMap = new Map<CategorizeKey, string>([
@@ -166,11 +157,16 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
           return buf.concat([s]);
         }
       }, [])
-      .map((s: Schema) => {
+      .map((s: Schema, index) => {
         return {
           title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
           dataIndex: s.name,
           key: s.name,
+          className: css`
+            max-width: 24%;
+            width: 24%;
+            min-width: 24%;
+          `,
           render: (v, record) => {
             const index = findIndex(field.value, record);
             return (
@@ -193,9 +189,8 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
     });
   };
 
-
   const expandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
-    if(!props.loading){
+    if (!props.loading) {
       const columns = useTableColumns();
       if (inherits.includes(record.key)) {
         columns.pop();
@@ -238,15 +233,35 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
           {...others}
           {...restProps}
           components={components}
-          showHeader={true}
+          showHeader={false}
           columns={columns}
           dataSource={record.data}
           pagination={false}
         />
       );
     }
-   
   };
+
+  const groupColumns = [
+    {
+      title: t('Field display name'),
+      dataIndex: 'name',
+      key: 'name',
+      width: '28%',
+    },
+    {
+      title: t('Field name'),
+      width: '24%',
+    },
+    {
+      title: t('Field interface'),
+      width: '24%',
+    },
+    {
+      title: t('Actions'),
+      width: '24%',
+    },
+  ];
   return (
     <div
       className={css`
@@ -257,7 +272,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
       `}
     >
       <Table
-        showHeader={false}
+        showHeader={true}
         loading={props?.loading}
         columns={groupColumns}
         dataSource={categorizeData}
