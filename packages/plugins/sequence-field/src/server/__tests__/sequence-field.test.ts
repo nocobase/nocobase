@@ -83,7 +83,7 @@ describe('sequence field', () => {
   });
 
   describe('integer pattern', () => {
-    it('no key', async () => {
+    it.skip('no key', async () => {
       expect(() => {
         db.collection({
           name: 'tests',

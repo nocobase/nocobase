@@ -242,8 +242,7 @@ export class SequenceField extends Field {
     const { name, patterns, inputable, match } = this.options;
     const value = instance.get(name);
     if (value != null && inputable) {
-      this.update(instance, options);
-      return;
+      return this.update(instance, options);
     }
 
     const results = await patterns.reduce((promise, p, i) => promise.then(async (result) => {
