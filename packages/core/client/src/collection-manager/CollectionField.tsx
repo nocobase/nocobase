@@ -13,7 +13,6 @@ const InternalField: React.FC = (props) => {
   const fieldSchema = useFieldSchema();
   const { name, interface: interfaceType, uiSchema, defaultValue } = useCollectionField();
   const collectionField = useCollectionField();
-  
   const component = useComponent(uiSchema?.['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
@@ -43,7 +42,7 @@ const InternalField: React.FC = (props) => {
     if (ctx?.form) {
       setFieldProps('initialValue', fieldSchema.default || defaultValue);
     }
-    
+
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
       const concatSchema = concat([], uiSchema['x-validator'] || [], fieldSchema['x-validator'] || []);
       field.validator = concatSchema;

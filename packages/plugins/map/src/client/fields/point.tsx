@@ -22,7 +22,7 @@ export const point: IField = {
   },
   properties: {
     ...defaultProps,
-    type: {
+    'uiSchema.x-component-props.mapType': {
       title: '{{ t("Map type") }}',
       type: 'string',
       required: true,
@@ -30,11 +30,11 @@ export const point: IField = {
       'x-component': 'Select',
       'x-disabled': '{{ !createOnly }}',
       enum: [
-        { label: '{{t("Amap")}}', value: 'amap' },
+        { label: '{{t("AMap")}}', value: 'amap' },
         { label: '{{t("Google Maps")}}', value: 'google' },
       ],
     },
-    accessKey: {
+    'uiSchema.x-component-props.accessKey': {
       title: '{{ t("Access key") }}',
       type: 'string',
       required: true,
