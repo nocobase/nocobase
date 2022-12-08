@@ -5,7 +5,9 @@ import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useCollection } from '../collection-manager';
 import { useRecordIsOwn } from '../record-provider';
+import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable, FormItem } from '../schema-component';
+import { useBlockRequestContext } from '../block-provider/BlockProvider';
 
 export const ACLContext = createContext(null);
 
@@ -128,7 +130,11 @@ export const ACLCollectionProvider = (props) => {
 };
 
 export const ACLActionProvider = (props) => {
-  const { name } = useCollection();
+  const record = useRecord();
+  const { name, primaryKeyField } = useCollection();
+  const { service } = useBlockRequestContext();
+  const { meta } = service.data || {};
+  const { allowedActions } = meta || {};
   const fieldSchema = useFieldSchema();
   const isOwn = useRecordIsOwn();
   const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
@@ -137,8 +143,11 @@ export const ACLActionProvider = (props) => {
   }
   const actionName = fieldSchema['x-action'];
   const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
+  const actionScope = allowedActions?.[path.split(':')[1]];
+  const actionScopeCheck = actionScope ? actionScope?.includes(record[primaryKeyField.name]) : true;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
   const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
+  fieldSchema['x-disabled'] = !actionScopeCheck;
   if (!params) {
     return null;
   }
