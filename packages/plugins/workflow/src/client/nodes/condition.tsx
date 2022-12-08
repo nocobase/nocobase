@@ -88,11 +88,6 @@ function CalculationGroup({ value, onChange }) {
         display: flex;
         align-items: center;
         gap: .5em;
-
-        .ant-select{
-          width: auto;
-          min-width: 6em;
-        }
       `}>
         <Trans>
           {'Meet '}

@@ -50,6 +50,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   const groups = [
     { value: 'control', name: `{{t("Control", { ns: "${NAMESPACE}" })}}` },
     { value: 'collection', name: `{{t("Collection operations", { ns: "${NAMESPACE}" })}}` },
+    { value: 'manual', name: `{{t("Manual", { ns: "${NAMESPACE}" })}}` },
     { value: 'extended', name: `{{t("Extended types", { ns: "${NAMESPACE}" })}}` },
   ];
   const instructionList = (Array.from(instructions.getValues()) as Instruction[]);

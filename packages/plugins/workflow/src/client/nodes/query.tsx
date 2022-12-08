@@ -45,6 +45,9 @@ export default {
   components: {
     VariableComponent
   },
+  useFields() {
+    return [];
+  },
   getter(props) {
     const { onChange } = props;
     const { nodes } = useFlowContext();

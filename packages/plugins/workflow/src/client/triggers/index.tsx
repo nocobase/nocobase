@@ -6,7 +6,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { InfoOutlined } from '@ant-design/icons';
 
-import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
+import { SchemaComponent, SchemaInitializerItemOptions, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
 
 import { nodeCardClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from "../style";
 import { useFlowContext } from "../FlowContext";
@@ -49,6 +49,8 @@ export interface Trigger {
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
+  useInitializers?(config): SchemaInitializerItemOptions;
+  initializers?: any;
   getter?(node: any): React.ReactNode;
 };
 

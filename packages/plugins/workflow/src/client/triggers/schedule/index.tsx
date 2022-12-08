@@ -40,6 +40,9 @@ export default {
     }
     return options;
   },
+  useFields(config) {
+    return [];
+  },
   getter({ onChange }) {
     const { t } = useWorkflowTranslation();
     const compile = useCompile();

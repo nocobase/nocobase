@@ -45,7 +45,7 @@ export default class implements Instruction {
   middlewares = [];
 
   constructor(protected plugin: Plugin) {
-    plugin.app.resourcer.use(this.middleware);
+    // plugin.app.resourcer.use(this.middleware);
   }
 
   middleware = async (context: Context, next) => {

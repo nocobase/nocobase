@@ -4,7 +4,7 @@ import { css } from "@emotion/css";
 
 import { useCompile } from "@nocobase/client";
 
-import { instructions, useNodeContext } from "./nodes";
+import { instructions, useAvailableUpstreams, useNodeContext } from "./nodes";
 import { useFlowContext } from "./FlowContext";
 import { triggers } from "./triggers";
 import { useTranslation } from "react-i18next";
@@ -163,11 +163,13 @@ function getType(value) {
   return 'object';
 }
 
-export function parseValue(value: any, Types): {
+type ParsedOperand = {
   type: string;
   value?: any;
   options?: any;
-} {
+};
+
+export function parseValue(value: any, Types): ParsedOperand {
   const valueType = getType(value);
   if (valueType !== 'string') {
     return { type: 'constant', value, options: { type: valueType } }
@@ -276,20 +278,11 @@ export const VariableTypes = {
     title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
     value: '$jobsMapByNodeId',
     options() {
-      const node = useNodeContext();
-      const stack = [];
-      for (let current = node.upstream; current; current = current.upstream) {
-        const { getter } = instructions.get(current.type);
-        // Note: consider `getter` as the key of a value available node
-        if (getter) {
-          stack.push({
-            value: current.id,
-            label: current.title ?? `#${current.id}`
-          });
-        }
-      }
-
-      return stack;
+      const upstreams = useAvailableUpstreams();
+      return upstreams.map(node => ({
+        value: node.id,
+        label: node.title ?? `#${node.id}`
+      }));
     },
     component(props) {
       const { nodes } = useFlowContext();
@@ -302,7 +295,7 @@ export const VariableTypes = {
         return null;
       }
       const instruction = instructions.get(node.type);
-      return instruction?.getter(props);
+      return instruction?.getter?.(props);
     },
     appendTypeValue({ options = {} }: { type: string, options: any }) {
       return options.nodeId ? [Number.parseInt(options.nodeId, 10)] : [];
@@ -328,7 +321,7 @@ export const VariableTypes = {
     component(props) {
       const { workflow } = useFlowContext();
       const trigger = triggers.get(workflow.type);
-      return trigger?.getter(props);
+      return trigger?.getter?.(props);
     },
     appendTypeValue({ options }) {
       return options.type ? [options.type] : [];
@@ -358,7 +351,7 @@ interface OperandProps {
   children?: React.ReactNode;
 }
 
-const OperandContext = React.createContext(null);
+const OperandContext = React.createContext<ParsedOperand>({ type: 'constant', value: null });
 
 export function useOperandContext() {
   return React.useContext(OperandContext);
@@ -379,7 +372,7 @@ export function Operand({
   const { component: Variable = NullRender, appendTypeValue } = Types[type] || {};
 
   return (
-    <div className={css`
+    <fieldset className={css`
       display: flex;
       gap: .5em;
       align-items: center;
@@ -418,7 +411,7 @@ export function Operand({
       <OperandContext.Provider value={operand}>
         {children ?? <Variable value={operand.value} onChange={onChange} />}
       </OperandContext.Provider>
-    </div>
+    </fieldset>
   );
 }
 
@@ -427,7 +420,7 @@ export function Calculation({ calculator, operands = [null], onChange }) {
   const compile = useCompile();
   return (
     <VariableTypesContext.Provider value={VariableTypes}>
-      <div className={css`
+      <fieldset className={css`
         display: flex;
         gap: .5em;
         align-items: center;
@@ -454,7 +447,7 @@ export function Calculation({ calculator, operands = [null], onChange }) {
           )
           : null
         }
-      </div>
+      </fieldset>
     </VariableTypesContext.Provider>
   );
 }

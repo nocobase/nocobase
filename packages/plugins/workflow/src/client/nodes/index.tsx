@@ -21,6 +21,8 @@ import condition from './condition';
 import parallel from './parallel';
 import delay from './delay';
 
+import prompt from './prompt';
+
 import query from './query';
 import create from './create';
 import update from './update';
@@ -40,6 +42,7 @@ export interface Instruction {
   components?: { [key: string]: any };
   render?(props): React.ReactElement;
   endding?: boolean;
+  useFields?(): any[];
   getter?(node: any): React.ReactElement;
 };
 
@@ -49,6 +52,8 @@ instructions.register('condition', condition);
 instructions.register('parallel', parallel);
 instructions.register('calculation', calculation);
 instructions.register('delay', delay);
+
+instructions.register('prompt', prompt);
 
 instructions.register('query', query);
 instructions.register('create', create);
@@ -84,10 +89,23 @@ function useUpdateAction() {
   };
 };
 
-const NodeContext = React.createContext(null);
+export const NodeContext = React.createContext<any>({});
 
 export function useNodeContext() {
   return useContext(NodeContext);
+}
+
+export function useAvailableUpstreams(node = useNodeContext()) {
+  const stack: any[] = [];
+  for (let current = node.upstream; current; current = current.upstream) {
+    const { getter } = instructions.get(current.type);
+    // Note: consider `getter` as the key of a value available node
+    if (getter) {
+      stack.push(current);
+    }
+  }
+
+  return stack;
 }
 
 export function Node({ data }) {
@@ -356,6 +374,7 @@ export function NodeDefaultView(props) {
                         'x-component-props': {
                           disabled: workflow.executed,
                           className: css`
+                            .ant-input,
                             .ant-select,
                             .ant-cascader-picker,
                             .ant-picker,

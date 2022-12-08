@@ -82,10 +82,15 @@ export default {
   'Pending': '等待处理',
   'Canceled': '已取消',
 
+  'Resolve': '通过',
+  'Reject': '拒绝',
+  'Operations': '操作',
+
   'This node contains branches, deleting will also be preformed to them, are you sure?': '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
 
   'Control': '流程控制',
   'Collection operations': '数据表操作',
+  'Manual': '人工处理',
   'Extended types': '扩展类型',
 
   'Node type': '节点类型',
@@ -118,6 +123,10 @@ export default {
   'Select status': '选择状态',
   'Succeed and continue': '通过并继续',
   'Fail and exit': '失败并退出',
+
+  'Prompt': '填写',
+  'Assignees': '负责人',
+  'Context': '上下文',
 
   'Create record': '新增数据',
   'Update record': '更新数据',
