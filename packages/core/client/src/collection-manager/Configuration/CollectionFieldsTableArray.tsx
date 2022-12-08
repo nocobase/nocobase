@@ -2,7 +2,6 @@ import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
-import { default as classNames } from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { findIndex } from 'lodash';
@@ -27,19 +26,6 @@ export const components = {
     row: (props) => {
       return <tr {...props} />;
     },
-    cell: (props) => (
-      <td
-        {...props}
-        className={classNames(
-          props.className,
-          css`
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          `,
-        )}
-      />
-    ),
   },
 };
 
@@ -163,12 +149,15 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
           dataIndex: s.name,
           key: s.name,
           className: css`
-            max-width: 24%;
-            width: 24%;
-            min-width: 24%;
+            max-width: 150px;
+            width: 150px;
+            min-width: 150px;
+            white-space: nowrap;
           `,
           render: (v, record) => {
             const index = findIndex(field.value, record);
+            console.log(schema);
+            console.log(index);
             return (
               <RecordIndexProvider index={index}>
                 <RecordProvider record={record}>
@@ -247,19 +236,19 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
       title: t('Field display name'),
       dataIndex: 'name',
       key: 'name',
-      width: '28%',
+      width: '180px',
     },
     {
       title: t('Field name'),
-      width: '24%',
+      width: '150px',
     },
     {
       title: t('Field interface'),
-      width: '24%',
+      width: '150px',
     },
     {
       title: t('Actions'),
-      width: '24%',
+      width: '150px',
     },
   ];
   return (
