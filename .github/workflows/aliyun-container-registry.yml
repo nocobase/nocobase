@@ -11,6 +11,7 @@ on:
     branches:
       - '**'
     paths:
+      - 'docker/nocobase/**'
       - 'packages/**'
 
 jobs:
