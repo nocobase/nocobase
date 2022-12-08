@@ -1,3 +1,4 @@
+import { ISchema } from '@formily/react';
 import { IField, interfacesProperties } from '@nocobase/client';
 const { defaultProps } = interfacesProperties;
 
@@ -17,6 +18,7 @@ export const point: IField = {
       // title,
       'x-disabled': true,
       'x-component': 'Map',
+      'x-component-designer': 'Map.Designer',
       'x-component-props': {},
     },
   },
@@ -44,5 +46,10 @@ export const point: IField = {
         allowClear: true,
       },
     },
+  },
+  schemaInitialize(schema: ISchema) {
+    Object.assign(schema, {
+      'x-designer': 'Map.Designer',
+    });
   },
 };

@@ -56,7 +56,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
   // AMap.MouseTool
   useEffect(() => {
-    if (!aMap.current) return;
+    if (!aMap.current || !collectionField?.interface) return;
 
     if (disabled) {
       mouseTool.current?.close(true);
@@ -79,7 +79,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
       default:
         return;
     }
-  }, [disabled, needUpdateFlag]);
+  }, [disabled, needUpdateFlag, collectionField?.interface]);
 
   useEffect(() => {
     if (!accessKey) return;

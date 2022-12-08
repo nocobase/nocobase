@@ -3,8 +3,9 @@ import React from 'react';
 import AMapComponent from './AMap';
 import ReadPretty from './ReadPretty';
 import { css } from '@emotion/css';
+import Designer from './Designer';
 
-const Map = (props) => {
+const InternalMap = connect((props) => {
   return (
     <div
       className={css`
@@ -17,6 +18,12 @@ const Map = (props) => {
       {props.mapType ? <AMapComponent {...props} /> : null}
     </div>
   );
+}, mapReadPretty(ReadPretty));
+
+const Map = InternalMap as typeof InternalMap & {
+  Designer: typeof Designer;
 };
 
-export default connect(Map, mapReadPretty(ReadPretty));
+Map.Designer = Designer;
+
+export default Map;
