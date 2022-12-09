@@ -162,7 +162,10 @@ export class ACL extends EventEmitter {
             throw e;
           }
 
-          actionsParams.push([action, actionCtx.permission?.parsedParams]);
+          actionsParams.push([
+            action,
+            actionCtx.permission?.can === null ? null : actionCtx.permission?.parsedParams || {},
+          ]);
         }
 
         const ids = listData.map((item) => item.get('id'));
@@ -171,8 +174,15 @@ export class ACL extends EventEmitter {
         const collection = ctx.db.getCollection(resourceName);
         const Model = collection.model;
 
+        const allAllowed = [];
+
         for (const [action, params] of actionsParams) {
-          if (!params || lodash.isEmpty(params)) {
+          if (!params) {
+            continue;
+          }
+
+          if (lodash.isEmpty(params)) {
+            allAllowed.push(action);
             continue;
           }
 
@@ -208,6 +218,10 @@ export class ACL extends EventEmitter {
 
         ctx.body.allowedActions = actions
           .map((action) => {
+            if (allAllowed.includes(action)) {
+              return [action, ids];
+            }
+
             return [action, results.filter((item) => Boolean(item.get(action))).map((item) => item.get('id'))];
           })
           .reduce((acc, [action, ids]) => {

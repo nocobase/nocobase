@@ -68,7 +68,9 @@ describe('list action with acl', () => {
     const response = await app.agent().resource('posts').list({});
 
     const data = response.body;
-    console.log(JSON.stringify(data, null, 2));
+    expect(data.meta.allowedActions.view).toEqual([1, 2, 3]);
+    expect(data.meta.allowedActions.update).toEqual([1, 2]);
+    expect(data.meta.allowedActions.destroy).toEqual([]);
   });
 });
 
