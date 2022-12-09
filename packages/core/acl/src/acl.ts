@@ -218,6 +218,7 @@ export class ACL extends EventEmitter {
           conditions.push({
             whereCase,
             action,
+            include: queryParams.include,
           });
         }
 
@@ -231,6 +232,7 @@ export class ACL extends EventEmitter {
               return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
             }),
           ],
+          include: conditions.map((condition) => condition.include).flat(),
         });
 
         ctx.body.allowedActions = actions
