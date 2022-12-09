@@ -176,7 +176,9 @@ export class ACL extends EventEmitter {
 
           actionsParams.push([
             action,
-            actionCtx.permission?.can === null ? null : actionCtx.permission?.parsedParams || {},
+            actionCtx.permission?.can === null && !actionCtx.permission.skip
+              ? null
+              : actionCtx.permission?.parsedParams || {},
           ]);
         }
 
