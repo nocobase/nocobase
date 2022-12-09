@@ -1,6 +1,6 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Menu } from 'antd';
+import { Menu, Select } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext, useCompile, useDesignable } from '../..';
@@ -143,6 +143,10 @@ export const ActionDesigner = (props) => {
             onChange={(value) => {
               field.componentProps.openMode = value;
               fieldSchema['x-component-props']['openMode'] = value;
+
+              // when openMode change, set openSize value to default
+              delete fieldSchema['x-component-props']['openSize'];
+
               dn.emit('patch', {
                 schema: {
                   'x-uid': fieldSchema['x-uid'],
@@ -152,6 +156,37 @@ export const ActionDesigner = (props) => {
               dn.refresh();
             }}
           />
+        )}
+        {isPopupAction && ['modal', 'drawer'].includes(fieldSchema?.['x-component-props']?.['openMode']) && (
+          <SchemaSettings.Item>
+            <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+              {t('Set popup size')}
+              <Select
+                bordered={false}
+                options={[
+                  { label: t('Small'), value: 'small' },
+                  { label: t('Middle'), value: 'middle' },
+                  { label: t('Large'), value: 'large' },
+                ]}
+                value={
+                  fieldSchema?.['x-component-props']?.['openSize'] ??
+                  (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
+                }
+                onChange={(value) => {
+                  field.componentProps.openSize = value;
+                  fieldSchema['x-component-props']['openSize'] = value;
+                  dn.emit('patch', {
+                    schema: {
+                      'x-uid': fieldSchema['x-uid'],
+                      'x-component-props': fieldSchema['x-component-props'],
+                    },
+                  });
+                  dn.refresh();
+                }}
+                style={{ textAlign: 'right', minWidth: 100 }}
+              />
+            </div>
+          </SchemaSettings.Item>
         )}
         {isUpdateModePopupAction && (
           <SchemaSettings.SelectItem
