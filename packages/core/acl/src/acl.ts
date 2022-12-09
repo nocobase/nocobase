@@ -128,8 +128,11 @@ export class ACL extends EventEmitter {
       await next();
 
       const { resourceName, actionName } = ctx.action;
+      const collection = ctx.db.getCollection(resourceName);
+      if (collection && actionName == 'list' && ctx.status === 200) {
+        const Model = collection.model;
+        const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
 
-      if (actionName == 'list' && ctx.status === 200) {
         const dataPath = ctx.paginate ? 'body.rows' : 'body';
         const listData = lodash.get(ctx, dataPath);
 
@@ -147,7 +150,10 @@ export class ACL extends EventEmitter {
               resourceName: ctx.action.resourceName,
               mergeParams() {},
             },
-            state: lodash.cloneDeep(ctx.state),
+            state: {
+              currentRole: ctx.state.currentRole,
+              currentUser: ctx.state.currentUser?.toJSON(),
+            },
             throw(...args) {
               throw new NoPermissionError(...args);
             },
@@ -168,11 +174,9 @@ export class ACL extends EventEmitter {
           ]);
         }
 
-        const ids = listData.map((item) => item.get('id'));
+        const ids = listData.map((item) => item.get(primaryKeyField));
 
         const conditions = [];
-        const collection = ctx.db.getCollection(resourceName);
-        const Model = collection.model;
 
         const allAllowed = [];
 
@@ -206,10 +210,10 @@ export class ACL extends EventEmitter {
 
         const results = await collection.model.findAll({
           where: {
-            id: ids,
+            [primaryKeyField]: ids,
           },
           attributes: [
-            'id',
+            primaryKeyField,
             ...conditions.map((condition) => {
               return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
             }),
@@ -222,7 +226,10 @@ export class ACL extends EventEmitter {
               return [action, ids];
             }
 
-            return [action, results.filter((item) => Boolean(item.get(action))).map((item) => item.get('id'))];
+            return [
+              action,
+              results.filter((item) => Boolean(item.get(action))).map((item) => item.get(primaryKeyField)),
+            ];
           })
           .reduce((acc, [action, ids]) => {
             acc[action] = ids;

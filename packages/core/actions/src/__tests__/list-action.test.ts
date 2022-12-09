@@ -1,6 +1,5 @@
 import { registerActions } from '@nocobase/actions';
 import { mockServer } from '@nocobase/test';
-import { useRoleResourceValues } from '../../../client/src/acl/Configuration/schemas/useRoleResourceValues';
 
 describe('list action with acl', () => {
   let app;
@@ -30,6 +29,62 @@ describe('list action with acl', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should list with meta permission that has difference primary key', async () => {
+    const userRole = app.acl.define({
+      role: 'user',
+    });
+
+    userRole.grantAction('tests:view', {});
+
+    userRole.grantAction('tests:update', {
+      own: true,
+    });
+
+    const Test = app.db.collection({
+      name: 'tests',
+      fields: [
+        { type: 'string', name: 'name', primaryKey: true },
+        {
+          type: 'bigInt',
+          name: 'createdById',
+        },
+      ],
+      autoGenId: false,
+      filterTargetKey: 'name',
+    });
+
+    await app.db.sync();
+
+    await Test.repository.create({
+      values: [
+        { name: 't1', createdById: 1 },
+        { name: 't2', createdById: 1 },
+        { name: 't3', createdById: 2 },
+      ],
+    });
+
+    app.resourcer.use(
+      (ctx, next) => {
+        ctx.state.currentRole = 'user';
+        ctx.state.currentUser = {
+          id: 1,
+        };
+
+        return next();
+      },
+      {
+        before: 'acl',
+      },
+    );
+
+    const response = await app.agent().resource('tests').list({});
+
+    const data = response.body;
+    expect(data.meta.allowedActions.view).toEqual(['t1', 't2', 't3']);
+    expect(data.meta.allowedActions.update).toEqual(['t1', 't2']);
+    expect(data.meta.allowedActions.destroy).toEqual([]);
   });
 
   it('should list items with meta permission', async () => {
