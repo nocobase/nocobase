@@ -152,6 +152,7 @@ export const ACLActionProvider = (props) => {
   const actionScope = allowedActions?.[path.split(':')[1]];
   const actionScopeCheck = actionScope ? actionScope?.includes(record[getPrimaryKeyField(name).name]) : true;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
+  fieldSchema['x-disabled'] = !actionScopeCheck;
   if (!name || allowAll || allowConfigure) {
     return <>{props.children}</>;
   }
