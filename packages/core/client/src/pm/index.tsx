@@ -286,29 +286,31 @@ const SettingsCenter = (props) => {
     return <Redirect to={`/admin/settings/${pluginName}/${firstTabName}`} />;
   }
   const component = items[pluginName]?.tabs?.[tabName]?.component;
+  const menuItems = Object.keys(items)
+    .sort()
+    .map((key) => {
+      const item = items[key];
+      const tabKey = Object.keys(item.tabs).shift();
+      return {
+        label: compile(item.title),
+        key: key,
+        icon: item.icon ? <Icon type={item.icon} /> : null,
+      };
+    });
   return (
     <div>
       <Layout>
         <Layout.Sider theme={'light'}>
-          <Menu selectedKeys={[pluginName]} style={{ height: 'calc(100vh - 46px)' }}>
-            {Object.keys(items)
-              .sort()
-              .map((key) => {
-                const item = items[key];
-                const tabKey = Object.keys(item.tabs).shift();
-                return (
-                  <Menu.Item
-                    key={key}
-                    icon={item.icon ? <Icon type={item.icon} /> : null}
-                    onClick={() => {
-                      history.push(`/admin/settings/${key}/${tabKey}`);
-                    }}
-                  >
-                    {compile(item.title)}
-                  </Menu.Item>
-                );
-              })}
-          </Menu>
+          <Menu
+            selectedKeys={[pluginName]}
+            style={{ height: 'calc(100vh - 46px)' }}
+            onClick={(e) => {
+              const item = items[e.key];
+              const tabKey = Object.keys(item.tabs).shift();
+              history.push(`/admin/settings/${e.key}/${tabKey}`);
+            }}
+            items={menuItems}
+          />
         </Layout.Sider>
         <Layout.Content>
           <PageHeader
