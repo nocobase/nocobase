@@ -626,4 +626,5 @@ export default {
   "Selector": "选择器",
   "Inner": "里面",
   "Search and select collection": "搜索并选择数据表",
+  'Please fill in the iframe URL': '请填写嵌入的地址',
 }
