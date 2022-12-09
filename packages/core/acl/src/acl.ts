@@ -9,6 +9,7 @@ import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl
 import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
+import NoPermissionError from './no-permission-error';
 
 interface CanResult {
   role: string;
@@ -40,6 +41,7 @@ interface CanArgs {
   role: string;
   resource: string;
   action: string;
+  ctx?: any;
 }
 
 export class ACL extends EventEmitter {
@@ -91,7 +93,7 @@ export class ACL extends EventEmitter {
 
     this.use(this.allowManager.aclMiddleware(), {
       tag: 'allow-manager',
-      before: 'acl',
+      before: 'core',
     });
 
     this.addCoreMiddleware();
@@ -116,21 +118,103 @@ export class ACL extends EventEmitter {
       },
       {
         after: 'core',
+        group: 'after',
       },
     );
   }
 
   public afterActionMiddleware() {
     return async (ctx, next) => {
-      const action = ctx.action?.name;
-      if (action == 'list') {
+      await next();
+
+      const { resourceName, actionName } = ctx.action;
+
+      if (actionName == 'list' && ctx.status === 200) {
         const dataPath = ctx.paginate ? 'body.rows' : 'body';
         const listData = lodash.get(ctx, dataPath);
+
         const actions = ['view', 'update', 'destroy'];
 
-        console.log(listData);
+        const actionsParams = [];
+
+        for (const action of actions) {
+          const actionCtx: any = {
+            db: ctx.db,
+            action: {
+              actionName: action,
+              name: action,
+              params: {},
+              resourceName: ctx.action.resourceName,
+              mergeParams() {},
+            },
+            state: lodash.cloneDeep(ctx.state),
+            throw(...args) {
+              throw new NoPermissionError(...args);
+            },
+          };
+          try {
+            await this.getActionParams(actionCtx);
+          } catch (e) {
+            if (e instanceof NoPermissionError) {
+              continue;
+            }
+
+            throw e;
+          }
+
+          actionsParams.push([action, actionCtx.permission?.parsedParams]);
+        }
+
+        const ids = listData.map((item) => item.get('id'));
+
+        const conditions = [];
+        const collection = ctx.db.getCollection(resourceName);
+        const Model = collection.model;
+
+        for (const [action, params] of actionsParams) {
+          if (!params || lodash.isEmpty(params)) {
+            continue;
+          }
+
+          const queryParams = collection.repository.buildQueryOptions(params);
+
+          const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
+            Model.getTableName(),
+            {
+              ...queryParams,
+              attributes: ['*'],
+            },
+            Model,
+          );
+
+          const whereCase = actionSql.match(/WHERE (.*?);/)[1];
+          conditions.push({
+            whereCase,
+            action,
+          });
+        }
+
+        const results = await collection.model.findAll({
+          where: {
+            id: ids,
+          },
+          attributes: [
+            'id',
+            ...conditions.map((condition) => {
+              return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
+            }),
+          ],
+        });
+
+        ctx.body.allowedActions = actions
+          .map((action) => {
+            return [action, results.filter((item) => Boolean(item.get(action))).map((item) => item.get('id'))];
+          })
+          .reduce((acc, [action, ids]) => {
+            acc[action] = ids;
+            return acc;
+          }, {});
       }
-      await next();
     };
   }
 
@@ -181,6 +265,7 @@ export class ACL extends EventEmitter {
       },
       {
         tag: 'core',
+        group: 'core',
       },
     );
   }
@@ -327,7 +412,10 @@ export class ACL extends EventEmitter {
   }
 
   use(fn: any, options?: ToposortOptions) {
-    this.middlewares.add(fn, options);
+    this.middlewares.add(fn, {
+      group: 'prep',
+      ...options,
+    });
   }
 
   /**
@@ -374,6 +462,21 @@ export class ACL extends EventEmitter {
 
       return compose(acl.middlewares.nodes)(ctx, next);
     };
+  }
+
+  async getActionParams(ctx) {
+    const roleName = ctx.state.currentRole || 'anonymous';
+    const { resourceName, actionName } = ctx.action;
+
+    ctx.can = (options: Omit<CanArgs, 'role'>) => {
+      return this.can({ role: roleName, ...options });
+    };
+
+    ctx.permission = {
+      can: ctx.can({ resource: resourceName, action: actionName }),
+    };
+
+    await compose(this.middlewares.nodes)(ctx, async () => {});
   }
 
   addFixedParams(resource: string, action: string, merger: Merger) {

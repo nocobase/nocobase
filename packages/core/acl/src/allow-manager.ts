@@ -59,7 +59,7 @@ export class AllowManager {
   aclMiddleware() {
     return async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
-      const skippedConditions = ctx.app.acl.allowManager.getAllowedConditions(resourceName, actionName);
+      const skippedConditions = this.acl.allowManager.getAllowedConditions(resourceName, actionName);
       let skip = false;
 
       for (const skippedCondition of skippedConditions) {

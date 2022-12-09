@@ -1,5 +1,6 @@
 import { registerActions } from '@nocobase/actions';
 import { mockServer } from '@nocobase/test';
+import { useRoleResourceValues } from '../../../client/src/acl/Configuration/schemas/useRoleResourceValues';
 
 describe('list action with acl', () => {
   let app;
@@ -66,8 +67,8 @@ describe('list action with acl', () => {
 
     const response = await app.agent().resource('posts').list({});
 
-    const data = response.body.data;
-    console.log({ data });
+    const data = response.body;
+    console.log(JSON.stringify(data, null, 2));
   });
 });
 

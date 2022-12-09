@@ -556,7 +556,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return new RelationRepositoryBuilder<R>(this.collection, association);
   }
 
-  protected buildQueryOptions(options: any) {
+  public buildQueryOptions(options: any) {
     const parser = new OptionsParser(options, {
       collection: this.collection,
     });
