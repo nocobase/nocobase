@@ -198,11 +198,16 @@ export class ACL extends EventEmitter {
 
           const queryParams = collection.repository.buildQueryOptions(params);
 
+          // console.log(JSON.stringify(queryParams, null, 2));
+
           const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
             Model.getTableName(),
             {
-              ...queryParams,
-              attributes: ['*'],
+              // ...queryParams,
+              where: queryParams.where,
+              attributes: [primaryKeyField],
+              includeIgnoreAttributes: false,
+              // include: queryParams.include,
             },
             Model,
           );
