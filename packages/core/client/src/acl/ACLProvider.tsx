@@ -8,6 +8,7 @@ import { useRecordIsOwn } from '../record-provider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable, FormItem } from '../schema-component';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
+import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 
 export const ACLContext = createContext(null);
 
@@ -129,28 +130,33 @@ export const ACLCollectionProvider = (props) => {
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
 
+const isBlockRequest = (schema) => {
+  if (schema['x-decorator'] === 'TableBlockProvider') {
+    return true;
+  } else {
+    return schema.parent && isBlockRequest(schema.parent);
+  }
+};
+
 export const ACLActionProvider = (props) => {
-  const record = useRecord();
-  const { name, primaryKeyField } = useCollection();
-  const { service } = useBlockRequestContext();
-  const { meta } = service.data || {};
-  const { allowedActions } = meta || {};
   const fieldSchema = useFieldSchema();
+  const record = useRecord();
+  const { name, getPrimaryKeyField } = useCollection();
+  const { service } = isBlockRequest(fieldSchema) ? useBlockRequestContext() : { service: useResourceActionContext() };
+  const { meta } = service?.data || {};
+  const { allowedActions } = meta || {};
   const isOwn = useRecordIsOwn();
   const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
-  if (!name || allowAll || allowConfigure) {
-    return <>{props.children}</>;
-  }
   const actionName = fieldSchema['x-action'];
   const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
   const actionScope = allowedActions?.[path.split(':')[1]];
-  const actionScopeCheck = actionScope ? actionScope?.includes(record[primaryKeyField.name]) : true;
+  const actionScopeCheck = actionScope ? actionScope?.includes(record[getPrimaryKeyField(name).name]) : true;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
-  const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
-  fieldSchema['x-disabled'] = !actionScopeCheck;
-  if (!params) {
-    return null;
+  if (!name || allowAll || allowConfigure) {
+    return <>{props.children}</>;
   }
+  const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
+  fieldSchema['x-disabled'] = !params || !actionScopeCheck;
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
 
