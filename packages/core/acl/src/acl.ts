@@ -127,8 +127,13 @@ export class ACL extends EventEmitter {
     return async (ctx, next) => {
       await next();
 
+      if (!ctx.action) {
+        return;
+      }
+
       const { resourceName, actionName } = ctx.action;
       const collection = ctx.db.getCollection(resourceName);
+
       if (collection && actionName == 'list' && ctx.status === 200) {
         const Model = collection.model;
         const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
@@ -154,6 +159,7 @@ export class ACL extends EventEmitter {
               currentRole: ctx.state.currentRole,
               currentUser: ctx.state.currentUser?.toJSON(),
             },
+            permission: {},
             throw(...args) {
               throw new NoPermissionError(...args);
             },
@@ -185,7 +191,7 @@ export class ACL extends EventEmitter {
             continue;
           }
 
-          if (lodash.isEmpty(params)) {
+          if (lodash.isEmpty(params) || lodash.isEmpty(params.filter)) {
             allAllowed.push(action);
             continue;
           }

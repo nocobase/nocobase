@@ -52,7 +52,7 @@ export class ACLAvailableStrategy {
     if (this.actionsAsObject?.hasOwnProperty(actionName)) {
       const predicateName = this.actionsAsObject[actionName];
       if (predicateName) {
-        return predicate[predicateName];
+        return lodash.cloneDeep(predicate[predicateName]);
       }
 
       return true;
