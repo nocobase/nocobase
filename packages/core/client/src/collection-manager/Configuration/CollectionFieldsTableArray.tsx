@@ -43,12 +43,13 @@ const useDefDataSource = (options, props) => {
   }, options);
 };
 
-type CategorizeKey = 'primaryAndForeignKey' | 'relation' | 'systemInfo' | 'basic';
+type CategorizeKey = 'primaryAndForeignKey' | 'relation' | 'systemInfo' | 'basic' | 'titleField';
 const CategorizeKeyNameMap = new Map<CategorizeKey, string>([
   ['primaryAndForeignKey', 'PK & FK fields'],
   ['relation', 'Association fields'],
   ['systemInfo', 'System fields'],
   ['basic', 'General fields'],
+  ['titleField', 'Title field'],
 ]);
 
 interface CategorizeDataItem {
@@ -58,7 +59,7 @@ interface CategorizeDataItem {
 }
 
 export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
-  const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'basic', 'systemInfo'];
+  const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'titleField', 'basic', 'systemInfo'];
   const field = useField<ArrayField>();
   const { name } = useRecord();
   const { t } = useTranslation();
@@ -94,6 +95,10 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         const itemInterface = getInterface(item?.interface);
         if (item?.primaryKey || item.isForeignKey) {
           addCategorizeVal('primaryAndForeignKey', item);
+          return;
+        }
+        if(item?.titleField){
+          addCategorizeVal('titleField', item);
           return;
         }
         const group = itemInterface?.group as CategorizeKey;
