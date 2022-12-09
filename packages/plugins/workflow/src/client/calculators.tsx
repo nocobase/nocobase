@@ -386,7 +386,7 @@ export function Operand({
     `}>
       <Cascader
         allowClear={false}
-        value={[type, ...(appendTypeValue ? appendTypeValue(operand) : [])]}
+        value={[Types[type] ? type : '', ...(appendTypeValue ? appendTypeValue(operand) : [])]}
         options={Object.values(Types).map((item: any) => {
           const options = typeof item.options === 'function' ? item.options() : item.options;
           return {
