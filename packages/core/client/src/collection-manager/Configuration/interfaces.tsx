@@ -5,7 +5,13 @@ import * as types from '../interfaces';
 export const interfaces = new Map<string, ISchema>();
 
 const fields = {};
-const groupLabels = {};
+const groups: Record<
+  string,
+  {
+    label: string;
+    order: number;
+  }
+> = {};
 
 export function registerField(group: string, type: string, schema) {
   fields[group] = fields[group] || {};
@@ -13,8 +19,12 @@ export function registerField(group: string, type: string, schema) {
   interfaces.set(type, schema);
 }
 
-export function registerGroupLabel(key: string, label: string) {
-  groupLabels[key] = label;
+export function registerGroupLabel(key: string, label: string | { label: string; order?: number }) {
+  const group = typeof label === 'string' ? { label } : label;
+  if (!group.order) {
+    group.order = Object.keys(groups).length * 10;
+  }
+  groups[key] = group as Required<typeof group>;
 }
 
 Object.keys(types).forEach((type) => {
@@ -27,29 +37,31 @@ registerGroupLabel('choices', '{{t("Choices")}}');
 registerGroupLabel('media', '{{t("Media")}}');
 registerGroupLabel('datetime', '{{t("Date & Time")}}');
 registerGroupLabel('relation', '{{t("Relation")}}');
-registerGroupLabel('relation', '{{t("Relation")}}');
 registerGroupLabel('advanced', '{{t("Advanced type")}}');
 registerGroupLabel('systemInfo', '{{t("System info")}}');
 registerGroupLabel('others', '{{t("Others")}}');
 
 export const getOptions = () => {
-  return Object.keys(groupLabels).map((groupName) => {
-    return {
-      label: groupLabels[groupName],
-      key: groupName,
-      children: Object.keys(fields[groupName] || {})
-        .map((type) => {
-          const field = fields[groupName][type];
-          return {
-            value: type,
-            label: field.title,
-            name: type,
-            ...fields[groupName][type],
-          };
-        })
-        .sort((a, b) => a.order - b.order),
-    };
-  });
+  return Object.keys(groups)
+    .map((groupName) => {
+      const group = groups[groupName];
+      return {
+        ...group,
+        key: groupName,
+        children: Object.keys(fields[groupName] || {})
+          .map((type) => {
+            const field = fields[groupName][type];
+            return {
+              value: type,
+              label: field.title,
+              name: type,
+              ...fields[groupName][type],
+            };
+          })
+          .sort((a, b) => a.order - b.order),
+      };
+    })
+    .sort((a, b) => a.order - b.order);
 };
 
 export const options = getOptions();
