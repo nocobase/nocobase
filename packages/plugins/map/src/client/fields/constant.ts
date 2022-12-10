@@ -13,6 +13,7 @@ export const commonSchema = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-disabled': '{{ !createOnly }}',
+      default: 'amap',
       enum: [
         { label: '{{t("AMap")}}', value: 'amap' },
         { label: '{{t("Google Maps")}}', value: 'google' },
