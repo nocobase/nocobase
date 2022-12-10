@@ -15,6 +15,26 @@ interface AMapComponentProps {
   disabled?: boolean;
 }
 
+const methodMapping = {
+  point: {
+    mouseTool: 'marker',
+    propertyKey: 'position',
+    overlay: 'Marker',
+  },
+  polygon: {
+    mouseTool: 'polygon',
+    editor: 'PolygonEditor',
+    propertyKey: 'path',
+    overlay: 'Polygon',
+  },
+  linestring: {
+    mouseTool: 'polyline',
+    editor: 'PolylineEditor',
+    propertyKey: 'path',
+    overlay: 'Polyline',
+  },
+};
+
 const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   const { value, onChange, accessKey, disabled } = props;
   const id = useRef(`nocobase-map-${Date.now().toString(32)}`);
@@ -36,6 +56,36 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     }
   };
 
+  const createEditor = () => {
+    const mapping = methodMapping[type as keyof typeof methodMapping];
+    if (mapping && 'editor' in mapping && !editor.current) {
+      editor.current = new aMap.current[mapping.editor](map.current);
+      editor.current.on('adjust', function ({ target }) {
+        onMapChange(target, true);
+      });
+      editor.current.on('move', function ({ target }) {
+        onMapChange(target, true);
+      });
+    }
+  };
+
+  const createMouseTool = () => {
+    if (mouseTool.current) return;
+
+    mouseTool.current = new aMap.current.MouseTool(map.current);
+    mouseTool.current.on('draw', function ({ obj }) {
+      onMapChange(obj);
+    });
+
+    const mapping = methodMapping[type as keyof typeof methodMapping];
+    if (!mapping) {
+      return;
+    }
+    mouseTool.current[mapping.mouseTool]({
+      strokeWeight: 5,
+    } as AMap.PolylineOptions);
+  };
+
   const setTarget = useCallback(() => {
     if (type !== 'point' && editor.current) {
       editor.current.setTarget(overlay.current);
@@ -43,46 +93,45 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     }
   }, [type]);
 
+  // 编辑时
   useEffect(() => {
     if (!aMap.current) return;
     if (!value || overlay.current) {
       return;
     }
-    let nextOverlay = null;
-    switch (type) {
-      case 'point':
-        nextOverlay = new aMap.current.Marker({
-          position: value,
-          offset: new AMap.Pixel(-13, -30),
-        } as AMap.MarkerOptions);
-        break;
-      case 'polygon':
-        nextOverlay = new aMap.current.Polygon({
-          path: value,
-        } as AMap.PolygonOptions);
-        break;
+    const mapping = methodMapping[type as keyof typeof methodMapping];
+    if (!mapping) {
+      return;
     }
+    const nextOverlay = new aMap.current[mapping.overlay]({
+      [mapping.propertyKey]: value,
+    });
 
-    if (nextOverlay) {
-      nextOverlay.setMap(map.current);
-      overlay.current = nextOverlay;
-      setTarget();
-    }
+    nextOverlay.setMap(map.current);
+    overlay.current = nextOverlay;
+
+    createEditor();
+    setTarget();
   }, [value, needUpdateFlag, type, setTarget]);
 
-  const onMapChange = (prevValue) => {
+  const onMapChange = (prevValue, onlyChange = false) => {
     let nextValue = null;
 
     if (type === 'point') {
       const { lat, lng } = (prevValue as AMap.Marker).getPosition();
       nextValue = [lng, lat];
-    } else if (type === 'polygon') {
+    } else if (type === 'polygon' || type === 'linestring') {
       nextValue = (prevValue as AMap.Polygon).getPath().map((item) => [item.lng, item.lat]);
+      if (nextValue.length < 2) {
+        return;
+      }
     }
 
-    toRemoveOverlay();
-    overlay.current = prevValue;
-    setTarget();
+    if (!onlyChange) {
+      toRemoveOverlay();
+      overlay.current = prevValue;
+      setTarget();
+    }
     onChange(nextValue);
   };
 
@@ -115,36 +164,11 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     }
   }, [disabled]);
 
-  // AMap.MouseTool
+  // AMap.MouseTool & AMap.XXXEditor
   useEffect(() => {
-    if (!aMap.current || !type) return;
-
-    if (disabled || mouseTool.current) {
-      return;
-    }
-
-    mouseTool.current = new aMap.current.MouseTool(map.current);
-    mouseTool.current.on('draw', function ({ obj }) {
-      onMapChange(obj);
-    });
-
-    switch (type) {
-      case 'point':
-        mouseTool.current.marker({
-          fillColor: '#00b0ff',
-          strokeColor: '#80d8ff',
-        });
-        break;
-      case 'polygon':
-        mouseTool.current.polygon({
-          fillColor: '#00b0ff',
-          strokeColor: '#80d8ff',
-        });
-        editor.current = new aMap.current.PolygonEditor(map.current);
-        break;
-      default:
-        return;
-    }
+    if (!aMap.current || !type || disabled) return;
+    createMouseTool();
+    createEditor();
   }, [disabled, needUpdateFlag, type]);
 
   useEffect(() => {
@@ -153,7 +177,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     AMapLoader.load({
       key: accessKey,
       version: '2.0',
-      plugins: ['AMap.MouseTool', 'AMap.PolygonEditor'],
+      plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor'],
     }).then((amap) => {
       map.current = new amap.Map(id.current, {} as AMap.MapOptions);
       aMap.current = amap;

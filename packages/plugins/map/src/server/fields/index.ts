@@ -1,3 +1,3 @@
 export * from './point'
-export * from './polygon'
 export * from './linestring'
+export * from './polygon'

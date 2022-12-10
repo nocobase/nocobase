@@ -1,6 +1,5 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { PointField } from './fields/point';
-import { PolygonField } from './fields/polygon';
+import { LinestringField, PointField, PolygonField } from './fields';
 
 export class MapPlugin extends Plugin {
   afterAdd() { }
@@ -8,7 +7,8 @@ export class MapPlugin extends Plugin {
   beforeLoad() {
     this.db.registerFieldTypes({
       point: PointField,
-      polygon: PolygonField
+      polygon: PolygonField,
+      linestring: LinestringField
     });
   }
 
