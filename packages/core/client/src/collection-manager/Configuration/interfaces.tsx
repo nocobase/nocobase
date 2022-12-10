@@ -19,27 +19,32 @@ export function registerField(group: string, type: string, schema) {
   interfaces.set(type, schema);
 }
 
-export function registerGroupLabel(key: string, label: string | { label: string; order?: number }) {
+export function registerGroup(key: string, label: string | { label: string; order?: number }) {
   const group = typeof label === 'string' ? { label } : label;
   if (!group.order) {
-    group.order = Object.keys(groups).length * 10;
+    group.order = (Object.keys(groups).length + 1) * 10;
   }
   groups[key] = group as Required<typeof group>;
 }
+
+/**
+ * @deprecated
+ */
+export const registerGroupLabel = registerGroup;
 
 Object.keys(types).forEach((type) => {
   const schema = types[type];
   registerField(schema.group || 'others', type, { order: 0, ...schema });
 });
 
-registerGroupLabel('basic', '{{t("Basic")}}');
-registerGroupLabel('choices', '{{t("Choices")}}');
-registerGroupLabel('media', '{{t("Media")}}');
-registerGroupLabel('datetime', '{{t("Date & Time")}}');
-registerGroupLabel('relation', '{{t("Relation")}}');
-registerGroupLabel('advanced', '{{t("Advanced type")}}');
-registerGroupLabel('systemInfo', '{{t("System info")}}');
-registerGroupLabel('others', '{{t("Others")}}');
+registerGroup('basic', '{{t("Basic")}}');
+registerGroup('choices', '{{t("Choices")}}');
+registerGroup('media', '{{t("Media")}}');
+registerGroup('datetime', '{{t("Date & Time")}}');
+registerGroup('relation', '{{t("Relation")}}');
+registerGroup('advanced', '{{t("Advanced type")}}');
+registerGroup('systemInfo', '{{t("System info")}}');
+registerGroup('others', '{{t("Others")}}');
 
 export const getOptions = () => {
   return Object.keys(groups)

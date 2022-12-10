@@ -1,9 +1,9 @@
-import { CollectionManagerContext, registerField, registerGroupLabel, SchemaComponentOptions } from '@nocobase/client';
+import { CollectionManagerContext, registerField, registerGroup, SchemaComponentOptions } from '@nocobase/client';
 import React, { useContext } from 'react';
 import Map from './components/Map';
 import { linestring, point, polygon } from './fields';
 
-registerGroupLabel(point.group, {
+registerGroup(point.group, {
   label: '{{t("Map")}}',
   order: 51,
 });
