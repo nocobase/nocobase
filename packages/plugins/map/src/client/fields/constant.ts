@@ -1,27 +1,9 @@
 import { ISchema } from '@formily/react';
-import { IField, interfacesProperties } from '@nocobase/client';
+import { interfacesProperties } from '@nocobase/client';
+
 const { defaultProps } = interfacesProperties;
 
-export const point: IField = {
-  name: 'point',
-  type: 'object',
-  group: 'map',
-  order: 4,
-  title: '{{t("Point")}}',
-  description: '{{t("Map point")}}',
-  sortable: true,
-  default: {
-    type: 'point',
-    // name,
-    uiSchema: {
-      type: 'void',
-      // title,
-      'x-disabled': true,
-      'x-component': 'Map',
-      'x-component-designer': 'Map.Designer',
-      'x-component-props': {},
-    },
-  },
+export const commonSchema = {
   properties: {
     ...defaultProps,
     'uiSchema.x-component-props.mapType': {
@@ -52,4 +34,4 @@ export const point: IField = {
       'x-designer': 'Map.Designer',
     });
   },
-};
+}
