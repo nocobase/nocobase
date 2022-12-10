@@ -84,6 +84,7 @@ export const SettingsCenterConfigure = () => {
     },
     {
       onSuccess(data) {
+        console.log(data)
         setkeys(data?.data?.map((schema) => schema['x-key']) || []);
       },
     },
@@ -120,7 +121,7 @@ export const SettingsCenterConfigure = () => {
   };
 
   return (
-    <Table
+    items?.length&&<Table
       loading={loading}
       rowKey={'key'}
       pagination={false}
