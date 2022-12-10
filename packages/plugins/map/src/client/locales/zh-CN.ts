@@ -3,6 +3,7 @@ const locale = {
   'Map type': '地图类型',
   'Point': '点',
   'Line': '线',
+  'Circle': '圆',
   'Polygon': '多边形',
   'Access key': '访问密钥',
   'Security code': '安全密钥',

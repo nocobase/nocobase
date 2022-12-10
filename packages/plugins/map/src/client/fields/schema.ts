@@ -18,6 +18,10 @@ if (Array.isArray(defaultProps.type.enum)) {
       label: 'Polygon',
       value: 'polygon',
     },
+    {
+      label: 'Circle',
+      value: 'circle',
+    },
   );
 }
 

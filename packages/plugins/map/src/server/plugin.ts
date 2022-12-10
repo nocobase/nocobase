@@ -1,15 +1,22 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { LineStringField, PointField, PolygonField } from './fields';
+import { CircleField, LineStringField, PointField, PolygonField } from './fields';
 
 export class MapPlugin extends Plugin {
   afterAdd() { }
 
   beforeLoad() {
-    this.db.registerFieldTypes({
+    const fields = {
       point: PointField,
       polygon: PolygonField,
       lineString: LineStringField
-    });
+    };
+
+
+    if (this.db.sequelize.getDialect() === 'postgres') {
+      fields['circle'] = CircleField
+    }
+
+    this.db.registerFieldTypes(fields);
   }
 
 
