@@ -27,6 +27,7 @@ export class ImportPlugin extends Plugin {
       type: 'new-data',
       onNewRecord: true,
     });
+
     this.app.acl.use(async (ctx, next) => {
       const { actionName } = ctx.action;
       if (['downloadXlsxTemplate', 'importXlsx'].includes(actionName)) {

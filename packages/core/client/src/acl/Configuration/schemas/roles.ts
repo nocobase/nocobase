@@ -3,6 +3,7 @@ import { uid } from '@formily/shared';
 import { useRequest } from '../../../api-client';
 import { useActionContext } from '../../../schema-component';
 import { roleCollectionsSchema } from './roleCollections';
+import { useRecord } from '../../../record-provider';
 
 const collection = {
   name: 'roles',
@@ -227,11 +228,14 @@ export const roleSchema: ISchema = {
                       type: 'void',
                       title: '{{t("Configure")}}',
                       'x-component': 'Action.Link',
+                      'x-decorator': 'ACLActionProvider',
+                      'x-acl-action': 'roles:view',
                       'x-component-props': {},
                       properties: {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
+                          'x-decorator': 'PermissionProvider',
                           title: '{{t("Configure permissions")}}',
                           properties: {
                             tabs1: {
@@ -271,6 +275,19 @@ export const roleSchema: ISchema = {
                                     },
                                   },
                                 },
+                                tab4: {
+                                  type: 'void',
+                                  title: '{{t("plugins permissions")}}',
+                                  'x-decorator': 'SettingCenterPermissionProvider',
+                                  'x-component': 'Tabs.TabPane',
+                                  'x-component-props': {},
+                                  properties: {
+                                    menu: {
+                                      'x-decorator': 'SettingCenterProvider',
+                                      'x-component': 'SettingsCenterConfigure',
+                                    },
+                                  },
+                                },
                               },
                             },
                           },
@@ -280,6 +297,8 @@ export const roleSchema: ISchema = {
                     update: {
                       type: 'void',
                       title: '{{t("Edit")}}',
+                      'x-decorator': 'ACLActionProvider',
+                      'x-acl-action': 'roles:update',
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         type: 'primary',
@@ -337,6 +356,8 @@ export const roleSchema: ISchema = {
                     delete: {
                       type: 'void',
                       title: '{{ t("Delete") }}',
+                      'x-acl-action': 'roles:destroy',
+                      'x-decorator': 'ACLActionProvider',
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         confirm: {

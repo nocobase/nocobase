@@ -1,4 +1,10 @@
+import { filter } from 'mathjs';
+
 export function filterMatch(model, where) {
+  if (where.filter !== undefined) {
+    where = filter;
+  }
+
   // Create an object that maps operator names to functions
   const operatorFunctions = {
     $eq: (value, condition) => value === condition,

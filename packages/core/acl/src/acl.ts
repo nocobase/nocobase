@@ -9,6 +9,7 @@ import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl
 import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
+import NoPermissionError from './no-permission-error';
 
 interface CanResult {
   role: string;
@@ -40,6 +41,7 @@ interface CanArgs {
   role: string;
   resource: string;
   action: string;
+  ctx?: any;
 }
 
 export class ACL extends EventEmitter {
@@ -91,7 +93,7 @@ export class ACL extends EventEmitter {
 
     this.use(this.allowManager.aclMiddleware(), {
       tag: 'allow-manager',
-      before: 'acl',
+      before: 'core',
     });
 
     this.addCoreMiddleware();
@@ -116,21 +118,139 @@ export class ACL extends EventEmitter {
       },
       {
         after: 'core',
+        group: 'after',
       },
     );
   }
 
   public afterActionMiddleware() {
     return async (ctx, next) => {
-      const action = ctx.action?.name;
-      if (action == 'list') {
+      await next();
+
+      if (!ctx.action) {
+        return;
+      }
+
+      const { resourceName, actionName } = ctx.action;
+      const collection = ctx.db.getCollection(resourceName);
+
+      if (collection && actionName == 'list' && ctx.status === 200) {
+        const Model = collection.model;
+        const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
+
         const dataPath = ctx.paginate ? 'body.rows' : 'body';
         const listData = lodash.get(ctx, dataPath);
+
         const actions = ['view', 'update', 'destroy'];
 
-        console.log(listData);
+        const actionsParams = [];
+
+        for (const action of actions) {
+          const actionCtx: any = {
+            db: ctx.db,
+            action: {
+              actionName: action,
+              name: action,
+              params: {},
+              resourceName: ctx.action.resourceName,
+              mergeParams() {},
+            },
+            state: {
+              currentRole: ctx.state.currentRole,
+              currentUser: ctx.state.currentUser?.toJSON(),
+            },
+            permission: {},
+            throw(...args) {
+              throw new NoPermissionError(...args);
+            },
+          };
+          try {
+            await this.getActionParams(actionCtx);
+          } catch (e) {
+            if (e instanceof NoPermissionError) {
+              continue;
+            }
+
+            throw e;
+          }
+
+          actionsParams.push([
+            action,
+            actionCtx.permission?.can === null && !actionCtx.permission.skip
+              ? null
+              : actionCtx.permission?.parsedParams || {},
+          ]);
+        }
+
+        const ids = listData.map((item) => item.get(primaryKeyField));
+
+        const conditions = [];
+
+        const allAllowed = [];
+
+        for (const [action, params] of actionsParams) {
+          if (!params) {
+            continue;
+          }
+
+          if (lodash.isEmpty(params) || lodash.isEmpty(params.filter)) {
+            allAllowed.push(action);
+            continue;
+          }
+
+          const queryParams = collection.repository.buildQueryOptions(params);
+
+          // console.log(JSON.stringify(queryParams, null, 2));
+
+          const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
+            Model.getTableName(),
+            {
+              // ...queryParams,
+              where: queryParams.where,
+              attributes: [primaryKeyField],
+              includeIgnoreAttributes: false,
+              // include: queryParams.include,
+            },
+            Model,
+          );
+
+          const whereCase = actionSql.match(/WHERE (.*?);/)[1];
+          conditions.push({
+            whereCase,
+            action,
+            include: queryParams.include,
+          });
+        }
+
+        const results = await collection.model.findAll({
+          where: {
+            [primaryKeyField]: ids,
+          },
+          attributes: [
+            primaryKeyField,
+            ...conditions.map((condition) => {
+              return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
+            }),
+          ],
+          include: conditions.map((condition) => condition.include).flat(),
+        });
+
+        ctx.body.allowedActions = actions
+          .map((action) => {
+            if (allAllowed.includes(action)) {
+              return [action, ids];
+            }
+
+            return [
+              action,
+              results.filter((item) => Boolean(item.get(action))).map((item) => item.get(primaryKeyField)),
+            ];
+          })
+          .reduce((acc, [action, ids]) => {
+            acc[action] = ids;
+            return acc;
+          }, {});
       }
-      await next();
     };
   }
 
@@ -181,6 +301,7 @@ export class ACL extends EventEmitter {
       },
       {
         tag: 'core',
+        group: 'core',
       },
     );
   }
@@ -327,7 +448,10 @@ export class ACL extends EventEmitter {
   }
 
   use(fn: any, options?: ToposortOptions) {
-    this.middlewares.add(fn, options);
+    this.middlewares.add(fn, {
+      group: 'prep',
+      ...options,
+    });
   }
 
   /**
@@ -374,6 +498,21 @@ export class ACL extends EventEmitter {
 
       return compose(acl.middlewares.nodes)(ctx, next);
     };
+  }
+
+  async getActionParams(ctx) {
+    const roleName = ctx.state.currentRole || 'anonymous';
+    const { resourceName, actionName } = ctx.action;
+
+    ctx.can = (options: Omit<CanArgs, 'role'>) => {
+      return this.can({ role: roleName, ...options });
+    };
+
+    ctx.permission = {
+      can: ctx.can({ resource: resourceName, action: actionName }),
+    };
+
+    await compose(this.middlewares.nodes)(ctx, async () => {});
   }
 
   addFixedParams(resource: string, action: string, merger: Merger) {

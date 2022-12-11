@@ -75,5 +75,11 @@ export default {
       sourceKey: 'name',
       targetKey: 'name',
     },
+    {
+      type: 'hasMany',
+      name: 'pluginTab',
+      target: 'pluginTabBlacklist',
+      foreignKey: 'roleName',
+    },
   ],
 } as CollectionOptions;

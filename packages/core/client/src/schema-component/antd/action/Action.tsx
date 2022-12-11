@@ -89,27 +89,30 @@ export const Action: ComposedAction = observer((props: any) => {
   const form = useForm();
   const designerProps = fieldSchema['x-designer-props'];
   const openMode = fieldSchema?.['x-component-props']?.['openMode'];
+  const disabled = form.disabled || fieldSchema['x-disabled'];
   const renderButton = () => (
     <SortableItem
       {...others}
       loading={field?.data?.loading}
       icon={<Icon type={icon} />}
-      disabled={form.disabled}
+      disabled={disabled}
       onClick={(e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const onOk = () => {
-          onClick?.(e);
-          setVisible(true);
-          run();
-        };
-        if (confirm) {
-          Modal.confirm({
-            ...confirm,
-            onOk,
-          });
-        } else {
-          onOk();
+        if (!disabled) {
+          e.preventDefault();
+          e.stopPropagation();
+          const onOk = () => {
+            onClick?.(e);
+            setVisible(true);
+            run();
+          };
+          if (confirm) {
+            Modal.confirm({
+              ...confirm,
+              onOk,
+            });
+          } else {
+            onOk();
+          }
         }
       }}
       component={component || Button}

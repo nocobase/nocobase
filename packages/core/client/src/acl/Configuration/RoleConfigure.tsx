@@ -1,14 +1,12 @@
 import { onFieldChange } from '@formily/core';
-import { message } from 'antd';
-import React from 'react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useRequest } from '../../api-client';
-import { useRecord } from '../../record-provider';
+import { useRequest } from '../../api-client';
 import { SchemaComponent } from '../../schema-component';
+import { PermissionContext } from './PermisionProvider';
 
 export const RoleConfigure = () => {
-  const api = useAPIClient();
-  const record = useRecord();
+  const { update, currentRecord } = useContext(PermissionContext);
   const { t } = useTranslation();
   return (
     <SchemaComponent
@@ -23,7 +21,7 @@ export const RoleConfigure = () => {
                 resource: 'roles',
                 action: 'get',
                 params: {
-                  filterByTk: record.name,
+                  filterByTk: currentRecord.name,
                 },
               },
               options,
@@ -34,11 +32,7 @@ export const RoleConfigure = () => {
               if (!form.modified) {
                 return;
               }
-              await api.resource('roles').update({
-                filterByTk: record.name,
-                values: form.values,
-              });
-              message.success(t('Saved successfully'));
+              update(form);
             });
           },
         },
@@ -51,7 +45,9 @@ export const RoleConfigure = () => {
           },
           'strategy.actions': {
             title: t('Global action permissions'),
-            description: t('All collections use general action permissions by default; permission configured individually will override the default one.'),
+            description: t(
+              'All collections use general action permissions by default; permission configured individually will override the default one.',
+            ),
             'x-component': 'StrategyActions',
             'x-decorator': 'FormItem',
           },
