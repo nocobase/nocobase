@@ -1,6 +1,6 @@
 import { IField } from '@nocobase/client';
 import { generateNTemplate } from '../locales';
-import { commonSchema } from './constant';
+import { commonSchema } from './schema';
 
 export const polygon: IField = {
   name: 'polygon',
