@@ -1,10 +1,10 @@
 const map2obj = (map: Map<string, string>) => {
   const obj = {};
-  for(let [key, value] of map){
+  for (let [key, value] of map) {
     obj[key] = value;
   }
- return obj;
-}
+  return obj;
+};
 
 export async function checkAction(ctx, next) {
   const currentRole = ctx.state.currentRole;

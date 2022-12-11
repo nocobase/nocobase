@@ -36,7 +36,27 @@ export default class PluginFileManager extends Plugin {
       await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
     }
 
-    this.app.acl.allow('attachments', 'upload', 'loggedIn');
-  }
+    this.app.acl.skip('attachments', 'upload', 'loggedIn');
+    this.app.acl.skip('storages', ['list', 'create', 'update', 'destroy'], 'allowConfigure');
 
+    const defaultStorageName = getStorageConfig(this.storageType()).defaults().name;
+
+    this.app.acl.addFixedParams('storages', 'destroy', () => {
+      return {
+        filter: { 'name.$ne': defaultStorageName },
+      };
+    });
+
+    const ownMerger = () => {
+      return {
+        filter: {
+          createdById: '{{ctx.state.currentUser.id}}',
+        },
+      };
+    };
+
+    this.app.acl.addFixedParams('attachments', 'update', ownMerger);
+    this.app.acl.addFixedParams('attachments', 'create', ownMerger);
+    this.app.acl.addFixedParams('attachments', 'destroy', ownMerger);
+  }
 }

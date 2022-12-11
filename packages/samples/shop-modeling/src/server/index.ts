@@ -5,10 +5,9 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import SnowflakeField from './fields/SnowflakeField';
 
 export class ShopPlugin extends Plugin {
-
   afterAdd() {
     this.db.registerFieldTypes({
-      snowflake: SnowflakeField
+      snowflake: SnowflakeField,
     });
   }
 
@@ -21,9 +20,9 @@ export class ShopPlugin extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
-    this.app.acl.allow('products', '*');
-    this.app.acl.allow('categories', '*');
-    this.app.acl.allow('orders', '*');
+    this.app.acl.skip('products', '*');
+    this.app.acl.skip('categories', '*');
+    this.app.acl.skip('orders', '*');
   }
 
   async install(options: InstallOptions) {

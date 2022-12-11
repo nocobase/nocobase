@@ -132,7 +132,12 @@ export class OptionsParser {
           appends.push(field);
         } else {
           // field is model attribute, change attributes to array type
-          if (!Array.isArray(attributes)) attributes = [];
+          if (!Array.isArray(attributes)) {
+            attributes = [];
+            if (this.collection.isParent()) {
+              attributes.push(this.inheritFromSubQuery());
+            }
+          }
 
           attributes.push(field);
         }

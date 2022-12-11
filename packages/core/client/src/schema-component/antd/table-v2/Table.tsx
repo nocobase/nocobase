@@ -10,7 +10,7 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext } from '../..';
-import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
+import { RecordIndexProvider, RecordProvider, useSchemaInitializer, useACLRoleContext, useCollection } from '../../../';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -20,44 +20,60 @@ const isCollectionFieldComponent = (schema: ISchema) => {
   return schema['x-component'] === 'CollectionField';
 };
 
+const useAclCheck = (schema: Schema) => {
+  const { actions, resources, allowAll } = useACLRoleContext();
+  let fieldName = Object.keys(schema.properties)?.[0];
+  let collectionName;
+  if (fieldName.includes('.')) {
+    collectionName = schema.properties[fieldName]['x-collection-name'];
+    fieldName = fieldName.split('.')[1];
+  } else {
+    collectionName = useCollection().name;
+  }
+  if (resources.includes(collectionName) && fieldName !== 'actions' && !allowAll) {
+    const { fields } = actions[`${collectionName}:view`];
+    return fields.includes(fieldName);
+  } else {
+    return true;
+  }
+};
+
 const useTableColumns = () => {
-  const start = Date.now();
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
-  const columns = schema
-    .reduceProperties((buf, s) => {
-      if (isColumnComponent(s)) {
-        return buf.concat([s]);
-      }
-    }, [])
-    .map((s: Schema) => {
-      const collectionFields = s.reduceProperties((buf, s) => {
-        if (isCollectionFieldComponent(s)) {
+  const columns =
+    schema
+      .reduceProperties((buf, s) => {
+        if (isColumnComponent(s) && useAclCheck(s)) {
           return buf.concat([s]);
         }
-      }, []);
-      const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
-
-      return {
-        title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
-        dataIndex,
-        key: s.name,
-        sorter: s['x-component-props']?.['sorter'],
-        // width: 300,
-        render: (v, record) => {
-          const index = field.value?.indexOf(record);
-          // console.log((Date.now() - start) / 1000);
-          return (
-            <RecordIndexProvider index={index}>
-              <RecordProvider record={record}>
-                <RecursionField schema={s} name={index} onlyRenderProperties />
-              </RecordProvider>
-            </RecordIndexProvider>
-          );
-        },
-      } as TableColumnProps<any>;
-    });
+        return buf;
+      }, [])
+      ?.map((s: Schema) => {
+        const collectionFields = s.reduceProperties((buf, s) => {
+          if (isCollectionFieldComponent(s)) {
+            return buf.concat([s]);
+          }
+        }, []);
+        const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
+        return {
+          title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
+          dataIndex,
+          key: s.name,
+          sorter: s['x-component-props']?.['sorter'],
+          render: (v, record) => {
+            const index = field.value?.indexOf(record);
+            return (
+              <RecordIndexProvider index={index}>
+                <RecordProvider record={record}>
+                  <RecursionField schema={s} name={index} onlyRenderProperties />
+                </RecordProvider>
+              </RecordIndexProvider>
+            );
+          },
+        } as TableColumnProps<any>;
+      }) || [];
   if (!exists) {
     return columns;
   }

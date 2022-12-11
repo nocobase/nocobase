@@ -212,8 +212,10 @@ export class CollectionManagerPlugin extends Plugin {
       await next();
     });
 
-    this.app.acl.allow('collections', 'list', 'loggedIn');
-    this.app.acl.allow('collections', ['create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.skip('collections', 'list', 'loggedIn');
+    this.app.acl.skip('collections', ['create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.skip('collections.fields', ['create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.skip('fields', ['create', 'update', 'destroy'], 'allowConfigure');
   }
 
   async load() {

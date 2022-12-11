@@ -1,6 +1,7 @@
 import { ACL, DefineOptions } from './acl';
-import { AvailableStrategyOptions } from './acl-available-strategy';
+import { ACLAvailableStrategy, AvailableStrategyOptions } from './acl-available-strategy';
 import { ACLResource } from './acl-resource';
+import lodash from 'lodash';
 
 export interface RoleActionParams {
   fields?: string[];
@@ -27,6 +28,12 @@ export class ACLRole {
 
   public setStrategy(value: string | AvailableStrategyOptions) {
     this.strategy = value;
+  }
+
+  public getStrategy() {
+    return lodash.isString(this.strategy)
+      ? this.acl.availableStrategy.get(this.strategy)
+      : new ACLAvailableStrategy(this.acl, this.strategy);
   }
 
   public getResourceActionsParams(resourceName: string) {

@@ -15,3 +15,5 @@ export * from './relation-repository/multiple-relation-repository';
 export * from './relation-repository/single-relation-repository';
 export * from './repository';
 export * from './update-associations';
+export * from './collection-importer';
+export * from './filter-match';

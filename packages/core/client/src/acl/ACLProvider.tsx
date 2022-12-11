@@ -5,7 +5,10 @@ import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useCollection } from '../collection-manager';
 import { useRecordIsOwn } from '../record-provider';
-import { SchemaComponentOptions, useDesignable } from '../schema-component';
+import { useRecord } from '../record-provider';
+import { SchemaComponentOptions, useDesignable, FormItem } from '../schema-component';
+import { useBlockRequestContext } from '../block-provider/BlockProvider';
+import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 
 export const ACLContext = createContext(null);
 
@@ -71,7 +74,7 @@ export const useACLRoleContext = () => {
       const [resourceName, act] = path.split(':');
       const currentAction = data?.actionAlias?.[act] || act;
       const hasResource = data?.resources?.includes(resourceName);
-      const params = data?.actions?.[`${resourceName}:${currentAction}`];
+      const params = data?.actions?.[`${resourceName}:${currentAction}`] || data?.actions?.[`${resourceName}:${act}`];
       if (hasResource) {
         if (!skipOwnCheck && params?.own) {
           return isOwn ? params : null;
@@ -127,26 +130,72 @@ export const ACLCollectionProvider = (props) => {
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
 
+const isBlockRequest = (schema) => {
+  if (schema['x-decorator'] === 'TableBlockProvider') {
+    return true;
+  } else {
+    return schema.parent && isBlockRequest(schema.parent);
+  }
+};
+
 export const ACLActionProvider = (props) => {
-  const { name } = useCollection();
   const fieldSchema = useFieldSchema();
+  const record = useRecord();
+  const { name, getPrimaryKeyField } = useCollection();
+  const { service } = isBlockRequest(fieldSchema) ? useBlockRequestContext() : { service: useResourceActionContext() };
+  const { meta } = service?.data || {};
+  const { allowedActions } = meta || {};
   const isOwn = useRecordIsOwn();
   const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
+  const actionName = fieldSchema['x-action'];
+  const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
+  const actionScope = allowedActions?.[path.split(':')[1]];
+  const actionScopeCheck = actionScope ? actionScope?.includes(record[getPrimaryKeyField(name).name]) : true;
+  const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
+  fieldSchema['x-disabled'] = !actionScopeCheck;
   if (!name || allowAll || allowConfigure) {
     return <>{props.children}</>;
   }
-  const actionName = fieldSchema['x-action'];
-  const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
-  const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
   const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
-  if (!params) {
-    return null;
-  }
+  fieldSchema['x-disabled'] = !params || !actionScopeCheck;
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
 
 export const ACLCollectionFieldProvider = (props) => {
-  return <>{props.children}</>;
+  const { name } = useCollection();
+  const fieldSchema = useFieldSchema();
+  const { allowAll, allowConfigure, getActionParams, resources } = useACLRoleContext();
+  const actionName = fieldSchema['x-action'] || 'view';
+  const findAclAction = (schema) => {
+    if (schema?.['x-collection-field']?.includes(name)) {
+      if (schema['x-acl-action']) {
+        return schema['x-acl-action'];
+      } else {
+        return schema.parent ? findAclAction(schema.parent) : `${name}:${actionName}`;
+      }
+    }
+    return `${name}:${actionName}`;
+  };
+  const path = findAclAction(fieldSchema);
+  const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
+  const isOwn = useRecordIsOwn();
+  if (!name || allowAll || allowConfigure) {
+    return <FormItem>{props.children}</FormItem>;
+  }
+  if (resources.includes(name)) {
+    const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
+    const { whitelist, fields } = params;
+    const aclFieldCheck = (whitelist || fields).includes(fieldSchema.name);
+    if (!aclFieldCheck) {
+      return null;
+    }
+    return (
+      <ACLActionParamsContext.Provider value={params}>
+        <FormItem>{props.children}</FormItem>
+      </ACLActionParamsContext.Provider>
+    );
+  }
+  return <FormItem>{props.children}</FormItem>;
 };
 
 export const ACLMenuItemProvider = (props) => {

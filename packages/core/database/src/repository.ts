@@ -10,7 +10,7 @@ import {
   ModelCtor,
   Op,
   Transactionable,
-  UpdateOptions as SequelizeUpdateOptions
+  UpdateOptions as SequelizeUpdateOptions,
 } from 'sequelize';
 import { WhereOperators } from 'sequelize/types/lib/model';
 import { Collection } from './collection';
@@ -556,7 +556,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return new RelationRepositoryBuilder<R>(this.collection, association);
   }
 
-  protected buildQueryOptions(options: any) {
+  public buildQueryOptions(options: any) {
     const parser = new OptionsParser(options, {
       collection: this.collection,
     });
