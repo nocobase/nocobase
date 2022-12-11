@@ -76,6 +76,14 @@ export default class WorkflowPlugin extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
+    this.db.addMigrations({
+      namespace: 'workflow',
+      directory: path.resolve(__dirname, 'migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+
     initActions(this);
     initTriggers(this, options.triggers);
     initInstructions(this, options.instructions);

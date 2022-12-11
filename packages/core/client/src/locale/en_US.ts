@@ -510,4 +510,5 @@ export default {
   "Selector": "Selector",
   "Inner": "Inner",
   "Search and select collection": "Search and select collection",
+  'Please fill in the iframe URL': 'Please fill in the iframe URL',
 }

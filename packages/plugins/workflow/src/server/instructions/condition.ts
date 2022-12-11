@@ -77,7 +77,8 @@ export default {
     // TODO(optimize): loading of jobs could be reduced and turned into incrementally in processor
     // const jobs = await processor.getJobs();
     const { calculation, rejectOnFalse } = node.config || {};
-    const result = logicCalculate(calculation, prevJob, processor);
+
+    const result = logicCalculate(processor.getParsedValue(calculation), prevJob, processor);
 
     if (!result && rejectOnFalse) {
       return {
