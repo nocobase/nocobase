@@ -81,5 +81,10 @@ export default {
       target: 'pluginTabBlacklist',
       foreignKey: 'roleName',
     },
+    {
+      type: 'array',
+      name: 'snippets',
+      as: 'set',
+    },
   ],
 } as CollectionOptions;

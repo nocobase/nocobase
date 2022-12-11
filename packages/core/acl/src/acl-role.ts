@@ -19,6 +19,7 @@ export interface ResourceActionsOptions {
 export class ACLRole {
   strategy: string | AvailableStrategyOptions;
   resources = new Map<string, ACLResource>();
+  snippets: Set<string> = new Set();
 
   constructor(public acl: ACL, public name: string) {}
 
@@ -74,6 +75,8 @@ export class ACLRole {
     resource.removeAction(actionName);
   }
 
+  public addSnippet(name: string) {}
+
   public toJSON(): DefineOptions {
     const actions = {};
 
@@ -88,6 +91,7 @@ export class ACLRole {
       role: this.name,
       strategy: this.strategy,
       actions,
+      snippets: Array.from(this.snippets),
     };
   }
 

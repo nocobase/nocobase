@@ -10,6 +10,7 @@ import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import NoPermissionError from './no-permission-error';
+import SnippetManager, { Snippet } from './snippet-manager';
 
 interface CanResult {
   role: string;
@@ -24,6 +25,7 @@ export interface DefineOptions {
   strategy?: string | AvailableStrategyOptions;
   actions?: ResourceActionsOptions;
   routes?: any;
+  snippets?: string[];
 }
 
 export interface ListenerContext {
@@ -52,6 +54,7 @@ export class ACL extends EventEmitter {
   protected middlewares: Toposort<any>;
 
   public allowManager = new AllowManager(this);
+  public snippetManager = new SnippetManager(this);
 
   roles = new Map<string, ACLRole>();
 
@@ -517,5 +520,9 @@ export class ACL extends EventEmitter {
 
   addFixedParams(resource: string, action: string, merger: Merger) {
     this.fixedParamsManager.addParams(resource, action, merger);
+  }
+
+  registerSnippet(snippet: Snippet) {
+    this.snippetManager.register(snippet);
   }
 }
