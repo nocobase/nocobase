@@ -5,6 +5,7 @@ const locale = {
   'Line': '线',
   'Polygon': '多边形',
   'Access key': '访问密钥',
+  'Security code': '安全密钥',
   'AMap': '高德地图',
   'Google Maps': '谷歌地图',
   'Clear': '清空',
@@ -13,6 +14,7 @@ const locale = {
   'Are you sure to clear the canvas?': '您确定要清空画布吗？',
   'Confirm': '确定',
   'Cancel': '取消',
+  'Enter keywords to search': '输入地方名关键字搜索',
   // Designer
   'Edit field title': '编辑字段标题',
   'Field title': '字段标题',

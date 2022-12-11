@@ -30,6 +30,10 @@ export const commonSchema = {
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
+      'x-component-props': {
+        showSearch: false,
+        allowClear: false,
+      },
       'x-disabled': '{{ !createOnly }}',
       default: 'amap',
       enum: [
@@ -39,6 +43,16 @@ export const commonSchema = {
     },
     'uiSchema.x-component-props.accessKey': {
       title: generateNTemplate('Access key'),
+      type: 'string',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      'x-component-props': {
+        allowClear: true,
+      },
+    },
+    'uiSchema.x-component-props.securityJsCode': {
+      title: generateNTemplate('Security code'),
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',

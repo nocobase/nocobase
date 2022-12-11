@@ -12,6 +12,7 @@
     "@formily/react": "2.0.20",
     "@emotion/css": "^11.7.1",
     "antd": "~4.19.5",
-    "sequelize": "^6.9.0"
+    "sequelize": "^6.9.0",
+    "ahooks": "^3.0.5"
   }
 }

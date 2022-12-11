@@ -5,11 +5,13 @@ import '@amap/amap-jsapi-types';
 import { useFieldSchema } from '@formily/react';
 import { useCollection } from '@nocobase/client';
 import { css } from '@emotion/css';
-import { Alert, Button, Modal } from 'antd';
+import { Alert, Button, Modal, Select } from 'antd';
 import { useMapTranslation } from '../locales';
+import Search from './Search';
 
 interface AMapComponentProps {
   accessKey: string;
+  securityJsCode: string;
   value: any;
   onChange: (value: number[]) => void;
   disabled?: boolean;
@@ -36,7 +38,7 @@ const methodMapping = {
 };
 
 const AMapComponent: React.FC<AMapComponentProps> = (props) => {
-  const { value, onChange, accessKey, disabled } = props;
+  const { value, onChange, accessKey, securityJsCode, disabled } = props;
   const id = useRef(`nocobase-map-${Date.now().toString(32)}`);
   const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
@@ -93,6 +95,12 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     }
   }, [type]);
 
+  const toCenter = (position, imm?: boolean) => {
+    if (map.current) {
+      map.current.setZoomAndCenter(13, position, imm);
+    }
+  };
+
   // 编辑时
   useEffect(() => {
     if (!aMap.current) return;
@@ -106,6 +114,9 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     const nextOverlay = new aMap.current[mapping.overlay]({
       [mapping.propertyKey]: value,
     });
+
+    // 聚焦在编辑的位置
+    map.current.setFitView([nextOverlay]);
 
     nextOverlay.setMap(map.current);
     overlay.current = nextOverlay;
@@ -173,17 +184,23 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
   useEffect(() => {
     if (!accessKey) return;
-
+    (window as any)._AMapSecurityConfig = {
+      securityJsCode: securityJsCode,
+    };
     AMapLoader.load({
       key: accessKey,
       version: '2.0',
+
       plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor'],
     }).then((amap) => {
-      map.current = new amap.Map(id.current, {} as AMap.MapOptions);
+      map.current = new amap.Map(id.current, {
+        resizeEnable: true,
+        zoom: 13,
+      } as AMap.MapOptions);
       aMap.current = amap;
       forceUpdate([]);
     });
-  }, [accessKey, type]);
+  }, [accessKey, type, securityJsCode]);
 
   return (
     <div
@@ -195,6 +212,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
         height: '500px',
       }}
     >
+      <Search toCenter={toCenter} aMap={aMap.current}></Search>
       <div
         style={{
           display: disabled ? 'none' : 'block',
