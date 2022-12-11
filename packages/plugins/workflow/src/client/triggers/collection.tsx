@@ -10,6 +10,7 @@ import { css } from '@emotion/css';
 import { onFieldValueChange } from '@formily/core';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
+import { useOperandContext } from '../calculators';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
@@ -147,15 +148,16 @@ export default {
     return options;
   },
   getter(props) {
-    const { type, options, onChange } = props;
+    const { onChange } = props;
     const { workflow } = useFlowContext();
+    const { options } = useOperandContext();
 
     return (
       <CollectionFieldSelect
         collection={workflow.config.collection}
         value={options?.path}
         onChange={(path) => {
-          onChange({ type, options: { ...options, type: 'data', path } });
+          onChange(`{{$context.data.${path}}}`);
         }}
       />
     );

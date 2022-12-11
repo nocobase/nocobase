@@ -5,7 +5,7 @@ import { useCompile, useCollectionDataSource, useCollectionManager } from '@noco
 
 import { ScheduleConfig } from './ScheduleConfig';
 import { useFlowContext } from '../../FlowContext';
-import { BaseTypeSet } from '../../calculators';
+import { BaseTypeSet, useOperandContext } from '../../calculators';
 import { SCHEDULE_MODE } from './constants';
 import { NAMESPACE, useWorkflowTranslation } from '../../locale';
 
@@ -40,11 +40,12 @@ export default {
     }
     return options;
   },
-  getter({ type, options, onChange }) {
+  getter({ onChange }) {
     const { t } = useWorkflowTranslation();
     const compile = useCompile();
     const { collections = [] } = useCollectionManager();
     const { workflow } = useFlowContext();
+    const { options } = useOperandContext();
     const path = options?.path ? options.path.split('.') : [];
     if (!options.type || options.type === 'date') {
       return null;
@@ -61,7 +62,7 @@ export default {
             label: compile(field.uiSchema?.title),
           }))}
         onChange={(next) => {
-          onChange({ type, options: { ...options, path: next.join('.') } });
+          onChange(`{{$context.${next.join('.')}}}`);
         }}
         allowClear={false}
       />
