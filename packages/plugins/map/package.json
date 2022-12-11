@@ -11,6 +11,7 @@
     "@amap/amap-jsapi-types": "^0.0.10",
     "@formily/react": "2.0.20",
     "@emotion/css": "^11.7.1",
-    "antd": "~4.19.5"
+    "antd": "~4.19.5",
+    "sequelize": "^6.9.0"
   }
 }

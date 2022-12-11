@@ -1,4 +1,5 @@
 import { IField } from '@nocobase/client';
+import { generateNTemplate } from '../locales';
 import { commonSchema } from './constant';
 
 export const polygon: IField = {
@@ -6,8 +7,8 @@ export const polygon: IField = {
   type: 'object',
   group: 'map',
   order: 4,
-  title: '{{t("Polygon")}}',
-  description: '{{t("Map Polygon")}}',
+  title: generateNTemplate('Polygon'),
+  description: generateNTemplate('Polygon'),
   sortable: true,
   default: {
     type: 'polygon',

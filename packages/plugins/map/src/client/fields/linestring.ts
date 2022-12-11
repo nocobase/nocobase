@@ -1,16 +1,17 @@
 import { IField } from '@nocobase/client';
+import { generateNTemplate } from '../locales';
 import { commonSchema } from './constant';
 
-export const linestring: IField = {
-  name: 'linestring',
+export const lineString: IField = {
+  name: 'lineString',
   type: 'object',
   group: 'map',
-  order: 4,
-  title: '{{t("Line")}}',
-  description: '{{t("Map Line")}}',
+  order: 2,
+  title: generateNTemplate('Line'),
+  description: generateNTemplate('Line'),
   sortable: true,
   default: {
-    type: 'linestring',
+    type: 'lineString',
     uiSchema: {
       type: 'void',
       'x-component': 'Map',

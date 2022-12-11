@@ -1,14 +1,15 @@
 import { ISchema } from '@formily/react';
 import { IField } from '@nocobase/client';
+import { generateNTemplate } from '../locales';
 import { commonSchema } from './constant';
 
 export const point: IField = {
   name: 'point',
   type: 'object',
   group: 'map',
-  order: 4,
-  title: '{{t("Point")}}',
-  description: '{{t("Map point")}}',
+  order: 1,
+  title: generateNTemplate('Point'),
+  description: generateNTemplate('Point'),
   sortable: true,
   default: {
     type: 'point',

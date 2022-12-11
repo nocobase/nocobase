@@ -5,8 +5,8 @@ import '@amap/amap-jsapi-types';
 import { useFieldSchema } from '@formily/react';
 import { useCollection } from '@nocobase/client';
 import { css } from '@emotion/css';
-import { Alert, Button, Modal, Typography } from 'antd';
-import { useTranslation } from 'react-i18next';
+import { Alert, Button, Modal } from 'antd';
+import { useMapTranslation } from '../locales';
 
 interface AMapComponentProps {
   accessKey: string;
@@ -27,7 +27,7 @@ const methodMapping = {
     propertyKey: 'path',
     overlay: 'Polygon',
   },
-  linestring: {
+  lineString: {
     mouseTool: 'polyline',
     editor: 'PolylineEditor',
     propertyKey: 'path',
@@ -38,7 +38,7 @@ const methodMapping = {
 const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   const { value, onChange, accessKey, disabled } = props;
   const id = useRef(`nocobase-map-${Date.now().toString(32)}`);
-  const { t } = useTranslation();
+  const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
   const map = useRef<AMap.Map>();
@@ -120,7 +120,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     if (type === 'point') {
       const { lat, lng } = (prevValue as AMap.Marker).getPosition();
       nextValue = [lng, lat];
-    } else if (type === 'polygon' || type === 'linestring') {
+    } else if (type === 'polygon' || type === 'lineString') {
       nextValue = (prevValue as AMap.Polygon).getPath().map((item) => [item.lng, item.lat]);
       if (nextValue.length < 2) {
         return;
@@ -146,7 +146,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     Modal.confirm({
       title: t('Clear the canvas'),
       content: t('Are you sure to clear the canvas?'),
-      okText: t('Reset'),
+      okText: t('Confirm'),
       cancelText: t('Cancel'),
       onOk() {
         ok();

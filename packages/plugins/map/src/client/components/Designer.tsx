@@ -9,7 +9,7 @@ import {
   useFormBlockContext,
 } from '@nocobase/client';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { useMapTranslation } from '../locales';
 
 const Designer = () => {
   const { getCollectionJoinField } = useCollectionManager();
@@ -17,7 +17,7 @@ const Designer = () => {
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { t } = useTranslation();
+  const { t } = useMapTranslation();
   const { dn, refresh } = useDesignable();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const originalTitle = collectionField?.uiSchema?.title;

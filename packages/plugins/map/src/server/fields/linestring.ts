@@ -1,7 +1,7 @@
 import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
 
-export class LinestringField extends Field {
+export class LineStringField extends Field {
   constructor(options?: any, context?: FieldContext) {
     const { name } = options
     super(
@@ -28,6 +28,6 @@ export class LinestringField extends Field {
 
 }
 
-export interface LinestringOptions extends BaseColumnFieldOptions {
-  type: 'linestring';
+export interface LineStringOptions extends BaseColumnFieldOptions {
+  type: 'lineString';
 }
