@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { PluginManager } from '../plugin-manager';
 import { ActionContext } from '../schema-component';
+import { useACLRoleContext } from '../acl/ACLProvider';
 
 const schema: ISchema = {
   type: 'object',
@@ -42,6 +43,7 @@ export const PluginManagerLink = () => {
 };
 
 export const SettingsCenterDropdown = () => {
+  const { pluginTabBlacklist = [] } = useACLRoleContext();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const history = useHistory();
@@ -49,27 +51,28 @@ export const SettingsCenterDropdown = () => {
     {
       title: t('Collections & Fields'),
       path: 'collection-manager/collections',
+      key: 'collections',
     },
     {
       title: t('Roles & Permissions'),
       path: 'acl/roles',
+      key: 'roles',
     },
     {
       title: t('File storages'),
       path: 'file-manager/storages',
+      key: 'storages',
     },
     {
       title: t('System settings'),
       path: 'system-settings/system-settings',
+      key: 'system-settings',
     },
     {
       title: t('workflow:Workflow'),
       path: 'workflow/workflows',
+      key: 'workflows',
     },
-    // {
-    //   title: t('Graph Collections'),
-    //   path: 'graph/collections',
-    // },
   ];
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
@@ -79,14 +82,16 @@ export const SettingsCenterDropdown = () => {
             <Menu.ItemGroup title={t('Bookmark')}>
               {items.map((item) => {
                 return (
-                  <Menu.Item
-                    onClick={() => {
-                      history.push('/admin/settings/' + item.path);
-                    }}
-                    key={item.path}
-                  >
-                    {item.title}
-                  </Menu.Item>
+                  !pluginTabBlacklist.includes(item.key) && (
+                    <Menu.Item
+                      onClick={() => {
+                        history.push('/admin/settings/' + item.path);
+                      }}
+                      key={item.path}
+                    >
+                      {item.title}
+                    </Menu.Item>
+                  )
                 );
               })}
             </Menu.ItemGroup>

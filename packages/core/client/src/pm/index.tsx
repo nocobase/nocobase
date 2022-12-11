@@ -1,5 +1,6 @@
 import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import {pickBy} from 'lodash';
 import { Avatar, Card, Layout, Menu, message, PageHeader, Popconfirm, Spin, Switch, Tabs } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +14,7 @@ import { RouteSwitchContext } from '../route-switch';
 import { useCompile } from '../schema-component';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
+import { useACLRoleContext } from '../acl/ACLProvider';
 
 export const SettingsCenterContext = createContext<any>({});
 
@@ -264,6 +266,7 @@ const settings = {
 };
 
 const SettingsCenter = (props) => {
+  const { pluginTabBlacklist = [] } = useACLRoleContext();
   const match = useRouteMatch<any>();
   const history = useHistory<any>();
   const items = useContext(SettingsCenterContext);
@@ -296,7 +299,7 @@ const SettingsCenter = (props) => {
               .map((key) => {
                 const item = items[key];
                 const tabKey = Object.keys(item.tabs).shift();
-                return (
+                return !pluginTabBlacklist.includes(tabKey)&&(
                   <Menu.Item
                     key={key}
                     icon={item.icon ? <Icon type={item.icon} /> : null}

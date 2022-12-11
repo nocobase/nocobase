@@ -4,6 +4,7 @@ import { useRequest } from '../../api-client';
 import { SchemaComponent } from '../../schema-component';
 import { roleSchema } from './schemas/roles';
 import { MenuItemsProvider } from '../Configuration/MenuItemsProvider';
+import { SettingCenterPermissionProvider,PermissionProvider } from '../Configuration/PermisionProvider';
 
 const AvailableActionsContext = createContext(null);
 
@@ -26,7 +27,7 @@ export const RoleTable = () => {
   return (
     <div>
       <AvailableActionsProver>
-        <SchemaComponent schema={roleSchema} components={{ MenuItemsProvider }} />
+        <SchemaComponent schema={roleSchema} components={{ MenuItemsProvider, SettingCenterPermissionProvider,PermissionProvider }} />
       </AvailableActionsProver>
     </div>
   );
