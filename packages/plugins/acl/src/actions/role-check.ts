@@ -13,7 +13,7 @@ export async function checkAction(ctx, next) {
       filter: {
         name: currentRole,
       },
-      appends: ['menuUiSchemas','pluginTab'],
+      appends: ['menuUiSchemas'],
     });
 
     const anonymous = await ctx.db.getRepository('roles').findOne({
