@@ -1,5 +1,10 @@
 import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
+import { joinComma, toValue } from '../helpers';
+
+class LineString extends DataTypes.ABSTRACT {
+  key = 'Path';
+}
 
 export class LineStringField extends Field {
   constructor(options?: any, context?: FieldContext) {
@@ -7,14 +12,10 @@ export class LineStringField extends Field {
     super(
       {
         get() {
-          const value = this.getDataValue(name);
-          return value?.coordinates
+          return toValue(this.getDataValue(name))
         },
         set(value) {
-          this.setDataValue(name, {
-            type: 'LineString',
-            coordinates: value
-          })
+          this.setDataValue(name, joinComma(value.map(joinComma)))
         },
         ...options,
       },
@@ -23,7 +24,7 @@ export class LineStringField extends Field {
   }
 
   get dataType() {
-    return DataTypes.GEOMETRY('LINESTRING');
+    return LineString;
   }
 
 }

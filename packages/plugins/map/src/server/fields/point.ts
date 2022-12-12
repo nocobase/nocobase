@@ -1,5 +1,10 @@
 import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
+import { joinComma } from '../helpers';
+
+class Point extends DataTypes.ABSTRACT {
+  key = 'Point';
+}
 
 export class PointField extends Field {
   constructor(options?: any, context?: FieldContext) {
@@ -8,13 +13,10 @@ export class PointField extends Field {
       {
         get() {
           const value = this.getDataValue(name);
-          return value?.coordinates
+          return value ? [value.x, value.y] : null
         },
         set(value) {
-          this.setDataValue(name, {
-            type: 'Point',
-            coordinates: value
-          })
+          this.setDataValue(name, joinComma(value))
         },
         ...options,
       },
@@ -23,7 +25,7 @@ export class PointField extends Field {
   }
 
   get dataType() {
-    return DataTypes.GEOMETRY('POINT');
+    return Point;
   }
 
 }
