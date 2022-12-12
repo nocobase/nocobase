@@ -32,7 +32,6 @@ export async function checkAction(ctx, next) {
       allowConfigure: roleInstance.get('allowConfigure'),
       allowMenuItemIds: roleInstance.get('menuUiSchemas').map((uiSchema) => uiSchema.get('x-uid')),
       allowAnonymous: !!anonymous,
-      pluginTabBlacklist:roleInstance.get('pluginTab').map((pluginTab) => pluginTab.get('tabKey'))
     };
   } else {
     throw new Error('Role not found');

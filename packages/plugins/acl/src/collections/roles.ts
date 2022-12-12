@@ -76,12 +76,6 @@ export default {
       targetKey: 'name',
     },
     {
-      type: 'hasMany',
-      name: 'pluginTab',
-      target: 'pluginTabBlacklist',
-      foreignKey: 'roleName',
-    },
-    {
       type: 'array',
       name: 'snippets',
       as: 'set',
