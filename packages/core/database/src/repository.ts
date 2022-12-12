@@ -10,9 +10,9 @@ import {
   ModelCtor,
   Op,
   Transactionable,
-  UpdateOptions as SequelizeUpdateOptions
+  UpdateOptions as SequelizeUpdateOptions,
+  WhereOperators
 } from 'sequelize';
-import { WhereOperators } from 'sequelize/types/lib/model';
 import { Collection } from './collection';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
@@ -33,7 +33,7 @@ import { handleAppendsQuery } from './utils';
 
 const debug = require('debug')('noco-database');
 
-export interface IRepository {}
+export interface IRepository { }
 
 interface CreateManyOptions extends BulkCreateOptions {
   records: Values[];
@@ -54,10 +54,10 @@ type Operators = keyof typeof operators & keyof WhereOperators;
 
 export type FilterWithOperator = {
   [key: string]:
-    | {
-        [K in Operators]: FieldValue;
-      }
-    | FieldValue;
+  | {
+    [K in Operators]: FieldValue;
+  }
+  | FieldValue;
 };
 
 export type FilterWithValue = {
@@ -187,8 +187,7 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
-  implements IRepository
-{
+  implements IRepository {
   database: Database;
   collection: Collection;
   model: ModelCtor<Model>;
