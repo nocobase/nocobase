@@ -1,5 +1,5 @@
 import { Action } from '@nocobase/resourcer';
-import { assign, getRepositoryFromParams, Toposort, ToposortOptions } from '@nocobase/utils';
+import { assign, Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
 import parse from 'json-templates';
 import compose from 'koa-compose';
@@ -100,30 +100,6 @@ export class ACL extends EventEmitter {
     });
 
     this.addCoreMiddleware();
-
-    // throw error when user has no fixed params permissions
-    this.use(
-      async (ctx, next) => {
-        const action = ctx.permission?.can?.action;
-
-        if (action == 'destroy') {
-          const repository = getRepositoryFromParams(ctx);
-          const filteredCount = await repository.count(ctx.permission.mergedParams);
-          const queryCount = await repository.count(ctx.permission.rawParams);
-
-          if (queryCount > filteredCount) {
-            ctx.throw(403, 'No permissions');
-            return;
-          }
-        }
-
-        await next();
-      },
-      {
-        after: 'core',
-        group: 'after',
-      },
-    );
   }
 
   public afterActionMiddleware() {

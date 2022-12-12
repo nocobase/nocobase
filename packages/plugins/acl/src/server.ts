@@ -10,6 +10,7 @@ import { setCurrentRole } from './middlewares/setCurrentRole';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
+import { utils as actionUtils } from '@nocobase/actions';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -493,6 +494,30 @@ export class PluginACL extends Plugin {
       },
       {
         before: 'core',
+      },
+    );
+
+    // throw error when user has no fixed params permissions
+    this.app.acl.use(
+      async (ctx, next) => {
+        const action = ctx.permission?.can?.action;
+
+        if (action == 'destroy') {
+          const repository = actionUtils.getRepositoryFromParams(ctx);
+          const filteredCount = await repository.count(ctx.permission.mergedParams);
+          const queryCount = await repository.count(ctx.permission.rawParams);
+
+          if (queryCount > filteredCount) {
+            ctx.throw(403, 'No permissions');
+            return;
+          }
+        }
+
+        await next();
+      },
+      {
+        after: 'core',
+        group: 'after',
       },
     );
   }
