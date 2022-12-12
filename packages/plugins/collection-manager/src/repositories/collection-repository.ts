@@ -1,5 +1,6 @@
-import { Repository } from '@nocobase/database';
+import { Model, Repository } from '@nocobase/database';
 import { CollectionModel } from '../models/collection';
+import Topo from '@hapi/topo';
 
 interface LoadOptions {
   filter?: any;
@@ -10,6 +11,8 @@ export class CollectionRepository extends Repository {
   async load(options: LoadOptions = {}) {
     const { filter, skipExist } = options;
     const instances = (await this.find({ filter })) as CollectionModel[];
+
+    const sorter = new Topo.Sorter<Model>();
 
     const throughModels = [];
 
@@ -24,9 +27,21 @@ export class CollectionRepository extends Repository {
           }
         }
       }
+
+      const topoOptions = {
+        group: instance.get('name'),
+      };
+
+      if (instance.get('inherits')) {
+        topoOptions['after'] = instance.get('inherits');
+      }
+
+      sorter.add(instance, topoOptions);
     }
 
-    instances.sort((a, b) => {
+    const sorted = sorter.nodes;
+
+    sorted.sort((a, b) => {
       if (throughModels.includes(a.get('name'))) {
         return -1;
       }
@@ -34,7 +49,7 @@ export class CollectionRepository extends Repository {
       return 1;
     });
 
-    for (const instance of instances) {
+    for (const instance of sorted) {
       await instance.load({ skipExist });
     }
   }
