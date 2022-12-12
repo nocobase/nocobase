@@ -364,6 +364,16 @@ export class ACL extends EventEmitter {
   can(options: CanArgs): CanResult | null {
     const { role, resource, action } = options;
     const aclRole = this.roles.get(role);
+
+    if (!aclRole) {
+      return null;
+    }
+
+    const snippetAllowed = aclRole.snippetAllowed(`${resource}:${action}`);
+    if (snippetAllowed === false) {
+      return null;
+    }
+
     const fixedParams = this.fixedParamsManager.getParams(resource, action);
 
     const mergeParams = (result: CanResult) => {
@@ -379,10 +389,6 @@ export class ACL extends EventEmitter {
 
       return result;
     };
-
-    if (!aclRole) {
-      return null;
-    }
 
     const aclResource = aclRole.getResource(resource);
 

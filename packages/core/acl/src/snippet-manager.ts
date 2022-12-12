@@ -32,13 +32,13 @@ class SnippetManager {
       throw new Error(`Snippet ${snippetName} not found`);
     }
 
-    const actions = snippet.actions.map((action) => {
-      return action;
-    });
+    const matched = snippet.actions.some((action) => minimatch(actionPath, action));
 
-    const matched = actions.some((action) => minimatch(actionPath, action));
+    if (matched) {
+      return negated ? false : true;
+    }
 
-    return negated ? !matched : matched;
+    return null;
   }
 }
 

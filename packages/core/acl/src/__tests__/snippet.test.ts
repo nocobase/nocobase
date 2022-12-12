@@ -70,5 +70,16 @@ describe('snippet manager', () => {
       expect(snippetManager.allow('collections:list', 'sc.collection-manager.fields')).toBe(true);
       expect(snippetManager.allow('collections:destroy', '!sc.collection-manager.fields')).toBe(false);
     });
+
+    it('should return null when not matched', () => {
+      const snippetManager = new SnippetManager();
+
+      snippetManager.register({
+        name: 'sc.collection-manager.fields',
+        actions: ['collections:*'],
+      });
+
+      expect(snippetManager.allow('fields:list', 'sc.collection-manager.fields')).toBeNull();
+    });
   });
 });

@@ -19,7 +19,7 @@ export interface ResourceActionsOptions {
 export class ACLRole {
   strategy: string | AvailableStrategyOptions;
   resources = new Map<string, ACLResource>();
-  snippets: Set<string> = new Set();
+  snippetRules: Set<string> = new Set();
 
   constructor(public acl: ACL, public name: string) {}
 
@@ -76,7 +76,22 @@ export class ACLRole {
   }
 
   public addSnippet(name: string) {
-    this.snippets.add(name);
+    this.snippetRules.add(name);
+  }
+
+  public snippetAllowed(actionPath: string) {
+    let results = null;
+
+    for (const snippetRule of this.snippetRules) {
+      const result = this.acl.snippetManager.allow(actionPath, snippetRule);
+      if (result === false) {
+        return false;
+      }
+
+      results = result;
+    }
+
+    return results;
   }
 
   public toJSON(): DefineOptions {
@@ -93,7 +108,7 @@ export class ACLRole {
       role: this.name,
       strategy: this.strategy,
       actions,
-      snippets: Array.from(this.snippets),
+      snippets: Array.from(this.snippetRules),
     };
   }
 
