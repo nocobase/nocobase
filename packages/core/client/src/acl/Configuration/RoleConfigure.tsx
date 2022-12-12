@@ -1,5 +1,7 @@
 import { onFieldChange } from '@formily/core';
 import React, { useContext } from 'react';
+import { css } from '@emotion/css';
+
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { SchemaComponent } from '../../schema-component';
@@ -32,16 +34,44 @@ export const RoleConfigure = () => {
               if (!form.modified) {
                 return;
               }
-              update(form);
+              update(field, form);
             });
           },
         },
         properties: {
-          allowConfigure: {
+          'ui-editor': {
             title: t('Configure permissions'),
+            type: 'boolean',
             'x-decorator': 'FormItem',
             'x-component': 'Checkbox',
-            'x-content': t('Allows configuration of the whole system, including UI, collections, permissions, etc.'),
+            'x-content': t('Allow to desgin pages'),
+            'x-decorator-props': {
+              className: css`
+                margin-bottom: 5px;
+              `,
+            },
+          },
+          'plugin-manager': {
+            type: 'boolean',
+            'x-decorator': 'FormItem',
+            'x-component': 'Checkbox',
+            'x-decorator-props': {
+              className: css`
+                margin-bottom: 5px;
+              `,
+            },
+            'x-content': t('Allow to manage plugins'),
+          },
+          'settings-center.*': {
+            type: 'boolean',
+            'x-decorator': 'FormItem',
+            'x-component': 'Checkbox',
+            'x-decorator-props': {
+              className: css`
+                margin-bottom: 5px;
+              `,
+            },
+            'x-content': t('Allow to configure plugins'),
           },
           'strategy.actions': {
             title: t('Global action permissions'),

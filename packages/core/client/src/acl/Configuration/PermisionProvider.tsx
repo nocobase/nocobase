@@ -6,10 +6,10 @@ import { useAPIClient } from '../../api-client';
 
 export const SettingCenterPermissionProvider = (props) => {
   const {
-    currentRecord: { allowConfigure },
+    currentRecord: { allowConfigurePlugins },
   } = useContext(PermissionContext);
 
-  if (!allowConfigure) {
+  if (!allowConfigurePlugins) {
     return null;
   }
   return <div>{props.children}</div>;
@@ -22,22 +22,31 @@ export const PermissionProvider = (props) => {
   const record = useRecord();
   const { t } = useTranslation();
   const [currentRecord, setCurrentRecord] = useState(record);
+
   return (
     <PermissionContext.Provider
       value={{
         currentRecord,
-        update: async (form) => {
-        //   const { allowConfigure } = form.values;
-
-          const { data } = await api.resource('roles').update({
-            filterByTk: record.name,
-            values: form.values,
-          });
-        //   await api.resource('roles.pluginTab').add({
-        //     values: [],
-        //   });
-
-          setCurrentRecord(data?.data?.[0]);
+        update: async (field, form) => {
+          const { path, value } = field.getState() as any;
+          if (['ui-editor', 'plugin-manager', 'settings-center.*'].includes(path)) {
+            const resource = api.resource('roles.snippets', record.name);
+            if (value) {
+              await resource.add({
+                values: [path],
+              });
+            } else {
+              await resource.remove({
+                values: [path],
+              });
+            }
+          } else {
+            const { data } = await api.resource('roles').update({
+              filterByTk: record.name,
+              values: form.values,
+            });
+          }
+          // setCurrentRecord(data?.data?.[0]);
           message.success(t('Saved successfully'));
         },
       }}
