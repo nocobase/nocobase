@@ -75,7 +75,9 @@ export class ACLRole {
     resource.removeAction(actionName);
   }
 
-  public addSnippet(name: string) {}
+  public addSnippet(name: string) {
+    this.snippets.add(name);
+  }
 
   public toJSON(): DefineOptions {
     const actions = {};
