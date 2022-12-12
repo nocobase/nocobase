@@ -52,10 +52,11 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       }
       if (item.type === 'item' && item.component) {
         const Component = findComponent(item.component);
+        item.key = `${item.key || 'item'}-${indexA}`;
         return (
           Component && (
             <SchemaInitializerItemContext.Provider
-              key={`${item.key || 'item'}-${indexA}`}
+              key={item.key}
               value={{
                 index: indexA,
                 item,
@@ -100,7 +101,6 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     });
   };
   const menu = <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>{renderItems(items)}</Menu>;
-
   if (!designable && props.designable !== true) {
     return null;
   }
