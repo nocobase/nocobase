@@ -1,7 +1,8 @@
 import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import { joinComma, toValue } from '../helpers';
+import { isPg, joinComma, toValue } from '../helpers';
 
+// @ts-ignore
 class LineString extends DataTypes.ABSTRACT {
   key = 'Path';
 }
@@ -12,10 +13,22 @@ export class LineStringField extends Field {
     super(
       {
         get() {
-          return toValue(this.getDataValue(name))
+          const value = this.getDataValue(name);
+          if (isPg(this.context)) {
+            return value?.coordinates
+          } else {
+            return toValue(value)
+          }
         },
         set(value) {
-          this.setDataValue(name, joinComma(value.map(joinComma)))
+          if (isPg(this.context)) {
+            this.setDataValue(name, joinComma(value.map(joinComma)))
+          } else {
+            this.setDataValue(name, {
+              type: 'LineString',
+              coordinates: value
+            })
+          }
         },
         ...options,
       },
@@ -24,7 +37,11 @@ export class LineStringField extends Field {
   }
 
   get dataType() {
-    return LineString;
+    if (isPg(this.context)) {
+      return LineString
+    } else {
+      return DataTypes.GEOMETRY('LINESTRING');
+    }
   }
 
 }

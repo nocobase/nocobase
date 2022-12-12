@@ -3,6 +3,7 @@ import { DataTypes } from 'sequelize';
 import { joinComma, toValue } from '../helpers';
 
 
+// @ts-ignore
 class Circle extends DataTypes.ABSTRACT {
   key = 'Circle';
 }

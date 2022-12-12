@@ -10,6 +10,7 @@ export const circle: IField = {
   title: generateNTemplate('Circle'),
   description: generateNTemplate('Circle'),
   sortable: true,
+  dialects: ['postgres'],
   default: {
     type: 'circle',
     uiSchema: {

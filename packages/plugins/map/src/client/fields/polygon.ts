@@ -10,6 +10,7 @@ export const polygon: IField = {
   title: generateNTemplate('Polygon'),
   description: generateNTemplate('Polygon'),
   sortable: true,
+  dialects: ['postgres', 'mysql'],
   default: {
     type: 'polygon',
     uiSchema: {

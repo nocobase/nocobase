@@ -6,3 +6,11 @@ export const toValue = (value?: string) => {
   if (!value) return null
   return JSON.parse(value.replace(/\(/g, '[').replace(/\)/g, ']'))
 }
+
+export const getDialect = (ctx) => {
+  return ctx.db.sequelize.getDialect();
+};
+
+export const isPg = (ctx) => {
+  return getDialect(ctx) === 'postgres';
+};
