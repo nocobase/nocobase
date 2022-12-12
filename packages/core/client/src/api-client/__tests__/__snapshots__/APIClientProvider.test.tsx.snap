@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`APIClientProvider useRequest is ok 1`] = `
+<div>
+  <div>
+    loading:true, refresh:true, run:true
+  </div>
+</div>
+`;

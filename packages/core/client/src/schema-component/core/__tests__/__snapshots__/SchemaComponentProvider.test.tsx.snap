@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SchemaComponentProvider SchemaComponent get component by SchemaComponentProvider 1`] = `
+<div>
+  <div>
+    hello
+  </div>
+</div>
+`;
