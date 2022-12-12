@@ -11,7 +11,12 @@ export const useFieldComponentOptions = () => {
   const { t } = useTranslation();
 
   const fieldComponentOptions = useMemo(() => {
-    if (!collectionField?.interface) return;
+    if (
+      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m']
+        .includes(collectionField.interface)
+    )
+      return;
+
     switch (collectionField.interface) {
       case 'o2m':
         return [

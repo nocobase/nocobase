@@ -4,8 +4,6 @@ import { Button, Select } from "antd";
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { Trans, useTranslation } from "react-i18next";
 
-import { i18n } from "@nocobase/client";
-
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
 import { useFlowContext } from '../FlowContext';
@@ -20,7 +18,7 @@ function CalculationItem({ value, onChange, onRemove }) {
     return null;
   }
 
-  const { calculator, operands = [] } = value;
+  const { calculator, operands = [null] } = value;
 
   return (
     <div className={css`

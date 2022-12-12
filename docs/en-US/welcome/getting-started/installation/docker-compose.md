@@ -92,7 +92,7 @@ NocoBase version ([click here for the latest version](https://hub.docker.com/r/n
 ```yml
 services:
   app:
-    image: nocobase/nocobase:0.7.0-alpha.78
+    image: nocobase/nocobase:main
 ```
 
 Environment variables
@@ -100,14 +100,14 @@ Environment variables
 ```yml
 services:
   app:
-    image: nocobase/nocobase:0.7.0-alpha.78
+    image: nocobase/nocobase:main
     environment:
       - DB_DIALECT=postgres
       - DB_HOST=postgres
       - DB_DATABASE=nocobase
       - DB_USER=nocobase
       - DB_PASSWORD=nocobase
-      - LOCAL_STORAGE_BASE_URL=http://localhost:13000/storage/uploads
+      - LOCAL_STORAGE_BASE_URL=/storage/uploads
 ```
 
 - `DB_*` is the database related, if it is not the default database service of the example, please change it according to the actual situation.
@@ -118,6 +118,8 @@ services:
 It may take a few minutes
 
 ```bash
+# pull service images
+$ docker-compose pull
 # run in the background
 $ docker-compose up -d
 # view app logs
