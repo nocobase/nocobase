@@ -15,11 +15,6 @@
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1"
   },
-  "devDependencies": {
-    "@nocobase/database": "0.8.0-alpha.13",
-    "@nocobase/resourcer": "0.8.0-alpha.13",
-    "@nocobase/cache": "0.8.0-alpha.13"
-  },
   "peerDependencies": {
     "moment": "2.x",
     "rc-input-number": "7.x"
