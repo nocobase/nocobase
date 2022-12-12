@@ -3,7 +3,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
 import template from 'lodash/template';
 import React, { createContext, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ACLCollectionProvider, TableFieldResource, useAPIClient, useRecord, WithoutTableFieldResource } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
@@ -82,6 +82,7 @@ export const useResourceAction = (props, opts = {}) => {
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
+  const location = useLocation();
   if (!Object.keys(params).includes('appends') && appends?.length) {
     params['appends'] = appends;
   }
@@ -104,7 +105,9 @@ export const useResourceAction = (props, opts = {}) => {
           api.services[fieldSchema['x-uid']] = result;
         }
       },
-      defaultParams: [params],
+      defaultParams: (location.state as any)?.serviceParams
+        ? JSON.parse((location.state as any)?.serviceParams)
+        : [params],
       refreshDeps: [JSON.stringify(params.appends)],
     },
   );
