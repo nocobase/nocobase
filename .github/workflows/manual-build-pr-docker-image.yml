@@ -46,3 +46,11 @@ jobs:
             COMMIT_HASH=${GITHUB_SHA}
           push: true
           tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-${{ inputs.pr_number }}
+      - name: Deploy NocoBase
+        run: |
+          curl --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}pr-${{ inputs.pr_number }}" \
+          --header 'Content-Type: application/json' \
+          -d "{
+              \"tag\": \"pr-${{ inputs.pr_number }}\",
+              \"dialect\": \"postgres\"
+          }"
