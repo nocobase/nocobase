@@ -1,5 +1,6 @@
 import { registerActions } from '@nocobase/actions';
 import { mockServer } from '@nocobase/test';
+import { mockServer as actionMockServer } from './index';
 
 describe('list action with acl', () => {
   let app;
@@ -132,9 +133,7 @@ describe('list action with acl', () => {
 describe('list action', () => {
   let app;
   beforeEach(async () => {
-    app = mockServer({
-      acl: false,
-    });
+    app = actionMockServer();
     registerActions(app);
 
     const Post = app.collection({

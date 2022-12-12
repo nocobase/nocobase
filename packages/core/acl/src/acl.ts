@@ -160,7 +160,16 @@ export class ACL extends EventEmitter {
             },
             state: {
               currentRole: ctx.state.currentRole,
-              currentUser: ctx.state.currentUser?.toJSON(),
+              currentUser: (() => {
+                if (!ctx.state.currentUser) {
+                  return null;
+                }
+                if (ctx.state.currentUser.toJSON) {
+                  return ctx.state.currentUser?.toJSON();
+                }
+
+                return ctx.state.currentUser;
+              })(),
             },
             permission: {},
             throw(...args) {

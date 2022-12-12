@@ -7,7 +7,7 @@ describe('acl snippet', () => {
     acl = new ACL();
   });
 
-  it('should register snippet', () => {
+  it.skip('should register snippet', () => {
     acl.registerSnippet({
       name: 'sc.collection-manager.fields',
       actions: ['collections:list'],
