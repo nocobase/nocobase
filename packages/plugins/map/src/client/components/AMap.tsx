@@ -215,7 +215,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   }, [disabled, needUpdateFlag, type]);
 
   useEffect(() => {
-    if (!mouseTool.current) return;
+    if (!mouseTool.current || !editor.current) return;
     const target = editor.current.getTarget();
     if (target) {
       mouseTool.current.close?.();
@@ -280,7 +280,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
           z-index: 2;
         `}
       >
-        <Button disabled={!overlay.current} onClick={onReset} type="primary">
+        <Button disabled={!value} onClick={onReset} type="primary">
           {t('Clear')}
         </Button>
       </div>

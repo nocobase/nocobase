@@ -14,14 +14,14 @@ export class LineStringField extends Field {
       {
         get() {
           const value = this.getDataValue(name);
-          if (isPg(this.context)) {
+          if (isPg(context)) {
             return value?.coordinates
           } else {
             return toValue(value)
           }
         },
         set(value) {
-          if (isPg(this.context)) {
+          if (isPg(context)) {
             this.setDataValue(name, joinComma(value.map(joinComma)))
           } else {
             this.setDataValue(name, {

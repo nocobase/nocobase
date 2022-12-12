@@ -14,14 +14,14 @@ export class PointField extends Field {
       {
         get() {
           const value = this.getDataValue(name);
-          if (isPg(this.context)) {
+          if (isPg(context)) {
             return value ? [value.x, value.y] : null
           } else {
             return value?.coordinates
           }
         },
         set(value) {
-          if (isPg(this.context)) {
+          if (isPg(context)) {
             this.setDataValue(name, joinComma(value))
           } else {
             this.setDataValue(name, {

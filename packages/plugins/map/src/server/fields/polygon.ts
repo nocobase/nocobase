@@ -14,14 +14,14 @@ export class PolygonField extends Field {
       {
         get() {
           const value = this.getDataValue(name)
-          if (isPg(this.context)) {
+          if (isPg(context)) {
             return toValue(value)
           } else {
             return value?.coordinates[0]
           }
         },
         set(value) {
-          if (isPg(this.context)) {
+          if (isPg(context)) {
             this.setDataValue(name, joinComma(value.map((item: any) => joinComma(item))))
           } else {
             this.setDataValue(name, {

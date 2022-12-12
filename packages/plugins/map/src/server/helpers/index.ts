@@ -8,7 +8,7 @@ export const toValue = (value?: string) => {
 }
 
 export const getDialect = (ctx) => {
-  return ctx.db.sequelize.getDialect();
+  return (ctx.db || ctx.database).sequelize.getDialect();
 };
 
 export const isPg = (ctx) => {
