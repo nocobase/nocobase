@@ -1,6 +1,43 @@
 import { mockServer, MockServer } from './index';
 import { registerActions } from '@nocobase/actions';
 
+describe('add action with set field', () => {
+  let app: MockServer;
+
+  beforeEach(async () => {
+    app = mockServer();
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('should add item into fields', async () => {
+    const TestCollection = app.collection({
+      name: 'test',
+      fields: [
+        {
+          type: 'set',
+          name: 'set-field',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const a1 = await TestCollection.repository.create({});
+
+    const response = await app
+      .agent()
+      .resource('posts.set-field', a1.get('id'))
+      .add({
+        values: ['a', 'b'],
+      });
+
+    expect(response.status).toEqual(200);
+  });
+});
+
 describe('add action', () => {
   let app: MockServer;
   let Post;
