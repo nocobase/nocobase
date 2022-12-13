@@ -13,7 +13,26 @@ export default class extends Migration {
     if (!fieldRepo) {
       return;
     }
+    const pluginRepo = db.getRepository('applicationPlugins');
     await db.sequelize.transaction(async (transaction) => {
+      const seqPlugin = await pluginRepo.findOne({
+        filter: {
+          name: 'sequence-field'
+        },
+        transaction
+      });
+      if (!seqPlugin) {
+        await pluginRepo.create({
+          values: {
+            name: 'sequence-field',
+            version: '0.8.0-alpha.13',
+            enabled: true,
+            installed: true,
+            builtIn: true,
+          }
+        });
+      }
+
       const fields = await fieldRepo.find({
         filter: {
           type: 'sequence'

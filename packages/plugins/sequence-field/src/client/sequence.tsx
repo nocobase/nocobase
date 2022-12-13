@@ -1,12 +1,13 @@
 import { css } from '@emotion/css';
 import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
 import { onFieldValueChange } from '@formily/core';
-import { SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
+import { SchemaOptionsContext, useForm, useFormEffects, ISchema } from '@formily/react';
 import { Button, Select } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Cron, SchemaComponent, SchemaComponentOptions, useCompile, interfacesProperties, IField } from '@nocobase/client';
+import { Cron, SchemaComponent, SchemaComponentOptions, useCompile, interfacesProperties, IField, useCollectionField } from '@nocobase/client';
+import { lang, NAMESPACE } from './locale';
 
 function RuleTypeSelect(props) {
   const compile = useCompile();
@@ -40,10 +41,10 @@ function RuleOptions() {
       flex-wrap: wrap;
     `}>
       {Object.keys(options)
-        .filter(key => typeof options[key] !== 'undefined')
+        .filter(key => typeof options[key] !== 'undefined' && ruleType.optionRenders[key])
         .map(key => {
           const Component = ruleType.optionRenders[key];
-          const { title } = ruleType.fieldset[key]
+          const { title } = ruleType.fieldset[key];
           return Component
             ? (
               <dl key={key} className={css`
@@ -68,7 +69,7 @@ function RuleOptions() {
 
 const RuleTypes = {
   string: {
-    title: '{{t("Fixed text")}}',
+    title: `{{t("Fixed text", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
       value(options = { value: '' }) {
         return <code>{options.value}</code>;
@@ -77,20 +78,20 @@ const RuleTypes = {
     fieldset: {
       value: {
         type: 'string',
-        title: '{{t("Text content")}}',
+        title: `{{t("Text content", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'Input'
       }
     }
   },
   integer: {
-    title: '{{t("Autoincrement")}}',
+    title: `{{t("Autoincrement", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
       digits({ value }) {
         const { t } = useTranslation();
         return (
           <span>
-            {t('{{value}} Digits', { value })}
+            {t('{{value}} Digits', { ns: NAMESPACE, value })}
           </span>
         );
       },
@@ -98,7 +99,7 @@ const RuleTypes = {
         const { t } = useTranslation();
         return (
           <span>
-            {t('Starts from {{value}}', { value })}
+            {t('Starts from {{value}}', { ns: NAMESPACE, value })}
           </span>
         );
       },
@@ -118,7 +119,7 @@ const RuleTypes = {
     fieldset: {
       digits: {
         type: 'number',
-        title: '{{t("Digits")}}',
+        title: `{{t("Digits", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
@@ -126,25 +127,40 @@ const RuleTypes = {
           max: 10
         },
         required: true,
-        default: 1
+        default: 1,
+        'x-reactions': {
+          target: 'start',
+          fulfill: {
+            schema: {
+              'x-component-props.max': '{{ 10 ** $self.value - 1 }}'
+            }
+          }
+        }
       },
       start: {
         type: 'number',
-        title: '{{t("Start from")}}',
+        title: `{{t("Start from", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
           min: 0
         },
         required: true,
-        default: 0
+        default: 0,
+        // 'x-reactions': {
+        //   dependencies: ['.start', '.base'],
+        //   fulfill: {
+        //     schema: {
+        //       'x-component-props.max': '{{ ($deps[1] ?? 10) ** ($deps[0] ?? 1) - 1 }}'
+        //     }
+        //   }
+        // }
       },
       cycle: {
         type: 'string',
-        title: '{{t("Reset cycle")}}',
+        title: `{{t("Reset cycle", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         ['x-component']({ value, onChange }) {
-          const { t } = useTranslation();
           const shortValues = [
             { label: 'No reset', value: 0 },
             { label: 'Daily', value: 1, cron: '0 0 * * *' },
@@ -162,7 +178,7 @@ const RuleTypes = {
             <fieldset>
               <Select value={option.value} onChange={(v) => onChange(shortValues[v].cron)}>
                 {shortValues.map(item => (
-                  <Select.Option key={item.value} value={item.value}>{t(item.label)}</Select.Option>
+                  <Select.Option key={item.value} value={item.value}>{lang(item.label)}</Select.Option>
                 ))}
               </Select>
               {option.value === 5
@@ -182,7 +198,7 @@ const RuleTypes = {
     }
   },
   date: {
-    title: '{{t("Date")}}',
+    title: `{{t("Date", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
       format(options = { value: 'YYYYMMDD' }) {
         return <code>{options.value}</code>;
@@ -251,7 +267,7 @@ export const sequence: IField = {
   type: 'object',
   group: 'advanced',
   order: 3,
-  title: '{{t("Sequence")}}',
+  title: `{{t("Sequence", { ns: "${NAMESPACE}" })}}`,
   sortable: true,
   default: {
     type: 'sequence',
@@ -259,19 +275,35 @@ export const sequence: IField = {
       type: 'string',
       'x-component': 'Input',
       'x-component-props': {
-        readOnly: true,
-        disabled: true
+        // readOnly: true,
+        // disabled: true
       },
       'x-read-pretty': true,
+      'x-reactions': {
+        dependencies: ['.inputable'],
+        fulfill: {
+          schema: {
+            'x-component-props.disabled': '{{ !$deps[0] }}'
+          }
+        }
+      }
     },
   },
   hasDefaultValue: false,
+  schemaInitialize(schema: ISchema, { block, field }) {
+    if (block === 'Form') {
+      Object.assign(schema['x-component-props'], {
+        disabled: !field.inputable,
+      });
+    }
+    return schema;
+  },
   properties: {
     ...interfacesProperties.defaultProps,
     unique: interfacesProperties.unique,
     patterns: {
       type: 'array',
-      title: '{{t("Sequence rules")}}',
+      title: `{{t("Sequence rules", { ns: "${NAMESPACE}" })}}`,
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'ArrayTable',
@@ -292,7 +324,7 @@ export const sequence: IField = {
           type: {
             type: 'void',
             'x-component': 'ArrayTable.Column',
-            'x-component-props': { title: '{{t("Type")}}' },
+            'x-component-props': { title: `{{t("Type", { ns: "${NAMESPACE}" })}}` },
             // 'x-hidden': true,
             properties: {
               type: {
@@ -307,7 +339,7 @@ export const sequence: IField = {
           options: {
             type: 'void',
             'x-component': 'ArrayTable.Column',
-            'x-component-props': { title: '{{t("Rule content")}}' },
+            'x-component-props': { title: `{{t("Rule content", { ns: "${NAMESPACE}" })}}` },
             properties: {
               options: {
                 type: 'object',
@@ -320,7 +352,7 @@ export const sequence: IField = {
             type: 'void',
             'x-component': 'ArrayTable.Column',
             'x-component-props': {
-              title: '{{t("Operations")}}',
+              title: `{{t("Operations", { ns: "${NAMESPACE}" })}}`,
               dataIndex: 'operations',
               fixed: 'right',
               className: css`
@@ -335,7 +367,6 @@ export const sequence: IField = {
             properties: {
               config: {
                 type: 'void',
-                // 'x-component': 'span',
                 properties: {
                   options: {
                     type: 'object',
@@ -343,55 +374,6 @@ export const sequence: IField = {
                   }
                 }
               },
-              // configure: {
-              //   type: 'void',
-              //   title: '{{t("Configure")}}',
-              //   'x-component': 'Action.Link',
-              //   properties: {
-              //     drawer: {
-              //       type: 'void',
-              //       'x-component': 'Action.Drawer',
-              //       'x-decorator': 'Form',
-              //       'x-decorator-props': {
-              //         useValues: useRowOptions
-              //       },
-              //       title: '{{t("Configure")}}',
-              //       properties: {
-              //         options: {
-              //           type: 'void',
-              //           'x-component': RuleConfig
-              //         },
-              //         actions: {
-              //           type: 'void',
-              //           'x-component': 'Action.Drawer.Footer',
-              //           properties: {
-              //             cancel: {
-              //               title: '{{t("Cancel")}}',
-              //               'x-component': 'Action',
-              //               'x-component-props': {
-              //                 // useAction: '{{ cm.useCancelAction }}',
-              //               },
-              //             },
-              //             submit: {
-              //               title: '{{t("Submit")}}',
-              //               'x-component': 'Action',
-              //               'x-component-props': {
-              //                 type: 'primary',
-              //                 async useAction() {
-              //                   const form = useForm();
-              //                   const ctx = useActionContext();
-              //                   await form.submit();
-              //                   console.log(form);
-              //                   ctx.setVisible(false);
-              //                 }
-              //               }
-              //             }
-              //           }
-              //         }
-              //       }
-              //     },
-              //   },
-              // },
               remove: {
                 type: 'void',
                 'x-component': 'ArrayTable.Remove',
@@ -405,21 +387,21 @@ export const sequence: IField = {
           type: 'void',
           'x-component': 'ArrayTable.Addition',
           'x-component-props': {
-            defaultValue: { type: 'integer' }
+            defaultValue: { type: 'integer', options: { digits: 1, start: 0 } }
           },
-          title: "{{t('Add rule')}}",
+          title: `{{t("Add rule", { ns: "${NAMESPACE}" })}}`,
         }
       }
     },
     inputable: {
       type: 'boolean',
-      title: "{{t('Inputable')}}",
+      title: `{{t("Inputable", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },
     match: {
       type: 'boolean',
-      title: "{{t('Match rules')}}",
+      title: `{{t("Match rules", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       'x-reactions': {
