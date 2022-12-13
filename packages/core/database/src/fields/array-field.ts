@@ -10,23 +10,23 @@ export class ArrayField extends Field {
     return DataTypes.JSON;
   }
 
-  sortValue(model) {
+  sortValue = (model) => {
     const oldValue = model.get(this.options.name);
 
     if (oldValue) {
       const newValue = oldValue.sort();
       model.set(this.options.name, newValue);
     }
-  }
+  };
 
   bind() {
     super.bind();
-    this.on('beforeSave', this.sortValue.bind(this));
+    this.on('beforeSave', this.sortValue);
   }
 
   unbind() {
     super.unbind();
-    this.off('beforeSave', this.sortValue.bind(this));
+    this.off('beforeSave', this.sortValue);
   }
 }
 
