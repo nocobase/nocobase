@@ -1,33 +1,32 @@
 name: Auto down deploy
-# deploy_host
-# deploy_host_username
-# deploy_host_password
 
-# https://docs.github.com/cn/actions/using-workflows/events-that-trigger-workflows#workflow_run
-env:
-  nocobase_deploy_sh_dir: /home/ecs-user/nocobase/auto-deploy-pr/
 on:
   pull_request:
     types:
       - closed
     branches:
       - '**'
-    paths:
-      - 'packages/**'
 
 jobs:
-  down_deploy:
+  down:
     runs-on: ubuntu-latest
     steps:
-      - name: ssh down deploy
-        if: github.event.pull_request.merged == true
-        uses: appleboy/ssh-action@master
-        env:
-          pr_number: ${{ github.event.number }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
         with:
-          host: ${{ secrets.deploy_host }}
-          username: ${{ secrets.deploy_host_username }}
-          password: ${{ secrets.deploy_host_password }}
-          script: |
-            cd ${{ env.nocobase_deploy_sh_dir }}
-            ./nocobase-deploy.sh down ${{ env.pr_number }}
+          images: |
+            nocobase/nocobase
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - name: Down ${{ steps.meta.outputs.tags }}
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo $IMAGE_TAG
+          export APP_NAME=$(echo $IMAGE_TAG | cut -d ":" -f 2)
+          echo $APP_NAME
+          curl --location --request DELETE "${{secrets.NOCOBASE_DEPLOY_HOST}}$APP_NAME"
