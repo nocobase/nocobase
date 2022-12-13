@@ -6,7 +6,7 @@ const locale = {
   'Circle': '圆',
   'Polygon': '多边形',
   'Access key': '访问密钥',
-  'Security code': '安全密钥',
+  'securityCode/serviceHost': 'securityCode/serviceHost',
   'AMap': '高德地图',
   'Google Maps': '谷歌地图',
   'Clear': '清空',
@@ -17,7 +17,7 @@ const locale = {
   'Cancel': '取消',
   'Enter keywords to search': '输入地方名关键字搜索',
   'The AccessKey is incorrect, please check it': '访问密钥不正确，请检查',
-  'Please configure the AMap securityCode or securityHost correctly': '请正确配置高德地图安全密钥或安全域名',
+  'Please configure the AMap securityCode or serviceHost correctly': '请正确配置高德地图 securityCode 或 serviceHost',
   // Designer
   'Edit field title': '编辑字段标题',
   'Field title': '字段标题',

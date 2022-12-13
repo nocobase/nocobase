@@ -56,7 +56,7 @@ export const commonSchema = {
       },
     },
     'uiSchema.x-component-props.securityJsCode': {
-      title: generateNTemplate('Security code'),
+      title: generateNTemplate('securityCode/serviceHost'),
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
