@@ -25,6 +25,7 @@ import { UidFieldOptions } from './uid-field';
 import { UUIDFieldOptions } from './uuid-field';
 import { VirtualFieldOptions } from './virtual-field';
 import { FormulaFieldOptions } from './formula-field';
+import { SetFieldOptions } from './set-field';
 
 export * from './array-field';
 export * from './set-field';
