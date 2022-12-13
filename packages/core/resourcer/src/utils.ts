@@ -140,6 +140,13 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
         delete: accessors.remove,
       },
     },
+    set: {
+      '/:associatedName/:associatedIndex/:resourceName': {
+        get: accessors.list,
+        post: accessors.add,
+        delete: accessors.remove,
+      },
+    },
   };
 
   const params: ParsedParams = {};
