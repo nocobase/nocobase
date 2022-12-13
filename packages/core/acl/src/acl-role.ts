@@ -104,7 +104,7 @@ export class ACLRole {
       role: this.name,
       strategy: this.strategy,
       actions,
-      snippets: Array.from(this.snippetPattens),
+      snippets: Array.from(this.snippetPatterns),
     };
   }
 
