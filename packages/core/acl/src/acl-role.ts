@@ -19,7 +19,7 @@ export interface ResourceActionsOptions {
 export class ACLRole {
   strategy: string | AvailableStrategyOptions;
   resources = new Map<string, ACLResource>();
-  snippetRules: Set<string> = new Set();
+  snippetPattens: Set<string> = new Set();
 
   constructor(public acl: ACL, public name: string) {}
 
@@ -75,14 +75,18 @@ export class ACLRole {
     resource.removeAction(actionName);
   }
 
-  public addSnippet(name: string) {
-    this.snippetRules.add(name);
+  public addSnippetPatten(name: string) {
+    this.snippetPattens.add(name);
+  }
+
+  public setSnippetPattens(snippetRules: string[]) {
+    this.snippetPattens = new Set(snippetRules);
   }
 
   public snippetAllowed(actionPath: string) {
     let results = null;
 
-    for (const snippetRule of this.snippetRules) {
+    for (const snippetRule of this.snippetPattens) {
       const result = this.acl.snippetManager.allow(actionPath, snippetRule);
       if (result === false) {
         return false;
