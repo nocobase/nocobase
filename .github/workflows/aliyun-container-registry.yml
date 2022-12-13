@@ -17,7 +17,7 @@ on:
 
 jobs:
   push-acr:
-    if: github.event.pull_request.head.repo.fork !== true
+    if: github.event.pull_request.head.repo.fork != true
     runs-on: ubuntu-latest
     services:
       verdaccio:
