@@ -7,16 +7,21 @@ on:
       - 'develop'
     paths:
       - 'packages/**'
+      - 'docker/nocobase/**'
+      - 'Dockerfile.acr'
+      - '.github/workflows/aliyun-container-registry.yml'
   pull_request:
     branches:
       - '**'
     paths:
-      - 'docker/nocobase/**'
       - 'packages/**'
+      - 'docker/nocobase/**'
+      - 'Dockerfile.acr'
+      - '.github/workflows/aliyun-container-registry.yml'
 
 jobs:
   push-acr:
-    if: github.event.pull_request.head.repo.fork !== true
+    if: github.event.pull_request.head.repo.fork != true
     runs-on: ubuntu-latest
     services:
       verdaccio:
