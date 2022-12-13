@@ -63,6 +63,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
   async afterDisable() {}
 
   async remove() {}
+
+  registerACLSettingSnippet({ name, actions }: { name: string; actions: string[] }) {
+    this.app.acl.registerSnippet({
+      name: `settings-center.${this.getName()}.${name}`,
+      actions,
+    });
+  }
 }
 
 export default Plugin;

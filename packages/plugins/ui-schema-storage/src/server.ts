@@ -26,6 +26,11 @@ export class UiSchemaStoragePlugin extends Plugin {
 
     this.registerRepository();
 
+    this.registerACLSettingSnippet({
+      name: 'block-templates',
+      actions: ['uiSchemaTemplates:*'],
+    });
+
     db.on('uiSchemas.beforeCreate', function setUid(model) {
       if (!model.get('name')) {
         model.set('name', uid());

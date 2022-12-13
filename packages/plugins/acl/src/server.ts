@@ -141,9 +141,9 @@ export class PluginACL extends Plugin {
       RoleModel,
     });
 
-    this.app.acl.registerSnippet({
-      name: 'settings-center.collection-manager.collections',
-      actions: ['collections:*', 'fields:*'],
+    this.registerACLSettingSnippet({
+      name: 'roles',
+      actions: ['roles:list', 'roles:create', 'roles:update', 'roles:destroy'],
     });
 
     this.registerAssociationFieldsActions();
