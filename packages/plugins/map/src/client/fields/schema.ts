@@ -41,12 +41,19 @@ export const commonSchema = {
       },
       'x-disabled': '{{ !createOnly }}',
       default: 'amap',
-      enum: MapTypes,
+      enum: MapTypes
     }
   },
-  schemaInitialize(schema: ISchema) {
-    Object.assign(schema, {
-      'x-designer': 'Map.Designer',
-    });
+  schemaInitialize(schema: ISchema, { readPretty, block }) {
+    console.log("🚀 ~ file: schema.ts:48 ~ schemaInitialize ~ schema", schema)
+    if (block === 'Form') {
+      Object.assign(schema, {
+        'x-component': 'Map',
+        'x-component-props': {
+          readOnly: true
+        },
+        'x-designer': 'Map.Designer',
+      });
+    }
   },
 }

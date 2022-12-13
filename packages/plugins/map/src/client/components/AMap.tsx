@@ -303,11 +303,8 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
         <Alert message={errMessage} type="error" />
       ) : (
         <>
-          <Search toCenter={toCenter} aMap={aMap.current}></Search>
+          <Search toCenter={toCenter} aMap={aMap.current} />
           <div
-            style={{
-              display: disabled ? 'none' : 'block',
-            }}
             className={css`
               position: absolute;
               top: 10px;
@@ -319,9 +316,6 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
             <Alert message={t('Click to select the starting point and double-click to end the drawing')} type="info" />
           </div>
           <div
-            style={{
-              display: disabled ? 'none' : 'block',
-            }}
             className={css`
               position: absolute;
               bottom: 20px;

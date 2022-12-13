@@ -1,11 +1,23 @@
-import { useFormBlockContext } from '@nocobase/client';
-import React from 'react';
+import { useField, useFieldSchema } from '@formily/react';
+import { useCollection } from '@nocobase/client';
+import React, { useEffect } from 'react';
 import AMapComponent from './AMap';
 
 const ReadPretty = (props) => {
-  const { value, readPretty } = props;
+  const { value, readOnly } = props;
+  const fieldSchema = useFieldSchema();
+  const { getField } = useCollection();
+  const collectionField = getField(fieldSchema.name);
+  const mapType = props.mapType || collectionField?.uiSchema['x-component-props']?.mapType;
+  const field = useField();
 
-  if (!readPretty)
+  useEffect(() => {
+    if (!field.title) {
+      field.title = collectionField.uiSchema.title;
+    }
+  }, collectionField.title);
+
+  if (!readOnly)
     return (
       <div
         style={{
@@ -15,7 +27,8 @@ const ReadPretty = (props) => {
         {value?.join(',')}
       </div>
     );
-  return <AMapComponent {...props}></AMapComponent>;
+
+  return mapType === 'amap' ? <AMapComponent mapType={mapType} {...props}></AMapComponent> : null;
 };
 
 export default ReadPretty;
