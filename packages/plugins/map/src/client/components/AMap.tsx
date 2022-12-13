@@ -277,17 +277,15 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
   if (!accessKey) {
     return (
-      <div>
-        <Alert
-          action={
-            <Button type="primary" onClick={() => history.push('/admin/settings/map-configuration/configuration')}>
-              {t('Go to the configuration page')}
-            </Button>
-          }
-          message={t('Please configure the AccessKey and SecurityJsCode first')}
-          type="error"
-        />
-      </div>
+      <Alert
+        action={
+          <Button type="primary" onClick={() => history.push('/admin/settings/map-configuration/configuration')}>
+            {t('Go to the configuration page')}
+          </Button>
+        }
+        message={t('Please configure the AccessKey and SecurityJsCode first')}
+        type="error"
+      />
     );
   }
 
