@@ -64,13 +64,55 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   const editor = useRef(null);
   const id = useRef(`nocobase-map-${type}-${Date.now().toString(32)}`);
 
-  const toRemoveOverlay = () => {
+  const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
+    strokeWeight: 5,
+    strokeColor: '#4e9bff',
+    fillColor: '#4e9bff',
+    strokeOpacity: 1,
+  });
+
+  const toRemoveOverlay = useCallback(() => {
     if (overlay.current) {
       map.current?.remove(overlay.current);
     }
-  };
+  }, []);
 
-  const createEditor = () => {
+  const setTarget = useCallback(() => {
+    if (!disabled && type !== 'point' && editor.current) {
+      editor.current.setTarget(overlay.current);
+      editor.current.open();
+    }
+  }, [type, disabled]);
+
+  const onMapChange = useCallback(
+    (target, onlyChange = false) => {
+      let nextValue = null;
+
+      if (type === 'point') {
+        const { lat, lng } = (target as AMap.Marker).getPosition();
+        nextValue = [lng, lat];
+      } else if (type === 'polygon' || type === 'lineString') {
+        nextValue = (target as AMap.Polygon).getPath().map((item) => [item.lng, item.lat]);
+        if (nextValue.length < 2) {
+          return;
+        }
+      } else if (type === 'circle') {
+        const center = target.getCenter();
+        const radius = target.getRadius();
+        nextValue = [center.lng, center.lat, radius];
+      }
+
+      if (!onlyChange) {
+        toRemoveOverlay();
+        overlay.current = target;
+        setTarget();
+      }
+      onChange(nextValue);
+    },
+    [needUpdateFlag, type, toRemoveOverlay, setTarget, onChange],
+  );
+
+  const createEditor = useCallback(() => {
     const mapping = methodMapping[type as keyof typeof methodMapping];
     if (mapping && 'editor' in mapping && !editor.current) {
       editor.current = new aMap.current[mapping.editor](map.current);
@@ -81,7 +123,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
         onMapChange(target, true);
       });
     }
-  };
+  }, [needUpdateFlag, type, onMapChange]);
 
   const executeMouseTool = useCallback(() => {
     if (!mouseTool.current) return;
@@ -91,7 +133,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
       return;
     }
     mouseTool.current[mapping.mouseTool]({
-      strokeWeight: 5,
+      ...commonOptions,
     } as AMap.PolylineOptions);
   }, []);
 
@@ -105,13 +147,6 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
     executeMouseTool();
   };
-
-  const setTarget = useCallback(() => {
-    if (type !== 'point' && editor.current) {
-      editor.current.setTarget(overlay.current);
-      editor.current.open();
-    }
-  }, [type]);
 
   const toCenter = (position, imm?: boolean) => {
     if (map.current) {
@@ -149,12 +184,13 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     if (!mapping) {
       return;
     }
-    const options = {};
+    const options = commonOptions;
     if ('transformOptions' in mapping) {
       Object.assign(options, mapping.transformOptions(value));
     } else if ('propertyKey' in mapping) {
       options[mapping.propertyKey] = value;
     }
+    console.log('🚀 ~ file: AMap.tsx:193 ~ useEffect ~ options', options);
     const nextOverlay = new aMap.current[mapping.overlay](options);
 
     // 聚焦在编辑的位置
@@ -165,33 +201,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
     createEditor();
     setTarget();
-  }, [value, needUpdateFlag, type, setTarget]);
-
-  const onMapChange = (target, onlyChange = false) => {
-    let nextValue = null;
-
-    if (type === 'point') {
-      const { lat, lng } = (target as AMap.Marker).getPosition();
-      nextValue = [lng, lat];
-    } else if (type === 'polygon' || type === 'lineString') {
-      nextValue = (target as AMap.Polygon).getPath().map((item) => [item.lng, item.lat]);
-      if (nextValue.length < 2) {
-        return;
-      }
-    } else if (type === 'circle') {
-      const center = target.getCenter();
-      const radius = target.getRadius();
-      nextValue = [center.lng, center.lat, radius];
-      console.log('🚀 ~ file: AMap.tsx:149 ~ onMapChange ~ nextValue', nextValue);
-    }
-
-    if (!onlyChange) {
-      toRemoveOverlay();
-      overlay.current = target;
-      setTarget();
-    }
-    onChange(nextValue);
-  };
+  }, [value, needUpdateFlag, type, createEditor, setTarget]);
 
   // 当在编辑时，关闭 mouseTool
   useEffect(() => {

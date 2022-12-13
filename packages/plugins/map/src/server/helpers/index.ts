@@ -1,5 +1,5 @@
 export const joinComma = (value: any[]) => {
-  return value.join(',')
+  return `(${value.join(',')})`
 }
 
 export const toValue = (value?: string) => {
