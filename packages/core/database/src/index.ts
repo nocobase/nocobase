@@ -17,3 +17,4 @@ export * from './repository';
 export * from './update-associations';
 export * from './collection-importer';
 export * from './filter-match';
+export * from './field-repository/array-field-repository';
