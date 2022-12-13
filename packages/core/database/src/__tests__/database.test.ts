@@ -1,5 +1,6 @@
 import path from 'path';
 import { Database, Model } from '..';
+import { ArrayFieldRepository } from '../field-repository/array-field-repository';
 import { mockDatabase } from './index';
 
 describe('database', () => {
@@ -45,6 +46,15 @@ describe('database', () => {
     expect(db.getRepository('tests.relations', '1')).toEqual(
       db.getCollection('tests').repository.relation('relations').of('1'),
     );
+  });
+
+  it('should get array field repository', async () => {
+    db.collection({
+      name: 'tests',
+      fields: [{ type: 'set', name: 'set-field' }],
+    });
+
+    expect(db.getRepository('tests.set-field', '1')).toBeInstanceOf(ArrayFieldRepository);
   });
 
   test('import', async () => {

@@ -15,3 +15,4 @@ export * from './relation-repository/multiple-relation-repository';
 export * from './relation-repository/single-relation-repository';
 export * from './repository';
 export * from './update-associations';
+export * from './field-repository/array-field-repository';

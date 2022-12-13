@@ -13,7 +13,7 @@ import {
   DoubleFieldOptions,
   FloatFieldOptions,
   IntegerFieldOptions,
-  RealFieldOptions
+  RealFieldOptions,
 } from './number-field';
 import { PasswordFieldOptions } from './password-field';
 import { RadioFieldOptions } from './radio-field';
@@ -27,6 +27,7 @@ import { VirtualFieldOptions } from './virtual-field';
 import { FormulaFieldOptions } from './formula-field';
 
 export * from './array-field';
+export * from './set-field';
 export * from './belongs-to-field';
 export * from './belongs-to-many-field';
 export * from './boolean-field';
@@ -66,6 +67,7 @@ export type FieldOptions =
   | VirtualFieldOptions
   | FormulaFieldOptions
   | ArrayFieldOptions
+  | SetFieldOptions
   | TimeFieldOptions
   | DateFieldOptions
   | UidFieldOptions
