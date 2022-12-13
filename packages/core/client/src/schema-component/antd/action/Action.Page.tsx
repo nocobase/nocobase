@@ -29,7 +29,7 @@ export const ActionPage: ComposedActionDrawer = observer((props) => {
       collection.name
     }&filterTargetKey=${filterTargetKey}&filterTargetVal=${filterTargetVal}&title=${compile(title)}&subTitle=${compile(
       schema.title,
-    )}&serviceParams=${JSON.stringify(service?.params)}`;
+    )}&serviceParams=${JSON.stringify(service?.params)}&openMode=page`;
 
     history.push({
       search: searchStr,
