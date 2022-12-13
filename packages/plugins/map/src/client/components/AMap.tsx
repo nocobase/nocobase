@@ -289,6 +289,10 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     );
   }
 
+  if (errMessage) {
+    return <Alert message={errMessage} type="error" />;
+  }
+
   return (
     <div
       className={css`
@@ -299,9 +303,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
         height: '500px',
       }}
     >
-      {errMessage ? (
-        <Alert message={errMessage} type="error" />
-      ) : (
+      {!disabled ? (
         <>
           <Search toCenter={toCenter} aMap={aMap.current} />
           <div
@@ -328,7 +330,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
             </Button>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 };
