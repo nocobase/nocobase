@@ -40,6 +40,22 @@ class SnippetManager {
 
     return null;
   }
+
+  getActions(snippetPattern: string) {
+    if (snippetPattern.startsWith('!')) {
+      snippetPattern = snippetPattern.slice(1);
+    }
+
+    const matchedSnippets = [];
+
+    for (const [name, snippet] of this.snippets) {
+      if (minimatch(name, snippetPattern)) {
+        matchedSnippets.push(snippet);
+      }
+    }
+
+    return matchedSnippets.map((snippet) => snippet.actions).flat();
+  }
 }
 
 export default SnippetManager;

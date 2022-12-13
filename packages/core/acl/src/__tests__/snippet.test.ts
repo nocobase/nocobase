@@ -21,16 +21,30 @@ describe('acl snippet', () => {
 
     const adminRole = acl.define({
       role: 'admin',
-      strategy: {
-        allowConfigure: true,
-      },
     });
 
+    adminRole.snippets.add('sc.*');
     expect(acl.can({ role: 'admin', resource: 'collections', action: 'list' })).not.toBeNull();
 
     adminRole.snippets.add('!sc.collection-manager.fields');
 
     expect(acl.can({ role: 'admin', resource: 'collections', action: 'list' })).toBeNull();
+  });
+
+  it('should merge snippets', () => {
+    acl.registerSnippet({
+      name: 'sc.collection-manager.fields',
+      actions: ['fields:list'],
+    });
+
+    acl.registerSnippet({
+      name: 'sc.collection-manager.collections',
+      actions: ['collections:list'],
+    });
+
+    const snippetManager = acl.snippetManager;
+
+    expect(snippetManager.getActions('sc.collection-manager.*')).toEqual(['fields:list', 'collections:list']);
   });
 });
 

@@ -2,6 +2,7 @@ import { ACL, DefineOptions } from './acl';
 import { ACLAvailableStrategy, AvailableStrategyOptions } from './acl-available-strategy';
 import { ACLResource } from './acl-resource';
 import lodash from 'lodash';
+import minimatch from 'minimatch';
 
 export interface RoleActionParams {
   fields?: string[];
@@ -32,6 +33,9 @@ export class ACLRole {
   }
 
   public getStrategy() {
+    if (!this.strategy) {
+      return null;
+    }
     return lodash.isString(this.strategy)
       ? this.acl.availableStrategy.get(this.strategy)
       : new ACLAvailableStrategy(this.acl, this.strategy);
@@ -76,18 +80,32 @@ export class ACLRole {
   }
 
   public snippetAllowed(actionPath: string) {
-    let results = null;
+    const allowedActions = [];
+    const rejectedActions = [];
+
+    const actionMatched = (actionPath, actionRule) => {
+      return minimatch(actionPath, actionRule);
+    };
 
     for (const snippetRule of this.snippets) {
-      const result = this.acl.snippetManager.allow(actionPath, snippetRule);
-      if (result === false) {
-        return false;
-      }
+      const actions = this.acl.snippetManager.getActions(snippetRule);
 
-      results = result;
+      if (snippetRule.startsWith('!')) {
+        rejectedActions.push(...actions);
+      } else {
+        allowedActions.push(...actions);
+      }
     }
 
-    return results;
+    if (rejectedActions.some((actionRule) => actionMatched(actionPath, actionRule))) {
+      return false;
+    }
+
+    if (allowedActions.some((actionRule) => actionMatched(actionPath, actionRule))) {
+      return true;
+    }
+
+    return null;
   }
 
   public toJSON(): DefineOptions {

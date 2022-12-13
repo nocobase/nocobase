@@ -370,6 +370,7 @@ export class ACL extends EventEmitter {
     }
 
     const snippetAllowed = aclRole.snippetAllowed(`${resource}:${action}`);
+
     if (snippetAllowed === false) {
       return null;
     }
@@ -408,17 +409,17 @@ export class ACL extends EventEmitter {
       }
     }
 
-    if (!aclRole.strategy) {
-      return null;
-    }
-
     const roleStrategy = aclRole.getStrategy();
 
-    if (!roleStrategy) {
+    if (!roleStrategy && !snippetAllowed) {
       return null;
     }
 
-    const roleStrategyParams = roleStrategy.allow(resource, this.resolveActionAlias(action));
+    let roleStrategyParams = roleStrategy?.allow(resource, this.resolveActionAlias(action));
+
+    if (!roleStrategyParams && snippetAllowed) {
+      roleStrategyParams = {};
+    }
 
     if (roleStrategyParams) {
       const result = { role, resource, action, params: {} };
