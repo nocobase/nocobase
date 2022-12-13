@@ -3258,7 +3258,7 @@
 
 "@hapi/topo@^6.0.0":
   version "6.0.0"
-  resolved "https://registry.npmjs.org/@hapi%2ftopo/-/topo-6.0.0.tgz#6548e23e0a3d3b117eb0671dba49f654c9224c21"
+  resolved "https://registry.yarnpkg.com/@hapi/topo/-/topo-6.0.0.tgz#6548e23e0a3d3b117eb0671dba49f654c9224c21"
   integrity sha512-aorJvN1Q1n5xrZuA50Z4X6adI6VAM2NalIVm46ALL9LUvdoqhof3JPY69jdJH8asM3PsWr2SUVYzp57EqUP41A==
   dependencies:
     "@hapi/hoek" "^10.0.0"
