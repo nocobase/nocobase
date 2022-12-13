@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - 'main'
+    paths:
+      - 'packages/**'
+      - 'docker/nocobase/**'
+      - 'Dockerfile'
+      - '.github/workflows/docker-hub.yml'
 
 jobs:
   push-docker:

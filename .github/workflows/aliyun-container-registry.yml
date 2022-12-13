@@ -7,13 +7,17 @@ on:
       - 'develop'
     paths:
       - 'packages/**'
+      - 'docker/nocobase/**'
+      - 'Dockerfile.acr'
+      - '.github/workflows/aliyun-container-registry.yml'
   pull_request:
     branches:
       - '**'
     paths:
       - 'packages/**'
       - 'docker/nocobase/**'
-      - '.github/workflows/**'
+      - 'Dockerfile.acr'
+      - '.github/workflows/aliyun-container-registry.yml'
 
 jobs:
   push-acr:

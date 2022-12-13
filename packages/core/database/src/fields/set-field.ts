@@ -6,20 +6,20 @@ export interface SetFieldOptions extends BaseColumnFieldOptions {
 }
 
 export class SetField extends ArrayField {
-  beforeSave(model) {
+  beforeSave = (model) => {
     const oldValue = model.get(this.options.name);
     if (oldValue) {
       model.set(this.options.name, [...new Set(oldValue)]);
     }
-  }
+  };
 
   bind() {
     super.bind();
-    this.on('beforeSave', this.beforeSave.bind(this));
+    this.on('beforeSave', this.beforeSave);
   }
 
   unbind() {
     super.unbind();
-    this.off('beforeSave', this.beforeSave.bind(this));
+    this.off('beforeSave', this.beforeSave);
   }
 }
