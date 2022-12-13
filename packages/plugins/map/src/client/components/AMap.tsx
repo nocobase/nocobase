@@ -8,6 +8,7 @@ import { css } from '@emotion/css';
 import { Alert, Button, Modal } from 'antd';
 import { useMapTranslation } from '../locales';
 import Search from './Search';
+import { useMemoizedFn } from 'ahooks';
 
 interface AMapComponentProps {
   accessKey: string;
@@ -71,48 +72,45 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     strokeOpacity: 1,
   });
 
-  const toRemoveOverlay = useCallback(() => {
+  const toRemoveOverlay = useMemoizedFn(() => {
     if (overlay.current) {
       map.current?.remove(overlay.current);
     }
-  }, []);
+  });
 
-  const setTarget = useCallback(() => {
+  const setTarget = useMemoizedFn(() => {
     if (!disabled && type !== 'point' && editor.current) {
       editor.current.setTarget(overlay.current);
       editor.current.open();
     }
-  }, [type, disabled]);
+  });
 
-  const onMapChange = useCallback(
-    (target, onlyChange = false) => {
-      let nextValue = null;
+  const onMapChange = useMemoizedFn((target, onlyChange = false) => {
+    let nextValue = null;
 
-      if (type === 'point') {
-        const { lat, lng } = (target as AMap.Marker).getPosition();
-        nextValue = [lng, lat];
-      } else if (type === 'polygon' || type === 'lineString') {
-        nextValue = (target as AMap.Polygon).getPath().map((item) => [item.lng, item.lat]);
-        if (nextValue.length < 2) {
-          return;
-        }
-      } else if (type === 'circle') {
-        const center = target.getCenter();
-        const radius = target.getRadius();
-        nextValue = [center.lng, center.lat, radius];
+    if (type === 'point') {
+      const { lat, lng } = (target as AMap.Marker).getPosition();
+      nextValue = [lng, lat];
+    } else if (type === 'polygon' || type === 'lineString') {
+      nextValue = (target as AMap.Polygon).getPath().map((item) => [item.lng, item.lat]);
+      if (nextValue.length < 2) {
+        return;
       }
+    } else if (type === 'circle') {
+      const center = target.getCenter();
+      const radius = target.getRadius();
+      nextValue = [center.lng, center.lat, radius];
+    }
 
-      if (!onlyChange) {
-        toRemoveOverlay();
-        overlay.current = target;
-        setTarget();
-      }
-      onChange(nextValue);
-    },
-    [needUpdateFlag, type, toRemoveOverlay, setTarget, onChange],
-  );
+    if (!onlyChange) {
+      toRemoveOverlay();
+      overlay.current = target;
+      setTarget();
+    }
+    onChange(nextValue);
+  });
 
-  const createEditor = useCallback(() => {
+  const createEditor = useMemoizedFn(() => {
     const mapping = methodMapping[type as keyof typeof methodMapping];
     if (mapping && 'editor' in mapping && !editor.current) {
       editor.current = new aMap.current[mapping.editor](map.current);
@@ -123,11 +121,10 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
         onMapChange(target, true);
       });
     }
-  }, [needUpdateFlag, type, onMapChange]);
+  });
 
-  const executeMouseTool = useCallback(() => {
-    if (!mouseTool.current) return;
-
+  const executeMouseTool = useMemoizedFn(() => {
+    if (!mouseTool.current || editor.current?.getTarget()) return;
     const mapping = methodMapping[type as keyof typeof methodMapping];
     if (!mapping) {
       return;
@@ -135,9 +132,9 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     mouseTool.current[mapping.mouseTool]({
       ...commonOptions,
     } as AMap.PolylineOptions);
-  }, []);
+  });
 
-  const createMouseTool = () => {
+  const createMouseTool = useMemoizedFn(() => {
     if (mouseTool.current) return;
 
     mouseTool.current = new aMap.current.MouseTool(map.current);
@@ -146,7 +143,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     });
 
     executeMouseTool();
-  };
+  });
 
   const toCenter = (position, imm?: boolean) => {
     if (map.current) {
@@ -184,13 +181,12 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     if (!mapping) {
       return;
     }
-    const options = commonOptions;
+    const options = { ...commonOptions };
     if ('transformOptions' in mapping) {
       Object.assign(options, mapping.transformOptions(value));
     } else if ('propertyKey' in mapping) {
       options[mapping.propertyKey] = value;
     }
-    console.log('🚀 ~ file: AMap.tsx:193 ~ useEffect ~ options', options);
     const nextOverlay = new aMap.current[mapping.overlay](options);
 
     // 聚焦在编辑的位置
@@ -201,7 +197,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
     createEditor();
     setTarget();
-  }, [value, needUpdateFlag, type, createEditor, setTarget]);
+  }, [value, needUpdateFlag, type, commonOptions]);
 
   // 当在编辑时，关闭 mouseTool
   useEffect(() => {
@@ -211,12 +207,10 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
       mouseTool.current?.close();
       editor.current?.close();
     } else {
-      if (!editor.current.getTarget()) {
-        executeMouseTool();
-      }
+      executeMouseTool();
       editor.current?.open();
     }
-  }, [disabled, executeMouseTool]);
+  }, [disabled]);
 
   // AMap.MouseTool & AMap.XXXEditor
   useEffect(() => {
@@ -233,19 +227,20 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     } else {
       executeMouseTool();
     }
-  }, [type, value, executeMouseTool]);
+  }, [type, value]);
 
   useEffect(() => {
     if (!accessKey || map.current) return;
+
     if (securityJsCode) {
       (window as any)._AMapSecurityConfig = {
         [securityJsCode.endsWith('_AMapService') ? 'securityJsCode' : 'serviceHOST']: securityJsCode,
       };
     }
+
     AMapLoader.load({
       key: accessKey,
       version: '2.0',
-
       plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor', 'AMap.CircleEditor'],
     })
       .then((amap) => {
@@ -265,6 +260,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
           setErrMessage(err);
         }
       });
+
     return () => {
       map.current?.destroy();
       aMap.current = null;
