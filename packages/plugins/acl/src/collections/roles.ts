@@ -76,9 +76,8 @@ export default {
       targetKey: 'name',
     },
     {
-      type: 'array',
+      type: 'set',
       name: 'snippets',
-      as: 'set',
     },
   ],
 } as CollectionOptions;
