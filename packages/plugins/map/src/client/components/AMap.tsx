@@ -50,7 +50,6 @@ const methodMapping = {
 
 const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   const { value, onChange, accessKey, securityJsCode, disabled } = props;
-  const id = useRef(`nocobase-map-${Date.now().toString(32)}`);
   const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
@@ -63,6 +62,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   const type = collectionField?.interface;
   const overlay = useRef<any>();
   const editor = useRef(null);
+  const id = useRef(`nocobase-map-${type}-${Date.now().toString(32)}`);
 
   const toRemoveOverlay = () => {
     if (overlay.current) {
@@ -226,7 +226,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   }, [type, value, executeMouseTool]);
 
   useEffect(() => {
-    if (!accessKey) return;
+    if (!accessKey || map.current) return;
     (window as any)._AMapSecurityConfig = {
       securityJsCode: securityJsCode,
     };
@@ -237,12 +237,14 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
       plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor', 'AMap.CircleEditor'],
     })
       .then((amap) => {
-        map.current = new amap.Map(id.current, {
-          resizeEnable: true,
-          zoom: 13,
-        } as AMap.MapOptions);
-        aMap.current = amap;
-        forceUpdate([]);
+        setTimeout(() => {
+          map.current = new amap.Map(id.current, {
+            resizeEnable: true,
+            zoom: 13,
+          } as AMap.MapOptions);
+          aMap.current = amap;
+          forceUpdate([]);
+        }, Math.random() * 300);
       })
       .catch((err) => {
         if (err.includes('多个不一致的 key')) {
@@ -251,6 +253,13 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
           setErrMessage(err);
         }
       });
+    return () => {
+      map.current?.destroy();
+      aMap.current = null;
+      map.current = null;
+      mouseTool.current = null;
+      editor.current = null;
+    };
   }, [accessKey, type, securityJsCode]);
 
   return (
