@@ -78,7 +78,7 @@ export class ACLRole {
   public snippetAllowed(actionPath: string) {
     let results = null;
 
-    for (const snippetRule of this.snippetPattens) {
+    for (const snippetRule of this.snippetPatterns) {
       const result = this.acl.snippetManager.allow(actionPath, snippetRule);
       if (result === false) {
         return false;
