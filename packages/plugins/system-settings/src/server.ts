@@ -28,6 +28,11 @@ export class SystemSettingsPlugin extends Plugin {
     if (cmd) {
       cmd.option('-l, --lang [lang]');
     }
+
+    this.registerACLSettingSnippet({
+      name: 'system-settings',
+      actions: ['systemSettings:update'],
+    });
   }
 
   async load() {

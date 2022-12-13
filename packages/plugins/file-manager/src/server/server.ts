@@ -28,6 +28,11 @@ export default class PluginFileManager extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
+    this.registerACLSettingSnippet({
+      name: 'storages',
+      actions: ['storages:*'],
+    });
+
     // 暂时中间件只能通过 use 加进来
     this.app.resourcer.use(uploadMiddleware);
     this.app.resourcer.registerActionHandler('upload', uploadAction);

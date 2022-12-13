@@ -38,6 +38,11 @@ export class CollectionManagerPlugin extends Plugin {
       CollectionRepository,
     });
 
+    this.registerACLSettingSnippet({
+      name: 'collections',
+      actions: ['collections:*'],
+    });
+
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
       const newValue = options.values;
       if (

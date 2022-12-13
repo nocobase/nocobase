@@ -121,6 +121,11 @@ export default class VerificationPlugin extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
+    this.registerACLSettingSnippet({
+      name: 'providers',
+      actions: ['verifications_providers:*'],
+    });
+
     initProviders(this);
     initActions(this);
 
