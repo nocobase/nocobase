@@ -23,6 +23,16 @@ export class ArrayFieldRepository {
   }
 
   @transaction()
+  async find(options?: Transactionable) {
+    return await this.get(options);
+  }
+
+  @transaction((args, transaction) => {
+    return {
+      values: args[0],
+      transaction,
+    };
+  })
   async set(
     options: Transactionable & {
       values: Array<string | number> | string | number;
@@ -38,7 +48,12 @@ export class ArrayFieldRepository {
     await instance.save({ transaction });
   }
 
-  @transaction()
+  @transaction((args, transaction) => {
+    return {
+      value: args[0],
+      transaction,
+    };
+  })
   async toggle(
     options: Transactionable & {
       value: string | number;
@@ -58,7 +73,12 @@ export class ArrayFieldRepository {
     await instance.save({ transaction });
   }
 
-  @transaction()
+  @transaction((args, transaction) => {
+    return {
+      values: args[0],
+      transaction,
+    };
+  })
   async add(
     options: Transactionable & {
       values: Array<string | number> | string | number;
@@ -77,7 +97,12 @@ export class ArrayFieldRepository {
     await instance.save({ transaction });
   }
 
-  @transaction()
+  @transaction((args, transaction) => {
+    return {
+      values: args[0],
+      transaction,
+    };
+  })
   async remove(
     options: Transactionable & {
       values: Array<string | number> | string | number;

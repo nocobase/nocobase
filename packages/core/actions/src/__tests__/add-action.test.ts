@@ -62,6 +62,39 @@ describe('add action', () => {
       });
 
     expect(response.statusCode).toEqual(200);
+
+    const listResponse = await app.agent().resource('posts.set_field', p1.get('id')).list({
+      paginate: false,
+    });
+
+    expect(listResponse.status).toEqual(200);
+    expect(listResponse.body).toEqual(['a', 'b']);
+
+    await app
+      .agent()
+      .resource('posts.set_field', p1.get('id'))
+      .remove({
+        values: ['b'],
+      });
+
+    const listResponse1 = await app.agent().resource('posts.set_field', p1.get('id')).list({
+      paginate: false,
+    });
+
+    expect(listResponse1.body).toEqual(['a']);
+
+    await app
+      .agent()
+      .resource('posts.set_field', p1.get('id'))
+      .set({
+        values: ['b', 'c', 'd'],
+      });
+
+    const listResponse2 = await app.agent().resource('posts.set_field', p1.get('id')).list({
+      paginate: false,
+    });
+
+    expect(listResponse2.body).toEqual(['b', 'c', 'd']);
   });
 
   test('add belongs to many', async () => {
