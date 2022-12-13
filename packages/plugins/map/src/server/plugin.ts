@@ -8,13 +8,9 @@ export class MapPlugin extends Plugin {
     const fields = {
       point: PointField,
       polygon: PolygonField,
-      lineString: LineStringField
+      lineString: LineStringField,
+      circle: CircleField
     };
-
-
-    if (this.db.inDialect('postgres', 'sqlite')) {
-      fields['circle'] = CircleField
-    }
 
     this.db.registerFieldTypes(fields);
   }
