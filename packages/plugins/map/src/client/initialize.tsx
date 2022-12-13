@@ -9,7 +9,7 @@ export const useRegisterInterface = () => {
   const { data } = useCurrentAppInfo() || {};
   useEffect(() => {
     const dialect = data?.database.dialect;
-    if (!dialect || dialect === 'sqlite') return;
+    if (!dialect) return;
 
     registerGroup(fields[0].group, {
       label: generateNTemplate('Map-based geometry'),

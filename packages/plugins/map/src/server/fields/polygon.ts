@@ -1,6 +1,6 @@
 import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import { isPg, joinComma, toValue } from '../helpers';
+import { isMysql, isPg, joinComma, toValue } from '../helpers';
 
 // @ts-ignore
 class Polygon extends DataTypes.ABSTRACT {
@@ -16,19 +16,22 @@ export class PolygonField extends Field {
           const value = this.getDataValue(name)
           if (isPg(context)) {
             return toValue(value)
-          } else {
+          } else if (isMysql(context)) {
             return value?.coordinates[0]
+          } else {
+            return value
           }
         },
         set(value) {
           if (isPg(context)) {
-            this.setDataValue(name, joinComma(value.map((item: any) => joinComma(item))))
-          } else {
-            this.setDataValue(name, {
+            value = joinComma(value.map((item: any) => joinComma(item)))
+          } else if (isMysql(context)) {
+            value = {
               type: 'Polygon',
               coordinates: [value]
-            })
+            }
           }
+          this.setDataValue(name, value)
         },
         ...options,
       },
@@ -39,8 +42,10 @@ export class PolygonField extends Field {
   get dataType() {
     if (isPg(this.context)) {
       return Polygon;
-    } else {
+    } else if (isMysql(this.context)) {
       return DataTypes.GEOMETRY('POLYGON');
+    } else {
+      return DataTypes.JSON;
     }
   }
 

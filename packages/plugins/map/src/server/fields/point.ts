@@ -1,6 +1,6 @@
 import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import { isPg, joinComma } from '../helpers';
+import { isMysql, isPg, joinComma } from '../helpers';
 
 // @ts-ignore
 class Point extends DataTypes.ABSTRACT {
@@ -16,19 +16,22 @@ export class PointField extends Field {
           const value = this.getDataValue(name);
           if (isPg(context)) {
             return value ? [value.x, value.y] : null
-          } else {
+          } else if (isMysql(context)) {
             return value?.coordinates
+          } else {
+            return value
           }
         },
         set(value) {
           if (isPg(context)) {
-            this.setDataValue(name, joinComma(value))
-          } else {
-            this.setDataValue(name, {
+            value = joinComma(value)
+          } else if (isMysql(context)) {
+            value = {
               type: 'Point',
               coordinates: value
-            })
+            }
           }
+          this.setDataValue(name, value)
         },
         ...options,
       },
@@ -39,8 +42,10 @@ export class PointField extends Field {
   get dataType() {
     if (isPg(this.context)) {
       return Point;
-    } else {
+    } if (isMysql(this.context)) {
       return DataTypes.GEOMETRY('POINT');
+    } else {
+      return DataTypes.JSON;
     }
   }
 

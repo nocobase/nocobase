@@ -1,6 +1,6 @@
 import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import { isPg, joinComma, toValue } from '../helpers';
+import { isMysql, isPg, isSqlite, joinComma, toValue } from '../helpers';
 
 // @ts-ignore
 class LineString extends DataTypes.ABSTRACT {
@@ -16,19 +16,22 @@ export class LineStringField extends Field {
           const value = this.getDataValue(name);
           if (isPg(context)) {
             return toValue(value)
-          } else {
+          } else if (isMysql(context)) {
             return value?.coordinates
+          } else {
+            return value
           }
         },
         set(value) {
           if (isPg(context)) {
-            this.setDataValue(name, joinComma(value.map(joinComma)))
-          } else {
-            this.setDataValue(name, {
+            value = joinComma(value.map(joinComma))
+          } else if (isMysql(context)) {
+            value = {
               type: 'LineString',
               coordinates: value
-            })
+            }
           }
+          this.setDataValue(name, value)
         },
         ...options,
       },
@@ -39,8 +42,10 @@ export class LineStringField extends Field {
   get dataType() {
     if (isPg(this.context)) {
       return LineString
-    } else {
+    } if (isMysql(this.context)) {
       return DataTypes.GEOMETRY('LINESTRING');
+    } else {
+      return DataTypes.JSON;
     }
   }
 

@@ -10,7 +10,6 @@ export const point: IField = {
   order: 1,
   title: generateNTemplate('Point'),
   description: generateNTemplate('Point'),
-  dialects: ['postgres', 'mysql'],
   sortable: true,
   default: {
     type: 'point',

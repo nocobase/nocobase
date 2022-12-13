@@ -12,7 +12,7 @@ export class MapPlugin extends Plugin {
     };
 
 
-    if (this.db.sequelize.getDialect() === 'postgres') {
+    if (this.db.inDialect('postgres', 'sqlite')) {
       fields['circle'] = CircleField
     }
 

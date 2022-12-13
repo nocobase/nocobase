@@ -10,7 +10,6 @@ export const lineString: IField = {
   title: generateNTemplate('Line'),
   description: generateNTemplate('Line'),
   sortable: true,
-  dialects: ['postgres', 'mysql'],
   default: {
     type: 'lineString',
     uiSchema: {

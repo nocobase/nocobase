@@ -14,3 +14,11 @@ export const getDialect = (ctx) => {
 export const isPg = (ctx) => {
   return getDialect(ctx) === 'postgres';
 };
+
+export const isSqlite = (ctx) => {
+  return getDialect(ctx) === 'sqlite';
+};
+
+export const isMysql = (ctx) => {
+  return getDialect(ctx) === 'mysql';
+};

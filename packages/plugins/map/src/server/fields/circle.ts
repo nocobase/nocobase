@@ -1,5 +1,6 @@
 import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
+import { isPg } from '../helpers';
 
 // @ts-ignore
 class Circle extends DataTypes.ABSTRACT {
@@ -14,10 +15,17 @@ export class CircleField extends Field {
       {
         get() {
           const value = this.getDataValue(name);
-          return value ? [value.x, value.y, value.radius] : null
+          if (isPg(context)) {
+            return value ? [value.x, value.y, value.radius] : null
+          } else {
+            return value
+          }
         },
-        set(value: number[]) {
-          this.setDataValue(name, value.join(','))
+        set(value) {
+          if (isPg(context)) {
+            value = value.join(',')
+          }
+          this.setDataValue(name, value)
         },
         ...options,
       },
@@ -26,9 +34,12 @@ export class CircleField extends Field {
   }
 
   get dataType() {
-    return Circle;
+    if (isPg(this.context)) {
+      return Circle;
+    } else {
+      return DataTypes.JSON
+    }
   }
-
 }
 
 export interface CircleFieldOptions extends BaseColumnFieldOptions {
