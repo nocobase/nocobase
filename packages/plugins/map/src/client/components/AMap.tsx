@@ -227,9 +227,11 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
   useEffect(() => {
     if (!accessKey || map.current) return;
-    (window as any)._AMapSecurityConfig = {
-      securityJsCode: securityJsCode,
-    };
+    if (securityJsCode) {
+      (window as any)._AMapSecurityConfig = {
+        [securityJsCode.endsWith('_AMapService') ? 'securityJsCode' : 'serviceHOST']: securityJsCode,
+      };
+    }
     AMapLoader.load({
       key: accessKey,
       version: '2.0',
