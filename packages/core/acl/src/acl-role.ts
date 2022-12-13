@@ -80,6 +80,10 @@ export class ACLRole {
   }
 
   public setSnippetPattens(snippetRules: string[]) {
+    if (!snippetRules) {
+      return this.snippetPattens.clear();
+    }
+
     this.snippetPattens = new Set(snippetRules);
   }
 

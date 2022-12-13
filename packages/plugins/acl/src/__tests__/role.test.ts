@@ -97,7 +97,12 @@ describe('role api', () => {
     expect(defaultRole[0].get('name')).toEqual('role2');
   });
 
-  it.skip('should sync snippet patterns', async () => {
+  it('should sync snippet patterns', async () => {
+    app.acl.registerSnippet({
+      name: 'collections',
+      actions: ['collection:*'],
+    });
+
     await db.getRepository('roles').create({
       values: {
         name: 'role1',
@@ -105,11 +110,15 @@ describe('role api', () => {
     });
 
     await db.getRepository<ArrayFieldRepository>('roles.snippets', 'role1').set({
-      values: ['test'],
+      values: ['collections'],
+    });
+
+    const role1Instance = await db.getRepository('roles').findOne({
+      filterByTk: 'role1',
     });
 
     const role1 = app.acl.getRole('role1');
 
-    console.log({ role1 });
+    expect(role1.toJSON()['snippets']).toEqual(['collections']);
   });
 });
