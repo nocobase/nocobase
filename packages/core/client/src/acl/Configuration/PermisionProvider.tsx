@@ -1,15 +1,14 @@
 import React, { useContext, createContext, useState } from 'react';
 import { message } from 'antd';
+import { observer, ISchema, useForm } from '@formily/react';
+
 import { useTranslation } from 'react-i18next';
 import { useRecord } from '../../record-provider';
 import { useAPIClient } from '../../api-client';
 
 export const SettingCenterPermissionProvider = (props) => {
-  const {
-    currentRecord: { allowConfigurePlugins },
-  } = useContext(PermissionContext);
-
-  if (!allowConfigurePlugins) {
+  const { currentRecord } = useContext(PermissionContext);
+  if (!currentRecord['settings-center.*']) {
     return null;
   }
   return <div>{props.children}</div>;
@@ -21,6 +20,10 @@ export const PermissionProvider = (props) => {
   const api = useAPIClient();
   const record = useRecord();
   const { t } = useTranslation();
+  const { snippets } = record;
+  snippets?.forEach((key) => {
+    record[key] = true;
+  });
   const [currentRecord, setCurrentRecord] = useState(record);
 
   return (
@@ -40,13 +43,14 @@ export const PermissionProvider = (props) => {
                 values: [path],
               });
             }
+            setCurrentRecord({ ...currentRecord, [path]: value });
           } else {
-            const { data } = await api.resource('roles').update({
+            await api.resource('roles').update({
               filterByTk: record.name,
               values: form.values,
             });
           }
-          // setCurrentRecord(data?.data?.[0]);
+
           message.success(t('Saved successfully'));
         },
       }}

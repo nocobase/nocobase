@@ -18,14 +18,12 @@ export const RoleConfigure = () => {
         'x-component': 'Form',
         'x-component-props': {
           useValues: (options) => {
+          
             return useRequest(
-              {
-                resource: 'roles',
-                action: 'get',
-                params: {
-                  filterByTk: currentRecord.name,
-                },
-              },
+              () =>
+                Promise.resolve({
+                  data: currentRecord,
+                }),
               options,
             );
           },
@@ -45,6 +43,7 @@ export const RoleConfigure = () => {
             'x-decorator': 'FormItem',
             'x-component': 'Checkbox',
             'x-content': t('Allow to desgin pages'),
+
             'x-decorator-props': {
               className: css`
                 margin-bottom: 5px;

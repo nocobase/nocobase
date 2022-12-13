@@ -31,8 +31,8 @@ const useAclCheck = (schema: Schema) => {
     collectionName = useCollection().name;
   }
   if (resources.includes(collectionName) && fieldName !== 'actions' && !allowAll) {
-    const { fields } = actions[`${collectionName}:view`];
-    return fields.includes(fieldName);
+    const { fields } = actions[`${collectionName}:view`] || {};
+    return fields?.includes(fieldName);
   } else {
     return true;
   }

@@ -102,8 +102,8 @@ export const useACLRoleContext = () => {
 };
 
 export const ACLAllowConfigure = (props) => {
-  const { allowAll, allowConfigure } = useACLRoleContext();
-  if (allowAll || allowConfigure) {
+  const { allowAll, snippets } = useACLRoleContext();
+  if (allowAll || snippets?.inculdes(props.aclKey)) {
     return <>{props.children}</>;
   }
   return null;

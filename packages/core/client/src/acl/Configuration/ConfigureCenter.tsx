@@ -9,7 +9,7 @@ import { uniq } from 'lodash';
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
   for (const data of tree) {
-    path.push({ tabKey: data.key });
+    path.push(data.key);
     if (func(data)) return path;
     if (data.children) {
       const findChildren = getParentKeys(data.children, func, path);
@@ -21,7 +21,7 @@ const getParentKeys = (tree, func, path = []) => {
 };
 const getChildrenKeys = (data = [], arr = []) => {
   for (let item of data) {
-    arr.push({ tabKey: item.key });
+    arr.push(item.key);
     if (item.children && item.children.length) getChildrenKeys(item.children, arr);
   }
   return arr;
@@ -51,7 +51,7 @@ const formatPluginTabs = (data) => {
   arr.forEach((v) => {
     const children = Object.entries(v[1].tabs).map((k: any) => {
       return {
-        key: k[0],
+        key: v[0] + '.' + k[0],
         title: k[1].title,
       };
     });
@@ -72,48 +72,27 @@ export const SettingsCenterConfigure = () => {
   const items: any[] = (pluginTags && formatPluginTabs(pluginTags)) || [];
   const { t } = useTranslation();
   const compile = useCompile();
-  const [keys, setkeys] = useState([]);
-  const { loading, refresh, data } = useRequest(
-    {
-      resource: 'roles.pluginTab',
-      resourceOf: record.name,
-      action: 'list',
-      params: {
-        paginate: false,
-      },
+  const { loading, refresh, data } = useRequest({
+    resource: 'roles.snippets',
+    resourceOf: record.name,
+    action: 'list',
+    params: {
+      paginate: false,
     },
-    {
-      onSuccess(data) {
-        console.log(data)
-        setkeys(data?.data?.map((schema) => schema['x-key']) || []);
-      },
-    },
-  );
-  const blackList = data?.data.map((v) => v.tabKey) || [];
-  const resource = api.resource('roles.pluginTab', record.name);
+  });
+  const resource = api.resource('roles.snippets', record.name);
 
   const handleChange = async (checked, record) => {
-    const parentKeys = getParentKeys(items, (data) => data.key === record.key);
     const childrenKeys = getChildrenKeys(record?.children, []);
+    const totalKeys = childrenKeys.concat(record.key);
     if (!checked) {
-      const totalKeys = childrenKeys.concat({ tabKey: record.key });
-      const newKeys = keys.filter((v) => !totalKeys.includes(v));
-      setkeys([...newKeys]);
-      await resource.destroy({
-        filter: {
-          tabKey: {
-            $in: totalKeys.map((v) => v.tabKey),
-          },
-        },
+      await resource.remove({
+        values: totalKeys.map((v) => '!' + v),
       });
       refresh();
     } else {
-      const totalKeys = childrenKeys.concat(parentKeys);
-      setkeys((prev) => {
-        return uniq([...prev, ...totalKeys]);
-      });
-      await resource.create({
-        values: totalKeys,
+      await resource.add({
+        values: totalKeys.map((v) => '!' + v),
       });
       refresh();
     }
@@ -121,31 +100,33 @@ export const SettingsCenterConfigure = () => {
   };
 
   return (
-    items?.length&&<Table
-      loading={loading}
-      rowKey={'key'}
-      pagination={false}
-      expandable={{
-        defaultExpandAllRows: true,
-      }}
-      columns={[
-        {
-          dataIndex: 'title',
-          title: t('Plugin Tab Name'),
-          render: (value) => {
-            return compile(value);
+    items?.length && (
+      <Table
+        loading={loading}
+        rowKey={'key'}
+        pagination={false}
+        expandable={{
+          defaultExpandAllRows: true,
+        }}
+        columns={[
+          {
+            dataIndex: 'title',
+            title: t('Plugin Tab Name'),
+            render: (value) => {
+              return compile(value);
+            },
           },
-        },
-        {
-          dataIndex: 'accessible',
-          title: t('Accessible'),
-          render: (_, record) => {
-            const checked = !blackList?.includes(record.key);
-            return <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
+          {
+            dataIndex: 'accessible',
+            title: t('Accessible'),
+            render: (_, record) => {
+              const checked = !data?.data?.includes('!' + record.key);
+              return <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
+            },
           },
-        },
-      ]}
-      dataSource={items}
-    />
+        ]}
+        dataSource={items}
+      />
+    )
   );
 };
