@@ -24,7 +24,7 @@ const ReadPretty = (props) => {
           whiteSpace: 'pre-wrap',
         }}
       >
-        {value?.join(',')}
+        {value?.map((item) => (Array.isArray(item) ? `(${item.join(',')})` : item)).join(',')}
       </div>
     );
 
