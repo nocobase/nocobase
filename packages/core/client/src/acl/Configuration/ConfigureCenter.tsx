@@ -51,14 +51,14 @@ const formatPluginTabs = (data) => {
   arr.forEach((v) => {
     const children = Object.entries(v[1].tabs).map((k: any) => {
       return {
-        key: v[0] + '.' + k[0],
+        key: 'settings-center.' + v[0] + '.' + k[0],
         title: k[1].title,
       };
     });
 
     pluginsTabs.push({
       title: v[1].title,
-      key: v[0],
+      key: 'settings-center.' + v[0],
       children,
     });
   });
@@ -81,7 +81,6 @@ export const SettingsCenterConfigure = () => {
     },
   });
   const resource = api.resource('roles.snippets', record.name);
-
   const handleChange = async (checked, record) => {
     const childrenKeys = getChildrenKeys(record?.children, []);
     const totalKeys = childrenKeys.concat(record.key);
@@ -121,7 +120,7 @@ export const SettingsCenterConfigure = () => {
             title: t('Accessible'),
             render: (_, record) => {
               const checked = !data?.data?.includes('!' + record.key);
-              return <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
+              return !record.children && <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
             },
           },
         ]}

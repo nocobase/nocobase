@@ -2,12 +2,13 @@ import { AppstoreAddOutlined, SettingOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Dropdown, Menu } from 'antd';
-import React, { useState } from 'react';
+import React, { useState,useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { PluginManager } from '../plugin-manager';
 import { ActionContext } from '../schema-component';
 import { useACLRoleContext } from '../acl/ACLProvider';
+import {SettingsCenterContext} from './index';
 
 const schema: ISchema = {
   type: 'object',
@@ -47,6 +48,8 @@ export const SettingsCenterDropdown = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const history = useHistory();
+  const pluginsTabs=useContext(SettingsCenterContext);
+  console.log(pluginsTabs)
   const items = [
     {
       title: t('Collections & Fields'),

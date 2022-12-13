@@ -1,6 +1,6 @@
 import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import {pickBy} from 'lodash';
+import { pickBy } from 'lodash';
 import { Avatar, Card, Layout, Menu, message, PageHeader, Popconfirm, Spin, Switch, Tabs } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -233,11 +233,11 @@ const settings = {
       },
     },
   },
-  'block-templates': {
+  'ui-schema-storage': {
     title: '{{t("Block templates")}}',
     icon: 'LayoutOutlined',
     tabs: {
-      list: {
+      'block-templates': {
         title: '{{t("Block templates")}}',
         component: BlockTemplatesPane,
       },
@@ -266,7 +266,7 @@ const settings = {
 };
 
 const SettingsCenter = (props) => {
-  const { pluginTabBlacklist = [] } = useACLRoleContext();
+  const { snippets = [] } = useACLRoleContext();
   const match = useRouteMatch<any>();
   const history = useHistory<any>();
   const items = useContext(SettingsCenterContext);
@@ -299,16 +299,18 @@ const SettingsCenter = (props) => {
               .map((key) => {
                 const item = items[key];
                 const tabKey = Object.keys(item.tabs).shift();
-                return !pluginTabBlacklist.includes(tabKey)&&(
-                  <Menu.Item
-                    key={key}
-                    icon={item.icon ? <Icon type={item.icon} /> : null}
-                    onClick={() => {
-                      history.push(`/admin/settings/${key}/${tabKey}`);
-                    }}
-                  >
-                    {compile(item.title)}
-                  </Menu.Item>
+                return (
+                  !snippets.includes(tabKey) && (
+                    <Menu.Item
+                      key={key}
+                      icon={item.icon ? <Icon type={item.icon} /> : null}
+                      onClick={() => {
+                        history.push(`/admin/settings/${key}/${tabKey}`);
+                      }}
+                    >
+                      {compile(item.title)}
+                    </Menu.Item>
+                  )
                 );
               })}
           </Menu>
