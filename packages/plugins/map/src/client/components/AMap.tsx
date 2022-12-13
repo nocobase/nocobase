@@ -234,7 +234,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
     if (securityJsCode) {
       (window as any)._AMapSecurityConfig = {
-        [securityJsCode.endsWith('_AMapService') ? 'securityJsCode' : 'serviceHOST']: securityJsCode,
+        [securityJsCode.endsWith('_AMapService') ? 'serviceHOST' : 'securityJsCode']: securityJsCode,
       };
     }
 
