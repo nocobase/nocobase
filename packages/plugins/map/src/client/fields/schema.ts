@@ -45,7 +45,6 @@ export const commonSchema = {
     }
   },
   schemaInitialize(schema: ISchema, { readPretty, block }) {
-    console.log("🚀 ~ file: schema.ts:48 ~ schemaInitialize ~ schema", schema)
     if (block === 'Form') {
       Object.assign(schema, {
         'x-component': 'Map',
