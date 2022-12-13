@@ -28,7 +28,7 @@ describe('acl snippet', () => {
 
     expect(acl.can({ role: 'admin', resource: 'collections', action: 'list' })).not.toBeNull();
 
-    adminRole.snippetPatterns.add('!sc.collection-manager.fields');
+    adminRole.snippets.add('!sc.collection-manager.fields');
 
     expect(acl.can({ role: 'admin', resource: 'collections', action: 'list' })).toBeNull();
   });

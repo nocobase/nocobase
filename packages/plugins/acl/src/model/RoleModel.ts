@@ -18,6 +18,6 @@ export class RoleModel extends Model {
       allowConfigure: this.get('allowConfigure') as boolean,
     });
 
-    role.snippetPatterns = new Set(this.get('snippets'));
+    role.snippets = new Set(this.get('snippets'));
   }
 }
