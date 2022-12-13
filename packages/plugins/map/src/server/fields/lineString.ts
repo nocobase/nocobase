@@ -15,9 +15,9 @@ export class LineStringField extends Field {
         get() {
           const value = this.getDataValue(name);
           if (isPg(context)) {
-            return value?.coordinates
-          } else {
             return toValue(value)
+          } else {
+            return value?.coordinates
           }
         },
         set(value) {
