@@ -3,9 +3,9 @@ import React from 'react';
 import AMapComponent from './AMap';
 
 const ReadPretty = (props) => {
-  const { value } = props;
-  const form = useFormBlockContext();
-  if (!form?.field)
+  const { value, readPretty } = props;
+
+  if (!readPretty)
     return (
       <div
         style={{

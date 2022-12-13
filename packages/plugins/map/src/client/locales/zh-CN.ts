@@ -24,7 +24,7 @@ const locale = {
   'Edit tooltip': '编辑提示信息',
   'Delete field': '删除字段',
   "Required": "必填",
-  'Pattern': '正则表达式',
+  'Pattern': '模式',
   "Editable": "可编辑",
   "Readonly": "只读（禁止编辑）",
   "Easy-reading": "只读（阅读模式）",

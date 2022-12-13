@@ -28,7 +28,7 @@ const Designer = () => {
     initialValue['required'] = field.required;
   }
 
-  let readOnlyMode = 'editable';
+  let readOnlyMode = form?.readPretty ? 'read-pretty' : 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
   }
@@ -154,12 +154,12 @@ const Designer = () => {
           }}
         />
       )}
-      {form && !form?.readPretty && fieldSchema?.['x-component-props']?.['pattern-disable'] != true && (
+      {form && fieldSchema?.['x-component-props']?.['pattern-disable'] != true && (
         <SchemaSettings.SelectItem
           key="pattern"
           title={t('Pattern')}
           options={[
-            { label: t('Editable'), value: 'editable' },
+            { disabled: form?.readPretty, label: t('Editable'), value: 'editable' },
             { label: t('Readonly'), value: 'readonly' },
             { label: t('Easy-reading'), value: 'read-pretty' },
           ]}
