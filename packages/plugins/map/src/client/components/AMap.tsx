@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { useFieldSchema } from '@formily/react';
@@ -9,6 +9,8 @@ import { Alert, Button, Modal } from 'antd';
 import { useMapTranslation } from '../locales';
 import Search from './Search';
 import { useMemoizedFn } from 'ahooks';
+import { useMapConfiguration } from '../hooks';
+import { useHistory } from 'react-router';
 
 interface AMapComponentProps {
   accessKey: string;
@@ -16,6 +18,7 @@ interface AMapComponentProps {
   value: any;
   onChange: (value: number[]) => void;
   disabled?: boolean;
+  mapType: string;
 }
 
 const methodMapping = {
@@ -50,7 +53,8 @@ const methodMapping = {
 };
 
 const AMapComponent: React.FC<AMapComponentProps> = (props) => {
-  const { value, onChange, accessKey, securityJsCode, disabled } = props;
+  const { accessKey, securityJsCode } = useMapConfiguration(props.mapType) || {};
+  const { value, onChange, disabled } = props;
   const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
@@ -63,6 +67,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   const type = collectionField?.interface;
   const overlay = useRef<any>();
   const editor = useRef(null);
+  const history = useHistory();
   const id = useRef(`nocobase-map-${type}-${Date.now().toString(32)}`);
 
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
@@ -269,6 +274,22 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
       editor.current = null;
     };
   }, [accessKey, type, securityJsCode]);
+
+  if (!accessKey) {
+    return (
+      <div>
+        <Alert
+          action={
+            <Button type="primary" onClick={() => history.push('/admin/settings/map-configuration/configuration')}>
+              {t('Go to the configuration page')}
+            </Button>
+          }
+          message={t('Please configure the AccessKey and SecurityJsCode first')}
+          type="error"
+        />
+      </div>
+    );
+  }
 
   return (
     <div

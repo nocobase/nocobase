@@ -20,8 +20,8 @@ export default React.memo((props) => {
         <SettingsCenterProvider
           settings={{
             'map-configuration': {
-              title: t('Map Configuration'),
-              icon: 'MapOutlined',
+              title: t('Map Manager'),
+              icon: 'EnvironmentOutlined',
               tabs: {
                 configuration: {
                   title: t('Configuration'),

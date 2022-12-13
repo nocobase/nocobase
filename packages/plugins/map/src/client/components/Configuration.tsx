@@ -1,20 +1,23 @@
 import { useAPIClient, useCompile, useRequest } from '@nocobase/client';
+import { useBoolean } from 'ahooks';
 import { Form, Input, Tabs, Button, Card, message } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { MapTypes } from '../constants';
+import { MapConfigurationResourceKey, useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locales';
 
-const MapConfigurationResourceKey = 'map-configuration';
 const AMapConfiguration = ({ type }) => {
   const { t } = useMapTranslation();
-  useRequest({
-    resource: MapConfigurationResourceKey,
-    action: 'get',
-    params: {
-      type,
-    },
-  });
+  const [isDisabled, disableAction] = useBoolean(false);
   const apiClient = useAPIClient();
+  const [form] = Form.useForm();
+  const data = useMapConfiguration(type);
+  useEffect(() => {
+    if (data) {
+      form.setFieldsValue(data);
+      disableAction.toggle();
+    }
+  }, [data]);
 
   const resource = useMemo(() => {
     return apiClient.resource(MapConfigurationResourceKey);
@@ -34,25 +37,31 @@ const AMapConfiguration = ({ type }) => {
       });
   };
   return (
-    <Form layout="vertical" onFinish={onSubmit}>
+    <Form form={form} layout="vertical" onFinish={onSubmit}>
       <Form.Item required name="accessKey" label={t('Access key')}>
-        <Input />
+        <Input disabled={isDisabled} />
       </Form.Item>
       <Form.Item required name="securityJsCode" label={t('securityJsCode or serviceHost')}>
-        <Input />
+        <Input disabled={isDisabled} />
       </Form.Item>
-      <Form.Item>
-        <Button type="primary" htmlType="submit">
-          {t('保存')}
+      {isDisabled ? (
+        <Button onClick={disableAction.toggle} type="ghost">
+          {t('Edit')}
         </Button>
-      </Form.Item>
+      ) : (
+        <Form.Item>
+          <Button type="primary" htmlType="submit">
+            {t('Save')}
+          </Button>
+        </Form.Item>
+      )}
     </Form>
   );
 };
 
 const components = {
   amap: AMapConfiguration,
-  google: () => <div>Google</div>,
+  google: () => <div>Coming soon</div>,
 };
 
 const tabList = MapTypes.map((item) => {

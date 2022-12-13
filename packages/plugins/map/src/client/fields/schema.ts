@@ -42,27 +42,7 @@ export const commonSchema = {
       'x-disabled': '{{ !createOnly }}',
       default: 'amap',
       enum: MapTypes,
-    },
-    'uiSchema.x-component-props.accessKey': {
-      title: generateNTemplate('Access key'),
-      type: 'string',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-      'x-component-props': {
-        allowClear: true,
-      },
-    },
-    'uiSchema.x-component-props.securityJsCode': {
-      title: generateNTemplate('securityJsCode or serviceHost'),
-      type: 'string',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-      'x-component-props': {
-        allowClear: true,
-      },
-    },
+    }
   },
   schemaInitialize(schema: ISchema) {
     Object.assign(schema, {

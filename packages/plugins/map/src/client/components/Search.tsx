@@ -8,6 +8,7 @@ interface SearchProps {
   aMap: any;
   toCenter: (p: any) => void;
 }
+
 const Search = (props: SearchProps) => {
   const { aMap, toCenter } = props;
   const { t } = useMapTranslation();

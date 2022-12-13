@@ -1,8 +1,9 @@
 import { CollectionOptions } from "@nocobase/client";
+import { MapConfigurationCollectionName } from "../constants";
 
 export default {
-  name: 'mapConfiguration',
-  title: '{{t("Map Configuration")}}',
+  name: MapConfigurationCollectionName,
+  title: '{{t("Map Manager")}}',
   fields: [
     {
       title: 'Access key',
@@ -11,9 +12,9 @@ export default {
       type: 'string'
     },
     {
-      title: 'securityCode',
-      comment: 'securityCode',
-      name: 'securityCode',
+      title: 'securityJsCode',
+      comment: 'securityJsCode or serviceHOST',
+      name: 'securityJsCode',
       type: 'string'
     },
     {

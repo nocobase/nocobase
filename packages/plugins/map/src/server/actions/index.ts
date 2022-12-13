@@ -1,11 +1,12 @@
 import { Context } from '@nocobase/actions';
+import { MapConfigurationCollectionName } from '../constants';
 
 export const getConfiguration = async (ctx: Context, next) => {
   const {
     params: { type },
   } = ctx.action;
 
-  const repo = ctx.db.getRepository('mapConfiguration');
+  const repo = ctx.db.getRepository(MapConfigurationCollectionName);
   const record = await repo.findOne({
     filter: {
       type,
@@ -20,7 +21,7 @@ export const setConfiguration = async (ctx: Context, next) => {
   const {
     params: values,
   } = ctx.action;
-  const repo = ctx.db.getRepository('mapConfiguration');
+  const repo = ctx.db.getRepository(MapConfigurationCollectionName);
   const record = await repo.findOne({
     filter: {
       type: values.type,
