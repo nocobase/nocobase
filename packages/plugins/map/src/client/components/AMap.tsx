@@ -57,6 +57,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   const map = useRef<AMap.Map>();
   const mouseTool = useRef<any>();
   const [needUpdateFlag, forceUpdate] = useState([]);
+  const [errMessage, setErrMessage] = useState('');
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
   const type = collectionField?.interface;
@@ -234,14 +235,22 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
       version: '2.0',
 
       plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor', 'AMap.CircleEditor'],
-    }).then((amap) => {
-      map.current = new amap.Map(id.current, {
-        resizeEnable: true,
-        zoom: 13,
-      } as AMap.MapOptions);
-      aMap.current = amap;
-      forceUpdate([]);
-    });
+    })
+      .then((amap) => {
+        map.current = new amap.Map(id.current, {
+          resizeEnable: true,
+          zoom: 13,
+        } as AMap.MapOptions);
+        aMap.current = amap;
+        forceUpdate([]);
+      })
+      .catch((err) => {
+        if (err.includes('多个不一致的 key')) {
+          setErrMessage(t('The AccessKey is incorrect, please check it'));
+        } else {
+          setErrMessage(err);
+        }
+      });
   }, [accessKey, type, securityJsCode]);
 
   return (
@@ -254,36 +263,41 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
         height: '500px',
       }}
     >
-      <Search toCenter={toCenter} aMap={aMap.current}></Search>
-      <div
-        style={{
-          display: disabled ? 'none' : 'block',
-        }}
-        className={css`
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          z-index: 2;
-          pointer-events: none;
-        `}
-      >
-        <Alert message={t('Click to select the starting point and double-click to end the drawing')} type="info" />
-      </div>
-      <div
-        style={{
-          display: disabled ? 'none' : 'block',
-        }}
-        className={css`
-          position: absolute;
-          bottom: 20px;
-          right: 20px;
-          z-index: 2;
-        `}
-      >
-        <Button disabled={!value} onClick={onReset} type="primary">
-          {t('Clear')}
-        </Button>
-      </div>
+      {errMessage ? <Alert message={errMessage} type="error" /> : null}
+      {!errMessage ? (
+        <>
+          <Search toCenter={toCenter} aMap={aMap.current}></Search>
+          <div
+            style={{
+              display: disabled ? 'none' : 'block',
+            }}
+            className={css`
+              position: absolute;
+              top: 10px;
+              right: 10px;
+              z-index: 2;
+              pointer-events: none;
+            `}
+          >
+            <Alert message={t('Click to select the starting point and double-click to end the drawing')} type="info" />
+          </div>
+          <div
+            style={{
+              display: disabled ? 'none' : 'block',
+            }}
+            className={css`
+              position: absolute;
+              bottom: 20px;
+              right: 20px;
+              z-index: 2;
+            `}
+          >
+            <Button disabled={!value} onClick={onReset} type="primary">
+              {t('Clear')}
+            </Button>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 };

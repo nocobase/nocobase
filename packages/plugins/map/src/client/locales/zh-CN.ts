@@ -16,6 +16,8 @@ const locale = {
   'Confirm': '确定',
   'Cancel': '取消',
   'Enter keywords to search': '输入地方名关键字搜索',
+  'The AccessKey is incorrect, please check it': '访问密钥不正确，请检查',
+  'Please configure the AMap securityCode or securityHost correctly': '请正确配置高德地图安全密钥或安全域名',
   // Designer
   'Edit field title': '编辑字段标题',
   'Field title': '字段标题',

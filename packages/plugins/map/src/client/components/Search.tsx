@@ -1,4 +1,4 @@
-import { Select } from 'antd';
+import { message, Select } from 'antd';
 import { css } from '@emotion/css';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDebounceFn } from 'ahooks';
@@ -15,7 +15,7 @@ const Search = (props: SearchProps) => {
   const [options, setOptions] = useState([]);
 
   useEffect(() => {
-    aMap?.plugin('AMap.AutoComplete', (...args) => {
+    aMap?.plugin('AMap.AutoComplete', () => {
       autocomplete.current = new aMap.AutoComplete({
         city: '全国',
       });
@@ -39,6 +39,7 @@ const Search = (props: SearchProps) => {
             }),
           );
         } else {
+          message.error(t('Please configure the AMap securityCode or securityHost correctly'));
           setOptions([]);
         }
       });
