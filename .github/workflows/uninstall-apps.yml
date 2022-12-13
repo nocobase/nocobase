@@ -1,4 +1,4 @@
-name: Auto down deploy
+name: Uninstall apps
 
 on:
   pull_request:
