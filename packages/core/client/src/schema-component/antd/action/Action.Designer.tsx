@@ -45,6 +45,15 @@ export const ActionDesigner = (props) => {
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] || '';
 
+  const enablePageMode = field.path.segments.length <= 8 && field.path.segments[0] == 'page';
+  const openModeList = [
+    { label: t('Drawer'), value: 'drawer' },
+    { label: t('Dialog'), value: 'modal' },
+  ];
+  if (enablePageMode) {
+    openModeList.push({ label: t('Page'), value: 'page' });
+  }
+
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -135,11 +144,7 @@ export const ActionDesigner = (props) => {
         {isPopupAction && (
           <SchemaSettings.SelectItem
             title={t('Open mode')}
-            options={[
-              { label: t('Drawer'), value: 'drawer' },
-              { label: t('Dialog'), value: 'modal' },
-              { label: t('Page'), value: 'page' },
-            ]}
+            options={openModeList}
             value={fieldSchema?.['x-component-props']?.['openMode']}
             onChange={(value) => {
               field.componentProps.openMode = value;
