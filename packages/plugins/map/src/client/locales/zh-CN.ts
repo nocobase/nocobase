@@ -6,7 +6,7 @@ const locale = {
   'Circle': '圆',
   'Polygon': '多边形',
   'Access key': '访问密钥',
-  'securityCode/serviceHost': 'securityCode/serviceHost',
+  'securityJsCode or serviceHost': 'securityJsCode 或 serviceHost',
   'AMap': '高德地图',
   'Google Maps': '谷歌地图',
   'Clear': '清空',

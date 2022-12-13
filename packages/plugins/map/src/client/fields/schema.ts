@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { interfacesProperties } from '@nocobase/client';
+import { MapTypes } from '../constants';
 import { generateNTemplate } from '../locales';
 
 const { defaultProps } = interfacesProperties;
@@ -40,10 +41,7 @@ export const commonSchema = {
       },
       'x-disabled': '{{ !createOnly }}',
       default: 'amap',
-      enum: [
-        { label: generateNTemplate('AMap'), value: 'amap' },
-        { label: generateNTemplate('Google Maps'), value: 'google' },
-      ],
+      enum: MapTypes,
     },
     'uiSchema.x-component-props.accessKey': {
       title: generateNTemplate('Access key'),
@@ -56,7 +54,7 @@ export const commonSchema = {
       },
     },
     'uiSchema.x-component-props.securityJsCode': {
-      title: generateNTemplate('securityCode/serviceHost'),
+      title: generateNTemplate('securityJsCode or serviceHost'),
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
