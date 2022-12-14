@@ -1,4 +1,7 @@
 import { ISchema, Schema } from '@formily/react';
+import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
 import { CollectionTemplate } from '../components/CollectionTemplate';
@@ -12,6 +15,7 @@ export const collection: CollectionOptions = {
   name: 'collections',
   filterTargetKey: 'name',
   targetKey: 'name',
+  sortable: true,
   fields: [
     {
       type: 'integer',
@@ -80,15 +84,16 @@ export const collectionSchema: ISchema = {
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
         collection: collection,
+        dragSort: true,
         request: {
           resource: 'collections',
           action: 'list',
           params: {
             pageSize: 50,
+            sort: 'sort',
             filter: {
               'hidden.$isFalsy': true,
             },
-            sort: ['sort'],
             appends: [],
           },
         },
@@ -150,6 +155,20 @@ export const collectionSchema: ISchema = {
               type: 'checkbox',
             },
             useDataSource: '{{ cm.useDataSourceFromRAC }}',
+            useAction() {
+              const api = useAPIClient();
+              const { t } = useTranslation();
+              return {
+                async move(from, to) {
+                  console.log(from, to);
+                  await api.resource('collections').move({
+                    sourceId: from.key,
+                    targetId: to.key,
+                  });
+                  message.success(t('Saved successfully'), 0.2);
+                },
+              };
+            },
           },
           properties: {
             column1: {
