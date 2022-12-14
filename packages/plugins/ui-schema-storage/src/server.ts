@@ -31,6 +31,23 @@ export class UiSchemaStoragePlugin extends Plugin {
       actions: ['uiSchemaTemplates:*'],
     });
 
+    this.app.acl.registerSnippet({
+      name: 'ui-editor',
+      actions: [
+        'uiSchemas:insert',
+        'uiSchemas:insertNewSchema',
+        'uiSchemas:remove',
+        'uiSchemas:patch',
+        'uiSchemas:batchPatch',
+        'uiSchemas:clearAncestor',
+        'uiSchemas:insertBeforeBegin',
+        'uiSchemas:insertAfterBegin',
+        'uiSchemas:insertBeforeEnd',
+        'uiSchemas:insertAfterEnd',
+        'uiSchemas:saveAsTemplate',
+      ]
+    });
+
     db.on('uiSchemas.beforeCreate', function setUid(model) {
       if (!model.get('name')) {
         model.set('name', uid());

@@ -43,6 +43,11 @@ export class PluginManager {
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
 
+    this.app.acl.registerSnippet({
+      name: 'plugin-manager',
+      actions: ['pm:*'],
+    });
+
     this.app.acl.skip('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
     this.app.acl.skip('applicationPlugins', '*', 'allowConfigure');
 
