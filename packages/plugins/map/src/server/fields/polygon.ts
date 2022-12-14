@@ -17,19 +17,19 @@ export class PolygonField extends Field {
           if (isPg(context)) {
             return toValue(value)
           } else if (isMysql(context)) {
-            return value?.coordinates[0]
+            return value?.coordinates[0].slice(0, -1) || null
           } else {
             return value
           }
         },
         set(value) {
           if (isPg(context)) {
-            value = joinComma(value.map((item: any) => joinComma(item)))
+            value = value ? joinComma(value.map((item: any) => joinComma(item))) : null
           } else if (isMysql(context)) {
-            value = {
+            value = value?.length ? {
               type: 'Polygon',
               coordinates: [value.concat([value[0]])]
-            }
+            } : null
           }
           this.setDataValue(name, value)
         },

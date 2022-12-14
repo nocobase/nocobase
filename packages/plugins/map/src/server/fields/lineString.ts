@@ -17,7 +17,7 @@ export class LineStringField extends Field {
           if (isPg(context)) {
             return toValue(value)
           } else if (isMysql(context)) {
-            return value?.coordinates
+            return value?.coordinates || null
           } else {
             return value
           }
@@ -26,10 +26,10 @@ export class LineStringField extends Field {
           if (isPg(context)) {
             value = joinComma(value.map(joinComma))
           } else if (isMysql(context)) {
-            value = {
+            value = value?.length ? {
               type: 'LineString',
               coordinates: value
-            }
+            } : null
           }
           this.setDataValue(name, value)
         },

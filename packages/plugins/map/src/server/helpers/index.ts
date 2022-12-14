@@ -1,4 +1,5 @@
 export const joinComma = (value: any[]) => {
+  if (!value) return null
   return `(${value.join(',')})`
 }
 

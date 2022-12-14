@@ -1,6 +1,6 @@
 import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import { isPg } from '../helpers';
+import { isPg, toValue } from '../helpers';
 
 // @ts-ignore
 class Circle extends DataTypes.ABSTRACT {
@@ -16,6 +16,9 @@ export class CircleField extends Field {
         get() {
           const value = this.getDataValue(name);
           if (isPg(context)) {
+            if (typeof value === 'string') {
+              return toValue(`(${value})`)
+            }
             return value ? [value.x, value.y, value.radius] : null
           } else {
             return value

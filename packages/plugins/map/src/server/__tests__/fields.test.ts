@@ -85,32 +85,37 @@ describe('fields', () => {
     const Test = await createCollection();
     const model = await Test.model.create();
     model.set('point', [1, 2]);
-    model.set('polygon', [3, 4]);
-    model.set('lineString', [5, 6]);
-    model.set('circle', [1, 2, 0.5]);
     expect(model.get('point')).toMatchObject([1, 2]);
-    expect(model.get('polygon')).toMatchObject([3, 4]);
-    expect(model.get('lineString')).toMatchObject([5, 6]);
+    model.set('polygon', [
+      [3, 4],
+      [5, 6],
+    ]);
+    expect(model.get('polygon')).toMatchObject([
+      [3, 4],
+      [5, 6],
+    ]);
+    model.set('lineString', [[5, 6], [7, 8]]);
+    expect(model.get('lineString')).toMatchObject([[5, 6], [7, 8]]);
+    model.set('circle', [1, 2, 0.5]);
     expect(model.get('circle')).toMatchObject([1, 2, 0.5]);
-  })
-
+  });
 
   it('create and update', async () => {
     const Test = await createCollection();
     const model = await Test.model.create(data);
     await model.save();
-    expect(await Test.model.findOne()).toMatchObject(data);
+    const findOne = () =>
+      db.getRepository('tests').findOne({
+        except: ['createdAt', 'updatedAt', 'id'],
+      });
+    expect(await findOne()).toMatchObject(data);
 
     await model.update({
       point: [1, 2],
-      polygon: [],
+      polygon: null,
     });
 
-    expect(
-      await db.getRepository('tests').findOne({
-        except: ['createdAt', 'updatedAt', 'id'],
-      }),
-    ).toMatchInlineSnapshot(`
+    expect(await findOne()).toMatchInlineSnapshot(`
       Object {
         "circle": Array [
           114.058996,
@@ -131,7 +136,27 @@ describe('fields', () => {
           1,
           2,
         ],
-        "polygon": Array [],
+        "polygon": null,
+      }
+    `);
+  });
+
+  it('empty', async () => {
+    const Test = await createCollection();
+    const model = await Test.model.create();
+    await model.save();
+
+    const findOne = () =>
+      db.getRepository('tests').findOne({
+        except: ['createdAt', 'updatedAt', 'id'],
+      });
+
+    expect(await findOne()).toMatchInlineSnapshot(`
+      Object {
+        "circle": null,
+        "lineString": null,
+        "point": null,
+        "polygon": null,
       }
     `);
   });
