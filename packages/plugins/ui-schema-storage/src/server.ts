@@ -44,8 +44,9 @@ export class UiSchemaStoragePlugin extends Plugin {
         'uiSchemas:insertAfterBegin',
         'uiSchemas:insertBeforeEnd',
         'uiSchemas:insertAfterEnd',
+        'uiSchemas:insertAdjacent',
         'uiSchemas:saveAsTemplate',
-      ]
+      ],
     });
 
     db.on('uiSchemas.beforeCreate', function setUid(model) {
