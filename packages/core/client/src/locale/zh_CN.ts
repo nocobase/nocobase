@@ -514,6 +514,7 @@ export default {
   'General permissions': '通用配置',
   'Global action permissions': '全局操作权限',
   'General action permissions': '通用操作权限',
+  "Settings center permissions":"配置中心权限",
   'Allow to desgin pages':"允许界面配置",
   "Allow to manage plugins":"允许管理插件",
   "Allow to configure plugins":"允许管理配置中心",
