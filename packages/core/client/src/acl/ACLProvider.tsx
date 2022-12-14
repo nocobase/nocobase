@@ -171,20 +171,16 @@ export const ACLCollectionFieldProvider = (props) => {
   if (!name || allowAll || allowConfigure) {
     return <FormItem>{props.children}</FormItem>;
   }
-  if (resources.includes(name)) {
-    const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn })||{};
-    const { whitelist, fields } = params;
-    const aclFieldCheck = (whitelist || fields)?.includes(fieldSchema.name);
-    if (!aclFieldCheck) {
-      return null;
-    }
-    return (
-      <ACLActionParamsContext.Provider value={params}>
-        <FormItem>{props.children}</FormItem>
-      </ACLActionParamsContext.Provider>
-    );
+  const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
+  const aclFieldCheck = params?(params.whitelist || params.fields)?.includes(fieldSchema.name):false;
+  if (!aclFieldCheck) {
+    return null;
   }
-  return <FormItem>{props.children}</FormItem>;
+  return (
+    <ACLActionParamsContext.Provider value={params}>
+      <FormItem>{props.children}</FormItem>
+    </ACLActionParamsContext.Provider>
+  );
 };
 
 export const ACLMenuItemProvider = (props) => {
