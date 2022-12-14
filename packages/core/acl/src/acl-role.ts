@@ -79,30 +79,59 @@ export class ACLRole {
     resource.removeAction(actionName);
   }
 
+  public effectiveSnippets(): { allowed: Array<string>; rejected: Array<string> } {
+    const allowedSnippets = new Set<string>();
+    const rejectedSnippets = new Set<string>();
+
+    const availableSnippets = this.acl.snippetManager.snippets;
+
+    for (let snippetRule of this.snippets) {
+      const negated = snippetRule.startsWith('!');
+      snippetRule = negated ? snippetRule.slice(1) : snippetRule;
+
+      for (const [_, availableSnippet] of availableSnippets) {
+        if (minimatch(availableSnippet.name, snippetRule)) {
+          if (negated) {
+            rejectedSnippets.add(availableSnippet.name);
+          } else {
+            allowedSnippets.add(availableSnippet.name);
+          }
+        }
+      }
+    }
+
+    // get difference of allowed and rejected snippets
+    const effectiveSnippets = new Set([...allowedSnippets].filter((x) => !rejectedSnippets.has(x)));
+    return {
+      allowed: [...effectiveSnippets],
+      rejected: [...rejectedSnippets],
+    };
+  }
+
   public snippetAllowed(actionPath: string) {
-    const allowedActions = [];
-    const rejectedActions = [];
+    const effectiveSnippets = this.effectiveSnippets();
+
+    const getActions = (snippets) => {
+      return snippets.map((snippetName) => this.acl.snippetManager.snippets.get(snippetName).actions).flat();
+    };
+
+    const allowedActions = getActions(effectiveSnippets.allowed);
+    const rejectedActions = getActions(effectiveSnippets.rejected);
 
     const actionMatched = (actionPath, actionRule) => {
       return minimatch(actionPath, actionRule);
     };
 
-    for (const snippetRule of this.snippets) {
-      const actions = this.acl.snippetManager.getActions(snippetRule);
-
-      if (snippetRule.startsWith('!')) {
-        rejectedActions.push(...actions);
-      } else {
-        allowedActions.push(...actions);
+    for (const action of allowedActions) {
+      if (actionMatched(actionPath, action)) {
+        return true;
       }
     }
 
-    if (rejectedActions.some((actionRule) => actionMatched(actionPath, actionRule))) {
-      return false;
-    }
-
-    if (allowedActions.some((actionRule) => actionMatched(actionPath, actionRule))) {
-      return true;
+    for (const action of rejectedActions) {
+      if (actionMatched(actionPath, action)) {
+        return false;
+      }
     }
 
     return null;

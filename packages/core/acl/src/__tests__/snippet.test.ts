@@ -8,15 +8,56 @@ describe('acl snippet', () => {
     acl = new ACL();
   });
 
-  it('should register snippet', () => {
+  it('should get effective snipptes', () => {
     acl.registerSnippet({
       name: 'sc.collection-manager.fields',
-      actions: ['collections:list'],
+      actions: ['fields:list'],
     });
 
     acl.registerSnippet({
       name: 'sc.collection-manager.gi',
+      actions: ['fields:list', 'gi:list'],
+    });
+
+    acl.registerSnippet({
+      name: 'sc.collection-manager.collections',
+      actions: ['collections:list'],
+    });
+
+    const adminRole = acl.define({
+      role: 'admin',
+    });
+
+    adminRole.snippets.add('sc.*');
+
+    expect(adminRole.effectiveSnippets().allowed).toEqual([
+      'sc.collection-manager.fields',
+      'sc.collection-manager.gi',
+      'sc.collection-manager.collections',
+    ]);
+
+    adminRole.snippets.add('!sc.collection-manager.gi');
+
+    expect(adminRole.effectiveSnippets().allowed).toEqual([
+      'sc.collection-manager.fields',
+      'sc.collection-manager.collections',
+    ]);
+  });
+
+  it('should register snippet', () => {
+    acl.registerSnippet({
+      name: 'sc.collection-manager.fields',
       actions: ['fields:list'],
+    });
+
+    acl.registerSnippet({
+      name: 'sc.collection-manager.gi',
+      actions: ['fields:list', 'gi:list'],
+    });
+
+    acl.registerSnippet({
+      name: 'sc.collection-manager.collections',
+      actions: ['collections:list'],
     });
 
     const adminRole = acl.define({
@@ -25,26 +66,16 @@ describe('acl snippet', () => {
 
     adminRole.snippets.add('sc.*');
     expect(acl.can({ role: 'admin', resource: 'collections', action: 'list' })).not.toBeNull();
+    expect(adminRole.snippetAllowed('collections:list')).toBe(true);
 
-    adminRole.snippets.add('!sc.collection-manager.fields');
+    adminRole.snippets.add('!sc.collection-manager.gi');
+    expect(acl.can({ role: 'admin', resource: 'gi', action: 'list' })).toBeNull();
+    expect(adminRole.snippetAllowed('gi:list')).toBe(false);
 
-    expect(acl.can({ role: 'admin', resource: 'collections', action: 'list' })).toBeNull();
-  });
+    expect(acl.can({ role: 'admin', resource: 'fields', action: 'list' })).not.toBeNull();
+    expect(adminRole.snippetAllowed('fields:list')).toBe(true);
 
-  it('should merge snippets', () => {
-    acl.registerSnippet({
-      name: 'sc.collection-manager.fields',
-      actions: ['fields:list'],
-    });
-
-    acl.registerSnippet({
-      name: 'sc.collection-manager.collections',
-      actions: ['collections:list'],
-    });
-
-    const snippetManager = acl.snippetManager;
-
-    expect(snippetManager.getActions('sc.collection-manager.*')).toEqual(['fields:list', 'collections:list']);
+    expect(adminRole.snippetAllowed('other:list')).toBeNull();
   });
 });
 
