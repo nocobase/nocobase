@@ -15,7 +15,7 @@ const locale = {
   'Are you sure to clear the canvas?': '您确定要清空画布吗？',
   'Confirm': '确定',
   'Cancel': '取消',
-  'Enter keywords to search': '输入地方名关键字搜索',
+  'Enter keywords to search': '输入地方名关键字搜索（必须包含省/市）',
   'The AccessKey is incorrect, please check it': '访问密钥不正确，请检查',
   'Please configure the AMap securityCode or serviceHost correctly': '请正确配置高德地图 securityCode 或 serviceHost',
   'Map Manager': '地图管理',
