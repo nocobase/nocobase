@@ -206,7 +206,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
   // 当在编辑时，关闭 mouseTool
   useEffect(() => {
-    if (!mouseTool.current || !editor.current) return;
+    if (!mouseTool.current) return;
 
     if (disabled) {
       mouseTool.current?.close();

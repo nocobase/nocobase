@@ -47,9 +47,8 @@ export const commonSchema = {
   schemaInitialize(schema: ISchema, { readPretty, block }) {
     if (block === 'Form') {
       Object.assign(schema, {
-        'x-component': 'Map',
         'x-component-props': {
-          readOnly: true
+          readOnly: readPretty ? true : false
         },
         'x-designer': 'Map.Designer',
       });
