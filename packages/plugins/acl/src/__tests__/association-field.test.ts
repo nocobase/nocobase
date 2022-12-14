@@ -74,6 +74,35 @@ describe('association test', () => {
         resource: 'posts.userComments',
       }),
     ).not.toBeNull();
+
+    const post = await db.getRepository('posts').create({
+      values: {
+        title: 'hello world',
+        userComments: [{ content: 'comment 1' }],
+      },
+    });
+
+    const UserRepo = db.getCollection('users').repository;
+    const user = await UserRepo.create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    const userPlugin = app.getPlugin('users') as UsersPlugin;
+
+    const userAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: user.get('id'),
+      }),
+      { type: 'bearer' },
+    );
+
+    //@ts-ignore
+    const response = await userAgent.resource('posts').list({});
+    expect(response.statusCode).toEqual(200);
+    const post1 = response.body.data[0];
+    expect(post1.userComments).not.toBeDefined();
   });
 });
 

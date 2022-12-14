@@ -1,5 +1,5 @@
-import { Context } from '@nocobase/actions';
-import { Collection, ImporterReader } from '@nocobase/database';
+import { Context, utils as actionUtils } from '@nocobase/actions';
+import { Collection, ImporterReader, RelationField } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
@@ -10,7 +10,7 @@ import { setCurrentRole } from './middlewares/setCurrentRole';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
-import { utils as actionUtils } from '@nocobase/actions';
+import lodash from 'lodash';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -144,6 +144,35 @@ export class PluginACL extends Plugin {
     this.registerACLSettingSnippet({
       name: 'roles',
       actions: ['roles:list', 'roles:create', 'roles:update', 'roles:destroy'],
+    });
+
+    // change resource fields to association fields
+    this.app.acl.beforeGrantAction((ctx) => {
+      const actionName = this.app.acl.resolveActionAlias(ctx.actionName);
+      const collection = this.app.db.getCollection(ctx.resourceName);
+
+      if (!collection) {
+        return;
+      }
+
+      const fieldsParams = ctx.params.fields;
+
+      if (!fieldsParams) {
+        return;
+      }
+
+      if (actionName == 'view' || actionName == 'export') {
+        const associationsFields = fieldsParams.filter((fieldName) => {
+          const field = collection.getField(fieldName);
+          return field instanceof RelationField;
+        });
+
+        ctx.params = {
+          ...ctx.params,
+          fields: lodash.difference(fieldsParams, associationsFields),
+          appends: associationsFields,
+        };
+      }
     });
 
     this.registerAssociationFieldsActions();

@@ -281,7 +281,9 @@ export class ACL extends EventEmitter {
           ctx.permission.parsedParams = parsedParams;
           ctx.log?.info && ctx.log.info('acl parsedParams', parsedParams);
           ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
-          resourcerAction.mergeParams(parsedParams);
+          resourcerAction.mergeParams(parsedParams, {
+            appends: (x, y) => lodash.intersection(x, y),
+          });
           ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
         }
 
