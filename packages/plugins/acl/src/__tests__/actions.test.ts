@@ -31,6 +31,7 @@ describe('destroy action with acl', () => {
       role: 'user',
     });
 
+    // user can destroy post which created by himself
     userRole.grantAction('posts:destroy', {
       own: true,
     });
@@ -62,7 +63,7 @@ describe('destroy action with acl', () => {
         filterByTk: p1.get('id'),
       });
 
-    // should throw error
+    // should throw errors
     expect(response.statusCode).toEqual(403);
   });
 

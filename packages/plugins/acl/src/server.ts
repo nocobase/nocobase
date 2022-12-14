@@ -535,7 +535,7 @@ export class PluginACL extends Plugin {
     );
 
     // throw error when user has no fixed params permissions
-    this.app.use(
+    this.app.acl.use(
       async (ctx: any, next) => {
         const action = ctx.permission?.can?.action;
 
@@ -558,8 +558,8 @@ export class PluginACL extends Plugin {
       },
     );
 
-    this.app.acl.use(
-      async (ctx, next) => {
+    this.app.use(
+      async (ctx: any, next) => {
         await next();
 
         if (!ctx.action) {
