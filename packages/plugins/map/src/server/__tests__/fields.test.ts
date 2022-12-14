@@ -36,7 +36,7 @@ describe('fields', () => {
     await db.close();
   });
 
-  const createCollection = () => {
+  const createCollection = async () => {
     const fields = [
       {
         type: 'point',
@@ -60,31 +60,39 @@ describe('fields', () => {
       fields,
     });
 
+    await db.sync();
+
     return Test;
   };
   it('define', async () => {
-    const Test = createCollection();
-    await Test.sync();
+    const Test = await createCollection();
     await Test.model.create();
   });
 
-  it('set', async () => {
-    const Test = createCollection();
-    await db.sync();
+  it('create', async () => {
+    const Test = await createCollection();
     const model = await Test.model.create(data);
     expect(model.get()).toMatchObject(data);
   });
 
-  it('get', async () => {
-    const Test = createCollection();
-    await db.sync();
+  it('find', async () => {
+    const Test = await createCollection();
     await Test.model.create(data);
     expect(await Test.model.findOne()).toMatchObject(data);
   });
 
+  it('set and get', async () => {
+    const Test = await createCollection();
+    const model = await Test.model.create();
+    model.set('point', [1, 2]);
+    expect(
+      model.get('point')
+    ).toMatchObject([1, 2]);
+  })
+
+
   it('create and update', async () => {
-    const Test = createCollection();
-    await db.sync();
+    const Test = await createCollection();
     const model = await Test.model.create(data);
     await model.save();
     expect(await Test.model.findOne()).toMatchObject(data);
