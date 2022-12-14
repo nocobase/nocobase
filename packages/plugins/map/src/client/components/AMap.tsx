@@ -309,8 +309,8 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
           <div
             className={css`
               position: absolute;
-              top: 10px;
-              right: 10px;
+              bottom: 20px;
+              left: 10px;
               z-index: 2;
               pointer-events: none;
             `}

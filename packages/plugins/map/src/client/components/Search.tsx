@@ -40,8 +40,11 @@ const Search = (props: SearchProps) => {
             }),
           );
         } else {
+          if (status === 'no_data') {
+            setOptions([]);
+            return;
+          }
           message.error(t('Please configure the AMap securityCode or securityHost correctly'));
-          setOptions([]);
         }
       });
     },
@@ -67,12 +70,15 @@ const Search = (props: SearchProps) => {
         top: 10px;
         left: 10px;
         z-index: 10;
-        width: 400px;
+        width: calc(100% - 20px);
       `}
     >
       <Select
         showSearch
         allowClear
+        style={{
+          background: 'rgba(255, 255, 255, 0.8)',
+        }}
         placeholder={t('Enter keywords to search')}
         filterOption={false}
         onSearch={onSearch}
