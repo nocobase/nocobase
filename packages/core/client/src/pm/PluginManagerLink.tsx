@@ -2,29 +2,13 @@ import { AppstoreAddOutlined, SettingOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Dropdown, Menu } from 'antd';
-import React, { useState,useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { PluginManager } from '../plugin-manager';
 import { ActionContext } from '../schema-component';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import {SettingsCenterContext} from './index';
-
-const schema: ISchema = {
-  type: 'object',
-  properties: {
-    [uid()]: {
-      'x-component': 'Action.Drawer',
-      type: 'void',
-      title: '{{t("Collections & Fields")}}',
-      properties: {
-        configuration: {
-          'x-component': 'ConfigurationTable',
-        },
-      },
-    },
-  },
-};
+import { getPluginsTabs, SettingsCenterContext } from './index';
 
 export const PluginManagerLink = () => {
   const [visible, setVisible] = useState(false);
@@ -44,55 +28,30 @@ export const PluginManagerLink = () => {
 };
 
 export const SettingsCenterDropdown = () => {
-  const { pluginTabBlacklist = [] } = useACLRoleContext();
+  const { snippets = [] } = useACLRoleContext();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const history = useHistory();
-  const pluginsTabs=useContext(SettingsCenterContext);
-  console.log(pluginsTabs)
-  const items = [
-    {
-      title: t('Collections & Fields'),
-      path: 'collection-manager/collections',
-      key: 'collections',
-    },
-    {
-      title: t('Roles & Permissions'),
-      path: 'acl/roles',
-      key: 'roles',
-    },
-    {
-      title: t('File storages'),
-      path: 'file-manager/storages',
-      key: 'storages',
-    },
-    {
-      title: t('System settings'),
-      path: 'system-settings/system-settings',
-      key: 'system-settings',
-    },
-    {
-      title: t('workflow:Workflow'),
-      path: 'workflow/workflows',
-      key: 'workflows',
-    },
-  ];
+  const itemData = useContext(SettingsCenterContext);
+  const pluginsTabs = getPluginsTabs(itemData, snippets);
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
         overlay={
           <Menu>
             <Menu.ItemGroup title={t('Bookmark')}>
-              {items.map((item) => {
+              {pluginsTabs.map((plugin) => {
+                const tabKey = plugin.tabs[0]?.key;
+                const path = `${plugin.key}/${tabKey}`;
                 return (
-                  !pluginTabBlacklist.includes(item.key) && (
+                  plugin.isBookmark && (
                     <Menu.Item
                       onClick={() => {
-                        history.push('/admin/settings/' + item.path);
+                        history.push('/admin/settings/' + path);
                       }}
-                      key={item.path}
+                      key={path}
                     >
-                      {item.title}
+                      {plugin.title}
                     </Menu.Item>
                   )
                 );

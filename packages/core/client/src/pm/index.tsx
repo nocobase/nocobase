@@ -1,6 +1,6 @@
 import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { pickBy } from 'lodash';
+import { sortBy } from 'lodash';
 import { Avatar, Card, Layout, Menu, message, PageHeader, Popconfirm, Spin, Switch, Tabs } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -265,11 +265,35 @@ const settings = {
   },
 };
 
+export const getPluginsTabs = (items, snippets) => {
+  const pluginsTabs = Object.keys(items).map((plugin) => {
+    const tabsObj = items[plugin].tabs;
+    const tabs = sortBy(
+      Object.keys(tabsObj).map((tab) => {
+        return {
+          key: tab,
+          ...tabsObj[tab],
+          isIdentify: !snippets?.includes('!settings-center.' + plugin + '.' + tab),
+        };
+      }),
+      'isIdentify',
+    );
+    return {
+      ...items[plugin],
+      key: plugin,
+      tabs,
+      isBookmark: !tabs.every((v) => !v.isIdentify),
+    };
+  });
+  return pluginsTabs;
+};
+
 const SettingsCenter = (props) => {
   const { snippets = [] } = useACLRoleContext();
   const match = useRouteMatch<any>();
   const history = useHistory<any>();
   const items = useContext(SettingsCenterContext);
+  const pluginsTabs = getPluginsTabs(items, snippets);
   const compile = useCompile();
   const firstUri = useMemo(() => {
     const keys = Object.keys(items).sort();
@@ -294,25 +318,22 @@ const SettingsCenter = (props) => {
       <Layout>
         <Layout.Sider theme={'light'}>
           <Menu selectedKeys={[pluginName]} style={{ height: 'calc(100vh - 46px)' }}>
-            {Object.keys(items)
-              .sort()
-              .map((key) => {
-                const item = items[key];
-                const tabKey = Object.keys(item.tabs).shift();
-                return (
-                  !snippets.includes(tabKey) && (
-                    <Menu.Item
-                      key={key}
-                      icon={item.icon ? <Icon type={item.icon} /> : null}
-                      onClick={() => {
-                        history.push(`/admin/settings/${key}/${tabKey}`);
-                      }}
-                    >
-                      {compile(item.title)}
-                    </Menu.Item>
-                  )
-                );
-              })}
+            {pluginsTabs.sort().map((plugin) => {
+              const tabKey = plugin.tabs[0]?.key;
+              return (
+                plugin.isBookmark && (
+                  <Menu.Item
+                    key={plugin.key}
+                    icon={plugin.icon ? <Icon type={plugin.icon} /> : null}
+                    onClick={() => {
+                      history.push(`/admin/settings/${plugin.key}/${tabKey}`);
+                    }}
+                  >
+                    {compile(plugin.title)}
+                  </Menu.Item>
+                )
+              );
+            })}
           </Menu>
         </Layout.Sider>
         <Layout.Content>
