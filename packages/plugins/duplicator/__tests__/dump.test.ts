@@ -1,12 +1,12 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import { AppDump } from '../src/index';
+import { Duplicator } from '../src/index';
 
 describe('dump action', function () {
   let app: MockServer;
 
   beforeEach(async () => {
     app = mockServer();
-    app.plugin(AppDump, { name: 'app-dump' });
+    app.plugin(Duplicator, { name: 'app-dump' });
     await app.loadAndInstall();
   });
 
