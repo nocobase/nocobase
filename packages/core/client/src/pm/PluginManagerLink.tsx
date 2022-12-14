@@ -6,6 +6,7 @@ import React, { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { PluginManager } from '../plugin-manager';
+import { useCompile } from '../schema-component';
 import { ActionContext } from '../schema-component';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { getPluginsTabs, SettingsCenterContext } from './index';
@@ -31,12 +32,15 @@ export const SettingsCenterDropdown = () => {
   const { snippets = [] } = useACLRoleContext();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
+  const compile = useCompile();
+
   const history = useHistory();
   const itemData = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(itemData, snippets);
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
+        placement="bottom"
         overlay={
           <Menu>
             <Menu.ItemGroup title={t('Bookmark')}>
@@ -51,7 +55,7 @@ export const SettingsCenterDropdown = () => {
                       }}
                       key={path}
                     >
-                      {plugin.title}
+                      {compile(plugin.title)}
                     </Menu.Item>
                   )
                 );
