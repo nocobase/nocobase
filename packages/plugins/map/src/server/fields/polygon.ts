@@ -28,7 +28,7 @@ export class PolygonField extends Field {
           } else if (isMysql(context)) {
             value = {
               type: 'Polygon',
-              coordinates: [value]
+              coordinates: [value.concat([value[0]])]
             }
           }
           this.setDataValue(name, value)
