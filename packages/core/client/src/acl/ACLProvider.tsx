@@ -159,14 +159,11 @@ export const ACLCollectionFieldProvider = (props) => {
   const { allowAll, allowConfigure, getActionParams, resources } = useACLRoleContext();
   const actionName = fieldSchema['x-action'] || 'view';
   const findAclAction = (schema) => {
-    if (schema?.['x-collection-field']?.includes(name)) {
-      if (schema['x-acl-action']) {
-        return schema['x-acl-action'];
-      } else {
-        return schema.parent ? findAclAction(schema.parent) : `${name}:${actionName}`;
-      }
+    if (schema['x-acl-action']) {
+      return schema['x-acl-action'];
+    } else {
+      return schema.parent ? findAclAction(schema.parent) : `${name}:${actionName}`;
     }
-    return `${name}:${actionName}`;
   };
   const path = findAclAction(fieldSchema);
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
@@ -175,9 +172,9 @@ export const ACLCollectionFieldProvider = (props) => {
     return <FormItem>{props.children}</FormItem>;
   }
   if (resources.includes(name)) {
-    const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
+    const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn })||{};
     const { whitelist, fields } = params;
-    const aclFieldCheck = (whitelist || fields).includes(fieldSchema.name);
+    const aclFieldCheck = (whitelist || fields)?.includes(fieldSchema.name);
     if (!aclFieldCheck) {
       return null;
     }
