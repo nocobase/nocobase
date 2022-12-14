@@ -39,7 +39,7 @@ export const commonSchema = {
         showSearch: false,
         allowClear: false,
       },
-      'x-disabled': '{{ !createOnly }}',
+      'x-disabled': '{{ isOverride || !createOnly }}',
       default: 'amap',
       enum: MapTypes
     }
