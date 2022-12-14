@@ -28,15 +28,26 @@ export const PluginManagerLink = () => {
   );
 };
 
+const getBookmarkTabs = (data) => {
+  const bookmarkTabs = [];
+  data.forEach((plugin) => {
+    const tabs = plugin.tabs;
+    tabs.forEach((tab) => {
+      tab.isBookmark && tab.isAllow && bookmarkTabs.push({ ...tab, path: `${plugin.key}/${tab.key}` });
+    });
+  });
+  return bookmarkTabs;
+};
 export const SettingsCenterDropdown = () => {
   const { snippets = [] } = useACLRoleContext();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const compile = useCompile();
-
   const history = useHistory();
   const itemData = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(itemData, snippets);
+  const bookmarkTabs = getBookmarkTabs(pluginsTabs);
+  console.log(bookmarkTabs);
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
@@ -44,20 +55,16 @@ export const SettingsCenterDropdown = () => {
         overlay={
           <Menu>
             <Menu.ItemGroup title={t('Bookmark')}>
-              {pluginsTabs.map((plugin) => {
-                const tabKey = plugin.tabs[0]?.key;
-                const path = `${plugin.key}/${tabKey}`;
+              {bookmarkTabs.map((tab) => {
                 return (
-                  plugin.isBookmark && (
-                    <Menu.Item
-                      onClick={() => {
-                        history.push('/admin/settings/' + path);
-                      }}
-                      key={path}
-                    >
-                      {compile(plugin.title)}
-                    </Menu.Item>
-                  )
+                  <Menu.Item
+                    onClick={() => {
+                      history.push('/admin/settings/' + tab.path);
+                    }}
+                    key={tab.path}
+                  >
+                    {compile(tab.title)}
+                  </Menu.Item>
                 );
               })}
             </Menu.ItemGroup>

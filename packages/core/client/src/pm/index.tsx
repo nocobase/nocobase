@@ -228,6 +228,7 @@ const settings = {
     icon: 'LockOutlined',
     tabs: {
       roles: {
+        isBookmark: true,
         title: '{{t("Roles & Permissions")}}',
         component: ACLPane,
       },
@@ -248,6 +249,7 @@ const settings = {
     title: '{{t("Collection manager")}}',
     tabs: {
       collections: {
+        isBookmark: true,
         title: '{{t("Collections & Fields")}}',
         component: CollectionManagerPane,
       },
@@ -258,6 +260,7 @@ const settings = {
     title: '{{t("System settings")}}',
     tabs: {
       'system-settings': {
+        isBookmark: true,
         title: '{{t("System settings")}}',
         component: SystemSettingsPane,
       },
@@ -273,16 +276,16 @@ export const getPluginsTabs = (items, snippets) => {
         return {
           key: tab,
           ...tabsObj[tab],
-          isIdentify: !snippets?.includes('!settings-center.' + plugin + '.' + tab),
+          isAllow: !snippets?.includes('!settings-center.' + plugin + '.' + tab),
         };
       }),
-      'isIdentify',
+      'isAllow',
     );
     return {
       ...items[plugin],
       key: plugin,
       tabs,
-      isBookmark: !tabs.every((v) => !v.isIdentify),
+      isAllow: !tabs.every((v) => !v.isAllow),
     };
   });
   return pluginsTabs;
@@ -321,7 +324,7 @@ const SettingsCenter = (props) => {
             {pluginsTabs.sort().map((plugin) => {
               const tabKey = plugin.tabs[0]?.key;
               return (
-                plugin.isBookmark && (
+                plugin.isAllow && (
                   <Menu.Item
                     key={plugin.key}
                     icon={plugin.icon ? <Icon type={plugin.icon} /> : null}
