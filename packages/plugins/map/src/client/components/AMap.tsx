@@ -256,6 +256,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
             zoom,
           } as AMap.MapOptions);
           aMap.current = amap;
+          setErrMessage('');
           forceUpdate([]);
         }, Math.random() * 300);
       })
@@ -276,7 +277,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     };
   }, [accessKey, type, securityJsCode]);
 
-  if (!accessKey) {
+  if (!accessKey || errMessage) {
     return (
       <Alert
         action={
@@ -284,14 +285,10 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
             {t('Go to the configuration page')}
           </Button>
         }
-        message={t('Please configure the AccessKey and SecurityJsCode first')}
+        message={errMessage || t('Please configure the AccessKey and SecurityJsCode first')}
         type="error"
       />
     );
-  }
-
-  if (errMessage) {
-    return <Alert message={errMessage} type="error" />;
   }
 
   return (
