@@ -36,6 +36,7 @@ export class ACLRole {
     if (!this.strategy) {
       return null;
     }
+
     return lodash.isString(this.strategy)
       ? this.acl.availableStrategy.get(this.strategy)
       : new ACLAvailableStrategy(this.acl, this.strategy);
