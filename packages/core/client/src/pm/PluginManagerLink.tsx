@@ -47,7 +47,6 @@ export const SettingsCenterDropdown = () => {
   const itemData = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(itemData, snippets);
   const bookmarkTabs = getBookmarkTabs(pluginsTabs);
-  console.log(bookmarkTabs);
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
