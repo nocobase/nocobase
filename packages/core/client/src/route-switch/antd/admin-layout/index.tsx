@@ -3,7 +3,6 @@ import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useMemo, useRef } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
-  ACLAllowConfigure,
   ACLRolesCheckProvider,
   CurrentUser,
   CurrentUserProvider,
@@ -167,9 +166,7 @@ const InternalAdminLayout = (props: any) => {
           </div>
         </div>
         <div style={{ position: 'absolute', zIndex: 10, top: 0, right: 0 }}>
-          <ACLAllowConfigure>
             <RemotePluginManagerToolbar />
-          </ACLAllowConfigure>
           <CurrentUser />
         </div>
       </Layout.Header>

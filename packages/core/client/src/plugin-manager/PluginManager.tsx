@@ -7,6 +7,7 @@ import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { PluginManagerContext } from './context';
+import { useACLRoleContext } from '../acl/ACLProvider';
 
 export const usePrefixCls = (
   tag?: string,
@@ -142,19 +143,15 @@ PluginManager.Toolbar.Item = (props) => {
 };
 
 export const RemotePluginManagerToolbar = () => {
-  // const api = useAPIClient();
-  // const { data, loading } = useRequest({
-  //   resource: 'plugins',
-  //   action: 'getPinned',
-  // });
-  // if (loading) {
-  //   return <Spin />;
-  // }
+  const { allowAll, snippets, allowConfigure } = useACLRoleContext();
+  const getSnippetsAllow = (aclKey) => {
+    return allowAll || snippets?.includes(aclKey) || allowConfigure;
+  };
   const items = [
-    { component: 'DesignableSwitch', pin: true, aclKey: 'ui-editor' },
-    { component: 'PluginManagerLink', pin: true, aclKey: 'plugin-manager' },
-    { component: 'SettingsCenterDropdown', pin: true, aclKey: 'settings-center.*' },
+    { component: 'DesignableSwitch', pin: true, isAllow: getSnippetsAllow('ui-editor') },
+    { component: 'PluginManagerLink', pin: true, isAllow: getSnippetsAllow('plugin-manager') },
+    { component: 'SettingsCenterDropdown', pin: true, isAllow: getSnippetsAllow('settings-center.*') },
     // ...data?.data,
   ];
-  return <PluginManager.Toolbar items={items} />;
+  return <PluginManager.Toolbar items={items.filter((v) => v.isAllow)} />;
 };
