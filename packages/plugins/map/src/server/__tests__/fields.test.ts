@@ -85,9 +85,13 @@ describe('fields', () => {
     const Test = await createCollection();
     const model = await Test.model.create();
     model.set('point', [1, 2]);
-    expect(
-      model.get('point')
-    ).toMatchObject([1, 2]);
+    model.set('polygon', [3, 4]);
+    model.set('lineString', [5, 6]);
+    model.set('circle', [1, 2, 0.5]);
+    expect(model.get('point')).toMatchObject([1, 2]);
+    expect(model.get('polygon')).toMatchObject([3, 4]);
+    expect(model.get('lineString')).toMatchObject([5, 6]);
+    expect(model.get('circle')).toMatchObject([1, 2, 0.5]);
   })
 
 
