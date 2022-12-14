@@ -141,8 +141,8 @@ export const ACLActionProvider = (props) => {
   const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
   const actionName = fieldSchema['x-action'];
   const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
-  const actionScope = allowedActions?.[path.split(':')[1]];
-  const actionScopeCheck = actionScope ? actionScope?.includes(record[getPrimaryKeyField(name).name]) : true;
+  const actionScope = allowedActions?.[path.split(':')[1]] || [];
+  const actionScopeCheck = actionScope.length > 0 ? actionScope?.includes(record[getPrimaryKeyField(name).name]) : true;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
   fieldSchema['x-disabled'] = !actionScopeCheck;
   if (!name || allowAll || allowConfigure) {
