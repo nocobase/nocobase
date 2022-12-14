@@ -338,7 +338,7 @@ export class PluginACL extends Plugin {
             name: 'root',
             title: '{{t("Root")}}',
             hidden: true,
-            snippets: ['ui-editor.*', 'plugin-manager.*', 'settings-center.*'],
+            snippets: ['ui-editor', 'plugin-manager', 'settings-center.*'],
           },
           {
             name: 'admin',
@@ -346,7 +346,7 @@ export class PluginACL extends Plugin {
             allowConfigure: true,
             allowNewMenu: true,
             strategy: { actions: ['create', 'view', 'update', 'destroy'] },
-            snippets: ['ui-editor.*', 'plugin-manager.*', 'settings-center.*'],
+            snippets: ['ui-editor', 'plugin-manager', 'settings-center.*'],
           },
           {
             name: 'member',
