@@ -4,4 +4,4 @@ class NoPermissionError extends Error {
   }
 }
 
-export default NoPermissionError;
+export { NoPermissionError };

@@ -45,6 +45,7 @@ export interface ApplicationOptions {
 
 export interface DefaultState extends KoaDefaultState {
   currentUser?: any;
+
   [key: string]: any;
 }
 
@@ -53,6 +54,7 @@ export interface DefaultContext extends KoaDefaultContext {
   cache: Cache;
   resourcer: Resourcer;
   i18n: any;
+
   [key: string]: any;
 }
 
@@ -260,7 +262,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (this.options.acl !== false) {
       this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
-      this.use(this.acl.afterActionMiddleware(), { after: 'restApi', group: 'after' });
     }
 
     registerMiddlewares(this, options);

@@ -11,6 +11,7 @@ import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
 import lodash from 'lodash';
+import { NoPermissionError } from '@nocobase/acl';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -534,8 +535,8 @@ export class PluginACL extends Plugin {
     );
 
     // throw error when user has no fixed params permissions
-    this.app.acl.use(
-      async (ctx, next) => {
+    this.app.use(
+      async (ctx: any, next) => {
         const action = ctx.permission?.can?.action;
 
         if (action == 'destroy') {
@@ -555,6 +556,150 @@ export class PluginACL extends Plugin {
         after: 'core',
         group: 'after',
       },
+    );
+
+    this.app.acl.use(
+      async (ctx, next) => {
+        await next();
+
+        if (!ctx.action) {
+          return;
+        }
+
+        const { resourceName, actionName } = ctx.action;
+        const collection = ctx.db.getCollection(resourceName);
+
+        if (collection && actionName == 'list' && ctx.status === 200) {
+          const Model = collection.model;
+          const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
+
+          const dataPath = ctx.paginate ? 'body.rows' : 'body';
+          const listData = lodash.get(ctx, dataPath);
+
+          const actions = ['view', 'update', 'destroy'];
+
+          const actionsParams = [];
+
+          for (const action of actions) {
+            const actionCtx: any = {
+              db: ctx.db,
+              action: {
+                actionName: action,
+                name: action,
+                params: {},
+                resourceName: ctx.action.resourceName,
+                mergeParams() {},
+              },
+              state: {
+                currentRole: ctx.state.currentRole,
+                currentUser: (() => {
+                  if (!ctx.state.currentUser) {
+                    return null;
+                  }
+                  if (ctx.state.currentUser.toJSON) {
+                    return ctx.state.currentUser?.toJSON();
+                  }
+
+                  return ctx.state.currentUser;
+                })(),
+              },
+              permission: {},
+              throw(...args) {
+                throw new NoPermissionError(...args);
+              },
+            };
+            try {
+              await this.app.acl.getActionParams(actionCtx);
+            } catch (e) {
+              if (e instanceof NoPermissionError) {
+                continue;
+              }
+
+              throw e;
+            }
+
+            actionsParams.push([
+              action,
+              actionCtx.permission?.can === null && !actionCtx.permission.skip
+                ? null
+                : actionCtx.permission?.parsedParams || {},
+            ]);
+          }
+
+          const ids = listData.map((item) => item.get(primaryKeyField));
+
+          const conditions = [];
+
+          const allAllowed = [];
+
+          for (const [action, params] of actionsParams) {
+            if (!params) {
+              continue;
+            }
+
+            if (lodash.isEmpty(params) || lodash.isEmpty(params.filter)) {
+              allAllowed.push(action);
+              continue;
+            }
+
+            const queryParams = collection.repository.buildQueryOptions(params);
+
+            // console.log(JSON.stringify(queryParams, null, 2));
+
+            const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
+              Model.getTableName(),
+              {
+                // ...queryParams,
+                where: queryParams.where,
+                attributes: [primaryKeyField],
+                includeIgnoreAttributes: false,
+                // include: queryParams.include,
+              },
+              Model,
+            );
+
+            const whereCase = actionSql.match(/WHERE (.*?);/)[1];
+            conditions.push({
+              whereCase,
+              action,
+              include: queryParams.include,
+            });
+          }
+
+          const results = await collection.model.findAll({
+            where: {
+              [primaryKeyField]: ids,
+            },
+            attributes: [
+              primaryKeyField,
+              ...conditions.map((condition) => {
+                return [
+                  ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`),
+                  condition.action,
+                ];
+              }),
+            ],
+            include: conditions.map((condition) => condition.include).flat(),
+          });
+
+          ctx.body.allowedActions = actions
+            .map((action) => {
+              if (allAllowed.includes(action)) {
+                return [action, ids];
+              }
+
+              return [
+                action,
+                results.filter((item) => Boolean(item.get(action))).map((item) => item.get(primaryKeyField)),
+              ];
+            })
+            .reduce((acc, [action, ids]) => {
+              acc[action] = ids;
+              return acc;
+            }, {});
+        }
+      },
+      { after: 'restApi', group: 'after' },
     );
   }
 
