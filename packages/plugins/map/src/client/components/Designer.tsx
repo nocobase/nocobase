@@ -8,6 +8,7 @@ import {
   useDesignable,
   useFormBlockContext,
 } from '@nocobase/client';
+import _ from 'lodash';
 import React from 'react';
 import { useMapTranslation } from '../locales';
 
@@ -206,6 +207,42 @@ const Designer = () => {
           }}
         />
       )}
+      <SchemaSettings.ModalItem
+        key="map-zoom"
+        title={t('Set default zoom level')}
+        schema={
+          {
+            type: 'object',
+            title: t('Set default zoom level'),
+            properties: {
+              zoom: {
+                title: t('Zoom'),
+                default: field.componentProps.zoom || 13,
+                description: t('The default zoom level of the map'),
+                'x-decorator': 'FormItem',
+                'x-component': 'InputNumber',
+                'x-component-props': {
+                  precision: 0,
+                },
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={({ zoom }) => {
+          if (zoom) {
+            _.set(fieldSchema, 'x-component-props.zoom', zoom);
+            Object.assign(field.componentProps, fieldSchema['x-component-props']);
+
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': field.componentProps,
+              },
+            });
+          }
+          dn.refresh();
+        }}
+      />
       <SchemaSettings.Remove
         key="remove"
         removeParentsIfNoChildren

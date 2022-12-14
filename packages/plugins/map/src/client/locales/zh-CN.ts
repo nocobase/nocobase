@@ -26,6 +26,9 @@ const locale = {
   'Save': '保存',
   'Please configure the AccessKey and SecurityJsCode first': '请先配置 AccessKey 和 SecurityJsCode',
   'Go to the configuration page': '前往配置页面',
+  'Zoom': '缩放',
+  'Set default zoom level': '设置默认缩放级别',
+  'The default zoom level of the map': '地图默认缩放级别',
   // Designer
   'Edit field title': '编辑字段标题',
   'Field title': '字段标题',

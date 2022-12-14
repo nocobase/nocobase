@@ -12,29 +12,30 @@ interface SearchProps {
 const Search = (props: SearchProps) => {
   const { aMap, toCenter } = props;
   const { t } = useMapTranslation();
-  const autocomplete = useRef<any>();
+  const placeSearch = useRef<any>();
   const [options, setOptions] = useState([]);
 
   useEffect(() => {
-    aMap?.plugin('AMap.AutoComplete', () => {
-      autocomplete.current = new aMap.AutoComplete({
+    aMap?.plugin('AMap.PlaceSearch', () => {
+      placeSearch.current = new aMap.PlaceSearch({
         city: '全国',
+        pageSize: 30,
       });
     });
   }, [aMap]);
 
   const { run: onSearch } = useDebounceFn(
     (keyword) => {
-      if (!autocomplete.current) {
+      if (!placeSearch.current) {
         return;
       }
-      autocomplete.current.search(keyword || ' ', (status, result) => {
+      placeSearch.current.search(keyword || ' ', (status, result) => {
         if (status === 'complete') {
           setOptions(
-            result.tips.map((item) => {
+            result.poiList.pois.map((item) => {
               return {
                 ...item,
-                label: `${item.district}-${item.name}`,
+                label: `${item.name}-${item.address}`,
                 value: item.id,
               };
             }),

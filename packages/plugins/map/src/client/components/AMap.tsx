@@ -19,6 +19,7 @@ interface AMapComponentProps {
   onChange: (value: number[]) => void;
   disabled?: boolean;
   mapType: string;
+  zoom: number;
 }
 
 const methodMapping = {
@@ -54,7 +55,7 @@ const methodMapping = {
 
 const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   const { accessKey, securityJsCode } = useMapConfiguration(props.mapType) || {};
-  const { value, onChange, disabled } = props;
+  const { value, onChange, disabled, zoom = 13 } = props;
   const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
@@ -152,7 +153,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
   const toCenter = (position, imm?: boolean) => {
     if (map.current) {
-      map.current.setZoomAndCenter(13, position, imm);
+      map.current.setZoomAndCenter(18, position, imm);
     }
   };
 
@@ -252,7 +253,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
         setTimeout(() => {
           map.current = new amap.Map(id.current, {
             resizeEnable: true,
-            zoom: 13,
+            zoom,
           } as AMap.MapOptions);
           aMap.current = amap;
           forceUpdate([]);
@@ -325,7 +326,14 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
               z-index: 2;
             `}
           >
-            <Button disabled={!value} onClick={onReset} type="primary">
+            <Button
+              disabled={!value}
+              style={{
+                height: '40px',
+              }}
+              onClick={onReset}
+              type="primary"
+            >
               {t('Clear')}
             </Button>
           </div>
