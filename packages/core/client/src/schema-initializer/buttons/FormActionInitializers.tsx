@@ -275,6 +275,14 @@ export const UpdateFormActionInitializers = {
             'x-action-settings': {},
           },
         },
+        {
+          type: 'item',
+          title: '{{t("Share")}}',
+          component: 'ShareActionInitializer',
+          schema: {
+            'x-action-settings': {},
+          },
+        },
       ],
     },
     {

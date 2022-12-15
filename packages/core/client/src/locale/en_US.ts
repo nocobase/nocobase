@@ -241,6 +241,8 @@ export default {
   "Label field": "Label field",
   "Default is the ID field": "Default is the ID field",
   "Set default sorting rules": "Set default sorting rules",
+  "Copy success!": "Copy success!",
+  "Share": "Share",
   "is before": "is before",
   "is after": "is after",
   "is on or after": "is on or after",

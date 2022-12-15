@@ -39,6 +39,14 @@ export const ReadPrettyFormActionInitializers = {
             'x-component': 'Action',
           },
         },
+        {
+          type: 'item',
+          title: '{{t("Share")}}',
+          component: 'ShareActionInitializer',
+          schema: {
+            'x-action-settings': {},
+          },
+        },
       ],
     },
 

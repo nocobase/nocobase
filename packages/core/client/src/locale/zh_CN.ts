@@ -285,6 +285,8 @@ export default {
   "Label field": "标签字段",
   "Default is the ID field": "默认为 ID 字段",
   "Set default sorting rules": "设置排序规则",
+  "Copy success!": "拷贝成功！",
+  "Share": "分享",
 
   "Set validation rules": "设置验证规则",
   "Max length": "最大长度",
