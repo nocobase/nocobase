@@ -2,8 +2,8 @@ import { Plugin } from '@nocobase/server';
 import path from 'path';
 
 export class PresetNocoBase extends Plugin {
-  async addBuiltInPlugins() {
-    const builtInPlugins = process.env.PRESET_NOCOBASE_PLUGINS
+  getBuiltInPlugins() {
+    return process.env.PRESET_NOCOBASE_PLUGINS
       ? process.env.PRESET_NOCOBASE_PLUGINS.split(',')
       : [
           'error-handler',
@@ -22,12 +22,21 @@ export class PresetNocoBase extends Plugin {
           'import',
           'audit-logs',
         ];
+  }
+
+  getLocalPlugins() {
+    const localPlugins = ['sample-hello', 'oidc', 'saml', 'map'];
+    return localPlugins;
+  }
+
+  async addBuiltInPlugins() {
+    const builtInPlugins = this.getBuiltInPlugins();
     await this.app.pm.add(builtInPlugins, {
       enabled: true,
       builtIn: true,
       installed: true,
     });
-    const localPlugins = ['sample-hello', 'oidc', 'saml'];
+    const localPlugins = this.getLocalPlugins();
     await this.app.pm.add(localPlugins, {});
     await this.app.reload();
   }
@@ -55,6 +64,20 @@ export class PresetNocoBase extends Plugin {
         console.log(`Initialize all built-in plugins`);
         await this.addBuiltInPlugins();
       }
+      const builtInPlugins = this.getBuiltInPlugins();
+      await this.app.pm.add(
+        builtInPlugins.filter((plugin) => !this.app.pm.has(plugin)),
+        {
+          enabled: true,
+          builtIn: true,
+          installed: true,
+        },
+      );
+      const localPlugins = this.getLocalPlugins();
+      await this.app.pm.add(
+        localPlugins.filter((plugin) => !this.app.pm.has(plugin)),
+        {},
+      );
     });
     this.app.on('beforeInstall', async () => {
       console.log(`Initialize all built-in plugins`);

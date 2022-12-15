@@ -10,14 +10,15 @@ import {
   ModelCtor,
   Op,
   Transactionable,
-  UpdateOptions as SequelizeUpdateOptions
+  UpdateOptions as SequelizeUpdateOptions,
 } from 'sequelize';
 import { WhereOperators } from 'sequelize/types/lib/model';
 import { Collection } from './collection';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
-import { RelationField } from './fields';
+import { ArrayFieldRepository } from './field-repository/array-field-repository';
+import { ArrayField, RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
@@ -161,19 +162,29 @@ const transaction = transactionWrapperBuilder(function () {
 class RelationRepositoryBuilder<R extends RelationRepository> {
   collection: Collection;
   associationName: string;
-  association: Association;
+  association: Association | { associationType: string };
 
   builderMap = {
     HasOne: HasOneRepository,
     BelongsTo: BelongsToRepository,
     BelongsToMany: BelongsToManyRepository,
     HasMany: HasManyRepository,
+    ArrayField: ArrayFieldRepository,
   };
 
   constructor(collection: Collection, associationName: string) {
     this.collection = collection;
     this.associationName = associationName;
     this.association = this.collection.model.associations[this.associationName];
+
+    if (!this.association) {
+      const field = collection.getField(associationName);
+      if (field && field instanceof ArrayField) {
+        this.association = {
+          associationType: 'ArrayField',
+        };
+      }
+    }
   }
 
   protected builder() {

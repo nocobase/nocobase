@@ -34,6 +34,7 @@
     "mathjs": "^10.6.0",
     "react-beautiful-dnd": "^13.1.0",
     "react-big-calendar": "^0.38.7",
+    "react-iframe": "~1.8.5",
     "react-contenteditable": "^3.3.6",
     "react-drag-listview": "^0.1.9",
     "react-helmet": "^6.1.0",

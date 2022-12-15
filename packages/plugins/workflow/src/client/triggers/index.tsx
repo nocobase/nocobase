@@ -70,7 +70,7 @@ function TriggerExecution() {
     <SchemaComponent
       schema={{
         type: 'void',
-        name: execution.id,
+        name: 'execution',
         'x-component': 'Action',
         'x-component-props': {
           title: <InfoOutlined />,

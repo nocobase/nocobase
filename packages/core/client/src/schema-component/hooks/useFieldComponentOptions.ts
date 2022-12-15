@@ -1,7 +1,7 @@
-import { useFieldSchema } from "@formily/react";
-import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { useCollectionManager, useCollection } from "../../collection-manager";
+import { useFieldSchema } from '@formily/react';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useCollection, useCollectionManager } from '../../collection-manager';
 
 export const useFieldComponentOptions = () => {
   const { getCollectionJoinField } = useCollectionManager();
@@ -11,7 +11,12 @@ export const useFieldComponentOptions = () => {
   const { t } = useTranslation();
 
   const fieldComponentOptions = useMemo(() => {
-    if (!collectionField?.interface) return;
+    if (!collectionField || !collectionField?.interface) {
+      return;
+    }
+
+    if (!['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) return;
+
     switch (collectionField.interface) {
       case 'o2m':
         return [
@@ -26,7 +31,7 @@ export const useFieldComponentOptions = () => {
         return [
           { label: t('Record picker'), value: 'CollectionField' },
           { label: t('Select'), value: 'AssociationSelect' },
-        ]
+        ];
 
       default:
         return [
@@ -34,7 +39,6 @@ export const useFieldComponentOptions = () => {
           { label: t('Subform'), value: 'FormField' },
           { label: t('Select'), value: 'AssociationSelect' },
         ];
-
     }
   }, [t, collectionField?.interface]);
 
