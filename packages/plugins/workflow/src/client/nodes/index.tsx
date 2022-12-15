@@ -218,7 +218,7 @@ export function JobButton() {
       schema={{
         type: 'void',
         properties: {
-          [job.id]: {
+          job: {
             type: 'void',
             'x-component': 'Action',
             'x-component-props': {
