@@ -37,7 +37,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
   } = props;
   const compile = useCompile();
   let { insertAdjacent, findComponent, designable } = useDesignable();
-  const [visible, setVisible] = useState(false);
+  // const [visible, setVisible] = useState(false);
   const insertSchema = (schema) => {
     if (props.insert) {
       props.insert(wrap(schema));
@@ -117,10 +117,10 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
           }
         `,
       )}
-      visible={visible}
-      onVisibleChange={(visible) => {
-        setVisible(visible);
-      }}
+      // visible={visible}
+      // onVisibleChange={(visible) => {
+      //   setVisible(visible);
+      // }}
       {...dropdown}
       overlay={menu}
     >
@@ -158,6 +158,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
           return <Menu.Divider key={`divider-${indexA}`} />;
         }
         if (item.type === 'itemGroup') {
+          console.log(item.children);
           return (
             <Menu.ItemGroup
               // @ts-ignore
