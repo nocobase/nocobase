@@ -48,8 +48,8 @@ export interface Trigger {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactElement;
-  getter?(node: any): React.ReactElement;
+  render?(props): React.ReactNode;
+  getter?(node: any): React.ReactNode;
 };
 
 export const triggers = new Registry<Trigger>();
@@ -70,56 +70,52 @@ function TriggerExecution() {
     <SchemaComponent
       schema={{
         type: 'void',
+        name: 'execution',
+        'x-component': 'Action',
+        'x-component-props': {
+          title: <InfoOutlined />,
+          shape: 'circle',
+          className: 'workflow-node-job-button',
+          type: 'primary'
+        },
         properties: {
-          trigger: {
+          [execution.id]: {
             type: 'void',
-            'x-component': 'Action',
-            'x-component-props': {
-              title: <InfoOutlined />,
-              shape: 'circle',
-              className: 'workflow-node-job-button',
-              type: 'primary'
+            'x-decorator': 'Form',
+            'x-decorator-props': {
+              initialValue: execution
             },
+            'x-component': 'Action.Modal',
+            title: (
+              <div className={cx(nodeTitleClass)}>
+                <Tag>{compile(trigger.title)}</Tag>
+                <strong>{workflow.title}</strong>
+                <span className="workflow-node-id">#{execution.id}</span>
+              </div>
+            ),
             properties: {
-              [execution.id]: {
-                type: 'void',
-                'x-decorator': 'Form',
-                'x-decorator-props': {
-                  initialValue: execution
+              createdAt: {
+                type: 'string',
+                title: `{{t("Triggered at", { ns: "${NAMESPACE}" })}}`,
+                'x-decorator': 'FormItem',
+                'x-component': 'DatePicker',
+                'x-component-props': {
+                  showTime: true
                 },
-                'x-component': 'Action.Modal',
-                title: (
-                  <div className={cx(nodeTitleClass)}>
-                    <Tag>{compile(trigger.title)}</Tag>
-                    <strong>{workflow.title}</strong>
-                    <span className="workflow-node-id">#{execution.id}</span>
-                  </div>
-                ),
-                properties: {
-                  createdAt: {
-                    type: 'string',
-                    title: `{{t("Triggered at", { ns: "${NAMESPACE}" })}}`,
-                    'x-decorator': 'FormItem',
-                    'x-component': 'DatePicker',
-                    'x-component-props': {
-                      showTime: true
-                    },
-                    'x-read-pretty': true,
-                  },
-                  context: {
-                    type: 'object',
-                    title: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input.JSON',
-                    'x-component-props': {
-                      className: css`
-                        padding: 1em;
-                        background-color: #eee;
-                      `
-                    },
-                    'x-read-pretty': true,
-                  }
-                }
+                'x-read-pretty': true,
+              },
+              context: {
+                type: 'object',
+                title: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
+                'x-decorator': 'FormItem',
+                'x-component': 'Input.JSON',
+                'x-component-props': {
+                  className: css`
+                    padding: 1em;
+                    background-color: #eee;
+                  `
+                },
+                'x-read-pretty': true,
               }
             }
           }

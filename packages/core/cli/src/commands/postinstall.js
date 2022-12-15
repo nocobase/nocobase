@@ -21,6 +21,10 @@ module.exports = (cli) => {
         const content = await readFile(resolve(cwd, '.env.example'), 'utf-8');
         await writeFile(resolve(cwd, '.env'), content, 'utf-8');
       }
+      if (!existsSync(resolve(cwd, '.env.test')) && existsSync(resolve(cwd, '.env.test.example'))) {
+        const content = await readFile(resolve(cwd, '.env.test.example'), 'utf-8');
+        await writeFile(resolve(cwd, '.env.test'), content, 'utf-8');
+      }
       if (!isPackageValid('umi')) {
         return;
       }

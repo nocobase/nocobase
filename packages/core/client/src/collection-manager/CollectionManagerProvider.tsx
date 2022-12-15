@@ -6,6 +6,7 @@ import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSch
 import { CollectionManagerContext } from './context';
 import { CollectionManagerOptions } from './types';
 import { templateOptions } from '../collection-manager/Configuration/templates';
+import * as defaultInterfaces from './interfaces';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { service, interfaces, collections = [], refreshCM, templates } = props;
@@ -16,7 +17,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
       value={{
         ...ctx,
         service,
-        interfaces: { ...ctx.interfaces, ...interfaces },
+        interfaces: { ...defaultInterfaces, ...ctx.interfaces, ...interfaces },
         templates: { ...defaultTemplates, ...templates },
         collections,
         refreshCM,

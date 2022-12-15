@@ -26,35 +26,13 @@ cd nocobase/docker/app-postgres
 ```yml
 services:
   app:
-    image: nocobase/nocobase:0.8.0-alpha.1
+    image: nocobase/nocobase:main
 ```
 
-## 3. Delete old images (not required)
-
-If you are using the latest image, you need to stop and delete the corresponding container first.
+## 3. Restart the container
 
 ```bash
-# find container ID
-docker ps
-# stop container
-docker stop <YOUR_CONTAINER_ID>
-# delete container
-docker rm <YOUR_CONTAINER_ID>
-```
-
-Delete the old image
-
-```bash
-# find image
-docker images
-# delete image
-docker rmi <YOUR_CONTAINER_ID>
-```
-
-## 4. Restart the container
-
-```bash
+docker-compose pull
 docker-compose up -d app
-# 查看 app 进程的情况
 docker-compose logs app
 ```

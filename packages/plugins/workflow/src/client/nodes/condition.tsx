@@ -4,8 +4,6 @@ import { Button, Select } from "antd";
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { Trans, useTranslation } from "react-i18next";
 
-import { i18n } from "@nocobase/client";
-
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
 import { useFlowContext } from '../FlowContext';
@@ -20,7 +18,7 @@ function CalculationItem({ value, onChange, onRemove }) {
     return null;
   }
 
-  const { calculator, operands = [] } = value;
+  const { calculator, operands = [null] } = value;
 
   return (
     <div className={css`
@@ -181,8 +179,9 @@ export default {
     { label: lang('Branch into "Yes" and "No"'), key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
-    const { id, config: { rejectOnFalse } } = data;
+    const { t } = useTranslation();
     const { nodes } = useFlowContext();
+    const { id, config: { rejectOnFalse } } = data;
     const trueEntry = nodes.find(item => item.upstreamId === id && item.branchIndex === 1);
     const falseEntry = nodes.find(item => item.upstreamId === id && item.branchIndex === 0);
     return (
@@ -217,8 +216,8 @@ export default {
                 }
               `}
             >
-              <span className={css`right: 4em;`}>{lang('No')}</span>
-              <span className={css`left: 4em;`}>{lang('Yes')}</span>
+              <span className={css`right: 4em;`}>{t('No')}</span>
+              <span className={css`left: 4em;`}>{t('Yes')}</span>
             </div>
           </div>
         )}

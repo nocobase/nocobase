@@ -15,6 +15,7 @@ import { useOptions } from '../hooks/useOptions';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
+import { getOptions } from './interfaces';
 
 const getSchema = (schema: IField, record: any, compile) => {
   if (!schema) {
@@ -28,7 +29,6 @@ const getSchema = (schema: IField, record: any, compile) => {
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
-
   const initialValue: any = {
     name: `f_${uid()}`,
     ...cloneDeep(schema.default),
@@ -145,6 +145,7 @@ export const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align } = props;
   const { getInterface, getTemplate } = useCollectionManager();
   const [visible, setVisible] = useState(false);
+  const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
@@ -153,7 +154,7 @@ export const AddFieldAction = (props) => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = availableFieldInterfaces || {};
     const optionArr = [];
-    options.forEach((v) => {
+    getOptions().forEach((v) => {
       if (v.key === 'systemInfo') {
         optionArr.push({
           ...v,
@@ -166,18 +167,28 @@ export const AddFieldAction = (props) => {
           }),
         });
       } else {
-        const children = v.children.filter((v) => {
-          if (include?.length) {
-            return include.includes(v.value);
-          } else if (exclude?.length) {
+        let children = [];
+        if (include?.length) {
+          include.forEach((k) => {
+            const field = v.children.find((h) => [k, k.interface].includes(h.value));
+            field &&
+              children.push({
+                ...field,
+                targetScope: k?.targetScope,
+              });
+          });
+        } else if (exclude?.length) {
+          children = v.children.filter((v) => {
             return !exclude.includes(v.value);
-          }
-          return true;
-        });
-        optionArr.push({
-          ...v,
-          children,
-        });
+          });
+        } else {
+          children = v.children;
+        }
+        children.length &&
+          optionArr.push({
+            ...v,
+            children,
+          });
       }
     });
     return optionArr;
@@ -195,8 +206,11 @@ export const AddFieldAction = (props) => {
                 maxHeight: '60vh',
                 overflow: 'auto',
               }}
-              onClick={(info) => {
-                const schema = getSchema(getInterface(info.key), record, compile);
+              onClick={(e) => {
+                //@ts-ignore
+                const targetScope = e.item.props['data-targetScope'];
+                targetScope && setTargetScope(targetScope);
+                const schema = getSchema(getInterface(e.key), record, compile);
                 if (schema) {
                   setSchema(schema);
                   setVisible(true);
@@ -210,7 +224,11 @@ export const AddFieldAction = (props) => {
                       {option.children
                         .filter((child) => !['o2o', 'subTable'].includes(child.name))
                         .map((child) => {
-                          return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
+                          return (
+                            <Menu.Item key={child.name} data-targetScope={child.targetScope}>
+                              {compile(child.title)}
+                            </Menu.Item>
+                          );
                         })}
                     </Menu.ItemGroup>
                   )
@@ -235,6 +253,7 @@ export const AddFieldAction = (props) => {
             useCreateCollectionField,
             record,
             showReverseFieldConfig: true,
+            targetScope,
             ...scope,
           }}
         />

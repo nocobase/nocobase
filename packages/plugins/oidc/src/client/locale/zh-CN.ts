@@ -18,7 +18,8 @@ export default {
   'Redirect url': '重定向地址',
   'Logout endpoint': '登出端点',
   'Id token sign alg': 'Id token 签名算法',
-  'Add provider': '添加身份提供者',
-  'Edit provider': '编辑身份提供者',
-  'Delete provider': '删除身份提供者',
+  'Add provider': '添加',
+  'Edit provider': '编辑',
+  'Delete provider': '删除',
+  'Sign in button name, which will be displayed on the sign in page': '登录按钮名称，将在登录页中显示',
 };

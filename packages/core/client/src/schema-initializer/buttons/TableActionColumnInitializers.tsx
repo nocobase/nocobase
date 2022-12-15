@@ -135,6 +135,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 title: '{{ t("Update record") }}',
                 'x-component': 'Action.Link',
                 'x-action': 'customize:update',
+                'x-acl-action': 'update',
                 'x-designer': 'Action.Designer',
                 'x-action-settings': {
                   assignedValues: {},

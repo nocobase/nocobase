@@ -1,12 +1,10 @@
 import { ISchema } from '@formily/react';
 import { FieldOptions } from '../../collection-manager/types';
 
-
-
 export interface ICollectionTemplate {
   name: string;
   title?: string;
-  color?:string;
+  color?: string;
   /** 排序 */
   order?: number;
   /** 默认配置 */
@@ -25,8 +23,9 @@ interface AvailableFieldInterfacesExclude {
   exclude?: any[];
 }
 
+
 interface CollectionOptions {
-  /** 
+  /**
    * 自动生成 id
    * @default true
    * */

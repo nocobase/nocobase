@@ -1,0 +1,32 @@
+name: Uninstall apps
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - '**'
+
+jobs:
+  down:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            nocobase/nocobase
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - name: Down ${{ steps.meta.outputs.tags }}
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo $IMAGE_TAG
+          export APP_NAME=$(echo $IMAGE_TAG | cut -d ":" -f 2)
+          echo $APP_NAME
+          curl --location --request DELETE "${{secrets.NOCOBASE_DEPLOY_HOST}}$APP_NAME"

@@ -7,14 +7,21 @@ on:
       - 'develop'
     paths:
       - 'packages/**'
+      - 'docker/nocobase/**'
+      - 'Dockerfile.acr'
+      - '.github/workflows/aliyun-container-registry.yml'
   pull_request:
     branches:
       - '**'
     paths:
       - 'packages/**'
+      - 'docker/nocobase/**'
+      - 'Dockerfile.acr'
+      - '.github/workflows/aliyun-container-registry.yml'
 
 jobs:
   push-acr:
+    if: github.event.pull_request.head.repo.fork != true
     runs-on: ubuntu-latest
     services:
       verdaccio:
@@ -60,3 +67,16 @@ jobs:
             COMMIT_HASH=${GITHUB_SHA}
           push: true
           tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}
+      - name: Deploy NocoBase
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo $IMAGE_TAG
+          export APP_NAME=$(echo $IMAGE_TAG | cut -d ":" -f 2)
+          echo $APP_NAME
+          curl --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}$APP_NAME" \
+            --header 'Content-Type: application/json' \
+            -d "{
+                \"tag\": \"$APP_NAME\",
+                \"dialect\": \"postgres\"
+            }"

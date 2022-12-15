@@ -362,7 +362,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async runAsCLI(argv = process.argv, options?: ParseOptions) {
-    await this.db.auth({ retry: 30 });
+    try {
+      await this.db.auth({ retry: 30 });
+    } catch (error) {
+      console.log(chalk.red(error.message));
+      process.exit(1);
+    }
     await this.dbVersionCheck({ exit: true });
     await this.load({
       method: argv?.[2],
@@ -471,6 +476,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     return true;
+  }
+
+  async isInstalled() {
+    return (
+      (await this.db.collectionExistsInDb('applicationVersion')) || (await this.db.collectionExistsInDb('collections'))
+    );
   }
 
   async install(options: InstallOptions = {}) {

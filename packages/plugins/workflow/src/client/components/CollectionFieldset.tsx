@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { css } from "@emotion/css";
 
 import { CollectionField, CollectionProvider, SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
-import { Operand, parseStringValue, VariableTypes, VariableTypesContext } from "../calculators";
+import { Operand, parseValue, VariableTypes, VariableTypesContext } from "../calculators";
 import { lang, NAMESPACE } from "../locale";
 
 function AssociationInput(props) {
@@ -66,14 +66,10 @@ export default observer(({ value, onChange }: any) => {
                   constant: {
                     title: `{{t("Constant", { ns: "${NAMESPACE}" })}}`,
                     value: 'constant',
-                    options: undefined
                   }
                 };
 
-                const operand = typeof value[field.name] === 'string'
-                  ? parseStringValue(value[field.name], VTypes)
-                  : { type: 'constant', value: value[field.name] };
-
+                const operand = parseValue(value[field.name], VTypes);
                 // constant for associations to use Input, others to use CollectionField
                 // dynamic values only support belongsTo/hasOne association, other association type should disable
 
@@ -86,14 +82,9 @@ export default observer(({ value, onChange }: any) => {
                   `}>
                     <VariableTypesContext.Provider value={VTypes}>
                       <Operand
-                        value={operand}
+                        value={value[field.name]}
                         onChange={(next) => {
-                          if (next.type !== operand.type && next.type === 'constant') {
-                            onChange({ ...value, [field.name]: null });
-                          } else {
-                            const { stringify } = VTypes[next.type];
-                            onChange({ ...value, [field.name]: stringify(next) });
-                          }
+                          onChange({ ...value, [field.name]: next });
                         }}
                       >
                         {operand.type === 'constant'

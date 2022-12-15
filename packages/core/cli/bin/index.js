@@ -16,6 +16,7 @@ const env = {
   DEFAULT_STORAGE_TYPE: 'local',
   LOCAL_STORAGE_DEST: 'storage/uploads',
   MFSU_AD: 'none',
+  PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
 };
 
 if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') {

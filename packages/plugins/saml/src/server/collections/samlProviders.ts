@@ -10,10 +10,6 @@ export default {
       name: 'title',
     },
     {
-      type: 'string',
-      name: 'buttonTitle',
-    },
-    {
       comment: '客户端id',
       type: 'string',
       name: 'clientId',
