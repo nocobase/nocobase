@@ -275,18 +275,7 @@ export const sequence: IField = {
       type: 'string',
       'x-component': 'Input',
       'x-component-props': {
-        // readOnly: true,
-        // disabled: true
       },
-      'x-read-pretty': true,
-      'x-reactions': {
-        dependencies: ['.inputable'],
-        fulfill: {
-          schema: {
-            'x-component-props.disabled': '{{ !$deps[0] }}'
-          }
-        }
-      }
     },
   },
   hasDefaultValue: false,

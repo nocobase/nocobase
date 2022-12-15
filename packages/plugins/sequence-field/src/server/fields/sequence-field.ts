@@ -225,10 +225,10 @@ export class SequenceField extends Field {
     const { name, inputable, match } = this.options;
     const value = instance.get(name);
     if (value != null && inputable && match && !this.match(value)) {
-      throw new ValidationError('sequence pattern invalid', [
+      throw new ValidationError('sequence pattern not match', [
         new ValidationErrorItem(
           `input value of ${name} field not match the sequence pattern (${this.matcher.toString()}) which is required`,
-          'Validation error',
+          'Validation error', // NOTE: type should only be this which in sequelize enum set
           name,
           value,
           instance,
