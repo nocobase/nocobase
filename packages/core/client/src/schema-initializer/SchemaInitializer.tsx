@@ -52,7 +52,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       }
       if (item.type === 'item' && item.component) {
         const Component = findComponent(item.component);
-        item.key = `${item.key || 'item'}-${indexA}`;
+        item.key = `${item.key || item.title}-${indexA}`;
         return (
           Component && (
             <SchemaInitializerItemContext.Provider
