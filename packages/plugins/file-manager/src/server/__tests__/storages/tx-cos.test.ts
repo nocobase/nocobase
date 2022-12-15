@@ -21,7 +21,7 @@ describe('storage:tx-cos', () => {
     const Storage = db.getCollection('storages').model;
     storage = await Storage.create({
       ...txStorage.defaults(),
-      name: `tx-cos_${db.getTablePrefix()}`,
+      name: 'tx-cos',
       default: true,
       path: 'test/path',
     });

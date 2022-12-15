@@ -21,7 +21,7 @@ describe('storage:s3', () => {
     const Storage = db.getCollection('storages').model;
     storage = await Storage.create({
       ...s3Storage.defaults(),
-      name: `s3_${db.getTablePrefix()}`,
+      name: 's3',
       default: true,
       path: 'test/path',
     });

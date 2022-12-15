@@ -21,7 +21,7 @@ describe('storage:ali-oss', () => {
     const Storage = db.getCollection('storages').model;
     storage = await Storage.create({
       ...aliossStorage.defaults(),
-      name: `ali-oss_${db.getTablePrefix()}`,
+      name: 'ali-oss',
       default: true,
       path: 'test/path',
     });
