@@ -4,6 +4,7 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent, SchemaComponentOptions } from '../../..';
 import { SchemaInitializer } from '../../../../schema-initializer';
+import { getMenuTabSchema } from '../../../../schema-initializer/buttons';
 
 export const MenuItemInitializers = (props: any) => {
   const { t } = useTranslation();
@@ -148,14 +149,19 @@ export const PageMenuItem = itemWrap((props) => {
           properties: {
             page: {
               type: 'void',
-              'x-component': 'Page',
               'x-async': true,
               properties: {
-                grid: {
+                tabs: {
                   type: 'void',
-                  'x-component': 'Grid',
-                  'x-initializer': 'BlockInitializers',
-                  properties: {},
+                  'x-component': 'Tabs',
+                  'x-component-props': {
+                    size: 'large',
+                    tabBarStyle: { backgroundColor: '#fff', paddingLeft: 24, paddingRight: 24, paddingTop: 12 },
+                  },
+                  'x-initializer': 'TabPaneInitializersForMenuBlock',
+                  properties: {
+                    tab1: getMenuTabSchema(title,icon),
+                  },
                 },
               },
             },

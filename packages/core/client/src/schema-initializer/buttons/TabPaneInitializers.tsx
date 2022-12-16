@@ -2,6 +2,37 @@ import { useForm } from '@formily/react';
 import React from 'react';
 import { SchemaComponent, useActionContext, useDesignable, useRecordIndex } from '../..';
 
+export const getMenuTabSchema = (title, icon = '') => {
+  return {
+    type: 'void',
+    title,
+    'x-component': 'Tabs.TabPane',
+    'x-designer': 'Tabs.Designer',
+    'x-component-props': {
+      icon,
+    },
+    properties: {
+      div: {
+        type: 'void',
+        'x-component': 'div',
+        'x-component-props': {
+          style: {
+            marginLeft: 24,
+            marginRight: 24,
+          },
+        },
+        properties: {
+          grid: {
+            type: 'void',
+            'x-component': 'Grid',
+            'x-initializer': 'BlockInitializers',
+            properties: {},
+          },
+        },
+      },
+    },
+  };
+};
 export const TabPaneInitializers = (props?: any) => {
   const { designable, insertBeforeEnd } = useDesignable();
   if (!designable) {
@@ -17,28 +48,33 @@ export const TabPaneInitializers = (props?: any) => {
     } else if (props.isBulkEdit) {
       initializer = 'CreateFormBulkEditBlockInitializers';
     }
+
     return {
       async run() {
         await form.submit();
         const { title, icon } = form.values;
-        insertBeforeEnd({
-          type: 'void',
-          title,
-          'x-component': 'Tabs.TabPane',
-          'x-designer': 'Tabs.Designer',
-          'x-component-props': {
-            icon,
-          },
-          properties: {
-            grid: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer':
-                props.isCreate || index === null ? 'CreateFormBlockInitializers' : 'RecordBlockInitializers',
-              properties: {},
+        if (props.isMenu) {
+          insertBeforeEnd(getMenuTabSchema(title, icon));
+        } else {
+          insertBeforeEnd({
+            type: 'void',
+            title,
+            'x-component': 'Tabs.TabPane',
+            'x-designer': 'Tabs.Designer',
+            'x-component-props': {
+              icon,
             },
-          },
-        });
+            properties: {
+              grid: {
+                type: 'void',
+                'x-component': 'Grid',
+                'x-initializer': initializer,
+                properties: {},
+              },
+            },
+          });
+        }
+
         await form.reset();
         ctx.setVisible(false);
       },
@@ -126,4 +162,8 @@ export const TabPaneInitializersForCreateFormBlock = (props) => {
 
 export const TabPaneInitializersForBulkEditFormBlock = (props) => {
   return <TabPaneInitializers {...props} isBulkEdit />;
+};
+
+export const TabPaneInitializersForMenuBlock = (props) => {
+  return <TabPaneInitializers {...props} isMenu />;
 };
