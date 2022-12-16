@@ -1,5 +1,6 @@
 import {
   CollectionManagerProvider,
+  registerField,
   SchemaComponentOptions,
   SchemaInitializerContext,
   SchemaInitializerProvider,
@@ -12,6 +13,8 @@ import { SnapshotBlockInitializers } from './SnapshotBlock/SnapshotBlockInitiali
 import { useSnapshotTranslation } from './locale';
 import { SnapshotBlockInitializersDetailItem } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializersDetailItem';
 import { SnapshotBlockProvider } from './SnapshotBlock/SnapshotBlockProvider';
+
+registerField(snapshot.group, snapshot.name as string, snapshot);
 
 export default React.memo((props) => {
   const t = useSnapshotTranslation();

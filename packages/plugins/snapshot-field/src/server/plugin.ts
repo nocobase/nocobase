@@ -12,7 +12,6 @@ export class SnapshotFieldPlugin extends Plugin {
       const collectionsHistory = this.app.db.getCollection('collectionsHistory');
       await collectionsHistory.repository.create({
         values: collectionDoc,
-        transaction,
       });
     };
 
@@ -23,7 +22,6 @@ export class SnapshotFieldPlugin extends Plugin {
       const fieldsHistory = this.app.db.getCollection('fieldsHistory');
       fieldsHistory.repository.create({
         values: fieldDoc,
-        transaction,
       });
     };
 
