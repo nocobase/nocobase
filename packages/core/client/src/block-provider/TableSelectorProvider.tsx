@@ -36,7 +36,7 @@ const InternalTableSelectorProvider = (props) => {
 const useAssociationNames = (collection) => {
   const { getCollectionFields } = useCollectionManager();
   const names = getCollectionFields(collection)
-    ?.filter((field) => field.target)
+    ?.filter((field) => field.target && field.interface !== 'snapshot')
     .map((field) => field.name);
   return names;
 };
