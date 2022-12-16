@@ -55,20 +55,22 @@ export class CollectionManagerPlugin extends Plugin {
 
       if (model.get('titleField')) {
         const collection = this.db.getCollection(model.get('collectionName'));
-        collection.fields.forEach((field: Field, key) => {
-          field.options.titleField = key == model.get('name');
-        });
+        if (collection) {
+          collection.fields.forEach((field: Field, key) => {
+            field.options.titleField = key == model.get('name');
+          });
 
-        await this.app.db.getRepository('fields').update({
-          values: {
-            titleField: false,
-          },
-          filter: {
-            'key.$ne': model.get('key'),
-            collectionName: model.get('collectionName'),
-          },
-          transaction: options.transaction,
-        });
+          await this.app.db.getRepository('fields').update({
+            values: {
+              titleField: false,
+            },
+            filter: {
+              'key.$ne': model.get('key'),
+              collectionName: model.get('collectionName'),
+            },
+            transaction: options.transaction,
+          });
+        }
       }
     });
 
