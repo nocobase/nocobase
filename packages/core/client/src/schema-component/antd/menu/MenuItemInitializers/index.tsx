@@ -4,7 +4,7 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent, SchemaComponentOptions } from '../../..';
 import { SchemaInitializer } from '../../../../schema-initializer';
-import { getMenuTabSchema } from '../../../../schema-initializer/buttons';
+import { getPageMenuSchema } from '../Menu.Designer';
 
 export const MenuItemInitializers = (props: any) => {
   const { t } = useTranslation();
@@ -132,41 +132,7 @@ export const PageMenuItem = itemWrap((props) => {
           initialValues: {},
         });
         const { title, icon } = values;
-        insert({
-          type: 'void',
-          title,
-          'x-component': 'Menu.Item',
-          'x-decorator': 'ACLMenuItemProvider',
-          'x-component-props': {
-            icon,
-          },
-          'x-server-hooks': [
-            {
-              type: 'onSelfCreate',
-              method: 'bindMenuToRole',
-            },
-          ],
-          properties: {
-            page: {
-              type: 'void',
-              'x-async': true,
-              properties: {
-                tabs: {
-                  type: 'void',
-                  'x-component': 'MenuTabs',
-                  'x-component-props': {
-                    size: 'large',
-                    tabBarStyle: { backgroundColor: '#fff', paddingLeft: 24, paddingRight: 24, paddingTop: 12 },
-                  },
-                  'x-initializer': 'TabPaneInitializersForMenuBlock',
-                  properties: {
-                    tab1: getMenuTabSchema(title, icon),
-                  },
-                },
-              },
-            },
-          },
-        });
+        insert(getPageMenuSchema(title, icon));
       }}
     />
   );

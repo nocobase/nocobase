@@ -45,9 +45,6 @@ export const MenuTabs: any = observer((props: TabsProps) => {
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   const { query } = location as any;
-  if(!query?.tabName && !window.history.state?.tabName){
-    window.history.replaceState(null, '', `/admin/${match.params?.name}?tabName=tab1`);
-  }
   return (
     <DndContext>
       <AntdTabs
@@ -63,7 +60,10 @@ export const MenuTabs: any = observer((props: TabsProps) => {
         size={size}
         tabBarStyle={tabBarStyle}
       >
-        {fieldSchema.mapProperties((schema, key) => {
+        {fieldSchema.mapProperties((schema, key, index) => {
+          if (!query?.tabName && !window.history.state?.tabName && index == 0) {
+            window.history.replaceState(null, '', `/admin/${match.params?.name}?tabName=${key}`);
+          }
           return (
             <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
               <RecursionField name={key} schema={schema} onlyRenderProperties />

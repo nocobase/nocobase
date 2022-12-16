@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { findByUid } from '.';
 import { createDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings, useAPIClient, useDesignable } from '../../../';
+import { getMenuTabSchema } from '../../../schema-initializer/buttons';
+import { uid } from '@formily/shared';
 
 const toItems = (properties = {}) => {
   const items = [];
@@ -115,36 +117,7 @@ const InsertMenuItems = (props) => {
           } as ISchema
         }
         onSubmit={({ title, icon }) => {
-          dn.insertAdjacent(insertPosition, {
-            type: 'void',
-            title,
-            'x-component': 'Menu.Item',
-            'x-decorator': 'ACLMenuItemProvider',
-            'x-component-props': {
-              icon,
-            },
-            'x-server-hooks': [
-              {
-                type: 'onSelfCreate',
-                method: 'bindMenuToRole',
-              },
-            ],
-            properties: {
-              page: {
-                type: 'void',
-                'x-component': 'Page',
-                'x-async': true,
-                properties: {
-                  grid: {
-                    type: 'void',
-                    'x-component': 'Grid',
-                    'x-initializer': 'BlockInitializers',
-                    properties: {},
-                  },
-                },
-              },
-            },
-          });
+          dn.insertAdjacent(insertPosition, getPageMenuSchema(title, icon));
         }}
       />
       <SchemaSettings.ModalItem
@@ -341,4 +314,42 @@ export const MenuDesigner = () => {
       />
     </GeneralSchemaDesigner>
   );
+};
+
+export const getPageMenuSchema = (title, icon) => {
+  return {
+    type: 'void',
+    title,
+    'x-component': 'Menu.Item',
+    'x-decorator': 'ACLMenuItemProvider',
+    'x-component-props': {
+      icon,
+    },
+    'x-server-hooks': [
+      {
+        type: 'onSelfCreate',
+        method: 'bindMenuToRole',
+      },
+    ],
+    properties: {
+      page: {
+        type: 'void',
+        'x-async': true,
+        properties: {
+          tabs: {
+            type: 'void',
+            'x-component': 'MenuTabs',
+            'x-component-props': {
+              size: 'middle',
+              tabBarStyle: { backgroundColor: '#fff', paddingLeft: 24, paddingRight: 24, paddingTop: 12 },
+            },
+            'x-initializer': 'TabPaneInitializersForMenuBlock',
+            properties: {
+              [uid()]: getMenuTabSchema(title, icon),
+            },
+          },
+        },
+      },
+    },
+  };
 };
