@@ -542,7 +542,7 @@ export const useShareActionProps = () => {
         ? window.location.href
         : `${window.location.origin}${location.pathname}?${getPageSearchStr(actionContainerSchema)}`;
       if (copy(url)) {
-        message.success(t('Copy success!'));
+        message.success(t('The link has been copied'));
       }
     },
   };
