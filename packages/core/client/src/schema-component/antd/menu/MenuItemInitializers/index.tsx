@@ -153,14 +153,14 @@ export const PageMenuItem = itemWrap((props) => {
               properties: {
                 tabs: {
                   type: 'void',
-                  'x-component': 'Tabs',
+                  'x-component': 'MenuTabs',
                   'x-component-props': {
                     size: 'large',
                     tabBarStyle: { backgroundColor: '#fff', paddingLeft: 24, paddingRight: 24, paddingTop: 12 },
                   },
                   'x-initializer': 'TabPaneInitializersForMenuBlock',
                   properties: {
-                    tab1: getMenuTabSchema(title,icon),
+                    tab1: getMenuTabSchema(title, icon),
                   },
                 },
               },

@@ -8,9 +8,10 @@ import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks/useDesigner';
 import { TabsDesigner } from './Tabs.Designer';
+import { useHistory, useLocation, useRouteMatch } from 'react-router-dom';
 
 export const Tabs: any = observer((props: TabsProps) => {
-  const { size = 'middle', tabBarStyle } = props;
+  const { size = 'middle', tabBarStyle, onChange } = props;
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   return (
@@ -18,6 +19,46 @@ export const Tabs: any = observer((props: TabsProps) => {
       <AntdTabs
         tabBarExtraContent={{
           right: render(),
+        }}
+        defaultActiveKey=""
+        onChange={onChange}
+        size={size}
+        tabBarStyle={tabBarStyle}
+      >
+        {fieldSchema.mapProperties((schema, key) => {
+          console.log(key);
+          return (
+            <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
+              <RecursionField name={key} schema={schema} onlyRenderProperties />
+            </AntdTabs.TabPane>
+          );
+        })}
+      </AntdTabs>
+    </DndContext>
+  );
+});
+
+export const MenuTabs: any = observer((props: TabsProps) => {
+  const match = useRouteMatch<any>();
+  const location = useLocation();
+  const { size = 'middle', tabBarStyle } = props;
+  const fieldSchema = useFieldSchema();
+  const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  const { query } = location as any;
+  if(!query?.tabName && !window.history.state?.tabName){
+    window.history.replaceState(null, '', `/admin/${match.params?.name}?tabName=tab1`);
+  }
+  return (
+    <DndContext>
+      <AntdTabs
+        tabBarExtraContent={{
+          right: render(),
+        }}
+        defaultActiveKey={query?.tabName ?? 'tab1'}
+        onChange={(activeKey) => {
+          // window.history.replaceState(null, '', `/admin/${match.params?.name}?tabName=${activeKey}`);
+          // can go back
+          window.history.pushState({ tabName: activeKey }, '', `/admin/${match.params?.name}?tabName=${activeKey}`);
         }}
         size={size}
         tabBarStyle={tabBarStyle}
