@@ -21,6 +21,7 @@ export class PresetNocoBase extends Plugin {
           'export',
           'import',
           'audit-logs',
+          'duplicator',
         ];
     await this.app.pm.add(builtInPlugins, {
       enabled: true,

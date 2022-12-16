@@ -29,6 +29,7 @@
     "@nocobase/plugin-users": "0.8.0-alpha.13",
     "@nocobase/plugin-verification": "0.8.0-alpha.13",
     "@nocobase/plugin-workflow": "0.8.0-alpha.13",
+    "@nocobase/plugin-duplicator": "0.8.0-alpha.13",
     "@nocobase/server": "0.8.0-alpha.13"
   },
   "repository": {

@@ -334,9 +334,9 @@
   resolved "https://registry.yarnpkg.com/@antv/x6-react-shape/-/x6-react-shape-1.6.3.tgz#053660bd555c4356e9719134e3e2a857b51301e2"
   integrity sha512-iCsRVkvKCVs7HUUblF/ALg5XxeeEPXDLHuYzRvbvNlCKKLbXLbaz6vJQSgTTrk2i4lrD+7xl4riA76FyWA3k/g==
 
-"@antv/x6@^1.34.2":
+"@antv/x6@^1.9.0":
   version "1.34.6"
-  resolved "https://registry.yarnpkg.com/@antv/x6/-/x6-1.34.6.tgz#b802b09b52c8620acf01734397714ea5e3f715b6"
+  resolved "https://registry.npmjs.org/@antv/x6/-/x6-1.34.6.tgz#b802b09b52c8620acf01734397714ea5e3f715b6"
   integrity sha512-cl8ywN7CTNVT94/ZEbq2mnZQTQe6FUgIlGOAjNOPL8sljZTBrpE6OsuGw4BDA2/XllwELfUfvVpgBvbdwRKrxw==
   dependencies:
     csstype "^3.0.3"
@@ -4383,153 +4383,6 @@
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
 
-"@nocobase/acl@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/acl/-/acl-0.8.0-alpha.9.tgz#7ffab4a367befc74daa681b1d5c2c907126cb280"
-  integrity sha512-jEgpjO6gGi4GwSyWxlmcwd368/AQgmrdsODDTLhhrJJI9+ovj2mxO664lQgh3FkDGtmduKlBiZ+qcgK+/RWa1w==
-  dependencies:
-    "@nocobase/resourcer" "0.8.0-alpha.9"
-    json-templates "^4.2.0"
-
-"@nocobase/actions@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/actions/-/actions-0.8.0-alpha.9.tgz#3804bbf30f7c4e8aa205b9802ec4f56a58c18c72"
-  integrity sha512-EvdNjXa+TTMU2Xn+MnA7tSa5rooGFtzsvJsSYbkpODtsVQsmTDRIZYZsOYFk/XcezxjzTTsxxXMSA7sLq6wifQ==
-  dependencies:
-    "@nocobase/cache" "0.8.0-alpha.9"
-    "@nocobase/database" "0.8.0-alpha.9"
-    "@nocobase/resourcer" "0.8.0-alpha.9"
-
-"@nocobase/cache@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/cache/-/cache-0.8.0-alpha.9.tgz#99f7ca196dacd41b69ed7b7f179fcc1c4c5baa27"
-  integrity sha512-GCi7OE9nLrXKq/Og6SPtPcjtreUxxAL9x7CwmD2x3Zb7gNTc2GvQ9NWoAlO8KTLlWuzuNcJXegBhxaxV8Lt5ew==
-  dependencies:
-    cache-manager "^4.1.0"
-
-"@nocobase/client@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/client/-/client-0.8.0-alpha.9.tgz#03446b4c4160a7ebda9dfd8aa80e2203541eb72c"
-  integrity sha512-cvh01k8Ujhc9D7kDYQ7QKP5tnLF+wBOqixtisivti9aeklMBaOKj1oLmxKHZlB2IJzKpT+rUntpsxGxUS6co9A==
-  dependencies:
-    "@antv/g2plot" "^2.4.18"
-    "@dnd-kit/core" "^5.0.1"
-    "@dnd-kit/sortable" "^6.0.0"
-    "@emotion/css" "^11.7.1"
-    "@formily/antd" "2.0.20"
-    "@formily/core" "2.0.20"
-    "@formily/react" "2.0.20"
-    "@nocobase/sdk" "0.8.0-alpha.9"
-    "@nocobase/utils" "0.8.0-alpha.9"
-    ahooks "^3.0.5"
-    antd "~4.19.5"
-    axios "^0.26.1"
-    classnames "^2.3.1"
-    cron-parser "^4.6.0"
-    cronstrue "^2.11.0"
-    file-saver "^2.0.5"
-    i18next "^21.6.0"
-    json-templates "^4.2.0"
-    marked "^4.0.12"
-    mathjs "^10.6.0"
-    react-beautiful-dnd "^13.1.0"
-    react-big-calendar "^0.38.7"
-    react-contenteditable "^3.3.6"
-    react-drag-listview "^0.1.9"
-    react-helmet "^6.1.0"
-    react-hotkeys-hook "^3.4.7"
-    react-i18next "^11.15.1"
-    react-image-lightbox "^5.1.4"
-    react-js-cron "^1.4.0"
-    react-quill "^1.3.5"
-    react-router-dom "^5.2.0"
-    react-to-print "^2.14.7"
-    solarlunar-es "^1.0.9"
-    use-deep-compare-effect "^1.8.1"
-
-"@nocobase/database@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/database/-/database-0.8.0-alpha.9.tgz#9684b4ddcfc5396df2ef3d4ae9cd2ce59142df81"
-  integrity sha512-zkLTW2iFg1tlbSTlW40oEmM7O2GxHXmIzErnDR4it0GWoLqjDgzNHP5QjODOxiiB/+/unNFudfGTNCoXxu2ZvA==
-  dependencies:
-    "@nocobase/utils" "0.8.0-alpha.9"
-    async-mutex "^0.3.2"
-    cron-parser "4.4.0"
-    deepmerge "^4.2.2"
-    flat "^5.0.2"
-    glob "^7.1.6"
-    mathjs "^10.6.1"
-    moment "2.x"
-    semver "^7.3.7"
-    sequelize "^6.9.0"
-    umzug "^3.1.1"
-
-"@nocobase/resourcer@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/resourcer/-/resourcer-0.8.0-alpha.9.tgz#5415af5944b31293e5e2da73bf5c999866a90fab"
-  integrity sha512-6v9bfUex2RfT8C3xX+SUhj8/zECCY6pQA3ce8GV3xd9cu6ku8c7hIiNM3KwgPOD189aND3FxNwxqpECNaoWQ1A==
-  dependencies:
-    "@nocobase/utils" "0.8.0-alpha.9"
-    deepmerge "^4.2.2"
-    koa-compose "^4.1.0"
-    lodash "^4.17.21"
-    path-to-regexp "^6.1.0"
-    qs "^6.9.4"
-
-"@nocobase/sdk@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/sdk/-/sdk-0.8.0-alpha.9.tgz#5306e7bf4aabf00894a65036c584508d93bda379"
-  integrity sha512-v+GF4N5ldYwmoqQIukGWzz/eOm2TgxcUZq3uE+YeP/aiDa4XAfkLrpBNsvCS24k3s/U+84FYrvTWRRStJGSzBA==
-  dependencies:
-    axios "^0.26.1"
-    qs "^6.10.1"
-
-"@nocobase/server@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/server/-/server-0.8.0-alpha.9.tgz#bc1955e41b2ac9f6640fdf109516376604d4092c"
-  integrity sha512-/mHk2Uc8RS/3GcGvnMnFKlbf2aCufGuc+GOr5gEKuyWa50ibD4nZ7LKJx023uEO07rxWkFkhR6+ExuZ+BGRDGQ==
-  dependencies:
-    "@hapi/topo" "^6.0.0"
-    "@koa/cors" "^3.1.0"
-    "@koa/router" "^9.4.0"
-    "@nocobase/acl" "0.8.0-alpha.9"
-    "@nocobase/actions" "0.8.0-alpha.9"
-    "@nocobase/database" "0.8.0-alpha.9"
-    "@nocobase/resourcer" "0.8.0-alpha.9"
-    chalk "^4.1.1"
-    commander "^9.2.0"
-    find-package-json "^1.2.0"
-    i18next "^21.6.0"
-    koa "^2.13.4"
-    koa-bodyparser "^4.3.0"
-    koa-static "^5.0.0"
-    lodash "^4.17.21"
-    semver "^7.3.7"
-    xpipe "^1.0.5"
-
-"@nocobase/test@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/test/-/test-0.8.0-alpha.9.tgz#40aaed50af9b8fd23c0666156c806273c75b0a3f"
-  integrity sha512-bpzcogPKzfq8mjIsLDy0xlsd0dNAUgmju9kk+RPV5wNZfhvofaA7YduexawbL+dLJQC+iyjmhAhARxl8rVhKuA==
-  dependencies:
-    "@nocobase/server" "0.8.0-alpha.9"
-    "@types/supertest" "^2.0.11"
-    mockjs "^1.1.0"
-    mysql2 "^2.3.3"
-    pg "^8.7.3"
-    pg-hstore "^2.3.4"
-    sqlite3 "^5.0.8"
-    supertest "^6.1.6"
-
-"@nocobase/utils@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/utils/-/utils-0.8.0-alpha.9.tgz#fa7e203412e91ab7a6ebb12a6d53d83e09465591"
-  integrity sha512-oEqKs4+0sO4x0TFEtf+Tf1nIkb9q+9y9YmrqOn6MyMo/ejTSh6nlNt1rAYgs02gTP4uHkSOb2/4K4oDm0JXLdg==
-  dependencies:
-    "@hapi/topo" "^6.0.0"
-    deepmerge "^4.2.2"
-    flat-to-nested "^1.1.1"
-
 "@node-saml/node-saml@^4.0.2":
   version "4.0.2"
   resolved "https://registry.npmjs.org/@node-saml/node-saml/-/node-saml-4.0.2.tgz#e12020ea635346f33fcef008fe0e6fa2f28713e5"
@@ -5571,14 +5424,7 @@
   resolved "https://registry.npmjs.org/@types/range-parser/-/range-parser-1.2.4.tgz#cd667bcfdd025213aafb7ca5915a932590acdcdc"
   integrity sha512-EEhsLsD6UsDM1yFhAvy0Cjr6VwmpMWqFBCb9w07wVugF7w9nfajxLuVmngTIpgS6svCnm6Vaw+MZhoDCKnOfsw==
 
-"@types/react-dom@^16.9.8":
-  version "16.9.17"
-  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-16.9.17.tgz#29100cbcc422d7b7dba7de24bb906de56680dd34"
-  integrity sha512-qSRyxEsrm5btPXnowDOs5jSkgT8ldAA0j6Qp+otHUh+xHzy3sXmgNfyhucZjAjkgpdAUw9rJe0QRtX/l+yaS4g==
-  dependencies:
-    "@types/react" "^16"
-
-"@types/react-dom@^17.0.0":
+"@types/react-dom@^16.9.8", "@types/react-dom@^17.0.0":
   version "17.0.11"
   resolved "https://registry.npmjs.org/@types/react-dom/-/react-dom-17.0.11.tgz#e1eadc3c5e86bdb5f7684e00274ae228e7bcc466"
   integrity sha512-f96K3k+24RaLGVu/Y2Ng3e1EbZ8/cVJvypZWd7cy0ofCBaf2lcM46xNhycMZ2xGwbBjRql7hOlZ+e2WlJ5MH3Q==
@@ -5638,19 +5484,10 @@
     "@types/history" "*"
     "@types/react" "*"
 
-"@types/react@*", "@types/react@>=16.9.11", "@types/react@^17.0.0":
+"@types/react@*", "@types/react@>=16.9.11", "@types/react@^16.9.43", "@types/react@^17.0.0":
   version "17.0.34"
   resolved "https://registry.npmjs.org/@types/react/-/react-17.0.34.tgz#797b66d359b692e3f19991b6b07e4b0c706c0102"
   integrity sha512-46FEGrMjc2+8XhHXILr+3+/sTe3OfzSPU9YGKILLrUYbQ1CLQC9Daqo1KzENGXAWwrFwiY0l4ZbF20gRvgpWTg==
-  dependencies:
-    "@types/prop-types" "*"
-    "@types/scheduler" "*"
-    csstype "^3.0.2"
-
-"@types/react@^16", "@types/react@^16.9.43":
-  version "16.14.34"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-16.14.34.tgz#d129324ffda312044e1c47aab18696e4ed493282"
-  integrity sha512-b99nWeGGReLh6aKBppghVqp93dFJtgtDOzc8NXM6hewD8PQ2zZG5kBLgbx+VJr7Q7WBMjHxaIl3dwpwwPIUgyA==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
