@@ -89,7 +89,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const form = useForm();
   const designerProps = fieldSchema['x-designer-props'];
   const openMode = fieldSchema?.['x-component-props']?.['openMode'];
-  const disabled = form.disabled || fieldSchema['x-disabled'];
+  const disabled = form.disabled || field.disabled;
   const openSize = fieldSchema?.['x-component-props']?.['openSize'];
   const renderButton = () => (
     <SortableItem

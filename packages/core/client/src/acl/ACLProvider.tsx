@@ -1,6 +1,6 @@
-import { useFieldSchema } from '@formily/react';
+import { useFieldSchema, useField } from '@formily/react';
 import { Spin } from 'antd';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useCollection } from '../collection-manager';
@@ -79,6 +79,7 @@ export const useACLRoleContext = () => {
         if (!skipOwnCheck && params?.own) {
           return isOwn ? params : null;
         }
+        console.log(params);
         return params;
       }
       const strategyActions = data?.strategy?.actions || [];
@@ -133,6 +134,7 @@ const isBlockRequest = (schema) => {
 export const ACLActionProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const record = useRecord();
+  const field = useField<any>();
   const { name, getPrimaryKeyField } = useCollection();
   const { service } = isBlockRequest(fieldSchema) ? useBlockRequestContext() : { service: useResourceActionContext() };
   const { meta } = service?.data || {};
@@ -142,14 +144,24 @@ export const ACLActionProvider = (props) => {
   const actionName = fieldSchema['x-action'];
   const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
   const actionScope = allowedActions?.[path.split(':')[1]] || [];
-  const actionScopeCheck = actionScope.length > 0 ? actionScope?.includes(record[getPrimaryKeyField(name).name]) : true;
+  const actionScopeCheck =
+    Object.keys(record).length && actionScope.length >= 0
+      ? actionScope?.includes(record[getPrimaryKeyField(name).name])
+      : true;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
-  fieldSchema['x-disabled'] = !actionScopeCheck;
+  const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
+  useEffect(() => {
+    if (allowAll) {
+      field.disabled = false;
+    } else if (allowConfigure) {
+      field.disabled = !actionScopeCheck;
+    } else {
+      field.disabled = !params || !actionScopeCheck;
+    }
+  });
   if (!name || allowAll || allowConfigure) {
     return <>{props.children}</>;
   }
-  const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
-  fieldSchema['x-disabled'] = !params || !actionScopeCheck;
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
 
@@ -172,7 +184,7 @@ export const ACLCollectionFieldProvider = (props) => {
     return <FormItem>{props.children}</FormItem>;
   }
   const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
-  const aclFieldCheck = params?(params.whitelist || params.fields)?.includes(fieldSchema.name):false;
+  const aclFieldCheck = params ? (params.whitelist || params.fields)?.includes(fieldSchema.name) : false;
   if (!aclFieldCheck) {
     return null;
   }
