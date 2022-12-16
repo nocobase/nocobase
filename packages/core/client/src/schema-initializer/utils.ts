@@ -107,7 +107,7 @@ export const useAssociatedTableColumnInitializerFields = () => {
   const { getInterface, getCollectionFields } = useCollectionManager();
   const groups = fields
     ?.filter((field) => {
-      return ['o2o', 'oho', 'obo', 'm2o', 'snapshot'].includes(field.interface);
+      return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
     })
     ?.map((field) => {
       const subFields = getCollectionFields(field.target);
@@ -121,7 +121,7 @@ export const useAssociatedTableColumnInitializerFields = () => {
             name: `${field.name}.${subField.name}`,
             // title: subField?.uiSchema?.title || subField.name,
 
-            'x-component': field.interface === 'snapshot' ? 'SnapshotField' : 'CollectionField',
+            'x-component': 'CollectionField',
             'x-read-pretty': true,
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
             'x-component-props': {},

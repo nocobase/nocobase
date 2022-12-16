@@ -8,7 +8,6 @@ import {
 import React, { useContext } from 'react';
 import { snapshot } from './interface';
 import { SnapshotRecordPicker } from './SnapshotRecordPicker';
-import { SnapshotField } from './SnapshotField';
 import { SnapshotBlockInitializers } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializers';
 import { useSnapshotTranslation } from './locale';
 import { SnapshotBlockInitializersDetailItem } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializersDetailItem';
@@ -34,7 +33,6 @@ export default React.memo((props) => {
         <SchemaComponentOptions
           components={{
             SnapshotRecordPicker,
-            SnapshotField,
             SnapshotBlockProvider,
             SnapshotBlockInitializersDetailItem,
           }}
