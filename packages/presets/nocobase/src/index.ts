@@ -12,6 +12,7 @@ export class PresetNocoBase extends Plugin {
           'ui-routes-storage',
           'file-manager',
           'system-settings',
+          'sequence-field',
           'verification',
           'users',
           'acl',
