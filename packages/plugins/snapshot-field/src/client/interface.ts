@@ -56,8 +56,8 @@ export const snapshot: IField = {
         // mode: 'tags',
         multiple: true,
         fieldNames: {
-          label: 'title',
-          value: 'name',
+          label: 'id',
+          value: 'id',
         },
       },
     },

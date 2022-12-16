@@ -8,14 +8,22 @@ export class SnapshotFieldPlugin extends Plugin {
 
   async beforeLoad() {
     const collectionHandler = async (model: Model, { transaction }) => {
-      const collectionDoc = model.get();
+      const collectionDoc = model.toJSON();
+
+      // 创建 collection 历史记录
       const collectionsHistory = this.app.db.getCollection('collectionsHistory');
       await collectionsHistory.repository.create({
         values: collectionDoc,
       });
+
+      // 创建 collection 初始化 fields 历史记录
+      const fieldsHistory = this.app.db.getCollection('fieldsHistory');
+      fieldsHistory.repository.createMany({
+        records: collectionDoc.fields,
+      });
     };
 
-    this.app.db.on('collections.afterCreate', collectionHandler);
+    this.app.db.on('collections.afterCreateWithAssociations', collectionHandler);
 
     const fieldHandler = async (model: Model, { transaction }) => {
       const fieldDoc = model.get();

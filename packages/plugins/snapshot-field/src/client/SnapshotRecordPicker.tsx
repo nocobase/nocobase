@@ -9,26 +9,40 @@ import {
 } from '@nocobase/client';
 import { SnapshotHistoryCollectionProvider } from './SnapshotHistoryCollectionProvider';
 
+const useTargetCollectionKey = () => {
+  const fieldSchema = useFieldSchema();
+  const { getCollection } = useCollectionManager();
+  const { getField } = useCollection();
+  const collectionField = getField(fieldSchema.name);
+  const targetCollection = getCollection(collectionField.target);
+  return targetCollection?.key;
+};
+
+const ReadPrettyRecordPickerWrapper = (props) => {
+  const collectionKey = useTargetCollectionKey();
+
+  return (
+    <SnapshotHistoryCollectionProvider collectionKey={collectionKey}>
+      <ReadPrettyRecordPicker {...props} />
+    </SnapshotHistoryCollectionProvider>
+  );
+};
+
 const SnapshotRecordPickerInner: any = connect(
   (props) => {
     const actionCtx = useActionContext();
 
     const isUpdateAction = actionCtx.fieldSchema['x-action'] === 'update';
 
-    return isUpdateAction ? <ReadPrettyRecordPicker {...props} /> : <InputRecordPicker {...props} />;
+    return isUpdateAction ? <ReadPrettyRecordPickerWrapper {...props} /> : <InputRecordPicker {...props} />;
   },
   // mapProps(mapSuffixProps),
-  mapReadPretty(ReadPrettyRecordPicker),
+  mapReadPretty(ReadPrettyRecordPickerWrapper),
 );
 
 export const SnapshotRecordPicker = (props) => {
   const { value, onChange, ...restProps } = props;
-  const fieldSchema = useFieldSchema();
-  const { getCollection } = useCollectionManager();
-  const { getField } = useCollection();
-  const collectionField = getField(fieldSchema.name);
-  const targetCollection = getCollection(collectionField.target);
-  const collectionKey = targetCollection?.key;
+  const collectionKey = useTargetCollectionKey();
 
   const newProps = {
     ...restProps,
@@ -36,9 +50,5 @@ export const SnapshotRecordPicker = (props) => {
     onChange: (value) => onChange({ data: value, collectionKey }),
   };
 
-  return (
-    <SnapshotHistoryCollectionProvider collectionKey={collectionKey}>
-      <SnapshotRecordPickerInner {...newProps} />
-    </SnapshotHistoryCollectionProvider>
-  );
+  return <SnapshotRecordPickerInner {...newProps} />;
 };
