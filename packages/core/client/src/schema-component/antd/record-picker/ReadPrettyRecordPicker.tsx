@@ -16,6 +16,13 @@ interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
 }
 
+const toValue = (value, placeholder) => {
+  if (value === null || value === undefined) {
+    return placeholder;
+  }
+  return value;
+};
+
 export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const { ellipsis } = props;
   const fieldSchema = useFieldSchema();
@@ -34,8 +41,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
   const renderRecords = () =>
     toArr(field.value).map((record, index, arr) => {
-      const val =
-        compile(record?.[fieldNames?.label || 'label']) || record?.[fieldNames?.value || 'value'] || record?.id;
+      const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
       return (
         <Fragment key={`${record.id}_${index}`}>
           <span>

@@ -339,6 +339,10 @@ export default {
   "Operation succeeded": "Operation succeeded",
   "Operation failed": "Operation failed",
   "Open mode": "Open mode",
+  "Set popup size": "Set popup size",
+  "Small": "Small",
+  "Middle": "Middle",
+  "Large": "Large",
   "Menu item title": "Menu item title",
   "Menu item icon": "Menu item icon",
   "Target": "Target",
@@ -511,4 +515,5 @@ export default {
   "Selector": "Selector",
   "Inner": "Inner",
   "Search and select collection": "Search and select collection",
+  'Please fill in the iframe URL': 'Please fill in the iframe URL',
 }

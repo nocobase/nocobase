@@ -165,6 +165,12 @@ export const BlockInitializers = {
           component: 'MarkdownBlockInitializer',
         },
         {
+          key: 'iframe',
+          type: 'item',
+          title: '{{t("Iframe")}}',
+          component: 'IframeBlockInitializer',
+        },
+        {
           key: 'auditLogs',
           type: 'item',
           title: '{{t("Audit logs")}}',

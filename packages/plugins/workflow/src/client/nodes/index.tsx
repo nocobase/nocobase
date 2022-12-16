@@ -7,6 +7,8 @@ import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
 import { Button, message, Modal, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
+import parse from 'json-templates';
+
 import { Registry } from '@nocobase/utils/client';
 import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
 
@@ -146,6 +148,24 @@ export function RemoveButton() {
       onNodeRemoved(node);
     }
 
+    const usingNodes = nodes.filter(node => {
+      if (node === current) {
+        return false;
+      }
+
+      const template = parse(node.config);
+      const refs = template.parameters.filter(({ key }) => key.startsWith(`$jobsMapByNodeId.${current.id}.`) || key === `$jobsMapByNodeId.${current.id}`);
+      return refs.length;
+    });
+
+    if (usingNodes.length) {
+      Modal.error({
+        title: lang('Can not delete'),
+        content: lang('The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.', { nodes: usingNodes.map(item => `#${item.id}`).join(', ') }),
+      });
+      return;
+    }
+
     const hasBranches = !nodes.find(item => item.upstream === current && item.branchIndex != null);
     const message = hasBranches
       ? t('Are you sure you want to delete it?')
@@ -198,7 +218,7 @@ export function JobButton() {
       schema={{
         type: 'void',
         properties: {
-          [job.id]: {
+          job: {
             type: 'void',
             'x-component': 'Action',
             'x-component-props': {

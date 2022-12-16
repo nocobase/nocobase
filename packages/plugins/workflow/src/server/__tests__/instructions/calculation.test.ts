@@ -38,6 +38,26 @@ describe('workflow > instructions > calculation', () => {
         config: {
           calculation: {
             calculator: 'add',
+            operands: [1, 1]
+          }
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(2);
+    });
+
+    it('constant (legacy)', async () => {
+      const n1 = await workflow.createNode({
+        type: 'calculation',
+        config: {
+          calculation: {
+            calculator: 'add',
             operands: [
               { value: 1 },
               { value: 1 }
@@ -84,10 +104,7 @@ describe('workflow > instructions > calculation', () => {
         config: {
           calculation: {
             calculator: 'add',
-            operands: [
-              { value: 1 },
-              { value: '{{$context.data.read}}' }
-            ]
+            operands: [1, '{{$context.data.read}}']
           }
         }
       });
@@ -141,10 +158,7 @@ describe('workflow > instructions > calculation', () => {
         config: {
           calculation: {
             calculator: 'add',
-            operands: [
-              { value: 1 },
-              { value: `{{$jobsMapByNodeId.${n1.id}.data.read}}` }
-            ]
+            operands: [1, `{{$jobsMapByNodeId.${n1.id}.data.read}}`]
           }
         },
         upstreamId: n1.id
@@ -198,10 +212,7 @@ describe('workflow > instructions > calculation', () => {
                 type: '$calculation',
                 options: {
                   calculator: 'minus',
-                  operands: [
-                    { value: '{{$context.data.read}}' },
-                    { value: 2 }
-                  ]
+                  operands: ['{{$context.data.read}}', 2]
                 }
               }
             ]
