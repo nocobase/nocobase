@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { useField } from '@formily/react';
 import { PageHeader as AntdPageHeader } from 'antd';
 import React, { useEffect } from 'react';
@@ -16,8 +17,15 @@ export const Page = (props) => {
   }, [field.title, title]);
   return (
     <>
-      <AntdPageHeader ghost={false} title={compile(title)} {...others} />
-      <div style={{ margin: 24 }}>{children}</div>
+      <div
+        className={css`
+          height: 100%;
+          overflow-y: auto;
+        `}
+      >
+        <AntdPageHeader ghost={false} title={compile(title)} {...others} />
+        <div style={{ margin: 24 }}>{children}</div>
+      </div>
     </>
   );
 };
