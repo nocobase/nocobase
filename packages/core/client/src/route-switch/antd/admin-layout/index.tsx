@@ -260,9 +260,9 @@ const InternalAdminLayout = (props: any) => {
           `}
         ></header>
         {service.contentLoading ? <Spin /> : props.children}
-        {/* <Layout.Footer>
+        <Layout.Footer>
           <PoweredBy />
-        </Layout.Footer> */}
+        </Layout.Footer>
       </Layout.Content>
     </Layout>
   );
