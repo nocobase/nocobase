@@ -120,6 +120,7 @@ export const Page = (props) => {
   }, [fieldSchema.title, title]);
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
+  const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const location = useLocation<any>();
@@ -149,7 +150,7 @@ export const Page = (props) => {
               }
             `}
             ghost={false}
-            title={fieldSchema.title || compile(title)}
+            title={hidePageTitle ? undefined : fieldSchema.title || compile(title)}
             {...others}
             footer={
               enablePageTabs && (

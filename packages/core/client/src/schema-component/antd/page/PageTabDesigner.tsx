@@ -11,6 +11,7 @@ export const PageDesigner = ({ title }) => {
   const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   return (
     <div className={'general-schema-designer'}>
@@ -34,6 +35,23 @@ export const PageDesigner = ({ title }) => {
             />
             {!disablePageHeader && <SchemaSettings.Divider />}
             {!disablePageHeader && (
+              <SchemaSettings.SwitchItem
+                title={t('Display page title')}
+                checked={!fieldSchema['x-component-props']?.hidePageTitle}
+                onChange={(v) => {
+                  fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+                  fieldSchema['x-component-props']['hidePageTitle'] = !v;
+                  dn.emit('patch', {
+                    schema: {
+                      ['x-uid']: fieldSchema['x-uid'],
+                      ['x-component-props']: fieldSchema['x-component-props'],
+                    },
+                  });
+                  dn.refresh();
+                }}
+              />
+            )}
+            {!disablePageHeader && !hidePageTitle && (
               <SchemaSettings.ModalItem
                 hide
                 title={t('Edit page title')}
