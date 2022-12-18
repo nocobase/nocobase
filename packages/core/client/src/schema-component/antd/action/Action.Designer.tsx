@@ -160,7 +160,7 @@ export const ActionDesigner = (props) => {
         {isPopupAction && ['modal', 'drawer'].includes(fieldSchema?.['x-component-props']?.['openMode']) && (
           <SchemaSettings.Item>
             <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
-              {t('Set popup size')}
+              {t('Popup size')}
               <Select
                 bordered={false}
                 options={[
