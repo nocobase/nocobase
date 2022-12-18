@@ -66,8 +66,10 @@ export class PresetNocoBase extends Plugin {
         await this.addBuiltInPlugins();
       }
       const builtInPlugins = this.getBuiltInPlugins();
+      const plugins = await this.db.getRepository('applicationPlugins').find();
+      const pluginNames = plugins.map((p) => p.name);
       await this.app.pm.add(
-        builtInPlugins.filter((plugin) => !this.app.pm.has(plugin)),
+        builtInPlugins.filter((plugin) => !pluginNames.includes(plugin)),
         {
           enabled: true,
           builtIn: true,
@@ -76,9 +78,10 @@ export class PresetNocoBase extends Plugin {
       );
       const localPlugins = this.getLocalPlugins();
       await this.app.pm.add(
-        localPlugins.filter((plugin) => !this.app.pm.has(plugin)),
+        localPlugins.filter((plugin) => !pluginNames.includes(plugin)),
         {},
       );
+      await this.app.reload();
     });
     this.app.on('beforeInstall', async () => {
       console.log(`Initialize all built-in plugins`);

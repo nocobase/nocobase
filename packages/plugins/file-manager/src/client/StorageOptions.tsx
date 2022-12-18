@@ -11,7 +11,6 @@ const schema = {
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
-        default: 'uploads',
       },
       path: {
         title: '{{t("Path")}}',
@@ -143,14 +142,12 @@ export const StorageOptions = observer((props) => {
   const field = useField<Field>();
   const [s, setSchema] = useState(new Schema({}));
   useEffect(() => {
-    form.clearFormGraph('options.*');
+    // form.clearFormGraph('options.*');
     setSchema(new Schema(schema[form.values.type] || {}));
   }, [form.values.type]);
   return (
-    <div>
-      <FormLayout layout={'vertical'}>
-        <RecursionField key={form.values.type || 'local'} basePath={field.address} onlyRenderProperties schema={s} />
-      </FormLayout>
-    </div>
+    <FormLayout layout={'vertical'}>
+      <RecursionField key={form.values.type || 'local'} basePath={field.address} onlyRenderProperties schema={s} />
+    </FormLayout>
   );
 });
