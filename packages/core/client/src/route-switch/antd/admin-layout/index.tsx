@@ -191,7 +191,7 @@ const InternalAdminLayout = (props: any) => {
               <MenuEditor sideMenuRef={sideMenuRef} />
             </div>
           </div>
-          <div style={{ position: 'absolute', zIndex: 10, top: 0, right: 0 }}>
+          <div style={{ position: 'absolute', height: '100%', zIndex: 10, top: 0, right: 0 }}>
             <ACLAllowConfigure>
               <RemotePluginManagerToolbar />
             </ACLAllowConfigure>
