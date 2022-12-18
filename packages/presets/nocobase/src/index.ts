@@ -1,28 +1,30 @@
 import { Plugin } from '@nocobase/server';
+import _ from 'lodash';
 import path from 'path';
 
 export class PresetNocoBase extends Plugin {
   getBuiltInPlugins() {
-    return process.env.PRESET_NOCOBASE_PLUGINS
-      ? process.env.PRESET_NOCOBASE_PLUGINS.split(',')
-      : [
-          'error-handler',
-          'collection-manager',
-          'ui-schema-storage',
-          'ui-routes-storage',
-          'file-manager',
-          'system-settings',
-          'sequence-field',
-          'verification',
-          'users',
-          'acl',
-          'china-region',
-          'workflow',
-          'client',
-          'export',
-          'import',
-          'audit-logs',
-        ];
+    const plugins = (process.env.PRESET_NOCOBASE_PLUGINS || '').split(',').filter(Boolean);
+    return _.uniq(
+      [
+        'error-handler',
+        'collection-manager',
+        'ui-schema-storage',
+        'ui-routes-storage',
+        'file-manager',
+        'system-settings',
+        'sequence-field',
+        'verification',
+        'users',
+        'acl',
+        'china-region',
+        'workflow',
+        'client',
+        'export',
+        'import',
+        'audit-logs',
+      ].concat(plugins),
+    );
   }
 
   getLocalPlugins() {
