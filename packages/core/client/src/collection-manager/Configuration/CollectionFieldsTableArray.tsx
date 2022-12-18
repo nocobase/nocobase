@@ -161,8 +161,6 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
           `,
           render: (v, record) => {
             const index = findIndex(field.value, record);
-            console.log(schema);
-            console.log(index);
             return (
               <RecordIndexProvider index={index}>
                 <RecordProvider record={record}>
