@@ -137,12 +137,9 @@ export const Page = (props) => {
           <AntdPageHeader
             className={css`
               &.has-footer {
-                padding-top: 14px;
+                padding-top: 12px;
                 .ant-page-header-heading-left {
-                  margin: 0;
-                  .ant-page-header-heading-title {
-                    line-height: 1em;
-                  }
+                  /* margin: 0; */
                 }
                 .ant-page-header-footer {
                   margin-top: 0;
