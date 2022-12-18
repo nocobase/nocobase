@@ -290,6 +290,7 @@ export const Menu: ComposedMenu = observer((props) => {
                       onSelect && onSelect(info);
                     }}
                     className={css`
+                      height: 100%;
                       .ant-menu-item {
                         > .ant-menu-title-content {
                           margin-left: -24px;

@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { Layout, Spin } from 'antd';
-import React, { createContext, useContext, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
   ACLAllowConfigure,
@@ -22,6 +22,7 @@ import {
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
 import { PoweredBy } from '../../../powered-by';
+import { useMutationObserver } from 'ahooks';
 
 const filterByACL = (schema, options) => {
   const { allowAll, allowConfigure, allowMenuItemIds = [] } = options;
@@ -123,11 +124,20 @@ const MenuEditor = (props) => {
 };
 
 const InternalAdminLayout = (props: any) => {
-  const route = useRoute();
-  const history = useHistory();
-  const match = useRouteMatch<any>();
-  const { setTitle } = useDocumentTitle();
-  const sideMenuRef = useRef();
+  const sideMenuRef = useRef<HTMLDivElement>();
+  const [sideMenuWidth, setSideMenuWidth] = useState(0);
+
+  useMutationObserver(
+    (value) => {
+      const width = (value[0].target as HTMLDivElement).offsetWidth;
+      setSideMenuWidth(width);
+    },
+    sideMenuRef,
+    {
+      childList: true,
+      attributes: true,
+    },
+  );
 
   const result = useSystemSettings();
   const { service } = useCollectionManager();
@@ -142,65 +152,114 @@ const InternalAdminLayout = (props: any) => {
           .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
             background-color: rgba(255, 255, 255, 0.1);
           }
+
+          position: fixed;
+          width: 100%;
+          height: 46px;
+          line-height: 46px;
+          padding: 0;
+          z-index: 100;
         `}
-        style={{ height: 46, lineHeight: '46px', position: 'relative', paddingLeft: 0 }}
       >
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', height: '100%', width: 'calc(100vw - 300px)' }}>
-          <div style={{ width: 200, display: 'inline-flex', color: '#fff', padding: '0', alignItems: 'center' }}>
-            <img
-              className={css`
-                padding: 0 16px;
-                object-fit: contain;
-                width: 100%;
-                height: 100%;
-              `}
-              src={result?.data?.data?.logo?.url}
-            />
-            {/* {result?.data?.data?.title} */}
-          </div>
-          <div
-            style={{
-              width: 'calc(100% - 590px)',
-            }}
-          >
-            <MenuEditor sideMenuRef={sideMenuRef} />
-          </div>
-        </div>
-        <div style={{ position: 'absolute', zIndex: 10, top: 0, right: 0 }}>
-          <ACLAllowConfigure>
-            <RemotePluginManagerToolbar />
-          </ACLAllowConfigure>
-          <CurrentUser />
-        </div>
-      </Layout.Header>
-      <Layout>
-        <Layout.Sider style={{ display: 'none' }} theme={'light'} ref={sideMenuRef}></Layout.Sider>
-        <Layout.Content
+        <div
           className={css`
-            min-height: calc(100vh - 46px);
-            padding-bottom: 42px;
             position: relative;
-            // padding-bottom: 70px;
-            > div {
-              position: relative;
-              // z-index: 1;
-            }
-            .ant-layout-footer {
-              position: absolute;
-              bottom: 0;
-              text-align: center;
-              width: 100%;
-              z-index: 0;
-              padding: 0px 50px;
-            }
+            width: 100%;
+            height: 100%;
           `}
         >
-          {service.contentLoading ? <Spin /> : props.children}
-          <Layout.Footer>
-            <PoweredBy />
-          </Layout.Footer>
-        </Layout.Content>
-      </Layout>
+          <div
+            style={{ position: 'relative', zIndex: 1, display: 'flex', height: '100%', width: 'calc(100vw - 300px)' }}
+          >
+            <div style={{ width: 200, display: 'inline-flex', color: '#fff', padding: '0', alignItems: 'center' }}>
+              <img
+                className={css`
+                  padding: 0 16px;
+                  object-fit: contain;
+                  width: 100%;
+                  height: 100%;
+                `}
+                src={result?.data?.data?.logo?.url}
+              />
+              {/* {result?.data?.data?.title} */}
+            </div>
+            <div
+              style={{
+                width: 'calc(100% - 590px)',
+              }}
+            >
+              <MenuEditor sideMenuRef={sideMenuRef} />
+            </div>
+          </div>
+          <div style={{ position: 'absolute', height: '100%', zIndex: 10, top: 0, right: 0 }}>
+            <ACLAllowConfigure>
+              <RemotePluginManagerToolbar />
+            </ACLAllowConfigure>
+            <CurrentUser />
+          </div>
+        </div>
+      </Layout.Header>
+      <div
+        style={
+          {
+            '--side-menu-width': `${sideMenuWidth}px`,
+          } as Record<string, string>
+        }
+        className={css`
+          width: var(--side-menu-width);
+          overflow: hidden;
+          flex: 0 0 var(--side-menu-width);
+          max-width: var(--side-menu-width);
+          min-width: var(--side-menu-width);
+          pointer-events: none;
+          transition: background-color 0.3s ease 0s, min-width 0.3s ease 0s,
+            max-width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s;
+        `}
+      ></div>
+      <Layout.Sider
+        className={css`
+          height: 100%;
+          position: fixed;
+          padding-top: 46px;
+          left: 0;
+          top: 0;
+          background: rgba(0, 0, 0, 0);
+          z-index: 100;
+        `}
+        style={{ display: 'none' }}
+        theme={'light'}
+        ref={sideMenuRef}
+      ></Layout.Sider>
+      <Layout.Content
+        className={css`
+          position: relative;
+          overflow-y: auto;
+          height: 100vh;
+          max-height: 100vh;
+          > div {
+            position: relative;
+            // z-index: 1;
+          }
+          .ant-layout-footer {
+            position: absolute;
+            bottom: 0;
+            text-align: center;
+            width: 100%;
+            z-index: 0;
+            padding: 0px 50px;
+          }
+        `}
+      >
+        <header
+          className={css`
+            height: 46px;
+            line-height: 46px;
+            background: transparent;
+            pointer-events: none;
+          `}
+        ></header>
+        {service.contentLoading ? <Spin /> : props.children}
+      </Layout.Content>
     </Layout>
   );
 };

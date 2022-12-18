@@ -63,6 +63,7 @@ const pageDesignerCss = css`
   position: relative;
   z-index: 20;
   padding-top: 1px;
+
   &:hover {
     > .general-schema-designer {
       display: block;
