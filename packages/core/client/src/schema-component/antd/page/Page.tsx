@@ -163,53 +163,55 @@ export const Page = (props) => {
                     }, 50);
                   }}
                   tabBarExtraContent={
-                    <Button
-                      className={css`
-                        border-color: rgb(241, 139, 98) !important;
-                        color: rgb(241, 139, 98) !important;
-                      `}
-                      type={'dashed'}
-                      onClick={async () => {
-                        const values = await FormDialog(t('Add tab'), () => {
-                          return (
-                            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-                              <FormLayout layout={'vertical'}>
-                                <SchemaComponent
-                                  schema={{
-                                    properties: {
-                                      title: {
-                                        title: t('Tab name'),
-                                        'x-component': 'Input',
-                                        'x-decorator': 'FormItem',
-                                        required: true,
+                    dn.designable && (
+                      <Button
+                        className={css`
+                          border-color: rgb(241, 139, 98) !important;
+                          color: rgb(241, 139, 98) !important;
+                        `}
+                        type={'dashed'}
+                        onClick={async () => {
+                          const values = await FormDialog(t('Add tab'), () => {
+                            return (
+                              <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                                <FormLayout layout={'vertical'}>
+                                  <SchemaComponent
+                                    schema={{
+                                      properties: {
+                                        title: {
+                                          title: t('Tab name'),
+                                          'x-component': 'Input',
+                                          'x-decorator': 'FormItem',
+                                          required: true,
+                                        },
+                                        icon: {
+                                          title: t('Icon'),
+                                          'x-component': 'IconPicker',
+                                          'x-decorator': 'FormItem',
+                                        },
                                       },
-                                      icon: {
-                                        title: t('Icon'),
-                                        'x-component': 'IconPicker',
-                                        'x-decorator': 'FormItem',
-                                      },
-                                    },
-                                  }}
-                                />
-                              </FormLayout>
-                            </SchemaComponentOptions>
-                          );
-                        }).open({
-                          initialValues: {},
-                        });
-                        const { title, icon } = values;
-                        dn.insertBeforeEnd({
-                          type: 'void',
-                          title,
-                          'x-icon': icon,
-                          'x-component': 'Grid',
-                          'x-initializer': 'BlockInitializers',
-                          properties: {},
-                        });
-                      }}
-                    >
-                      Add tab
-                    </Button>
+                                    }}
+                                  />
+                                </FormLayout>
+                              </SchemaComponentOptions>
+                            );
+                          }).open({
+                            initialValues: {},
+                          });
+                          const { title, icon } = values;
+                          dn.insertBeforeEnd({
+                            type: 'void',
+                            title,
+                            'x-icon': icon,
+                            'x-component': 'Grid',
+                            'x-initializer': 'BlockInitializers',
+                            properties: {},
+                          });
+                        }}
+                      >
+                        Add tab
+                      </Button>
+                    )
                   }
                 >
                   {fieldSchema.mapProperties((schema) => {
