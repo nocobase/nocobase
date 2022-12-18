@@ -232,7 +232,6 @@ const InternalAdminLayout = (props: any) => {
       ></Layout.Sider>
       <Layout.Content
         className={css`
-          padding-bottom: 0;
           position: relative;
           overflow-y: auto;
           height: 100vh;
