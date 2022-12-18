@@ -1,5 +1,5 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import { Duplicator } from '../src/index';
+import Duplicator from '../src/index';
 
 describe('dump action', function () {
   let app: MockServer;

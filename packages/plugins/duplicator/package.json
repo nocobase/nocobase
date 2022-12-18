@@ -13,7 +13,10 @@
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@nocobase/database": "0.8.0-alpha.13",
-    "@nocobase/server": "0.8.0-alpha.13"
+    "@nocobase/server": "0.8.0-alpha.13",
+    "archiver": "^5.3.1",
+    "decompress": "^4.2.1",
+    "tar": "^6.1.13"
   },
   "repository": {
     "type": "git",
