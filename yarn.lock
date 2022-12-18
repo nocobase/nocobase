@@ -339,23 +339,6 @@
     csstype "^3.0.8"
     tslib "^2.0.3"
 
-"@antv/x6-react-shape@^1.6.2":
-  version "1.6.3"
-  resolved "https://registry.yarnpkg.com/@antv/x6-react-shape/-/x6-react-shape-1.6.3.tgz#053660bd555c4356e9719134e3e2a857b51301e2"
-  integrity sha512-iCsRVkvKCVs7HUUblF/ALg5XxeeEPXDLHuYzRvbvNlCKKLbXLbaz6vJQSgTTrk2i4lrD+7xl4riA76FyWA3k/g==
-
-"@antv/x6@^1.34.2":
-  version "1.34.6"
-  resolved "https://registry.yarnpkg.com/@antv/x6/-/x6-1.34.6.tgz#b802b09b52c8620acf01734397714ea5e3f715b6"
-  integrity sha512-cl8ywN7CTNVT94/ZEbq2mnZQTQe6FUgIlGOAjNOPL8sljZTBrpE6OsuGw4BDA2/XllwELfUfvVpgBvbdwRKrxw==
-  dependencies:
-    csstype "^3.0.3"
-    jquery "^3.5.1"
-    jquery-mousewheel "^3.1.13"
-    lodash-es "^4.17.15"
-    mousetrap "^1.6.5"
-    utility-types "^3.10.0"
-
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.16.0":
   version "7.16.0"
   resolved "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.16.0.tgz#0dfc80309beec8411e65e706461c408b0bb9b431"
@@ -4393,153 +4376,6 @@
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
 
-"@nocobase/acl@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/acl/-/acl-0.8.0-alpha.9.tgz#7ffab4a367befc74daa681b1d5c2c907126cb280"
-  integrity sha512-jEgpjO6gGi4GwSyWxlmcwd368/AQgmrdsODDTLhhrJJI9+ovj2mxO664lQgh3FkDGtmduKlBiZ+qcgK+/RWa1w==
-  dependencies:
-    "@nocobase/resourcer" "0.8.0-alpha.9"
-    json-templates "^4.2.0"
-
-"@nocobase/actions@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/actions/-/actions-0.8.0-alpha.9.tgz#3804bbf30f7c4e8aa205b9802ec4f56a58c18c72"
-  integrity sha512-EvdNjXa+TTMU2Xn+MnA7tSa5rooGFtzsvJsSYbkpODtsVQsmTDRIZYZsOYFk/XcezxjzTTsxxXMSA7sLq6wifQ==
-  dependencies:
-    "@nocobase/cache" "0.8.0-alpha.9"
-    "@nocobase/database" "0.8.0-alpha.9"
-    "@nocobase/resourcer" "0.8.0-alpha.9"
-
-"@nocobase/cache@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/cache/-/cache-0.8.0-alpha.9.tgz#99f7ca196dacd41b69ed7b7f179fcc1c4c5baa27"
-  integrity sha512-GCi7OE9nLrXKq/Og6SPtPcjtreUxxAL9x7CwmD2x3Zb7gNTc2GvQ9NWoAlO8KTLlWuzuNcJXegBhxaxV8Lt5ew==
-  dependencies:
-    cache-manager "^4.1.0"
-
-"@nocobase/client@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/client/-/client-0.8.0-alpha.9.tgz#03446b4c4160a7ebda9dfd8aa80e2203541eb72c"
-  integrity sha512-cvh01k8Ujhc9D7kDYQ7QKP5tnLF+wBOqixtisivti9aeklMBaOKj1oLmxKHZlB2IJzKpT+rUntpsxGxUS6co9A==
-  dependencies:
-    "@antv/g2plot" "^2.4.18"
-    "@dnd-kit/core" "^5.0.1"
-    "@dnd-kit/sortable" "^6.0.0"
-    "@emotion/css" "^11.7.1"
-    "@formily/antd" "2.0.20"
-    "@formily/core" "2.0.20"
-    "@formily/react" "2.0.20"
-    "@nocobase/sdk" "0.8.0-alpha.9"
-    "@nocobase/utils" "0.8.0-alpha.9"
-    ahooks "^3.0.5"
-    antd "~4.19.5"
-    axios "^0.26.1"
-    classnames "^2.3.1"
-    cron-parser "^4.6.0"
-    cronstrue "^2.11.0"
-    file-saver "^2.0.5"
-    i18next "^21.6.0"
-    json-templates "^4.2.0"
-    marked "^4.0.12"
-    mathjs "^10.6.0"
-    react-beautiful-dnd "^13.1.0"
-    react-big-calendar "^0.38.7"
-    react-contenteditable "^3.3.6"
-    react-drag-listview "^0.1.9"
-    react-helmet "^6.1.0"
-    react-hotkeys-hook "^3.4.7"
-    react-i18next "^11.15.1"
-    react-image-lightbox "^5.1.4"
-    react-js-cron "^1.4.0"
-    react-quill "^1.3.5"
-    react-router-dom "^5.2.0"
-    react-to-print "^2.14.7"
-    solarlunar-es "^1.0.9"
-    use-deep-compare-effect "^1.8.1"
-
-"@nocobase/database@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/database/-/database-0.8.0-alpha.9.tgz#9684b4ddcfc5396df2ef3d4ae9cd2ce59142df81"
-  integrity sha512-zkLTW2iFg1tlbSTlW40oEmM7O2GxHXmIzErnDR4it0GWoLqjDgzNHP5QjODOxiiB/+/unNFudfGTNCoXxu2ZvA==
-  dependencies:
-    "@nocobase/utils" "0.8.0-alpha.9"
-    async-mutex "^0.3.2"
-    cron-parser "4.4.0"
-    deepmerge "^4.2.2"
-    flat "^5.0.2"
-    glob "^7.1.6"
-    mathjs "^10.6.1"
-    moment "2.x"
-    semver "^7.3.7"
-    sequelize "^6.9.0"
-    umzug "^3.1.1"
-
-"@nocobase/resourcer@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/resourcer/-/resourcer-0.8.0-alpha.9.tgz#5415af5944b31293e5e2da73bf5c999866a90fab"
-  integrity sha512-6v9bfUex2RfT8C3xX+SUhj8/zECCY6pQA3ce8GV3xd9cu6ku8c7hIiNM3KwgPOD189aND3FxNwxqpECNaoWQ1A==
-  dependencies:
-    "@nocobase/utils" "0.8.0-alpha.9"
-    deepmerge "^4.2.2"
-    koa-compose "^4.1.0"
-    lodash "^4.17.21"
-    path-to-regexp "^6.1.0"
-    qs "^6.9.4"
-
-"@nocobase/sdk@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/sdk/-/sdk-0.8.0-alpha.9.tgz#5306e7bf4aabf00894a65036c584508d93bda379"
-  integrity sha512-v+GF4N5ldYwmoqQIukGWzz/eOm2TgxcUZq3uE+YeP/aiDa4XAfkLrpBNsvCS24k3s/U+84FYrvTWRRStJGSzBA==
-  dependencies:
-    axios "^0.26.1"
-    qs "^6.10.1"
-
-"@nocobase/server@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/server/-/server-0.8.0-alpha.9.tgz#bc1955e41b2ac9f6640fdf109516376604d4092c"
-  integrity sha512-/mHk2Uc8RS/3GcGvnMnFKlbf2aCufGuc+GOr5gEKuyWa50ibD4nZ7LKJx023uEO07rxWkFkhR6+ExuZ+BGRDGQ==
-  dependencies:
-    "@hapi/topo" "^6.0.0"
-    "@koa/cors" "^3.1.0"
-    "@koa/router" "^9.4.0"
-    "@nocobase/acl" "0.8.0-alpha.9"
-    "@nocobase/actions" "0.8.0-alpha.9"
-    "@nocobase/database" "0.8.0-alpha.9"
-    "@nocobase/resourcer" "0.8.0-alpha.9"
-    chalk "^4.1.1"
-    commander "^9.2.0"
-    find-package-json "^1.2.0"
-    i18next "^21.6.0"
-    koa "^2.13.4"
-    koa-bodyparser "^4.3.0"
-    koa-static "^5.0.0"
-    lodash "^4.17.21"
-    semver "^7.3.7"
-    xpipe "^1.0.5"
-
-"@nocobase/test@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/test/-/test-0.8.0-alpha.9.tgz#40aaed50af9b8fd23c0666156c806273c75b0a3f"
-  integrity sha512-bpzcogPKzfq8mjIsLDy0xlsd0dNAUgmju9kk+RPV5wNZfhvofaA7YduexawbL+dLJQC+iyjmhAhARxl8rVhKuA==
-  dependencies:
-    "@nocobase/server" "0.8.0-alpha.9"
-    "@types/supertest" "^2.0.11"
-    mockjs "^1.1.0"
-    mysql2 "^2.3.3"
-    pg "^8.7.3"
-    pg-hstore "^2.3.4"
-    sqlite3 "^5.0.8"
-    supertest "^6.1.6"
-
-"@nocobase/utils@0.8.0-alpha.9":
-  version "0.8.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@nocobase/utils/-/utils-0.8.0-alpha.9.tgz#fa7e203412e91ab7a6ebb12a6d53d83e09465591"
-  integrity sha512-oEqKs4+0sO4x0TFEtf+Tf1nIkb9q+9y9YmrqOn6MyMo/ejTSh6nlNt1rAYgs02gTP4uHkSOb2/4K4oDm0JXLdg==
-  dependencies:
-    "@hapi/topo" "^6.0.0"
-    deepmerge "^4.2.2"
-    flat-to-nested "^1.1.1"
-
 "@node-saml/node-saml@^4.0.2":
   version "4.0.2"
   resolved "https://registry.npmjs.org/@node-saml/node-saml/-/node-saml-4.0.2.tgz#e12020ea635346f33fcef008fe0e6fa2f28713e5"
@@ -5581,14 +5417,7 @@
   resolved "https://registry.npmjs.org/@types/range-parser/-/range-parser-1.2.4.tgz#cd667bcfdd025213aafb7ca5915a932590acdcdc"
   integrity sha512-EEhsLsD6UsDM1yFhAvy0Cjr6VwmpMWqFBCb9w07wVugF7w9nfajxLuVmngTIpgS6svCnm6Vaw+MZhoDCKnOfsw==
 
-"@types/react-dom@^16.9.8":
-  version "16.9.17"
-  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-16.9.17.tgz#29100cbcc422d7b7dba7de24bb906de56680dd34"
-  integrity sha512-qSRyxEsrm5btPXnowDOs5jSkgT8ldAA0j6Qp+otHUh+xHzy3sXmgNfyhucZjAjkgpdAUw9rJe0QRtX/l+yaS4g==
-  dependencies:
-    "@types/react" "^16"
-
-"@types/react-dom@^17.0.0":
+"@types/react-dom@^16.9.8", "@types/react-dom@^17.0.0":
   version "17.0.11"
   resolved "https://registry.npmjs.org/@types/react-dom/-/react-dom-17.0.11.tgz#e1eadc3c5e86bdb5f7684e00274ae228e7bcc466"
   integrity sha512-f96K3k+24RaLGVu/Y2Ng3e1EbZ8/cVJvypZWd7cy0ofCBaf2lcM46xNhycMZ2xGwbBjRql7hOlZ+e2WlJ5MH3Q==
@@ -5648,19 +5477,10 @@
     "@types/history" "*"
     "@types/react" "*"
 
-"@types/react@*", "@types/react@>=16.9.11", "@types/react@^17.0.0":
+"@types/react@*", "@types/react@>=16.9.11", "@types/react@^16.9.43", "@types/react@^17.0.0":
   version "17.0.34"
   resolved "https://registry.npmjs.org/@types/react/-/react-17.0.34.tgz#797b66d359b692e3f19991b6b07e4b0c706c0102"
   integrity sha512-46FEGrMjc2+8XhHXILr+3+/sTe3OfzSPU9YGKILLrUYbQ1CLQC9Daqo1KzENGXAWwrFwiY0l4ZbF20gRvgpWTg==
-  dependencies:
-    "@types/prop-types" "*"
-    "@types/scheduler" "*"
-    csstype "^3.0.2"
-
-"@types/react@^16", "@types/react@^16.9.43":
-  version "16.14.34"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-16.14.34.tgz#d129324ffda312044e1c47aab18696e4ed493282"
-  integrity sha512-b99nWeGGReLh6aKBppghVqp93dFJtgtDOzc8NXM6hewD8PQ2zZG5kBLgbx+VJr7Q7WBMjHxaIl3dwpwwPIUgyA==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
@@ -9350,11 +9170,6 @@ csstype@^3.0.2:
   resolved "https://registry.npmjs.org/csstype/-/csstype-3.0.9.tgz#6410af31b26bd0520933d02cbc64fce9ce3fbf0b"
   integrity sha512-rpw6JPxK6Rfg1zLOYCSwle2GFOOsnjmDYDaBwEcwoOg4qlsIVCN789VkBZDJAGi4T07gI4YSutR43t9Zz4Lzuw==
 
-csstype@^3.0.3:
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.1.1.tgz#841b532c45c758ee546a11d5bd7b7b473c8c30b9"
-  integrity sha512-DJR/VvkAvSZW9bTouZue2sSxDwdTN92uHjqeKVm+0dAqdfNykRzQ95tay8aXMBAAPpUiq4Qcug2L7neoRh2Egw==
-
 csstype@^3.0.8:
   version "3.1.0"
   resolved "https://registry.npmjs.org/csstype/-/csstype-3.1.0.tgz#4ddcac3718d787cf9df0d1b7d15033925c8f29f2"
@@ -9403,14 +9218,6 @@ d3-timer@^1.0.9:
   version "1.0.10"
   resolved "https://registry.npmjs.org/d3-timer/-/d3-timer-1.0.10.tgz#dfe76b8a91748831b13b6d9c793ffbd508dd9de5"
   integrity sha512-B1JDm0XDaQC+uvo4DT79H0XmBskgS3l6Ve+1SBCfxgmtIb1AVrPIoqd+nPSv+loMX8szQ0sVUhGngL7D5QPiXw==
-
-dagre@^0.8.5:
-  version "0.8.5"
-  resolved "https://registry.yarnpkg.com/dagre/-/dagre-0.8.5.tgz#ba30b0055dac12b6c1fcc247817442777d06afee"
-  integrity sha512-/aTqmnRta7x7MCCpExk7HQL2O4owCT2h8NT//9I1OQ9vt29Pa0BzSAkR5lwFUcQ7491yVi/3CXU9jQ5o0Mn2Sw==
-  dependencies:
-    graphlib "^2.1.8"
-    lodash "^4.17.15"
 
 dargs@^7.0.0:
   version "7.0.0"
@@ -11876,13 +11683,6 @@ graceful-fs@^4.1.11, graceful-fs@^4.1.15, graceful-fs@^4.1.2, graceful-fs@^4.1.6
   resolved "https://registry.npmjs.org/graceful-readlink/-/graceful-readlink-1.0.1.tgz#4cafad76bc62f02fa039b2f94e9a3dd3a391a725"
   integrity sha1-TK+tdrxi8C+gObL5Tpo906ORpyU=
 
-graphlib@^2.1.8:
-  version "2.1.8"
-  resolved "https://registry.yarnpkg.com/graphlib/-/graphlib-2.1.8.tgz#5761d414737870084c92ec7b5dbcb0592c9d35da"
-  integrity sha512-jcLLfkpoVGmH7/InMC/1hIvOPSUh38oJtGhvrOFGzioE1DZ+0YW16RgmOJhHiuWTvGiJQ9Z1Ik43JvkRPRvE+A==
-  dependencies:
-    lodash "^4.17.15"
-
 growly@^1.3.0:
   version "1.3.0"
   resolved "https://registry.npmjs.org/growly/-/growly-1.3.0.tgz#f10748cbe76af964b7c96c93c6bcc28af120c081"
@@ -14284,16 +14084,6 @@ jose@^4.10.0:
   resolved "https://registry.npmjs.org/jose/-/jose-4.11.1.tgz#8f7443549befe5bddcf4bae664a9cbc1a62da4fa"
   integrity sha512-YRv4Tk/Wlug8qicwqFNFVEZSdbROCHRAC6qu/i0dyNKr5JQdoa2pIGoS04lLO/jXQX7Z9omoNewYIVIxqZBd9Q==
 
-jquery-mousewheel@^3.1.13:
-  version "3.1.13"
-  resolved "https://registry.yarnpkg.com/jquery-mousewheel/-/jquery-mousewheel-3.1.13.tgz#06f0335f16e353a695e7206bf50503cb523a6ee5"
-  integrity sha512-GXhSjfOPyDemM005YCEHvzrEALhKDIswtxSHSR2e4K/suHVJKJxxRCGz3skPjNxjJjQa9AVSGGlYjv1M3VLIPg==
-
-jquery@^3.5.1:
-  version "3.6.1"
-  resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.6.1.tgz#fab0408f8b45fc19f956205773b62b292c147a16"
-  integrity sha512-opJeO4nCucVnsjiXOE+/PcCgYw9Gwpvs/a6B1LL/lQhwWwpbVEVYDZ1FokFr8PRc7ghYlrFPuyHuiiDNTQxmcw==
-
 js-base64@^2.5.2:
   version "2.6.4"
   resolved "https://registry.npmjs.org/js-base64/-/js-base64-2.6.4.tgz#f4e686c5de1ea1f867dbcad3d46d969428df98c4"
@@ -15006,7 +14796,7 @@ lockfile@^1.0.4:
   dependencies:
     signal-exit "^3.0.2"
 
-lodash-es@^4.17.11, lodash-es@^4.17.15:
+lodash-es@^4.17.11:
   version "4.17.21"
   resolved "https://registry.npmjs.org/lodash-es/-/lodash-es-4.17.21.tgz#43e626c46e6591b7750beb2b50117390c609e3ee"
   integrity sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==
@@ -16090,11 +15880,6 @@ moo@^0.5.0:
   version "0.5.1"
   resolved "https://registry.npmjs.org/moo/-/moo-0.5.1.tgz#7aae7f384b9b09f620b6abf6f74ebbcd1b65dbc4"
   integrity sha512-I1mnb5xn4fO80BH9BLcF0yLypy2UKl+Cb01Fu0hJRkJjlCRtxZMWkTdAtDd5ZqCOxtCkhmRwyI57vWT+1iZ67w==
-
-mousetrap@^1.6.5:
-  version "1.6.5"
-  resolved "https://registry.yarnpkg.com/mousetrap/-/mousetrap-1.6.5.tgz#8a766d8c272b08393d5f56074e0b5ec183485bf9"
-  integrity sha512-QNo4kEepaIBwiT8CDhP98umTetp+JNfQYBWvC1pc6/OAibuXtRcxZ58Qz8skvEHYvURne/7R8T5VoOI7rDsEUA==
 
 mri@^1.1.5:
   version "1.2.0"
@@ -23180,11 +22965,6 @@ util@^0.11.0:
   integrity sha512-HShAsny+zS2TZfaXxD9tYj4HQGlBezXZMZuM/S5PKLLoZkShZiGk9o5CzukI1LVHZvjdvZ2Sj1aW/Ndn2NB/HQ==
   dependencies:
     inherits "2.0.3"
-
-utility-types@^3.10.0:
-  version "3.10.0"
-  resolved "https://registry.yarnpkg.com/utility-types/-/utility-types-3.10.0.tgz#ea4148f9a741015f05ed74fd615e1d20e6bed82b"
-  integrity sha512-O11mqxmi7wMKCo6HKFt5AhO4BwY3VV68YU07tgxfz8zJTIxr4BpsezN49Ffwy9j3ZpwwJp4fkRwjRzq3uWE6Rg==
 
 utility@0.1.11:
   version "0.1.11"
