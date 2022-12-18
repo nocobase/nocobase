@@ -7,12 +7,15 @@ import { useDesignable } from '../..';
 import { SchemaSettings } from '../../../schema-settings';
 
 export const PageDesigner = ({ title }) => {
-  const { dn } = useDesignable();
+  const { dn, designable } = useDesignable();
   const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
+  if (!designable) {
+    return null;
+  }
   return (
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>
@@ -108,8 +111,11 @@ export const PageDesigner = ({ title }) => {
 };
 
 export const PageTabDesigner = ({ schema }) => {
-  const { dn } = useDesignable();
+  const { dn, designable } = useDesignable();
   const { t } = useTranslation();
+  if (!designable) {
+    return null;
+  }
   return (
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>
