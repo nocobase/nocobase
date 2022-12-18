@@ -1,9 +1,10 @@
 import { Plugin } from '@nocobase/server';
+import addDumpCommand from './commands/dump';
+import addRestoreCommand from './commands/restore';
 
-export class Duplicator extends Plugin {
+export default class Duplicator extends Plugin {
   beforeLoad() {
-    this.app.command('dump').action(async () => {});
-
-    this.app.command('restore').action(async () => {});
+    addDumpCommand(this.app);
+    addRestoreCommand(this.app);
   }
 }
