@@ -936,4 +936,35 @@ pgOnly()('collection inherits', () => {
     expect(student1.get('name')).toBe('student1');
     expect(student1.get('age')).toBe(10);
   });
+
+  it('should destroy fields on parents table', async () => {
+    const profile = db.collection({
+      name: 'profiles',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    const person = db.collection({
+      name: 'person',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          type: 'hasOne',
+          name: 'profile',
+        },
+      ],
+    });
+
+    const student = db.collection({
+      name: 'student',
+      inherits: 'person',
+    });
+
+    await db.sync();
+
+    person.removeField('profile');
+
+    person.setField('profile', { type: 'belongsTo' });
+
+    await db.sync();
+  });
 });
