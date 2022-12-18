@@ -84,6 +84,7 @@ export class PresetNocoBase extends Plugin {
         {},
       );
       await this.app.reload();
+      await this.app.db.sync();
     });
     this.app.on('beforeInstall', async () => {
       console.log(`Initialize all built-in plugins`);
