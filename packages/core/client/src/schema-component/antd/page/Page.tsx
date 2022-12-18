@@ -64,9 +64,6 @@ const pageDesignerCss = css`
   z-index: 20;
   padding-top: 1px;
 
-  height: 100%;
-  overflow-y: auto;
-
   &:hover {
     > .general-schema-designer {
       display: block;
