@@ -710,13 +710,13 @@ describe('sequence field', () => {
       await db.sync();
 
       const TestModel = db.getModel('tests');
-      const item1 = await TestModel.create();
+      const item1 = await TestModel.create({});
       expect(item1.name).toBe('0');
 
       const item2 = await TestModel.create({ name: '2' });
       expect(item2.name).toBe('2');
 
-      const item3 = await TestModel.create();
+      const item3 = await TestModel.create({});
       expect(item3.name).toBe('3');
     });
 
