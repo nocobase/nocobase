@@ -515,5 +515,5 @@ export default {
   "Inner": "Inner",
   "Search and select collection": "Search and select collection",
   'Please fill in the iframe URL': 'Please fill in the iframe URL',
-  'Set fixed block': 'Set fixed block'
+  'Fix block': 'Fix block'
 }

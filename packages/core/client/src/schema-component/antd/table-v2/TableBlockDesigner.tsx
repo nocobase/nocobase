@@ -62,7 +62,7 @@ export const TableBlockDesigner = () => {
         />
       )}
       <SchemaSettings.SwitchItem
-        title={t('Set fixed block')}
+        title={t('Fix block')}
         checked={fieldSchema['x-decorator-props']['fixedBlock']}
         onChange={(fixedBlock) => {
           field.decoratorProps.fixedBlock = fixedBlock;

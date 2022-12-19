@@ -612,5 +612,5 @@ export default {
   "Search and select collection": "搜索并选择数据表",
   'Please fill in the iframe URL': '请填写嵌入的地址',
 
-  'Set fixed block': '设置固定区块'
+  'Fix block': '固定区块'
 }
