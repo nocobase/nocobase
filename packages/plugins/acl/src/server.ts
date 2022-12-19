@@ -144,7 +144,7 @@ export class PluginACL extends Plugin {
 
     this.registerACLSettingSnippet({
       name: 'roles',
-      actions: ['roles:list', 'roles:create', 'roles:update', 'roles:destroy', 'availableActions:list'],
+      actions: ['roles:*', 'roles.resources:*', 'roles.menuUiSchemas:*', 'roles.snippets:*', 'availableActions:list'],
     });
 
     // change resource fields to association fields
