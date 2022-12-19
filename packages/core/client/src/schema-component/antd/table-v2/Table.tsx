@@ -9,7 +9,7 @@ import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext } from '../..';
+import { DndContext, useFixedBlock } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
 
 const isColumnComponent = (schema: Schema) => {
@@ -360,6 +360,17 @@ export const Table: any = observer((props: any) => {
     },
     [field, dragSort],
   );
+  const { height } = useFixedBlock();
+  const fieldSchema = useFieldSchema();
+  const fixedBlock = fieldSchema.parent['x-decorator-props'].fixedBlock;
+  const scroll = useMemo(() => {
+    return fixedBlock
+      ? {
+          x: document.body.clientWidth < 1080 ? 1080 : document.body.clientWidth,
+          y: document.body.clientHeight - height - 225,
+        }
+      : null;
+  }, [fixedBlock, height]);
 
   return (
     <div
@@ -381,7 +392,7 @@ export const Table: any = observer((props: any) => {
             onTableChange?.(pagination, filters, sorter, extra);
           }}
           // tableLayout={'auto'}
-          // scroll={{ x: 12 * 300 + 80 }}
+          scroll={scroll}
           columns={columns}
           dataSource={field?.value?.slice?.()}
         />

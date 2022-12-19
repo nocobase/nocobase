@@ -23,6 +23,7 @@ const useGroupField = (props) => {
 
 const InternalKanbanBlockProvider = (props) => {
   const field = useField<any>();
+  const fieldSchema = useFieldSchema();
   const { resource, service } = useBlockRequestContext();
   const groupField = useGroupField(props);
   if (!groupField) {
@@ -42,6 +43,7 @@ const InternalKanbanBlockProvider = (props) => {
         service,
         resource,
         groupField,
+        fixedBlock: fieldSchema?.['x-decorator-props'].fixedBlock,
       }}
     >
       {props.children}
@@ -93,7 +95,7 @@ const useAssociationNames = (collection) => {
   if (gridSchema) {
     recursiveProperties(gridSchema, 'CollectionField', associationFields, appends);
   }
-  
+
   return uniq(appends);
 };
 

@@ -1,5 +1,5 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useKanbanBlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
@@ -7,6 +7,7 @@ import { useCollectionFilterOptions } from '../../../collection-manager/action-h
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
+import { useFixedBlock } from '../page';
 
 export const KanbanDesigner = () => {
   const { name, title } = useCollection();
@@ -19,6 +20,12 @@ export const KanbanDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const template = useSchemaTemplate();
+
+  const { onFixedSchema } = useFixedBlock();
+  useEffect(() => {
+    onFixedSchema(fieldSchema);
+  }, [field?.decoratorProps?.fixedBlock]);
+
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
@@ -44,6 +51,20 @@ export const KanbanDesigner = () => {
           field.decoratorProps.params = params;
           fieldSchema['x-decorator-props']['params'] = params;
           service.run({ ...service.params?.[0], filter });
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+            },
+          });
+        }}
+      />
+      <SchemaSettings.SwitchItem
+        title={t('Set fixed block')}
+        checked={fieldSchema['x-decorator-props']['fixedBlock']}
+        onChange={(fixedBlock) => {
+          field.decoratorProps.fixedBlock = fixedBlock;
+          fieldSchema['x-decorator-props'].fixedBlock = fixedBlock;
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
