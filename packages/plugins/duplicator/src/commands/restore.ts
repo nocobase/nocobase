@@ -6,6 +6,7 @@ import path from 'path';
 import lodash from 'lodash';
 import fs from 'fs';
 import * as readline from 'readline';
+import { sqlAdapter } from '../utils';
 
 export default function addRestoreCommand(app: Application) {
   app
@@ -82,7 +83,13 @@ export async function importCollection(
 
   if (options.clear !== false) {
     // truncate old data
-    await ctx.app.db.getRepository(collectionName).destroy({ truncate: true, hooks: false });
+    let sql = `TRUNCATE TABLE "${collection.model.tableName}"`;
+    if (ctx.app.db.inDialect('sqlite')) {
+      sql = `DELETE
+             FROM "${collection.model.tableName}"`;
+    }
+
+    await ctx.app.db.sequelize.query(sqlAdapter(ctx.app.db, sql));
   }
 
   // read file content from collection data

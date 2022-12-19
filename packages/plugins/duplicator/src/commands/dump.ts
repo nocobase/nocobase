@@ -30,7 +30,15 @@ async function dumpAction(app) {
     app: app,
   };
 
-  const uiCollections = ['uiSchemas', 'uiSchemaTreePath', 'uiSchemaTemplates', 'uiSchemaServerHooks', 'uiRoutes'];
+  const uiCollections = [
+    'collections',
+    'fields',
+    'uiSchemas',
+    'uiSchemaTreePath',
+    'uiSchemaTemplates',
+    'uiSchemaServerHooks',
+    'uiRoutes',
+  ];
 
   for (const collection of uiCollections) {
     await dumpCollection(ctx, {
@@ -48,9 +56,11 @@ export async function dumpCollection(ctx: DumpContext, options: { collectionName
   const { collectionName } = options;
 
   const collection = ctx.app.db.getCollection(collectionName);
+
   const rows = await collection.repository.find({
     raw: true,
   });
+
   const collectionDataDir = path.resolve(ctx.dir, 'collections', collectionName);
 
   await fsPromises.mkdir(collectionDataDir, { recursive: true });
