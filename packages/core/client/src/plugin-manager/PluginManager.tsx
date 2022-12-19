@@ -143,9 +143,9 @@ PluginManager.Toolbar.Item = (props) => {
 };
 
 export const RemotePluginManagerToolbar = () => {
-  const { allowAll, snippets, allowConfigure } = useACLRoleContext();
+  const { allowAll, snippets } = useACLRoleContext();
   const getSnippetsAllow = (aclKey) => {
-    return allowAll || snippets?.includes(aclKey) || allowConfigure;
+    return allowAll || snippets?.includes(aclKey);
   };
   const items = [
     { component: 'DesignableSwitch', pin: true, isAllow: getSnippetsAllow('ui-editor') },
