@@ -692,7 +692,7 @@ describe('sequence field', () => {
       expect(item3.name).toBe('1');
     });
 
-    it.only('input value beyond generated sequence', async () => {
+    it('input value beyond generated sequence', async () => {
       const testsCollection = db.collection({
         name: 'tests',
         fields: [
@@ -709,16 +709,16 @@ describe('sequence field', () => {
       });
       await db.sync();
 
-      const TestRepo = db.getRepository('tests');
-      const item1 = await TestRepo.create({});
+      const TestModel = db.getModel('tests');
+      const item1 = await TestModel.create({});
       expect(item1.name).toBe('0');
 
-      const item2 = await TestRepo.create({
+      const item2 = await TestModel.create({
         values: { name: '2' }
       });
       expect(item2.name).toBe('2');
 
-      const item3 = await TestRepo.create({});
+      const item3 = await TestModel.create({});
       expect(item3.name).toBe('3');
     });
 
