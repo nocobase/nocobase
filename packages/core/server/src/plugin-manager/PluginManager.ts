@@ -97,6 +97,10 @@ export class PluginManager {
     return this.plugins.get(name);
   }
 
+  has(name: string) {
+    return this.plugins.has(name);
+  }
+
   clientWrite(data: any) {
     const { method, plugins } = data;
     if (method === 'create') {

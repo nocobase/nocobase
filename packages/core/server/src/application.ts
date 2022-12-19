@@ -371,9 +371,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       process.exit(1);
     }
     await this.dbVersionCheck({ exit: true });
-    await this.load({
-      method: argv?.[2],
-    });
+    if (argv?.[2] !== 'upgrade') {
+      await this.load({
+        method: argv?.[2],
+      });
+    }
     return this.cli.parseAsync(argv, options);
   }
 

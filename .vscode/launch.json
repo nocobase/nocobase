@@ -34,6 +34,24 @@
       ],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
-    }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Migration",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": [
+        "run",
+        "--inspect-brk",
+        "nocobase",
+        "migrator",
+        "up",
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
   ]
 }

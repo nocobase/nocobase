@@ -21,7 +21,7 @@
     "@formily/react": "2.0.20",
     "@nocobase/sdk": "0.8.0-alpha.13",
     "@nocobase/utils": "0.8.0-alpha.13",
-    "ahooks": "^3.0.5",
+    "ahooks": "^3.7.2",
     "antd": "~4.19.5",
     "axios": "^0.26.1",
     "classnames": "^2.3.1",

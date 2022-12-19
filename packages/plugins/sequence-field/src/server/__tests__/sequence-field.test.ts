@@ -1,13 +1,27 @@
 import moment from 'moment';
 
-import { Database } from '../../database';
-import { mockDatabase } from '..';
+import { Application } from '@nocobase/server';
+import { Database } from '@nocobase/database';
+import { mockServer, mockDatabase } from '@nocobase/test';
 
-describe('string field', () => {
+import Plugin, { SequenceField, SequenceFieldOptions } from '..';
+
+describe('sequence field', () => {
+  let app: Application;
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    app = mockServer();
+    app.plugin(Plugin);
+    db = app.db;
+    await db.sync({
+      force: true,
+      alter: {
+        drop: true
+      }
+    });
+    await app.load();
+    await app.start();
   });
 
   afterEach(async () => {
@@ -69,6 +83,15 @@ describe('string field', () => {
   });
 
   describe('integer pattern', () => {
+    it.skip('no key', async () => {
+      expect(() => {
+        db.collection({
+          name: 'tests',
+          fields: [{ type: 'sequence', name: 'name', patterns: [{ type: 'integer' }] }],
+        });
+      }).toThrow();
+    });
+
     it('default start from 0, digits as 1, no cycle', async () => {
       db.collection({
         name: 'tests',
@@ -78,7 +101,8 @@ describe('string field', () => {
             name: 'name',
             patterns: [
               {
-                type: 'integer'
+                type: 'integer',
+                options: { key: 1 }
               }
             ]
           }
@@ -105,7 +129,8 @@ describe('string field', () => {
               {
                 type: 'integer',
                 options: {
-                  start: 9
+                  start: 9,
+                  key: 1
                 }
               }
             ]
@@ -131,7 +156,8 @@ describe('string field', () => {
             name: 'name',
             patterns: [
               {
-                type: 'integer'
+                type: 'integer',
+                options: { key: 1 }
               }
             ]
           }
@@ -139,8 +165,10 @@ describe('string field', () => {
       });
       await db.sync();
       const field = collection.getField('name');
-      // set current option in memory
-      field.options.patterns[0].options = { current: 9 };
+      const SeqRepo = db.getRepository('sequences');
+      await SeqRepo.create({
+
+      });
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create();
@@ -159,7 +187,8 @@ describe('string field', () => {
                 type: 'integer',
                 options: {
                   digits: 2,
-                  start: 9
+                  start: 9,
+                  key: 1
                 }
               }
             ]
@@ -187,7 +216,8 @@ describe('string field', () => {
               {
                 type: 'integer',
                 options: {
-                  cycle: '0 0 * * * *'
+                  cycle: '0 0 0 * * *',
+                  key: 1
                 }
               }
             ]
@@ -201,19 +231,21 @@ describe('string field', () => {
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create({
+        id: 1,
         createdAt: yesterday
       });
       expect(item1.get('name')).toBe('0');
 
       const item2 = await TestModel.create({
+        id: 2,
         createdAt: yesterday
       });
       expect(item2.get('name')).toBe('1');
 
-      const item3 = await TestModel.create();
+      const item3 = await TestModel.create({ id: 3 });
       expect(item3.get('name')).toBe('0');
 
-      const item4 = await TestModel.create();
+      const item4 = await TestModel.create({ id: 4 });
       expect(item4.get('name')).toBe('1');
     });
 
@@ -232,7 +264,8 @@ describe('string field', () => {
         type: 'sequence',
         patterns: [
           {
-            type: 'integer'
+            type: 'integer',
+            options: { key: 1 }
           }
         ]
       });
@@ -240,6 +273,64 @@ describe('string field', () => {
 
       const item2 = await TestModel.create();
       expect(item2.get('name')).toBe('0');
+    });
+
+    it('deleted sequence should be skipped', async () => {
+      db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              {
+                type: 'integer',
+                options: { key: 1 }
+              }
+            ]
+          }
+        ],
+      });
+      await db.sync();
+
+      const TestModel = db.getModel('tests');
+      const item1 = await TestModel.create();
+      expect(item1.get('name')).toBe('0');
+
+      await item1.destroy();
+
+      const item2 = await TestModel.create();
+      expect(item2.get('name')).toBe('1');
+    });
+
+    it('multiple integer in same field', async () => {
+      db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              {
+                type: 'integer',
+                options: { key: 1 }
+              },
+              {
+                type: 'integer',
+                options: { key: 2 }
+              }
+            ]
+          }
+        ],
+      });
+      await db.sync();
+
+      const TestModel = db.getModel('tests');
+      const item1 = await TestModel.create();
+      expect(item1.get('name')).toBe('00');
+
+      const item2 = await TestModel.create();
+      expect(item2.get('name')).toBe('11');
     });
   });
 
@@ -331,7 +422,7 @@ describe('string field', () => {
             patterns: [
               { type: 'string', options: { value: 'A' } },
               { type: 'date' },
-              { type: 'integer' }
+              { type: 'integer', options: { key: 1 } }
             ]
           }
         ],
@@ -359,7 +450,7 @@ describe('string field', () => {
             patterns: [
               { type: 'string', options: { value: 'A' } },
               { type: 'date' },
-              { type: 'integer' }
+              { type: 'integer', options: { key: 1 } }
             ]
           }
         ],
@@ -373,53 +464,66 @@ describe('string field', () => {
       const item1 = await TestModel.create();
       expect(item1.get('name')).toBe(`A${YYYYMMDD}0`);
 
-      testsCollection.setField('name', {
+      const f2 = testsCollection.setField('name', {
         type: 'sequence',
         patterns: [
           { type: 'string', options: { value: 'A' } },
           { type: 'date' },
-          // change options but no difference with default
-          { type: 'integer', options: { digits: 1 } }
+          // change options but no difference with default with new key
+          { type: 'integer', options: { digits: 1, key: 2 } }
         ]
-      });
+      }) as SequenceField;
 
       const item2 = await TestModel.create();
-      expect(item2.get('name')).toBe(`A${YYYYMMDD}1`);
+      expect(item2.get('name')).toBe(`A${YYYYMMDD}0`);
 
-      testsCollection.setField('name', {
+      const f3 = testsCollection.setField('name', {
         type: 'sequence',
         patterns: [
           { type: 'string', options: { value: 'A' } },
           { type: 'date' },
-          { type: 'integer', options: { digits: 2 } }
+          // change options but no difference with default with key
+          { type: 'integer', options: { digits: 1, key: f2.options.patterns[2].options.key } }
         ]
       });
 
       const item3 = await TestModel.create();
-      expect(item3.get('name')).toBe(`A${YYYYMMDD}00`);
+      expect(item3.get('name')).toBe(`A${YYYYMMDD}1`);
+
+      const f4 = testsCollection.setField('name', {
+        type: 'sequence',
+        patterns: [
+          { type: 'string', options: { value: 'A' } },
+          { type: 'date' },
+          { type: 'integer', options: { digits: 2, key: 3 } }
+        ]
+      });
+
+      const item4 = await TestModel.create();
+      expect(item4.get('name')).toBe(`A${YYYYMMDD}00`);
 
       testsCollection.setField('name', {
         type: 'sequence',
         patterns: [
           { type: 'string', options: { value: 'a' } },
           { type: 'date' },
-          { type: 'integer', options: { digits: 2 } }
+          { type: 'integer', options: { digits: 2, key: f4.options.patterns[2].options.key } }
         ]
       });
 
-      const item4 = await TestModel.create();
-      expect(item4.get('name')).toBe(`a${YYYYMMDD}01`);
+      const item5 = await TestModel.create();
+      expect(item5.get('name')).toBe(`a${YYYYMMDD}01`);
 
       testsCollection.setField('name', {
         type: 'sequence',
         patterns: [
           { type: 'date' },
-          { type: 'integer', options: { digits: 2 } }
+          { type: 'integer', options: { digits: 2, key: 4 } }
         ]
       });
 
-      const item5 = await TestModel.create();
-      expect(item5.get('name')).toBe(`${YYYYMMDD}00`);
+      const item6 = await TestModel.create();
+      expect(item6.get('name')).toBe(`${YYYYMMDD}00`);
     });
   });
 
@@ -434,7 +538,7 @@ describe('string field', () => {
             patterns: [
               { type: 'string', options: { value: 'A' } },
               { type: 'date' },
-              { type: 'integer', options: { digits: 2, cycle: '0 0 * * *' } }
+              { type: 'integer', options: { digits: 2, cycle: '0 0 * * *', key: 1 } }
             ]
           },
           {
@@ -442,7 +546,7 @@ describe('string field', () => {
             name: 'code',
             patterns: [
               { type: 'string', options: { value: 'C' } },
-              { type: 'integer', options: { digits: 4 }}
+              { type: 'integer', options: { digits: 4, key: 1 }}
             ]
           }
         ]
@@ -466,15 +570,188 @@ describe('string field', () => {
       testsCollection.setField('name', {
         type: 'sequence',
         patterns: [
-          { type: 'string', options: { value: 'a' } },
           { type: 'date' },
-          { type: 'integer', options: { digits: 1 } }
+          { type: 'integer', options: { digits: 1, key: 1 } },
+          { type: 'string', options: { value: 'a' } },
         ]
       });
 
       const item3 = await TestModel.create();
-      expect(item3.get('name')).toBe(`a${NOW}0`);
+      expect(item3.get('name')).toBe(`${NOW}1a`);
       expect(item3.get('code')).toBe(`C0002`);
+    });
+  });
+
+  describe('inputable', () => {
+    it('not inputable', async () => {
+      const testsCollection = db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              { type: 'string', options: { value: 'A' } },
+              { type: 'date' },
+              { type: 'integer', options: { key: 1 } }
+            ],
+            inputable: false
+          }
+        ],
+      });
+      await db.sync();
+
+      const now = new Date();
+      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const name = `BB${YYYYMMDD}11`;
+
+      const TestModel = db.getModel('tests');
+      const result = await TestModel.create({ name });
+      expect(result.name).toBe(`A${YYYYMMDD}0`);
+    });
+
+    it('inputable without match', async () => {
+      const testsCollection = db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              { type: 'string', options: { value: 'A' } },
+              { type: 'date' },
+              { type: 'integer', options: { key: 1 } }
+            ],
+            inputable: true,
+            match: false
+          }
+        ],
+      });
+      await db.sync();
+
+      const now = new Date();
+      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const name = `BB${YYYYMMDD}11`;
+
+      const TestModel = db.getModel('tests');
+      const result = await TestModel.create({ name });
+      expect(result.name).toBe(name);
+    });
+
+    it('inputable with match', async () => {
+      const testsCollection = db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              { type: 'string', options: { value: 'A' } },
+              { type: 'date' },
+              { type: 'integer', options: { key: 1 } }
+            ],
+            inputable: true,
+            match: true
+          }
+        ],
+      });
+      await db.sync();
+
+      const now = new Date();
+      const YYYYMMDD = moment(now).format('YYYYMMDD');
+
+      const TestModel = db.getModel('tests');
+      await expect(TestModel.create({ name: `BB${YYYYMMDD}11` })).rejects.toThrow();
+    });
+
+    it('input value within generated sequence', async () => {
+      const testsCollection = db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              { type: 'integer', options: { key: 1 } }
+            ],
+            inputable: true,
+            match: true
+          }
+        ],
+      });
+      await db.sync();
+
+      const TestModel = db.getModel('tests');
+      const item1 = await TestModel.create();
+      expect(item1.name).toBe('0');
+
+      const item2 = await TestModel.create({ name: '0' });
+      expect(item2.name).toBe('0');
+
+      const item3 = await TestModel.create();
+      expect(item3.name).toBe('1');
+    });
+
+    it('input value beyond generated sequence', async () => {
+      const testsCollection = db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              { type: 'integer', options: { key: 1 } }
+            ],
+            inputable: true,
+            match: true
+          }
+        ],
+      });
+      await db.sync();
+
+      const TestModel = db.getModel('tests');
+      const item1 = await TestModel.create();
+      expect(item1.name).toBe('0');
+
+      const item2 = await TestModel.create({ name: '2' });
+      expect(item2.name).toBe('2');
+
+      const item3 = await TestModel.create();
+      expect(item3.name).toBe('3');
+    });
+
+    it('input value with cycle', async () => {
+      const testsCollection = db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              { type: 'integer', options: { key: 1, cycle: '0 0 0 * * *' } }
+            ],
+            inputable: true,
+            match: true
+          }
+        ],
+      });
+      await db.sync();
+
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      const TestModel = db.getModel('tests');
+      const item1 = await TestModel.create({ createdAt: yesterday });
+      expect(item1.name).toBe('0');
+
+      const item2 = await TestModel.create({ name: '0', createdAt: yesterday });
+      expect(item2.name).toBe('0');
+
+      const item3 = await TestModel.create({ createdAt: yesterday });
+      expect(item3.name).toBe('1');
+
+      const item4 = await TestModel.create();
+      expect(item4.name).toBe('0');
     });
   });
 });
