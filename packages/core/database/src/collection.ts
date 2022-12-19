@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -279,6 +279,18 @@ export class Collection<
     const bool = this.fields.delete(name);
 
     if (bool) {
+      if (this.isParent()) {
+        for (const child of this.db.inheritanceMap.getChildren(this.name, {
+          deep: false,
+        })) {
+          const childCollection = this.db.getCollection(child);
+          const existField = childCollection.getField(name);
+          if (existField && existField.options.inherit) {
+            childCollection.removeField(name);
+          }
+        }
+      }
+
       this.emit('field.afterRemove', field);
     }
 
