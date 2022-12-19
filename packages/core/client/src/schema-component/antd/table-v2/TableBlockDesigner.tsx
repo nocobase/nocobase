@@ -8,7 +8,6 @@ import { useCollectionFilterOptions, useSortFields } from '../../../collection-m
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
-import { useFixedBlock } from '../page';
 
 export const TableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
@@ -35,11 +34,6 @@ export const TableBlockDesigner = () => {
   });
   const template = useSchemaTemplate();
   const { dragSort } = field.decoratorProps;
-
-  const { onFixedSchema } = useFixedBlock();
-  useEffect(() => {
-    onFixedSchema(fieldSchema);
-  }, [field?.decoratorProps?.fixedBlock]);
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>

@@ -21,11 +21,6 @@ export const KanbanDesigner = () => {
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const template = useSchemaTemplate();
 
-  const { onFixedSchema } = useFixedBlock();
-  useEffect(() => {
-    onFixedSchema(fieldSchema);
-  }, [field?.decoratorProps?.fixedBlock]);
-
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />

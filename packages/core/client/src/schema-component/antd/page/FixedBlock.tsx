@@ -1,6 +1,5 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { SchemaComponent } from '../../core';
 import { css } from '@emotion/css';
 
 const FixedBlockContext = React.createContext({
@@ -9,6 +8,16 @@ const FixedBlockContext = React.createContext({
   height: 0,
   schema: {} as unknown as Schema,
 });
+
+export const useFixedSchema = () => {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { onFixedSchema } = useFixedBlock();
+
+  useEffect(() => {
+    onFixedSchema(fieldSchema);
+  }, [field?.decoratorProps?.fixedBlock, fieldSchema['x-decorator-props'].fixedBlock]);
+};
 
 export const useFixedBlock = () => {
   return useContext(FixedBlockContext);
@@ -47,10 +56,10 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
                   height: 100%;
                 }
               }
-              .ant-spin-nested-loading {
-                height: 100%;
+              & .ant-spin-nested-loading {
+                height: calc(100% - 32px - 16px);
               }
-              .ant-spin-container {
+              & .ant-spin-container {
                 height: 100%;
               }
             }

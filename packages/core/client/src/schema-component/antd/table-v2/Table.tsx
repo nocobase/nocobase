@@ -9,7 +9,7 @@ import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, useFixedBlock } from '../..';
+import { DndContext, useFixedBlock, useFixedSchema } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
 
 const isColumnComponent = (schema: Schema) => {
@@ -169,6 +169,7 @@ export const Table: any = observer((props: any) => {
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
   const requiredValidator = field.required || required;
+
   useEffect(() => {
     field.setValidator((value) => {
       if (requiredValidator) {
