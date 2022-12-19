@@ -1,6 +1,8 @@
+import { NoPermissionError } from '@nocobase/acl';
 import { Context, utils as actionUtils } from '@nocobase/actions';
 import { Collection, ImporterReader, RelationField } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import lodash from 'lodash';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { checkAction } from './actions/role-check';
@@ -10,8 +12,6 @@ import { setCurrentRole } from './middlewares/setCurrentRole';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
-import lodash from 'lodash';
-import { NoPermissionError } from '@nocobase/acl';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -144,7 +144,15 @@ export class PluginACL extends Plugin {
 
     this.registerACLSettingSnippet({
       name: 'roles',
-      actions: ['roles:*', 'roles.resources:*', 'roles.menuUiSchemas:*', 'roles.snippets:*', 'availableActions:list'],
+      actions: [
+        'roles:*',
+        'roles.snippets:*',
+        'availableActions:list',
+        'roles.collections:list',
+        'roles.resources:*',
+        'uiSchemas:getProperties',
+        'roles.menuUiSchemas:*',
+      ],
     });
 
     // change resource fields to association fields
