@@ -229,7 +229,7 @@ export const roleSchema: ISchema = {
                       title: '{{t("Configure")}}',
                       'x-component': 'Action.Link',
                       'x-decorator': 'ACLActionProvider',
-                      'x-acl-action': 'roles:view',
+                      'x-acl-action': 'roles:update',
                       'x-component-props': {},
                       properties: {
                         drawer: {

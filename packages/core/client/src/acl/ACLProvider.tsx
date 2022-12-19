@@ -79,7 +79,6 @@ export const useACLRoleContext = () => {
         if (!skipOwnCheck && params?.own) {
           return isOwn ? params : null;
         }
-        console.log(params);
         return params;
       }
       const strategyActions = data?.strategy?.actions || [];
@@ -153,10 +152,8 @@ export const ACLActionProvider = (props) => {
   useEffect(() => {
     if (allowAll) {
       field.disabled = false;
-    } else if (allowConfigure) {
-      field.disabled = !actionScopeCheck;
     } else {
-      field.disabled = !params || !actionScopeCheck;
+      field.disabled = !params&&!actionScope.length || !actionScopeCheck;
     }
   });
   if (!name || allowAll || allowConfigure) {
