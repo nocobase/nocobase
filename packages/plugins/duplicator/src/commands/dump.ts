@@ -30,7 +30,7 @@ async function dumpAction(app) {
     app: app,
   };
 
-  const uiCollections = ['uiSchemas', 'uiSchemaTreePath', 'uiSchemaTemplates', 'uiSchemaServerHooks'];
+  const uiCollections = ['uiSchemas', 'uiSchemaTreePath', 'uiSchemaTemplates', 'uiSchemaServerHooks', 'uiRoutes'];
 
   for (const collection of uiCollections) {
     await dumpCollection(ctx, {
@@ -125,6 +125,7 @@ async function packDumpedDir(ctx: DumpContext) {
   archive.directory(ctx.dir, false);
 
   await archive.finalize();
+  console.log('dumped to', filePath);
 }
 
 async function clearDump(ctx: DumpContext) {

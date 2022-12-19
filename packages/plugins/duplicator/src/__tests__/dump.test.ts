@@ -76,6 +76,7 @@ describe('dump', () => {
           address: null,
           meta: {
             hello: 'world2',
+            withQuota: 'with "quota" \'quota\'',
           },
           profile: {},
         },
@@ -104,8 +105,6 @@ describe('dump', () => {
 
     expect(results.length).toEqual(2);
 
-    console.log({ results });
-
     const sql = await importCollection(
       {
         app,
@@ -117,6 +116,6 @@ describe('dump', () => {
       },
     );
 
-    console.log({ sql });
+    await db.sequelize.query(sql, { type: 'INSERT' });
   });
 });

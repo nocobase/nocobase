@@ -50,22 +50,40 @@ async function importCollections(ctx: RestoreContext) {
   }
 }
 
+const _escapeString = function (val) {
+  val = val.replace(/[\0\n\r\b\t\\'"\x1a]/g, function (s) {
+    switch (s) {
+      case "'":
+        return "''";
+
+      default:
+        return s;
+    }
+  });
+
+  return val;
+};
+
 export async function importCollection(
   ctx: RestoreContext,
   options: {
     collectionName: string;
     insert?: boolean;
+    clear?: boolean;
   },
 ) {
   const { collectionName, insert } = options;
+  const collection = ctx.app.db.getCollection(collectionName);
   const collectionDataPath = path.resolve(ctx.dir, 'collections', collectionName, 'data');
   const collectionMetaPath = path.resolve(ctx.dir, 'collections', collectionName, 'meta');
 
   const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
   const meta = JSON.parse(metaContent);
 
-  // truncate old data
-  await ctx.app.db.getRepository(collectionName).destroy({ truncate: true, hooks: false });
+  if (options.clear !== false) {
+    // truncate old data
+    await ctx.app.db.getRepository(collectionName).destroy({ truncate: true, hooks: false });
+  }
 
   // read file content from collection data
   const rows = await readLines(collectionDataPath);
@@ -77,7 +95,7 @@ export async function importCollection(
 
   const columns = meta['columns'];
 
-  const inertSQL = `INSERT INTO "${collectionName}" (${columns.map((c) => `"${c}"`).join(',')})
+  const inertSQL = `INSERT INTO "${collection.model.tableName}" (${columns.map((c) => `"${c}"`).join(',')})
                     VALUES ${rows
                       .map((row) => {
                         return `(${columns
@@ -85,11 +103,11 @@ export async function importCollection(
                             const data = JSON.parse(row)[index];
 
                             if (lodash.isPlainObject(data)) {
-                              return `'${JSON.stringify(data)}'`;
+                              return `'${_escapeString(JSON.stringify(data))}'`;
                             }
 
                             if (lodash.isString(data)) {
-                              return `'${data}'`;
+                              return `'${_escapeString(data)}'`;
                             }
 
                             if (lodash.isNull(data)) {
