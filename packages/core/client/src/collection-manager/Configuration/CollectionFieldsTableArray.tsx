@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { findIndex } from 'lodash';
 import {
@@ -59,13 +59,11 @@ interface CategorizeDataItem {
 }
 
 export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
-  const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'titleField', 'basic', 'systemInfo'];
   const field = useField<ArrayField>();
   const { name } = useRecord();
   const { t } = useTranslation();
   const compile = useCompile();
-  const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
-    useCollectionManager();
+  const { getInterface, getInheritCollections, getCollection } = useCollectionManager();
   const {
     showIndex = true,
     useSelectedRowKeys = useDef,
@@ -77,68 +75,77 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
   const [categorizeData, setCategorizeData] = useState<Array<CategorizeDataItem>>([]);
   const [expandedKeys, setExpendedKeys] = useState(selectedRowKeys);
   const inherits = getInheritCollections(name);
-  const currentFields = getCurrentCollectionFields(name);
+  const collection = getCollection(name);
+
+  const loadData = (data, titleField) => {
+    const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'titleField', 'basic', 'systemInfo'];
+    const tmpData: Array<CategorizeDataItem> = [];
+    const categorizeMap = new Map<CategorizeKey, any>();
+    const addCategorizeVal = (categorizeKey: CategorizeKey, val) => {
+      let fieldArr = categorizeMap.get(categorizeKey);
+      if (!fieldArr) {
+        fieldArr = [];
+      }
+      fieldArr.push(val);
+      categorizeMap.set(categorizeKey, fieldArr);
+    };
+    data.forEach((item) => {
+      const itemInterface = getInterface(item?.interface);
+      if (item?.primaryKey || item.isForeignKey) {
+        addCategorizeVal('primaryAndForeignKey', item);
+        return;
+      }
+
+      if (titleField == item?.name) {
+        addCategorizeVal('titleField', item);
+        return;
+      }
+      const group = itemInterface?.group as CategorizeKey;
+      switch (group) {
+        case 'systemInfo':
+        case 'relation':
+          addCategorizeVal(group, item);
+          break;
+        default:
+          addCategorizeVal('basic', item);
+      }
+    });
+    if (inherits) {
+      inherits.forEach((v) => {
+        sortKeyArr.push(v);
+        const parentCollection = getCollection(v);
+        parentCollection.fields.map((k) => {
+          if (k.interface) {
+            addCategorizeVal(v, new Proxy(k, {}));
+            data.push(new Proxy(k, {}));
+          }
+        });
+      });
+    }
+    sortKeyArr.forEach((key) => {
+      if (categorizeMap.get(key)?.length > 0) {
+        const parentCollection = getCollection(key);
+        tmpData.push({
+          key,
+          name:
+            t(CategorizeKeyNameMap.get(key)) || t(`Parent collection fields`) + `(${compile(parentCollection.title)})`,
+          data: categorizeMap.get(key),
+        });
+      }
+    });
+    setExpendedKeys(sortKeyArr);
+    setCategorizeData(tmpData);
+  };
   useDataSource({
     onSuccess(data) {
       field.value = data?.data || [];
-      const tmpData: Array<CategorizeDataItem> = [];
-      const categorizeMap = new Map<CategorizeKey, any>();
-      const addCategorizeVal = (categorizeKey: CategorizeKey, val) => {
-        let fieldArr = categorizeMap.get(categorizeKey);
-        if (!fieldArr) {
-          fieldArr = [];
-        }
-        fieldArr.push(val);
-        categorizeMap.set(categorizeKey, fieldArr);
-      };
-      field.value.forEach((item) => {
-        const itemInterface = getInterface(item?.interface);
-        if (item?.primaryKey || item.isForeignKey) {
-          addCategorizeVal('primaryAndForeignKey', item);
-          return;
-        }
-        if(item?.titleField){
-          addCategorizeVal('titleField', item);
-          return;
-        }
-        const group = itemInterface?.group as CategorizeKey;
-        switch (group) {
-          case 'systemInfo':
-          case 'relation':
-            addCategorizeVal(group, item);
-            break;
-          default:
-            addCategorizeVal('basic', item);
-        }
-      });
-      if (inherits) {
-        inherits.forEach((v) => {
-          sortKeyArr.push(v);
-          const parentCollection = getCollection(v);
-          parentCollection.fields.map((k) => {
-            if (k.interface) {
-              addCategorizeVal(v, new Proxy(k, {}));
-              field.value.push(new Proxy(k, {}));
-            }
-          });
-        });
-      }
-      sortKeyArr.forEach((key) => {
-        if (categorizeMap.get(key)?.length > 0) {
-          const parentCollection = getCollection(key);
-          tmpData.push({
-            key,
-            name:
-              t(CategorizeKeyNameMap.get(key)) ||
-              t(`Parent collection fields`) + `(${compile(parentCollection.title)})`,
-            data: categorizeMap.get(key),
-          });
-        }
-      });
-      setExpendedKeys(sortKeyArr);
-      setCategorizeData(tmpData);
     },
   });
+
+  useEffect(() => {
+    loadData(field.value, collection.titleField);
+  }, [field.value, collection.titleField]);
+
   const useTableColumns = () => {
     const schema = useFieldSchema();
     const { exists, render } = useSchemaInitializer(schema['x-initializer']);

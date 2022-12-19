@@ -52,26 +52,6 @@ export class CollectionManagerPlugin extends Plugin {
           throw new Error('cant update field without a reverseField key');
         }
       }
-
-      if (model.get('titleField')) {
-        const collection = this.db.getCollection(model.get('collectionName'));
-        if (collection) {
-          collection.fields.forEach((field: Field, key) => {
-            field.options.titleField = key == model.get('name');
-          });
-
-          await this.app.db.getRepository('fields').update({
-            values: {
-              titleField: false,
-            },
-            filter: {
-              'key.$ne': model.get('key'),
-              collectionName: model.get('collectionName'),
-            },
-            transaction: options.transaction,
-          });
-        }
-      }
     });
 
     // 要在 beforeInitOptions 之前处理
@@ -99,6 +79,30 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
+    const _handleTitleFieldFunc = async (model, options) => {
+      const optionsVal = model.get('options');
+      optionsVal.hasOwnProperty('titleField');
+      if (optionsVal?.hasOwnProperty('titleField')) {
+
+        const titleField = optionsVal?.['titleField'] ? model.get('name') : ''
+        await this.db.getRepository('collections').update({
+          values: {
+            titleField,
+          },
+          filter: {
+            name: model.get('collectionName'),
+          },
+          transaction: options.transaction,
+        });
+        const collection = this.db.getCollection(model.get('collectionName'));
+        collection.options.titleField = titleField
+        delete optionsVal?.['titleField'];
+      }
+    }
+
+    this.app.db.on('fields.beforeUpdate', _handleTitleFieldFunc);
+    this.app.db.on('fields.beforeCreate', _handleTitleFieldFunc);
+
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
     this.app.db.on(
@@ -111,13 +115,6 @@ export class CollectionManagerPlugin extends Plugin {
         }
       },
     );
-    this.app.db.on('collections.afterUpdate', async (model: CollectionModel, { context, transaction }) => {
-      if (context) {
-        await model.load({
-          transaction,
-        });
-      }
-    });
 
     this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
       if (context) {
