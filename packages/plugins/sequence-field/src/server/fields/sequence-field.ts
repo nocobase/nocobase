@@ -257,14 +257,14 @@ export class SequenceField extends Field {
     const { name, patterns } = this.options;
     const matched = this.match(instance.get(name));
     if (matched) {
-      await matched.slice(1)
+      await (matched.slice(1)
         .map((_, i) => sequencePatterns.get(patterns[i].type).update)
         .reduce((promise, update, i) => promise.then(() => {
           if (!update) {
             return;
           }
           return update.call(this, instance, matched[i + 1], patterns[i].options, options)
-        }), Promise.resolve());
+        }), Promise.resolve()));
     }
   }
 

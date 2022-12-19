@@ -713,9 +713,7 @@ describe('sequence field', () => {
       const item1 = await TestModel.create({});
       expect(item1.name).toBe('0');
 
-      const item2 = await TestModel.create({
-        values: { name: '2' }
-      });
+      const item2 = await TestModel.create({ name: '2' });
       expect(item2.name).toBe('2');
 
       const item3 = await TestModel.create({});
