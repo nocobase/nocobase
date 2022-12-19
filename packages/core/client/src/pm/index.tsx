@@ -279,7 +279,7 @@ export const getPluginsTabs = (items, snippets) => {
           isAllow: !snippets?.includes('!settings-center.' + plugin + '.' + tab),
         };
       }),
-      'isAllow',
+      (o) => !o.isAllow,
     );
     return {
       ...items[plugin],
@@ -316,6 +316,7 @@ const SettingsCenter = (props) => {
     return <Redirect to={`/admin/settings/${pluginName}/${firstTabName}`} />;
   }
   const component = items[pluginName]?.tabs?.[tabName]?.component;
+  const plugin: any = pluginsTabs.find((v) => v.key === pluginName);
   return (
     <div>
       <Layout>
@@ -376,9 +377,8 @@ const SettingsCenter = (props) => {
                   history.push(`/admin/settings/${pluginName}/${activeKey}`);
                 }}
               >
-                {Object.keys(items[pluginName]?.tabs).map((tabKey) => {
-                  const tab = items[pluginName].tabs?.[tabKey];
-                  return <Tabs.TabPane tab={compile(tab?.title)} key={tabKey} />;
+                {plugin.tabs?.map((tab) => {
+                  return tab.isAllow && <Tabs.TabPane tab={compile(tab?.title)} key={tab.key} />;
                 })}
               </Tabs>
             }
