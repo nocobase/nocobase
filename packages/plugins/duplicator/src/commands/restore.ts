@@ -2,6 +2,10 @@ import { Application } from '@nocobase/server';
 import decompress from 'decompress';
 import * as os from 'os';
 import fsPromises from 'fs/promises';
+import path from 'path';
+import lodash from 'lodash';
+import fs from 'fs';
+import * as readline from 'readline';
 
 export default function addRestoreCommand(app: Application) {
   app
@@ -19,7 +23,7 @@ interface RestoreContext {
 
 async function restoreAction(app, restoreFilePath: string) {
   const tmpDir = os.tmpdir();
-  const restoreDir = `${tmpDir}/nocobase-restore-${Date.now()}`;
+  const restoreDir = path.resolve(tmpDir, `nocobase-restore-${Date.now()}`);
 
   const restoreContext: RestoreContext = {
     app,
@@ -36,12 +40,92 @@ async function restoreAction(app, restoreFilePath: string) {
 }
 
 async function importCollections(ctx: RestoreContext) {
-  const collectionsDir = `${ctx.dir}/collections`;
+  const collectionsDir = path.resolve(ctx.dir, 'collections');
   const collections = await fsPromises.readdir(collectionsDir);
 
   for (const collectionName of collections) {
-    const collectionDataPath = `${collectionsDir}/${collectionName}/data`;
+    await importCollection(ctx, {
+      collectionName,
+    });
   }
+}
+
+export async function importCollection(
+  ctx: RestoreContext,
+  options: {
+    collectionName: string;
+    insert?: boolean;
+  },
+) {
+  const { collectionName, insert } = options;
+  const collectionDataPath = path.resolve(ctx.dir, 'collections', collectionName, 'data');
+  const collectionMetaPath = path.resolve(ctx.dir, 'collections', collectionName, 'meta');
+
+  const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
+  const meta = JSON.parse(metaContent);
+
+  // truncate old data
+  await ctx.app.db.getRepository(collectionName).destroy({ truncate: true, hooks: false });
+
+  // read file content from collection data
+  const rows = await readLines(collectionDataPath);
+
+  if (rows.length == 0) {
+    ctx.app.logger.info(`${collectionName} has no data to import`);
+    return;
+  }
+
+  const columns = meta['columns'];
+
+  const inertSQL = `INSERT INTO "${collectionName}" (${columns.map((c) => `"${c}"`).join(',')})
+                    VALUES ${rows
+                      .map((row) => {
+                        return `(${columns
+                          .map((column, index) => {
+                            const data = JSON.parse(row)[index];
+
+                            if (lodash.isPlainObject(data)) {
+                              return `'${JSON.stringify(data)}'`;
+                            }
+
+                            if (lodash.isString(data)) {
+                              return `'${data}'`;
+                            }
+
+                            if (lodash.isNull(data)) {
+                              return 'null';
+                            }
+
+                            return data;
+                          })
+                          .join(',')})`;
+                      })
+                      .join(',')}`;
+
+  if (insert === false) {
+    return inertSQL;
+  }
+
+  await ctx.app.db.sequelize.query(inertSQL, {
+    type: 'INSERT',
+  });
+
+  ctx.app.logger.info(`${collectionName} imported with ${rows.length} rows`);
+}
+
+export async function readLines(filePath: string) {
+  const results = [];
+  const fileStream = fs.createReadStream(filePath);
+
+  const rl = readline.createInterface({
+    input: fileStream,
+    crlfDelay: Infinity,
+  });
+
+  for await (const line of rl) {
+    results.push(line);
+  }
+  return results;
 }
 
 async function clearDump(ctx: RestoreContext) {

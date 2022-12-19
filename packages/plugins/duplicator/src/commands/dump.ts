@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as util from 'util';
 import fsPromises from 'fs/promises';
 import * as process from 'process';
+import path from 'path';
 import archiver from 'archiver';
 import { DUMPED_EXTENSION } from '../utils';
 
@@ -22,7 +23,7 @@ interface DumpContext {
 }
 
 async function dumpAction(app) {
-  const dumpedDir = `${os.tmpdir()}/nocobase-dump-${Date.now()}`;
+  const dumpedDir = path.resolve(os.tmpdir(), `nocobase-dump-${Date.now()}`);
 
   const ctx: DumpContext = {
     dir: dumpedDir,
@@ -43,37 +44,58 @@ async function dumpAction(app) {
   await app.stop();
 }
 
-async function dumpCollection(ctx: DumpContext, options: { collectionName: string }) {
+export async function dumpCollection(ctx: DumpContext, options: { collectionName: string }) {
   const { collectionName } = options;
 
   const collection = ctx.app.db.getCollection(collectionName);
-  const rows = await collection.repository.find();
-  const collectionDataDir = `${ctx.dir}/collections/${collectionName}`;
+  const rows = await collection.repository.find({
+    raw: true,
+  });
+  const collectionDataDir = path.resolve(ctx.dir, 'collections', collectionName);
 
   await fsPromises.mkdir(collectionDataDir, { recursive: true });
 
-  const dataFilePath = `${collectionDataDir}/data`;
+  // write collection data
+  const dataFilePath = path.resolve(collectionDataDir, 'data');
 
   const dataStream = fs.createWriteStream(dataFilePath);
 
+  const columns = Object.keys(collection.model.rawAttributes);
+
   for (const row of rows) {
-    dataStream.write(JSON.stringify(row) + '\n', 'utf8');
+    dataStream.write(
+      JSON.stringify(
+        columns.map((col) => {
+          return row[col];
+        }),
+      ) + '\r\n',
+      'utf8',
+    );
   }
 
   dataStream.end();
   await finished(dataStream);
 
-  console.log('dumped', collectionName, rows.length);
+  const meta = {
+    name: collectionName,
+    count: rows.length,
+    columns,
+  };
+
+  // write meta file
+  await fsPromises.writeFile(path.resolve(collectionDataDir, 'meta'), JSON.stringify(meta), 'utf8');
 }
 
 async function packDumpedDir(ctx: DumpContext) {
-  const workDir = process.cwd();
-  const filePath = `${workDir}/dump.zip`;
+  const filePath = path.resolve(
+    process.cwd(),
+    `dump-${new Date().toISOString().replace(/T/, '-').replace(/\..+/, '')}.${DUMPED_EXTENSION}`,
+  );
 
   const output = fs.createWriteStream(filePath);
 
   const archive = archiver('zip', {
-    zlib: { level: 9 }, // Sets the compression level.
+    zlib: { level: 9 },
   });
 
   output.on('close', function () {
@@ -103,7 +125,6 @@ async function packDumpedDir(ctx: DumpContext) {
   archive.directory(ctx.dir, false);
 
   await archive.finalize();
-  await fsPromises.rename(filePath, `${workDir}/dump-${Date.now()}.${DUMPED_EXTENSION}`);
 }
 
 async function clearDump(ctx: DumpContext) {
