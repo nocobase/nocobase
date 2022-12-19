@@ -45,7 +45,7 @@ export class PluginManager {
 
     this.app.acl.registerSnippet({
       name: 'plugin-manager',
-      actions: ['pm:*'],
+      actions: ['pm:*', 'applicationPlugins:list'],
     });
 
     this.app.acl.skip('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
