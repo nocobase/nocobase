@@ -31,7 +31,7 @@ export const ACLRolesCheckProvider = (props) => {
     },
     {
       onSuccess(data) {
-        if (!data?.data?.allowConfigure && !data?.data?.allowAll) {
+        if (!data?.data?.snippets.includes('ui-editor')) {
           setDesignable(false);
         }
         if (data?.data?.role !== api.auth.role) {
@@ -46,14 +46,15 @@ export const ACLRolesCheckProvider = (props) => {
   if (result.error) {
     return <Redirect to={'/signin'} />;
   }
+  console.log(result)
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };
 
 export const useRoleRecheck = () => {
   const ctx = useContext(ACLContext);
-  const { allowAll, allowConfigure } = useACLRoleContext();
+  const { allowAll } = useACLRoleContext();
   return () => {
-    if (allowAll || allowConfigure) {
+    if (allowAll) {
       return;
     }
     ctx.refresh();
@@ -104,10 +105,10 @@ export const useACLRoleContext = () => {
 const ACLActionParamsContext = createContext<any>({});
 
 export const ACLCollectionProvider = (props) => {
-  const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
+  const { allowAll, getActionParams } = useACLRoleContext();
   const fieldSchema = useFieldSchema();
   const isOwn = useRecordIsOwn();
-  if (allowAll || allowConfigure) {
+  if (allowAll) {
     return <>{props.children}</>;
   }
   const path = fieldSchema['x-acl-action'];
@@ -139,7 +140,7 @@ export const ACLActionProvider = (props) => {
   const { meta } = service?.data || {};
   const { allowedActions } = meta || {};
   const isOwn = useRecordIsOwn();
-  const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
+  const { allowAll, getActionParams } = useACLRoleContext();
   const actionName = fieldSchema['x-action'];
   const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
   const actionScope = allowedActions?.[path.split(':')[1]] || [];
@@ -153,10 +154,10 @@ export const ACLActionProvider = (props) => {
     if (allowAll) {
       field.disabled = false;
     } else {
-      field.disabled = !params&&!actionScope.length || !actionScopeCheck;
+      field.disabled = (!params && !actionScope.length) || !actionScopeCheck;
     }
   });
-  if (!name || allowAll || allowConfigure) {
+  if (!name || allowAll) {
     return <>{props.children}</>;
   }
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
@@ -165,7 +166,7 @@ export const ACLActionProvider = (props) => {
 export const ACLCollectionFieldProvider = (props) => {
   const { name } = useCollection();
   const fieldSchema = useFieldSchema();
-  const { allowAll, allowConfigure, getActionParams, resources } = useACLRoleContext();
+  const { allowAll, getActionParams } = useACLRoleContext();
   const actionName = fieldSchema['x-action'] || 'view';
   const findAclAction = (schema) => {
     if (schema['x-acl-action']) {
@@ -177,7 +178,7 @@ export const ACLCollectionFieldProvider = (props) => {
   const path = findAclAction(fieldSchema);
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
   const isOwn = useRecordIsOwn();
-  if (!name || allowAll || allowConfigure) {
+  if (!name || allowAll) {
     return <FormItem>{props.children}</FormItem>;
   }
   const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
@@ -193,9 +194,9 @@ export const ACLCollectionFieldProvider = (props) => {
 };
 
 export const ACLMenuItemProvider = (props) => {
-  const { allowAll, allowConfigure, allowMenuItemIds = [] } = useACLRoleContext();
+  const { allowAll, allowMenuItemIds = [] } = useACLRoleContext();
   const fieldSchema = useFieldSchema();
-  if (allowAll || allowConfigure) {
+  if (allowAll) {
     return <>{props.children}</>;
   }
   if (!fieldSchema['x-uid']) {

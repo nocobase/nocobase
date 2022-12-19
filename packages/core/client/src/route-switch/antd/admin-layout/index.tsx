@@ -24,8 +24,8 @@ import { PoweredBy } from '../../../powered-by';
 import { useMutationObserver } from 'ahooks';
 
 const filterByACL = (schema, options) => {
-  const { allowAll, allowConfigure, allowMenuItemIds = [] } = options;
-  if (allowAll || allowConfigure) {
+  const { allowAll, allowMenuItemIds = [] } = options;
+  if (allowAll) {
     return schema;
   }
   const filterSchema = (s) => {
@@ -191,7 +191,7 @@ const InternalAdminLayout = (props: any) => {
             </div>
           </div>
           <div style={{ position: 'absolute', height: '100%', zIndex: 10, top: 0, right: 0 }}>
-              <RemotePluginManagerToolbar />
+            <RemotePluginManagerToolbar />
             <CurrentUser />
           </div>
         </div>
