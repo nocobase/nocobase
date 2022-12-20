@@ -38,13 +38,14 @@ const useTableColumns = () => {
         }
       }, []);
       const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
-
+      console.log("s['x-component-props']", s['x-component-props']);
       return {
         title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
         dataIndex,
         key: s.name,
         sorter: s['x-component-props']?.['sorter'],
-        // width: 300,
+        width: 200,
+        ...s['x-component-props'],
         render: (v, record) => {
           const index = field.value?.indexOf(record);
           // console.log((Date.now() - start) / 1000);
@@ -65,6 +66,7 @@ const useTableColumns = () => {
     title: render(),
     dataIndex: 'TABLE_COLUMN_INITIALIZER',
     key: 'TABLE_COLUMN_INITIALIZER',
+    render: () => <div style={{ minWidth: 300 }}></div>,
   });
 };
 
@@ -370,10 +372,12 @@ export const Table: any = observer((props: any) => {
   const scroll = useMemo(() => {
     return fixedBlock
       ? {
-          x: columns.length < 8 ? tableWidth - 24 * 2 : tableWidth < 1500 ? 1500 : tableWidth,
+          x: 'max-content',
           y: tableHeight - headerAndPaginationHeight,
         }
-      : null;
+      : {
+          x: 'max-content',
+        };
   }, [fixedBlock, columns?.length, tableWidth, tableHeight, headerAndPaginationHeight]);
 
   const elementRef = useRef<HTMLDivElement>();
@@ -420,7 +424,7 @@ export const Table: any = observer((props: any) => {
           onChange={(pagination, filters, sorter, extra) => {
             onTableChange?.(pagination, filters, sorter, extra);
           }}
-          // tableLayout={'auto'}
+          tableLayout={'auto'}
           scroll={scroll}
           columns={columns}
           dataSource={field?.value?.slice?.()}

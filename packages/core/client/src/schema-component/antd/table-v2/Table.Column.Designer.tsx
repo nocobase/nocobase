@@ -13,7 +13,7 @@ const useLabelFields = (collectionName?: any) => {
   const { getCollectionFields } = useCollectionManager();
   const targetFields = getCollectionFields(collectionName);
   return targetFields
-    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean'&&!field.isForeignKey)
+    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean' && !field.isForeignKey)
     ?.map?.((field) => {
       return {
         value: field.name,
@@ -33,7 +33,7 @@ export const TableColumnDesigner = (props) => {
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
   const options = useLabelFields(collectionField?.target);
   const intefaceCfg = getInterface(collectionField?.interface);
-  
+
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -68,29 +68,58 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      {
-        intefaceCfg && intefaceCfg.sortable === true && (
-          <SchemaSettings.SwitchItem
-            title={t('Sortable')}
-            checked={field.componentProps.sorter}
-            onChange={(v) => {
-              const schema: ISchema = {
-                ['x-uid']: columnSchema['x-uid'],
-              };
-              columnSchema['x-component-props'] = {
-                ...columnSchema['x-component-props'],
-                sorter: v
-              }
-              schema['x-component-props'] = columnSchema['x-component-props'];
-              field.componentProps.sorter = v;
-              dn.emit('patch', {
-                schema
-              });
-              dn.refresh();
-            }}
-          />
-        )
-      }
+      <SchemaSettings.ModalItem
+        title={t('Column width')}
+        schema={
+          {
+            type: 'object',
+            title: t('Column width'),
+            properties: {
+              width: {
+                default: columnSchema?.['x-component-props']?.['width'] || 200,
+                'x-decorator': 'FormItem',
+                'x-component': 'InputNumber',
+                'x-component-props': {},
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={({ width }) => {
+          const props = columnSchema['x-component-props'] || {};
+          props['width'] = width;
+          const schema: ISchema = {
+            ['x-uid']: columnSchema['x-uid'],
+          };
+          schema['x-component-props'] = props;
+          columnSchema['x-component-props'] = props;
+          field.componentProps.width = width;
+          dn.emit('patch', {
+            schema,
+          });
+          dn.refresh();
+        }}
+      />
+      {intefaceCfg && intefaceCfg.sortable === true && (
+        <SchemaSettings.SwitchItem
+          title={t('Sortable')}
+          checked={field.componentProps.sorter}
+          onChange={(v) => {
+            const schema: ISchema = {
+              ['x-uid']: columnSchema['x-uid'],
+            };
+            columnSchema['x-component-props'] = {
+              ...columnSchema['x-component-props'],
+              sorter: v,
+            };
+            schema['x-component-props'] = columnSchema['x-component-props'];
+            field.componentProps.sorter = v;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
       {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Title field')}
