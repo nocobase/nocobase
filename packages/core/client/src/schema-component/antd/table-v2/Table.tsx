@@ -4,12 +4,12 @@ import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { ISchema, observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
-import { useMemoizedFn } from 'ahooks';
+import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, useFixedBlock, useFixedSchema } from '../..';
+import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
 
 const isColumnComponent = (schema: Schema) => {
@@ -364,21 +364,36 @@ export const Table: any = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const fixedBlock = fieldSchema.parent['x-decorator-props'].fixedBlock;
   const [tableHeight, setTableHeight] = useState(0);
+  const [tableWidth, setTableWidth] = useState(0);
+
   const [headerAndPaginationHeight, setHeaderAndPaginationHeight] = useState(0);
   const scroll = useMemo(() => {
     return fixedBlock
       ? {
-          x: document.body.clientWidth < 1920 ? 1920 : document.body.clientWidth,
+          x: tableWidth - 24 * 2,
           y: tableHeight - headerAndPaginationHeight,
         }
       : null;
-  }, [fixedBlock, tableHeight, headerAndPaginationHeight]);
+  }, [fixedBlock, tableWidth, tableHeight, headerAndPaginationHeight]);
+
+  const elementRef = useRef<HTMLDivElement>();
+  const calcTableSize = () => {
+    if (!elementRef.current) return;
+    const clientRect = elementRef.current?.getBoundingClientRect();
+    setTableHeight(Math.ceil(clientRect?.height || 0));
+    setTableWidth(Math.ceil(clientRect?.width || 0));
+  };
+  useEventListener('resize', calcTableSize);
+
+  const mountedRef: RefCallback<HTMLDivElement> = (ref) => {
+    console.log(ref);
+    elementRef.current = ref;
+    calcTableSize();
+  };
 
   return (
     <div
-      ref={(elementRef) => {
-        setTableHeight(Math.ceil(elementRef?.getBoundingClientRect().height || 0));
-      }}
+      ref={mountedRef}
       className={css`
         height: 100%;
         overflow: hidden;
