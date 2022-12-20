@@ -58,6 +58,8 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
             .noco-card-item {
               height: 100%;
               .ant-card {
+                display: flex;
+                flex-direction: column;
                 height: 100%;
                 .ant-card-body {
                   display: flex;
