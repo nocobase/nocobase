@@ -1,5 +1,5 @@
 import { useFieldSchema, useField } from '@formily/react';
-import { Spin } from 'antd';
+import { Spin, Result } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
@@ -22,7 +22,29 @@ export const ACLProvider = (props) => {
   );
 };
 
+const getRouteUrl = (props) => {
+  if (props?.match) {
+    return props.match;
+  }
+  return getRouteUrl(props.children.props);
+};
+
+const getRouteAclCheck = (match, snippets) => {
+  const { url, params } = match;
+  if (url === '/admin/pm/list' || params?.pluginName || params?.name?.includes('settings')) {
+    const pmAclCheck = url === '/admin/pm/list' && snippets.includes('plugin-manager');
+    const pluginTabByName = params?.name.split('/');
+    pluginTabByName.shift();
+    const pluginName = params.pluginName || pluginTabByName[0];
+    const tabName = params.tabName || pluginTabByName[1];
+    const pluginTabSnippet = pluginName && tabName && `!settings-center.${pluginName}.${tabName}`;
+    const pluginTabAclCheck = pluginTabSnippet && !snippets.includes(pluginTabSnippet);
+    return pmAclCheck || pluginTabAclCheck;
+  }
+  return true;
+};
 export const ACLRolesCheckProvider = (props) => {
+  const route = getRouteUrl(props.children.props);
   const { setDesignable } = useDesignable();
   const api = useAPIClient();
   const result = useRequest(
@@ -40,13 +62,21 @@ export const ACLRolesCheckProvider = (props) => {
       },
     },
   );
+  const routeAclCheck = !result.loading && getRouteAclCheck(route, result.data?.data.snippets);
   if (result.loading) {
     return <Spin />;
   }
   if (result.error) {
     return <Redirect to={'/signin'} />;
   }
-  console.log(result)
+  if (!routeAclCheck) {
+    return (
+      <ACLContext.Provider value={result}>
+        <Result status="403" title="403" subTitle="Sorry, you are not authorized to access this page." />
+      </ACLContext.Provider>
+    );
+  }
+
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };
 
