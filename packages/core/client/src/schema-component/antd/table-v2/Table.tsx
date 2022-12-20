@@ -38,7 +38,6 @@ const useTableColumns = () => {
         }
       }, []);
       const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
-      console.log("s['x-component-props']", s['x-component-props']);
       return {
         title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
         dataIndex,
