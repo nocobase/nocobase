@@ -1,10 +1,9 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { css } from '@emotion/css';
 
 const FixedBlockContext = React.createContext({
   setFixedSchema: (schema: Schema) => {},
-  onFixedSchema: (schema: Schema) => {},
   height: 0,
   schema: {} as unknown as Schema,
 });
@@ -12,11 +11,24 @@ const FixedBlockContext = React.createContext({
 export const useFixedSchema = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { onFixedSchema } = useFixedBlock();
+  const { setFixedSchema } = useFixedBlock();
+  const hasSet = useRef(false);
 
   useEffect(() => {
-    onFixedSchema(fieldSchema);
+    if (fieldSchema?.['x-decorator-props'].fixedBlock) {
+      setFixedSchema(fieldSchema);
+      hasSet.current = true;
+    }
   }, [field?.decoratorProps?.fixedBlock, fieldSchema['x-decorator-props'].fixedBlock]);
+
+  useEffect(
+    () => () => {
+      if (hasSet.current) {
+        setFixedSchema(null);
+      }
+    },
+    [],
+  );
 };
 
 export const useFixedBlock = () => {
@@ -36,13 +48,8 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
     return parent;
   }, [fixedSchema, fixedSchema?.['x-decorator-props']['fixedBlock']]);
 
-  const onFixedSchema = (s) => {
-    if (s?.['x-decorator-props'].fixedBlock) {
-      setFixedSchema(s);
-    }
-  };
   return (
-    <FixedBlockContext.Provider value={{ schema: fixedSchema, height, setFixedSchema, onFixedSchema }}>
+    <FixedBlockContext.Provider value={{ schema: fixedSchema, height, setFixedSchema }}>
       {schema ? (
         <div
           className={css`
