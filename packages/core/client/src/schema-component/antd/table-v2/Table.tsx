@@ -9,7 +9,7 @@ import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext } from '../..';
+import { DndContext, useDesignable } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
 
 const isColumnComponent = (schema: Schema) => {
@@ -24,6 +24,7 @@ const useTableColumns = () => {
   const start = Date.now();
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
+  const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns = schema
     .reduceProperties((buf, s) => {
@@ -65,7 +66,7 @@ const useTableColumns = () => {
     title: render(),
     dataIndex: 'TABLE_COLUMN_INITIALIZER',
     key: 'TABLE_COLUMN_INITIALIZER',
-    render: () => <div style={{ minWidth: 300 }}></div>,
+    render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
   });
 };
 
