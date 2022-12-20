@@ -368,7 +368,7 @@ export const Table: any = observer((props: any) => {
   const scroll = useMemo(() => {
     return fixedBlock
       ? {
-          x: (document.body.clientWidth < 1080 ? 1080 : document.body.clientWidth) - 200,
+          x: document.body.clientWidth < 1920 ? 1920 : document.body.clientWidth,
           y: tableHeight - headerAndPaginationHeight,
         }
       : null;
