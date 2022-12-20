@@ -244,14 +244,14 @@ export const Page = (props) => {
           />
         )}
       </div>
-      <div style={{ margin: 24, marginBottom: 0 }}>
+      <div style={{ margin: 24 }}>
         {loading ? (
           <Spin />
         ) : (
           <FixedBlock
             height={
-              // header 46 margin 24
-              height + 46 + 24
+              // header 46 margin 48
+              height + 46 + 48
             }
           >
             {!disablePageHeader && enablePageTabs ? (

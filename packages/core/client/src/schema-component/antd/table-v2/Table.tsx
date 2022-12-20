@@ -7,7 +7,7 @@ import { reaction } from '@formily/reactive';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useFixedBlock, useFixedSchema } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
@@ -361,21 +361,30 @@ export const Table: any = observer((props: any) => {
     },
     [field, dragSort],
   );
-  const { height } = useFixedBlock();
   const fieldSchema = useFieldSchema();
   const fixedBlock = fieldSchema.parent['x-decorator-props'].fixedBlock;
+  const [tableHeight, setTableHeight] = useState(0);
+  const [headerAndPaginationHeight, setHeaderAndPaginationHeight] = useState(0);
   const scroll = useMemo(() => {
     return fixedBlock
       ? {
-          x: document.body.clientWidth < 1080 ? 1080 : document.body.clientWidth,
-          y: document.body.clientHeight - height - 225,
+          x: (document.body.clientWidth < 1080 ? 1080 : document.body.clientWidth) - 200,
+          y: tableHeight - headerAndPaginationHeight,
         }
       : null;
-  }, [fixedBlock, height]);
+  }, [fixedBlock, tableHeight, headerAndPaginationHeight]);
 
   return (
     <div
+      ref={(elementRef) => {
+        setTableHeight(Math.ceil(elementRef?.getBoundingClientRect().height || 0));
+      }}
       className={css`
+        height: 100%;
+        overflow: hidden;
+        .ant-table-wrapper {
+          height: 100%;
+        }
         .ant-table {
           overflow-x: auto;
           overflow-y: hidden;
@@ -384,6 +393,11 @@ export const Table: any = observer((props: any) => {
     >
       <SortableWrapper>
         <AntdTable
+          ref={(ref) => {
+            const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
+            const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
+            setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
+          }}
           rowKey={rowKey ?? defaultRowKey}
           {...others}
           {...restProps}

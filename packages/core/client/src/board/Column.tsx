@@ -53,7 +53,7 @@ function Column({
               display: 'inline-block',
               verticalAlign: 'top',
               ...columnProvided.draggableProps.style,
-              '--column-height': fixedBlock ? `calc(100% - ${headerHeight + 15 + 28}px)` : 'inherit',
+              '--column-height': fixedBlock ? `calc(100% - ${headerHeight}px)` : 'inherit',
             }}
             className="react-kanban-column"
             data-testid={`column-${children.id}`}

@@ -53,11 +53,16 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
               .ant-card {
                 height: 100%;
                 .ant-card-body {
+                  display: flex;
+                  flex-direction: column;
                   height: 100%;
+                  overflow: hidden;
+                  // padding-bottom: 0;
                 }
               }
               & .ant-spin-nested-loading {
-                height: calc(100% - 32px - 16px);
+                height: 100%;
+                overflow: hidden;
               }
               & .ant-spin-container {
                 height: 100%;
@@ -71,7 +76,7 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
           <RecursionField onlyRenderProperties={false} schema={schema} />
         </div>
       ) : (
-        <div style={{ marginBottom: 24 }}>{props.children}</div>
+        props.children
       )}
     </FixedBlockContext.Provider>
   );
