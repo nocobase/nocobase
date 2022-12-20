@@ -89,6 +89,7 @@ export type Values = any;
 
 export interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'>, Transactionable {
   filter?: Filter;
+  filterByTk?: TargetKey | TargetKey[];
   context?: any;
 }
 
@@ -222,6 +223,17 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       options = {
         ...options,
         ...this.parseFilter(countOptions.filter, countOptions),
+      };
+    }
+
+    if (countOptions?.filterByTk) {
+      options['where'] = {
+        [Op.and]: [
+          options['where'] || {},
+          {
+            [this.collection.filterTargetKey]: options.filterByTk,
+          },
+        ],
       };
     }
 

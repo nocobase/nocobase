@@ -693,4 +693,44 @@ describe('acl', () => {
       action: 'view',
     });
   });
+
+  it('should destroy new role when user are root user', async () => {
+    const roles = await db.getRepository('roles').find();
+
+    const users = await db.getRepository('users').find();
+    const rootUser = await db.getRepository('users').findOne({
+      filterByTk: 1,
+    });
+
+    const userPlugin = app.getPlugin('users') as UsersPlugin;
+
+    const rootAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: rootUser.get('id'),
+      }),
+      { type: 'bearer' },
+    );
+
+    const response = await rootAgent
+      // @ts-ignore
+      .resource('roles')
+      .create({
+        values: {
+          name: 'testRole',
+        },
+      });
+
+    expect(response.statusCode).toEqual(200);
+
+    expect(await db.getRepository('roles').findOne({ filterByTk: 'testRole' })).toBeDefined();
+    const destroyResponse = await rootAgent
+      // @ts-ignore
+      .resource('roles')
+      .destroy({
+        filterByTk: 'testRole',
+      });
+
+    expect(destroyResponse.statusCode).toEqual(200);
+    expect(await db.getRepository('roles').findOne({ filterByTk: 'testRole' })).toBeNull();
+  });
 });
