@@ -87,11 +87,11 @@ export type AssociationKeysToBeUpdate = string[];
 
 export type Values = any;
 
-export interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'>, Transactionable {
-  filter?: Filter;
-  filterByTk?: TargetKey | TargetKey[];
-  context?: any;
-}
+export type CountOptions = Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'> &
+  Transactionable & {
+    filter?: Filter;
+    context?: any;
+  } & FilterByTk;
 
 export interface FilterByTk {
   filterByTk?: TargetKey;
