@@ -1,6 +1,11 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { css } from '@emotion/css';
+import { SchemaSettings } from '../../../schema-settings';
+import { useTranslation } from 'react-i18next';
+import { useDesignable } from '../../hooks';
+import { useGridContext } from '../grid';
+import { useRecord } from '../../../record-provider';
 
 const FixedBlockContext = React.createContext({
   setFixedSchema: (schema: Schema) => {},
@@ -33,6 +38,36 @@ export const useFixedSchema = () => {
 
 export const useFixedBlock = () => {
   return useContext(FixedBlockContext);
+};
+
+export const useFixedBlockDesignerSetting = () => {
+  const field = useField();
+  const { t } = useTranslation();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const record = useRecord();
+
+  return useMemo(() => {
+    if (Object.keys(record).length) {
+      return;
+    }
+    return (
+      <SchemaSettings.SwitchItem
+        title={t('Fix block')}
+        checked={fieldSchema['x-decorator-props']['fixedBlock']}
+        onChange={(fixedBlock) => {
+          field.decoratorProps.fixedBlock = fixedBlock;
+          fieldSchema['x-decorator-props'].fixedBlock = fixedBlock;
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+            },
+          });
+        }}
+      />
+    );
+  }, [fieldSchema['x-decorator-props'], field.decoratorProps?.fixedBlock, dn, record]);
 };
 
 interface FixedBlockProps {
