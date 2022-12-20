@@ -366,7 +366,6 @@ export const Table: any = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
   const [tableHeight, setTableHeight] = useState(0);
-  const [tableWidth, setTableWidth] = useState(0);
 
   const [headerAndPaginationHeight, setHeaderAndPaginationHeight] = useState(0);
   const scroll = useMemo(() => {
@@ -378,14 +377,13 @@ export const Table: any = observer((props: any) => {
       : {
           x: 'max-content',
         };
-  }, [fixedBlock, columns?.length, tableWidth, tableHeight, headerAndPaginationHeight]);
+  }, [fixedBlock, tableHeight, headerAndPaginationHeight]);
 
   const elementRef = useRef<HTMLDivElement>();
   const calcTableSize = () => {
     if (!elementRef.current) return;
     const clientRect = elementRef.current?.getBoundingClientRect();
     setTableHeight(Math.ceil(clientRect?.height || 0));
-    setTableWidth(Math.ceil(clientRect?.width || 0));
   };
   useEventListener('resize', calcTableSize);
 

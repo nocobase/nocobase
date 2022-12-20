@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useTableBlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { useRecord } from '../../../record-provider';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
