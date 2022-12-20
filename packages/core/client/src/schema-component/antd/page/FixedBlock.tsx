@@ -15,11 +15,11 @@ export const useFixedSchema = () => {
   const hasSet = useRef(false);
 
   useEffect(() => {
-    if (fieldSchema?.['x-decorator-props'].fixedBlock) {
+    if (fieldSchema?.['x-decorator-props']?.fixedBlock) {
       setFixedSchema(fieldSchema);
       hasSet.current = true;
     }
-  }, [field?.decoratorProps?.fixedBlock, fieldSchema['x-decorator-props'].fixedBlock]);
+  }, [field?.decoratorProps?.fixedBlock, fieldSchema?.['x-decorator-props']?.fixedBlock]);
 
   useEffect(
     () => () => {
@@ -43,9 +43,8 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
   const { height } = props;
   const [fixedSchema, setFixedSchema] = useState<Schema>();
   const schema = useMemo<Schema>(() => {
-    if (!fixedSchema || fixedSchema['x-decorator-props']['fixedBlock'] !== true) return;
-    const parent = fixedSchema.parent;
-    return parent;
+    if (!fixedSchema || fixedSchema['x-decorator-props']?.fixedBlock !== true) return;
+    return fixedSchema.parent;
   }, [fixedSchema, fixedSchema?.['x-decorator-props']['fixedBlock']]);
 
   return (

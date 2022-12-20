@@ -45,7 +45,7 @@ const InternalKanbanBlockProvider = (props) => {
         service,
         resource,
         groupField,
-        fixedBlock: fieldSchema?.['x-decorator-props'].fixedBlock,
+        fixedBlock: fieldSchema?.['x-decorator-props']?.fixedBlock,
       }}
     >
       {props.children}

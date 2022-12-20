@@ -364,7 +364,7 @@ export const Table: any = observer((props: any) => {
     [field, dragSort],
   );
   const fieldSchema = useFieldSchema();
-  const fixedBlock = fieldSchema.parent['x-decorator-props'].fixedBlock;
+  const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
   const [tableHeight, setTableHeight] = useState(0);
   const [tableWidth, setTableWidth] = useState(0);
 

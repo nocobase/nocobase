@@ -1,8 +1,6 @@
-import { useField } from '@formily/react';
 import React, { forwardRef, useState } from 'react';
 import { Draggable } from 'react-beautiful-dnd';
 import { useKanbanBlockContext } from '../block-provider';
-import { useFixedBlock } from '../schema-component';
 import Card from './Card';
 import CardAdder from './CardAdder';
 import { pickPropOut } from './utils';

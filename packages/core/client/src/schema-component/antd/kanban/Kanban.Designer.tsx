@@ -1,5 +1,5 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useKanbanBlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
@@ -7,7 +7,6 @@ import { useCollectionFilterOptions } from '../../../collection-manager/action-h
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
-import { useFixedBlock } from '../page';
 
 export const KanbanDesigner = () => {
   const { name, title } = useCollection();
