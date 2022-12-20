@@ -28,7 +28,6 @@ const Resizable = (props) => {
         } as ISchema
       }
       onSubmit={({ width }) => {
-        console.log(fieldSchema);
         const props = fieldSchema['x-component-props'] || {};
         props['width'] = width;
         const schema: ISchema = {
@@ -218,7 +217,7 @@ export const TableActionColumnInitializers = (props: any) => {
         },
         {
           type: 'item',
-          title: t('Column size'),
+          title: t('Column width'),
           component: Resizable,
         },
       ]}
