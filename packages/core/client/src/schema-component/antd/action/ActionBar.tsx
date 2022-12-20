@@ -27,14 +27,24 @@ export const ActionBar = observer((props: any) => {
   }
   return (
     <div
-      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflowX: 'auto', ...style }}
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        overflowX: 'auto',
+        flexShrink: 0,
+        ...style,
+      }}
       {...others}
     >
-      <div className={css`
-        .ant-space:last-child {
-          margin-left: 8px;
-        }
-      `} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+      <div
+        className={css`
+          .ant-space:last-child {
+            margin-left: 8px;
+          }
+        `}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}
+      >
         <DndContext>
           <Space>
             {fieldSchema.mapProperties((schema, key) => {
