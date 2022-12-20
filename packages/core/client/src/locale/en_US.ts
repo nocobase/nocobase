@@ -340,7 +340,7 @@ export default {
   "Operation succeeded": "Operation succeeded",
   "Operation failed": "Operation failed",
   "Open mode": "Open mode",
-  "Set popup size": "Set popup size",
+  "Popup size": "Popup size",
   "Small": "Small",
   "Middle": "Middle",
   "Large": "Large",

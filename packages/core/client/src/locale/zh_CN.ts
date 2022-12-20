@@ -407,7 +407,7 @@ export default {
   "Operation succeeded": "操作成功",
   "Operation failed": "操作失败",
   "Open mode": "打开方式",
-  "Set popup size": "设置弹窗尺寸",
+  "Popup size": "弹窗尺寸",
   "Small": "较窄",
   "Middle": "中等",
   "Large": "较宽",
