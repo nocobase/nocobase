@@ -124,6 +124,7 @@ export interface CreateOptions extends SequelizeCreateOptions {
   blacklist?: BlackList;
   updateAssociationValues?: AssociationKeysToBeUpdate;
   context?: any;
+  excludeFields?: string[];
 }
 
 export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {

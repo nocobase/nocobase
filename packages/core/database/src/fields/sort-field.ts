@@ -12,7 +12,11 @@ export class SortField extends Field {
 
   setSortValue = async (instance, options) => {
     const { name, scopeKey } = this.options;
+    const { excludeFields } = options;
     const { model } = this.context.collection;
+    if (excludeFields?.includes(name)) {
+      return;
+    }
 
     if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
       return;

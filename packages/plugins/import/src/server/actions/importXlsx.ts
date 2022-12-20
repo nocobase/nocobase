@@ -39,6 +39,7 @@ export async function importXlsx(ctx: Context, next: Next) {
     //   )
     // ).filter((item) => 'value' in item && item.value !== undefined);
     const values = [];
+    let maxSort = await repository.model.max<number, any>('sort');
     for (const item of originalList) {
       try {
         const transformResult = await transform({ ctx, record: item, columns, fields: collectionFields });
@@ -57,7 +58,8 @@ export async function importXlsx(ctx: Context, next: Next) {
         }
         try {
           await repository.create({
-            values: { ...val },
+            values: { ...val, sort: ++maxSort },
+            excludeFields: ['sort'],
             transaction,
           });
         } catch (error) {
