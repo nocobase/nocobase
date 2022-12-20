@@ -122,4 +122,46 @@ describe('list action with acl', () => {
     expect(data.meta.allowedActions.update).toEqual([1, 2]);
     expect(data.meta.allowedActions.destroy).toEqual([]);
   });
+
+  it('should response item permission when request get action', async () => {
+    const userRole = app.acl.define({
+      role: 'user',
+    });
+
+    userRole.grantAction('posts:view', {});
+
+    userRole.grantAction('posts:update', {
+      own: true,
+    });
+
+    await Post.repository.create({
+      values: [
+        { title: 'p1', createdById: 1 },
+        { title: 'p2', createdById: 1 },
+        { title: 'p3', createdById: 2 },
+      ],
+    });
+
+    app.resourcer.use(
+      (ctx, next) => {
+        ctx.state.currentRole = 'user';
+        ctx.state.currentUser = {
+          id: 1,
+        };
+
+        return next();
+      },
+      {
+        before: 'acl',
+      },
+    );
+
+    const getResponse = await app.agent().resource('posts').get({
+      filterByTk: 1,
+    });
+
+    const getBody = getResponse.body;
+
+    expect(getBody.meta.allowedActions).toBeDefined();
+  });
 });

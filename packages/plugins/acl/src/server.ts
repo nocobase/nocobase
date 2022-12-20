@@ -581,12 +581,16 @@ export class PluginACL extends Plugin {
         const { resourceName, actionName } = ctx.action;
         const collection = ctx.db.getCollection(resourceName);
 
-        if (collection && actionName == 'list' && ctx.status === 200) {
+        if (collection && (actionName == 'list' || actionName == 'get') && ctx.status === 200) {
           const Model = collection.model;
           const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
 
           const dataPath = ctx.paginate ? 'body.rows' : 'body';
-          const listData = lodash.get(ctx, dataPath);
+          let listData = lodash.get(ctx, dataPath);
+
+          if (actionName == 'get') {
+            listData = lodash.castArray(listData);
+          }
 
           const actions = ['view', 'update', 'destroy'];
 
@@ -694,7 +698,7 @@ export class PluginACL extends Plugin {
             include: conditions.map((condition) => condition.include).flat(),
           });
 
-          ctx.body.allowedActions = actions
+          const allowedActions = actions
             .map((action) => {
               if (allAllowed.includes(action)) {
                 return [action, ids];
@@ -709,6 +713,17 @@ export class PluginACL extends Plugin {
               acc[action] = ids;
               return acc;
             }, {});
+
+          if (actionName == 'get') {
+            ctx.bodyMeta = {
+              ...(ctx.bodyMeta || {}),
+              allowedActions: allowedActions,
+            };
+          }
+
+          if (actionName == 'list') {
+            ctx.body.allowedActions = allowedActions;
+          }
         }
       },
       { after: 'restApi', group: 'after' },
