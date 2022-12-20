@@ -370,11 +370,11 @@ export const Table: any = observer((props: any) => {
   const scroll = useMemo(() => {
     return fixedBlock
       ? {
-          x: tableWidth - 24 * 2,
+          x: columns.length < 8 ? tableWidth - 24 * 2 : tableWidth < 1500 ? 1500 : tableWidth,
           y: tableHeight - headerAndPaginationHeight,
         }
       : null;
-  }, [fixedBlock, tableWidth, tableHeight, headerAndPaginationHeight]);
+  }, [fixedBlock, columns?.length, tableWidth, tableHeight, headerAndPaginationHeight]);
 
   const elementRef = useRef<HTMLDivElement>();
   const calcTableSize = () => {
@@ -386,7 +386,6 @@ export const Table: any = observer((props: any) => {
   useEventListener('resize', calcTableSize);
 
   const mountedRef: RefCallback<HTMLDivElement> = (ref) => {
-    console.log(ref);
     elementRef.current = ref;
     calcTableSize();
   };
