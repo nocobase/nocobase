@@ -16,6 +16,7 @@ import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import './style.less';
 import type { ToolbarProps } from './types';
+import { formatDate } from './utils';
 
 const Weeks = ['month', 'week', 'day'] as const;
 
@@ -225,7 +226,8 @@ export const Calendar: any = observer((props: any) => {
           if (!record) {
             return;
           }
-          record.__event = event;
+          record.__event = { ...event, start: formatDate(moment(event.start)), end: formatDate(moment(event.end)) };
+
           setRecord(record);
           setVisible(true);
         }}

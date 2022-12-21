@@ -7,12 +7,13 @@ import { useTranslation } from 'react-i18next';
 import { useBlockRequestContext, useFilterByTk } from '../../../block-provider';
 import { useRecord } from '../../../record-provider';
 import { useActionContext } from '../action';
+import { formatDate } from './utils';
 const { Text } = Typography;
 
 export const DeleteEvent = observer(() => {
   const { visible, setVisible } = useActionContext();
   const { exclude = [], cron, ...record } = useRecord();
-  const startDate = moment(record.__parent.__event.start).format();
+  const startDate = formatDate(moment(record.__parent.__event.start));
   const filterByTk = useFilterByTk();
   const { resource, service, __parent } = useBlockRequestContext();
   const [value, onChange] = useState(startDate);
