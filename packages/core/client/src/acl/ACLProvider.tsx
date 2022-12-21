@@ -105,7 +105,7 @@ export const useACLRoleContext = () => {
       const currentAction = data?.actionAlias?.[act] || act || path;
       const hasResource = data?.resources?.includes(resourceName);
       const params = data?.actions?.[`${resourceName}:${currentAction}`] || data?.actions?.[`${resourceName}:${act}`];
-      console.log(path, params, resourceName);
+      // console.log(path, params, resourceName);
       if (hasResource) {
         if (!skipOwnCheck && params?.own) {
           return isOwn ? params : null;
@@ -183,7 +183,7 @@ export const ACLActionProvider = (props) => {
       ? actionScope?.includes(record[getPrimaryKeyField(name).name])
       : true;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
-  const params = !isAclScope ? getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn }) : true;
+  const params = isAclScope===false ? getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn }) : true;
   useEffect(() => {
     if (allowAll) {
       field.disabled = false;

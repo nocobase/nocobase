@@ -12,7 +12,7 @@ const { Text } = Typography;
 export const DeleteEvent = observer(() => {
   const { visible, setVisible } = useActionContext();
   const { exclude = [], cron, ...record } = useRecord();
-  const startDate = moment(record.__parent.__event.start).format();
+  const startDate = moment(record.__parent.__event?.start).format();
   const filterByTk = useFilterByTk();
   const { resource, service, __parent } = useBlockRequestContext();
   const [value, onChange] = useState(startDate);
