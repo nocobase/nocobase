@@ -138,6 +138,7 @@ export default {
   "Override":"重写",
   "Override field":"重写字段",
   "Configure fields of {{title}}": "「{{title}}」的字段配置",
+  "Association fields filter": "关系字段筛选",
   "PK & FK fields": "主外键字段",
   "Association fields": "关系字段",
   "System fields": "系统字段",

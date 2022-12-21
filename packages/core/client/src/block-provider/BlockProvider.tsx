@@ -2,11 +2,12 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
 import template from 'lodash/template';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, FC, useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ACLCollectionProvider, TableFieldResource, useAPIClient, useRecord, WithoutTableFieldResource } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
+import { SharedFilterProvider } from './SharedFilterProvider';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -150,7 +151,9 @@ export const BlockProvider = (props) => {
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
         <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props}>{props.children}</BlockRequestProvider>
+          <BlockRequestProvider {...props}>
+            <SharedFilterProvider {...props}>{props.children}</SharedFilterProvider>
+          </BlockRequestProvider>
         </BlockResourceContext.Provider>
       </BlockAssociationContext.Provider>
     </MaybeCollectionProvider>

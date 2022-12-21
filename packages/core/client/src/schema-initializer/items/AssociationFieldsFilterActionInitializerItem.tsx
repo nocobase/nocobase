@@ -4,9 +4,9 @@ import { merge } from '@formily/shared';
 import { SchemaInitializer } from '..';
 import { useCurrentSchema } from '../utils';
 
-export const InitializerWithSwitch = (props) => {
-  const { type, schema, item, insert } = props;
-  const { exists, remove } = useCurrentSchema(schema?.[type] || item?.schema?.[type], type, item.find, item.remove);
+export const AssociationFieldsFilterActionInitializerItem = (props) => {
+  const { collectionFieldKey, schema, item, insert } = props;
+  const { exists, remove } = useCurrentSchema(collectionFieldKey, 'x-collection-fieldKey', item.find, item.remove);
   return (
     <SchemaInitializer.SwitchItem
       checked={exists}

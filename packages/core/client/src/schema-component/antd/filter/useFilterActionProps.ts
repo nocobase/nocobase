@@ -1,8 +1,10 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import flat from 'flat';
+import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBlockRequestContext } from '../../../block-provider';
+import { concatFilter, SharedFilterContext } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 
 export const useFilterOptions = (collectionName: string) => {
@@ -107,6 +109,7 @@ export const useFilterActionProps = () => {
 export const useFilterFieldProps = ({ options, service, params }) => {
   const { t } = useTranslation();
   const field = useField<Field>();
+  const { associateFilter, setFilter } = useContext(SharedFilterContext);
   return {
     options,
     onSubmit(values) {
@@ -114,7 +117,16 @@ export const useFilterFieldProps = ({ options, service, params }) => {
       const defaultFilter = removeNullCondition(params.filter);
       // filter parameter for the filter action
       const filter = removeNullCondition(values?.filter);
-      service.run({ ...service.params?.[0], page: 1, filter: mergeFilter(defaultFilter, filter) });
+      // save to shared filter context
+      setFilter(values?.filter);
+
+      // associate filter
+      const asctFilter = removeNullCondition(associateFilter);
+
+      // finally filter with concat
+      const paramFilter = concatFilter(concatFilter(defaultFilter, filter), asctFilter);
+
+      service.run({ ...service.params?.[0], page: 1, filter: paramFilter });
       const items = filter?.$and || filter?.$or;
       if (items?.length) {
         field.title = t('{{count}} filter items', { count: items?.length || 0 });

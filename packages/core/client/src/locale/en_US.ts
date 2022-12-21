@@ -133,6 +133,7 @@ export default {
   "Override":"Override",
   "Override field":"Override field",
   "Configure fields of {{title}}": "Configure fields of {{title}}",
+  "Association fields filter": "Association fields filter",
   "PK & FK fields": "PK & FK fields",
   "Association fields": "Association fields",
   "Parent collection fields":"Parent collection fields",
