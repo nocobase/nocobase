@@ -11,6 +11,7 @@ export const BulkDestroyActionInitializer = (props) => {
     'x-component': 'Action',
     'x-designer': 'Action.Designer',
     'x-decorator': 'ACLActionProvider',
+    'x-acl-scope': false,
     'x-acl-action-props': {
       skipScopeCheck: true,
     },
