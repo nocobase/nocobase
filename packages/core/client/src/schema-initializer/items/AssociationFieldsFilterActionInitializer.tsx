@@ -20,7 +20,7 @@ export const AssociationFieldsFilterActionInitializer = (props) => {
   const schema = {
     type: 'void',
     'x-action': 'associateFilter',
-    'x-designer': 'AssociationFieldsFilter.Designer',
+    // 'x-designer': 'AssociationFieldsFilter.Designer',
     'x-initializer': 'AssociationFieldsFilterInitializer',
     'x-component': 'AssociationFieldsFilter',
     properties: {},

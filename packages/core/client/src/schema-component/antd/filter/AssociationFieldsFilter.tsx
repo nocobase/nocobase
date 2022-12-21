@@ -64,8 +64,8 @@ export const AssociationFieldsFilter = (props) => {
       )}
     >
       <Designer />
-      {render()}
       {props.children}
+      {render()}
     </SortableItem>
   );
 };
