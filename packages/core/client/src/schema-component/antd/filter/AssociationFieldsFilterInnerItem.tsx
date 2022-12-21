@@ -38,7 +38,7 @@ export const AssociationFieldsFilterInnerItem = (props) => {
       title: compile(i[labelKey]),
       key: i[valueKey],
     }))
-    .filter((i) => i.title?.toLowerCase().includes(searchValue.toLowerCase()));
+    .filter((i) => (typeof i.title === 'string' ? i.title : '-').toLowerCase().includes(searchValue.toLowerCase()));
 
   useEffect(() => {
     resource.list().then((res) => {
