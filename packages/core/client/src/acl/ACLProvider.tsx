@@ -98,14 +98,14 @@ export const useACLContext = () => {
 export const useACLRoleContext = () => {
   const ctx = useContext(ACLContext);
   const data = ctx.data?.data;
-
   return {
     ...data,
     getActionParams(path: string, { skipOwnCheck, isOwn }) {
       const [resourceName, act] = path.split(':');
-      const currentAction = data?.actionAlias?.[act] || act;
+      const currentAction = data?.actionAlias?.[act] || act || path;
       const hasResource = data?.resources?.includes(resourceName);
       const params = data?.actions?.[`${resourceName}:${currentAction}`] || data?.actions?.[`${resourceName}:${act}`];
+      console.log(path, params, resourceName);
       if (hasResource) {
         if (!skipOwnCheck && params?.own) {
           return isOwn ? params : null;
@@ -170,21 +170,25 @@ export const ACLActionProvider = (props) => {
   const { meta } = service?.data || {};
   const { allowedActions } = meta || {};
   const isOwn = useRecordIsOwn();
+  const isAclScope = fieldSchema['x-acl-scope'];
   const { allowAll, getActionParams } = useACLRoleContext();
   const actionName = fieldSchema['x-action'];
-  const path = fieldSchema['x-acl-action'] || `${name}:${actionName}`;
+  const aclAction = fieldSchema['x-acl-action']?.includes(':')
+    ? fieldSchema['x-acl-action']
+    : `${name}:${fieldSchema['x-acl-action'] || actionName}`;
+  const path = aclAction;
   const actionScope = allowedActions?.[path.split(':')[1]] || [];
   const actionScopeCheck =
-    Object.keys(record).length && actionScope.length >= 0
+    isAclScope && Object.keys(record).length && actionScope.length >= 0
       ? actionScope?.includes(record[getPrimaryKeyField(name).name])
       : true;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
-  const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
+  const params = !isAclScope ? getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn }) : true;
   useEffect(() => {
     if (allowAll) {
       field.disabled = false;
     } else {
-      field.disabled = (!params && !actionScope.length) || !actionScopeCheck;
+      field.disabled = !params || !actionScopeCheck;
     }
   });
   if (!name || allowAll) {
@@ -212,7 +216,8 @@ export const ACLCollectionFieldProvider = (props) => {
     return <FormItem>{props.children}</FormItem>;
   }
   const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
-  const aclFieldCheck = params ? (params.whitelist || params.fields)?.includes(fieldSchema.name) : false;
+  const aclFieldCheck =
+    params.whitelist || params.fields ? (params.whitelist || params.fields)?.includes(fieldSchema.name) : true;
   if (!aclFieldCheck) {
     return null;
   }
@@ -224,9 +229,9 @@ export const ACLCollectionFieldProvider = (props) => {
 };
 
 export const ACLMenuItemProvider = (props) => {
-  const { allowAll, allowMenuItemIds = [] } = useACLRoleContext();
+  const { allowAll, allowMenuItemIds = [], snippets } = useACLRoleContext();
   const fieldSchema = useFieldSchema();
-  if (allowAll) {
+  if (allowAll || snippets.includes('ui-editor')) {
     return <>{props.children}</>;
   }
   if (!fieldSchema['x-uid']) {

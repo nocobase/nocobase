@@ -611,7 +611,7 @@ export const createDetailsBlockSchema = (options) => {
   const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
-    'x-acl-action': `${resourceName}:get`,
+    'x-acl-action': `${resourceName}:view`,
     'x-decorator': 'DetailsBlockProvider',
     'x-decorator-props': {
       resource: resourceName,

@@ -42,14 +42,15 @@ const initImportSettings = (fields) => {
 
 export const ImportActionInitializer = (props) => {
   const { item, insert } = props;
-  const { exists, remove } = useCurrentSchema('import', 'x-action', item.find, item.remove);
+  const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', item.find, item.remove);
   const { name } = useCollection();
   const fields = useFields(name);
 
   const schema: ISchema = {
     type: 'void',
     title: '{{ t("Import") }}',
-    'x-action': 'import',
+    'x-action': 'importXlsx',
+    'x-acl-scope':false,
     'x-action-settings': {
       importSettings: { importColumns: [], explain: '' },
     },
