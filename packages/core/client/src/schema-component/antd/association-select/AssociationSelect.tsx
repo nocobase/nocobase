@@ -112,10 +112,11 @@ AssociationSelect.Designer = () => {
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
-  const sortFields = useSortFields(collectionField.target);
+  const sortFields = useSortFields(collectionField?.target);
+
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const defaultFilter = field.componentProps?.service?.params?.filter || {};
-  const dataSource = useCollectionFilterOptions(collectionField.target);
+  const dataSource = useCollectionFilterOptions(collectionField?.target);
   useFieldTitle();
 
   const sort = defaultSort?.map((item: string) => {
