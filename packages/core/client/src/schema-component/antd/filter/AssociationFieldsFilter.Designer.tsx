@@ -3,7 +3,7 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 
 export const AssociationFieldsFilterDesigner = (props) => {
   return (
-    <GeneralSchemaDesigner {...props}>
+    <GeneralSchemaDesigner {...props} disableInitializer={true} draggable={false}>
       <SchemaSettings.Remove
         removeParentsIfNoChildren
         breakRemoveOn={{

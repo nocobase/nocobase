@@ -39,18 +39,18 @@ export const AssociationFieldsFilterInnerItemDesigner = (props) => {
   };
 
   return (
-    <GeneralSchemaDesigner {...props}>
-      <SchemaSettings.Remove
-        breakRemoveOn={{
-          'x-component': 'Grid',
-        }}
-      />
+    <GeneralSchemaDesigner {...props} disableInitializer={true}>
       <SchemaSettings.SelectItem
         key="title-field"
         title={t('Title field')}
         options={options}
         value={fieldSchema['x-designer-props']?.fieldNames?.label}
         onChange={onTitleFieldChange}
+      />
+      <SchemaSettings.Remove
+        breakRemoveOn={{
+          'x-component': 'Grid',
+        }}
       />
     </GeneralSchemaDesigner>
   );
