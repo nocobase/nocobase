@@ -14,7 +14,7 @@ import {
   useCollectionFilterOptions,
 } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { useDesignable, useCompile, useFieldComponentOptions } from '../../hooks';
+import { useDesignable, useCompile, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
@@ -66,12 +66,6 @@ const InternalAssociationSelect = connect(
       }
     }, [props.value, normalizeValues]);
 
-    useEffect(() => {
-      if (!field.title) {
-        field.title = collectionField.uiSchema.title;
-      }
-    }, collectionField.title);
-
     return <RemoteSelect {...props} objectValue={objectValue} value={value} service={service}></RemoteSelect>;
   },
   mapProps(
@@ -122,7 +116,7 @@ AssociationSelect.Designer = () => {
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const defaultFilter = field.componentProps?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField.target);
-  console.log(collectionField?.target, ['CollectionField', 'AssociationSelect'].includes(fieldSchema['x-component']));
+  useFieldTitle();
 
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
