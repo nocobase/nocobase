@@ -1,6 +1,7 @@
 import { RecursionField, useFieldSchema } from '@formily/react';
 import { Card, Col, Row } from 'antd';
 import React from 'react';
+import { css } from '@emotion/css';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { BlockItem } from '../block-item';
 
@@ -18,14 +19,25 @@ export const CardItem: React.FC = (props) => {
     <BlockItem className={'noco-card-item'}>
       <Card style={{ marginBottom: 24 }} bordered={false} {...restProps}>
         <Row>
-          <Col span={hasFilter ? 4 : 0}>
-            <RecursionField
-              schema={fieldSchema}
-              onlyRenderProperties
-              filterProperties={(s) => s['x-component'] === 'AssociationFieldsFilter'}
-            />
-          </Col>
-          <Col span={hasFilter ? 20 : 24}>
+          {hasFilter ? (
+            <Col
+              className={css`
+                width: 200px;
+                flex: 0 0 auto;
+              `}
+            >
+              <RecursionField
+                schema={fieldSchema}
+                onlyRenderProperties
+                filterProperties={(s) => s['x-component'] === 'AssociationFieldsFilter'}
+              />
+            </Col>
+          ) : null}
+          <Col
+            className={css`
+              flex: 1 1 auto;
+            `}
+          >
             <RecursionField
               schema={fieldSchema}
               onlyRenderProperties
