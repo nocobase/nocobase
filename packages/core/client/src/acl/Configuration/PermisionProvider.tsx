@@ -43,7 +43,7 @@ export const PermissionProvider = (props) => {
                 values: [path],
               });
             }
-            setCurrentRecord({ ...currentRecord, [path]: value });
+            setCurrentRecord({ ...currentRecord, ...form.values, [path]: value });
           } else {
             await api.resource('roles').update({
               filterByTk: record.name,
