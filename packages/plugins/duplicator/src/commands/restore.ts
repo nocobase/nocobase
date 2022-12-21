@@ -81,12 +81,15 @@ export async function importCollection(
   const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
   const meta = JSON.parse(metaContent);
 
+  const tableName = meta.tableName;
+
   if (options.clear !== false) {
     // truncate old data
-    let sql = `TRUNCATE TABLE "${collection.model.tableName}"`;
+    let sql = `TRUNCATE TABLE "${tableName}"`;
+
     if (ctx.app.db.inDialect('sqlite')) {
       sql = `DELETE
-             FROM "${collection.model.tableName}"`;
+             FROM "${tableName}"`;
     }
 
     await ctx.app.db.sequelize.query(sqlAdapter(ctx.app.db, sql));

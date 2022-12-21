@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { Op, Transactionable } from '@nocobase/database';
+import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -14,7 +14,6 @@ import WorkflowModel from './models/Workflow';
 import Processor from './Processor';
 import initTriggers, { Trigger } from './triggers';
 import JobModel from './models/Job';
-
 
 type Pending = [ExecutionModel, JobModel?];
 export default class WorkflowPlugin extends Plugin {
@@ -34,9 +33,9 @@ export default class WorkflowPlugin extends Plugin {
     } else if (!instance.current) {
       const count = await Model.count({
         where: {
-          key: instance.key
+          key: instance.key,
         },
-        transaction: options.transaction
+        transaction: options.transaction,
       });
       if (!count) {
         instance.set('current', true);
@@ -52,18 +51,21 @@ export default class WorkflowPlugin extends Plugin {
         key: instance.key,
         current: true,
         id: {
-          [Op.ne]: instance.id
-        }
+          [Op.ne]: instance.id,
+        },
       },
-      transaction: options.transaction
+      transaction: options.transaction,
     });
 
     if (previous) {
       // NOTE: set to `null` but not `false` will not violate the unique index
-      await previous.update({ enabled: false, current: null }, {
-        transaction: options.transaction,
-        hooks: false
-      });
+      await previous.update(
+        { enabled: false, current: null },
+        {
+          transaction: options.transaction,
+          hooks: false,
+        },
+      );
 
       this.toggle(previous, false);
     }
@@ -72,9 +74,7 @@ export default class WorkflowPlugin extends Plugin {
   async load() {
     const { db, options } = this;
 
-    await db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, './collections'));
 
     this.db.addMigrations({
       namespace: 'workflow',
@@ -164,23 +164,28 @@ export default class WorkflowPlugin extends Plugin {
       // NOTE: no transaction here for read-uncommitted execution
       const existed = await workflow.countExecutions({
         where: {
-          id: options.context.executionId
-        }
+          id: options.context.executionId,
+        },
       });
 
       if (existed) {
-        console.warn(`workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`);
+        console.warn(
+          `workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`,
+        );
         return;
       }
     }
 
-    const execution = await this.db.sequelize.transaction(async transaction => {
-      const execution = await workflow.createExecution({
-        context,
-        key: workflow.key,
-        status: EXECUTION_STATUS.CREATED,
-        useTransaction: workflow.useTransaction,
-      }, { transaction });
+    const execution = await this.db.sequelize.transaction(async (transaction) => {
+      const execution = await workflow.createExecution(
+        {
+          context,
+          key: workflow.key,
+          status: EXECUTION_STATUS.CREATED,
+          useTransaction: workflow.useTransaction,
+        },
+        { transaction },
+      );
 
       const executed = await workflow.countExecutions({ transaction });
 
@@ -189,19 +194,22 @@ export default class WorkflowPlugin extends Plugin {
 
       const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
         where: {
-          key: workflow.key
+          key: workflow.key,
         },
-        transaction
+        transaction,
       });
-      await (<typeof WorkflowModel>workflow.constructor).update({
-        allExecuted
-      }, {
-        where: {
-          key: workflow.key
+      await (<typeof WorkflowModel>workflow.constructor).update(
+        {
+          allExecuted,
         },
-        individualHooks: true,
-        transaction
-      });
+        {
+          where: {
+            key: workflow.key,
+          },
+          individualHooks: true,
+          transaction,
+        },
+      );
 
       execution.workflow = workflow;
 
@@ -220,7 +228,7 @@ export default class WorkflowPlugin extends Plugin {
     } else {
       this.dispatch();
     }
-  }
+  };
 
   public async resume(job) {
     if (!job.execution) {
@@ -241,16 +249,16 @@ export default class WorkflowPlugin extends Plugin {
     if (this.pending.length) {
       next = this.pending.shift() as Pending;
     } else {
-      const execution = await this.db.getRepository('executions').findOne({
+      const execution = (await this.db.getRepository('executions').findOne({
         filter: {
-          status: EXECUTION_STATUS.CREATED
+          status: EXECUTION_STATUS.CREATED,
         },
-        sort: 'createdAt'
-      }) as ExecutionModel;
+        sort: 'createdAt',
+      })) as ExecutionModel;
       if (execution) {
         next = [execution];
       }
-    };
+    }
     if (next) {
       this.process(...next);
     }

@@ -4,7 +4,9 @@ import { InstallOptions } from './plugin-manager';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
+
   load();
+
   getName(): string;
 }
 
@@ -17,6 +19,7 @@ export interface PluginOptions {
   install?: (this: Plugin) => void;
   load?: (this: Plugin) => void;
   plugin?: typeof Plugin;
+
   [key: string]: any;
 }
 
@@ -28,9 +31,11 @@ export abstract class Plugin<O = any> implements PluginInterface {
   db: Database;
 
   constructor(app: Application, options?: any) {
+    this.setOptions(options);
+
     this.app = app;
     this.db = app.db;
-    this.setOptions(options);
+
     this.afterAdd();
   }
 
@@ -63,6 +68,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
   async afterDisable() {}
 
   async remove() {}
+
+  async importCollections(collectionsPath: string) {
+    await this.db.import({
+      directory: collectionsPath,
+      from: this.getName(),
+    });
+  }
 }
 
 export default Plugin;

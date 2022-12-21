@@ -22,6 +22,23 @@ interface DumpContext {
   dir: string;
 }
 
+const fixedPlugins = ['acl', 'workflow', 'ui-schema-storage', 'ui-routes-storage', 'collection-manager'];
+
+const optionsPlugins = ['file-manager', 'system-settings'];
+
+function getFixedCollections(app) {
+  return [...fixedPlugins, ...optionsPlugins]
+    .map((pluginName) => {
+      return app.db.importedFrom.get(pluginName) || [];
+    })
+    .flat();
+}
+
+async function getCustomCollections(app) {
+  const collections = await app.db.getCollection('collections').repository.find();
+  return collections.map((collection) => collection.get('name'));
+}
+
 async function dumpAction(app) {
   const dumpedDir = path.resolve(os.tmpdir(), `nocobase-dump-${Date.now()}`);
 
@@ -30,17 +47,9 @@ async function dumpAction(app) {
     app: app,
   };
 
-  const uiCollections = [
-    'collections',
-    'fields',
-    'uiSchemas',
-    'uiSchemaTreePath',
-    'uiSchemaTemplates',
-    'uiSchemaServerHooks',
-    'uiRoutes',
-  ];
+  const dumpedCollections = [...getFixedCollections(app), ...(await getCustomCollections(app))];
 
-  for (const collection of uiCollections) {
+  for (const collection of dumpedCollections) {
     await dumpCollection(ctx, {
       collectionName: collection,
     });
@@ -54,6 +63,8 @@ async function dumpAction(app) {
 
 export async function dumpCollection(ctx: DumpContext, options: { collectionName: string }) {
   const { collectionName } = options;
+  const { app } = ctx;
+  app.log.info(`dumping collection ${collectionName}`);
 
   const collection = ctx.app.db.getCollection(collectionName);
 
@@ -88,6 +99,7 @@ export async function dumpCollection(ctx: DumpContext, options: { collectionName
 
   const meta = {
     name: collectionName,
+    tableName: collection.model.tableName,
     count: rows.length,
     columns,
   };

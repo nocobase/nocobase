@@ -158,6 +158,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
 
+  importedFrom = new Map<string, Array<string>>();
+
   modelHook: ModelHook;
   version: DatabaseVersion;
 
@@ -578,7 +580,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>> {
+  async import(options: {
+    directory: string;
+    from?: string;
+    extensions?: ImportFileExtension[];
+  }): Promise<Map<string, Collection>> {
     const reader = new ImporterReader(options.directory, options.extensions);
     const modules = await reader.read();
     const result = new Map<string, Collection>();
@@ -588,6 +594,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
         this.extendCollection(module.collectionOptions, module.mergeOptions);
       } else {
         const collection = this.collection(module);
+
+        if (options.from) {
+          this.importedFrom.set(options.from, [...(this.importedFrom.get(options.from) || []), collection.name]);
+        }
+
         result.set(collection.name, collection);
       }
     }

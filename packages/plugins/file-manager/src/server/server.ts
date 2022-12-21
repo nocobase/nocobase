@@ -24,9 +24,7 @@ export default class PluginFileManager extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, './collections'));
 
     // 暂时中间件只能通过 use 加进来
     this.app.resourcer.use(uploadMiddleware);
@@ -38,5 +36,4 @@ export default class PluginFileManager extends Plugin {
 
     this.app.acl.allow('attachments', 'upload', 'loggedIn');
   }
-
 }
