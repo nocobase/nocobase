@@ -37,5 +37,27 @@ export const AssociationFieldsFilterInitializer = () => {
     },
   }));
 
-  return <SchemaInitializer.Button icon={'SettingOutlined'} title={t('Configure fields')} items={items} />;
+  const associatedFieldGroup: SchemaInitializerItemOptions = {
+    type: 'itemGroup',
+    title: t('关联'),
+    children: items,
+  };
+
+  const dividerItem: SchemaInitializerItemOptions = {
+    type: 'divider',
+  };
+
+  const deleteItem: SchemaInitializerItemOptions = {
+    type: 'item',
+    title: t('Delete'),
+    component: 'AssociationFieldsFilterInitializerDelete',
+  };
+
+  return (
+    <SchemaInitializer.Button
+      icon={'SettingOutlined'}
+      title={t('Configure fields')}
+      items={[associatedFieldGroup, dividerItem, deleteItem]}
+    />
+  );
 };

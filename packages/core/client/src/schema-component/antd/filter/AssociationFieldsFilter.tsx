@@ -2,7 +2,6 @@ import React from 'react';
 import { css } from '@emotion/css';
 import cls from 'classnames';
 import { useDesigner } from '../../hooks';
-import { AssociationFieldsFilterDesigner } from './AssociationFieldsFilter.Designer';
 import { SortableItem } from '../../common';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { useFieldSchema } from '@formily/react';
@@ -69,5 +68,3 @@ export const AssociationFieldsFilter = (props) => {
     </SortableItem>
   );
 };
-
-AssociationFieldsFilter.Designer = AssociationFieldsFilterDesigner;

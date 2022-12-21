@@ -1,8 +1,7 @@
 import React from 'react';
-import { Field } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionField, useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 
