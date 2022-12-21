@@ -986,6 +986,9 @@ export const createCalendarBlockSchema = (options) => {
                           grid: {
                             type: 'void',
                             'x-component': 'Grid',
+                            'x-initializer-props': {
+                              actionInitializers: 'CalendarFormActionInitializers'
+                            },
                             'x-initializer': 'RecordBlockInitializers',
                             properties: {},
                           },
