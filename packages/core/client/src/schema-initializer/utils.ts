@@ -211,7 +211,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
-      return {
+      const resultItem = {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
         component: 'CollectionFieldInitializer',
@@ -221,6 +221,14 @@ export const useFormItemInitializerFields = (options?: any) => {
         },
         schema,
       } as SchemaInitializerItemOptions;
+      if (block == 'Kanban') {
+        resultItem['find'] = (schema: Schema, key: string, action: string) => {
+          const s = findSchema(schema,'x-component',block)
+          return findSchema(s, key, action);
+        };
+      }
+
+      return resultItem;
     });
 };
 
