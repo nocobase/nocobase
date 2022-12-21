@@ -315,7 +315,7 @@ const SettingsCenter = (props) => {
         `}
         theme={'light'}
       >
-        <Menu selectedKeys={[pluginName]} style={{ height: 'calc(100vh - 46px)' }}>
+        <Menu selectedKeys={[pluginName]} style={{ height: 'calc(100vh - 46px)', overflowY: 'auto' }}>
           {Object.keys(items)
             .sort()
             .map((key) => {
