@@ -29,12 +29,7 @@ export const CardItem: React.FC = (props) => {
             <RecursionField
               schema={fieldSchema}
               onlyRenderProperties
-              filterProperties={(s) => s['x-component'] === 'ActionBar'}
-            />
-            <RecursionField
-              schema={fieldSchema}
-              onlyRenderProperties
-              filterProperties={(s) => s['x-component'] === 'TableV2'}
+              filterProperties={(s) => s['x-component'] !== 'AssociationFieldsFilter'}
             />
           </Col>
         </Row>
