@@ -4,7 +4,7 @@ import { observer, RecursionField, Schema, useFieldSchema } from '@formily/react
 import { parseExpression } from 'cron-parser';
 import get from 'lodash/get';
 import moment from 'moment';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +21,9 @@ import { formatDate } from './utils';
 const Weeks = ['month', 'week', 'day'] as const;
 
 const localizer = momentLocalizer(moment);
+export const DeleteEventContext = React.createContext({
+  close: () => {},
+});
 
 function Toolbar(props: ToolbarProps) {
   const fieldSchema = useFieldSchema();
@@ -169,13 +172,20 @@ const CalendarRecordViewer = (props) => {
       }, null),
     [],
   );
+
+  const close = useCallback(() => {
+    setVisible(false);
+  }, []);
+
   return (
     eventSchema && (
-      <ActionContext.Provider value={{ visible, setVisible }}>
-        <RecordProvider record={record}>
-          <RecursionField schema={eventSchema} name={eventSchema.name} />
-        </RecordProvider>
-      </ActionContext.Provider>
+      <DeleteEventContext.Provider value={{ close }}>
+        <ActionContext.Provider value={{ visible, setVisible }}>
+          <RecordProvider record={record}>
+            <RecursionField schema={eventSchema} name={eventSchema.name} />
+          </RecordProvider>
+        </ActionContext.Provider>
+      </DeleteEventContext.Provider>
     )
   );
 };
