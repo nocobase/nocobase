@@ -7,10 +7,11 @@ import { reaction } from '@formily/reactive';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useACLRoleContext, useCollection, useSchemaInitializer } from '../../../';
+import { ACLcollectionParamsContext } from '../../../acl/ACLProvider';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -20,32 +21,22 @@ const isCollectionFieldComponent = (schema: ISchema) => {
   return schema['x-component'] === 'CollectionField';
 };
 
-const useAclCheck = (schema: Schema) => {
-  const { actions, resources, allowAll } = useACLRoleContext();
-  let fieldName = Object.keys(schema.properties)?.[0];
-  let collectionName;
-  if (fieldName.includes('.')) {
-    collectionName = schema.properties[fieldName]['x-collection-name'];
-    fieldName = fieldName.split('.')[1];
-  } else {
-    collectionName = useCollection().name;
-  }
-  if (resources.includes(collectionName) && fieldName !== 'actions' && !allowAll) {
-    const { fields } = actions[`${collectionName}:view`] || {};
-    return fields?.includes(fieldName);
-  } else {
-    return true;
-  }
+const useAclCheck = (schema: Schema, params) => {
+  const fieldName = Object.keys(schema.properties)?.[0];
+  return (params?.whitelist || params?.fields) && schema['x-action-column'] !== 'actions'
+    ? (params.whitelist || params.fields)?.includes(fieldName)
+    : true;
 };
 
 const useTableColumns = () => {
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
+  const data = useContext(ACLcollectionParamsContext);
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns =
     schema
       .reduceProperties((buf, s) => {
-        if (isColumnComponent(s) && useAclCheck(s)) {
+        if (isColumnComponent(s) && useAclCheck(s, data)) {
           return buf.concat([s]);
         }
         return buf;

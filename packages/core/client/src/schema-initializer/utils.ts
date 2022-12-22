@@ -772,6 +772,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
+            'x-acl-resource': resourceName,
             'x-component-props': {
               style: {
                 marginBottom: 24,

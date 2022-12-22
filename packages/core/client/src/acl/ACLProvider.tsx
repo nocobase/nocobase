@@ -1,6 +1,7 @@
 import { useFieldSchema, useField } from '@formily/react';
 import { Spin, Result } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
+import { last } from 'lodash';
 import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useCollection } from '../collection-manager';
@@ -106,8 +107,8 @@ function transOptionsMap(options) {
 function getActionName(name) {
   const options = new Map([
     ['destroy', ['delete', 'destroy', 'deleteEvent']],
-    ['update', ['update', 'edit']],
-    ['view', ['view', 'get', 'list']],
+    ['update', ['update', 'edit', 'bulkUpdate', 'bulkEdit']],
+    ['view', ['view', 'get', 'list', '', null, undefined]],
   ]);
 
   let newOptions = transOptionsMap(options);
@@ -129,7 +130,9 @@ export const useACLRoleContext = () => {
     getActionParams(actionPath: string, { skipOwnCheck, isOwn }) {
       const path = actionPath;
       const isAclScope = fieldSchema['x-acl-scope'];
-      const [resourceName, actionName] = path.split(':');
+      const aclData = path.split(':');
+      const resourceName = aclData[0];
+      const actionName = last(aclData);
       const act = getActionName(actionName);
       const aclActionScope = allowedActions?.[act] || [];
       if (isAclScope) {
@@ -168,6 +171,8 @@ export const useACLRoleContext = () => {
 
 const ACLActionParamsContext = createContext<any>({});
 
+export const ACLcollectionParamsContext = createContext<any>({});
+
 export const ACLCollectionProvider = (props) => {
   const { allowAll, getActionParams } = useACLRoleContext();
   const fieldSchema = useFieldSchema();
@@ -184,7 +189,7 @@ export const ACLCollectionProvider = (props) => {
   if (!params) {
     return null;
   }
-  return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
+  return <ACLcollectionParamsContext.Provider value={params}>{props.children}</ACLcollectionParamsContext.Provider>;
 };
 
 const isBlockRequest = (schema) => {
@@ -202,11 +207,15 @@ export const ACLActionProvider = (props) => {
   const isOwn = useRecordIsOwn();
   const { allowAll, getActionParams } = useACLRoleContext();
   const actionName = fieldSchema['x-action'];
+  const resourceName = fieldSchema.parent['x-acl-resource'];
   const path = fieldSchema['x-acl-action']?.includes(':')
     ? fieldSchema['x-acl-action']
-    : `${name}:${fieldSchema['x-acl-action'] || actionName}`;
+    : `${resourceName || name}:${fieldSchema['x-acl-action'] || actionName}`;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
   const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
+  console.log(fieldSchema);
+  console.log(path, params);
+
   useEffect(() => {
     if (allowAll) {
       field.disabled = false;
