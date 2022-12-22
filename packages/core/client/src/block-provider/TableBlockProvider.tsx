@@ -3,6 +3,7 @@ import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useCollectionManager } from '../collection-manager';
+import { useFixedSchema } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const TableBlockContext = createContext<any>({});
@@ -14,6 +15,7 @@ const InternalTableBlockProvider = (props) => {
   // if (service.loading) {
   //   return <Spin />;
   // }
+  useFixedSchema();
   return (
     <TableBlockContext.Provider
       value={{

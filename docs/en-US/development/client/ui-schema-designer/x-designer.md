@@ -1,6 +1,6 @@
-# x-designer 组件
+# x-designer
 
-## 内置 x-designer 组件
+## Built-in x-designer component
 
 - Action.Designer
 - Calendar.Designer
@@ -21,7 +21,7 @@
 - TableSelectorDesigner
 - Tabs.Designer
 
-## 替换
+## Replacement
 
 ```tsx | pure
 import React, { useContext } from 'react';

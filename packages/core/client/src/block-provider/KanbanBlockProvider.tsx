@@ -5,6 +5,7 @@ import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useACLRoleContext } from '../acl';
 import { useCollection, useCollectionManager } from '../collection-manager';
+import { useFixedSchema } from '../schema-component';
 import { toColumns } from '../schema-component/antd/kanban/Kanban';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
@@ -23,6 +24,8 @@ const useGroupField = (props) => {
 
 const InternalKanbanBlockProvider = (props) => {
   const field = useField<any>();
+  const fieldSchema = useFieldSchema();
+  useFixedSchema();
   const { resource, service } = useBlockRequestContext();
   const groupField = useGroupField(props);
   if (!groupField) {
@@ -42,6 +45,7 @@ const InternalKanbanBlockProvider = (props) => {
         service,
         resource,
         groupField,
+        fixedBlock: fieldSchema?.['x-decorator-props']?.fixedBlock,
       }}
     >
       {props.children}
@@ -93,7 +97,7 @@ const useAssociationNames = (collection) => {
   if (gridSchema) {
     recursiveProperties(gridSchema, 'CollectionField', associationFields, appends);
   }
-  
+
   return uniq(appends);
 };
 
