@@ -1,4 +1,4 @@
 export * from './Filter';
 export * from './useFilterActionProps';
-export * from './AssociationFieldsFilter';
-export * from './AssociationFieldsFilterInnerItem';
+export * from '../association-filter/AssociationFieldsFilter';
+export * from '../association-filter/AssociationFieldsFilterInnerItem';

@@ -11,7 +11,7 @@ import { AssociationFieldsFilterInnerItemDesigner } from './AssociationFieldsFil
 import { SortableItem } from '../../common';
 import { concatFilter, SharedFilterContext } from '../../../block-provider/SharedFilterProvider';
 import { useBlockRequestContext } from '../../../block-provider';
-import { removeNullCondition } from './useFilterActionProps';
+import { removeNullCondition } from '../filter/useFilterActionProps';
 
 const { Panel } = Collapse;
 
