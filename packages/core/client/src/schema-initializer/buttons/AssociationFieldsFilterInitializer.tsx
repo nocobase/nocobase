@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaInitializerItemOptions } from '..';
-import { CollectionFieldProvider, useCollection } from '../../collection-manager';
+import { useCollection } from '../../collection-manager';
+import { css } from '@emotion/css';
 
 export const AssociationFieldsFilterInitializer = () => {
   const { t } = useTranslation();
@@ -55,6 +56,9 @@ export const AssociationFieldsFilterInitializer = () => {
 
   return (
     <SchemaInitializer.Button
+      className={css`
+        margin-top: 16px;
+      `}
       icon={'SettingOutlined'}
       title={t('Configure fields')}
       items={[associatedFieldGroup, dividerItem, deleteItem]}

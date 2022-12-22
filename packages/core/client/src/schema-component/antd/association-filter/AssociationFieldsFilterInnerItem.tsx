@@ -14,6 +14,7 @@ import { useBlockRequestContext } from '../../../block-provider';
 import { removeNullCondition } from '../filter/useFilterActionProps';
 
 const { Panel } = Collapse;
+const { Search } = Input;
 
 export const AssociationFieldsFilterInnerItem = (props) => {
   const collectionField = useCollectionField();
@@ -159,7 +160,11 @@ export const AssociationFieldsFilterInnerItem = (props) => {
       )}
     >
       <Designer />
-      <Collapse defaultActiveKey={[collectionField.uiSchemaUid]} ghost>
+      <Collapse
+        defaultActiveKey={[collectionField.uiSchemaUid]}
+        ghost
+        expandIcon={searchVisible ? () => null : undefined}
+      >
         <Panel
           className={css`
             & .ant-collapse-content-box {
@@ -167,6 +172,9 @@ export const AssociationFieldsFilterInnerItem = (props) => {
             }
             & .ant-collapse-header {
               padding: 10px !important;
+            }
+            & .ant-collapse-header {
+              background: #fafafa;
             }
           `}
           header={

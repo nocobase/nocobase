@@ -18,7 +18,7 @@ export const CardItem: React.FC = (props) => {
   return templateKey && !template ? null : (
     <BlockItem className={'noco-card-item'}>
       <Card style={{ marginBottom: 24 }} bordered={false} {...restProps}>
-        <Row>
+        <Row gutter={10}>
           {hasFilter ? (
             <Col
               className={css`
