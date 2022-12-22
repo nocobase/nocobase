@@ -49,14 +49,16 @@ async function dumpAction(app) {
 
   const dumpedCollections = [...getFixedCollections(app), ...(await getCustomCollections(app))];
 
-  for (const collection of dumpedCollections) {
-    await dumpCollection(ctx, {
-      collectionName: collection,
-    });
-  }
+  console.log(dumpedCollections);
 
-  await packDumpedDir(ctx);
-  await clearDump(ctx);
+  // for (const collection of dumpedCollections) {
+  //   await dumpCollection(ctx, {
+  //     collectionName: collection,
+  //   });
+  // }
+
+  // await packDumpedDir(ctx);
+  // await clearDump(ctx);
 
   await app.stop();
 }

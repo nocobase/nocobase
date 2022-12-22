@@ -81,6 +81,9 @@ export async function importCollection(
   const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
   const meta = JSON.parse(metaContent);
 
+  if (!collection) {
+  }
+
   const tableName = meta.tableName;
 
   if (options.clear !== false) {

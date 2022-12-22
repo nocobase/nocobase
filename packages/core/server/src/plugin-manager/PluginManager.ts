@@ -42,7 +42,9 @@ export class PluginManager {
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
+
     this.app.acl.allow('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
+
     this.server = net.createServer((socket) => {
       socket.on('data', async (data) => {
         const { method, plugins } = JSON.parse(data.toString());
@@ -55,6 +57,7 @@ export class PluginManager {
       });
       socket.pipe(socket);
     });
+
     this.app.on('beforeLoad', async (app, options) => {
       if (options?.method && ['install', 'upgrade'].includes(options.method)) {
         await this.collection.sync();
@@ -68,6 +71,7 @@ export class PluginManager {
       }
       this.app.acl.allow('applicationPlugins', 'list');
     });
+
     this.addStaticMultiple(options.plugins);
   }
 
