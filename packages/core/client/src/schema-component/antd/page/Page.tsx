@@ -1,10 +1,9 @@
 import { css } from '@emotion/css';
 import { FormDialog, FormLayout } from '@formily/antd';
 import { RecursionField, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
-import { useMutationObserver } from 'ahooks';
 import { Button, PageHeader as AntdPageHeader, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useDocumentTitle } from '../../../document-title';
@@ -265,7 +264,7 @@ export const Page = (props) => {
             ) : (
               <div
                 className={css`
-                  .nb-grid:not(:last-child) {
+                  > .nb-grid:not(:last-child) {
                     > .nb-schema-initializer-button {
                       display: none;
                     }
