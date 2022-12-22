@@ -1,9 +1,7 @@
-import { ISchema, observer, useFieldSchema } from '@formily/react';
+import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
-  CardItem,
-  DragHandler,
-  Grid,
+  CardItem, Grid,
   Markdown,
   SchemaComponent,
   SchemaComponentProvider,
@@ -54,16 +52,6 @@ export const AddBlockButton = (props: any) => {
     />
   );
 };
-
-const Block = observer((props) => {
-  const fieldSchema = useFieldSchema();
-  return (
-    <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
-      Block {fieldSchema.title}
-      <DragHandler />
-    </div>
-  );
-});
 
 const schema: ISchema = {
   type: 'object',
