@@ -12,8 +12,8 @@ export type SharedFilter = {
 export type SharedFilterContextValue = {
   filter: SharedFilter;
   setFilter: (filter: SharedFilter) => void;
-  associateFilter: SharedFilter;
-  setAssociateFilter: (filter: SharedFilter) => void;
+  associateFilterStore: SharedFilter;
+  setAssociateFilter: (key: string, filter: SharedFilter) => void;
 };
 
 export const SharedFilterContext = createContext<SharedFilterContextValue>({
@@ -22,7 +22,7 @@ export const SharedFilterContext = createContext<SharedFilterContextValue>({
     $or: [],
   },
   setFilter: undefined!,
-  associateFilter: {},
+  associateFilterStore: {},
   setAssociateFilter: undefined!,
 });
 
@@ -33,7 +33,7 @@ export const concatFilter = (f1: SharedFilter, f2: SharedFilter) => ({
 
 export const SharedFilterProvider: FC<{ params?: any }> = (props) => {
   const [filter, setFilterUnwrap] = useState<SharedFilter>(props.params?.filter ?? {});
-  const [associateFilter, setAssociateFilterUnwrap] = useState({});
+  const [associateFilterStore, setAssociateFilterUnwrap] = useState<Record<string, SharedFilter>>({});
 
   const setFilter = (incomeFilter: SharedFilter) => {
     setFilterUnwrap({
@@ -42,15 +42,18 @@ export const SharedFilterProvider: FC<{ params?: any }> = (props) => {
     });
   };
 
-  const setAssociateFilter = (incomeFilter: SharedFilter) => {
+  const setAssociateFilter = (key: string, incomeFilter: SharedFilter) => {
     setAssociateFilterUnwrap({
-      $and: incomeFilter.$and ?? [],
-      $or: incomeFilter.$or ?? [],
+      ...associateFilterStore,
+      [key]: {
+        $and: incomeFilter.$and ?? [],
+        $or: incomeFilter.$or ?? [],
+      },
     });
   };
 
   return (
-    <SharedFilterContext.Provider value={{ filter, setFilter, associateFilter, setAssociateFilter }}>
+    <SharedFilterContext.Provider value={{ filter, setFilter, associateFilterStore, setAssociateFilter }}>
       {props.children}
     </SharedFilterContext.Provider>
   );

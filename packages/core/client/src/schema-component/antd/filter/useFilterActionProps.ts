@@ -109,7 +109,7 @@ export const useFilterActionProps = () => {
 export const useFilterFieldProps = ({ options, service, params }) => {
   const { t } = useTranslation();
   const field = useField<Field>();
-  const { associateFilter, setFilter } = useContext(SharedFilterContext);
+  const { associateFilterStore: associateFilter, setFilter } = useContext(SharedFilterContext);
   return {
     options,
     onSubmit(values) {

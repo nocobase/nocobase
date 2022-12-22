@@ -22,11 +22,12 @@ export const AssociationFieldsFilterInnerItem = (props) => {
   const compile = useCompile();
   const { service, props: blockProps } = useBlockRequestContext();
   const [list, setList] = useState([]);
-  const { filter, setAssociateFilter } = useContext(SharedFilterContext);
+  const { filter, setAssociateFilter, associateFilterStore: associateFilter } = useContext(SharedFilterContext);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
   const targetCollectionName = fieldSchema['x-component-props'].target;
+  const collectionFieldName = collectionField.name;
 
   const resource = useResource(targetCollectionName);
 
@@ -47,7 +48,7 @@ export const AssociationFieldsFilterInnerItem = (props) => {
   }, []);
 
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-  const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [autoExpandParent, setAutoExpandParent] = useState<boolean>(true);
 
   const onExpand = (expandedKeysValue: React.Key[]) => {
@@ -55,31 +56,40 @@ export const AssociationFieldsFilterInnerItem = (props) => {
     setAutoExpandParent(false);
   };
 
-  const onCheck = (checkedKeysValue: React.Key[]) => {
-    setCheckedKeys(checkedKeysValue);
+  const onSelect = (selectedKeysValue: React.Key[]) => {
+    setSelectedKeys(selectedKeysValue);
 
     const orList = treeData
-      .filter((item) => checkedKeysValue.includes(item.key))
+      .filter((item) => selectedKeysValue.includes(item.key))
       .map((item) => ({
-        [collectionField.name]: {
+        [collectionFieldName]: {
           [valueKey]: {
             $eq: item.key,
           },
         },
       }));
 
-    const newAssociateFilter =
+    const newFilter =
       orList.length > 0
         ? {
-            $and: {
-              $or: orList,
-            },
+            $or: orList,
           }
         : {};
 
-    setAssociateFilter(newAssociateFilter);
+    setAssociateFilter(collectionFieldName, newFilter);
 
-    const paramFilter = concatFilter(removeNullCondition(filter), removeNullCondition(newAssociateFilter));
+    const newAssociationFilterList = Object.entries(associateFilter).map(([key, filter]) => {
+      if (key === collectionFieldName) return newFilter;
+      return filter;
+    });
+
+    const newAssociationFilter = newAssociationFilterList.length
+      ? {
+          $and: newAssociationFilterList,
+        }
+      : {};
+
+    const paramFilter = concatFilter(removeNullCondition(filter), removeNullCondition(newAssociationFilter));
 
     service.run({ ...service.params?.[0], page: 1, filter: paramFilter });
   };
@@ -153,8 +163,7 @@ export const AssociationFieldsFilterInnerItem = (props) => {
         <Panel
           className={css`
             & .ant-collapse-content-box {
-              padding-top: 0 !important;
-              padding-bottom: 0 !important;
+              padding: 0 8px !important;
             }
             & .ant-collapse-header {
               padding: 10px !important;
@@ -199,14 +208,12 @@ export const AssociationFieldsFilterInnerItem = (props) => {
         >
           <Tree
             style={{ padding: 0 }}
-            checkable
             onExpand={onExpand}
             expandedKeys={expandedKeys}
             autoExpandParent={autoExpandParent}
-            onCheck={onCheck}
-            checkedKeys={checkedKeys}
             treeData={treeData}
-            selectedKeys={[]}
+            onSelect={onSelect}
+            selectedKeys={selectedKeys}
           />
         </Panel>
       </Collapse>
