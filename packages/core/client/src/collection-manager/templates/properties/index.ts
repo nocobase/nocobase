@@ -1,3 +1,75 @@
+import { css } from '@emotion/css';
+
+const moreOptions = {
+  autoGenId: {
+    type: 'boolean',
+    'x-content': '{{t("Generate ID field automatically")}}',
+    default: true,
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+    'x-disabled': '{{ !createOnly }}',
+    'x-reactions': [
+      {
+        target: 'sortable',
+        when: '{{createOnly&&!$self.value}}',
+        fulfill: {
+          state: {
+            value: false,
+          },
+          schema: {
+            'x-disabled': true,
+          },
+        },
+        otherwise: {
+          schema: {
+            'x-disabled': '{{!createOnly}}',
+          },
+        },
+      },
+    ],
+  },
+  createdBy: {
+    type: 'boolean',
+    'x-content': '{{t("Store the creation user of each record")}}',
+    default: true,
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+    'x-disabled': '{{ !createOnly }}',
+  },
+  updatedBy: {
+    type: 'boolean',
+    'x-content': '{{t("Store the last update user of each record")}}',
+    default: true,
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+    'x-disabled': '{{ !createOnly }}',
+  },
+  createdAt: {
+    type: 'boolean',
+    'x-content': '{{t("Store the creation time of each record")}}',
+    default: true,
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+    'x-disabled': '{{ !createOnly }}',
+  },
+  updatedAt: {
+    type: 'boolean',
+    'x-content': '{{t("Store the last update time of each record")}}',
+    default: true,
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+    'x-disabled': '{{ !createOnly }}',
+  },
+  sortable: {
+    type: 'boolean',
+    'x-content': '{{t("Records can be sorted")}}',
+    default: true,
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+    'x-disabled': '{{ !createOnly }}',
+  },
+};
+
 export const defaultConfigurableProperties = {
   title: {
     type: 'string',
@@ -30,72 +102,21 @@ export const defaultConfigurableProperties = {
     'x-visible': '{{ enableInherits}}',
     'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
   },
-  autoGenId: {
-    type: 'boolean',
-    'x-content': '{{t("AutoGenId")}}',
-    default: true,
+  ...moreOptions,
+  moreOptions: {
+    title: '{{t("More options")}}',
+    type: 'void',
     'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-    'x-reactions': [
-      {
-        target: 'sortable',
-        when: '{{createOnly&&!$self.value}}',
-        fulfill: {
-          state: {
-            value: false,
-          },
-          schema: {
-            'x-disabled': true,
-          },
-        },
-        otherwise: {
-          schema: {
-            'x-disabled': '{{!createOnly}}',
-          },
-        },
-      },
-    ],
-  },
-  createdBy: {
-    type: 'boolean',
-    'x-content': '{{t("CreatedBy")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-  },
-  updatedBy: {
-    type: 'boolean',
-    'x-content': '{{t("UpdatedBy")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-  },
-  createdAt: {
-    type: 'boolean',
-    'x-content': '{{t("CreatedAt")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-  },
-  updatedAt: {
-    type: 'boolean',
-    'x-content': '{{t("UpdatedAt")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
-  },
-  sortable: {
-    type: 'boolean',
-    'x-content': '{{t("Records can be sorted")}}',
-    default: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': '{{ !createOnly }}',
+    'x-decorator-props': {
+      className: css`
+        .ant-formily-item {
+          margin-bottom: 0;
+        }
+      `,
+    },
+    properties: {
+      ...moreOptions,
+    },
   },
 };
 
@@ -108,7 +129,8 @@ export type DefaultConfigurableKeys =
   | 'updatedBy'
   | 'createdAt'
   | 'updatedAt'
-  | 'sortable';
+  | 'sortable'
+  | 'moreOptions';
 
 export const getConfigurableProperties = (...keys: DefaultConfigurableKeys[]) => {
   const props = {};

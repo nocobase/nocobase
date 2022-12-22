@@ -1,18 +1,18 @@
-# Schema 的设计能力
+# Schema design capabilities
 
-Schema 的设计能力主要体现在
+The design capabilities of Schema are mainly
 
-- 邻近位置插入，可用于
-  - 插入新的 schema 节点
-  - 现有 schema 节点的拖拽移动
-- schema 参数修改
+- Neighborhood insertion, which can be used to
+  - Insertion of new schema nodes
+  - Drag-and-drop movement of existing schema nodes
+- schema parameter modification
 
-设计器核心 API 和参数有：
+The core designer APIs and parameters are
 
-- 设计器 API：`createDesignable()` & `useDesignable()`
-- Schema 参数：`x-designer`，用于适配设计器组件
+- Designer API: `createDesignable()` & `useDesignable()`
+- Schema parameters: `x-designer`, used to adapt the designer component
 
-## 设计器 API
+## Designer API
 
 ### createDesignable()
 
@@ -25,13 +25,13 @@ const current = new Schema({
 });
 
 const {
-  designable,         // 是否可以配置
+  designable, // whether it is configurable
   remove,
-  insertAdjacent,     // 在某位置插入，四个位置：beforeBegin、afterBegin、beforeEnd、afterEnd
-  insertBeforeBegin,  // 在当前节点的前面插入
-  insertAfterBegin,   // 在当前节点的第一个子节点前面插入
-  insertBeforeEnd,    // 在当前节点的最后一个子节点后面
-  insertAfterEnd,     // 在当前节点的后面
+  insertAdjacent, // insert at a position, four positions: beforeBegin, afterBegin, beforeEnd, afterEnd
+  insertBeforeBegin, // insert in front of the current node
+  insertAfterBegin, // insert in front of the first child node of the current node
+  insertBeforeEnd, // after the last child of the current node
+  insertAfterEnd, // after the current node
 } = createDesignable({
   current,
 });
@@ -59,17 +59,17 @@ console.log(current.toJSON());
 
 ### useDesignable()
 
-React Hook 场景也可以用 `useDesignable()` 获取当前 schema 组件设计器的 API
+React Hook scenarios can also use `useDesignable()` to get the API of the current schema component designer
 
 ```ts
 const {
-  designable,         // 是否可以配置
+  designable, // whether it is configurable
   remove,
-  insertAdjacent,     // 在某位置插入，四个位置：beforeBegin、afterBegin、beforeEnd、afterEnd
-  insertBeforeBegin,  // 在当前节点的前面插入
-  insertAfterBegin,   // 在当前节点的第一个子节点前面插入
-  insertBeforeEnd,    // 在当前节点的最后一个子节点后面
-  insertAfterEnd,     // 在当前节点的后面
+  insertAdjacent, // insert at a position, four positions: beforeBegin, afterBegin, beforeEnd, afterEnd
+  insertBeforeBegin, // insert in front of the current node
+  insertAfterBegin, // insert in front of the first child node of the current node
+  insertBeforeEnd, // after the last child of the current node
+  insertAfterEnd, // after the current node
 } = useDesignable();
 
 const schema = {
@@ -77,57 +77,54 @@ const schema = {
   'x-component': 'Hello',
 };
 
-// 在当前节点的前面插入
+// Insert in front of the current node
 insertBeforeBegin(schema);
-// 等同于
+// Equivalent to
 insertAdjacent('beforeBegin', schema);
 
-// 在当前节点的第一个子节点前面插入
+// insert in front of the first child of the current node
 insertAfterBegin(schema);
-// 等同于
+// Equivalent to
 insertAdjacent('afterBegin', schema);
 
-// 在当前节点的最后一个子节点后面
+// after the last child of the current node
 insertBeforeEnd(schema);
-// 等同于
+// Equivalent to
 insertAdjacent('beforeEnd', schema);
 
-// 在当前节点的后面
+// After the current node
 insertAfterEnd(schema);
-// 等同于
+// Equivalent to
 insertAdjacent('afterEnd', schema);
 ```
+## Neighborhood insertion
 
-## 邻近位置插入
+Similar to the DOM's [insert adjacent](https://dom.spec.whatwg.org/#insert-adjacent) concept, Schema also provides the `insertAdjacent()` method for solving the insertion of adjacent positions.
 
-与 DOM 的 [insert adjacent](https://dom.spec.whatwg.org/#insert-adjacent) 概念相似，Schema 也提供了 `insertAdjacent()` 方法用于解决邻近位置的插入问题。
-
-四个邻近位置
+The four adjacent positions
 
 ```ts
 {
   properties: {
-    // beforeBegin 在当前节点的前面插入
+    // beforeBegin insert before the current node
     node1: {
       properties: {
-        // afterBegin 在当前节点的第一个子节点前面插入
+        // afterBegin inserted before the first child of the current node
         // ...
-        // beforeEnd 在当前节点的最后一个子节点后面
+        // beforeEnd after the last child of the current node
       },
     },
-    // afterEnd 在当前节点的后面
+    // afterEnd after the current node
   },
 }
 ```
+Like HTML tags, the components of the Schema component library can be combined with each other and inserted in reasonable proximity as needed via the insertAdjacent API.
 
-和 HTML 标签一样，Schema 组件库的组件也是可以相互组合，通过 insertAdjacent API 按实际需要插入在合理的邻近位置。
+### Inserting a new schema node
 
-### 插入新的 schema 节点
+Within a Schema component, a new node can be inserted directly into the adjacent position of the current Schema with `useDesignable()`.
 
-在 Schema 组件里，可以直接通过 `useDesignable()` 在当前 Schema 的相邻位置插入新节点：
-
-
-示例
+Example
 
 ```tsx
 import React from 'react';
@@ -210,9 +207,9 @@ export default () => {
 }
 ```
 
-### 现有 schema 节点的拖拽移动
+### Drag-and-drop movement of existing schema nodes
 
-insertAdjacent 等方法也可用于节点的拖拽移动
+Methods such as insertAdjacent can also be used to drag and drop nodes
 
 ```tsx
 import React from 'react';
@@ -319,10 +316,9 @@ export default function App() {
   );
 }
 ```
+## Applications of `x-designer` 
 
-## `x-designer` 的应用
-
-`x-designer` 通常只在 BlockItem、CardItem、FormItem 等包装器组件中使用。
+`x-designer` is usually used only in wrapper components such as BlockItem, CardItem, FormItem, etc.
 
 ```ts
 {
@@ -346,8 +342,8 @@ export default function App() {
 }
 ```
 
-说明：NocoBase 提供的 Schema 设计器是以工具栏形式直接嵌入于界面，当激活界面配置时（`designable = true`），`x-designer` 组件（设计器工具栏）会显示出来，就可以通过工具栏更新当前 schema 组件了，工具栏提供的设计能力包括：
+Note: The Schema designer provided by NocoBase is directly embedded in the interface in the form of a toolbar. When the UI configuration is activated (`designable = true`), the `x-designer` component (designer toolbar) will be displayed and the current schema component can be updated through the toolbar.
 
-- 拖拽移动：DndContext + DragHandler
-- 插入新节点：SchemaInitializer
-- 参数配置：SchemaSettings
+- Drag and Drop: DndContext + DragHandler
+- Inserting new nodes: SchemaInitializer
+- Parameter configuration: SchemaSettings

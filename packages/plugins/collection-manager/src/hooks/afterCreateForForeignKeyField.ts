@@ -143,7 +143,7 @@ export function afterCreateForForeignKeyField(db: Database) {
           values: {
             name: through,
             title: through,
-            timestamps: false,
+            timestamps: true,
             autoGenId: false,
             hidden: true,
             autoCreate: true,

@@ -13,7 +13,7 @@ import {
   DoubleFieldOptions,
   FloatFieldOptions,
   IntegerFieldOptions,
-  RealFieldOptions
+  RealFieldOptions,
 } from './number-field';
 import { PasswordFieldOptions } from './password-field';
 import { RadioFieldOptions } from './radio-field';
@@ -25,9 +25,10 @@ import { UidFieldOptions } from './uid-field';
 import { UUIDFieldOptions } from './uuid-field';
 import { VirtualFieldOptions } from './virtual-field';
 import { FormulaFieldOptions } from './formula-field';
-import { SequenceFieldOptions } from './sequence-field';
+import { SetFieldOptions } from './set-field';
 
 export * from './array-field';
+export * from './set-field';
 export * from './belongs-to-field';
 export * from './belongs-to-many-field';
 export * from './boolean-field';
@@ -49,7 +50,6 @@ export * from './uid-field';
 export * from './uuid-field';
 export * from './virtual-field';
 export * from './formula-field';
-export { SequenceField } from './sequence-field';
 
 export type FieldOptions =
   | BaseFieldOptions
@@ -68,6 +68,7 @@ export type FieldOptions =
   | VirtualFieldOptions
   | FormulaFieldOptions
   | ArrayFieldOptions
+  | SetFieldOptions
   | TimeFieldOptions
   | DateFieldOptions
   | UidFieldOptions
@@ -77,5 +78,4 @@ export type FieldOptions =
   | BelongsToFieldOptions
   | HasOneFieldOptions
   | HasManyFieldOptions
-  | BelongsToManyFieldOptions
-  | SequenceFieldOptions;
+  | BelongsToManyFieldOptions;
