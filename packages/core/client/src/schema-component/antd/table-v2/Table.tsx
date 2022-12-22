@@ -10,7 +10,7 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext } from '../..';
-import { RecordIndexProvider, RecordProvider, useSchemaInitializer, useACLRoleContext, useCollection } from '../../../';
+import { RecordIndexProvider, RecordProvider, useACLRoleContext, useCollection, useSchemaInitializer } from '../../../';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -67,7 +67,7 @@ const useTableColumns = () => {
             return (
               <RecordIndexProvider index={index}>
                 <RecordProvider record={record}>
-                  <RecursionField schema={s} name={index} onlyRenderProperties />
+                  <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
                 </RecordProvider>
               </RecordIndexProvider>
             );

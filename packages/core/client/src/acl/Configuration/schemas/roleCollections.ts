@@ -12,23 +12,36 @@ const collection = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Collection display name")}}',
+        title: '{{t("Collections & Associations")}}',
         type: 'number',
         'x-component': 'Input',
         required: true,
       } as ISchema,
     },
-    // {
-    //   type: 'string',
-    //   name: 'name',
-    //   interface: 'input',
-    //   uiSchema: {
-    //     title: '数据表标识',
-    //     type: 'string',
-    //     'x-component': 'Input',
-    //     description: '使用英文',
-    //   } as ISchema,
-    // },
+    {
+      type: 'string',
+      name: 'name',
+      interface: 'input',
+      uiSchema: {
+        title: '{{t("Resource name")}}',
+        type: 'string',
+        'x-component': 'Input',
+      } as ISchema,
+    },
+    {
+      type: 'string',
+      name: 'type',
+      interface: 'input',
+      uiSchema: {
+        title: '{{t("Resource type")}}',
+        type: 'string',
+        'x-component': 'Select',
+        enum: [
+          { label: '{{t("Collection")}}', value: 'collection', color: 'green' },
+          { label: '{{t("Association")}}', value: 'association', color: 'blue' },
+        ],
+      } as ISchema,
+    },
     {
       type: 'string',
       name: 'usingConfig',
@@ -89,13 +102,25 @@ export const roleCollectionsSchema: ISchema = {
         useDataSource: '{{ cm.useDataSourceFromRAC }}',
       },
       properties: {
-        column1: {
+        column0: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
           'x-component': 'Table.Column',
           properties: {
             title: {
               type: 'number',
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column1: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          properties: {
+            type: {
+              type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
             },

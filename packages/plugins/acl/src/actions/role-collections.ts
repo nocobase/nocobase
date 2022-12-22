@@ -15,6 +15,7 @@ const roleCollectionsResource = {
 
       const db: Database = ctx.db;
       const collectionRepository = db.getRepository('collections');
+      const fieldRepository = db.getRepository('fields');
 
       // all collections
       const [collections, count] = await collectionRepository.findAndCount({
@@ -35,23 +36,52 @@ const roleCollectionsResource = {
         .filter((roleResources) => roleResources.get('usingActionsConfig'))
         .map((roleResources) => roleResources.get('name'));
 
+      const items = collections.map((collection, i) => {
+        const exists = roleResourcesNames.includes(collection.get('name'));
+
+        const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(collection.get('name'))
+          ? 'resourceAction'
+          : 'strategy';
+
+        const c = db.getCollection(collection.get('name'));
+
+        const children = [...c.fields.values()]
+          .filter(
+            (f) => f.options.interface && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(f.options.type),
+          )
+          .map((f, j) => {
+            const name = `${collection.get('name')}.${f.options.name}`;
+            const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(name)
+              ? 'resourceAction'
+              : 'strategy';
+            const exists = roleResourcesNames.includes(name);
+            return {
+              type: 'association',
+              __index: `${i}.children.${j}`,
+              name,
+              collectionName: f.options.target,
+              title: f.options?.uiSchema?.title,
+              roleName: role,
+              usingConfig,
+              exists,
+            };
+          });
+
+        return {
+          type: 'collection',
+          name: collection.get('name') as string,
+          collectionName: collection.get('name'),
+          title: collection.get('title') as string,
+          roleName: role,
+          usingConfig,
+          exists,
+          children: children.length > 0 ? children : null,
+        };
+      });
+
       ctx.body = {
         count,
-        rows: collections.map((collection) => {
-          const exists = roleResourcesNames.includes(collection.get('name'));
-
-          const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(collection.get('name'))
-            ? 'resourceAction'
-            : 'strategy';
-
-          return {
-            name: collection.get('name') as string,
-            title: collection.get('title') as string,
-            roleName: role,
-            usingConfig,
-            exists,
-          };
-        }),
+        rows: items,
         page: Number(page),
         pageSize: Number(pageSize),
         totalPage: totalPage(count, pageSize),
