@@ -78,6 +78,7 @@ const FormItemInitializer = (props) => {
         form.setValuesIn(name, uid());
         insert({
           name,
+          type: 'string',
           'x-component': 'CollectionField',
           'x-collection-field': `posts.${name}`,
           'x-component-props': {},
