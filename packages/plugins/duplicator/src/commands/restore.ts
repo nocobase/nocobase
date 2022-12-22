@@ -49,7 +49,7 @@ async function importCollections(ctx: RestoreContext) {
     collectionName: 'applicationPlugins',
   });
 
-  await app.reload();
+  await ctx.app.reload();
 
   const metaCollections = [
     'uiSchemas',
