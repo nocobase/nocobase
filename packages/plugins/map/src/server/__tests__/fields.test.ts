@@ -145,10 +145,6 @@ describe('fields', () => {
         "polygon": null,
       }
     `);
-
-    const rawResults = await db.sequelize.query('SELECT * from ' + Test.model.tableName);
-
-    console.log(rawResults[0]);
   });
 
   it('empty', async () => {

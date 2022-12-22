@@ -7,7 +7,6 @@ import lodash from 'lodash';
 import fs from 'fs';
 import * as readline from 'readline';
 import { sqlAdapter } from '../utils';
-import app from '../../../../app/server/src';
 
 export default function addRestoreCommand(app: Application) {
   app
