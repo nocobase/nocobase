@@ -22,7 +22,7 @@ export const AssociationFieldsFilterInitializer = () => {
       'x-designer-props': {
         target: field.target,
         fieldNames: {
-          label: 'title',
+          label: 'id',
         },
       },
       'x-decorator': 'CollectionFieldProvider',
