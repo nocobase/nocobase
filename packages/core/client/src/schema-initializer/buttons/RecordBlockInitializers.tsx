@@ -104,7 +104,8 @@ const useRelationFields = () => {
   return relationFields;
 };
 
-const useInheritFields = () => {
+const useInheritFields = (props) => {
+  const { actionInitializers } = props;
   const collection = useCollection();
   const { getChildrenCollections } = useCollectionManager();
   const childrenCollections = getChildrenCollections(collection.name);
@@ -116,14 +117,14 @@ const useInheritFields = () => {
       component: 'RecordReadPrettyFormBlockInitializer',
       icon: false,
       targetCollection: c,
-      actionInitializers: 'CalendarFormActionInitializers',
+      actionInitializers,
     };
   });
 };
 
 export const RecordBlockInitializers = (props: any) => {
   const { t } = useTranslation();
-  const { insertPosition, component } = props;
+  const { insertPosition, component, actionInitializers } = props;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -141,7 +142,7 @@ export const RecordBlockInitializers = (props: any) => {
               type: 'item',
               title: '{{t("Details")}}',
               component: 'RecordReadPrettyFormBlockInitializer',
-              actionInitializers: 'CalendarFormActionInitializers',
+              actionInitializers,
             },
             {
               key: 'form',
@@ -154,7 +155,7 @@ export const RecordBlockInitializers = (props: any) => {
         {
           type: 'itemGroup',
           title: '{{t("Children collection blocks")}}',
-          children: useInheritFields(),
+          children: useInheritFields(props),
         },
         {
           type: 'itemGroup',

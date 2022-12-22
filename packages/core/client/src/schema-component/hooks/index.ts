@@ -6,4 +6,5 @@ export * from './useDesigner';
 export * from './useFieldProps';
 export * from './useSchemaComponentContext';
 export * from './useFieldComponentOptions';
+export * from './useFieldTitle';
 

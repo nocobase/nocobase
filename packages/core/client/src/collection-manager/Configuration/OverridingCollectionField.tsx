@@ -189,6 +189,7 @@ export const OverridingFieldAction = (props) => {
             useCancelAction,
             showReverseFieldConfig: !data?.reverseField,
             createOnly: true,
+            isOverride: true,
             targetScope: { name: childCollections },
             ...scope,
           }}
