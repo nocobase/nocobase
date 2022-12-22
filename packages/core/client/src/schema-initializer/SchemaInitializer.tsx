@@ -10,7 +10,7 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps,
+  SchemaInitializerItemProps
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -37,7 +37,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
   } = props;
   const compile = useCompile();
   let { insertAdjacent, findComponent, designable } = useDesignable();
-  // const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(false);
   const insertSchema = (schema) => {
     if (props.insert) {
       props.insert(wrap(schema));
@@ -117,10 +117,10 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
           }
         `,
       )}
-      // visible={visible}
-      // onVisibleChange={(visible) => {
-      //   setVisible(visible);
-      // }}
+      visible={visible}
+      onVisibleChange={(visible) => {
+        setVisible(visible);
+      }}
       {...dropdown}
       overlay={menu}
     >
