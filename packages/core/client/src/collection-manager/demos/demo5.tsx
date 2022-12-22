@@ -1,5 +1,6 @@
 import { FormLayout } from '@formily/antd';
-import { ISchema } from '@formily/react';
+import { createForm } from '@formily/core';
+import { FormContext, ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   CardItem,
@@ -30,6 +31,7 @@ const schema: ISchema = {
     grid: {
       type: 'void',
       'x-component': 'Grid',
+      'x-read-pretty': true,
       'x-initializer': 'AddFieldButton',
       'x-uid': uid(),
       properties: {},
@@ -53,6 +55,11 @@ const gridRowColWrap = (schema: ISchema) => {
   };
 };
 
+const form = createForm({
+  initialValues: {},
+  // readPretty: true,
+});
+
 const FormItemInitializer = (props) => {
   const { item, insert } = props;
   const { getInterface } = useCollectionManager();
@@ -68,6 +75,7 @@ const FormItemInitializer = (props) => {
         options.name = name;
         options.uiSchema.title = name;
         collection.fields.push(options);
+        form.setValuesIn(name, uid());
         insert({
           name,
           'x-component': 'CollectionField',
@@ -115,9 +123,11 @@ export default function App() {
       <SchemaInitializerProvider initializers={{ AddFieldButton }}>
         <CollectionManagerProvider>
           <CollectionProvider collection={collection}>
-            <FormLayout layout={'vertical'}>
-              <SchemaComponent schema={schema} />
-            </FormLayout>
+            <FormContext.Provider value={form}>
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent schema={schema} />
+              </FormLayout>
+            </FormContext.Provider>
           </CollectionProvider>
         </CollectionManagerProvider>
       </SchemaInitializerProvider>
