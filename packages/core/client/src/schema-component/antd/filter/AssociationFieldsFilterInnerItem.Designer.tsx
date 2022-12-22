@@ -15,7 +15,9 @@ export const AssociationFieldsFilterInnerItemDesigner = (props) => {
   const targetFields = getCollectionFields(fieldSchema['x-designer-props'].target) ?? [];
 
   const options = targetFields
-    .filter((field) => field?.interface && !['subTable'].includes(field?.interface))
+    .filter(
+      (field) => field?.interface && ['id', 'input', 'phone', 'email', 'integer', 'number'].includes(field?.interface),
+    )
     .map((field) => ({
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
