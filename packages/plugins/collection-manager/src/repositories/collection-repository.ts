@@ -50,6 +50,7 @@ export class CollectionRepository extends Repository {
     });
 
     for (const instance of sorted) {
+      console.log(instance.get('name'));
       await instance.load({ skipExist });
     }
   }

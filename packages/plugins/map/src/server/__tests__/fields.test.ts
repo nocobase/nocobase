@@ -94,8 +94,14 @@ describe('fields', () => {
       [3, 4],
       [5, 6],
     ]);
-    model.set('lineString', [[5, 6], [7, 8]]);
-    expect(model.get('lineString')).toMatchObject([[5, 6], [7, 8]]);
+    model.set('lineString', [
+      [5, 6],
+      [7, 8],
+    ]);
+    expect(model.get('lineString')).toMatchObject([
+      [5, 6],
+      [7, 8],
+    ]);
     model.set('circle', [1, 2, 0.5]);
     expect(model.get('circle')).toMatchObject([1, 2, 0.5]);
   });
@@ -139,6 +145,10 @@ describe('fields', () => {
         "polygon": null,
       }
     `);
+
+    const rawResults = await db.sequelize.query('SELECT * from ' + Test.model.tableName);
+
+    console.log(rawResults[0]);
   });
 
   it('empty', async () => {

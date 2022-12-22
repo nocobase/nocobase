@@ -62,13 +62,17 @@ export class PluginManager {
       if (options?.method && ['install', 'upgrade'].includes(options.method)) {
         await this.collection.sync();
       }
+
       const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
+
       if (!exists) {
         return;
       }
+
       if (options?.method !== 'install' || options.reload) {
         await this.repository.load();
       }
+
       this.app.acl.allow('applicationPlugins', 'list');
     });
 

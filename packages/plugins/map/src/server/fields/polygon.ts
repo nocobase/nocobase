@@ -4,34 +4,36 @@ import { isMysql, isPg, joinComma, toValue } from '../helpers';
 
 // @ts-ignore
 class Polygon extends DataTypes.ABSTRACT {
-  key = 'Polygon'
+  key = 'Polygon';
 }
 
 export class PolygonField extends Field {
   constructor(options?: any, context?: FieldContext) {
-    const { name } = options
+    const { name } = options;
     super(
       {
         get() {
-          const value = this.getDataValue(name)
+          const value = this.getDataValue(name);
           if (isPg(context)) {
-            return toValue(value)
+            return toValue(value);
           } else if (isMysql(context)) {
-            return value?.coordinates[0].slice(0, -1) || null
+            return value?.coordinates[0].slice(0, -1) || null;
           } else {
-            return value
+            return value;
           }
         },
         set(value) {
           if (isPg(context)) {
-            value = value ? joinComma(value.map((item: any) => joinComma(item))) : null
+            value = value ? joinComma(value.map((item: any) => joinComma(item))) : null;
           } else if (isMysql(context)) {
-            value = value?.length ? {
-              type: 'Polygon',
-              coordinates: [value.concat([value[0]])]
-            } : null
+            value = value?.length
+              ? {
+                  type: 'Polygon',
+                  coordinates: [value.concat([value[0]])],
+                }
+              : null;
           }
-          this.setDataValue(name, value)
+          this.setDataValue(name, value);
         },
         ...options,
       },
@@ -48,7 +50,6 @@ export class PolygonField extends Field {
       return DataTypes.JSON;
     }
   }
-
 }
 
 export interface PolygonFieldOptions extends BaseColumnFieldOptions {

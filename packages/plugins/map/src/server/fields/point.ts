@@ -9,32 +9,34 @@ class Point extends DataTypes.ABSTRACT {
 
 export class PointField extends Field {
   constructor(options?: any, context?: FieldContext) {
-    const { name } = options
+    const { name } = options;
     super(
       {
         get() {
           const value = this.getDataValue(name);
           if (isPg(context)) {
             if (typeof value === 'string') {
-              return toValue(value)
+              return toValue(value);
             }
-            return value ? [value.x, value.y] : null
+            return value ? [value.x, value.y] : null;
           } else if (isMysql(context)) {
-            return value?.coordinates || null
+            return value?.coordinates || null;
           } else {
-            return value
+            return value;
           }
         },
         set(value) {
           if (isPg(context)) {
-            value = joinComma(value)
+            value = joinComma(value);
           } else if (isMysql(context)) {
-            value = value?.length ? {
-              type: 'Point',
-              coordinates: value
-            } : null
+            value = value?.length
+              ? {
+                  type: 'Point',
+                  coordinates: value,
+                }
+              : null;
           }
-          this.setDataValue(name, value)
+          this.setDataValue(name, value);
         },
         ...options,
       },
@@ -45,13 +47,13 @@ export class PointField extends Field {
   get dataType() {
     if (isPg(this.context)) {
       return Point;
-    } if (isMysql(this.context)) {
+    }
+    if (isMysql(this.context)) {
       return DataTypes.GEOMETRY('POINT');
     } else {
       return DataTypes.JSON;
     }
   }
-
 }
 
 export interface PointFieldOptions extends BaseColumnFieldOptions {

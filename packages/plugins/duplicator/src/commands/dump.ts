@@ -22,7 +22,8 @@ interface DumpContext {
   dir: string;
 }
 
-const fixedPlugins = ['acl', 'workflow', 'ui-schema-storage', 'ui-routes-storage', 'collection-manager'];
+const fixedPlugins = ['collection-manager', 'ui-schema-storage', 'ui-routes-storage', 'acl', 'workflow'];
+const fixedCollections = ['applicationPlugins'];
 
 const optionsPlugins = ['file-manager', 'system-settings'];
 
@@ -47,20 +48,29 @@ async function dumpAction(app) {
     app: app,
   };
 
-  const dumpedCollections = [...getFixedCollections(app), ...(await getCustomCollections(app))];
+  const dumpedCollections = [...fixedCollections, ...getFixedCollections(app), ...(await getCustomCollections(app))];
 
-  console.log(dumpedCollections);
+  for (const collection of dumpedCollections) {
+    await dumpCollection(ctx, {
+      collectionName: collection,
+    });
+  }
 
-  // for (const collection of dumpedCollections) {
-  //   await dumpCollection(ctx, {
-  //     collectionName: collection,
-  //   });
-  // }
-
-  // await packDumpedDir(ctx);
-  // await clearDump(ctx);
+  await dumpMeta(ctx);
+  await packDumpedDir(ctx);
+  await clearDump(ctx);
 
   await app.stop();
+}
+
+export async function dumpMeta(ctx: DumpContext) {
+  const metaPath = path.resolve(ctx.dir, 'meta');
+
+  await fsPromises.writeFile(
+    metaPath,
+    JSON.stringify({ version: ctx.app.version.get(), dialect: ctx.app.db.sequelize.getDialect() }),
+    'utf8',
+  );
 }
 
 export async function dumpCollection(ctx: DumpContext, options: { collectionName: string }) {

@@ -7,6 +7,7 @@ import lodash from 'lodash';
 import fs from 'fs';
 import * as readline from 'readline';
 import { sqlAdapter } from '../utils';
+import app from '../../../../app/server/src';
 
 export default function addRestoreCommand(app: Application) {
   app
@@ -22,7 +23,7 @@ interface RestoreContext {
   dir: string;
 }
 
-async function restoreAction(app, restoreFilePath: string) {
+async function restoreAction(app: Application, restoreFilePath: string) {
   const tmpDir = os.tmpdir();
   const restoreDir = path.resolve(tmpDir, `nocobase-restore-${Date.now()}`);
 
@@ -44,7 +45,44 @@ async function importCollections(ctx: RestoreContext) {
   const collectionsDir = path.resolve(ctx.dir, 'collections');
   const collections = await fsPromises.readdir(collectionsDir);
 
-  for (const collectionName of collections) {
+  // import plugins
+  await importCollection(ctx, {
+    collectionName: 'applicationPlugins',
+  });
+
+  await app.reload();
+
+  const metaCollections = [
+    'uiSchemas',
+    'uiRoutes',
+    'uiSchemaServerHooks',
+    'uiSchemaTemplates',
+    'uiSchemaTreePath',
+    'collections',
+    'fields',
+  ];
+
+  // import collections and uiSchemas
+  for (const collectionName of metaCollections) {
+    await importCollection(ctx, {
+      collectionName,
+    });
+  }
+
+  //@ts-ignore
+  await ctx.app.db.getRepository('collections').load();
+
+  await ctx.app.db.sync({
+    force: false,
+    alter: {
+      drop: false,
+    },
+  });
+
+  const expectedCollections = [...metaCollections, 'applicationPlugins'];
+
+  // import custom collections
+  for (const collectionName of collections.filter((collectionName) => !expectedCollections.includes(collectionName))) {
     await importCollection(ctx, {
       collectionName,
     });
@@ -73,6 +111,8 @@ export async function importCollection(
     clear?: boolean;
   },
 ) {
+  const { app } = ctx;
+  app.log.info(`start import ${options.collectionName}`);
   const { collectionName, insert } = options;
   const collection = ctx.app.db.getCollection(collectionName);
   const collectionDataPath = path.resolve(ctx.dir, 'collections', collectionName, 'data');
@@ -80,10 +120,7 @@ export async function importCollection(
 
   const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
   const meta = JSON.parse(metaContent);
-
-  if (!collection) {
-  }
-
+  app.log.info(`collection meta ${metaContent}`);
   const tableName = meta.tableName;
 
   if (options.clear !== false) {
@@ -91,8 +128,7 @@ export async function importCollection(
     let sql = `TRUNCATE TABLE "${tableName}"`;
 
     if (ctx.app.db.inDialect('sqlite')) {
-      sql = `DELETE
-             FROM "${tableName}"`;
+      sql = `DELETE FROM "${tableName}"`;
     }
 
     await ctx.app.db.sequelize.query(sqlAdapter(ctx.app.db, sql));
@@ -108,14 +144,27 @@ export async function importCollection(
 
   const columns = meta['columns'];
 
+  const fields = columns
+    .map((column) => [column, collection.getField(column)?.type])
+    .reduce((carry, [column, type]) => {
+      carry[column] = type;
+      return carry;
+    }, {});
+
   const inertSQL = `INSERT INTO "${collection.model.tableName}" (${columns.map((c) => `"${c}"`).join(',')})
                     VALUES ${rows
                       .map((row) => {
                         return `(${columns
                           .map((column, index) => {
-                            const data = JSON.parse(row)[index];
+                            let data = JSON.parse(row)[index];
 
-                            if (lodash.isPlainObject(data)) {
+                            const fieldType = fields[column];
+
+                            if (fieldType === 'point') {
+                              return `'(${data.x}, ${data.y})'`;
+                            }
+
+                            if (lodash.isPlainObject(data) || lodash.isArray(data)) {
                               return `'${_escapeString(JSON.stringify(data))}'`;
                             }
 
