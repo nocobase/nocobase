@@ -223,9 +223,9 @@ Blacklist.
 ```bash
 POST  /api/posts:create?blacklist=date
 
+# The date field will be filtered out and not be written to the database
 {
-  "title": "My first post",
-  "date": "2022-05-19"      # The date field will be filtered out and not be written to the database
+  "title": "My first post"
 }
 ```
 
