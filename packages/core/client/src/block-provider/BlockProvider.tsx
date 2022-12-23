@@ -165,8 +165,6 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
     return buf;
   }, null);
 
-  console.log(fieldSchema);
-
   if (associationFilterSchema) {
     return (
       <Component {...field.componentProps}>
