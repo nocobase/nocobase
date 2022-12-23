@@ -47,6 +47,10 @@ async function importCollections(ctx: RestoreContext, options) {
 
   const ignore = lodash.castArray(options.ignore);
 
+  if (ignore.includes('users')) {
+    ignore.push('rolesUsers');
+  }
+
   // import plugins
   await importCollection(ctx, {
     collectionName: 'applicationPlugins',
