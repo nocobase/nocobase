@@ -26,9 +26,16 @@ export const Iframe: any = observer((props: IIframe & { html?: string; htmlId?: 
     return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
   }
 
+  const src = React.useMemo(() => {
+    if (mode === 'html') {
+      return `/api/iframeHtml:getHtml/${htmlId}?token=${api.auth.getToken()}&v=${field.data?.v || ''}`;
+    }
+    return url;
+  }, [url, mode, htmlId, field.data?.v]);
+
   return (
     <RIframe
-      url={`/api/iframeHtml:getHtml/${htmlId}?token=${api.auth.getToken()}&v=${field.data?.v || ''}`}
+      url={src}
       width="100%"
       display="block"
       position="relative"
