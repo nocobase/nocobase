@@ -1,7 +1,7 @@
 import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { sortBy } from 'lodash';
-import { Avatar, Card, Layout, Menu, message, PageHeader, Popconfirm, Spin, Switch, Tabs } from 'antd';
+import { Avatar, Card, Layout, Menu, message, PageHeader, Popconfirm, Spin, Switch, Tabs, Result } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Redirect, useHistory, useRouteMatch } from 'react-router-dom';
@@ -288,7 +288,7 @@ export const getPluginsTabs = (items, snippets) => {
       isAllow: !tabs.every((v) => !v.isAllow),
     };
   });
-  return pluginsTabs;
+  return sortBy(pluginsTabs, (o) => !o.isAllow);
 };
 
 const SettingsCenter = (props) => {
@@ -299,12 +299,13 @@ const SettingsCenter = (props) => {
   const pluginsTabs = getPluginsTabs(items, snippets);
   const compile = useCompile();
   const firstUri = useMemo(() => {
-    const keys = Object.keys(items).sort();
-    const pluginName = keys.shift();
-    const tabName = Object.keys(items?.[pluginName]?.tabs || {}).shift();
+    const pluginName = pluginsTabs[0].key;
+    const tabName = pluginsTabs[0].tabs[0].key;
     return `/admin/settings/${pluginName}/${tabName}`;
-  }, [items]);
+  }, [pluginsTabs]);
   const { pluginName, tabName } = match.params || {};
+  const activePlugin = pluginsTabs.find((v) => v.key === pluginName);
+  const aclPluginTabCheck = activePlugin?.isAllow && activePlugin.tabs.find((v) => v.key === tabName)?.isAllow;
   if (!pluginName) {
     return <Redirect to={firstUri} />;
   }
@@ -383,7 +384,13 @@ const SettingsCenter = (props) => {
               </Tabs>
             }
           />
-          <div style={{ margin: 24 }}>{component && React.createElement(component)}</div>
+          <div style={{ margin: 24 }}>
+            {aclPluginTabCheck ? (
+              component && React.createElement(component)
+            ) : (
+              <Result status="403" title="403" subTitle="Sorry, you are not authorized to access this page." />
+            )}
+          </div>
         </Layout.Content>
       </Layout>
     </div>

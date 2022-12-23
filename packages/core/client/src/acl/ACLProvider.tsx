@@ -11,6 +11,7 @@ import { SchemaComponentOptions, useDesignable, FormItem } from '../schema-compo
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { InternalAdminLayout } from '../route-switch/antd/admin-layout';
+import pathToRegexp from 'path-to-regexp';
 
 export const ACLContext = createContext(null);
 
@@ -25,7 +26,6 @@ export const ACLProvider = (props) => {
 };
 
 const getRouteUrl = (props) => {
-  console.log(props);
   if (props?.match) {
     return props.match;
   }
@@ -65,16 +65,17 @@ export const ACLRolesCheckProvider = (props) => {
       },
     },
   );
-  const routeAclCheck = route && !result.loading && getRouteAclCheck(route, result.data?.data.snippets);
+  const routeAclCheck = route ? !result.loading && getRouteAclCheck(route, result.data?.data.snippets) : true;
   if (result.loading) {
     return <Spin />;
   }
   if (result.error) {
     return <Redirect to={'/signin'} />;
   }
+  if (pathToRegexp('/admin/settings/:pluginName?/:tabName?').test(route.url)) {
+    return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
+  }
   if (!routeAclCheck) {
-    // const Component = useRouteComponent(props.children.props?.route?.component);
-    console.log(props, props.children.props?.route?.component);
     return (
       <ACLContext.Provider value={result}>
         <InternalAdminLayout {...props}>
