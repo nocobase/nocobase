@@ -11,7 +11,8 @@ export class IframeBlockPlugin extends Plugin {
     await this.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
-    this.app.acl.allow('iframeHtml', 'getHtml');
+    this.app.acl.allow('iframeHtml', ['get', 'create', 'update'], 'allowConfigure');
+    this.app.acl.allow('iframeHtml', 'getHtml', 'loggedIn');
     this.app.actions({
       'iframeHtml:getHtml': getHtml,
     });
