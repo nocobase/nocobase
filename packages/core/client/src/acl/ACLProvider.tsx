@@ -127,11 +127,7 @@ export const useACLRoleContext = () => {
   const fieldSchema = useFieldSchema();
   const data = ctx.data?.data;
   const { name, getPrimaryKeyField } = useCollection();
-  const result =
-    fieldSchema && isBlockRequest(fieldSchema) ? useBlockRequestContext() : { service: useResourceActionContext() };
-  const { meta } = result?.service?.data || {};
-  const { allowedActions } = meta || {};
-
+  const result = useBlockRequestContext() || { service: useResourceActionContext() };
   return {
     ...data,
     getActionParams(actionPath: string, { skipOwnCheck, isOwn }) {
@@ -141,8 +137,10 @@ export const useACLRoleContext = () => {
       const resourceName = aclData[0];
       const actionName = last(aclData);
       const act = getActionName(actionName);
-      const aclActionScope = allowedActions?.[act] || [];
       if (isAclScope) {
+        const { meta } = result?.service?.data || {};
+        const { allowedActions } = meta || {};
+        const aclActionScope = allowedActions?.[act] || [];
         return Object.keys(record).length && aclActionScope.length >= 0
           ? aclActionScope?.includes(record[getPrimaryKeyField(name).name])
           : true;
@@ -202,23 +200,18 @@ export const ACLCollectionProvider = (props) => {
   return <ACLcollectionParamsContext.Provider value={params}>{props.children}</ACLcollectionParamsContext.Provider>;
 };
 
-const isBlockRequest = (schema) => {
-  if (schema['x-decorator'] === 'TableBlockProvider') {
-    return true;
-  } else {
-    return schema.parent && isBlockRequest(schema.parent);
-  }
-};
 
 export const ACLActionProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const field = useField<any>();
   const { name } = useCollection();
   const isOwn = useRecordIsOwn();
+  const record = useRecord();
   const { allowAll, getActionParams, resources } = useACLRoleContext();
   const actionName = fieldSchema['x-action'];
   const aclResource = fieldSchema.parent['x-acl-resource'] || [];
   const resourceName = aclResource.find((v) => resources.includes(v));
+  fieldSchema['x-acl-scope'] = Object.keys(record).length > 0;
   const path = fieldSchema['x-acl-action']?.includes(':')
     ? fieldSchema['x-acl-action']
     : `${resourceName || name}:${fieldSchema['x-acl-action'] || actionName}`;
