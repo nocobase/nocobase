@@ -1,7 +1,7 @@
 import cls from 'classnames';
 import React, { MouseEvent, ChangeEvent, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/css';
-import { Button, Col, Collapse, Input, Row, Tree } from 'antd';
+import { Col, Collapse, Input, Row, Tree } from 'antd';
 import { SearchOutlined, CloseOutlined } from '@ant-design/icons';
 import { useCollectionField } from '../../../collection-manager';
 import { useFieldSchema } from '@formily/react';
@@ -172,8 +172,6 @@ export const AssociationFieldsFilterInnerItem = (props) => {
             }
             & .ant-collapse-header {
               padding: 10px !important;
-            }
-            & .ant-collapse-header {
               background: #fafafa;
             }
           `}
@@ -182,7 +180,9 @@ export const AssociationFieldsFilterInnerItem = (props) => {
               className={css`
                 align-items: center;
                 width: 100%;
+                height: 22px;
                 flex-wrap: nowrap;
+                ${searchVisible ? 'border-bottom: 1px solid #dcdcdc;' : ''}
               `}
               gutter={5}
             >
@@ -192,7 +192,22 @@ export const AssociationFieldsFilterInnerItem = (props) => {
                 `}
               >
                 {searchVisible ? (
-                  <Input size="small" onClick={handleSearchClick} onChange={handleSearchInput} />
+                  <input
+                    autoFocus
+                    placeholder="Search..."
+                    className={css`
+                      outline: none;
+                      background: #fafafa;
+                      width: 100%;
+                      border: none;
+                      height: 20px;
+                      &::placeholder {
+                        color: #dcdcdc;
+                      }
+                    `}
+                    onClick={handleSearchClick}
+                    onChange={handleSearchInput}
+                  />
                 ) : (
                   compile(collectionField.uiSchema.title)
                 )}
@@ -202,26 +217,36 @@ export const AssociationFieldsFilterInnerItem = (props) => {
                   flex: 0 0 auto;
                 `}
               >
-                <Button
-                  size="small"
-                  type="text"
-                  shape="circle"
-                  icon={searchVisible ? <CloseOutlined /> : <SearchOutlined />}
-                  onClick={handleSearchToggle}
-                />
+                {searchVisible ? (
+                  <CloseOutlined
+                    className={css`
+                      color: #aeaeae !important;
+                      font-size: 11px;
+                    `}
+                    onClick={handleSearchToggle}
+                  />
+                ) : (
+                  <SearchOutlined
+                    className={css`
+                      color: #aeaeae !important;
+                    `}
+                    onClick={handleSearchToggle}
+                  />
+                )}
               </Col>
             </Row>
           }
           key={collectionField.uiSchemaUid}
         >
           <Tree
-            style={{ padding: 0 }}
+            style={{ padding: '16px 0' }}
             onExpand={onExpand}
             expandedKeys={expandedKeys}
             autoExpandParent={autoExpandParent}
             treeData={treeData}
             onSelect={onSelect}
             selectedKeys={selectedKeys}
+            blockNode
           />
         </Panel>
       </Collapse>

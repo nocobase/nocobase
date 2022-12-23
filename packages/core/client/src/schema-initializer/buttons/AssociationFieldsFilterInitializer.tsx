@@ -42,7 +42,7 @@ export const AssociationFieldsFilterInitializer = () => {
 
   const associatedFieldGroup: SchemaInitializerItemOptions = {
     type: 'itemGroup',
-    title: t('关联'),
+    title: t('Association fields'),
     children: items,
   };
 
