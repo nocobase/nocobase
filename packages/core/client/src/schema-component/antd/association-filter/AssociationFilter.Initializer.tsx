@@ -1,10 +1,10 @@
 import { css } from '@emotion/css';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, SchemaInitializerItemOptions } from '..';
-import { useCollection } from '../../collection-manager';
+import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
+import { useCollection } from '../../../collection-manager';
 
-export const AssociationFieldsFilterInitializer = () => {
+export const AssociationFilterInitializer = () => {
   const { t } = useTranslation();
   const { fields } = useCollection();
 
@@ -16,13 +16,13 @@ export const AssociationFieldsFilterInitializer = () => {
     type: 'item',
     key: field.key,
     title: field.uiSchema.title,
-    component: 'AssociationFieldsFilterActionInitializerItem',
+    component: 'AssociationFilterDesignerDisplayField',
     collectionFieldKey: field.key,
     schema: {
       name: field.name,
       type: 'void',
       'x-target-collection': field.target,
-      'x-designer': 'AssociationFieldsFilterInnerItem.Designer',
+      'x-designer': 'AssociationFilter.Item.Designer',
       'x-designer-props': {
         fieldNames: {
           label: 'id',
@@ -32,7 +32,7 @@ export const AssociationFieldsFilterInitializer = () => {
       'x-decorator-props': {
         name: field.name,
       },
-      'x-component': 'AssociationFieldsFilterInnerItem',
+      'x-component': 'AssociationFilter.Item',
       properties: {},
     },
   }));
@@ -50,7 +50,7 @@ export const AssociationFieldsFilterInitializer = () => {
   const deleteItem: SchemaInitializerItemOptions = {
     type: 'item',
     title: t('Delete'),
-    component: 'AssociationFieldsFilterInitializerDelete',
+    component: 'AssociationFilterDesignerDelete',
   };
 
   return (

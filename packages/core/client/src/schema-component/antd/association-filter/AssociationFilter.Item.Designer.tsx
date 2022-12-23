@@ -5,7 +5,7 @@ import { useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 
-export const AssociationFieldsFilterInnerItemDesigner = (props) => {
+export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { getCollectionFields } = useCollectionManager();

@@ -63,7 +63,7 @@ export const TableActionInitializers = {
       },
       find: (schema: Schema) => {
         const resultSchema = Object.entries(schema.parent.properties).find(
-          ([, value]) => value['x-component'] === 'AssociationFieldsFilter',
+          ([, value]) => value['x-component'] === 'AssociationFilter',
         )?.[1];
         return resultSchema;
       },

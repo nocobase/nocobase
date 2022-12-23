@@ -1,11 +1,11 @@
 import React, { useContext } from 'react';
 import { useFieldSchema } from '@formily/react';
-import { SchemaInitializer } from '../SchemaInitializer';
-import { createDesignable, SchemaComponentContext } from '../../schema-component';
-import { useAPIClient } from '../../api-client';
+import { SchemaInitializer } from '../../../schema-initializer/SchemaInitializer';
+import { createDesignable, SchemaComponentContext } from '../..';
+import { useAPIClient } from '../../../api-client';
 import { useTranslation } from 'react-i18next';
 
-export const AssociationFieldsFilterInitializerDelete = (props) => {
+export const AssociationFilterDesignerDelete = (props) => {
   const { refresh } = useContext(SchemaComponentContext);
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();

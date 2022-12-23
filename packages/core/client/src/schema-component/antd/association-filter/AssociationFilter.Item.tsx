@@ -7,14 +7,13 @@ import { useCollectionField } from '../../../collection-manager';
 import { useFieldSchema } from '@formily/react';
 import { useResource } from '../../../api-client';
 import { useCompile, useDesigner } from '../../hooks';
-import { AssociationFieldsFilterInnerItemDesigner } from './AssociationFieldsFilterInnerItem.Designer';
 import { SortableItem } from '../../common';
 import { SharedFilterContext } from '../../../block-provider/SharedFilterProvider';
 import { useBlockRequestContext } from '../../../block-provider';
 
 const { Panel } = Collapse;
 
-export const AssociationFieldsFilterInnerItem = (props) => {
+export const AssociationFilterItem = (props) => {
   const collectionField = useCollectionField();
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
@@ -245,5 +244,3 @@ export const AssociationFieldsFilterInnerItem = (props) => {
     </SortableItem>
   );
 };
-
-AssociationFieldsFilterInnerItem.Designer = AssociationFieldsFilterInnerItemDesigner;

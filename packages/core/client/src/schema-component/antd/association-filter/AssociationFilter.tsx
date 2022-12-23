@@ -5,8 +5,11 @@ import { useDesigner } from '../../hooks';
 import { SortableItem } from '../../common';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { useFieldSchema } from '@formily/react';
+import { AssociationFilterInitializer } from './AssociationFilter.Initializer';
+import { AssociationFilterItem } from './AssociationFilter.Item';
+import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
 
-export const AssociationFieldsFilter = (props) => {
+export const AssociationFilter = (props) => {
   const Designer = useDesigner();
   const filedSchema = useFieldSchema();
 
@@ -68,3 +71,9 @@ export const AssociationFieldsFilter = (props) => {
     </SortableItem>
   );
 };
+
+AssociationFilter.Initializer = AssociationFilterInitializer;
+AssociationFilter.Item = AssociationFilterItem as typeof AssociationFilterItem & {
+  Designer: typeof AssociationFilterItemDesigner;
+};
+AssociationFilter.Item.Designer = AssociationFilterItemDesigner;

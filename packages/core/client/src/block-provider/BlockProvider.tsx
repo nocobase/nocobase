@@ -159,7 +159,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   const field = useField();
   const Component = findComponent(field.component?.[0]) || React.Fragment;
   const associationFilterSchema = fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'AssociationFieldsFilter') {
+    if (s['x-component'] === 'AssociationFilter') {
       return s;
     }
     return buf;
@@ -177,7 +177,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
             <RecursionField
               schema={fieldSchema}
               onlyRenderProperties
-              filterProperties={(s) => s['x-component'] === 'AssociationFieldsFilter'}
+              filterProperties={(s) => s['x-component'] === 'AssociationFilter'}
             />
           </Col>
           <Col
@@ -188,7 +188,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
             <RecursionField
               schema={fieldSchema}
               onlyRenderProperties
-              filterProperties={(s) => s['x-component'] !== 'AssociationFieldsFilter'}
+              filterProperties={(s) => s['x-component'] !== 'AssociationFilter'}
             />
           </Col>
         </Row>

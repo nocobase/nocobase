@@ -1,9 +1,9 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../api-client';
-import { createDesignable, SchemaComponentContext, useDesignable } from '../../schema-component';
-import { ActionInitializer } from './ActionInitializer';
+import { useAPIClient } from '../../../api-client';
+import { createDesignable, SchemaComponentContext, useDesignable } from '../..';
+import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
 export const AssociationFieldsFilterActionInitializer = (props) => {
   const { refresh } = useContext(SchemaComponentContext);
@@ -20,8 +20,8 @@ export const AssociationFieldsFilterActionInitializer = (props) => {
   const schema = {
     type: 'void',
     'x-action': 'associateFilter',
-    'x-initializer': 'AssociationFieldsFilterInitializer',
-    'x-component': 'AssociationFieldsFilter',
+    'x-initializer': 'AssociationFilter.Initializer',
+    'x-component': 'AssociationFilter',
     properties: {},
   };
 

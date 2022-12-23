@@ -1,10 +1,10 @@
 import React from 'react';
 import { merge } from '@formily/shared';
 
-import { SchemaInitializer } from '..';
-import { useCurrentSchema } from '../utils';
+import { SchemaInitializer } from '../../../schema-initializer';
+import { useCurrentSchema } from '../../../schema-initializer/utils';
 
-export const AssociationFieldsFilterActionInitializerItem = (props) => {
+export const AssociationFilterDesignerDisplayField = (props) => {
   const { collectionFieldKey, schema, item, insert } = props;
   const { exists, remove } = useCurrentSchema(schema.name, 'name', item.find, item.remove);
   return (
