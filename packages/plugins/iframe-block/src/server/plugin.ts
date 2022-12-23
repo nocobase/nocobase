@@ -12,9 +12,6 @@ export class IframeBlockPlugin extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
     this.app.acl.allow('iframeHtml', 'getJson');
-    this.app.acl.allow('iframeHtml', 'get');
-    this.app.acl.allow('iframeHtml', 'create');
-    this.app.acl.allow('iframeHtml', 'update');
     this.app.resource({
       name: 'iframeHtml',
       actions: {
