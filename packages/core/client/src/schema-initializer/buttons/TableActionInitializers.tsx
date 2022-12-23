@@ -57,7 +57,7 @@ export const TableActionInitializers = {
     {
       type: 'item',
       title: "{{t('Association fields filter')}}",
-      component: 'AssociationFieldsFilterActionInitializer',
+      component: 'ActionBarAssociationFilterAction',
       schema: {
         'x-align': 'left',
       },

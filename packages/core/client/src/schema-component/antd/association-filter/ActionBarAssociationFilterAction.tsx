@@ -5,7 +5,7 @@ import { useAPIClient } from '../../../api-client';
 import { createDesignable, SchemaComponentContext, useDesignable } from '../..';
 import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
-export const AssociationFieldsFilterActionInitializer = (props) => {
+export const ActionBarAssociationFilterAction = (props) => {
   const { refresh } = useContext(SchemaComponentContext);
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
