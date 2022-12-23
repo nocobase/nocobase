@@ -174,13 +174,16 @@ const ACLActionParamsContext = createContext<any>({});
 export const ACLcollectionParamsContext = createContext<any>({});
 
 export const ACLCollectionProvider = (props) => {
-  const { allowAll, getActionParams } = useACLRoleContext();
+  const { allowAll, getActionParams, resources } = useACLRoleContext();
   const fieldSchema = useFieldSchema();
   const isOwn = useRecordIsOwn();
   if (allowAll) {
     return <>{props.children}</>;
   }
-  const path = fieldSchema['x-acl-action'];
+  const aclAction = fieldSchema['x-acl-action'];
+  const aclResource = fieldSchema['x-acl-resource'];
+  const resourceName = aclResource?.find((v) => resources.includes(v));
+  const path = resourceName?`${resourceName}:${last(aclAction.split(':'))}`:aclAction;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
   if (!path) {
     return <>{props.children}</>;
@@ -205,17 +208,15 @@ export const ACLActionProvider = (props) => {
   const field = useField<any>();
   const { name } = useCollection();
   const isOwn = useRecordIsOwn();
-  const { allowAll, getActionParams } = useACLRoleContext();
+  const { allowAll, getActionParams, resources } = useACLRoleContext();
   const actionName = fieldSchema['x-action'];
-  const resourceName = fieldSchema.parent['x-acl-resource'];
+  const aclResource = fieldSchema.parent['x-acl-resource'] || [];
+  const resourceName = aclResource.find((v) => resources.includes(v));
   const path = fieldSchema['x-acl-action']?.includes(':')
     ? fieldSchema['x-acl-action']
     : `${resourceName || name}:${fieldSchema['x-acl-action'] || actionName}`;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
   const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
-  console.log(fieldSchema);
-  console.log(path, params);
-
   useEffect(() => {
     if (allowAll) {
       field.disabled = false;
@@ -232,25 +233,14 @@ export const ACLActionProvider = (props) => {
 export const ACLCollectionFieldProvider = (props) => {
   const { name } = useCollection();
   const fieldSchema = useFieldSchema();
-  const { allowAll, getActionParams } = useACLRoleContext();
-  const actionName = fieldSchema['x-action'] || 'view';
-  const findAclAction = (schema) => {
-    if (schema['x-acl-action']) {
-      return schema['x-acl-action'];
-    } else {
-      return schema.parent ? findAclAction(schema.parent) : `${name}:${actionName}`;
-    }
-  };
-  fieldSchema['x-acl-scope'] = false;
-  const path = findAclAction(fieldSchema);
-  const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
-  const isOwn = useRecordIsOwn();
+  const { allowAll } = useACLRoleContext();
+  const params=useContext(ACLcollectionParamsContext);
   if (!name || allowAll) {
     return <FormItem>{props.children}</FormItem>;
   }
-  const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
+  const fieldWhiteList=params?.whitelist || params?.fields?.concat(params?.appends)
   const aclFieldCheck =
-    params?.whitelist || params?.fields ? (params.whitelist || params.fields)?.includes(fieldSchema.name) : true;
+  fieldWhiteList ? (fieldWhiteList)?.includes(fieldSchema.name) : true;
   if (!aclFieldCheck) {
     return null;
   }

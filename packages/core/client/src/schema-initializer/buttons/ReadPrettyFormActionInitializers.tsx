@@ -108,6 +108,7 @@ export const ReadPrettyFormActionInitializers = {
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-action': 'customize:update',
+            'x-decorator': 'ACLActionProvider',
             'x-acl-action': 'update',
             'x-action-settings': {
               assignedValues: {},
@@ -130,6 +131,7 @@ export const ReadPrettyFormActionInitializers = {
             title: '{{ t("Custom request") }}',
             'x-component': 'Action',
             'x-action': 'customize:form:request',
+            'x-decorator': 'ACLActionProvider',
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               requestSettings: {},
