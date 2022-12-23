@@ -20,9 +20,7 @@ export const IframeDesigner = () => {
     if (mode === 'html') {
       const {
         data: { data },
-      } = await api.request({
-        url: `/iframeHtml:getJson/${htmlId}`,
-      });
+      } = await api.resource('iframeHtml').get({ filterByTk: htmlId });
       html = data?.html;
     }
     setInitialValues({ mode, url, html, height });
@@ -35,17 +33,22 @@ export const IframeDesigner = () => {
     componentProps['mode'] = mode;
     componentProps['height'] = height;
     if (mode === 'html') {
-      let { htmlId } = componentProps;
-      const requestUrl = htmlId ? `/iframeHtml:update/${htmlId}` : '/iframeHtml:create';
-      const {
-        data: { data },
-      } = await api.request({
-        url: requestUrl,
-        method: 'post',
-        data: { html },
-      });
+      const { htmlId } = componentProps;
+      const response = htmlId
+        ? await api.resource('iframeHtml').update({
+            filterByTk: htmlId,
+            values: { html },
+          })
+        : await api.resource('iframeHtml').create({
+            values: { html },
+          });
+
+      let data = response?.data?.data;
+      if (Array.isArray(data)) {
+        data = data[0];
+      }
       componentProps['url'] = null;
-      componentProps['html'] = html;
+      componentProps['html'] = data.html;
       componentProps['htmlId'] = data.id;
     } else {
       componentProps['url'] = url;

@@ -23,7 +23,7 @@ export const Iframe: any = observer((props: IIframe & { html?: string; htmlId?: 
     if (mode === 'html') {
       if (htmlId) {
         setInternalUrl('');
-        setTimeout(() => setInternalUrl(`/api/iframeHtml:get/${htmlId}`), 0);
+        setTimeout(() => setInternalUrl(`/api/iframeHtml:getHtml/${htmlId}`), 0);
       }
     } else {
       url && setInternalUrl(url);

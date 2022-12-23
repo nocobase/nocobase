@@ -1,6 +1,6 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import path from 'path';
-import { createHtml, getHtml, getJson, updateHtml } from './actions';
+import { getHtml } from './actions';
 
 export class IframeBlockPlugin extends Plugin {
   afterAdd() {}
@@ -11,15 +11,9 @@ export class IframeBlockPlugin extends Plugin {
     await this.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
-    this.app.acl.allow('iframeHtml', 'getJson');
-    this.app.resource({
-      name: 'iframeHtml',
-      actions: {
-        getJson,
-        get: getHtml,
-        create: createHtml,
-        update: updateHtml,
-      },
+    this.app.acl.allow('iframeHtml', 'getHtml');
+    this.app.actions({
+      'iframeHtml:getHtml': getHtml,
     });
   }
 
