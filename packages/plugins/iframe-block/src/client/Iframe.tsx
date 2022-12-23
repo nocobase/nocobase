@@ -1,6 +1,6 @@
 import { observer } from '@formily/react';
 import { Card } from 'antd';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import RIframe from 'react-iframe';
 import type { IIframe } from 'react-iframe/types';
@@ -14,15 +14,27 @@ function isNumeric(str: string) {
   ); // ...and ensure strings of whitespace fail
 }
 
-export const Iframe: any = observer((props: IIframe) => {
-  const { url, height, ...others } = props;
+export const Iframe: any = observer((props: IIframe & { html?: string; htmlId?: number; mode: string }) => {
+  const { url, htmlId, mode, height, html, ...others } = props;
+  const [internalUrl, setInternalUrl] = useState<string>('');
   const { t } = useTranslation();
-  if (!url) {
+
+  useEffect(() => {
+    if (mode === 'html') {
+      if (htmlId) {
+        setInternalUrl('');
+        setTimeout(() => setInternalUrl(`/api/iframeHtml:get/${htmlId}`), 0);
+      }
+    } else {
+      url && setInternalUrl(url);
+    }
+  }, [url, htmlId, mode, html]);
+  if (!internalUrl) {
     return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
   }
   return (
     <RIframe
-      url={url}
+      url={internalUrl}
       width="100%"
       display="block"
       position="relative"
