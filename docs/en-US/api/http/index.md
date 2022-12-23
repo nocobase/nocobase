@@ -4,16 +4,16 @@ HTTP API of NocoBase is designed based on Resource & Action, a superset of REST 
 
 ## Resource
 
-Resource has two expressions in NocoBase:
+In NocoBase, resource has two expressions:
 
 - `<collection>`
 - `<collection>.<association>`
 
 <Alert>
 
-- collection is the set of all abstract data
-- association is the associated data of collection
-- resource includes both collection and collection.association
+- Collection is the set of all abstract data
+- Association is the associated data of collection
+- Resource includes both collection and collection.association
 
 </Alert>
 
@@ -25,12 +25,12 @@ Resource has two expressions in NocoBase:
 
 ## Action
 
-Resource action is expressed by `:<action>`
+Action on resource is expressed by `:<action>`
 
 - `<collection>:<action>`
 - `<collection>.<association>:<action>`
 
-Built-in global actions for collection or association
+Built-in global actions for collection or association:
 
 - `create`
 - `get`
@@ -39,7 +39,7 @@ Built-in global actions for collection or association
 - `destroy`
 - `move`
 
-Built-in association actions for association only
+Built-in association actions for association only:
 
 - `set`
 - `add`
@@ -49,8 +49,8 @@ Built-in association actions for association only
 ### Example
 
 - `posts:create` Create post
-- `posts.user:get` View post user
-- `posts.tags:add` Attach tags to post (associate existing tags with post)
+- `posts.user:get` Get post user
+- `posts.tags:add` Add tags to post (associate existing tags with post)
 
 ## Request URL
 
@@ -97,10 +97,10 @@ GET   /api/posts/1/tags:remove
 
 ## Locate Resource
 
-- collection resource locates the data to be processed by `collectionIndex`, `collectionIndex` must be unique
-- association resource locates the data to be processed by `collectionIndex` and `associationIndex` jointly, `associationIndex` may not be unique, but the joint index of `collectionIndex` and `associationIndex` must be unique
+- Collection resource locates the data to be processed by `collectionIndex`, `collectionIndex` must be unique.
+- Association resource locates the data to be processed by `collectionIndex` and `associationIndex` jointly, `associationIndex` may not be unique, but the joint index of `collectionIndex` and `associationIndex` must be unique.
 
-When viewing details of association resource, the requested URL needs to provide both `<collectionIndex>` and `<associationIndex>`, `<collectionIndex>` is needed as `<associationIndex>` may not be unique.
+When viewing details of association resource, the requested URL needs to provide both `<collectionIndex>` and `<associationIndex>`, `<collectionIndex>` is necessary as `<associationIndex>` may not be unique.
 
 For example, `tables.fields` represents the fields of a data table:
 
@@ -231,7 +231,7 @@ POST  /api/posts:create?blacklist=date
 
 ## Request Response
 
-Format of the response is:
+Format of the response:
 
 ```ts
 type ResponseResult = {
