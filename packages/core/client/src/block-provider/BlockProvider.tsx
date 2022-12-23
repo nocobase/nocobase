@@ -153,57 +153,60 @@ export const useBlockRequestContext = () => {
   return useContext(BlockRequestContext);
 };
 
-export const BlockProvider = (props) => {
-  const { collection, association } = props;
-  const resource = useResource(props);
+export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   const fieldSchema = useFieldSchema();
   const { findComponent } = useDesignable();
   const field = useField();
+  const Component = findComponent(field.component?.[0]) || React.Fragment;
   const associationFilterSchema = fieldSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'AssociationFieldsFilter') {
       return s;
     }
     return buf;
   }, null);
+  if (associationFilterSchema) {
+    return (
+      <Component {...field.componentProps}>
+        <Row gutter={16}>
+          <Col
+            className={css`
+              width: 200px;
+              flex: 0 0 auto;
+            `}
+          >
+            <RecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              filterProperties={(s) => s['x-component'] === 'AssociationFieldsFilter'}
+            />
+          </Col>
+          <Col
+            className={css`
+              flex: 1 1 auto;
+            `}
+          >
+            <RecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              filterProperties={(s) => s['x-component'] !== 'AssociationFieldsFilter'}
+            />
+          </Col>
+        </Row>
+      </Component>
+    );
+  }
+  return props.children;
+};
+
+export const BlockProvider = (props) => {
+  const { collection, association } = props;
+  const resource = useResource(props);
   return (
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
         <BlockResourceContext.Provider value={resource}>
           <BlockRequestProvider {...props}>
-            <SharedFilterProvider {...props}>
-              {associationFilterSchema
-                ? React.createElement(
-                    findComponent(field.component?.[0] || 'div'),
-                    field.componentProps,
-
-                    <Row gutter={16}>
-                      <Col
-                        className={css`
-                          width: 200px;
-                          flex: 0 0 auto;
-                        `}
-                      >
-                        <RecursionField
-                          schema={fieldSchema}
-                          onlyRenderProperties
-                          filterProperties={(s) => s['x-component'] === 'AssociationFieldsFilter'}
-                        />
-                      </Col>
-                      <Col
-                        className={css`
-                          flex: 1 1 auto;
-                        `}
-                      >
-                        <RecursionField
-                          schema={fieldSchema}
-                          onlyRenderProperties
-                          filterProperties={(s) => s['x-component'] !== 'AssociationFieldsFilter'}
-                        />
-                      </Col>
-                    </Row>,
-                  )
-                : props.children}
-            </SharedFilterProvider>
+            <SharedFilterProvider {...props} />
           </BlockRequestProvider>
         </BlockResourceContext.Provider>
       </BlockAssociationContext.Provider>

@@ -1,14 +1,16 @@
+import { css } from '@emotion/css';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaInitializerItemOptions } from '..';
 import { useCollection } from '../../collection-manager';
-import { css } from '@emotion/css';
 
 export const AssociationFieldsFilterInitializer = () => {
   const { t } = useTranslation();
   const { fields } = useCollection();
 
-  const associatedFields = fields.filter((field) => ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface));
+  const associatedFields = fields.filter((field) =>
+    ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m'].includes(field.interface),
+  );
 
   const items: SchemaInitializerItemOptions[] = associatedFields.map((field) => ({
     type: 'item',
