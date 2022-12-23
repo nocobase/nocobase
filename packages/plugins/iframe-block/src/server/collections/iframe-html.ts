@@ -13,7 +13,7 @@ export default {
       allowNull: false,
     },
     {
-      type: 'string',
+      type: 'text',
       name: 'html',
     },
   ],
