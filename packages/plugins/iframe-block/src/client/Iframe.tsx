@@ -16,15 +16,11 @@ function isNumeric(str: string | undefined) {
 }
 
 export const Iframe: any = observer((props: IIframe & { html?: string; htmlId?: number; mode: string }) => {
-  const { url, htmlId, mode, height, html, ...others } = props;
+  const { url, htmlId, mode = 'url', height, html, ...others } = props;
 
   const { t } = useTranslation();
   const api = useAPIClient();
   const field = useField();
-
-  if ((mode !== 'html' && !url) || (mode !== 'html' && !htmlId)) {
-    return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
-  }
 
   const src = React.useMemo(() => {
     if (mode === 'html') {
@@ -32,6 +28,10 @@ export const Iframe: any = observer((props: IIframe & { html?: string; htmlId?: 
     }
     return url;
   }, [url, mode, htmlId, field.data?.v]);
+
+  if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
+    return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
+  }
 
   return (
     <RIframe
