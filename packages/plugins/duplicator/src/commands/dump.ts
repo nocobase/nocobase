@@ -24,14 +24,27 @@ interface DumpContext {
 
 const fixedPlugins = ['collection-manager', 'ui-schema-storage', 'ui-routes-storage', 'acl', 'workflow'];
 
-const ignorePlugins = ['error-handler', 'client', 'export', 'import', 'sample-hello', 'audit-logs', 'china-region'];
+const ignorePlugins = [
+  'error-handler',
+  'client',
+  'export',
+  'import',
+  'sample-hello',
+  'audit-logs',
+  'china-region',
+  'system-settings',
+  'verification',
+  'oidc',
+  'saml',
+  'map',
+  'sequence-field',
+  'duplicator',
+];
 
 const fixedCollections = ['applicationPlugins'];
 
-const optionsPlugins = ['file-manager', 'system-settings'];
-
-function getFixedCollections(app) {
-  return [...fixedPlugins, ...optionsPlugins]
+function getPluginCollections(app: Application, plugins: string[]) {
+  return plugins
     .map((pluginName) => {
       return app.db.importedFrom.get(pluginName) || [];
     })
@@ -51,11 +64,9 @@ async function getCustomCollections(app) {
 
 async function dumpAction(app) {
   const appPlugins = await getAppPlugins(app);
-  const usersPlugins = appPlugins.filter((pluginName) => ![...fixedCollections, ...ignorePlugins].includes(pluginName));
+  const excludePlugins = [...fixedPlugins, ...ignorePlugins];
+  const usersPlugins = appPlugins.filter((pluginName) => !excludePlugins.includes(pluginName));
 
-  console.log(usersPlugins);
-
-  return;
   const dumpedDir = path.resolve(os.tmpdir(), `nocobase-dump-${Date.now()}`);
 
   const ctx: DumpContext = {
@@ -63,7 +74,12 @@ async function dumpAction(app) {
     app: app,
   };
 
-  const dumpedCollections = [...fixedCollections, ...getFixedCollections(app), ...(await getCustomCollections(app))];
+  const dumpedCollections = [
+    ...fixedCollections,
+    ...getPluginCollections(app, fixedPlugins),
+    ...getPluginCollections(app, usersPlugins),
+    ...(await getCustomCollections(app)),
+  ];
 
   for (const collection of dumpedCollections) {
     await dumpCollection(ctx, {
