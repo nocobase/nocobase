@@ -122,7 +122,7 @@ const MenuEditor = (props) => {
   );
 };
 
-const InternalAdminLayout = (props: any) => {
+export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
   const [sideMenuWidth, setSideMenuWidth] = useState(0);
 

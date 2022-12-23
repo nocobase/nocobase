@@ -10,6 +10,7 @@ import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable, FormItem } from '../schema-component';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
+import { InternalAdminLayout } from '../route-switch/antd/admin-layout';
 
 export const ACLContext = createContext(null);
 
@@ -24,10 +25,11 @@ export const ACLProvider = (props) => {
 };
 
 const getRouteUrl = (props) => {
+  console.log(props);
   if (props?.match) {
     return props.match;
   }
-  return getRouteUrl(props.children.props);
+  return props && getRouteUrl(props?.children?.props);
 };
 
 const getRouteAclCheck = (match, snippets) => {
@@ -63,7 +65,7 @@ export const ACLRolesCheckProvider = (props) => {
       },
     },
   );
-  const routeAclCheck = !result.loading && getRouteAclCheck(route, result.data?.data.snippets);
+  const routeAclCheck = route && !result.loading && getRouteAclCheck(route, result.data?.data.snippets);
   if (result.loading) {
     return <Spin />;
   }
@@ -71,9 +73,13 @@ export const ACLRolesCheckProvider = (props) => {
     return <Redirect to={'/signin'} />;
   }
   if (!routeAclCheck) {
+    // const Component = useRouteComponent(props.children.props?.route?.component);
+    console.log(props, props.children.props?.route?.component);
     return (
       <ACLContext.Provider value={result}>
-        <Result status="403" title="403" subTitle="Sorry, you are not authorized to access this page." />
+        <InternalAdminLayout {...props}>
+          <Result status="403" title="403" subTitle="Sorry, you are not authorized to access this page." />
+        </InternalAdminLayout>
       </ACLContext.Provider>
     );
   }
@@ -183,7 +189,7 @@ export const ACLCollectionProvider = (props) => {
   const aclAction = fieldSchema['x-acl-action'];
   const aclResource = fieldSchema['x-acl-resource'];
   const resourceName = aclResource?.find((v) => resources.includes(v));
-  const path = resourceName?`${resourceName}:${last(aclAction.split(':'))}`:aclAction;
+  const path = resourceName ? `${resourceName}:${last(aclAction.split(':'))}` : aclAction;
   const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
   if (!path) {
     return <>{props.children}</>;
@@ -234,13 +240,12 @@ export const ACLCollectionFieldProvider = (props) => {
   const { name } = useCollection();
   const fieldSchema = useFieldSchema();
   const { allowAll } = useACLRoleContext();
-  const params=useContext(ACLcollectionParamsContext);
+  const params = useContext(ACLcollectionParamsContext);
   if (!name || allowAll) {
     return <FormItem>{props.children}</FormItem>;
   }
-  const fieldWhiteList=params?.whitelist || params?.fields?.concat(params?.appends)
-  const aclFieldCheck =
-  fieldWhiteList ? (fieldWhiteList)?.includes(fieldSchema.name) : true;
+  const fieldWhiteList = params?.whitelist || params?.fields?.concat(params?.appends);
+  const aclFieldCheck = fieldWhiteList ? fieldWhiteList?.includes(fieldSchema.name) : true;
   if (!aclFieldCheck) {
     return null;
   }
