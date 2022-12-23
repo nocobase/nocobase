@@ -27,11 +27,13 @@ export const ActionBar = observer((props: any) => {
       </div>
     );
   }
+  const hasActions = Object.keys(fieldSchema.properties).length > 0;
   return (
     <div
       style={
-        designable
-          ? {
+        !designable && !hasActions
+          ? undefined
+          : {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -39,7 +41,6 @@ export const ActionBar = observer((props: any) => {
               flexShrink: 0,
               ...style,
             }
-          : undefined
       }
       {...others}
     >
