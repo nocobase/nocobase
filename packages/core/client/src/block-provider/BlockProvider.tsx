@@ -82,10 +82,10 @@ export const useResourceAction = (props, opts = {}) => {
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
-  const location = useLocation();
   if (!Object.keys(params).includes('appends') && appends?.length) {
     params['appends'] = appends;
   }
+
   const result = useRequest(
     (opts) => {
       if (!action) {
@@ -105,9 +105,7 @@ export const useResourceAction = (props, opts = {}) => {
           api.services[fieldSchema['x-uid']] = result;
         }
       },
-      defaultParams: (location.state as any)?.serviceParams
-        ? JSON.parse((location.state as any)?.serviceParams)
-        : [params],
+      defaultParams: [params],
       refreshDeps: [JSON.stringify(params.appends)],
     },
   );

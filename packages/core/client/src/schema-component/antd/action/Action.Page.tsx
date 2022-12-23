@@ -13,7 +13,7 @@ export const ActionPage: ComposedActionDrawer = observer((props) => {
 
   if (visible) {
     history.push({
-      search: getPageSearchStr(schema),
+      search: window.location.search ? `${window.location.search}&${getPageSearchStr(schema)}` : getPageSearchStr(schema)
     });
     return null;
   }

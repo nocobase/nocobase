@@ -45,7 +45,7 @@ export const ActionDesigner = (props) => {
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] || '';
 
-  const enablePageMode = field.path.segments.length <= 8 && field.path.segments[0] == 'page';
+  const enablePageMode = field.path.segments.length <= 9 && field.path.segments[0] == 'page';
   const openModeList = [
     { label: t('Drawer'), value: 'drawer' },
     { label: t('Dialog'), value: 'modal' },

@@ -6,7 +6,7 @@ import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { useDocumentTitle, useFormBlockContext, useTableBlockContext } from '../..';
+import { useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
@@ -510,22 +510,17 @@ const getParentActionContainer = (schema) => {
 
 export const usePageMode = () => {
   const location = useLocation();
-  const { service } = useBlockRequestContext();
   const collection = useCollection();
   const record = useRecord();
-  const compile = useCompile();
-  const { title } = useDocumentTitle();
   const filterTargetKey = collection.filterTargetKey || 'id';
   const filterTargetVal = record?.[filterTargetKey];
   return {
     getPageSearchStr(schema) {
-      return `subXUid=${schema?.['x-uid']}&collectionName=${
+      return `sub-page=/${schema?.['x-uid']}/${
         collection.name
-      }&filterTargetKey=${filterTargetKey}&filterTargetVal=${filterTargetVal}&title=${compile(
-        title,
-      )}&subTitle=${compile(schema?.title)}&serviceParams=${JSON.stringify(service?.params)}&openMode=page`;
+      }/${filterTargetVal}`
     },
-    isPageMode: 'page' === (location as any)?.query?.openMode,
+    isPageMode: !!(location as any)?.query?.['sub-page'],
   };
 };
 
