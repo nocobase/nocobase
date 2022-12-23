@@ -23,6 +23,9 @@ interface DumpContext {
 }
 
 const fixedPlugins = ['collection-manager', 'ui-schema-storage', 'ui-routes-storage', 'acl', 'workflow'];
+
+const ignorePlugins = ['error-handler', 'client', 'export', 'import', 'sample-hello', 'audit-logs', 'china-region'];
+
 const fixedCollections = ['applicationPlugins'];
 
 const optionsPlugins = ['file-manager', 'system-settings'];
@@ -35,12 +38,24 @@ function getFixedCollections(app) {
     .flat();
 }
 
+async function getAppPlugins(app: Application) {
+  const plugins = await app.db.getCollection('applicationPlugins').repository.find();
+
+  return plugins.map((plugin) => plugin.get('name'));
+}
+
 async function getCustomCollections(app) {
   const collections = await app.db.getCollection('collections').repository.find();
   return collections.map((collection) => collection.get('name'));
 }
 
 async function dumpAction(app) {
+  const appPlugins = await getAppPlugins(app);
+  const usersPlugins = appPlugins.filter((pluginName) => ![...fixedCollections, ...ignorePlugins].includes(pluginName));
+
+  console.log(usersPlugins);
+
+  return;
   const dumpedDir = path.resolve(os.tmpdir(), `nocobase-dump-${Date.now()}`);
 
   const ctx: DumpContext = {
