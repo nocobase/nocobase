@@ -155,6 +155,7 @@ export default {
         '/development/client/index',
         {
           title: 'UI 设计器',
+          'title.zh-CN': 'UI 设计器',
           'title.TR-TR': 'Kullanıcı Arayüz Tasarımcısı',
           type: 'subMenu',
           children: [
