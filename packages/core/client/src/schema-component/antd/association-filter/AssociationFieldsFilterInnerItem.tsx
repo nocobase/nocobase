@@ -9,12 +9,10 @@ import { useResource } from '../../../api-client';
 import { useCompile, useDesigner } from '../../hooks';
 import { AssociationFieldsFilterInnerItemDesigner } from './AssociationFieldsFilterInnerItem.Designer';
 import { SortableItem } from '../../common';
-import { concatFilter, SharedFilterContext } from '../../../block-provider/SharedFilterProvider';
+import { SharedFilterContext } from '../../../block-provider/SharedFilterProvider';
 import { useBlockRequestContext } from '../../../block-provider';
-import { removeNullCondition } from '../filter/useFilterActionProps';
 
 const { Panel } = Collapse;
-const { Search } = Input;
 
 export const AssociationFieldsFilterInnerItem = (props) => {
   const collectionField = useCollectionField();
@@ -23,7 +21,7 @@ export const AssociationFieldsFilterInnerItem = (props) => {
   const compile = useCompile();
   const { service, props: blockProps } = useBlockRequestContext();
   const [list, setList] = useState([]);
-  const { filter, setAssociateFilter, associateFilterStore: associateFilter } = useContext(SharedFilterContext);
+  const { setSharedFilterStore, sharedFilterStore, getFilterParams } = useContext(SharedFilterContext);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
@@ -77,20 +75,14 @@ export const AssociationFieldsFilterInnerItem = (props) => {
           }
         : {};
 
-    setAssociateFilter(collectionFieldName, newFilter);
+    const newAssociationFilterStore = {
+      ...sharedFilterStore,
+      [collectionFieldName]: newFilter,
+    };
 
-    const newAssociationFilterList = Object.entries(associateFilter).map(([key, filter]) => {
-      if (key === collectionFieldName) return newFilter;
-      return filter;
-    });
+    setSharedFilterStore(newAssociationFilterStore);
 
-    const newAssociationFilter = newAssociationFilterList.length
-      ? {
-          $and: newAssociationFilterList,
-        }
-      : {};
-
-    const paramFilter = concatFilter(removeNullCondition(filter), removeNullCondition(newAssociationFilter));
+    const paramFilter = getFilterParams(newAssociationFilterStore);
 
     service.run({ ...service.params?.[0], page: 1, filter: paramFilter });
   };

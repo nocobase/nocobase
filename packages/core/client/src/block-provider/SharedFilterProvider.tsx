@@ -9,51 +9,55 @@ export type SharedFilter = {
   [K in SHARED_FILTER_CONDITION]?: any;
 };
 
+export type SharedFilterStore = Record<string, SharedFilter>;
+
 export type SharedFilterContextValue = {
-  filter: SharedFilter;
-  setFilter: (filter: SharedFilter) => void;
-  associateFilterStore: SharedFilter;
-  setAssociateFilter: (key: string, filter: SharedFilter) => void;
+  sharedFilterStore: SharedFilter;
+  setSharedFilterStore: (filterStore: SharedFilterStore) => void;
+  getFilterParams: (filterStore?: SharedFilterStore) => any;
 };
 
 export const SharedFilterContext = createContext<SharedFilterContextValue>({
-  filter: {
-    $and: [],
-    $or: [],
-  },
-  setFilter: undefined!,
-  associateFilterStore: {},
-  setAssociateFilter: undefined!,
+  sharedFilterStore: {},
+  setSharedFilterStore: undefined!,
+  getFilterParams: undefined!,
 });
 
-export const concatFilter = (f1: SharedFilter, f2: SharedFilter) => ({
-  $and: (f1.$and ?? []).concat(f2.$and ?? []),
-  $or: (f1.$or ?? []).concat(f2.$or ?? []),
-});
+export const concatFilter = (f1: SharedFilter, f2: SharedFilter): SharedFilter => {
+  const newAnd = [f1.$and, f2.$and].filter((i) => i);
+  const newOr = [f1.$or, f2.$or].filter((i) => i);
+  const newFilter: SharedFilter = {};
+  newAnd.length && (newFilter.$and = newAnd);
+  newOr.length && (newFilter.$or = newOr);
+  return newFilter;
+};
 
 export const SharedFilterProvider: FC<{ params?: any }> = (props) => {
-  const [filter, setFilterUnwrap] = useState<SharedFilter>(props.params?.filter ?? {});
-  const [associateFilterStore, setAssociateFilterUnwrap] = useState<Record<string, SharedFilter>>({});
+  const [sharedFilterStore, setSharedFilterStoreUnwrap] = useState<Record<string, SharedFilter>>({});
 
-  const setFilter = (incomeFilter: SharedFilter) => {
-    setFilterUnwrap({
-      $and: incomeFilter.$and ?? [],
-      $or: incomeFilter.$or ?? [],
-    });
+  const setSharedFilterStore = (associationFilter: Record<string, SharedFilter>) => {
+    setSharedFilterStoreUnwrap(associationFilter);
   };
 
-  const setAssociateFilter = (key: string, incomeFilter: SharedFilter) => {
-    setAssociateFilterUnwrap({
-      ...associateFilterStore,
-      [key]: {
-        $and: incomeFilter.$and ?? [],
-        $or: incomeFilter.$or ?? [],
-      },
-    });
+  const getFilterParams = (filterStore?: SharedFilterStore) => {
+    const newAssociationFilterList = Object.entries(filterStore ?? sharedFilterStore).map(([key, filter]) => filter);
+    const newAssociationFilter = newAssociationFilterList.length
+      ? {
+          $and: newAssociationFilterList,
+        }
+      : {};
+
+    return newAssociationFilter;
   };
 
   return (
-    <SharedFilterContext.Provider value={{ filter, setFilter, associateFilterStore, setAssociateFilter }}>
+    <SharedFilterContext.Provider
+      value={{
+        sharedFilterStore,
+        setSharedFilterStore,
+        getFilterParams,
+      }}
+    >
       {props.children}
     </SharedFilterContext.Provider>
   );

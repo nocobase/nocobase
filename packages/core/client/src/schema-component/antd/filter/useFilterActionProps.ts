@@ -71,7 +71,10 @@ export const useFilterFieldOptions = (fields) => {
 };
 
 const isEmpty = (obj) => {
-  return obj && Object.keys(obj).length === 0 && Object.getPrototypeOf(obj) === Object.prototype;
+  return (
+    (Array.isArray(obj) && obj.length === 0) ||
+    (obj && Object.keys(obj).length === 0 && Object.getPrototypeOf(obj) === Object.prototype)
+  );
 };
 
 export const removeNullCondition = (filter) => {
@@ -79,24 +82,11 @@ export const removeNullCondition = (filter) => {
   const values = {};
   for (const key in items) {
     const value = items[key];
-    if (value !== null && !isEmpty(value)) {
+    if (value != null && !isEmpty(value)) {
       values[key] = value;
     }
   }
   return flat.unflatten(values);
-};
-
-export const mergeFilter = (filter1, filter2) => {
-  if (filter1 && filter2) {
-    return { $and: [filter1, filter2] };
-  }
-  if (!filter1 && filter2) {
-    return filter2;
-  }
-  if (filter1 && !filter2) {
-    return filter1;
-  }
-  return {};
 };
 
 export const useFilterActionProps = () => {
@@ -109,7 +99,7 @@ export const useFilterActionProps = () => {
 export const useFilterFieldProps = ({ options, service, params }) => {
   const { t } = useTranslation();
   const field = useField<Field>();
-  const { associateFilterStore: associateFilter, setFilter } = useContext(SharedFilterContext);
+  const { sharedFilterStore, setSharedFilterStore, getFilterParams } = useContext(SharedFilterContext);
   return {
     options,
     onSubmit(values) {
@@ -117,14 +107,15 @@ export const useFilterFieldProps = ({ options, service, params }) => {
       const defaultFilter = removeNullCondition(params.filter);
       // filter parameter for the filter action
       const filter = removeNullCondition(values?.filter);
-      // save to shared filter context
-      setFilter(values?.filter);
 
-      // associate filter
-      const asctFilter = removeNullCondition(associateFilter);
+      const newSharedFilterStore = {
+        ...sharedFilterStore,
+        ActionBar: concatFilter(defaultFilter, filter),
+      };
 
-      // finally filter with concat
-      const paramFilter = concatFilter(concatFilter(defaultFilter, filter), asctFilter);
+      setSharedFilterStore(newSharedFilterStore);
+
+      const paramFilter = getFilterParams(newSharedFilterStore);
 
       service.run({ ...service.params?.[0], page: 1, filter: paramFilter });
       const items = filter?.$and || filter?.$or;
