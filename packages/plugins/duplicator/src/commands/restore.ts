@@ -161,42 +161,35 @@ export async function importCollection(
       return carry;
     }, {});
 
-  const inertSQL = `INSERT INTO "${collection.model.tableName}" (${columns.map((c) => `"${c}"`).join(',')})
-                    VALUES ${rows
-                      .map((row) => {
-                        return `(${columns
-                          .map((column, index) => {
-                            let data = JSON.parse(row)[index];
+  const rowsAsValues = rows.map((row) => {
+    const values = JSON.parse(row);
 
-                            const fieldType = fields[column];
+    return values
+      .map((val, index) => {
+        const column = columns[index];
+        return [column, val];
+      })
+      .reduce((carry, [column, val]) => {
+        const fieldType = fields[column];
+        if (fieldType === 'point') {
+          carry[column] = `(${val.x}, ${val.y})`;
+        } else if (lodash.isPlainObject(val) || lodash.isArray(val)) {
+          carry[column] = JSON.stringify(val);
+        } else {
+          carry[column] = val;
+        }
+        return carry;
+      }, {});
+  });
 
-                            if (fieldType === 'point') {
-                              return `'(${data.x}, ${data.y})'`;
-                            }
-
-                            if (lodash.isPlainObject(data) || lodash.isArray(data)) {
-                              return `'${_escapeString(JSON.stringify(data))}'`;
-                            }
-
-                            if (lodash.isString(data)) {
-                              return `'${_escapeString(data)}'`;
-                            }
-
-                            if (lodash.isNull(data)) {
-                              return 'null';
-                            }
-
-                            return data;
-                          })
-                          .join(',')})`;
-                      })
-                      .join(',')}`;
+  //@ts-ignore
+  const sql = collection.model.queryInterface.queryGenerator.bulkInsertQuery(tableName, rowsAsValues);
 
   if (insert === false) {
-    return inertSQL;
+    return sql;
   }
 
-  await ctx.app.db.sequelize.query(inertSQL, {
+  await ctx.app.db.sequelize.query(sql, {
     type: 'INSERT',
   });
 

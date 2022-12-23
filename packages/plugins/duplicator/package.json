@@ -23,5 +23,8 @@
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/duplicator"
+  },
+  "devDependencies": {
+    "@types/archiver": "^5.3.1"
   }
 }
