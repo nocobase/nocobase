@@ -6,6 +6,11 @@ export default {
   updatedBy: true,
   fields: [
     {
+      type: 'uid',
+      name: 'id',
+      primaryKey: true,
+    },
+    {
       type: 'text',
       name: 'html',
     },

@@ -1,6 +1,6 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
-import { useAsyncEffect, useSafeState } from 'ahooks';
+import { uid } from '@formily/shared';
+import { GeneralSchemaDesigner, SchemaSettings, useAPIClient, useDesignable } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,68 +9,58 @@ export const IframeDesigner = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const { api } = dn.options;
-  const [initialValues, setInitialValues] = useSafeState({});
-  const [count, setCount] = useSafeState(0);
+  const api = useAPIClient();
+  const { mode, url, htmlId, height = '60vh' } = fieldSchema['x-component-props'] || {};
 
-  useAsyncEffect(async () => {
-    const componentProps = fieldSchema['x-component-props'] || {};
-    const { mode, url, htmlId, height = '60vh' } = componentProps;
-    let html = null;
-    if (mode === 'html') {
-      const {
-        data: { data },
-      } = await api.resource('iframeHtml').get({ filterByTk: htmlId });
-      html = data?.html;
+  const saveHtml = async (html: string) => {
+    const options = {
+      values: { html },
+    };
+    if (htmlId) {
+      const { data } = await api.resource('iframeHtml').update?.({ ...options, filterByTk: htmlId });
+      return data?.data?.[0] || { id: htmlId };
+    } else {
+      const { data } = await api.resource('iframeHtml').create?.(options);
+      return data?.data;
     }
-    setInitialValues({ mode, url, html, height });
-  }, [count]);
-
-  const refresh = () => setCount(count + 1);
+  };
 
   const submitHandler = async ({ mode, url, html, height }) => {
     const componentProps = fieldSchema['x-component-props'] || {};
     componentProps['mode'] = mode;
     componentProps['height'] = height;
+    componentProps['url'] = url;
     if (mode === 'html') {
-      const { htmlId } = componentProps;
-      const response = htmlId
-        ? await api.resource('iframeHtml').update({
-            filterByTk: htmlId,
-            values: { html },
-          })
-        : await api.resource('iframeHtml').create({
-            values: { html },
-          });
-
-      let data = response?.data?.data;
-      if (Array.isArray(data)) {
-        data = data[0];
-      }
-      componentProps['url'] = null;
-      componentProps['html'] = data.html;
+      const data = await saveHtml(html);
       componentProps['htmlId'] = data.id;
-    } else {
-      componentProps['url'] = url;
-      componentProps['html'] = null;
-      componentProps['htmlId'] = null;
     }
     fieldSchema['x-component-props'] = componentProps;
     field.componentProps = { ...componentProps };
+    field.data = { v: uid() };
     dn.emit('patch', {
       schema: {
         'x-uid': fieldSchema['x-uid'],
         'x-component-props': componentProps,
       },
     });
-    refresh();
   };
 
   return (
     <GeneralSchemaDesigner>
       <SchemaSettings.ModalItem
         title={t('Edit iframe')}
-        initialValues={initialValues}
+        asyncGetInitialValues={async () => {
+          const values = {
+            mode,
+            url,
+            height,
+          };
+          if (htmlId) {
+            const { data } = await api.resource('iframeHtml').get?.({ filterByTk: htmlId });
+            values['html'] = data?.data?.html || '';
+          }
+          return values;
+        }}
         schema={
           {
             type: 'object',
@@ -80,6 +70,7 @@ export const IframeDesigner = () => {
                 title: '{{t("Mode")}}',
                 'x-component': 'Radio.Group',
                 'x-decorator': 'FormItem',
+                required: true,
                 default: 'url',
                 enum: [
                   { value: 'url', label: t('URL') },
@@ -126,7 +117,6 @@ export const IframeDesigner = () => {
             },
           } as ISchema
         }
-        // {{ fetchData(api, { url: 'chartData:get' }) }}
         onSubmit={submitHandler}
       />
       <SchemaSettings.Divider />
