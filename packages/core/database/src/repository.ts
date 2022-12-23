@@ -7,11 +7,11 @@ import {
   DestroyOptions as SequelizeDestroyOptions,
   FindAndCountOptions as SequelizeAndCountOptions,
   FindOptions as SequelizeFindOptions,
-  ModelCtor,
+  ModelStatic,
   Op,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
-  WhereOperators
+  WhereOperators,
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -34,7 +34,7 @@ import { handleAppendsQuery } from './utils';
 
 const debug = require('debug')('noco-database');
 
-export interface IRepository { }
+export interface IRepository {}
 
 interface CreateManyOptions extends BulkCreateOptions {
   records: Values[];
@@ -55,10 +55,10 @@ type Operators = keyof typeof operators & keyof WhereOperators;
 
 export type FilterWithOperator = {
   [key: string]:
-  | {
-    [K in Operators]: FieldValue;
-  }
-  | FieldValue;
+    | {
+        [K in Operators]: FieldValue;
+      }
+    | FieldValue;
 };
 
 export type FilterWithValue = {
@@ -198,10 +198,11 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
-  implements IRepository {
+  implements IRepository
+{
   database: Database;
   collection: Collection;
-  model: ModelCtor<Model>;
+  model: ModelStatic<Model>;
 
   constructor(collection: Collection) {
     this.database = collection.context.database;

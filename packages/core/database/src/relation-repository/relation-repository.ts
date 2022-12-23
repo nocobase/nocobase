@@ -1,5 +1,5 @@
 import lodash from 'lodash';
-import { Association, BelongsTo, BelongsToMany, HasMany, HasOne, ModelCtor, Transaction } from 'sequelize';
+import { Association, BelongsTo, BelongsToMany, HasMany, HasOne, ModelStatic, Transaction } from 'sequelize';
 import { Collection } from '../collection';
 import Database from '../database';
 import { transactionWrapperBuilder } from '../decorators/transaction-decorator';
@@ -18,7 +18,7 @@ export const transaction = transactionWrapperBuilder(function () {
 export abstract class RelationRepository {
   sourceCollection: Collection;
   association: Association;
-  targetModel: ModelCtor<any>;
+  targetModel: ModelStatic<any>;
   targetCollection: Collection;
   associationName: string;
   associationField: RelationField;
