@@ -12,7 +12,7 @@ import {
   useAPIClient,
   useDesignable,
   useRecord,
-  WithoutTableFieldResource
+  WithoutTableFieldResource,
 } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
@@ -167,7 +167,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   if (associationFilterSchema) {
     return (
       <Component {...field.componentProps}>
-        <Row gutter={16}>
+        <Row gutter={16} wrap={false}>
           <Col
             className={css`
               width: 200px;
