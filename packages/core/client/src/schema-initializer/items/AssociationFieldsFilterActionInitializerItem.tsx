@@ -6,7 +6,7 @@ import { useCurrentSchema } from '../utils';
 
 export const AssociationFieldsFilterActionInitializerItem = (props) => {
   const { collectionFieldKey, schema, item, insert } = props;
-  const { exists, remove } = useCurrentSchema(collectionFieldKey, 'x-collection-fieldKey', item.find, item.remove);
+  const { exists, remove } = useCurrentSchema(schema.name, 'name', item.find, item.remove);
   return (
     <SchemaInitializer.SwitchItem
       checked={exists}

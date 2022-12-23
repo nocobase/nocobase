@@ -25,7 +25,7 @@ export const AssociationFieldsFilterInnerItem = (props) => {
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
-  const targetCollectionName = fieldSchema['x-component-props'].target;
+  const targetCollectionName = fieldSchema['x-target-collection'];
   const collectionFieldName = collectionField.name;
 
   const resource = useResource(targetCollectionName);

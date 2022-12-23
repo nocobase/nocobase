@@ -19,11 +19,11 @@ export const AssociationFieldsFilterInitializer = () => {
     component: 'AssociationFieldsFilterActionInitializerItem',
     collectionFieldKey: field.key,
     schema: {
+      name: field.name,
       type: 'void',
-      'x-collection-fieldKey': field.key,
+      'x-target-collection': field.target,
       'x-designer': 'AssociationFieldsFilterInnerItem.Designer',
       'x-designer-props': {
-        target: field.target,
         fieldNames: {
           label: 'id',
         },
@@ -33,9 +33,6 @@ export const AssociationFieldsFilterInitializer = () => {
         name: field.name,
       },
       'x-component': 'AssociationFieldsFilterInnerItem',
-      'x-component-props': {
-        target: field.target,
-      },
       properties: {},
     },
   }));

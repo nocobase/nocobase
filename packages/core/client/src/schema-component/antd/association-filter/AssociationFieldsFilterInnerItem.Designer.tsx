@@ -12,7 +12,7 @@ export const AssociationFieldsFilterInnerItemDesigner = (props) => {
   const compile = useCompile();
   const { dn } = useDesignable();
 
-  const targetFields = getCollectionFields(fieldSchema['x-designer-props'].target) ?? [];
+  const targetFields = getCollectionFields(fieldSchema['x-target-collection']) ?? [];
 
   const options = targetFields
     .filter(
