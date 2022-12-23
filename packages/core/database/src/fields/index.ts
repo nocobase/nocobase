@@ -25,7 +25,6 @@ import { UidFieldOptions } from './uid-field';
 import { UUIDFieldOptions } from './uuid-field';
 import { VirtualFieldOptions } from './virtual-field';
 import { FormulaFieldOptions } from './formula-field';
-import { SequenceFieldOptions } from './sequence-field';
 import { SetFieldOptions } from './set-field';
 
 export * from './array-field';
@@ -51,7 +50,6 @@ export * from './uid-field';
 export * from './uuid-field';
 export * from './virtual-field';
 export * from './formula-field';
-export { SequenceField } from './sequence-field';
 
 export type FieldOptions =
   | BaseFieldOptions
@@ -80,5 +78,4 @@ export type FieldOptions =
   | BelongsToFieldOptions
   | HasOneFieldOptions
   | HasManyFieldOptions
-  | BelongsToManyFieldOptions
-  | SequenceFieldOptions;
+  | BelongsToManyFieldOptions;

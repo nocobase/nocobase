@@ -1,27 +1,30 @@
 import { Plugin } from '@nocobase/server';
+import _ from 'lodash';
 import path from 'path';
 
 export class PresetNocoBase extends Plugin {
   getBuiltInPlugins() {
-    return process.env.PRESET_NOCOBASE_PLUGINS
-      ? process.env.PRESET_NOCOBASE_PLUGINS.split(',')
-      : [
-          'error-handler',
-          'collection-manager',
-          'ui-schema-storage',
-          'ui-routes-storage',
-          'file-manager',
-          'system-settings',
-          'verification',
-          'users',
-          'acl',
-          'china-region',
-          'workflow',
-          'client',
-          'export',
-          'import',
-          'audit-logs',
-        ];
+    const plugins = (process.env.PRESET_NOCOBASE_PLUGINS || '').split(',').filter(Boolean);
+    return _.uniq(
+      [
+        'error-handler',
+        'collection-manager',
+        'ui-schema-storage',
+        'ui-routes-storage',
+        'file-manager',
+        'system-settings',
+        'sequence-field',
+        'verification',
+        'users',
+        'acl',
+        'china-region',
+        'workflow',
+        'client',
+        'export',
+        'import',
+        'audit-logs',
+      ].concat(plugins),
+    );
   }
 
   getLocalPlugins() {
@@ -65,8 +68,10 @@ export class PresetNocoBase extends Plugin {
         await this.addBuiltInPlugins();
       }
       const builtInPlugins = this.getBuiltInPlugins();
+      const plugins = await this.db.getRepository('applicationPlugins').find();
+      const pluginNames = plugins.map((p) => p.name);
       await this.app.pm.add(
-        builtInPlugins.filter((plugin) => !this.app.pm.has(plugin)),
+        builtInPlugins.filter((plugin) => !pluginNames.includes(plugin)),
         {
           enabled: true,
           builtIn: true,
@@ -75,9 +80,11 @@ export class PresetNocoBase extends Plugin {
       );
       const localPlugins = this.getLocalPlugins();
       await this.app.pm.add(
-        localPlugins.filter((plugin) => !this.app.pm.has(plugin)),
+        localPlugins.filter((plugin) => !pluginNames.includes(plugin)),
         {},
       );
+      await this.app.reload();
+      await this.app.db.sync();
     });
     this.app.on('beforeInstall', async () => {
       console.log(`Initialize all built-in plugins`);

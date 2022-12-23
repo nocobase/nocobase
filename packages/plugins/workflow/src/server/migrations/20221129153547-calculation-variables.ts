@@ -29,7 +29,7 @@ function migrateConfig(config) {
   return Object.keys(config).reduce((memo, key) => ({ ...memo, [key]: migrateConfig(config[key]) }), {});
 }
 
-export default class AddUsersPhoneMigration extends Migration {
+export default class extends Migration {
   async up() {
     const match = await this.app.version.satisfies('<=0.8.0-alpha.13');
     if (!match) {

@@ -27,7 +27,14 @@ export const ActionBar = observer((props: any) => {
   }
   return (
     <div
-      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflowX: 'auto', ...style }}
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        overflowX: 'auto',
+        flexShrink: 0,
+        ...style,
+      }}
       {...others}
     >
       <div
