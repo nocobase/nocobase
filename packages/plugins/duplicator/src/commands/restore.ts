@@ -161,24 +161,37 @@ export async function importCollection(
       return carry;
     }, {});
 
-  const rowsAsValues = rows.map((row) =>
+  const rowsWithMeta = rows.map((row) =>
     JSON.parse(row)
       .map((val, index) => [columns[index], val])
       .reduce((carry, [column, val]) => {
         const fieldType = fields[column];
+
         if (fieldType === 'point') {
-          carry[column] = `(${val.x}, ${val.y})`;
-        } else if (lodash.isPlainObject(val) || lodash.isArray(val)) {
-          carry[column] = JSON.stringify(val);
-        } else {
-          carry[column] = val;
+          val = `(${val.x}, ${val.y})`;
         }
+
+        carry[column] = val;
+
         return carry;
       }, {}),
   );
 
+  const model = collection.model;
+
+  const fieldMappedAttributes = {};
+  // @ts-ignore
+  for (const attr in model.tableAttributes) {
+    fieldMappedAttributes[model.rawAttributes[attr].field || attr] = model.rawAttributes[attr];
+  }
+
   //@ts-ignore
-  const sql = collection.model.queryInterface.queryGenerator.bulkInsertQuery(tableName, rowsAsValues);
+  const sql = collection.model.queryInterface.queryGenerator.bulkInsertQuery(
+    tableName,
+    rowsWithMeta,
+    {},
+    fieldMappedAttributes,
+  );
 
   if (insert === false) {
     return sql;
