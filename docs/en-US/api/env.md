@@ -1,15 +1,15 @@
-# Environment variables
+# Environment Variables
 
-## Global environment variables
+## Global Environment Variables
 
 Saved in the `.env` file
 
 ### APP_ENV
 
-Application environment, default value `development`, options include
+Application environment, default is `development`, options include
 
 - `production` production environment
-- ``development`` development environment
+- `development` development environment
 
 ```bash
 APP_ENV=production
@@ -17,7 +17,7 @@ APP_ENV=production
 
 ### APP_HOST
 
-Application host, default value ``0.0.0.0``
+Application host, default is `0.0.0.0`
 
 ```bash
 APP_HOST=192.168.3.154
@@ -25,7 +25,7 @@ APP_HOST=192.168.3.154
 
 ### APP_PORT
 
-Application port, default value ``13000``
+Application port, default is `13000`
 
 ```bash
 APP_PORT=13000
@@ -41,7 +41,7 @@ APP_KEY=app-key-test
 
 ### API_BASE_PATH
 
-NocoBase API address prefix, default value ``/api/``
+NocoBase API address prefix, default is `/api/`
 
 ```bash
 API_BASE_PATH=/api/
@@ -49,25 +49,25 @@ API_BASE_PATH=/api/
 
 ### PLUGIN_PACKAGE_PREFIX
 
-Plugin package prefix, default value `@nocobase/plugin-,@nocobase/preset-`
+Plugin package prefix, default is `@nocobase/plugin-,@nocobase/preset-`
 
-For example, a project named `my-nocobase-app` adds the `hello` plugin with the package name `@my-nocobase-app/plugin-hello`.
+For example, add plugin `hello` into project `my-nocobase-app`, the plugin package name is `@my-nocobase-app/plugin-hello`.
 
-PLUGIN_PACKAGE_PREFIX is configured as follows.
+PLUGIN_PACKAGE_PREFIX is configured as follows:
 
 ```bash
 PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
 ```
 
-The correspondence between plugin names and package names is
+The correspondence between plugin name and package name is:
 
 - `users` plugin package name is `@nocobase/plugin-users`
 - `nocobase` plugin package name is `@nocobase/preset-nocobase`
-- `hello` Plugin package named `@my-nocobase-app/plugin-hello`
+- `hello` plugin package name is `@my-nocobase-app/plugin-hello`
 
 ### DB_DIALECT
 
-Database type, default value `sqlite`, options include
+Database type, default is `sqlite`, options include
 
 - `sqlite`
 - `mysql`
@@ -79,7 +79,7 @@ DB_DIALECT=mysql
 
 ### DB_STORAGE
 
-Database file path (configured when using a SQLite database)
+Database file path (required when using a SQLite database)
 
 ```bash
 ### Relative path
@@ -92,7 +92,7 @@ DB_HOST=/your/path/nocobase.db
 
 Database host (required when using MySQL or PostgreSQL databases)
 
-Default value ``localhost``
+Default is `localhost`
 
 ```bash
 DB_HOST=localhost
@@ -102,8 +102,8 @@ DB_HOST=localhost
 
 Database port (required when using MySQL or PostgreSQL databases)
 
-- MySQL default port 3306
-- PostgreSQL default port 5432
+- Default port of MySQL is 3306
+- Default port of PostgreSQL is 5432
 
 ```bash
 DB_PORT=3306
@@ -127,7 +127,7 @@ DB_USER=nocobase
 
 ### DB_PASSWORD
 
-Database password(required when using MySQL or PostgreSQL databases)
+Database password (required when using MySQL or PostgreSQL databases)
 
 ```bash
 DB_PASSWORD=nocobase
@@ -143,7 +143,7 @@ DB_TABLE_PREFIX=nocobase_
 
 ### DB_LOGGING
 
-Database logging switch, default value ``off``, options include
+Database log switch, default is `off`, options include
 
 - `on` on
 - `off` off
@@ -154,18 +154,18 @@ DB_LOGGING=on
 
 ### LOGGER_TRANSPORT
 
-Log transport, default ``console,dailyRotateFile``, options include
+Log transport, default is `console,dailyRotateFile`, options include
 
 - `console`
 - `dailyRotateFile`
 
 ### DAILY_ROTATE_FILE_DIRNAME
 
-`dailyRotateFile` path to store logs, default is `storage/logs`
+Path to save `dailyRotateFile` logs, default is `storage/logs`
 
-## Temporary environment variables
+## Temporary Environment Variables
 
-When installing NocoBase, you can assist the installation by setting temporary environment variables, such as
+The installation of NocoBase can be assited by setting temporary environment variables, such as:
 
 ```bash
 yarn cross-env \
@@ -188,10 +188,10 @@ yarn nocobase install -l zh-CN -e demo@nocobase.com -p admin123 -n "Super Admin"
 
 ### INIT_APP_LANG
 
-Language at installation, default value `en-US`, options include
+Language at the time of installation, default is `en-US`, options include
 
-- `en-US`
-- `zh-CN`
+- `en-US` English
+- `zh-CN` Chinese (Simplified)
 
 ```bash
 yarn cross-env \
