@@ -17,15 +17,16 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
 
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
-    const { fieldNames, service = {}, wait = 300, ...others } = props;
+    const { fieldNames = {}, service = {}, wait = 300, ...others } = props;
 
     const { data, run } = useRequest(
       {
         action: 'list',
         ...service,
         params: {
-          pageSize: 30,
+          pageSize: 200,
           ...service?.params,
+          fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
           filter: {
             $and: [service?.params?.filter].filter(Boolean),
