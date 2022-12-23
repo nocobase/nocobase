@@ -161,14 +161,9 @@ export async function importCollection(
       return carry;
     }, {});
 
-  const rowsAsValues = rows.map((row) => {
-    const values = JSON.parse(row);
-
-    return values
-      .map((val, index) => {
-        const column = columns[index];
-        return [column, val];
-      })
+  const rowsAsValues = rows.map((row) =>
+    JSON.parse(row)
+      .map((val, index) => [columns[index], val])
       .reduce((carry, [column, val]) => {
         const fieldType = fields[column];
         if (fieldType === 'point') {
@@ -179,8 +174,8 @@ export async function importCollection(
           carry[column] = val;
         }
         return carry;
-      }, {});
-  });
+      }, {}),
+  );
 
   //@ts-ignore
   const sql = collection.model.queryInterface.queryGenerator.bulkInsertQuery(tableName, rowsAsValues);
