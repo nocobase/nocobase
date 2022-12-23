@@ -24,7 +24,8 @@ const InternalRemoteSelect = connect(
         action: 'list',
         ...service,
         params: {
-          pageSize: 30,
+          pageSize: 200,
+          fields: [fieldNames.label, fieldNames.value],
           ...service?.params,
           // search needs
           filter: {
