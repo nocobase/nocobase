@@ -7,6 +7,7 @@ import lodash from 'lodash';
 import fs from 'fs';
 import * as readline from 'readline';
 import { sqlAdapter } from '../utils';
+import { DataTypes } from '@nocobase/database';
 
 export default function addRestoreCommand(app: Application) {
   app
@@ -99,20 +100,6 @@ async function importCollections(ctx: RestoreContext, options) {
   }
 }
 
-const _escapeString = function (val) {
-  val = val.replace(/[\0\n\r\b\t\\'"\x1a]/g, function (s) {
-    switch (s) {
-      case "'":
-        return "''";
-
-      default:
-        return s;
-    }
-  });
-
-  return val;
-};
-
 export async function importCollection(
   ctx: RestoreContext,
   options: {
@@ -155,7 +142,7 @@ export async function importCollection(
   const columns = meta['columns'];
 
   const fields = columns
-    .map((column) => [column, collection.getField(column)?.type])
+    .map((column) => [column, collection.getField(column)])
     .reduce((carry, [column, type]) => {
       carry[column] = type;
       return carry;
@@ -165,10 +152,28 @@ export async function importCollection(
     JSON.parse(row)
       .map((val, index) => [columns[index], val])
       .reduce((carry, [column, val]) => {
-        const fieldType = fields[column];
+        if (val === null) {
+          carry[column] = null;
+          return carry;
+        }
 
-        if (fieldType === 'point') {
+        const field = fields[column];
+
+        if (!field) {
+          carry[column] = val;
+          return carry;
+        }
+
+        if (field.type === 'point') {
           val = `(${val.x}, ${val.y})`;
+        }
+
+        if (field.dataType === DataTypes.BOOLEAN) {
+          val = Boolean(val);
+        }
+
+        if (field.dataType === DataTypes.JSON) {
+          val = JSON.parse(val);
         }
 
         carry[column] = val;

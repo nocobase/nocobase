@@ -22,7 +22,14 @@ interface DumpContext {
   dir: string;
 }
 
-const fixedPlugins = ['collection-manager', 'ui-schema-storage', 'ui-routes-storage', 'acl', 'workflow'];
+const fixedPlugins = [
+  'collection-manager',
+  'ui-schema-storage',
+  'ui-routes-storage',
+  'acl',
+  'workflow',
+  'sequence-field',
+];
 
 const ignorePlugins = [
   'error-handler',
@@ -37,7 +44,6 @@ const ignorePlugins = [
   'oidc',
   'saml',
   'map',
-  'sequence-field',
   'duplicator',
 ];
 

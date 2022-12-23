@@ -449,6 +449,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   buildField(options, context: FieldContext) {
     const { type } = options;
+
     const Field = this.fieldTypes.get(type);
 
     if (!Field) {

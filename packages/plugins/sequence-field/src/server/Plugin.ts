@@ -15,7 +15,7 @@ export default class SequenceFieldPlugin extends Plugin {
     const { app, db, options } = this;
 
     db.registerFieldTypes({
-      sequence: SequenceField
+      sequence: SequenceField,
     });
 
     db.addMigrations({
@@ -26,51 +26,57 @@ export default class SequenceFieldPlugin extends Plugin {
       },
     });
 
-    await db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     db.on('fields.beforeSave', async (field, { transaction }) => {
       if (field.get('type') !== 'sequence') {
         return;
       }
-      const patterns = (field.get('patterns') || []).filter(p => p.type === 'integer');
+      const patterns = (field.get('patterns') || []).filter((p) => p.type === 'integer');
       if (!patterns.length) {
         return;
       }
 
       const SequenceRepo = db.getRepository('sequences');
-      await patterns.reduce((promise: Promise<any>, p) => promise.then(async () => {
-        if (p.options?.key == null) {
-          Object.assign(p, {
-            options: {
-              ...p.options,
-              key: await asyncRandomInt(1 << 16)
+      await patterns.reduce(
+        (promise: Promise<any>, p) =>
+          promise.then(async () => {
+            if (p.options?.key == null) {
+              Object.assign(p, {
+                options: {
+                  ...p.options,
+                  key: await asyncRandomInt(1 << 16),
+                },
+              });
             }
-          });
-        }
-      }), Promise.resolve());
+          }),
+        Promise.resolve(),
+      );
       const sequences = await SequenceRepo.find({
         filter: {
           field: field.get('name'),
           collection: field.get('collectionName'),
-          key: patterns.map(p => p.options.key),
+          key: patterns.map((p) => p.options.key),
         },
-        transaction
+        transaction,
       });
-      await patterns.reduce((promise: Promise<any>, p) => promise.then(async () => {
-        if (!sequences.find(s => s.get('key') === p.options.key)) {
-          await SequenceRepo.create({
-            values: {
-              field: field.get('name'),
-              collection: field.get('collectionName'),
-              key: p.options.key,
-            },
-            transaction
-          });
-          await field.load({ transaction });
-        }
-      }), Promise.resolve());
+      await patterns.reduce(
+        (promise: Promise<any>, p) =>
+          promise.then(async () => {
+            if (!sequences.find((s) => s.get('key') === p.options.key)) {
+              await SequenceRepo.create({
+                values: {
+                  field: field.get('name'),
+                  collection: field.get('collectionName'),
+                  key: p.options.key,
+                },
+                transaction,
+              });
+              await field.load({ transaction });
+            }
+          }),
+        Promise.resolve(),
+      );
     });
 
     db.on('fields.afterDestroy', async (field, { transaction }) => {
@@ -78,7 +84,7 @@ export default class SequenceFieldPlugin extends Plugin {
         return;
       }
 
-      const patterns = (field.get('patterns') || []).filter(p => p.type === 'integer');
+      const patterns = (field.get('patterns') || []).filter((p) => p.type === 'integer');
       if (!patterns.length) {
         return;
       }
@@ -88,9 +94,9 @@ export default class SequenceFieldPlugin extends Plugin {
         filter: {
           field: field.get('name'),
           collection: field.get('collectionName'),
-          key: patterns.map(p => p.key),
+          key: patterns.map((p) => p.key),
         },
-        transaction
+        transaction,
       });
     });
   }
