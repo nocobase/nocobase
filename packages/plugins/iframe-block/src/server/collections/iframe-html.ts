@@ -2,16 +2,9 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'iframeHtml',
-  createdBy: false,
-  updatedBy: false,
+  createdBy: true,
+  updatedBy: true,
   fields: [
-    {
-      name: 'id',
-      type: 'bigInt',
-      autoIncrement: true,
-      primaryKey: true,
-      allowNull: false,
-    },
     {
       type: 'text',
       name: 'html',
