@@ -12,8 +12,9 @@ export default function addRestoreCommand(app: Application) {
   app
     .command('restore')
     .argument('<string>', 'restore file path')
-    .action(async (restoreFilePath) => {
-      await restoreAction(app, restoreFilePath);
+    .option('-i, --ignore [value...]', 'ignore collections')
+    .action(async (restoreFilePath, options) => {
+      await restoreAction(app, restoreFilePath, options);
     });
 }
 
@@ -22,7 +23,7 @@ interface RestoreContext {
   dir: string;
 }
 
-async function restoreAction(app: Application, restoreFilePath: string) {
+async function restoreAction(app: Application, restoreFilePath: string, options) {
   const tmpDir = os.tmpdir();
   const restoreDir = path.resolve(tmpDir, `nocobase-restore-${Date.now()}`);
 
@@ -34,15 +35,17 @@ async function restoreAction(app: Application, restoreFilePath: string) {
   await decompress(restoreFilePath, restoreDir);
   console.log('decompressed at ' + restoreDir);
 
-  await importCollections(restoreContext);
+  await importCollections(restoreContext, options);
 
   await clearDump(restoreContext);
   await app.stop();
 }
 
-async function importCollections(ctx: RestoreContext) {
+async function importCollections(ctx: RestoreContext, options) {
   const collectionsDir = path.resolve(ctx.dir, 'collections');
   const collections = await fsPromises.readdir(collectionsDir);
+
+  const ignore = lodash.castArray(options.ignore);
 
   // import plugins
   await importCollection(ctx, {
@@ -82,6 +85,10 @@ async function importCollections(ctx: RestoreContext) {
 
   // import custom collections
   for (const collectionName of collections.filter((collectionName) => !expectedCollections.includes(collectionName))) {
+    if (ignore.includes(collectionName)) {
+      continue;
+    }
+
     await importCollection(ctx, {
       collectionName,
     });
