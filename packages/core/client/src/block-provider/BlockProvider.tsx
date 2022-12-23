@@ -186,6 +186,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
           <Col
             className={css`
               flex: 1 1 auto;
+              min-width: 0;
             `}
           >
             <RecursionField

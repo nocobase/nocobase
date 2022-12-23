@@ -13,8 +13,6 @@ export const ActionBarAssociationFilterAction = (props) => {
   const dn = createDesignable({ t, api, refresh, current: fieldSchema });
   dn.loadAPIClientEvents();
 
-  console.log(fieldSchema.parent.toJSON());
-
   const handleInsert = (s: Schema) => {
     dn.insertBeforeBegin(s);
   };
