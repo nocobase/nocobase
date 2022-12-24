@@ -38,4 +38,4 @@ export default {
   $dateNotAfter(value) {
     return { [Op.lt]: getNextDay(value) };
   },
-};
+} as Record<string, any>;
