@@ -30,7 +30,7 @@ export const AssociationFilterItem = (props) => {
   const resource = useResource(targetCollectionName);
 
   const labelKey = fieldSchema['x-designer-props'].fieldNames.label;
-  const valueKey = 'id';
+  const valueKey = collectionField?.targetKey ?? 'id';
 
   const treeData = list
     .map((i) => ({
