@@ -1,10 +1,10 @@
-import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from 'sequelize';
 import parser from 'cron-parser';
-import moment from 'moment';
 import { escapeRegExp } from 'lodash';
+import moment from 'moment';
+import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from 'sequelize';
 
+import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
-import { Model, BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
 
 
 export interface Pattern {
@@ -225,11 +225,13 @@ export class SequenceField extends Field {
       throw new ValidationError('sequence pattern not match', [
         new ValidationErrorItem(
           `input value of ${name} field not match the sequence pattern (${this.matcher.toString()}) which is required`,
-          'Validation error', // NOTE: type should only be this which in sequelize enum set
+          'validation error', // NOTE: type should only be this which in sequelize enum set
           name,
           value,
           instance,
-          'sequence_pattern_not_match'
+          'sequence_pattern_not_match',
+          name,
+          [],
         )
       ]);
     }
