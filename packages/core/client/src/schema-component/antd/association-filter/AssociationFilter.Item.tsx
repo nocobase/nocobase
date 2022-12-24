@@ -179,6 +179,8 @@ export const AssociationFilterItem = (props) => {
           className={css`
             & .ant-collapse-content-box {
               padding: 0 8px !important;
+              max-height: 200px;
+              overflow: auto;
             }
             & .ant-collapse-header {
               padding: 10px !important;
