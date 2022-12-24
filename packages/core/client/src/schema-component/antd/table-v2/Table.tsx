@@ -9,7 +9,7 @@ import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import { RecordIndexProvider, RecordProvider, useACLRoleContext, useCollection, useSchemaInitializer } from '../../../';
 import { ACLcollectionParamsContext } from '../../../acl/ACLProvider';
-import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState ,useContext} from 'react';
+import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
 
@@ -23,9 +23,8 @@ const isCollectionFieldComponent = (schema: ISchema) => {
 
 const useAclCheck = (schema: Schema, params) => {
   const fieldName = Object.keys(schema.properties)?.[0];
-  return (params?.whitelist || params?.fields) && schema['x-action-column'] !== 'actions'
-    ? (params.whitelist || params.fields)?.includes(fieldName)
-    : true;
+  const fieldWhiteList = params?.whitelist || params?.fields?.concat(params?.appends);
+  return fieldWhiteList && schema['x-action-column'] !== 'actions' ? fieldWhiteList?.includes(fieldName) : true;
 };
 
 const useTableColumns = () => {
