@@ -1,49 +1,57 @@
-import cls from 'classnames';
-import React, { MouseEvent, ChangeEvent, useContext, useEffect, useState } from 'react';
+import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Col, Collapse, Input, Row, Tree } from 'antd';
-import { SearchOutlined, CloseOutlined } from '@ant-design/icons';
-import { useCollectionField } from '../../../collection-manager';
 import { useFieldSchema } from '@formily/react';
-import { useResource } from '../../../api-client';
-import { useCompile, useDesigner } from '../../hooks';
-import { SortableItem } from '../../common';
-import { SharedFilterContext } from '../../../block-provider/SharedFilterProvider';
+import { Col, Collapse, Input, Row, Tree } from 'antd';
+import cls from 'classnames';
+import React, { ChangeEvent, MouseEvent, useContext, useState } from 'react';
+import { useRequest } from '../../../api-client';
 import { useBlockRequestContext } from '../../../block-provider';
+import { SharedFilterContext } from '../../../block-provider/SharedFilterProvider';
+import { SortableItem } from '../../common';
+import { useCompile, useDesigner } from '../../hooks';
+import { AssociationFilter } from './AssociationFilter';
 
 const { Panel } = Collapse;
 
 export const AssociationFilterItem = (props) => {
-  const collectionField = useCollectionField();
+  const collectionField = AssociationFilter.useAssociationField();
+
+  if (!collectionField) {
+    return null;
+  }
+
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const compile = useCompile();
   const { service, props: blockProps } = useBlockRequestContext();
-  const [list, setList] = useState([]);
   const { setSharedFilterStore, sharedFilterStore, getFilterParams } = useContext(SharedFilterContext);
   const [searchVisible, setSearchVisible] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
 
-  const targetCollectionName = fieldSchema['x-target-collection'];
   const collectionFieldName = collectionField.name;
 
-  const resource = useResource(targetCollectionName);
+  const valueKey = collectionField?.targetKey || 'id';
+  const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
-  const labelKey = fieldSchema['x-designer-props'].fieldNames.label;
-  const valueKey = collectionField?.targetKey ?? 'id';
+  const fieldNames = {
+    title: labelKey || valueKey,
+    key: valueKey,
+  };
 
-  const treeData = list
-    .map((i) => ({
-      title: compile(i[labelKey]),
-      key: i[valueKey],
-    }))
-    .filter((i) => (typeof i.title === 'string' ? i.title : '-').toLowerCase().includes(searchValue.toLowerCase()));
+  const { data, params, loading, run } = useRequest(
+    {
+      resource: collectionField.target,
+      action: 'list',
+      params: {
+        fields: [labelKey, valueKey],
+      },
+    },
+    {
+      refreshDeps: [labelKey, valueKey],
+      debounceWait: 300,
+    },
+  );
 
-  useEffect(() => {
-    resource.list().then((res) => {
-      setList(res.data.data);
-    });
-  }, []);
+  const treeData = data?.data || [];
 
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
@@ -57,15 +65,13 @@ export const AssociationFilterItem = (props) => {
   const onSelect = (selectedKeysValue: React.Key[]) => {
     setSelectedKeys(selectedKeysValue);
 
-    const orList = treeData
-      .filter((item) => selectedKeysValue.includes(item.key))
-      .map((item) => ({
-        [collectionFieldName]: {
-          [valueKey]: {
-            $eq: item.key,
-          },
+    const orList = selectedKeysValue.map((item) => ({
+      [collectionFieldName]: {
+        [valueKey]: {
+          $eq: item,
         },
-      }));
+      },
+    }));
 
     const newFilter =
       orList.length > 0
@@ -87,8 +93,14 @@ export const AssociationFilterItem = (props) => {
   };
 
   const handleSearchToggle = (e: MouseEvent) => {
+    const filter = params?.[0]?.filter;
+    if (searchVisible || filter) {
+      run({
+        ...params?.[0],
+        filter: undefined,
+      });
+    }
     setSearchVisible(!searchVisible);
-    if (searchValue) setSearchValue('');
     e.stopPropagation();
   };
 
@@ -96,8 +108,13 @@ export const AssociationFilterItem = (props) => {
     e.stopPropagation();
   };
 
-  const handleSearchInput = (e: ChangeEvent) => {
-    setSearchValue((e.target as HTMLInputElement).value);
+  const handleSearchInput = (e: ChangeEvent<any>) => {
+    run({
+      ...params?.[0],
+      filter: {
+        [`${labelKey}.$includes`]: e.target.value,
+      },
+    });
   };
 
   return (
@@ -183,7 +200,8 @@ export const AssociationFilterItem = (props) => {
                 `}
               >
                 {searchVisible ? (
-                  <input
+                  <Input
+                    bordered={false}
                     autoFocus
                     placeholder="Search..."
                     className={css`
@@ -192,6 +210,7 @@ export const AssociationFilterItem = (props) => {
                       width: 100%;
                       border: none;
                       height: 20px;
+                      padding: 4px;
                       &::placeholder {
                         color: #dcdcdc;
                       }
@@ -200,7 +219,7 @@ export const AssociationFilterItem = (props) => {
                     onChange={handleSearchInput}
                   />
                 ) : (
-                  compile(collectionField.uiSchema.title)
+                  compile(collectionField.uiSchema?.title)
                 )}
               </Col>
               <Col
@@ -236,6 +255,8 @@ export const AssociationFilterItem = (props) => {
             autoExpandParent={autoExpandParent}
             treeData={treeData}
             onSelect={onSelect}
+            fieldNames={fieldNames}
+            titleRender={(node) => compile(node[labelKey])}
             selectedKeys={selectedKeys}
             blockNode
           />

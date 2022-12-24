@@ -1,8 +1,8 @@
 import { css } from '@emotion/css';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
 import { useCollection } from '../../../collection-manager';
+import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
 
 export const AssociationFilterInitializer = () => {
   const { t } = useTranslation();
@@ -20,18 +20,13 @@ export const AssociationFilterInitializer = () => {
     schema: {
       name: field.name,
       type: 'void',
-      'x-target-collection': field.target,
       'x-designer': 'AssociationFilter.Item.Designer',
-      'x-designer-props': {
+      'x-component': 'AssociationFilter.Item',
+      'x-component-props': {
         fieldNames: {
-          label: 'id',
+          label: field.targetKey || 'id',
         },
       },
-      'x-decorator': 'CollectionFieldProvider',
-      'x-decorator-props': {
-        name: field.name,
-      },
-      'x-component': 'AssociationFilter.Item',
       properties: {},
     },
   }));

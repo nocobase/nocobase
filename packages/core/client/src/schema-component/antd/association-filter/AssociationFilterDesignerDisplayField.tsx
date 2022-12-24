@@ -1,5 +1,5 @@
-import React from 'react';
 import { merge } from '@formily/shared';
+import React from 'react';
 
 import { SchemaInitializer } from '../../../schema-initializer';
 import { useCurrentSchema } from '../../../schema-initializer/utils';

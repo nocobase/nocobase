@@ -1,10 +1,11 @@
-import React from 'react';
 import { css } from '@emotion/css';
-import cls from 'classnames';
-import { useDesigner } from '../../hooks';
-import { SortableItem } from '../../common';
-import { useSchemaInitializer } from '../../../schema-initializer';
 import { useFieldSchema } from '@formily/react';
+import cls from 'classnames';
+import React from 'react';
+import { useCollection } from '../../../collection-manager';
+import { useSchemaInitializer } from '../../../schema-initializer';
+import { SortableItem } from '../../common';
+import { useDesigner } from '../../hooks';
 import { AssociationFilterInitializer } from './AssociationFilter.Initializer';
 import { AssociationFilterItem } from './AssociationFilter.Item';
 import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
@@ -77,3 +78,9 @@ AssociationFilter.Item = AssociationFilterItem as typeof AssociationFilterItem &
   Designer: typeof AssociationFilterItemDesigner;
 };
 AssociationFilter.Item.Designer = AssociationFilterItemDesigner;
+
+AssociationFilter.useAssociationField = () => {
+  const fieldSchema = useFieldSchema();
+  const { getField } = useCollection();
+  return React.useMemo(() => getField(fieldSchema.name as any), [fieldSchema.name]);
+};

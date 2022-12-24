@@ -1,18 +1,21 @@
-import React from 'react';
 import { useFieldSchema } from '@formily/react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
+import { AssociationFilter } from './AssociationFilter';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
+  const collectionField = AssociationFilter.useAssociationField();
+
   const { getCollectionFields } = useCollectionManager();
   const compile = useCompile();
   const { dn } = useDesignable();
 
-  const targetFields = getCollectionFields(fieldSchema['x-target-collection']) ?? [];
+  const targetFields = getCollectionFields(collectionField.target) ?? [];
 
   const options = targetFields
     .filter(
@@ -30,9 +33,9 @@ export const AssociationFilterItemDesigner = (props) => {
     const fieldNames = {
       label,
     };
-    fieldSchema['x-designer-props'] = fieldSchema['x-designer-props'] || {};
-    fieldSchema['x-designer-props']['fieldNames'] = fieldNames;
-    schema['x-designer-props'] = fieldSchema['x-designer-props'];
+    fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+    fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+    schema['x-component-props'] = fieldSchema['x-component-props'];
     dn.emit('patch', {
       schema,
     });
@@ -45,7 +48,7 @@ export const AssociationFilterItemDesigner = (props) => {
         key="title-field"
         title={t('Title field')}
         options={options}
-        value={fieldSchema['x-designer-props']?.fieldNames?.label}
+        value={fieldSchema['x-component-props']?.fieldNames?.label}
         onChange={onTitleFieldChange}
       />
       <SchemaSettings.Remove
