@@ -205,6 +205,7 @@ export const AssociationFilterItem = (props) => {
                   flex: 1 1 auto;
                   overflow: hidden;
                   text-overflow: ellipsis;
+                  white-space: nowrap;
                 `}
               >
                 {searchVisible ? (
