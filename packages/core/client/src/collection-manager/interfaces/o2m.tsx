@@ -59,6 +59,7 @@ export const o2m: IField = {
           block: {
             type: 'void',
             'x-decorator': 'TableFieldProvider',
+            'x-acl-action': `${field.target}:list`,
             'x-decorator-props': {
               collection: field.target,
               association: association,

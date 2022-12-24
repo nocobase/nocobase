@@ -24,6 +24,7 @@ const isCollectionFieldComponent = (schema: ISchema) => {
 const useAclCheck = (schema: Schema, params) => {
   const fieldName = Object.keys(schema.properties)?.[0];
   const fieldWhiteList = params?.whitelist || params?.fields?.concat(params?.appends);
+  console.log(fieldWhiteList)
   return fieldWhiteList && schema['x-action-column'] !== 'actions' ? fieldWhiteList?.includes(fieldName) : true;
 };
 
