@@ -1,4 +1,5 @@
-import { observer } from '@formily/react';
+import { observer, useField } from '@formily/react';
+import { useAPIClient } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +7,7 @@ import RIframe from 'react-iframe';
 import type { IIframe } from 'react-iframe/types';
 import { IframeDesigner } from './Iframe.Designer';
 
-function isNumeric(str: string) {
+function isNumeric(str: string | undefined) {
   if (typeof str !== 'string') return false; // we only process strings!
   return (
     !isNaN(str as any) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
@@ -14,15 +15,27 @@ function isNumeric(str: string) {
   ); // ...and ensure strings of whitespace fail
 }
 
-export const Iframe: any = observer((props: IIframe) => {
-  const { url, height, ...others } = props;
+export const Iframe: any = observer((props: IIframe & { html?: string; htmlId?: number; mode: string }) => {
+  const { url, htmlId, mode = 'url', height, html, ...others } = props;
+
   const { t } = useTranslation();
-  if (!url) {
+  const api = useAPIClient();
+  const field = useField();
+
+  const src = React.useMemo(() => {
+    if (mode === 'html') {
+      return `/api/iframeHtml:getHtml/${htmlId}?token=${api.auth.getToken()}&v=${field.data?.v || ''}`;
+    }
+    return url;
+  }, [url, mode, htmlId, field.data?.v]);
+
+  if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
     return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
   }
+
   return (
     <RIframe
-      url={url}
+      url={src}
       width="100%"
       display="block"
       position="relative"
