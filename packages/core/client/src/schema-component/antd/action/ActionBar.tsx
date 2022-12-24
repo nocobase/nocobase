@@ -27,7 +27,7 @@ export const ActionBar = observer((props: any) => {
       </div>
     );
   }
-  const hasActions = Object.keys(fieldSchema.properties).length > 0;
+  const hasActions = Object.keys(fieldSchema.properties ?? {}).length > 0;
   return (
     <div
       style={
