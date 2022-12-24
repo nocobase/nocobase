@@ -173,7 +173,7 @@ export async function importCollection(
         }
 
         if (field.dataType === DataTypes.JSON) {
-          val = JSON.parse(val);
+          val = lodash.isString(val) ? JSON.parse(val) : val;
         }
 
         carry[column] = val;
