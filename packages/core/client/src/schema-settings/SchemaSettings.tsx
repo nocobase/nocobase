@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import { createForm, Field, GeneralField } from '@formily/core';
-import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
+import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Alert, Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
 import classNames from 'classnames';
@@ -22,7 +22,7 @@ import {
   useAPIClient,
   useCollection,
   useCompile,
-  useDesignable
+  useDesignable,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -60,6 +60,7 @@ type SchemaSettingsNested = {
   Item?: React.FC<MenuItemProps>;
   Divider?: React.FC;
   Popup?: React.FC<MenuItemProps & { schema?: ISchema }>;
+  SwitchItem?: React.FC<SwitchItemProps>;
   [key: string]: any;
 };
 
@@ -381,8 +382,10 @@ SchemaSettings.Remove = (props: any) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const ctx = useBlockTemplateContext();
+  const form = useForm();
   return (
     <SchemaSettings.Item
+      eventKey="remove"
       onClick={() => {
         Modal.confirm({
           title: t('Delete block'),
@@ -402,6 +405,7 @@ SchemaSettings.Remove = (props: any) => {
             } else {
               dn.remove(null, options);
             }
+            delete form.values[fieldSchema.name];
           },
         });
       }}
@@ -428,6 +432,12 @@ SchemaSettings.SelectItem = (props) => {
     </SchemaSettings.Item>
   );
 };
+
+interface SwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
+  title: string;
+  checked?: boolean;
+  onChange?: (v: boolean) => void;
+}
 
 SchemaSettings.SwitchItem = (props) => {
   const { title, onChange, ...others } = props;

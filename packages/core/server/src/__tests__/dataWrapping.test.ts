@@ -19,6 +19,7 @@ describe('application', () => {
           collate: 'utf8mb4_unicode_ci',
         },
       },
+      acl: false,
       resourcer: {
         prefix: '/api',
       },

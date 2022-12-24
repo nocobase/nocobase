@@ -1,5 +1,5 @@
 import { Dropdown, Menu } from 'antd';
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useAPIClient, useCurrentUserContext } from '..';
@@ -8,18 +8,15 @@ import { ChangePassword } from './ChangePassword';
 import { EditProfile } from './EditProfile';
 import { LanguageSettings } from './LanguageSettings';
 import { SwitchRole } from './SwitchRole';
+import {useCurrentAppInfo} from '../appInfo/CurrentAppInfoProvider'
+
 
 const ApplicationVersion = () => {
-  const { data, loading } = useRequest({
-    url: 'app:getInfo',
-  });
-  if (loading) {
-    return null;
-  }
+  const data=useCurrentAppInfo();
   return (
-    <Menu.Item key="version" disabled>
-      Version {data?.data?.version}
-    </Menu.Item>
+      <Menu.Item key="version" disabled>
+        Version {data?.data?.version}
+      </Menu.Item>
   );
 };
 

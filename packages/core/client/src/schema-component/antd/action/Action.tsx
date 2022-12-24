@@ -74,7 +74,6 @@ export const Action: ComposedAction = observer((props: any) => {
     component,
     useAction = useA,
     className,
-    disabled,
     icon,
     title,
     ...others
@@ -90,6 +89,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const form = useForm();
   const designerProps = fieldSchema['x-designer-props'];
   const openMode = fieldSchema?.['x-component-props']?.['openMode'];
+  const openSize = fieldSchema?.['x-component-props']?.['openSize'];
   const renderButton = () => (
     <SortableItem
       {...others}
@@ -129,7 +129,9 @@ export const Action: ComposedAction = observer((props: any) => {
         formValueChanged,
         setFormValueChanged,
         openMode,
+        openSize,
         containerRefKey,
+        fieldSchema,
       }}
     >
       {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}

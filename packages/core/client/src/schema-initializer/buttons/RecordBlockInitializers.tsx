@@ -12,13 +12,13 @@ const recursiveParent = (schema: Schema) => {
   } else {
     return recursiveParent(schema.parent);
   }
-}
+};
 
 const useRelationFields = () => {
   const fieldSchema = useFieldSchema();
   const { getCollectionFields } = useCollectionManager();
   let fields = [];
-  
+
   if (fieldSchema['x-initializer']) {
     fields = useCollection().fields;
   } else {
@@ -52,7 +52,7 @@ const useRelationFields = () => {
             //   component: 'RecordAssociationFormBlockInitializer',
             // },
           ],
-        }
+        };
       }
 
       if (['hasMany', 'belongsToMany'].includes(field.type)) {
@@ -90,7 +90,7 @@ const useRelationFields = () => {
               component: 'RecordAssociationCalendarBlockInitializer',
             },
           ],
-        }
+        };
       }
 
       return {
@@ -101,12 +101,30 @@ const useRelationFields = () => {
         component: 'RecordAssociationBlockInitializer',
       };
     }) as any;
-    return relationFields;
+  return relationFields;
+};
+
+const useInheritFields = (props) => {
+  const { actionInitializers } = props;
+  const collection = useCollection();
+  const { getChildrenCollections } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collection.name);
+  return childrenCollections.map((c) => {
+    return {
+      key: c.key,
+      type: 'item',
+      title: c?.title || c.name,
+      component: 'RecordReadPrettyFormBlockInitializer',
+      icon: false,
+      targetCollection: c,
+      actionInitializers,
+    };
+  });
 };
 
 export const RecordBlockInitializers = (props: any) => {
   const { t } = useTranslation();
-  const { insertPosition, component } = props;
+  const { insertPosition, component, actionInitializers } = props;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -124,6 +142,7 @@ export const RecordBlockInitializers = (props: any) => {
               type: 'item',
               title: '{{t("Details")}}',
               component: 'RecordReadPrettyFormBlockInitializer',
+              actionInitializers,
             },
             {
               key: 'form',
@@ -132,6 +151,11 @@ export const RecordBlockInitializers = (props: any) => {
               component: 'RecordFormBlockInitializer',
             },
           ],
+        },
+        {
+          type: 'itemGroup',
+          title: '{{t("Children collection blocks")}}',
+          children: useInheritFields(props),
         },
         {
           type: 'itemGroup',

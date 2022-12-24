@@ -9,13 +9,15 @@ import { collection } from '../../schemas/collection';
 import { OnField } from './OnField';
 import { EndsByField } from './EndsByField';
 import { RepeatField } from './RepeatField';
+import { SCHEDULE_MODE } from './constants';
+import { NAMESPACE } from '../../locale';
 
 const ModeFieldsets = {
-  0: {
+  [SCHEDULE_MODE.STATIC]: {
     startsOn: {
       type: 'datetime',
       name: 'startsOn',
-      title: '{{t("Starts on")}}',
+      title: `{{t("Starts on", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker',
       'x-component-props': {
@@ -26,7 +28,7 @@ const ModeFieldsets = {
     repeat: {
       type: 'string',
       name: 'repeat',
-      title: '{{t("Repeat mode")}}',
+      title: `{{t("Repeat mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RepeatField',
       'x-reactions': [
@@ -51,7 +53,7 @@ const ModeFieldsets = {
     endsOn: {
       type: 'datetime',
       name: 'endsOn',
-      title: '{{t("Ends on")}}',
+      title: `{{t("Ends on", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker',
       'x-component-props': {
@@ -61,16 +63,16 @@ const ModeFieldsets = {
     limit: {
       type: 'number',
       name: 'limit',
-      title: '{{t("Repeat limit")}}',
+      title: `{{t("Repeat limit", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
       'x-component-props': {
-        placeholder: '{{t("No limit")}}',
+        placeholder: `{{t("No limit", { ns: "${NAMESPACE}" })}}`,
         min: 0
       }
     }
   },
-  1: {
+  [SCHEDULE_MODE.COLLECTION_FIELD]: {
     collection: {
       ...collection,
       'x-reactions': [
@@ -88,7 +90,7 @@ const ModeFieldsets = {
     },
     startsOn: {
       type: 'object',
-      title: '{{t("Starts on")}}',
+      title: `{{t("Starts on", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'OnField',
       'x-reactions': [
@@ -106,7 +108,7 @@ const ModeFieldsets = {
     repeat: {
       type: 'string',
       name: 'repeat',
-      title: '{{t("Repeat mode")}}',
+      title: `{{t("Repeat mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RepeatField',
       'x-reactions': [
@@ -130,23 +132,28 @@ const ModeFieldsets = {
     },
     endsOn: {
       type: 'object',
-      title: '{{t("Ends on")}}',
+      title: `{{t("Ends on", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'EndsByField'
     },
     limit: {
       type: 'number',
       name: 'limit',
-      title: '{{t("Repeat limit")}}',
+      title: `{{t("Repeat limit", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
       'x-component-props': {
-        placeholder: '{{t("No limit")}}',
+        placeholder: `{{t("No limit", { ns: "${NAMESPACE}" })}}`,
         min: 0
       }
     }
   }
 };
+
+const scheduleModeOptions = [
+  { value: SCHEDULE_MODE.STATIC, label: `{{t("Based on certain date", { ns: "${NAMESPACE}" })}}` },
+  { value: SCHEDULE_MODE.COLLECTION_FIELD, label: `{{t("Based on date field of collection", { ns: "${NAMESPACE}" })}}` },
+];
 
 export const ScheduleConfig = () => {
   const { values = {}, clearFormGraph } = useForm();
@@ -168,15 +175,12 @@ export const ScheduleConfig = () => {
       <SchemaComponent
         schema={{
           type: 'number',
-          title: '{{t("Trigger mode")}}',
+          title: `{{t("Trigger mode", { ns: "${NAMESPACE}" })}}`,
           name: 'mode',
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
           'x-component-props': {
-            options: [
-              { value: 0, label: '{{t("Based on certain date")}}' },
-              { value: 1, label: '{{t("Based on date field of collection")}}' },
-            ]
+            options: scheduleModeOptions
           },
           required: true
         }}

@@ -96,6 +96,7 @@ describe('remove action', () => {
         values: [t1.get('id')],
       });
 
+    expect(response.status).toEqual(200);
     expect(await p1.countTags()).toEqual(1);
   });
 
@@ -112,10 +113,7 @@ describe('remove action', () => {
     const postProfile = await Profile.repository.findOne();
     expect(await postProfile.getPost()).not.toBeNull();
 
-    const response = await app
-      .agent()
-      .resource('posts.profile', p1.get('id'))
-      .remove();
+    const response = await app.agent().resource('posts.profile', p1.get('id')).remove();
 
     await postProfile.reload();
     expect(await postProfile.getPost()).toBeNull();

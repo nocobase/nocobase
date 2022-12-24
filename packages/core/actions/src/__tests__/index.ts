@@ -5,17 +5,11 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
-import table2resource from '../../../server/src/middlewares/table2resource';
+import db2resource from '../../../server/src/middlewares/db2resource';
+import { uid } from '@nocobase/utils';
 
 export function generatePrefixByPath() {
-  const { id } = require.main;
-  const key = id
-    .replace(`${process.env.PWD}/packages`, '')
-    .replace(/src\/__tests__/g, '')
-    .replace('.test.ts', '')
-    .replace(/[^\w]/g, '_')
-    .replace(/_+/g, '_');
-  return key;
+  return `mock_${uid(6)}`;
 }
 
 export function getConfig(config = {}, options?: any): DatabaseOptions {
@@ -118,7 +112,7 @@ export class MockServer extends Koa {
       await next();
     });
     this.use(bodyParser());
-    this.use(table2resource);
+    this.use(db2resource);
     this.use(
       this.resourcer.restApiMiddleware({
         prefix: '/api',

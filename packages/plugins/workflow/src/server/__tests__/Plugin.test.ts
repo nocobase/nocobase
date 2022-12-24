@@ -1,12 +1,12 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
-import { getApp } from '.';
+import { getApp, sleep } from '.';
+import { EXECUTION_STATUS } from '../constants';
 
 
 
 describe('workflow > Plugin', () => {
   let app: MockServer;
-  let agent;
   let db: Database;
   let PostModel;
   let PostRepo;
@@ -14,7 +14,6 @@ describe('workflow > Plugin', () => {
 
   beforeEach(async () => {
     app = await getApp();
-    agent = app.agent();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
     PostModel = db.getCollection('posts').model;
@@ -63,6 +62,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const count = await workflow.countExecutions();
       expect(count).toBe(0);
 
@@ -70,6 +72,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
     });
@@ -84,7 +89,11 @@ describe('workflow > Plugin', () => {
         }
       });
       expect(workflow.current).toBe(true);
+
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const c1 = await workflow.countExecutions();
       expect(c1).toBe(1);
 
@@ -92,6 +101,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
     });
@@ -107,6 +119,9 @@ describe('workflow > Plugin', () => {
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const c1 = await workflow.countExecutions();
       expect(c1).toBe(1);
 
@@ -116,6 +131,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
 
@@ -125,6 +143,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       const p3 = await PostRepo.create({ values: { title: 't3' } });
+
+      await sleep(500);
+
       const c3 = await workflow.countExecutions();
       expect(c3).toBe(2);
     });
@@ -140,6 +161,9 @@ describe('workflow > Plugin', () => {
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
       const c1 = await workflow.countExecutions();
       expect(c1).toBe(1);
 
@@ -151,13 +175,51 @@ describe('workflow > Plugin', () => {
       });
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
     });
   });
 
-  describe('revision', () => {
-    it('create revision', async () => {
+  describe('cycling trigger', () => {
+    it('trigger should not be triggered more than once in same execution', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          params: {
+            values: {
+              title: 't2'
+            }
+          }
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(2);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
+  describe('dispatcher', () => {
+    it('multiple triggers in same event', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'collection',
@@ -167,47 +229,39 @@ describe('workflow > Plugin', () => {
         }
       });
 
-      const { body, status } = await agent.resource(`workflows`).revision({
-        filterByTk: w1.id
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
       });
 
-      expect(status).toBe(200);
-      const { data: w2 } = body;
-      expect(w2.config).toMatchObject(w1.config);
-      expect(w2.key).toBe(w1.key);
-      expect(w2.current).toBeFalsy();
-      expect(w2.enabled).toBe(false);
+      const w3 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await WorkflowModel.update({
-        enabled: true
-      }, {
-        where: {
-          id: w2.id
-        },
-        individualHooks: true
-      });
+      await sleep(1000);
 
-      const [w1next, w2next] = await WorkflowModel.findAll({
-        order: [['id', 'ASC']]
-      });
+      const [e1] = await w1.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
 
-      expect(w1next.enabled).toBe(false);
-      expect(w1next.current).toBe(null);
-      expect(w2next.enabled).toBe(true);
-      expect(w2next.current).toBe(true);
+      const [e2] = await w2.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
 
-      const p2 = await PostRepo.create({ values: { title: 't2' } });
-
-      const [e1] = await w1next.getExecutions();
-      const [e2] = await w2next.getExecutions();
-      expect(e1.key).toBe(e2.key);
-      expect(e1.workflowId).toBe(w1.id);
-      expect(e2.workflowId).toBe(w2.id);
+      const [e3] = await w3.getExecutions();
+      expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
 
-    it('revision with nodes', async () => {
+    it('when server starts, process all created executions', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'collection',
@@ -217,73 +271,28 @@ describe('workflow > Plugin', () => {
         }
       });
 
-      const n1 = await w1.createNode({
-        type: 'echo'
-      });
-      const n2 = await w1.createNode({
-        type: 'calculation',
-        config: {
-          calculation: {
-            calculator: 'add',
-            operands: [
-              {
-                type: '$jobsMapByNodeId',
-                options: {
-                  nodeId: n1.id,
-                  path: 'data.read'
-                }
-              },
-              {
-                value: `{{$jobsMapByNodeId.${n1.id}.data.read}}`
-              }
-            ]
-          }
-        },
-        upstreamId: n1.id
-      });
-      await n1.setDownstream(n2);
+      await app.stop();
 
-      const { body } = await agent.resource(`workflows`).revision({
-        filterByTk: w1.id
-      });
-      const w2 = await WorkflowModel.findByPk(body.data.id, {
-        include: [
-          'nodes'
-        ]
-      });
+      await db.reconnect();
 
-      const n1_2 = w2.nodes.find(n => !n.upstreamId);
-      const n2_2 = w2.nodes.find(n => !n.downstreamId);
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      expect(n1_2.type).toBe('echo');
-      expect(n2_2.type).toBe('calculation');
-      expect(n2_2.config).toMatchObject({
-        calculation: {
-          calculator: 'add',
-          operands: [
-            {
-              type: '$jobsMapByNodeId',
-              options: {
-                nodeId: n1_2.id,
-                path: 'data.read'
-              }
-            },
-            {
-              value: `{{$jobsMapByNodeId.${n1_2.id}.data.read}}`
-            }
-          ]
+      const ExecutionModel = db.getCollection('executions').model;
+      const e1 = await ExecutionModel.create({
+        workflowId: w1.id,
+        key: w1.key,
+        useTransaction: w1.useTransaction,
+        context: {
+          data: p1.get()
         }
       });
 
-      await w2.update({ enabled: true });
+      await app.start();
 
-      await PostRepo.create({
-        values: { title: 't1', read: 1 }
-      });
+      await sleep(500);
 
-      const [execution] = await w2.getExecutions();
-      const [echo, calculation] = await execution.getJobs({ order: [['id', 'ASC']] });
-      expect(calculation.result).toBe(2);
+      const [e2] = await w1.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
   });
 });

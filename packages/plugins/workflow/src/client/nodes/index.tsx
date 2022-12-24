@@ -1,14 +1,20 @@
-import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useContext } from 'react';
+import {
+  CloseOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
-import { Registry } from '@nocobase/utils/client';
 import { Button, message, Modal, Tag } from 'antd';
-import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import parse from 'json-templates';
+
+import { Registry } from '@nocobase/utils/client';
 import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
 
 import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from '../style';
-import { AddButton, useFlowContext } from '../WorkflowCanvas';
+import { AddButton } from '../AddButton';
+import { useFlowContext } from '../FlowContext';
 
 import calculation from './calculation';
 import condition from './condition';
@@ -19,6 +25,9 @@ import query from './query';
 import create from './create';
 import update from './update';
 import destroy from './destroy';
+import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
+import { lang, NAMESPACE } from '../locale';
+import request from "./request";
 
 export interface Instruction {
   title: string;
@@ -45,9 +54,9 @@ instructions.register('query', query);
 instructions.register('create', create);
 instructions.register('update', update);
 instructions.register('destroy', destroy);
+instructions.register('request', request);
 
 function useUpdateAction() {
-  const { t } = useTranslation();
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
@@ -57,10 +66,11 @@ function useUpdateAction() {
   return {
     async run() {
       if (workflow.executed) {
-        message.error(t('Node in executed workflow cannot be modified'));
+        message.error(lang('Node in executed workflow cannot be modified'));
         return;
       }
-      await form.submit();
+      // TODO: how to do validation separately for each field? especially disabled for dynamic fields?
+      // await form.submit();
       await api.resource('flow_nodes', data.id).update({
         filterByTk: data.id,
         values: {
@@ -81,7 +91,6 @@ export function useNodeContext() {
 }
 
 export function Node({ data }) {
-
   const instruction = instructions.get(data.type);
 
   return (
@@ -124,10 +133,12 @@ export function Node({ data }) {
 export function RemoveButton() {
   const { t } = useTranslation();
   const api = useAPIClient();
-  const { workflow } = useFlowContext();
-  const resource = api.resource('workflows.nodes', workflow.id);
+  const { workflow, nodes, onNodeRemoved } = useFlowContext() ?? {};
   const current = useNodeContext();
-  const { nodes, onNodeRemoved } = useFlowContext();
+  if (!workflow) {
+    return null;
+  }
+  const resource = api.resource('workflows.nodes', workflow.id);
 
   async function onRemove() {
     async function onOk() {
@@ -137,10 +148,28 @@ export function RemoveButton() {
       onNodeRemoved(node);
     }
 
+    const usingNodes = nodes.filter(node => {
+      if (node === current) {
+        return false;
+      }
+
+      const template = parse(node.config);
+      const refs = template.parameters.filter(({ key }) => key.startsWith(`$jobsMapByNodeId.${current.id}.`) || key === `$jobsMapByNodeId.${current.id}`);
+      return refs.length;
+    });
+
+    if (usingNodes.length) {
+      Modal.error({
+        title: lang('Can not delete'),
+        content: lang('The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.', { nodes: usingNodes.map(item => `#${item.id}`).join(', ') }),
+      });
+      return;
+    }
+
     const hasBranches = !nodes.find(item => item.upstream === current && item.branchIndex != null);
     const message = hasBranches
       ? t('Are you sure you want to delete it?')
-      : t('This node contains branches, deleting will also be preformed to them, are you sure?');
+      : lang('This node contains branches, deleting will also be preformed to them, are you sure?');
 
     Modal.confirm({
       title: t('Delete'),
@@ -162,9 +191,110 @@ export function RemoveButton() {
   );
 }
 
+export function JobButton() {
+  const compile = useCompile();
+  const { execution } = useFlowContext();
+  const { id, type, title, job } = useNodeContext() ?? {};
+  if (!execution) {
+    return null;
+  }
+
+  if (!job) {
+    return (
+      <span
+        className={cx('workflow-node-job-button', css`
+          border: 2px solid #d9d9d9;
+          border-radius: 50%;
+        `)}
+      />
+    );
+  }
+
+  const instruction = instructions.get(type);
+  const { value, icon, color } = JobStatusOptionsMap[job.status];
+
+  return (
+    <SchemaComponent
+      schema={{
+        type: 'void',
+        properties: {
+          job: {
+            type: 'void',
+            'x-component': 'Action',
+            'x-component-props': {
+              title: icon,
+              shape: 'circle',
+              className: ['workflow-node-job-button', css`
+                background-color: ${color};
+                &:hover,&:focus{
+                  background-color: ${color}
+                }
+              `]
+            },
+            properties: {
+              [job.id]: {
+                type: 'void',
+                'x-decorator': 'Form',
+                'x-decorator-props': {
+                  initialValue: job
+                },
+                'x-component': 'Action.Modal',
+                title: (
+                  <div className={cx(nodeTitleClass)}>
+                    <Tag>{compile(instruction.title)}</Tag>
+                    <strong>{title}</strong>
+                    <span className="workflow-node-id">#{id}</span>
+                  </div>
+                ),
+                properties: {
+                  status: {
+                    type: 'number',
+                    title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Select',
+                    enum: JobStatusOptions,
+                    'x-read-pretty': true,
+                  },
+                  updatedAt: {
+                    type: 'string',
+                    title: `{{t("Executed at", { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'DatePicker',
+                    'x-component-props': {
+                      showTime: true
+                    },
+                    'x-read-pretty': true,
+                  },
+                  result: {
+                    type: 'object',
+                    title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Input.JSON',
+                    'x-component-props': {
+                      className: css`
+                        padding: 1em;
+                        background-color: #eee;
+                      `
+                    },
+                    'x-read-pretty': true,
+                  }
+                }
+              }
+            }
+          }
+        }
+      }}
+    />
+  );
+}
+
 export function NodeDefaultView(props) {
   const compile = useCompile();
-  const { workflow } = useFlowContext();
+  const { workflow } = useFlowContext() ?? {};
+  if (!workflow) {
+    return null;
+  }
+
   const { data, children } = props;
   const instruction = instructions.get(data.type);
   const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
@@ -181,6 +311,7 @@ export function NodeDefaultView(props) {
             <span className="workflow-node-id">#{data.id}</span>
           </h4>
           <RemoveButton />
+          <JobButton />
         </div>
         <SchemaComponent
           scope={instruction.scope}

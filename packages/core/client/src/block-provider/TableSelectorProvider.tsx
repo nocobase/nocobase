@@ -2,31 +2,34 @@ import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCollectionManager } from '../collection-manager';
-import { useRecord } from '../record-provider';
+import { RecordProvider, useRecord } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
 export const TableSelectorContext = createContext<any>({});
 
 const InternalTableSelectorProvider = (props) => {
-  const { params, rowKey } = props;
+  const { params, rowKey, extraFilter } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   // if (service.loading) {
   //   return <Spin />;
   // }
   return (
-    <TableSelectorContext.Provider
-      value={{
-        field,
-        service,
-        resource,
-        params,
-        rowKey,
-      }}
-    >
-      {props.children}
-    </TableSelectorContext.Provider>
+    <RecordProvider record={{}}>
+      <TableSelectorContext.Provider
+        value={{
+          field,
+          service,
+          resource,
+          params,
+          extraFilter,
+          rowKey,
+        }}
+      >
+        {props.children}
+      </TableSelectorContext.Provider>
+    </RecordProvider>
   );
 };
 
@@ -39,21 +42,23 @@ const useAssociationNames = (collection) => {
 };
 
 const recursiveParent = (schema: Schema, component) => {
-  return schema['x-component'] === component 
-    ? schema 
-    : (schema.parent ? recursiveParent(schema.parent, component) : null);
-}
+  return schema['x-component'] === component
+    ? schema
+    : schema.parent
+    ? recursiveParent(schema.parent, component)
+    : null;
+};
 
 export const TableSelectorProvider = (props) => {
   const fieldSchema = useFieldSchema();
-  const ctx = useFormBlockContext()
+  const ctx = useFormBlockContext();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const record = useRecord();
 
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   // const value = ctx.form.query(collectionFieldSchema?.name).value();
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
-  
+
   console.log('TableSelectorProvider', collectionFieldSchema, collectionField, record);
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
@@ -63,57 +68,74 @@ export const TableSelectorProvider = (props) => {
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
+  let extraFilter;
   if (collectionField) {
     if (['oho', 'o2m'].includes(collectionField.interface)) {
       if (record?.[collectionField.sourceKey]) {
-        params['filter'] = {
-          $or: [{
-            [collectionField.foreignKey]: {
-              $is: null,
-            }
-          }, {
-            [collectionField.foreignKey]: {
-              $eq: record?.[collectionField.sourceKey],
-            }
-          }]
-        }
+        extraFilter = {
+          $or: [
+            {
+              [collectionField.foreignKey]: {
+                $is: null,
+              },
+            },
+            {
+              [collectionField.foreignKey]: {
+                $eq: record?.[collectionField.sourceKey],
+              },
+            },
+          ],
+        };
       } else {
-        params['filter'] = {
+        extraFilter = {
           [collectionField.foreignKey]: {
             $is: null,
-          }
-        }
+          },
+        };
       }
     }
     if (['obo'].includes(collectionField.interface)) {
       const fields = getCollectionFields(collectionField.target);
-      const targetField = fields.find(f => f.foreignKey && f.foreignKey === collectionField.foreignKey);
+      const targetField = fields.find((f) => f.foreignKey && f.foreignKey === collectionField.foreignKey);
       if (targetField) {
         if (record?.[collectionField.foreignKey]) {
-          params['filter'] = {
-            $or: [{
-              [`${targetField.name}.${targetField.foreignKey}`]: {
-                $is: null,
-              }
-            }, {
-              [`${targetField.name}.${targetField.foreignKey}`]: {
-                $eq: record?.[collectionField.foreignKey],
-              }
-            }]
-          }
+          extraFilter = {
+            $or: [
+              {
+                [`${targetField.name}.${targetField.foreignKey}`]: {
+                  $is: null,
+                },
+              },
+              {
+                [`${targetField.name}.${targetField.foreignKey}`]: {
+                  $eq: record?.[collectionField.foreignKey],
+                },
+              },
+            ],
+          };
         } else {
-          params['filter'] = {
+          extraFilter = {
             [`${targetField.name}.${targetField.foreignKey}`]: {
               $is: null,
-            }
-          }
+            },
+          };
         }
       }
     }
   }
+
+  if (extraFilter) {
+    if (params?.filter) {
+      params['filter'] = {
+        $and: [extraFilter, params['filter']],
+      };
+    } else {
+      params['filter'] = extraFilter;
+    }
+  }
   return (
     <BlockProvider {...props} params={params}>
-      <InternalTableSelectorProvider {...props} params={params} />
+      <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
     </BlockProvider>
   );
 };

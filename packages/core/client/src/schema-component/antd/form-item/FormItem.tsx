@@ -6,7 +6,7 @@ import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useDesignable } from '../..';
+import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -35,13 +35,15 @@ export const FormItem: any = (props) => {
         `}`}
         {...props}
         extra={
-          field.description ? (
+          typeof field.description === 'string' ? (
             <div
               dangerouslySetInnerHTML={{
                 __html: HTMLEncode(field.description).split('\n').join('<br/>'),
               }}
             />
-          ) : null
+          ) : (
+            field.description
+          )
         }
       />
     </BlockItem>
@@ -56,13 +58,14 @@ FormItem.Designer = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { dn, refresh, insertAdjacent, insertBeforeBegin } = useDesignable();
+  const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
   const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
+  const fieldComponentOptions = useFieldComponentOptions();
   const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
@@ -189,7 +192,7 @@ FormItem.Designer = (props) => {
         <SchemaSettings.SwitchItem
           key="required"
           title={t('Required')}
-          checked={fieldSchema.required}
+          checked={fieldSchema.required as boolean}
           onChange={(required) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
@@ -328,62 +331,61 @@ FormItem.Designer = (props) => {
       )}
       {form && !form?.readPretty && collectionField?.uiSchema?.type && (
         <SchemaSettings.ModalItem
-        title={t('Set default value')}
-        components={{ ArrayCollapse, FormLayout }}
-        schema={{
-          type: 'object',
-          title: t('Set default value'),
-          properties: {
-            default: {
-              ...collectionField.uiSchema,
-              name: 'default',
-              title: t('Default value'),
-              'x-decorator': 'FormItem',
-              default: fieldSchema.default || collectionField.defaultValue,
+          title={t('Set default value')}
+          components={{ ArrayCollapse, FormLayout }}
+          schema={
+            {
+              type: 'object',
+              title: t('Set default value'),
+              properties: {
+                default: {
+                  ...collectionField.uiSchema,
+                  name: 'default',
+                  title: t('Default value'),
+                  'x-decorator': 'FormItem',
+                  default: fieldSchema.default || collectionField.defaultValue,
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={(v) => {
+            const schema: ISchema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            if (field.value !== v.default) {
+              field.value = v.default;
             }
-          }
-        } as ISchema}
-        onSubmit={(v) => {
-          const schema: ISchema = {
-            ['x-uid']: fieldSchema['x-uid'],
-          };
-          if (field.value !== v.default) {
-            field.value = v.default;
-          }
-          fieldSchema.default = v.default;
-          schema.default = v.default;
-          dn.emit('patch', {
-            schema,
-          });
-          refresh();
-        }}
-      />
+            fieldSchema.default = v.default;
+            schema.default = v.default;
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
       )}
-      {form && !isSubFormAssocitionField && ['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface) && (
+      {form && !isSubFormAssocitionField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
-          options={
-            collectionField?.interface === 'o2m'
-              ? [
-                  { label: t('Record picker'), value: 'CollectionField' },
-                  { label: t('Subtable'), value: 'TableField' },
-                ]
-              : [
-                  { label: t('Record picker'), value: 'CollectionField' },
-                  { label: t('Subform'), value: 'FormField' },
-                ]
-          }
+          options={fieldComponentOptions}
           value={fieldSchema['x-component']}
-          onChange={(v) => {
+          onChange={(type) => {
             const schema: ISchema = {
               name: collectionField.name,
               type: 'void',
-              // title: compile(collectionField.uiSchema?.title),
+              required: fieldSchema['required'],
+              description: fieldSchema['description'],
+              default: fieldSchema['default'],
               'x-decorator': 'FormItem',
               'x-designer': 'FormItem.Designer',
-              'x-component': v,
-              'x-component-props': {},
+              'x-component': type,
+              'x-validator': fieldSchema['x-validator'],
               'x-collection-field': fieldSchema['x-collection-field'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+              'x-component-props': {
+                ...collectionField?.uiSchema?.['x-component-props'],
+                ...fieldSchema['x-component-props'],
+              },
             };
 
             interfaceConfig?.schemaInitialize?.(schema, {

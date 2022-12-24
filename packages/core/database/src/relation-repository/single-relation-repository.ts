@@ -3,6 +3,7 @@ import { SingleAssociationAccessors, Transactionable } from 'sequelize';
 import { Model } from '../model';
 import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
+import { handleAppendsQuery } from '../utils';
 import { RelationRepository, transaction } from './relation-repository';
 import { handleAppendsQuery } from '../utils';
 
@@ -44,7 +45,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     });
   }
 
-  async find(options?: SingleRelationFindOption): Promise<Model<any>> {
+  async find(options?: SingleRelationFindOption): Promise<Model<any> | null> {
     const transaction = await this.getTransaction(options);
 
     const findOptions = this.buildQueryOptions({

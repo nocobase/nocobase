@@ -1,0 +1,24 @@
+{
+  "name": "@nocobase/logger",
+  "version": "0.8.0-alpha.13",
+  "description": "nocobase logging library",
+  "license": "Apache-2.0",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/logging"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "winston": "^3.8.2",
+    "winston-daily-rotate-file": "^4.7.1"
+  }
+}

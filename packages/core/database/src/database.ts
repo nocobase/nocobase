@@ -1,4 +1,4 @@
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import glob from 'glob';
@@ -6,6 +6,7 @@ import lodash from 'lodash';
 import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
 import {
+  DataTypes,
   ModelCtor,
   Op,
   Options,
@@ -19,14 +20,46 @@ import {
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
+import ReferencesMap from './features/ReferencesMap';
+import { referentialIntegrityCheck } from './features/referential-integrity-check';
+import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
+import { InheritedCollection } from './inherited-collection';
+import InheritanceMap from './inherited-map';
 import { MigrationItem, Migrations } from './migration';
 import { Model } from './model';
 import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
+import {
+  AfterDefineCollectionListener,
+  BeforeDefineCollectionListener,
+  CreateListener,
+  CreateWithAssociationsListener,
+  DatabaseAfterDefineCollectionEventType,
+  DatabaseAfterRemoveCollectionEventType,
+  DatabaseBeforeDefineCollectionEventType,
+  DatabaseBeforeRemoveCollectionEventType,
+  DestroyListener,
+  EventType,
+  ModelCreateEventTypes,
+  ModelCreateWithAssociationsEventTypes,
+  ModelDestroyEventTypes,
+  ModelSaveEventTypes,
+  ModelSaveWithAssociationsEventTypes,
+  ModelUpdateEventTypes,
+  ModelUpdateWithAssociationsEventTypes,
+  ModelValidateEventTypes,
+  RemoveCollectionListener,
+  SaveListener,
+  SaveWithAssociationsListener,
+  SyncListener,
+  UpdateListener,
+  UpdateWithAssociationsListener,
+  ValidateListener,
+} from './types';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -42,6 +75,7 @@ interface MapOf<T> {
 export interface IDatabaseOptions extends Options {
   tablePrefix?: string;
   migrator?: any;
+  usingBigIntForId?: boolean;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -119,6 +153,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelCtor<any>, Collection>();
+  tableNameCollectionMap = new Map<string, Collection>();
+
+  referenceMap = new ReferencesMap();
+  inheritanceMap = new InheritanceMap();
 
   modelHook: ModelHook;
   version: DatabaseVersion;
@@ -150,6 +188,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
       delete opts.timezone;
     } else if (!opts.timezone) {
       opts.timezone = '+00:00';
+    }
+
+    if (options.dialect === 'postgres') {
+      // https://github.com/sequelize/sequelize/issues/1774
+      require('pg').defaults.parseInt8 = true;
     }
 
     this.sequelize = new Sequelize(opts);
@@ -205,6 +248,40 @@ export class Database extends EventEmitter implements AsyncEmitter {
         opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
       }
     });
+
+    this.initListener();
+  }
+
+  initListener() {
+    this.on('afterCreate', async (instance) => {
+      instance?.toChangedWithAssociations?.();
+    });
+
+    this.on('afterUpdate', async (instance) => {
+      instance?.toChangedWithAssociations?.();
+    });
+
+    this.on('beforeDestroy', async (instance, options) => {
+      await referentialIntegrityCheck({
+        db: this,
+        referencedInstance: instance,
+        transaction: options.transaction,
+      });
+    });
+
+    this.on('afterRemoveCollection', (collection) => {
+      this.inheritanceMap.removeNode(collection.name);
+    });
+
+    this.on('afterDefine', (model) => {
+      if (lodash.get(this.options, 'usingBigIntForId', true)) {
+        const idAttribute = model.rawAttributes['id'];
+        if (idAttribute && idAttribute.primaryKey) {
+          model.rawAttributes['id'].type = DataTypes.BIGINT;
+          model.refreshAttributes();
+        }
+      }
+    });
   }
 
   addMigration(item: MigrationItem) {
@@ -222,7 +299,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
       this.migrations.add({
         name: namespace ? `${namespace}/${filename}` : filename,
-        migration: this.requireModule(file),
+        migration: requireModule(file),
         context,
       });
     }
@@ -230,16 +307,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   inDialect(...dialect: string[]) {
     return dialect.includes(this.sequelize.getDialect());
-  }
-
-  private requireModule(module: any) {
-    if (typeof module === 'string') {
-      module = require(module);
-    }
-    if (typeof module !== 'object') {
-      return module;
-    }
-    return module.__esModule ? module.default : module;
   }
 
   /**
@@ -251,12 +318,19 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     this.emit('beforeDefineCollection', options);
 
-    const collection = new Collection(options, {
-      database: this,
-    });
+    const hasValidInheritsOptions = (() => {
+      return options.inherits && lodash.castArray(options.inherits).length > 0;
+    })();
+
+    const collection = hasValidInheritsOptions
+      ? new InheritedCollection(options, {
+          database: this,
+        })
+      : new Collection(options, {
+          database: this,
+        });
 
     this.collections.set(collection.name, collection);
-    this.modelCollection.set(collection.model, collection);
 
     this.emit('afterDefineCollection', collection);
 
@@ -283,6 +357,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const collection = this.collections.get(name);
     this.emit('beforeRemoveCollection', collection);
 
+    collection.resetFields();
+
     const result = this.collections.delete(name);
 
     this.sequelize.modelManager.removeModel(collection.model);
@@ -300,6 +376,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   getRepository<R extends Repository>(name: string): R;
   getRepository<R extends RelationRepository>(name: string, relationId: string | number): R;
+  getRepository<R extends ArrayFieldRepository>(name: string, relationId: string | number): R;
 
   getRepository<R extends RelationRepository>(name: string, relationId?: string | number): Repository | R {
     if (relationId) {
@@ -384,10 +461,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (isMySQL) {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', null);
     }
+
     const result = await this.sequelize.sync(options);
+
     if (isMySQL) {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', null);
     }
+
     return result;
   }
 
@@ -420,7 +500,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         return true;
       } catch (error) {
         if (count >= retry) {
-          throw error;
+          throw new Error('Connection failed, please check your database connection credentials and try again.');
         }
         console.log('reconnecting...', count);
         ++count;
@@ -458,7 +538,23 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.close();
   }
 
-  on(event: string | symbol, listener): this {
+  on(event: EventType, listener: any): this;
+  on(event: ModelValidateEventTypes, listener: SyncListener): this;
+  on(event: ModelValidateEventTypes, listener: ValidateListener): this;
+  on(event: ModelCreateEventTypes, listener: CreateListener): this;
+  on(event: ModelUpdateEventTypes, listener: UpdateListener): this;
+  on(event: ModelSaveEventTypes, listener: SaveListener): this;
+  on(event: ModelDestroyEventTypes, listener: DestroyListener): this;
+  on(event: ModelCreateWithAssociationsEventTypes, listener: CreateWithAssociationsListener): this;
+  on(event: ModelUpdateWithAssociationsEventTypes, listener: UpdateWithAssociationsListener): this;
+  on(event: ModelSaveWithAssociationsEventTypes, listener: SaveWithAssociationsListener): this;
+  on(event: DatabaseBeforeDefineCollectionEventType, listener: BeforeDefineCollectionListener): this;
+  on(event: DatabaseAfterDefineCollectionEventType, listener: AfterDefineCollectionListener): this;
+  on(
+    event: DatabaseBeforeRemoveCollectionEventType | DatabaseAfterRemoveCollectionEventType,
+    listener: RemoveCollectionListener,
+  ): this;
+  on(event: EventType, listener: any): this {
     // NOTE: to match if event is a sequelize or model type
     const type = this.modelHook.match(event);
 

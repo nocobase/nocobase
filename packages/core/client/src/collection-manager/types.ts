@@ -4,6 +4,7 @@ export interface CollectionManagerOptions {
   service?: any;
   interfaces?: any;
   collections?: any[];
+  templates?: any;
   refreshCM?: () => Promise<void>;
 }
 
@@ -21,6 +22,7 @@ export interface CollectionOptions {
   targetKey?: string;
   sortable?: any;
   fields?: FieldOptions[];
+  inherits?:string[];
 }
 
 export interface ICollectionProviderProps {

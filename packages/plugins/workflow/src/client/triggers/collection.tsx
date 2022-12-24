@@ -4,11 +4,13 @@ import { observer, useForm, useFormEffects } from '@formily/react';
 
 import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
-import { useFlowContext } from '../WorkflowCanvas';
+import { useFlowContext } from '../FlowContext';
 import { collection, filter } from '../schemas/collection';
 import { css } from '@emotion/css';
 import { onFieldValueChange } from '@formily/core';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
+import { NAMESPACE, useWorkflowTranslation } from '../locale';
+import { useOperandContext } from '../calculators';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
@@ -33,6 +35,7 @@ const FieldsSelect = observer((props) => {
         .filter(field => (
           !field.hidden
           && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true)
+          && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
         ))
         .map(field => (
           <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema?.title)}</Select.Option>
@@ -41,10 +44,24 @@ const FieldsSelect = observer((props) => {
   );
 });
 
+const COLLECTION_TRIGGER_MODE = {
+  CREATED: 1,
+  UPDATED: 2,
+  SAVED: 3,
+  DELETED: 4,
+};
+
+const collectionModeOptions = [
+  { label: `{{t("After record added", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.CREATED },
+  { label: `{{t("After record updated", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.UPDATED },
+  { label: `{{t("After record added or updated", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.SAVED },
+  { label: `{{t("After record deleted", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.DELETED },
+];
+
 
 
 export default {
-  title: '{{t("Collection event")}}',
+  title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
   type: 'collection',
   fieldset: {
     'config.collection': {
@@ -79,18 +96,13 @@ export default {
     },
     'config.mode': {
       type: 'number',
-      title: '{{t("Trigger on")}}',
+      title: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`,
       name: 'config.mode',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
-        options: [
-          { value: 1, label: '{{t("After record added")}}' },
-          { value: 2, label: '{{t("After record updated")}}' },
-          { value: 3, label: '{{t("After record added or updated")}}' },
-          { value: 4, label: '{{t("After record deleted")}}' }
-        ],
-        placeholder: '{{t("Trigger on")}}'
+        options: collectionModeOptions,
+        placeholder: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`
       },
       required: true,
       'x-reactions': [
@@ -98,7 +110,7 @@ export default {
           target: 'config.changed',
           fulfill: {
             state: {
-              disabled: '{{!($self.value & 0b010)}}',
+              disabled: `{{!($self.value & ${COLLECTION_TRIGGER_MODE.UPDATED})}}`,
             },
           }
         },
@@ -107,8 +119,8 @@ export default {
     'config.changed': {
       type: 'array',
       name: 'changed',
-      title: '{{t("Changed fields")}}',
-      description: '{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.")}}',
+      title: `{{t("Changed fields", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'FieldsSelect',
       'x-component-props': {
@@ -119,7 +131,7 @@ export default {
     'config.condition': {
       ...filter,
       name: 'config.condition',
-      title: '{{t("Only triggers when match conditions")}}'
+      title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`
     }
   },
   scope: {
@@ -128,17 +140,24 @@ export default {
   components: {
     FieldsSelect
   },
+  getOptions(config) {
+    const { t } = useWorkflowTranslation();
+    const options: any[] = [
+      { value: 'data', label: t('Trigger data') },
+    ];
+    return options;
+  },
   getter(props) {
-    const { type, options, onChange } = props;
+    const { onChange } = props;
     const { workflow } = useFlowContext();
-    const value = options?.path?.replace(/^data\./, '');
+    const { options } = useOperandContext();
 
     return (
       <CollectionFieldSelect
         collection={workflow.config.collection}
-        value={value}
-        onChange={(value) => {
-          onChange({ type, options: { ...options, path: `data.${value}` } });
+        value={options?.path}
+        onChange={(path) => {
+          onChange(`{{$context.data.${path}}}`);
         }}
       />
     );

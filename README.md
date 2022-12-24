@@ -1,5 +1,5 @@
-English | [中文](./README.zh-CN.md)
-
+English | [中文](./README.zh-CN.md) | [Türkçe](./README.tr-TR.md)
+ 
 ![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
 
 **Note:** 📌
@@ -12,7 +12,7 @@ We are looking for full-time, remote product design and development colleagues t
 
 ## What is NocoBase
 
-NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in minutes.
+NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in hours.
 
 Homepage:  
 https://www.nocobase.com/  
@@ -49,7 +49,7 @@ NocoBase adopts the design idea of separating the data structure from the user i
 
 ![2.collection-block.png](https://docs.nocobase.com/static/2.collection-block.7dcc928f.png)
 
-### 2. Integrate "system configuration" and "system use"
+### 2. What you see is what you get
 
 NocoBase enables the development of complex and distinctive business systems, but this does not mean that complex and specialized operations are required. With a single click, configuration options can be displayed on the usage interface, which means that administrators with system configuration rights can configure the user interface directly with WYSIWYG operations.
 
@@ -67,14 +67,14 @@ NocoBase adopts plugin architecture, all new features can be implemented by deve
 
 NocoBase supports three installation methods:
 
-- <a target="_blank" href="https://docs.nocobase.com/getting-started/installation/docker-compose">Installing With Docker (👍Recommended)</a>
+- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/docker-compose">Installing With Docker (👍Recommended)</a>
 
   Suitable for no-code scenarios, no code to write. When upgrading, just download the latest image and reboot.
 
-- <a target="_blank" href="https://docs.nocobase.com/getting-started/installation/create-nocobase-app">Installing from create-nocobase-app CLI</a>
+- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/create-nocobase-app">Installing from create-nocobase-app CLI</a>
 
   The business code of the project is completely independent and supports low-code development.
 
-- <a target="_blank" href="https://docs.nocobase.com/getting-started/installation/git-clone">Installing from Git source code</a>
+- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/git-clone">Installing from Git source code</a>
 
   If you want to experience the latest unreleased version, or want to participate in the contribution, you need to make changes and debug on the source code, it is recommended to choose this installation method, which requires a high level of development skills, and if the code has been updated, you can git pull the latest code.

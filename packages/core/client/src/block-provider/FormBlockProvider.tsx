@@ -1,9 +1,11 @@
 import { createForm } from '@formily/core';
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { RecordProvider } from '../record-provider';
+import { RecordProvider, useRecord } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { useDesignable } from '../schema-component';
+import { useCollectionManager } from '../collection-manager';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -46,10 +48,19 @@ const InternalFormBlockProvider = (props) => {
 };
 
 export const FormBlockProvider = (props) => {
+  const record = useRecord();
+  const { __tableName } = record;
+  const { getInheritCollections } = useCollectionManager();
+  const inheritCollections = getInheritCollections(__tableName);
+  const { designable } = useDesignable();
+  const flag =
+    !designable && __tableName && !inheritCollections.includes(props.collection) && __tableName !== props.collection;
   return (
-    <BlockProvider {...props}>
-      <InternalFormBlockProvider {...props} />
-    </BlockProvider>
+    !flag && (
+      <BlockProvider {...props}>
+        <InternalFormBlockProvider {...props} />
+      </BlockProvider>
+    )
   );
 };
 

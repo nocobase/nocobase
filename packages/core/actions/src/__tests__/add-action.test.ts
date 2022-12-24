@@ -25,6 +25,7 @@ describe('add action', () => {
         { type: 'hasOne', name: 'profile' },
         { type: 'belongsToMany', name: 'tags', through: 'posts_tags' },
         { type: 'string', name: 'status', defaultValue: 'draft' },
+        { type: 'set', name: 'set_field' },
       ],
     });
 
@@ -49,6 +50,51 @@ describe('add action', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  test('add values to set field', async () => {
+    const p1 = await Post.repository.create({});
+    const response = await app
+      .agent()
+      .resource('posts.set_field', p1.get('id'))
+      .add({
+        values: ['a', 'b'],
+      });
+
+    expect(response.statusCode).toEqual(200);
+
+    const listResponse = await app.agent().resource('posts.set_field', p1.get('id')).list({
+      paginate: false,
+    });
+
+    expect(listResponse.status).toEqual(200);
+    expect(listResponse.body).toEqual(['a', 'b']);
+
+    await app
+      .agent()
+      .resource('posts.set_field', p1.get('id'))
+      .remove({
+        values: ['b'],
+      });
+
+    const listResponse1 = await app.agent().resource('posts.set_field', p1.get('id')).list({
+      paginate: false,
+    });
+
+    expect(listResponse1.body).toEqual(['a']);
+
+    await app
+      .agent()
+      .resource('posts.set_field', p1.get('id'))
+      .set({
+        values: ['b', 'c', 'd'],
+      });
+
+    const listResponse2 = await app.agent().resource('posts.set_field', p1.get('id')).list({
+      paginate: false,
+    });
+
+    expect(listResponse2.body).toEqual(['b', 'c', 'd']);
   });
 
   test('add belongs to many', async () => {
@@ -85,6 +131,7 @@ describe('add action', () => {
         values: [t1.get('id'), t2.get('id')],
       });
 
+    expect(response.status).toEqual(200);
     expect(await p1.countTags()).toEqual(2);
 
     // add with through values

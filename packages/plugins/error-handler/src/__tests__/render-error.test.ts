@@ -1,13 +1,15 @@
-import { MockServer, mockServer } from '@nocobase/test';
-import { PluginErrorHandler } from '../server';
 import { Database } from '@nocobase/database';
+import { MockServer, mockServer } from '@nocobase/test';
 import supertest from 'supertest';
+import { PluginErrorHandler } from '../server';
 describe('create with exception', () => {
   let app: MockServer;
   beforeEach(async () => {
-    app = mockServer();
+    app = mockServer({
+      acl: false,
+    });
     await app.cleanDb();
-    app.plugin(PluginErrorHandler);
+    app.plugin(PluginErrorHandler, { name: 'error-handler' });
   });
 
   afterEach(async () => {

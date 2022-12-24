@@ -5,11 +5,12 @@ import {
   ForeignKeyOptions,
   HasOneOptions,
   HasOneOptions as SequelizeHasOneOptions,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { Reference } from '../features/ReferencesMap';
 
 export interface HasOneFieldOptions extends HasOneOptions {
   /**
@@ -73,6 +74,10 @@ export interface HasOneFieldOptions extends HasOneOptions {
 }
 
 export class HasOneField extends RelationField {
+  get dataType(): any {
+    return 'HasOne';
+  }
+
   get target() {
     const { target, name } = this.options;
     return target || Utils.pluralize(name);
@@ -86,9 +91,22 @@ export class HasOneField extends RelationField {
     return Utils.camelize([model.options.name.singular, model.primaryKeyAttribute].join('_'));
   }
 
+  reference(association): Reference {
+    const sourceKey = association.sourceKey;
+
+    return {
+      sourceCollectionName: this.database.modelCollection.get(association.target).name,
+      sourceField: association.foreignKey,
+      targetField: sourceKey,
+      targetCollectionName: this.database.modelCollection.get(association.source).name,
+      onDelete: this.options.onDelete,
+    };
+  }
+
   bind() {
     const { database, collection } = this.context;
     const Target = this.TargetModel;
+
     if (!Target) {
       database.addPendingField(this);
       return false;
@@ -96,7 +114,7 @@ export class HasOneField extends RelationField {
 
     const association = collection.model.hasOne(Target, {
       constraints: false,
-      ...omit(this.options, ['name', 'type', 'target']),
+      ...omit(this.options, ['name', 'type', 'target', 'onDelete']),
       as: this.name,
       foreignKey: this.foreignKey,
     });
@@ -129,6 +147,8 @@ export class HasOneField extends RelationField {
     if (tcoll) {
       tcoll.addIndex([this.options.foreignKey]);
     }
+
+    this.database.referenceMap.addReference(this.reference(association));
     return true;
   }
 
@@ -138,16 +158,30 @@ export class HasOneField extends RelationField {
     database.removePendingField(this);
     // 如果关系表内没有显式的创建外键字段，删除关系时，外键也删除掉
     const tcoll = database.collections.get(this.target);
-    const foreignKey = this.options.foreignKey;
-    const field = tcoll.findField((field) => {
-      if (field.name === foreignKey) {
-        return true;
+
+    if (tcoll && !this.options.inherit) {
+      const foreignKey = this.options.foreignKey;
+
+      const field = tcoll.findField((field) => {
+        if (field.name === foreignKey) {
+          return true;
+        }
+
+        return field.type === 'belongsTo' && field.foreignKey === foreignKey;
+      });
+
+      if (!field) {
+        tcoll.model.removeAttribute(foreignKey);
       }
-      return field.type === 'belongsTo' && field.foreignKey === foreignKey;
-    });
-    if (!field) {
-      tcoll.model.removeAttribute(foreignKey);
     }
+
+    const association = collection.model.associations[this.name];
+
+    if (association) {
+      this.database.referenceMap.removeReference(this.reference(association));
+    }
+
+    this.clearAccessors();
     // 删掉 model 的关联字段
     delete collection.model.associations[this.name];
     // @ts-ignore

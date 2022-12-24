@@ -10,7 +10,7 @@ import { assign } from './assign';
 
 type FunctionService = (...args: any[]) => Promise<any>;
 
-type ResourceActionOptions<P = any> = {
+export type ResourceActionOptions<P = any> = {
   resource?: string;
   resourceOf?: any;
   action?: string;

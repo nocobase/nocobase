@@ -1,5 +1,6 @@
 import { Plugin, PluginManager } from '@nocobase/server';
 import { mockServer } from '@nocobase/test';
+import { uid } from '@nocobase/utils';
 import { PluginMultiAppManager } from '../server';
 
 describe('test with start', () => {
@@ -35,9 +36,11 @@ describe('test with start', () => {
 
     const db = app.db;
 
+    const name = `d_${uid()}`;
+
     await db.getRepository('applications').create({
       values: {
-        name: 'sub1',
+        name,
         options: {
           plugins: ['test-package'],
         },
@@ -47,6 +50,8 @@ describe('test with start', () => {
     expect(loadFn).toHaveBeenCalledTimes(1);
     expect(installFn).toHaveBeenCalledTimes(1);
 
+    const subApp = await app.appManager.getApplication(name);
+    await subApp.destroy();
     await app.destroy();
   });
 
@@ -60,14 +65,18 @@ describe('test with start', () => {
 
     const db = app.db;
 
+    const name = `d_${uid()}`;
+
     await db.getRepository('applications').create({
       values: {
-        name: 'sub1',
+        name,
         options: {
-          plugins: ['@nocobase/plugin-ui-schema-storage'],
+          plugins: ['ui-schema-storage'],
         },
       },
     });
+    const subApp = await app.appManager.getApplication(name);
+    await subApp.destroy();
     await app.destroy();
   });
 
@@ -80,7 +89,10 @@ describe('test with start', () => {
 
     let app = mockServer();
     await app.cleanDb();
+
+
     app.plugin(PluginMultiAppManager);
+
 
     await app.loadAndInstall();
     await app.start();
@@ -91,17 +103,21 @@ describe('test with start', () => {
     mockGetPluginByName.mockReturnValue(TestPlugin);
     PluginManager.resolvePlugin = mockGetPluginByName;
 
+    const name = `d_${uid()}`;
+    console.log(name);
+
     await db.getRepository('applications').create({
       values: {
-        name: 'sub1',
+        name,
         options: {
           plugins: ['test-package'],
         },
       },
     });
 
-    expect(app.appManager.applications.get('sub1')).toBeDefined();
+    expect(app.appManager.applications.get(name)).toBeDefined();
 
+    await app.appManager.applications.get(name).destroy();
     await app.stop();
 
     let newApp = mockServer({
@@ -115,15 +131,18 @@ describe('test with start', () => {
     await newApp.start();
 
     expect(await newApp.db.getRepository('applications').count()).toEqual(1);
-    expect(newApp.appManager.applications.get('sub1')).not.toBeDefined();
+    expect(newApp.appManager.applications.get(name)).not.toBeDefined();
 
     newApp.appManager.setAppSelector(() => {
-      return 'sub1';
+      return name;
     });
 
     await newApp.agent().resource('test').test();
-    expect(newApp.appManager.applications.get('sub1')).toBeDefined();
+    expect(newApp.appManager.applications.get(name)).toBeDefined();
 
+    await newApp.appManager.applications.get(name).destroy();
+
+    await newApp.destroy();
     await app.destroy();
   });
 });

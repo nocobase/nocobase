@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { CollectionOptions } from '../../types';
+import { CollectionFieldInterface } from '../components/CollectionFieldInterface';
 import { options } from '../interfaces';
 
 const collection: CollectionOptions = {
@@ -71,7 +72,7 @@ export const collectionFieldSchema: ISchema = {
       resource: 'collections.fields',
       action: 'list',
       params: {
-        pageSize: 50,
+        paginate: false,
         filter: {
           'interface.$not': null,
         },
@@ -80,10 +81,6 @@ export const collectionFieldSchema: ISchema = {
       },
     },
   },
-  // 'x-component': 'CollectionProvider',
-  // 'x-component-props': {
-  //   collection,
-  // },
   properties: {
     summary: {
       type: 'void',
@@ -113,7 +110,7 @@ export const collectionFieldSchema: ISchema = {
         create: {
           type: 'void',
           title: '{{ t("Add new") }}',
-          'x-component': 'AddFieldAction',
+          'x-component': 'AddCollectionField',
           'x-component-props': {
             type: 'primary',
           },
@@ -123,7 +120,7 @@ export const collectionFieldSchema: ISchema = {
     table: {
       type: 'void',
       'x-uid': 'input',
-      'x-component': 'Table.Void',
+      'x-component': 'CollectionFieldsTable',
       'x-component-props': {
         rowKey: 'name',
         rowSelection: {
@@ -159,9 +156,10 @@ export const collectionFieldSchema: ISchema = {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
           'x-component': 'Table.Column',
+          title: '{{t("Field interface")}}',
           properties: {
             interface: {
-              'x-component': 'CollectionField',
+              'x-component': CollectionFieldInterface,
               'x-read-pretty': true,
             },
           },
@@ -181,7 +179,7 @@ export const collectionFieldSchema: ISchema = {
                 update: {
                   type: 'void',
                   title: '{{ t("Edit") }}',
-                  'x-component': 'EditFieldAction',
+                  'x-component': 'EditCollectionField',
                   'x-component-props': {
                     type: 'primary',
                   },
@@ -200,6 +198,40 @@ export const collectionFieldSchema: ISchema = {
                 },
               },
             },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const overridingSchema: ISchema = {
+  type: 'void',
+  title: '{{ t("Actions") }}',
+  'x-component': 'Table.Column',
+  properties: {
+    actions: {
+      type: 'void',
+      'x-component': 'Space',
+      'x-component-props': {
+        split: '|',
+      },
+      properties: {
+        overriding: {
+          type: 'void',
+          title: '{{ t("Overriding") }}',
+          'x-component': 'OverridingCollectionField',
+          'x-component-props': {
+            type: 'primary',
+            'currentCollection': '{{ currentCollection }}',
+          },
+        },
+        view: {
+          type: 'void',
+          title: '{{ t("View") }}',
+          'x-component': 'ViewCollectionField',
+          'x-component-props': {
+            type: 'primary',
           },
         },
       },

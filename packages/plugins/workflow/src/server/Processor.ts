@@ -33,7 +33,7 @@ export default class Processor {
   jobsMap = new Map<number, JobModel>();
   jobsMapByNodeId: { [key: number]: any } = {};
 
-  constructor(public execution: ExecutionModel, private options: ProcessorOptions) {
+  constructor(public execution: ExecutionModel, public options: ProcessorOptions) {
   }
 
   // make dual linked nodes list then cache
@@ -70,23 +70,13 @@ export default class Processor {
 
     const { options } = this;
 
-    const { sequelize } = (<typeof ExecutionModel>this.execution.constructor).database;
-
     // @ts-ignore
-    const transaction = options.transaction && !options.transaction.finished
+    return options.transaction && !options.transaction.finished
       ? options.transaction
-      : await sequelize.transaction();
-
-    // @ts-ignore
-    if (this.execution.transaction !== transaction.id) {
-
-    // @ts-ignore
-      await this.execution.update({ transaction: transaction.id }, { transaction });
-    }
-    return transaction;
+      : await options.plugin.db.sequelize.transaction();
   }
 
-  async prepare(commit?: boolean) {
+  private async prepare() {
     const transaction = await this.getTransaction();
     this.transaction = transaction;
 
@@ -105,10 +95,6 @@ export default class Processor {
     });
 
     this.makeJobs(jobs);
-
-    if (commit) {
-      await this.commit();
-    }
   }
 
   public async start() {

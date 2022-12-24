@@ -1,22 +1,27 @@
-import React, { useContext, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
-import { Dropdown, Menu, Button, Tag, Switch, message } from 'antd';
-import { PlusOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Link, useHistory } from 'react-router-dom';
+import { Dropdown, Menu, Button, Tag, Switch, message, Breadcrumb } from 'antd';
+import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
+import classnames from 'classnames';
 import { useTranslation } from 'react-i18next';
 
 import {
-  useAPIClient,
-  useCompile,
+  ActionContext,
+  SchemaComponent,
   useDocumentTitle,
   useResourceActionContext,
   useResourceContext
 } from '@nocobase/client';
 
-import { Instruction, instructions, Node } from './nodes';
-import { addButtonClass, branchBlockClass, branchClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
+import { FlowContext } from './FlowContext';
+import { branchBlockClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
 import { TriggerConfig } from './triggers';
-
+import { Branch } from './Branch';
+import { executionSchema } from './schemas/executions';
+import { ExecutionLink } from './ExecutionLink';
+import { ExecutionResourceProvider } from './ExecutionResourceProvider';
+import { lang } from './locale';
 
 
 
@@ -34,25 +39,20 @@ function makeNodes(nodes): void {
   }
 }
 
-const FlowContext = React.createContext(null);
-
-export function useFlowContext() {
-  return useContext(FlowContext);
-}
-
 export function WorkflowCanvas() {
-  const { t } = useTranslation();
   const history = useHistory();
+  const { t } = useTranslation();
   const { data, refresh, loading } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
   const { setTitle } = useDocumentTitle();
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
     const { title } = data?.data ?? {};
-    setTitle(`${title ? `${title} - ` : ''}${t('Workflow')}`);
+    setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
   }, [data?.data]);
 
   if (!data?.data && !loading) {
-    return <div>{t('Load failed')}</div>;
+    return <div>{lang('Load failed')}</div>;
   }
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
@@ -72,7 +72,7 @@ export function WorkflowCanvas() {
       filterByTk: workflow[targetKey],
       values: {
         enabled: value,
-        // NOTE: keep `key` field to adapter for backend
+        // NOTE: keep `key` field to adapt for backend
         key: workflow.key
       }
     });
@@ -81,12 +81,29 @@ export function WorkflowCanvas() {
 
   async function onRevision() {
     const { data: { data: revision } } = await resource.revision({
-      filterByTk: workflow[targetKey]
+      filterByTk: workflow[targetKey],
+      filter: {
+        key: workflow.key
+      }
     });
     message.success(t('Operation succeeded'));
 
     history.push(`${revision.id}`);
   }
+
+  async function onMenuCommand({ key }) {
+    switch (key) {
+      case 'history':
+        setVisible(true);
+        return;
+      case 'revision':
+        return onRevision();
+      default:
+        break;
+    }
+  }
+
+  const revisionable = workflow.executed && !revisions.find(item => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt));
 
   return (
     <FlowContext.Provider value={{
@@ -97,24 +114,36 @@ export function WorkflowCanvas() {
     }}>
       <div className="workflow-toolbar">
         <header>
-          <strong>{workflow.title}</strong>
+          <Breadcrumb>
+            <Breadcrumb.Item>
+              <Link to={`/admin/settings/workflow/workflows`}>
+                {lang('Workflow')}
+              </Link>
+            </Breadcrumb.Item>
+            <Breadcrumb.Item>
+              <strong>{workflow.title}</strong>
+            </Breadcrumb.Item>
+          </Breadcrumb>
         </header>
         <aside>
           <div className="workflow-versions">
-            <label>{t('Version')}</label>
             <Dropdown
               trigger={['click']}
               overlay={
                 <Menu
                   onClick={onSwitchVersion}
-                  defaultSelectedKeys={[workflow.id]}
+                  defaultSelectedKeys={[`${workflow.id}`]}
                   className={cx(workflowVersionDropdownClass)}
                 >
-                  {revisions.sort((a, b) => b.id - a.id).map(item => (
+                  {revisions.sort((a, b) => b.id - a.id).map((item, index) => (
                     <Menu.Item
-                      key={item.id}
+                      key={`${item.id}`}
                       icon={item.current ? <RightOutlined /> : null}
-                      className={item.executed ? 'executed' : 'unexecuted'}
+                      className={classnames({
+                        executed: item.executed,
+                        unexecuted: !item.executed,
+                        enabled: item.enabled,
+                      })}
                     >
                       <strong>{`#${item.id}`}</strong>
                       <time>{(new Date(item.createdAt)).toLocaleString()}</time>
@@ -123,21 +152,38 @@ export function WorkflowCanvas() {
                 </Menu>
               }
             >
-              <Button type="link">{workflow?.id ? `#${workflow.id}` : null}<DownOutlined /></Button>
+              <Button type="text">
+                <label>{lang('Version')}</label>
+                <span>{workflow?.id ? `#${workflow.id}` : null}</span>
+                <DownOutlined />
+              </Button>
             </Dropdown>
           </div>
           <Switch
             checked={workflow.enabled}
             onChange={onToggle}
-            checkedChildren={t('On')}
-            unCheckedChildren={t('Off')}
+            checkedChildren={lang('On')}
+            unCheckedChildren={lang('Off')}
           />
-          {workflow.executed && !revisions.find(item => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt))
-            ? (
-              <Button onClick={onRevision}>{t('Copy to new version')}</Button>
-            )
-            : null
-          }
+          <Dropdown
+            overlay={
+              <Menu onClick={onMenuCommand}>
+                <Menu.Item key="history" disabled={!workflow.executed}>{lang('Execution history')}</Menu.Item>
+                <Menu.Item key="revision" disabled={!revisionable}>{lang('Copy to new version')}</Menu.Item>
+              </Menu>
+            }
+          >
+            <Button type="text" icon={<EllipsisOutlined />} />
+          </Dropdown>
+          <ActionContext.Provider value={{ visible, setVisible }}>
+            <SchemaComponent
+              schema={executionSchema}
+              components={{
+                ExecutionResourceProvider,
+                ExecutionLink
+              }}
+            />
+          </ActionContext.Provider>
         </aside>
       </div>
       <div className="workflow-canvas">
@@ -147,105 +193,10 @@ export function WorkflowCanvas() {
         </div>
         <div className={cx(nodeCardClass)}>
           <div className={cx(nodeMetaClass)}>
-            <Tag color="#333">{t('End')}</Tag>
+            <Tag color="#333">{lang('End')}</Tag>
           </div>
         </div>
       </div>
     </FlowContext.Provider>
   );
 }
-
-export function Branch({
-  from = null,
-  entry = null,
-  branchIndex = null,
-  controller = null
-}) {
-  const list = [];
-  for (let node = entry; node; node = node.downstream) {
-    list.push(node);
-  }
-
-  return (
-    <div className={cx(branchClass)}>
-      <div className="workflow-branch-lines" />
-      {controller}
-      <AddButton upstream={from} branchIndex={branchIndex} />
-      <div className="workflow-node-list">
-        {list.map(item => <Node data={item} key={item.id} />)}
-      </div>
-    </div>
-  );
-}
-
-// TODO(bug): useless observable
-// const instructionsList = observable(Array.from(instructions.getValues()));
-
-interface AddButtonProps {
-  upstream;
-  branchIndex?: number;
-};
-
-export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
-  const compile = useCompile();
-  const api = useAPIClient();
-  const { workflow, onNodeAdded } = useFlowContext();
-  const resource = api.resource('workflows.nodes', workflow.id);
-
-  async function onCreate({ keyPath }) {
-    const type = keyPath.pop();
-    const config = {};
-    const [optionKey] = keyPath;
-    if (optionKey) {
-      const { value } = instructions.get(type).options.find(item => item.key === optionKey);
-      Object.assign(config, value);
-    }
-
-    const { data: { data: node } } = await resource.create({
-      values: {
-        type,
-        upstreamId: upstream?.id ?? null,
-        branchIndex,
-        config
-      }
-    });
-
-    onNodeAdded(node);
-  }
-
-  const groups = [
-    { value: 'control', name: '{{t("Control")}}' },
-    { value: 'collection', name: '{{t("Collection operations")}}' },
-  ];
-  const instructionList = (Array.from(instructions.getValues()) as Instruction[]);
-
-  return (
-    <div className={cx(addButtonClass)}>
-      <Dropdown
-        trigger={['click']}
-        overlay={
-          <Menu onClick={ev => onCreate(ev)}>
-            {groups.map(group => (
-              <Menu.ItemGroup key={group.value} title={compile(group.name)}>
-                {instructionList.filter(item => item.group === group.value).map(item => item.options
-                ? (
-                  <Menu.SubMenu key={item.type} title={compile(item.title)}>
-                    {item.options.map(option => (
-                      <Menu.Item key={option.key}>{compile(option.label)}</Menu.Item>
-                    ))}
-                  </Menu.SubMenu>
-                )
-                : (
-                  <Menu.Item key={item.type}>{compile(item.title)}</Menu.Item>
-                ))}
-              </Menu.ItemGroup>
-            ))}
-          </Menu>
-        }
-        disabled={workflow.executed}
-      >
-        <Button shape="circle" icon={<PlusOutlined />} />
-      </Dropdown>
-    </div>
-  );
-};

@@ -1,13 +1,15 @@
 import { ArrayItems } from '@formily/antd';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React from 'react';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableBlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { useRecord } from '../../../record-provider';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
+import { useFixedBlockDesignerSetting } from '../page';
 
 export const TableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
@@ -34,24 +36,29 @@ export const TableBlockDesigner = () => {
   });
   const template = useSchemaTemplate();
   const { dragSort } = field.decoratorProps;
+  const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
+
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.SwitchItem
-        title={t('Enable drag and drop sorting')}
-        checked={field.decoratorProps.dragSort}
-        onChange={(dragSort) => {
-          field.decoratorProps.dragSort = dragSort;
-          fieldSchema['x-decorator-props'].dragSort = dragSort;
-          service.run({ ...service.params?.[0], sort: 'sort' });
-          dn.emit('patch', {
-            schema: {
-              ['x-uid']: fieldSchema['x-uid'],
-              'x-decorator-props': fieldSchema['x-decorator-props'],
-            },
-          });
-        }}
-      />
+      {sortable && (
+        <SchemaSettings.SwitchItem
+          title={t('Enable drag and drop sorting')}
+          checked={field.decoratorProps.dragSort}
+          onChange={(dragSort) => {
+            field.decoratorProps.dragSort = dragSort;
+            fieldSchema['x-decorator-props'].dragSort = dragSort;
+            service.run({ ...service.params?.[0], sort: 'sort' });
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': fieldSchema['x-decorator-props'],
+              },
+            });
+          }}
+        />
+      )}
+      {fixedBlockDesignerSetting}
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={
@@ -176,7 +183,6 @@ export const TableBlockDesigner = () => {
           }}
         />
       )}
-
       <SchemaSettings.SelectItem
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}

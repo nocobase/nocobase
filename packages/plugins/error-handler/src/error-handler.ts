@@ -18,6 +18,7 @@ export class ErrorHandler {
         },
       ],
     };
+
     if (ctx.status === 500) {
       console.error(err);
     }
@@ -25,11 +26,12 @@ export class ErrorHandler {
 
   middleware() {
     const self = this;
-
     return async function errorHandler(ctx, next) {
       try {
         await next();
       } catch (err) {
+        ctx.log.error(err);
+
         for (const handler of self.handlers) {
           if (handler.guard(err)) {
             return handler.render(err, ctx);

@@ -1,4 +1,8 @@
 import { ISchema } from '@formily/react';
+import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
+import { NAMESPACE } from '../locale';
 import { triggers } from '../triggers';
 import { executionSchema } from './executions';
 
@@ -23,13 +27,14 @@ const collection = {
       name: 'type',
       interface: 'select',
       uiSchema: {
-        title: '{{t("Trigger type")}}',
+        title: `{{t("Trigger type", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
         'x-decorator': 'FormItem',
         enum: Array.from(triggers.getEntities()).map(([value, { title }]) => ({
           value,
           label: title,
+          color: 'gold'
         })),
         required: true,
       } as ISchema,
@@ -49,22 +54,33 @@ const collection = {
       name: 'enabled',
       interface: 'radio',
       uiSchema: {
-        title: '{{t("Status")}}',
+        title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         enum: [
-          { label: '{{t("On")}}', value: true },
-          { label: '{{t("Off")}}', value: false },
+          { label: `{{t("On", { ns: "${NAMESPACE}" })}}`, value: true, color: '#52c41a' },
+          { label: `{{t("Off", { ns: "${NAMESPACE}" })}}`, value: false },
         ],
         'x-component': 'Radio.Group',
         'x-decorator': 'FormItem',
         default: false
       } as ISchema
-    }
+    },
+    {
+      type: 'number',
+      name: 'allExecuted',
+      interface: 'integer',
+      uiSchema: {
+        title: `{{t("Executed", { ns: "${NAMESPACE}" })}}`,
+        type: 'number',
+        'x-component': 'InputNumber',
+        'x-decorator': 'FormItem',
+      } as ISchema
+    },
   ],
 };
 
 export const workflowSchema: ISchema = {
-  type: 'object',
+  type: 'void',
   properties: {
     provider: {
       type: 'void',
@@ -80,7 +96,7 @@ export const workflowSchema: ISchema = {
             filter: {
               current: true
             },
-            sort: ['createdAt'],
+            sort: ['-enabled', '-createdAt'],
             except: ['config'],
           },
         },
@@ -217,6 +233,25 @@ export const workflowSchema: ISchema = {
                 },
               }
             },
+            allExecuted: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                allExecuted: {
+                  type: 'number',
+                  'x-decorator': 'OpenDrawer',
+                  'x-decorator-props': {
+                    component: 'a',
+                  },
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                  properties: {
+                    drawer: executionSchema
+                  }
+                },
+              }
+            },
             actions: {
               type: 'void',
               title: '{{ t("Actions") }}',
@@ -232,22 +267,6 @@ export const workflowSchema: ISchema = {
                     config: {
                       type: 'void',
                       'x-component': 'WorkflowLink'
-                    },
-                    executions: {
-                      type: 'void',
-                      title: '{{t("Execution History")}}',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {
-                        type: 'primary',
-                      },
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          title: '{{t("Execution History")}}',
-                          'x-component': 'Action.Drawer',
-                          properties: executionSchema
-                        }
-                      }
                     },
                     update: {
                       type: 'void',
@@ -271,6 +290,10 @@ export const workflowSchema: ISchema = {
                               'x-decorator': 'FormItem',
                             },
                             enabled: {
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                            },
+                            description: {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                             },
@@ -299,6 +322,26 @@ export const workflowSchema: ISchema = {
                         },
                       },
                     },
+                    revision: {
+                      type: 'void',
+                      title: `{{t("Duplicate", { ns: "${NAMESPACE}" })}}`,
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        useAction() {
+                          const { t } = useTranslation();
+                          const { refresh } = useResourceActionContext();
+                          const { resource, targetKey } = useResourceContext();
+                          const { [targetKey]: filterByTk } = useRecord();
+                          return {
+                            async run() {
+                              await resource.revision({ filterByTk });
+                              message.success(t('Operation succeeded'));
+                              refresh();
+                            },
+                          };
+                        }
+                      }
+                    }
                     // delete: {
                     //   type: 'void',
                     //   title: '{{ t("Delete") }}',

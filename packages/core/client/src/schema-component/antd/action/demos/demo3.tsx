@@ -1,6 +1,6 @@
 import { FormItem, Input } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, observer, useField, useForm } from '@formily/react';
+import { ISchema, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Action, Form, SchemaComponent, SchemaComponentProvider, useActionContext } from '@nocobase/client';
 import { Select } from 'antd';
 import React, { useRef } from 'react';
@@ -20,6 +20,7 @@ const useCloseAction = () => {
 
 const Editable = observer((props) => {
   const field = useField<Field>();
+  const schema = useFieldSchema();
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
@@ -29,6 +30,7 @@ const Editable = observer((props) => {
           style={{ width: 100 }}
           onChange={(value) => {
             field.componentProps.openMode = value;
+            schema['x-component-props']['openMode'] = value;
           }}
         >
           <Select.Option value={'drawer'}>Drawer</Select.Option>

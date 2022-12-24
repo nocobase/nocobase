@@ -1,10 +1,10 @@
-import _ from 'lodash';
-import compose from 'koa-compose';
 import { requireModule } from '@nocobase/utils';
+import compose from 'koa-compose';
+import _ from 'lodash';
+import { assign, MergeStrategies } from './assign';
+import Middleware, { MiddlewareType } from './middleware';
 import Resource from './resource';
 import { HandlerType } from './resourcer';
-import Middleware, { MiddlewareType } from './middleware';
-import { assign, MergeStrategies } from './assign';
 
 export type ActionType = string | HandlerType | ActionOptions;
 
@@ -221,6 +221,15 @@ export class Action {
     this.mergeParams(params);
   }
 
+  toJSON() {
+    return {
+      actionName: this.actionName,
+      resourceName: this.resourceName,
+      resourceOf: this.resourceOf,
+      params: this.params,
+    };
+  }
+
   clone() {
     const options = _.cloneDeep(this.options);
     delete options.middleware;
@@ -286,9 +295,12 @@ export class Action {
   }
 
   getHandlers() {
-    return [...this.resource.resourcer.getMiddlewares(), ...this.getMiddlewareHandlers(), this.getHandler()].filter(
-      Boolean,
-    );
+    const handers = [
+      ...this.resource.resourcer.getMiddlewares(),
+      ...this.getMiddlewareHandlers(),
+      this.getHandler(),
+    ].filter(Boolean);
+    return handers;
   }
 
   async execute(context: any, next?: any) {

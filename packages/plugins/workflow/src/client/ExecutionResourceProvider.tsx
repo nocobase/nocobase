@@ -1,7 +1,7 @@
 import React from "react";
 import { ResourceActionProvider, useRecord } from "@nocobase/client";
 
-export const ExecutionResourceProvider = ({ request, ...others }) => {
+export const ExecutionResourceProvider = ({ request, filter = {}, ...others }) => {
   const workflow = useRecord();
   const props = {
     ...others,
@@ -11,11 +11,10 @@ export const ExecutionResourceProvider = ({ request, ...others }) => {
         ...request?.params,
         filter: {
           ...(request?.params?.filter),
-          key: workflow.key
+          key: workflow.key,
         }
       }
-    },
-    workflow
+    }
   };
 
   return (

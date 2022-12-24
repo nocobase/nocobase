@@ -35,7 +35,7 @@ Radio.Group = connect(
         {dataSource
           .filter((option) => option.value === value)
           .map((option, key) => (
-            <Tag key={key} color={option.color}>
+            <Tag key={key} color={option.color} icon={option.icon}>
               {option.label}
             </Tag>
           ))}

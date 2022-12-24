@@ -42,8 +42,8 @@ const getTitle = (item, lang) => {
   return item.title;
 };
 
-const parseMenuItems = (items, lang = null) => {
-  const menuItems = [];
+const parseMenuItems = (items: any[], lang: string) => {
+  const menuItems: any[] = [];
   for (const item of items) {
     if (typeof item === 'string') {
       const result = markdown(item, lang);
@@ -76,6 +76,38 @@ const parseMenuItems = (items, lang = null) => {
   return menuItems;
 };
 
+const navs = [
+  {
+    title: 'Welcome',
+    'title.zh-CN': '欢迎',
+    path: '/welcome',
+  },
+  {
+    title: 'User manual',
+    'title.zh-CN': '使用手册',
+    path: '/manual',
+  },
+  {
+    title: 'Plugin Development',
+    'title.zh-CN': '插件开发',
+    path: '/development',
+  },
+  {
+    title: 'API reference',
+    'title.zh-CN': 'API 参考',
+    path: '/api',
+  },
+  {
+    title: 'Schema components',
+    'title.zh-CN': 'Schema 组件库',
+    path: '/components',
+  },
+  {
+    title: 'GitHub',
+    path: 'https://github.com/nocobase/nocobase',
+  },
+];
+
 export default defineConfig({
   title: 'NocoBase',
   outputPath: `./docs/dist/${lang}`,
@@ -86,18 +118,13 @@ export default defineConfig({
   locales: [[lang, lang]],
   hash: true,
   logo: 'https://www.nocobase.com/images/logo.png',
-  navs: [
-    {
-      title: 'Docs',
-      path: '/',
-      hidden: true,
-    },
-    {
-      title: 'GitHub',
-      path: 'https://github.com/nocobase/nocobase',
-    },
-  ],
-  menus: {
-    '/': parseMenuItems(menus, lang),
+  navs: {
+    'en-US': navs,
+    'zh-CN': navs.map((item) => ({ ...item, title: item['title.zh-CN'] || item.title })),
   },
+  menus: Object.keys(menus).reduce((result, key) => {
+    const items = menus[key];
+    result[key] = parseMenuItems(items, lang);
+    return result;
+  }, {}),
 });

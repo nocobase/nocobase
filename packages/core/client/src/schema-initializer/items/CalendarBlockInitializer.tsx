@@ -12,7 +12,7 @@ import { DataBlockInitializer } from "./DataBlockInitializer";
 export const CalendarBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
-  const { getCollection } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   return (
     <DataBlockInitializer
@@ -20,8 +20,8 @@ export const CalendarBlockInitializer = (props) => {
       componentType={'Calendar'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const collection = getCollection(item.name);
-        const stringFields = collection?.fields
+        const collectionFields = getCollectionFields(item.name);
+        const stringFields = collectionFields
           ?.filter((field) => field.type === 'string')
           ?.map((field) => {
             return {
@@ -29,7 +29,7 @@ export const CalendarBlockInitializer = (props) => {
               value: field.name,
             };
           });
-        const dateFields = collection?.fields
+        const dateFields = collectionFields
           ?.filter((field) => field.type === 'date')
           ?.map((field) => {
             return {

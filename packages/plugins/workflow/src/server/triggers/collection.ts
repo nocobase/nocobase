@@ -1,5 +1,5 @@
-import { Model } from "@nocobase/database";
-import Plugin, { Trigger } from "..";
+import { Collection, Model } from "@nocobase/database";
+import { Trigger } from "..";
 import WorkflowModel from "../models/Workflow";
 
 export interface CollectionChangeTriggerConfig {
@@ -26,20 +26,34 @@ function getHookId(workflow, type) {
   return `${type}#${workflow.id}`;
 }
 
+function getFieldRawName(collection: Collection, name: string) {
+  const field = collection.getField(name);
+  if (field && field.type === 'belongsTo') {
+    return field.foreignKey;
+  }
+  return name;
+}
+
 // async function, should return promise
 async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: Model, options) {
-  const { collection, condition, changed } = workflow.config;
+  const { collection: collectionName, condition, changed } = workflow.config;
+  const collection = (<typeof Model>data.constructor).database.getCollection(collectionName);
+  const { transaction, context } = options;
+
   // NOTE: if no configured fields changed, do not trigger
-  if (changed && changed.length && changed.every(name => !data.changed(name))) {
-    // TODO: temp comment out
-    // return;
+  if (changed
+    && changed.length
+    && changed
+      .filter(name => !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collection.getField(name).type))
+      .every(name => !data.changedWithAssociations(getFieldRawName(collection, name)))
+  ) {
+    return;
   }
   // NOTE: if no configured condition match, do not trigger
   if (condition && condition.$and?.length) {
     // TODO: change to map filter format to calculation format
     // const calculation = toCalculation(condition);
-    const { repository, model } = (<typeof Model>data.constructor).database.getCollection(collection);
-    const { transaction } = options;
+    const { repository, model } = collection;
     const count = await repository.count({
       filter: {
         $and: [
@@ -47,6 +61,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
           { [model.primaryKeyAttribute]: data[model.primaryKeyAttribute] }
         ]
       },
+      context,
       transaction
     });
 
@@ -55,8 +70,8 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     }
   }
 
-  return this.plugin.trigger(workflow, { data: data.get() }, {
-    transaction: options.transaction
+  this.plugin.trigger(workflow, { data: data.get() }, {
+    context
   });
 }
 

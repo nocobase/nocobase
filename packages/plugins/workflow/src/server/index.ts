@@ -1,6 +1,6 @@
-export * from './calculators';
 export * from './constants';
-export * from './instructions';
-export * from './triggers';
-export * from './Processor';
+export * from './calculators';
+// export * from './instructions';
+export { Trigger } from './triggers';
+export { default as Processor } from './Processor';
 export { default } from './Plugin';

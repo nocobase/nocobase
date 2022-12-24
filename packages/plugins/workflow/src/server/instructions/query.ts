@@ -14,6 +14,9 @@ export default {
     const options = processor.getParsedValue(params);
     const result = await (multiple ? repo.find : repo.findOne).call(repo, {
       ...options,
+      context: {
+        executionId: processor.execution.id
+      },
       transaction: processor.transaction
     });
 

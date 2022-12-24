@@ -1,4 +1,6 @@
 import { get } from 'lodash';
+import moment from 'moment';
+import solarLunar from 'solarlunar-es';
 import { i18n } from '../../../i18n';
 
 export const toEvents = (data: any[], fieldNames: any) => {
@@ -11,3 +13,13 @@ export const toEvents = (data: any[], fieldNames: any) => {
     };
   });
 };
+
+export const getLunarDay = (date: moment.MomentInput) => {
+  const md = moment(date);
+  const result = solarLunar.solar2lunar(md.year(), md.month() + 1, md.date());
+  return typeof result !== 'number' ? result.lunarFestival || result.term || result.dayCn : result;
+};
+
+export const formatDate = (date: moment.Moment) => {
+  return date.format('YYYY-MM-DDTHH:mm:ss.SSSZ')
+}

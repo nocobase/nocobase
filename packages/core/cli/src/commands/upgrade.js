@@ -15,16 +15,18 @@ module.exports = (cli) => {
     .option('--raw')
     .option('-S|--skip-code-update')
     .action(async (options) => {
-      promptForTs();
+      if (hasTsNode()) promptForTs();
+      if (hasCorePackages()) {
+        // await run('yarn', ['install']);
+        await runAppCommand('upgrade');
+        return;
+      }
       if (options.skipCodeUpdate) {
         await runAppCommand('upgrade');
         return;
       }
-      if (hasCorePackages()) {
-        await run('yarn', ['install']);
-        await runAppCommand('upgrade');
-        return;
-      }
+      await runAppCommand('upgrade');
+      // If ts-node is not installed, do not do the following
       if (!hasTsNode()) {
         return;
       }

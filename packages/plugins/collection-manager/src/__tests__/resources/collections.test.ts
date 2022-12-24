@@ -7,7 +7,6 @@ describe('collections', () => {
 
   beforeEach(async () => {
     app = await createApp();
-    await app.install({ clean: true });
   });
 
   afterEach(async () => {

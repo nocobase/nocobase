@@ -1,15 +1,17 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { message, Modal } from 'antd';
 import parse from 'json-templates';
+import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { useFormBlockContext } from '../..';
+import { useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { useActionContext, useCompile } from '../../schema-component';
+import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
@@ -226,6 +228,173 @@ export const useCustomizeUpdateActionProps = () => {
         });
       } else {
         message.success(compile(onSuccess?.successMessage));
+      }
+    },
+  };
+};
+
+export const useCustomizeBulkUpdateActionProps = () => {
+  const { field, resource, __parent, service } = useBlockRequestContext();
+  const actionSchema = useFieldSchema();
+  const currentRecord = useRecord();
+  const tableBlockContext = useTableBlockContext();
+  const { rowKey } = tableBlockContext;
+  const { selectedRowKeys } = tableBlockContext.field?.data ?? {};
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
+  const history = useHistory();
+  const compile = useCompile();
+  const { t } = useTranslation();
+  const actionField = useField();
+
+  return {
+    async onClick() {
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        updateMode,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
+      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentUser });
+      Modal.confirm({
+        title: t('Bulk update'),
+        content: updateMode === 'selected' ? t('Update selected data?') : t('Update all data?'),
+        async onOk() {
+          const { filter } = service.params?.[0] ?? {};
+          const updateData: { filter?: any; values: any; forceUpdate: boolean } = {
+            values: { ...assignedValues },
+            filter,
+            forceUpdate: false,
+          };
+          if (updateMode === 'selected') {
+            if (!selectedRowKeys?.length) {
+              message.error(t('Please select the records to be updated'));
+              actionField.data.loading = false;
+              return;
+            }
+            updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRowKeys } }] };
+          }
+          if (!updateData.filter) {
+            updateData.forceUpdate = true;
+          }
+          try {
+            await resource.update(updateData);
+          } catch (error) {
+          } finally {
+            actionField.data.loading = false;
+          }
+          service?.refresh?.();
+          if (!(resource instanceof TableFieldResource)) {
+            __parent?.service?.refresh?.();
+          }
+          if (!onSuccess?.successMessage) {
+            return;
+          }
+          if (onSuccess?.manualClose) {
+            Modal.success({
+              title: compile(onSuccess?.successMessage),
+              onOk: async () => {
+                if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+                  if (isURL(onSuccess.redirectTo)) {
+                    window.location.href = onSuccess.redirectTo;
+                  } else {
+                    history.push(onSuccess.redirectTo);
+                  }
+                }
+              },
+            });
+          } else {
+            message.success(compile(onSuccess?.successMessage));
+          }
+        },
+        async onCancel() {
+          actionField.data.loading = false;
+        },
+      });
+    },
+  };
+};
+
+export const useCustomizeBulkEditActionProps = () => {
+  const form = useForm();
+  const { t } = useTranslation();
+  const { field, resource, __parent } = useBlockRequestContext();
+  const actionContext = useActionContext();
+  const history = useHistory();
+  const compile = useCompile();
+  const actionField = useField();
+  const tableBlockContext = useTableBlockContext();
+  const { rowKey } = tableBlockContext;
+  const { selectedRowKeys } = tableBlockContext.field?.data ?? {};
+  const { setVisible, fieldSchema: actionSchema } = actionContext;
+  return {
+    async onClick() {
+      const { onSuccess, skipValidator, updateMode } = actionSchema?.['x-action-settings'] ?? {};
+      const { filter } = __parent.service.params?.[0] ?? {};
+      if (!skipValidator) {
+        await form.submit();
+      }
+      let values = cloneDeep(form.values);
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
+      for (const key in values) {
+        if (Object.prototype.hasOwnProperty.call(values, key)) {
+          const value = values[key];
+          if (BulkEditFormItemValueType.Clear in value) {
+            values[key] = null;
+          } else if (BulkEditFormItemValueType.ChangedTo in value) {
+            values[key] = value[BulkEditFormItemValueType.ChangedTo];
+          } else if (BulkEditFormItemValueType.RemainsTheSame in value) {
+            delete values[key];
+          }
+        }
+      }
+      try {
+        const updateData: { filter?: any; values: any; forceUpdate: boolean } = {
+          values,
+          filter,
+          forceUpdate: false,
+        };
+        if (updateMode === 'selected') {
+          if (!selectedRowKeys?.length) {
+            message.error(t('Please select the records to be updated'));
+            return;
+          }
+          updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRowKeys } }] };
+        }
+        if (!updateData.filter) {
+          updateData.forceUpdate = true;
+        }
+        await resource.update(updateData);
+        actionField.data.loading = false;
+        if (!(resource instanceof TableFieldResource)) {
+          __parent?.__parent?.service?.refresh?.();
+        }
+        __parent?.service?.refresh?.();
+        setVisible?.(false);
+        if (!onSuccess?.successMessage) {
+          return;
+        }
+        if (onSuccess?.manualClose) {
+          Modal.success({
+            title: compile(onSuccess?.successMessage),
+            onOk: async () => {
+              await form.reset();
+              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+                if (isURL(onSuccess.redirectTo)) {
+                  window.location.href = onSuccess.redirectTo;
+                } else {
+                  history.push(onSuccess.redirectTo);
+                }
+              }
+            },
+          });
+        } else {
+          message.success(compile(onSuccess?.successMessage));
+        }
+      } finally {
+        actionField.data.loading = false;
       }
     },
   };

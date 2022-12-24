@@ -41,6 +41,72 @@ describe('workflow > triggers > collection', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+  });
+
+  describe('config.changed', () => {
+    it('no changed config', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts'
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.update({ filterByTk: post.id, values: { title: 't2' } });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('t2');
+    });
+
+    it('field in changed config', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+          changed: ['title']
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.update({ filterByTk: post.id, values: { title: 't2' } });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(executions[0].context.data.title).toBe('t2');
+    });
+
+    it('field not in changed config', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+          changed: ['published']
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.update({ filterByTk: post.id, values: { title: 't2' } });
+
+      await sleep(500);
+
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(0);
     });

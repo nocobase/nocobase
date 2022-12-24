@@ -12,6 +12,9 @@ export default {
     const options = processor.getParsedValue(params);
     const result = await repo.create({
       ...options,
+      context: {
+        executionId: processor.execution.id
+      },
       transaction: processor.transaction
     });
 

@@ -18,6 +18,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (opts) => {
       promptForTs();
+
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         run('ts-node', [
           '-P',
@@ -29,15 +30,22 @@ module.exports = (cli) => {
         ]);
         return;
       }
+
       const { port, client, server } = opts;
+
       if (port) {
         process.env.APP_PORT = opts.port;
       }
+
       const { APP_PORT } = process.env;
+
       let clientPort = APP_PORT;
       let serverPort;
+
       nodeCheck();
+
       await postCheck(opts);
+
       if (server) {
         serverPort = APP_PORT;
       } else if (!server && !client) {
@@ -45,10 +53,11 @@ module.exports = (cli) => {
           port: 1 * clientPort + 1,
         });
       }
+
       await runAppCommand('install', ['--silent']);
-      if (opts.dbSync) {
-        await runAppCommand('db:sync');
-      }
+      // if (opts.dbSync) {
+      //   await runAppCommand('db:sync');
+      // }
       if (server || !client) {
         console.log('starting server', serverPort);
         const argv = [
@@ -61,6 +70,9 @@ module.exports = (cli) => {
           ...process.argv.slice(3),
           `--port=${serverPort}`,
         ];
+        if (opts.dbSync) {
+          argv.push('--db-sync');
+        }
         run('ts-node-dev', argv, {
           env: {
             APP_PORT: serverPort,
@@ -73,7 +85,8 @@ module.exports = (cli) => {
           env: {
             PORT: clientPort,
             APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
-            PROXY_TARGET_URL: process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
+            PROXY_TARGET_URL:
+              process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
           },
         });
       }
