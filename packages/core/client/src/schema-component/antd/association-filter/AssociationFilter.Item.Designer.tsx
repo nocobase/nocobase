@@ -19,7 +19,8 @@ export const AssociationFilterItemDesigner = (props) => {
 
   const options = targetFields
     .filter(
-      (field) => field?.interface && ['id', 'input', 'phone', 'email', 'integer', 'number'].includes(field?.interface),
+      (field) =>
+        field?.interface && ['id', 'input', 'phone', 'email', 'integer', 'number', 'linkTo'].includes(field?.interface),
     )
     .map((field) => ({
       value: field?.name,
