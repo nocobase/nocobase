@@ -17,7 +17,6 @@ export const AssociationFilterInitializer = () => {
     key: field.key,
     title: field.uiSchema.title,
     component: 'AssociationFilterDesignerDisplayField',
-    collectionFieldKey: field.key,
     schema: {
       name: field.name,
       type: 'void',

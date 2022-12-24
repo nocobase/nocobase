@@ -5,7 +5,7 @@ import { SchemaInitializer } from '../../../schema-initializer';
 import { useCurrentSchema } from '../../../schema-initializer/utils';
 
 export const AssociationFilterDesignerDisplayField = (props) => {
-  const { collectionFieldKey, schema, item, insert } = props;
+  const { schema, item, insert } = props;
   const { exists, remove } = useCurrentSchema(schema.name, 'name', item.find, item.remove);
   return (
     <SchemaInitializer.SwitchItem
