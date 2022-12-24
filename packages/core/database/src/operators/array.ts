@@ -149,4 +149,4 @@ export default {
       [Op.and]: [Sequelize.literal(`${subQuery}`)],
     };
   },
-};
+} as Record<string, any>;
