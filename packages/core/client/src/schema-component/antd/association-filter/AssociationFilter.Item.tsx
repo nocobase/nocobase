@@ -188,6 +188,7 @@ export const AssociationFilterItem = (props) => {
               className={css`
                 align-items: center;
                 width: 100%;
+                min-width: 0;
                 height: 22px;
                 flex-wrap: nowrap;
                 ${searchVisible ? 'border-bottom: 1px solid #dcdcdc;' : ''}
@@ -195,8 +196,11 @@ export const AssociationFilterItem = (props) => {
               gutter={5}
             >
               <Col
+                title={compile(collectionField.uiSchema.title)}
                 className={css`
                   flex: 1 1 auto;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
                 `}
               >
                 {searchVisible ? (
