@@ -1,4 +1,4 @@
-import { useFieldSchema } from '@formily/react';
+import { ISchema, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../collection-manager';
@@ -44,6 +44,37 @@ export const AssociationFilterItemDesigner = (props) => {
 
   return (
     <GeneralSchemaDesigner {...props} disableInitializer={true}>
+      <SchemaSettings.ModalItem
+        title={t('Custom title')}
+        schema={
+          {
+            type: 'object',
+            title: t('Custom title'),
+            properties: {
+              title: {
+                default: fieldSchema?.title,
+                description: `${t('Original title: ')}${collectionField?.uiSchema?.title || fieldSchema?.title}`,
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                'x-component-props': {},
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={({ title }) => {
+          if (title) {
+            // field.title = title;
+            fieldSchema.title = title;
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                title: fieldSchema.title,
+              },
+            });
+          }
+          dn.refresh();
+        }}
+      />
       <SchemaSettings.SelectItem
         key="title-field"
         title={t('Title field')}

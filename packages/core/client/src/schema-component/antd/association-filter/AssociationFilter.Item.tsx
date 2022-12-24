@@ -23,7 +23,7 @@ export const AssociationFilterItem = (props) => {
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const compile = useCompile();
-  const { service, props: blockProps } = useBlockRequestContext();
+  const { service } = useBlockRequestContext();
   const { setSharedFilterStore, sharedFilterStore, getFilterParams } = useContext(SharedFilterContext);
   const [searchVisible, setSearchVisible] = useState(false);
 
@@ -117,6 +117,8 @@ export const AssociationFilterItem = (props) => {
     });
   };
 
+  const title = fieldSchema.title ?? collectionField.uiSchema?.title;
+
   return (
     <SortableItem
       className={cls(
@@ -196,7 +198,7 @@ export const AssociationFilterItem = (props) => {
               gutter={5}
             >
               <Col
-                title={compile(collectionField.uiSchema.title)}
+                title={compile(title)}
                 className={css`
                   flex: 1 1 auto;
                   overflow: hidden;
@@ -223,7 +225,7 @@ export const AssociationFilterItem = (props) => {
                     onChange={handleSearchInput}
                   />
                 ) : (
-                  compile(collectionField.uiSchema?.title)
+                  compile(title)
                 )}
               </Col>
               <Col

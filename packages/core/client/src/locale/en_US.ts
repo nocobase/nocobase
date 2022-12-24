@@ -274,6 +274,7 @@ export default {
   "Allow uploading multiple files": "Allow uploading multiple files",
   "Configure calendar": "Configure calendar",
   "Title field": "Title field",
+  "Custom title": "Custom title",
   "Start date field": "Start date field",
   "End date field": "End date field",
   "Navigate": "Navigate",
