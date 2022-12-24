@@ -208,7 +208,8 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-component-props': {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
-      return {
+      // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
+      const resultItem = {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
         component: 'CollectionFieldInitializer',
@@ -218,6 +219,14 @@ export const useFormItemInitializerFields = (options?: any) => {
         },
         schema,
       } as SchemaInitializerItemOptions;
+      if (block == 'Kanban') {
+        resultItem['find'] = (schema: Schema, key: string, action: string) => {
+          const s = findSchema(schema,'x-component',block)
+          return findSchema(s, key, action);
+        };
+      }
+
+      return resultItem;
     });
 };
 
@@ -984,6 +993,9 @@ export const createCalendarBlockSchema = (options) => {
                           grid: {
                             type: 'void',
                             'x-component': 'Grid',
+                            'x-initializer-props': {
+                              actionInitializers: 'CalendarFormActionInitializers'
+                            },
                             'x-initializer': 'RecordBlockInitializers',
                             properties: {},
                           },

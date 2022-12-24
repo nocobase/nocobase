@@ -2,11 +2,11 @@ import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
 import {
-  ModelCtor,
   ModelOptions,
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
+  ModelStatic,
   Utils,
 } from 'sequelize';
 import { Database } from './database';
@@ -25,7 +25,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   inherits?: string[] | string;
   filterTargetKey?: string;
   fields?: FieldOptions[];
-  model?: string | ModelCtor<Model>;
+  model?: string | ModelStatic<Model>;
   repository?: string | RepositoryType;
   sortable?: CollectionSortable;
   /**
@@ -51,7 +51,7 @@ export class Collection<
   context: CollectionContext;
   isThrough?: boolean;
   fields: Map<string, any> = new Map<string, any>();
-  model: ModelCtor<Model>;
+  model: ModelStatic<Model>;
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get filterTargetKey() {
@@ -109,7 +109,7 @@ export class Collection<
       return;
     }
     const { name, model, autoGenId = true } = this.options;
-    let M: ModelCtor<Model> = Model;
+    let M: ModelStatic<Model> = Model;
     if (this.context.database.sequelize.isDefined(name)) {
       const m = this.context.database.sequelize.model(name);
       if ((m as any).isThrough) {
@@ -450,7 +450,7 @@ export class Collection<
       }
     }
 
-    const models: ModelCtor<Model>[] = [];
+    const models: ModelStatic<Model>[] = [];
     // @ts-ignore
     this.context.database.sequelize.modelManager.forEachModel((model) => {
       if (modelNames.has(model.name)) {

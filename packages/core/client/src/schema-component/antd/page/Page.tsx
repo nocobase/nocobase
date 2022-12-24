@@ -10,6 +10,7 @@ import { useDocumentTitle } from '../../../document-title';
 import { Icon } from '../../../icon';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
+import FixedBlock from './FixedBlock';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 
 const designerCss = css`
@@ -130,10 +131,17 @@ export const Page = (props) => {
     // @ts-ignore
     return location?.query?.tab || Object.keys(fieldSchema.properties).shift();
   });
+
+  const [height, setHeight] = useState(0);
+
   return (
-    <>
-      <div className={pageDesignerCss}>
-        <PageDesigner title={fieldSchema.title || title} />
+    <div className={pageDesignerCss}>
+      <PageDesigner title={fieldSchema.title || title} />
+      <div
+        ref={(ref) => {
+          setHeight(Math.floor(ref?.getBoundingClientRect().height || 0) + 1);
+        }}
+      >
         {!disablePageHeader && (
           <AntdPageHeader
             className={css`
@@ -234,32 +242,41 @@ export const Page = (props) => {
             }
           />
         )}
-        <div style={{ margin: 24 }}>
-          {loading ? (
-            <Spin />
-          ) : !disablePageHeader && enablePageTabs ? (
-            <RecursionField
-              schema={fieldSchema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s.name === activeKey;
-              }}
-            />
-          ) : (
-            <div
-              className={css`
-                .nb-grid:not(:last-child) {
-                  > .nb-schema-initializer-button {
-                    display: none;
-                  }
-                }
-              `}
-            >
-              {props.children}
-            </div>
-          )}
-        </div>
       </div>
-    </>
+      <div style={{ margin: 24 }}>
+        {loading ? (
+          <Spin />
+        ) : (
+          <FixedBlock
+            height={
+              // header 46 margin 48
+              height + 46 + 48
+            }
+          >
+            {!disablePageHeader && enablePageTabs ? (
+              <RecursionField
+                schema={fieldSchema}
+                onlyRenderProperties
+                filterProperties={(s) => {
+                  return s.name === activeKey;
+                }}
+              />
+            ) : (
+              <div
+                className={css`
+                  > .nb-grid:not(:last-child) {
+                    > .nb-schema-initializer-button {
+                      display: none;
+                    }
+                  }
+                `}
+              >
+                {props.children}
+              </div>
+            )}
+          </FixedBlock>
+        )}
+      </div>
+    </div>
   );
 };

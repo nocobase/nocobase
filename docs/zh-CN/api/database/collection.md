@@ -46,7 +46,7 @@ db.collection({
 | `options.name` | `string` | - | collection 标识 |
 | `options.tableName?` | `string` | - | 数据库表名，如不传则使用 `options.name` 的值 |
 | `options.fields?` | `FieldOptions[]` | - | 字段定义，详见 [Field](./field) |
-| `options.model?` | `string \| ModelCtor<Model>` | - | Sequelize 的 Model 类型，如果使用的是 `string`，则需要调用之前在 db 上注册过该模型名称 |
+| `options.model?` | `string \| ModelStatic<Model>` | - | Sequelize 的 Model 类型，如果使用的是 `string`，则需要调用之前在 db 上注册过该模型名称 |
 | `options.repository?` | `string \| RepositoryType` | - | 数据仓库类型，如果使用 `string`，则需要调用之前在 db 上注册过该仓库类型 |
 | `options.sortable?` | `string \| boolean \| { name?: string; scopeKey?: string }` | - | 数据可排序字段配置，默认不排序 |
 | `options.autoGenId?` | `boolean` | `true` | 是否自动生成唯一主键，默认为 `true` |

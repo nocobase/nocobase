@@ -5,8 +5,8 @@ import {
   HasMany,
   HasOne,
   Hookable,
-  ModelCtor,
-  Transactionable
+  ModelStatic,
+  Transactionable,
 } from 'sequelize';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
@@ -297,13 +297,13 @@ export async function updateSingleAssociation(
 
     const createAccessor = association.accessors.create;
     let dataKey: string;
-    let M: ModelCtor<Model>;
+    let M: ModelStatic<Model>;
     if (association.associationType === 'BelongsTo') {
-      M = association.target as ModelCtor<Model>;
+      M = association.target as ModelStatic<Model>;
       // @ts-ignore
       dataKey = association.targetKey;
     } else {
-      M = association.target as ModelCtor<Model>;
+      M = association.target as ModelStatic<Model>;
       dataKey = M.primaryKeyAttribute;
     }
 

@@ -1,4 +1,4 @@
-import { FindAttributeOptions, ModelCtor, Op, Sequelize } from 'sequelize';
+import { FindAttributeOptions, ModelStatic, Op, Sequelize } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import FilterParser from './filter-parser';
@@ -15,7 +15,7 @@ export class OptionsParser {
   options: FindOptions;
   database: Database;
   collection: Collection;
-  model: ModelCtor<any>;
+  model: ModelStatic<any>;
   filterParser: FilterParser;
   context: OptionsParserContext;
 
@@ -212,7 +212,7 @@ export class OptionsParser {
      * @param queryParams
      * @param append
      */
-    const setInclude = (model: ModelCtor<any>, queryParams: any, append: string) => {
+    const setInclude = (model: ModelStatic<any>, queryParams: any, append: string) => {
       const appendFields = append.split('.');
       const appendAssociation = appendFields[0];
 

@@ -348,7 +348,7 @@ const SettingsCenter = (props) => {
           `}
           theme={'light'}
         >
-          <Menu selectedKeys={[pluginName]} style={{ height: 'calc(100vh - 46px)' }}>
+          <Menu selectedKeys={[pluginName]} style={{ height: 'calc(100vh - 46px)',overflowY: 'auto', overflowX: 'hidden'  }}>
             {pluginsTabs.sort().map((plugin) => {
               const tabKey = plugin.tabs[0]?.key;
               return (

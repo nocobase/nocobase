@@ -9,7 +9,7 @@ import { Model, BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/da
 
 export interface Pattern {
   validate?(options): string | null;
-  generate(this: SequenceField, instance: Model, index: number, options: Transactionable): Promise<string> | string;
+  generate(this: SequenceField, instance: Model, opts: { [key: string]: any }, options: Transactionable): Promise<string> | string;
   getLength(options): number;
   getMatcher(options): string;
   update?(this: SequenceField, instance: Model, value: string, options, transactionable: Transactionable): Promise<void>;
@@ -24,8 +24,7 @@ sequencePatterns.register('string', {
     }
     return null;
   },
-  generate(instance, index) {
-    const { options } = this.options.patterns[index];
+  generate(instance, options) {
     return options.value;
   },
   getLength(options) {
@@ -43,9 +42,8 @@ sequencePatterns.register('integer', {
   //   }
   //   return null;
   // },
-  async generate(this: SequenceField, instance: Model, index, { transaction }) {
+  async generate(this: SequenceField, instance: Model, options, { transaction }) {
     const recordTime = <Date>instance.get('createdAt');
-    const { options = {} } = this.options.patterns[index];
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
     const max = Math.pow(base, digits) - 1;
     const SeqRepo = this.database.getRepository('sequences');
@@ -169,8 +167,7 @@ sequencePatterns.register('integer', {
 });
 
 sequencePatterns.register('date', {
-  generate(this: SequenceField, instance, index) {
-    const { options } = this.options.patterns[index];
+  generate(this: SequenceField, instance, options) {
     return moment(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
   },
   getLength(options) {
@@ -246,7 +243,7 @@ export class SequenceField extends Field {
     }
 
     const results = await patterns.reduce((promise, p, i) => promise.then(async (result) => {
-      const item = await (sequencePatterns.get(p.type)).generate.call(this, instance, i, options);
+      const item = await (sequencePatterns.get(p.type)).generate.call(this, instance, p.options, options);
       return result.concat(item);
     }), Promise.resolve([]));
     instance.set(name, results.join(''));
@@ -260,14 +257,14 @@ export class SequenceField extends Field {
     const { name, patterns } = this.options;
     const matched = this.match(instance.get(name));
     if (matched) {
-      await matched.slice(1)
+      await (matched.slice(1)
         .map((_, i) => sequencePatterns.get(patterns[i].type).update)
         .reduce((promise, update, i) => promise.then(() => {
           if (!update) {
             return;
           }
-          update.call(this, instance, matched[i + 1], patterns[i].options, options)
-        }), Promise.resolve());
+          return update.call(this, instance, matched[i + 1], patterns[i].options, options)
+        }), Promise.resolve()));
     }
   }
 

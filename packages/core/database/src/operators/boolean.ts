@@ -15,4 +15,4 @@ export default {
       [Op.eq]: true,
     };
   },
-};
+} as Record<string, any>;
