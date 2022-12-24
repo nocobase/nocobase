@@ -115,7 +115,7 @@ function getActionName(name) {
   const options = new Map([
     ['destroy', ['delete', 'destroy', 'deleteEvent']],
     ['update', ['update', 'edit', 'bulkUpdate', 'bulkEdit']],
-    ['view', ['view', 'get', 'list', '', null, undefined]],
+    ['view', ['view', 'list', '', null, undefined]],
   ]);
 
   let newOptions = transOptionsMap(options);
@@ -185,6 +185,7 @@ export const ACLCollectionProvider = (props) => {
   if (allowAll) {
     return <>{props.children}</>;
   }
+
   const aclAction = fieldSchema['x-acl-action'];
   const aclResource = fieldSchema['x-acl-resource'];
   const resourceName = aclResource?.find((v) => resources.includes(v));

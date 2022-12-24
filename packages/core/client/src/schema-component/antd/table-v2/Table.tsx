@@ -7,7 +7,7 @@ import { reaction } from '@formily/reactive';
 import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import { RecordIndexProvider, RecordProvider, useACLRoleContext, useCollection, useSchemaInitializer } from '../../../';
+import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
 import { ACLcollectionParamsContext } from '../../../acl/ACLProvider';
 import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +24,6 @@ const isCollectionFieldComponent = (schema: ISchema) => {
 const useAclCheck = (schema: Schema, params) => {
   const fieldName = Object.keys(schema.properties)?.[0];
   const fieldWhiteList = params?.whitelist || params?.fields?.concat(params?.appends);
-  console.log(fieldWhiteList)
   return fieldWhiteList && schema['x-action-column'] !== 'actions' ? fieldWhiteList?.includes(fieldName) : true;
 };
 
