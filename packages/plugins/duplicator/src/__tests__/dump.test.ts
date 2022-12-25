@@ -1,10 +1,10 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
-import { dumpCollection } from '../commands/dump';
 import * as os from 'os';
 import path from 'path';
 import fsPromises from 'fs/promises';
 import { importCollection, readLines } from '../commands/restore';
+import { Dumper } from '../dumper';
 
 describe('dump', () => {
   let app: MockServer;
@@ -83,15 +83,13 @@ describe('dump', () => {
       ],
     });
 
-    await dumpCollection(
-      {
-        app,
-        dir: testDir,
-      },
-      {
-        collectionName: 'users',
-      },
-    );
+    const dumper = new Dumper(app, {
+      workDir: testDir,
+    });
+
+    await dumper.dumpCollection({
+      name: 'users',
+    });
 
     const collectionMetaFile = await fsPromises.readFile(path.resolve(testDir, 'collections', 'users', 'meta'), 'utf8');
 

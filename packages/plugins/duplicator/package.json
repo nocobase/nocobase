@@ -16,6 +16,7 @@
     "@nocobase/server": "0.8.0-alpha.13",
     "archiver": "^5.3.1",
     "decompress": "^4.2.1",
+    "inquirer": "^9.1.4",
     "lodash": "^4.17.21",
     "tar": "^6.1.13"
   },
