@@ -64,7 +64,7 @@ hello world
 
 ### Inject Plugin
 
-NocoBase Application is designed as a highly extensible framework, plugins can be written and injected to extend the functionality of the application. For example, the above-mentioned Web service can be replaced with a plugin.
+NocoBase Application is designed as a highly extensible framework, plugins can be written and injected to the applicationto to extend its functionality. For example, the above-mentioned web service can be replaced with a plugin.
 
 ```javascript
 const { Application, Plugin } = require('@nocobase/server');
@@ -97,11 +97,11 @@ Please refer to the detailed guides of [plugin development](./plugin.md). Read m
 
 ## Life Cycle
 
-Depending on the running mode, the Application has three life cycle stages.
+Application has three life cycle stages depends on the running mode.
 
 ### Install
 
-Use the `install` command in `cli` to invoke the installation. Generally, if needs to write new tables or data to the database before using the plugin, you need to do it during installation. Installation is also required when using NocoBase for the first time.
+Use the `install` command in `cli` to invoke the installation. Generally, if needs to write new tables or data to the database before using the plugin, you have to do it during installation. Installation is also required when using NocoBase for the first time.
 
 * Call the `load` method to load registered plugins.
 * Trigger the `beforeInstall` event.
@@ -151,7 +151,7 @@ Create an application instance.
 | `options.resourcer` | `ResourcerOptions` | `{}` | Resource route configuration |
 | `options.logger` | `AppLoggerOptions` | `{}` | Log |
 | `options.cors` | [`CorsOptions`](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/koa__cors/index.d.ts#L24) | `{}` | Cross-domain configuration, refer to [@koa/cors](https://npmjs.com/package/@koa/cors) |
-| `options.dataWrapping` | `boolean` | `true` | Whether or not to wrap the response data, `true` will wrap the usual `ctx.body` into a `{ data, meta }` structure. |
+| `options.dataWrapping` | `boolean` | `true` | Whether or not to wrap the response data, `true` will wrap the usual `ctx.body` into a `{ data, meta }` structure |
 | `options.registerActions` | `boolean` | `true` | Whether or not to register the default [actions](#) |
 | `options.i18n` | `I18nOptions` | `{}` | Internationalization configuration, refer to [i18next](https://www.i18next.com/overview/api) |
 | `options.plugins` | `PluginConfiguration[]` | `[]` | Configuration of the plugins enabled by default |
