@@ -2,7 +2,6 @@ import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database'
 import { DataTypes } from 'sequelize';
 import { isMysql, isPg, isSqlite, joinComma, toValue } from '../helpers';
 
-// @ts-ignore
 class LineString extends DataTypes.ABSTRACT {
   key = 'Path';
 }

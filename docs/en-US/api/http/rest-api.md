@@ -1,12 +1,10 @@
 # REST API
 
-NocoBase's HTTP API is a superset of the REST API, and the standard CRUD API also supports the RESTful style.
+HTTP API of NocoBase is a superset of REST API, and the standard CRUD API also supports the RESTful style.
 
-## Collection resources
+## Collection Resources
 
----
-
-### Create collection
+### Create Collection
 
 HTTP API
 
@@ -24,7 +22,7 @@ POST  /api/<collection>
 {} # JSON body
 ```
 
-### List collection
+### View Collection List
 
 HTTP API
 
@@ -38,7 +36,7 @@ REST API
 GET   /api/<collection>
 ```
 
-### View collection details
+### View Collection Details
 
 HTTP API
 
@@ -53,7 +51,7 @@ REST API
 GET   /api/<collection>/<collectionIndex>
 ```
 
-### Update collection
+### Update Collection
 
 HTTP API
 
@@ -76,7 +74,7 @@ PUT    /api/<collection>/<collectionIndex>
 {} # JSON body
 ```
 
-### Delete collection
+### Delete Collection
 
 HTTP API
 
@@ -92,9 +90,7 @@ REST API
 DELETE    /api/<collection>/<collectionIndex>
 ```
 
-## Association resources
-
----
+## Association Resources
 
 ### Create Association
 
@@ -114,7 +110,7 @@ POST    /api/<collection>/<collectionIndex>/<association>
 {} # JSON body
 ```
 
-### List Association
+### View Association List
 
 HTTP API
 
@@ -128,7 +124,7 @@ REST API
 GET   /api/<collection>/<collectionIndex>/<association>
 ```
 
-### View Association details
+### View Association Details
 
 HTTP API
 

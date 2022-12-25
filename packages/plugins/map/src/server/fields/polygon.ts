@@ -2,7 +2,6 @@ import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database'
 import { DataTypes } from 'sequelize';
 import { isMysql, isPg, joinComma, toValue } from '../helpers';
 
-// @ts-ignore
 class Polygon extends DataTypes.ABSTRACT {
   key = 'Polygon';
 }

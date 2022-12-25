@@ -7,12 +7,12 @@ import {
   DestroyOptions as SequelizeDestroyOptions,
   FindAndCountOptions as SequelizeAndCountOptions,
   FindOptions as SequelizeFindOptions,
-  ModelCtor,
+  ModelStatic,
   Op,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
+  WhereOperators,
 } from 'sequelize';
-import { WhereOperators } from 'sequelize/types/lib/model';
 import { Collection } from './collection';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
@@ -202,7 +202,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 {
   database: Database;
   collection: Collection;
-  model: ModelCtor<Model>;
+  model: ModelStatic<Model>;
 
   constructor(collection: Collection) {
     this.database = collection.context.database;
