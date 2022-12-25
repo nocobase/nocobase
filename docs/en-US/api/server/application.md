@@ -1,15 +1,16 @@
 # Application
 
-## 概览
+## Overview
 
-### Web服务 
-Nocobase Application 是基于 [Koa](https://koajs.com/) 实现的 WEB 框架，兼容 Koa 的 API。
+### Web Service
+
+NocoBase Application is a web framework implemented based on [Koa](https://koajs.com/), compatible with Koa API.
 
 ```javascript
 // index.js
 const { Application } = require('@nocobase/server');
 
-// 创建App实例，并配置数据库连接信息
+// Create App instance and configure the database
 const app = new Application({
     database: {
         dialect: 'sqlite',
@@ -17,24 +18,25 @@ const app = new Application({
     }
 });
 
-// 注册中间件 响应请求
+// Register middleware, response to requests
 app.use(async ctx => {
   ctx.body = 'Hello World';
 });
 
-// 以命令行模式启动
+// Run in the CLI mode
 app.runAsCLI();
 ```
 
-在命令行中运行 `node index.js start` 启动服务后，使用 `curl` 请求服务。
+After running `node index.js start` in CLI to start service, use `curl` to request service.
 
 ```bash
 $> curl localhost:3000
 Hello World
 ```
 
-### 命令行工具
-Nocobase Application 中也内置了 `cli commander`，可以当作命令行工具运行。
+### CLI Tool
+
+NocoBase Application has a built-in `cli commander`, which can be run as CLI tool.
 
 ```javascript
 // cmd.js
@@ -53,22 +55,21 @@ app.cli.command('hello').action(async () => {
 app.runAsCLI()
 ```
 
-在命令行中运行
+Run in CLI:
 
 ```bash
 $> node cmd.js hello
 hello world
 ```
 
-### 插件注入
+### Inject Plugin
 
-Nocobase Application 被设计为高度可扩展的框架，可以编写插件注入到应用中扩展功能。
-例如上面的 Web 服务可以替换为插件形式。
+NocoBase Application is designed as a highly extensible framework, plugins can be written and injected to extend the functionality of the application. For example, the above-mentioned Web service can be replaced with a plugin.
 
 ```javascript
 const { Application, Plugin } = require('@nocobase/server');
 
-// 通过继承 Plugin 类来编写插件
+// Write plugin by inheriting the Plugin class
 class HelloWordPlugin extends Plugin {
   load() {
     this.app.use(async (ctx, next) => {
@@ -84,53 +85,53 @@ const app = new Application({
   }
 });
 
-// 注入插件
+// Inject plugin
 app.plugin(HelloWordPlugin, { name: 'hello-world-plugin'} );
 
 app.runAsCLI()
 ```
 
-### 更多示例
+### More Examples
 
-更加详细的插件开发文档请参考 [插件开发](./plugin.md)。
-Application 类的更多示例可参考 [examples](https://github.com/nocobase/nocobase/blob/main/examples/index.md)
+Please refer to the detailed guides of [plugin development](./plugin.md). Read more [examples](https://github.com/nocobase/nocobase/blob/main/examples/index.md) of the Application class.
 
-## 生命周期
+## Life Cycle
 
-根据不同运行模式，Application 有三种生命周期：
+Depending on the running mode, the Application has three life cycle stages.
 
-### 安装
-使用 `cli` 中的 `install` 命令调用安装。
-一般来说，插件在使用之前若需要在数据库中写入新表或者数据，都需要在安装时执行。在初次使用 Nocobase 时也需要调用安装。
+### Install
 
-* 调用 `load` 方法，载入已注册的插件。
-* 触发 `beforeInstall` 事件。
-* 调用 `db.sync` 方法，同步数据库。
-* 调用 `pm.install` 方法，执行已注册插件的 `install` 方法。
-* 写入 `nocobase` 版本。
-* 触发 `afterInstall`。
-* 调用 `stop` 方法，结束安装。
+Use the `install` command in `cli` to invoke the installation. Generally, if needs to write new tables or data to the database before using the plugin, you need to do it during installation. Installation is also required when using NocoBase for the first time.
 
-### 启动
-使用 `cli` 中的 `start` 命令来启动 Nocobase Web 服务。
+* Call the `load` method to load registered plugins.
+* Trigger the `beforeInstall` event.
+* Call the `db.sync` method to synchronize database. 
+* Call the `pm.install` method to execute the `install` methods of registered plugins.
+* Write the version of `nocobase`.
+* Trigger the `afterInstall` event.
+* Call the `stop` method to end installation.
 
-* 调用 `load` 方法，载入已注册的插件。
-* 调用 `start` 方法
-  * 触发 `beforeStart`
-  * 启动端口监听
-  * 触发 `afterStart`
+### Start
 
-### 更新
+Use the `start` command in `cli` to start NocoBase Web service.
 
-当需要更新 Nocobase 时，可使用 `cli` 中的 `upgrade` 命令。
+* Call the `load` method to load registered plugins.
+* Call the `start` medthod:
+  * Trigger the `beforeStart` event
+  * Start port listening
+  * Trigger the `afterStart` event
 
-* 调用 `load` 方法，载入已注册的插件。
-* 触发 `beforeUpgrade`。
-* 调用 `db.migrator.up` 方法，执行数据库迁移。
-* 调用 `db.sync` 方法，同步数据库。
-* 调用 `version.update` 方法，更新 `nocobase` 版本。
-* 触发 `afterUpgrade`。
-* 调用 `stop` 方法，结束更新。
+### Upgrade
+
+Use the `upgrade` command in `cli` to upgrade NocoBase Web service when needed.
+
+* Call the `load` method to load registered plugins.
+* Trigger the `beforeUpgrade` event.
+* Call the `db.migrator.up` method to migrate database.
+* Call the `db.sync` method to synchronize database.
+* Call the `version.update` method to update the version of `nocobase`.
+* Trigger the `afterUpgrade` event.
+* Call the `stop` medthod to end upgrade.
 
 ## 构造函数
 
