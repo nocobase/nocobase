@@ -120,7 +120,7 @@ export class Dumper extends AppMigrator {
   }
 
   async packDumpedDir() {
-    const filePath = path.resolve(process.cwd(), `dump-${dayjs().format('YYYYMMDDTHH:mm:ss')}.${DUMPED_EXTENSION}`);
+    const filePath = path.resolve(process.cwd(), `dump-${dayjs().format('YYYYMMDDTHHmmss')}.${DUMPED_EXTENSION}`);
 
     const output = fs.createWriteStream(filePath);
 
