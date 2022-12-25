@@ -4,7 +4,7 @@ import fsPromises from 'fs/promises';
 import fs from 'fs';
 import util from 'util';
 import stream from 'stream';
-import { DUMPED_EXTENSION } from './utils';
+import { DUMPED_EXTENSION, humanFileSize } from './utils';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
 
@@ -129,8 +129,7 @@ export class Dumper extends AppMigrator {
     });
 
     output.on('close', function () {
-      console.log(archive.pointer() + ' total bytes');
-      console.log('archiver has been finalized and the output file descriptor has closed.');
+      console.log('dumped file size: ' + humanFileSize(archive.pointer(), true));
     });
 
     output.on('end', function () {
