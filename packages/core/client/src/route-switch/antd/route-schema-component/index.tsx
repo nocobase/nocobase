@@ -51,10 +51,8 @@ export function RouteSchemaComponent(props: any) {
         return <Spin />;
       }
 
-      data.data.properties.tabs['x-component-props'] = {
-        tabBarExtraContent: {
-          left: <Button type="text" icon={<ArrowLeftOutlined />} onClick={onBack} style={{ marginRight: 12 }} />,
-        },
+      data.data.properties.tabs['x-component-props'].tabBarExtraContent = {
+        left: <Button type="text" icon={<ArrowLeftOutlined />} onClick={onBack} style={{ marginRight: 12 }} />,
       };
 
       return (

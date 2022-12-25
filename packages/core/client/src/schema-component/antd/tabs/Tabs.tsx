@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
+import {Button, Space, TabPaneProps, Tabs as AntdTabs, TabsProps} from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { Icon } from '../../../icon';
@@ -8,13 +8,18 @@ import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks/useDesigner';
 import { TabsDesigner } from './Tabs.Designer';
+import {useShareActionProps} from "../../../block-provider/hooks";
+import {useTranslation} from "react-i18next";
 
 export const Tabs: any = observer((props: TabsProps) => {
   const fieldSchema = useFieldSchema();
+  const {onClick} = useShareActionProps();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  const { t } = useTranslation();
+  debugger
   const { tabBarExtraContent = {} } = props;
   if (!tabBarExtraContent['right']) {
-    tabBarExtraContent['right'] = render();
+    tabBarExtraContent['right'] = <Space> {render()} {fieldSchema['x-component-props']?.share ? <Button onClick={onClick} >{t('Share')}</Button>: null} </Space>;
   }
   return (
     <DndContext>
