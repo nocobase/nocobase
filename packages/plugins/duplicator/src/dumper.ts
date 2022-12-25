@@ -1,5 +1,4 @@
 import { AppMigrator } from './app-migrator';
-import { Application } from '@nocobase/server';
 import path from 'path';
 import fsPromises from 'fs/promises';
 import fs from 'fs';
@@ -7,30 +6,10 @@ import util from 'util';
 import stream from 'stream';
 import { DUMPED_EXTENSION } from './utils';
 import archiver from 'archiver';
-import lodash from 'lodash';
 
 const finished = util.promisify(stream.finished);
 
 export class Dumper extends AppMigrator {
-  dumpCtx: {
-    dir: string;
-    app: Application;
-  };
-
-  constructor(
-    app,
-    options?: {
-      workDir: string;
-    },
-  ) {
-    super(app);
-
-    this.dumpCtx = {
-      app,
-      dir: lodash.get(options, 'workDir', this.tmpDir()),
-    };
-  }
-
   async dump() {
     const fixedPlugins = [
       'collection-manager',
@@ -78,11 +57,11 @@ export class Dumper extends AppMigrator {
 
     await this.dumpMeta();
     await this.packDumpedDir();
-    await this.clearDump();
+    await this.clearWorkDir();
   }
 
   async dumpMeta() {
-    const metaPath = path.resolve(this.dumpCtx.dir, 'meta');
+    const metaPath = path.resolve(this.workDir, 'meta');
 
     await fsPromises.writeFile(
       metaPath,
@@ -92,7 +71,9 @@ export class Dumper extends AppMigrator {
   }
 
   async dumpCollection(options: { name: string }) {
-    const { app, dir } = this.dumpCtx;
+    const app = this.app;
+    const dir = this.workDir;
+
     const collectionName = options.name;
     app.log.info(`dumping collection ${collectionName}`);
 
@@ -173,13 +154,9 @@ export class Dumper extends AppMigrator {
 
     archive.pipe(output);
 
-    archive.directory(this.dumpCtx.dir, false);
+    archive.directory(this.workDir, false);
 
     await archive.finalize();
     console.log('dumped to', filePath);
-  }
-
-  async clearDump() {
-    await this.rmDir(this.dumpCtx.dir);
   }
 }

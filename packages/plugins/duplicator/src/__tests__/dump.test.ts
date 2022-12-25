@@ -3,8 +3,9 @@ import { Database } from '@nocobase/database';
 import * as os from 'os';
 import path from 'path';
 import fsPromises from 'fs/promises';
-import { importCollection, readLines } from '../commands/restore';
 import { Dumper } from '../dumper';
+import { readLines } from '../utils';
+import { Restorer } from '../restorer';
 
 describe('dump', () => {
   let app: MockServer;
@@ -103,16 +104,14 @@ describe('dump', () => {
 
     expect(results.length).toEqual(2);
 
-    const sql = await importCollection(
-      {
-        app,
-        dir: testDir,
-      },
-      {
-        collectionName: 'users',
-        insert: false,
-      },
-    );
+    const restorer = new Restorer(app, {
+      workDir: testDir,
+    });
+
+    const sql = await restorer.importCollection({
+      name: 'users',
+      insert: false,
+    });
 
     await db.sequelize.query(sql, { type: 'INSERT' });
   });
