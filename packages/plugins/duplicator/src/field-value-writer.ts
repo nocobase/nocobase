@@ -7,14 +7,12 @@ export class FieldValueWriter {
   static writers = new Map<string, WriterFunc>();
 
   static write(field: Field, val) {
+    if (val === null) return val;
+
     const fieldType = field.typeToString();
     const writer = FieldValueWriter.writers[fieldType];
 
-    if (writer) {
-      return writer(val);
-    }
-
-    return val;
+    return writer ? writer(val) : val;
   }
 
   static registerWriter(types: string | string[], writer: WriterFunc) {
