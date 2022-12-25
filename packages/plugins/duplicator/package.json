@@ -15,6 +15,7 @@
     "@nocobase/database": "0.8.0-alpha.13",
     "@nocobase/server": "0.8.0-alpha.13",
     "archiver": "^5.3.1",
+    "dayjs": "^1.11.7",
     "decompress": "^4.2.1",
     "inquirer": "^9.1.4",
     "lodash": "^4.17.21",

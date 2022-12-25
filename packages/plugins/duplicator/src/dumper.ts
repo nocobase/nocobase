@@ -6,6 +6,7 @@ import util from 'util';
 import stream from 'stream';
 import { DUMPED_EXTENSION } from './utils';
 import archiver from 'archiver';
+import dayjs from 'dayjs';
 
 const finished = util.promisify(stream.finished);
 
@@ -119,10 +120,7 @@ export class Dumper extends AppMigrator {
   }
 
   async packDumpedDir() {
-    const filePath = path.resolve(
-      process.cwd(),
-      `dump-${new Date().toISOString().replace(/T/, '-').replace(/\..+/, '')}.${DUMPED_EXTENSION}`,
-    );
+    const filePath = path.resolve(process.cwd(), `dump-${dayjs().format('YYYYMMDDTHH:mm:ss')}.${DUMPED_EXTENSION}`);
 
     const output = fs.createWriteStream(filePath);
 
