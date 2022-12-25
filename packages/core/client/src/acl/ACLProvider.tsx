@@ -141,7 +141,7 @@ export const useACLRoleContext = () => {
         const { meta } = result?.service?.data || {};
         const { allowedActions } = meta || {};
         const aclActionScope = allowedActions?.[act] || [];
-        return Object.keys(record).length && aclActionScope.length >= 0
+        return Object.keys(record).length && meta && aclActionScope.length >= 0
           ? aclActionScope?.includes(record[getPrimaryKeyField(name).name])
           : true;
       }
@@ -200,7 +200,6 @@ export const ACLCollectionProvider = (props) => {
   }
   return <ACLcollectionParamsContext.Provider value={params}>{props.children}</ACLcollectionParamsContext.Provider>;
 };
-
 
 export const ACLActionProvider = (props) => {
   const fieldSchema = useFieldSchema();
