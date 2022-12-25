@@ -2,6 +2,7 @@ import { mockServer, MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
 import * as os from 'os';
 import path from 'path';
+import lodash from 'lodash';
 import fsPromises from 'fs/promises';
 import { Dumper } from '../dumper';
 import { readLines } from '../utils';

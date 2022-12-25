@@ -87,7 +87,8 @@ export class Dumper extends AppMigrator {
     // write collection data
     const dataFilePath = path.resolve(collectionDataDir, 'data');
     const dataStream = fs.createWriteStream(dataFilePath);
-    const columns = Object.keys(collection.model.rawAttributes);
+    // @ts-ignore
+    const columns = Object.keys(collection.model.tableAttributes);
 
     // read collection data
     const rows = await collection.repository.find({
@@ -95,14 +96,13 @@ export class Dumper extends AppMigrator {
     });
 
     for (const row of rows) {
-      dataStream.write(
-        JSON.stringify(
-          columns.map((col) => {
-            return row[col];
-          }),
-        ) + '\r\n',
-        'utf8',
+      const rowData = JSON.stringify(
+        columns.map((col) => {
+          return row[col];
+        }),
       );
+
+      dataStream.write(rowData + '\r\n', 'utf8');
     }
 
     dataStream.end();

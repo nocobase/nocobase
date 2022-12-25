@@ -144,7 +144,7 @@ export class Restorer extends AppMigrator {
             val = Boolean(val);
           }
 
-          if (field.dataType === DataTypes.JSON) {
+          if (field.dataType === DataTypes.JSON || field.dataType === DataTypes.JSONB) {
             val = lodash.isString(val) ? JSON.parse(val) : val;
           }
 
