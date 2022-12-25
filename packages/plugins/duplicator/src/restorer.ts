@@ -2,9 +2,9 @@ import { AppMigrator } from './app-migrator';
 import path from 'path';
 import fsPromises from 'fs/promises';
 import { readLines, sqlAdapter } from './utils';
-import { DataTypes } from '@nocobase/database';
 import lodash from 'lodash';
 import decompress from 'decompress';
+import { FieldValueWriter } from './field-value-writer';
 
 export class Restorer extends AppMigrator {
   async restore(backupFilePath: string) {
@@ -136,19 +136,7 @@ export class Restorer extends AppMigrator {
             return carry;
           }
 
-          if (field.type === 'point') {
-            val = `(${val.x}, ${val.y})`;
-          }
-
-          if (field.dataType === DataTypes.BOOLEAN) {
-            val = Boolean(val);
-          }
-
-          if (field.dataType === DataTypes.JSON || field.dataType === DataTypes.JSONB) {
-            val = lodash.isString(val) ? JSON.parse(val) : val;
-          }
-
-          carry[column] = val;
+          carry[column] = FieldValueWriter.write(field, val);
 
           return carry;
         }, {}),
