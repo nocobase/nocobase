@@ -133,28 +133,28 @@ Use the `upgrade` command in `cli` to upgrade NocoBase Web service when needed.
 * Trigger the `afterUpgrade` event.
 * Call the `stop` medthod to end upgrade.
 
-## 构造函数
+## Constructor
 
 ### `constructor()`
 
-创建一个应用实例。
+Create an instance.
 
-**签名**
+**Signature**
 
 * `constructor(options: ApplicationOptions)`
 
-**参数**
+**Parameters**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.database` | `IDatabaseOptions` or `Database` | `{}` | 数据库配置 |
-| `options.resourcer` | `ResourcerOptions` | `{}` | 资源路由配置 |
-| `options.logger` | `AppLoggerOptions` | `{}` | 日志 |
-| `options.cors` | [`CorsOptions`](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/koa__cors/index.d.ts#L24) | `{}` | 跨域配置，参考 [@koa/cors](https://npmjs.com/package/@koa/cors) |
-| `options.dataWrapping` | `boolean` | `true` | 是否包装响应数据，`true` 则将把通常的 `ctx.body` 包装为 `{ data, meta }` 的结构。 |
-| `options.registerActions` | `boolean` | `true` | 是否注册默认的 [actions](#) |
-| `options.i18n` | `I18nOptions` | `{}` | 国际化配置，参考 [i18next](https://www.i18next.com/overview/api) |
-| `options.plugins` | `PluginConfiguration[]` | `[]` | 默认启用的插件配置 |
+| `options.database` | `IDatabaseOptions` or `Database` | `{}` | Database configuration |
+| `options.resourcer` | `ResourcerOptions` | `{}` | Resource route configuration |
+| `options.logger` | `AppLoggerOptions` | `{}` | Log |
+| `options.cors` | [`CorsOptions`](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/koa__cors/index.d.ts#L24) | `{}` | Cross-domain configuration, refer to [@koa/cors](https://npmjs.com/package/@koa/cors) |
+| `options.dataWrapping` | `boolean` | `true` | Whether or not to wrap the response data, `true` will wrap the usual `ctx.body` into a `{ data, meta }` structure. |
+| `options.registerActions` | `boolean` | `true` | Whether or not to register the default [actions](#) |
+| `options.i18n` | `I18nOptions` | `{}` | Internationalization configuration, refer to [i18next](https://www.i18next.com/overview/api) |
+| `options.plugins` | `PluginConfiguration[]` | `[]` | Configuration of the plugins enabled by default |
 
 Type
 
@@ -164,44 +164,44 @@ interface ApplicationOptions {
 }
 ```
 
-## 实例成员
+## Instance Members
 
 ### `cli`
 
-命令行工具实例，参考 npm 包 [Commander](https://www.npmjs.com/package/commander)。
+CLI tool instance, refer to the npm package [Commander](https://www.npmjs.com/package/commander)。
 
 ### `db`
 
-数据库实例，相关 API 参考 [Database](/api/database)。
+Database instance, refer to [Database](/api/database) for the related API.
 
 ### `resourcer`
 
-应用初始化自动创建的资源路由管理实例，相关 API 参考 [Resourcer](/api/resourcer)。
+Resource route management instance created automatically during app initialization, refer to [Resourcer](/api/resourcer) for the related API.
+
 
 ### `acl`
 
-ACL 实例，相关 API 参考 [ACL](/api/acl)。
-
+ACL instance, refer to [ACL](/api/acl) for the related API.
 
 ### `logger`
 
-Winston 实例，相关 API 参考 [Winston](https://github.com/winstonjs/winston#table-of-contents)。
+Winston instance, refer to [Winston](https://github.com/winstonjs/winston#table-of-contents) for the related API.
 
 ### `i18n`
 
-I18next 实例，相关 API 参考 [I18next](https://www.i18next.com/overview/api)。
+I18next instance, refer to [I18next](https://www.i18next.com/overview/api) for the related API.
 
 ### `pm`
 
-插件管理器实例，相关 API 参考 [PluginManager](./plugin-manager)。
+Plugin manager instance, refer to [PluginManager](./plugin-manager) for the related API.
 
 ### `version`
 
-应用版本实例，相关 API 参考 [ApplicationVersion](./application-version)。
+App version instance, refer to [ApplicationVersion](./application-version) for the related API.
 
 ### `middleware`
 
-内置的中间件有：
+Built-in middleware includes:
 
 - logger
 - i18next
@@ -213,9 +213,9 @@ I18next 实例，相关 API 参考 [I18next](https://www.i18next.com/overview/ap
 
 ### `context`
 
-继承自 koa 的 context，可以通过 `app.context` 访问，用于向每个请求注入上下文可访问的内容。参考 [Koa Context](https://koajs.com/#app-context)。
+Context inherited from koa, accessible via `app.context`, is used to inject context-accessible content to each request. Refer to [Koa Context](https://koajs.com/#app-context).
 
-NocoBase 默认对 context 注入了以下成员，可以在请求处理函数中直接使用：
+NocoBase injects the following members to context by default, which can be used directly in the request function:
 
 | 变量名 | 类型 | 描述 |
 | --- | --- | --- |
