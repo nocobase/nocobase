@@ -1,12 +1,12 @@
 import { ISchema, useForm } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
-  Filter,
+  SharedFilter,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
   useActionContext,
-  useRequest
+  useRequest,
 } from '@nocobase/client';
 import React from 'react';
 
