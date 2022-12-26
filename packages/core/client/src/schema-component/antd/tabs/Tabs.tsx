@@ -15,6 +15,7 @@ export const Tabs: any = observer((props: TabsProps) => {
   return (
     <DndContext>
       <AntdTabs
+        style={props.style}
         tabBarExtraContent={{
           right: render(),
         }}

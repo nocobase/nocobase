@@ -24,12 +24,13 @@ export const FilterGroup = connect((props) => {
     <FilterLogicContext.Provider value={logic}>
       <div
         style={
-          bordered
+          true
             ? {
                 position: 'relative',
-                border: '1px dashed #dedede',
+                border: '1px solid #dedede',
                 padding: 14,
                 marginBottom: 8,
+                borderRadius: 2,
               }
             : {
                 position: 'relative',

@@ -1,8 +1,14 @@
+export * from '../../schema-component/antd/association-filter/ActionBarAssociationFilterAction';
+// association filter
+export * from '../../schema-component/antd/association-filter/AssociationFilter';
+export * from '../../schema-component/antd/association-filter/AssociationFilterDesignerDelete';
+export * from '../../schema-component/antd/association-filter/AssociationFilterDesignerDisplayField';
 export * from './ActionInitializer';
 export * from './BlockInitializer';
 export * from './BulkDestroyActionInitializer';
 export * from './BulkEditSubmitActionInitializer';
 export * from './CalendarBlockInitializer';
+export * from './ChartBlockInitializer';
 export * from './CollectionFieldInitializer';
 export * from './CreateActionInitializer';
 export * from './CreateFormBlockInitializer';
@@ -37,8 +43,4 @@ export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';
-// association filter
-export * from '../../schema-component/antd/association-filter/AssociationFilter';
-export * from '../../schema-component/antd/association-filter/ActionBarAssociationFilterAction';
-export * from '../../schema-component/antd/association-filter/AssociationFilterDesignerDisplayField';
-export * from '../../schema-component/antd/association-filter/AssociationFilterDesignerDelete';
+
