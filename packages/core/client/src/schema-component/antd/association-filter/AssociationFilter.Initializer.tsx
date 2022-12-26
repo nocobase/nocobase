@@ -9,7 +9,7 @@ export const AssociationFilterInitializer = () => {
   const { fields } = useCollection();
 
   const associatedFields = fields.filter((field) =>
-    ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m'].includes(field.interface),
+    ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field.interface),
   );
 
   const items: SchemaInitializerItemOptions[] = associatedFields.map((field) => ({
