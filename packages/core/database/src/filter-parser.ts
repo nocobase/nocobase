@@ -1,6 +1,6 @@
 import { flatten, unflatten } from 'flat';
 import { default as lodash, default as _ } from 'lodash';
-import { ModelCtor } from 'sequelize';
+import { ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Model } from './model';
@@ -17,7 +17,7 @@ interface FilterParserContext {
 export default class FilterParser {
   collection: Collection;
   database: Database;
-  model: ModelCtor<Model>;
+  model: ModelStatic<Model>;
   filter: FilterType;
   context: FilterParserContext;
 

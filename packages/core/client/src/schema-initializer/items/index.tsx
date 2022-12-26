@@ -17,7 +17,6 @@ export * from './DetailsBlockInitializer';
 export * from './FilterActionInitializer';
 export * from './FormBlockInitializer';
 export * from './G2PlotInitializer';
-export * from './IframeBlockInitializer';
 export * from './InitializerWithSwitch';
 export * from './KanbanBlockInitializer';
 export * from './MarkdownBlockInitializer';

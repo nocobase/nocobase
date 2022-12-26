@@ -2,7 +2,6 @@ import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database'
 import { DataTypes } from 'sequelize';
 import { isPg, toValue } from '../helpers';
 
-// @ts-ignore
 class Circle extends DataTypes.ABSTRACT {
   key = 'Circle';
 }

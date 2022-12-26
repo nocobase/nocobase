@@ -1,8 +1,7 @@
 import { FormOutlined } from '@ant-design/icons';
+import { SchemaInitializer } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { SchemaInitializer } from '../SchemaInitializer';
 
 export const IframeBlockInitializer = (props) => {
   const { insert } = props;

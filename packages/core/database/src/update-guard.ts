@@ -1,5 +1,5 @@
 import lodash from 'lodash';
-import { ModelCtor } from 'sequelize';
+import { ModelStatic } from 'sequelize';
 import { Model } from './model';
 import { AssociationKeysToBeUpdate, BlackList, WhiteList } from './repository';
 
@@ -11,7 +11,7 @@ type UpdateValues = {
 
 type UpdateAction = 'create' | 'update';
 export class UpdateGuard {
-  model: ModelCtor<any>;
+  model: ModelStatic<any>;
   action: UpdateAction;
   private associationKeysToBeUpdate: AssociationKeysToBeUpdate;
   private blackList: BlackList;
@@ -21,7 +21,7 @@ export class UpdateGuard {
     this.action = action;
   }
 
-  setModel(model: ModelCtor<any>) {
+  setModel(model: ModelStatic<any>) {
     this.model = model;
   }
 
