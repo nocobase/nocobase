@@ -223,7 +223,7 @@ export const overridingSchema: ISchema = {
           'x-component': 'OverridingCollectionField',
           'x-component-props': {
             type: 'primary',
-            'currentCollection': '{{ currentCollection }}',
+            currentCollection: '{{ currentCollection }}',
           },
         },
         view: {
