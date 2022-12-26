@@ -1,11 +1,22 @@
 import { Context } from '..';
 import { getRepositoryFromParams } from '../utils';
-import { BelongsToManyRepository, MultipleRelationRepository, HasManyRepository } from '@nocobase/database';
+import {
+  BelongsToManyRepository,
+  MultipleRelationRepository,
+  HasManyRepository,
+  ArrayFieldRepository,
+} from '@nocobase/database';
 
 export async function add(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
-  if (!(repository instanceof MultipleRelationRepository || repository instanceof HasManyRepository)) {
+  if (
+    !(
+      repository instanceof MultipleRelationRepository ||
+      repository instanceof HasManyRepository ||
+      repository instanceof ArrayFieldRepository
+    )
+  ) {
     return await next();
   }
 

@@ -1,3 +1,4 @@
+import { useFieldSchema } from '@formily/react';
 import { isPlainObj } from '@formily/shared';
 import React, { createContext, useContext } from 'react';
 import { SchemaComponentOptions } from '../schema-component';
@@ -13,7 +14,8 @@ export interface SchemaInitializerProviderProps {
   initializers?: Record<string, any>;
 }
 
-export const useSchemaInitializer = (name: string) => {
+export const useSchemaInitializer = (name: string, props = {}) => {
+  const fieldSchema = useFieldSchema();
   const initializers = useContext(SchemaInitializerContext);
   const render = (component?: any, props?: any) => {
     return component && React.createElement(component, props);
@@ -23,7 +25,8 @@ export const useSchemaInitializer = (name: string) => {
     return { exists: false, render: (props?: any) => render(null) };
   }
 
-  const initializer = initializers?.[name];
+  const initializer = initializers?.[name || fieldSchema?.['x-initializer']];
+  const initializerProps = { ...props, ...fieldSchema?.['x-initializer-props'] };
 
   if (!initializer) {
     return { exists: false, render: (props?: any) => render(null) };
@@ -34,14 +37,14 @@ export const useSchemaInitializer = (name: string) => {
       exists: true,
       render: (props?: any) => {
         const component = (initializer as any).component || SchemaInitializer.Button;
-        return render(component, { ...initializer, ...props });
+        return render(component, { ...initializer, ...initializerProps, ...props });
       },
     };
   }
 
   return {
     exists: true,
-    render: (props?: any) => render(initializer, props),
+    render: (props?: any) => render(initializer, { ...initializerProps, ...props }),
   };
 };
 

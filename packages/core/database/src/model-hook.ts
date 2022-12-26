@@ -1,5 +1,6 @@
 import lodash from 'lodash';
-import type { SequelizeHooks } from 'sequelize/types/lib/hooks';
+import { SequelizeHooks } from 'sequelize/types/hooks';
+
 import Database from './database';
 import { Model } from './model';
 

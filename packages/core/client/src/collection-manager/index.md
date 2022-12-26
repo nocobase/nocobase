@@ -143,3 +143,7 @@ resource 需要与 `<RecordProvider/>` 搭配使用，用于提供当前数据�
 
 <code src="./demos/demo3.tsx"/>
 <code src="./demos/demo4.tsx"/>
+
+## Initializer
+
+<code src="./demos/demo5.tsx"/>

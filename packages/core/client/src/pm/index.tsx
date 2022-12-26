@@ -286,54 +286,79 @@ const SettingsCenter = (props) => {
     return <Redirect to={`/admin/settings/${pluginName}/${firstTabName}`} />;
   }
   const component = items[pluginName]?.tabs?.[tabName]?.component;
-  const menuItems = Object.keys(items)
-    .sort()
-    .map((key) => {
-      const item = items[key];
-      const tabKey = Object.keys(item.tabs).shift();
-      return {
-        label: compile(item.title),
-        key: key,
-        icon: item.icon ? <Icon type={item.icon} /> : null,
-      };
-    });
   return (
-    <div>
-      <Layout>
-        <Layout.Sider theme={'light'}>
-          <Menu
-            selectedKeys={[pluginName]}
-            style={{ height: 'calc(100vh - 46px)' }}
-            onClick={(e) => {
-              const item = items[e.key];
+    <Layout>
+      <div
+        style={
+          {
+            '--side-menu-width': '200px',
+          } as Record<string, string>
+        }
+        className={css`
+          width: var(--side-menu-width);
+          overflow: hidden;
+          flex: 0 0 var(--side-menu-width);
+          max-width: var(--side-menu-width);
+          min-width: var(--side-menu-width);
+          pointer-events: none;
+        `}
+      ></div>
+      <Layout.Sider
+        className={css`
+          height: 100%;
+          position: fixed;
+          padding-top: 46px;
+          left: 0;
+          top: 0;
+          background: rgba(0, 0, 0, 0);
+          z-index: 100;
+        `}
+        theme={'light'}
+      >
+        <Menu
+          selectedKeys={[pluginName]}
+          style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
+        >
+          {Object.keys(items)
+            .sort()
+            .map((key) => {
+              const item = items[key];
               const tabKey = Object.keys(item.tabs).shift();
-              history.push(`/admin/settings/${e.key}/${tabKey}`);
-            }}
-            items={menuItems}
-          />
-        </Layout.Sider>
-        <Layout.Content>
-          <PageHeader
-            ghost={false}
-            title={compile(items[pluginName]?.title)}
-            footer={
-              <Tabs
-                activeKey={tabName}
-                onChange={(activeKey) => {
-                  history.push(`/admin/settings/${pluginName}/${activeKey}`);
-                }}
-              >
-                {Object.keys(items[pluginName]?.tabs).map((tabKey) => {
-                  const tab = items[pluginName].tabs?.[tabKey];
-                  return <Tabs.TabPane tab={compile(tab?.title)} key={tabKey} />;
-                })}
-              </Tabs>
-            }
-          />
-          <div style={{ margin: 24 }}>{component && React.createElement(component)}</div>
-        </Layout.Content>
-      </Layout>
-    </div>
+              return (
+                <Menu.Item
+                  key={key}
+                  icon={item.icon ? <Icon type={item.icon} /> : null}
+                  onClick={() => {
+                    history.push(`/admin/settings/${key}/${tabKey}`);
+                  }}
+                >
+                  {compile(item.title)}
+                </Menu.Item>
+              );
+            })}
+        </Menu>
+      </Layout.Sider>
+      <Layout.Content>
+        <PageHeader
+          ghost={false}
+          title={compile(items[pluginName]?.title)}
+          footer={
+            <Tabs
+              activeKey={tabName}
+              onChange={(activeKey) => {
+                history.push(`/admin/settings/${pluginName}/${activeKey}`);
+              }}
+            >
+              {Object.keys(items[pluginName]?.tabs).map((tabKey) => {
+                const tab = items[pluginName].tabs?.[tabKey];
+                return <Tabs.TabPane tab={compile(tab?.title)} key={tabKey} />;
+              })}
+            </Tabs>
+          }
+        />
+        <div style={{ margin: 24 }}>{component && React.createElement(component)}</div>
+      </Layout.Content>
+    </Layout>
   );
 };
 

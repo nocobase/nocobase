@@ -7,7 +7,7 @@ import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
 import {
   DataTypes,
-  ModelCtor,
+  ModelStatic,
   Op,
   Options,
   QueryInterfaceDropAllTablesOptions,
@@ -15,13 +15,14 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import ReferencesMap from './features/ReferencesMap';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
+import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
 import { InheritedCollection } from './inherited-collection';
@@ -57,14 +58,14 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener
+  ValidateListener,
 } from './types';
 
 export interface MergeOptions extends merge.Options {}
 
 export interface PendingOptions {
   field: RelationField;
-  model: ModelCtor<Model>;
+  model: ModelStatic<Model>;
 }
 
 interface MapOf<T> {
@@ -146,12 +147,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
   migrations: Migrations;
   fieldTypes = new Map();
   options: IDatabaseOptions;
-  models = new Map<string, ModelCtor<Model>>();
+  models = new Map<string, ModelStatic<Model>>();
   repositories = new Map<string, RepositoryType>();
   operators = new Map();
   collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
-  modelCollection = new Map<ModelCtor<any>, Collection>();
+  modelCollection = new Map<ModelStatic<any>, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
 
   referenceMap = new ReferencesMap();
@@ -370,11 +371,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   getModel<M extends Model>(name: string) {
-    return this.getCollection(name).model as ModelCtor<M>;
+    return this.getCollection(name).model as ModelStatic<M>;
   }
 
   getRepository<R extends Repository>(name: string): R;
   getRepository<R extends RelationRepository>(name: string, relationId: string | number): R;
+  getRepository<R extends ArrayFieldRepository>(name: string, relationId: string | number): R;
 
   getRepository<R extends RelationRepository>(name: string, relationId?: string | number): Repository | R {
     if (relationId) {
@@ -407,7 +409,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  registerModels(models: MapOf<ModelCtor<any>>) {
+  registerModels(models: MapOf<ModelStatic<any>>) {
     for (const [type, schemaType] of Object.entries(models)) {
       this.models.set(type, schemaType);
     }

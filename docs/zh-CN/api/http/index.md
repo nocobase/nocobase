@@ -223,9 +223,9 @@ POST  /api/posts:create?whitelist=title
 ```bash
 POST  /api/posts:create?blacklist=date
 
+# date 字段会被过滤掉，不会写入数据库
 {
-  "title": "My first post",
-  "date": "2022-05-19"      # date 字段会被过滤掉，不会写入数据库
+  "title": "My first post"
 }
 ```
 

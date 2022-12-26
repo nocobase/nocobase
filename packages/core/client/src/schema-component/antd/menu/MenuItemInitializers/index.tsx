@@ -1,5 +1,6 @@
 import { FormDialog, FormLayout } from '@formily/antd';
 import { SchemaOptionsContext } from '@formily/react';
+import { uid } from '@formily/shared';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent, SchemaComponentOptions } from '../../..';
@@ -151,7 +152,7 @@ export const PageMenuItem = itemWrap((props) => {
               'x-component': 'Page',
               'x-async': true,
               properties: {
-                grid: {
+                [uid()]: {
                   type: 'void',
                   'x-component': 'Grid',
                   'x-initializer': 'BlockInitializers',
