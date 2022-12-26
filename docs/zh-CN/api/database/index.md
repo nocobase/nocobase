@@ -396,7 +396,7 @@ db.registerFieldTypes({
 
 **签名**
 
-* `registerModels(models: MapOf<ModelCtor<any>>): void`
+* `registerModels(models: MapOf<ModelStatic<any>>): void`
 
 **参数**
 

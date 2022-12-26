@@ -23,6 +23,7 @@ export class PresetNocoBase extends Plugin {
         'export',
         'import',
         'audit-logs',
+        'iframe-block',
       ].concat(plugins),
     );
   }

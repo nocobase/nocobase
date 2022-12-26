@@ -328,7 +328,7 @@ const SettingsCenter = (props) => {
       >
         <Menu
           selectedKeys={[pluginName]}
-          style={{ height: 'calc(100vh - 46px)', overflowY: 'auto' }}
+          style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
           onClick={(e) => {
             const item = items[e.key];
             const tabKey = Object.keys(item.tabs).shift();
