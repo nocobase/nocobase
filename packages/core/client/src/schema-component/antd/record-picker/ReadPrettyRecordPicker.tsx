@@ -7,7 +7,7 @@ import { CollectionProvider, useCollection, useCollectionManager } from '../../.
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
-import { ActionContext } from '../action';
+import { ActionContext, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
@@ -38,6 +38,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const [record, setRecord] = useState({});
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
+  const { snapshot } = useActionContext();
 
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
   const renderRecords = () =>
@@ -48,6 +49,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
           <span>
             <a
               onClick={(e) => {
+                if (snapshot) return;
                 e.stopPropagation();
                 e.preventDefault();
                 setVisible(true);
@@ -96,7 +98,9 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
           <EllipsisWithTooltip ellipsis={ellipsis} ref={ellipsisWithTooltipRef}>
             {renderRecords()}
           </EllipsisWithTooltip>
-          <ActionContext.Provider value={{ visible, setVisible, openMode: 'drawer' }}>
+          <ActionContext.Provider
+            value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField.interface === 'snapshot' }}
+          >
             {renderRecordProvider()}
           </ActionContext.Provider>
         </CollectionProvider>

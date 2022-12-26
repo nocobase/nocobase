@@ -62,8 +62,8 @@ export const snapshot: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty, block }) {
-    if (readPretty) {
+  schemaInitialize(schema: ISchema, { field, readPretty, block }) {
+    if (readPretty || field.interface === 'snapshot') {
       schema['properties'] = {
         viewer: cloneDeep(recordPickerViewer),
       };
