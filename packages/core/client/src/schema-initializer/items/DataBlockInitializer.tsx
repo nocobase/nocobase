@@ -1,13 +1,15 @@
-import React from "react";
 import { TableOutlined } from '@ant-design/icons';
+import React, { useContext } from 'react';
 
-import { SchemaInitializer } from "..";
-import { useSchemaTemplateManager } from "../../schema-templates";
-import { useCollectionDataSourceItems } from "../utils";
+import { SchemaInitializer, SchemaInitializerButtonContext } from '..';
+import { useSchemaTemplateManager } from '../../schema-templates';
+import { useCollectionDataSourceItems } from '../utils';
 
 export const DataBlockInitializer = (props) => {
   const { templateWrap, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const { setVisible } = useContext(SchemaInitializerButtonContext);
+
   return (
     <SchemaInitializer.Item
       icon={<TableOutlined />}
@@ -23,6 +25,7 @@ export const DataBlockInitializer = (props) => {
             insert(createBlockSchema({ collection: item.name }));
           }
         }
+        setVisible(false);
       }}
       items={useCollectionDataSourceItems(componentType)}
     />
