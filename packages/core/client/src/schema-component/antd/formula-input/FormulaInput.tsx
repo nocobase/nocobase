@@ -43,7 +43,9 @@ const AntdFormulaInput = (props) => {
       setHtml('');
     }
   }, [value]);
-
+  const items = keys.map((key) => {
+    return { label: numColumns.get(key), key };
+  });
   const menu = (
     <Menu
       onClick={async (args) => {
@@ -54,11 +56,8 @@ const AntdFormulaInput = (props) => {
         setDropdownVisible(false);
         (inputRef.current as any).focus();
       }}
-    >
-      {keys.map((key) => (
-        <Menu.Item key={key}>{numColumns.get(key)}</Menu.Item>
-      ))}
-    </Menu>
+      items={items}
+    />
   );
 
   const handleChange = (e) => {
