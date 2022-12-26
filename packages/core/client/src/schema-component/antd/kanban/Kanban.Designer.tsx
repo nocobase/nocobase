@@ -86,43 +86,41 @@ export const KanbanDesigner = () => {
           dn.refresh();
         }}
       />
-      {['modal', 'drawer'].includes(fieldSchema?.['x-component-props']?.['openMode']) && (
-        <SchemaSettings.Item>
-          <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
-            {t('Popup size')}
-            <Select
-              bordered={false}
-              options={[
-                { label: t('Small'), value: 'small' },
-                { label: t('Middle'), value: 'middle' },
-                { label: t('Large'), value: 'large' },
-              ]}
-              value={
-                fieldSchema?.['x-component-props']?.['openSize'] ??
-                (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
-              }
-              onChange={(value) => {
-                if(fieldSchema['x-component-props']){
-                  fieldSchema['x-component-props']['openSize'] = value;
-                }else{
-                  fieldSchema['x-component-props'] = {
-                    openSize: value
-                  }
+      <SchemaSettings.Item>
+        <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+          {t('Popup size')}
+          <Select
+            bordered={false}
+            options={[
+              { label: t('Small'), value: 'small' },
+              { label: t('Middle'), value: 'middle' },
+              { label: t('Large'), value: 'large' },
+            ]}
+            value={
+              fieldSchema?.['x-component-props']?.['openSize'] ??
+              (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
+            }
+            onChange={(value) => {
+              if(fieldSchema['x-component-props']){
+                fieldSchema['x-component-props']['openSize'] = value;
+              }else{
+                fieldSchema['x-component-props'] = {
+                  openSize: value
                 }
+              }
 
-                dn.emit('patch', {
-                  schema: {
-                    'x-uid': fieldSchema['x-uid'],
-                    'x-component-props': fieldSchema['x-component-props'],
-                  },
-                });
-                dn.refresh();
-              }}
-              style={{ textAlign: 'right', minWidth: 100 }}
-            />
-          </div>
-        </SchemaSettings.Item>
-      )}
+              dn.emit('patch', {
+                schema: {
+                  'x-uid': fieldSchema['x-uid'],
+                  'x-component-props': fieldSchema['x-component-props'],
+                },
+              });
+              dn.refresh();
+            }}
+            style={{ textAlign: 'right', minWidth: 100 }}
+          />
+        </div>
+      </SchemaSettings.Item>
       <SchemaSettings.Divider />
       <SchemaSettings.Template componentName={'Kanban'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
