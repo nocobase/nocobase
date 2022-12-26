@@ -1,6 +1,13 @@
 import prettyFormat from 'pretty-format';
+import Worker from './__mocks__/workerMock';
 
 global['prettyFormat'] = prettyFormat;
+//@ts-ignore
+global['Worker'] = Worker;
+//@ts-ignore
+global.URL.createObjectURL = function () {};
+
+
 
 jest.setTimeout(300000);
 

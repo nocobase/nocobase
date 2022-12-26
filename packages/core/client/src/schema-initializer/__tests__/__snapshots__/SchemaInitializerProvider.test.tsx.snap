@@ -1,0 +1,34 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SchemaInitializerProvider SchemaInitializer 1`] = `
+<div>
+  <div>
+    BlockInitializers
+    BulkEditFormItemInitializers
+    CalendarActionInitializers
+    CreateFormBlockInitializers
+    CreateFormBulkEditBlockInitializers
+    CustomFormItemInitializers
+    DetailsActionInitializers
+    FormActionInitializers
+    CreateFormActionInitializers
+    UpdateFormActionInitializers
+    BulkEditFormActionInitializers
+    FormItemInitializers
+    KanbanActionInitializers
+    ReadPrettyFormActionInitializers
+    CalendarFormActionInitializers
+    ReadPrettyFormItemInitializers
+    RecordBlockInitializers
+    RecordFormBlockInitializers
+    SubTableActionInitializers
+    TableActionColumnInitializers
+    TableActionInitializers
+    TableColumnInitializers
+    TableSelectorInitializers
+    TabPaneInitializers
+    TabPaneInitializersForCreateFormBlock
+    TabPaneInitializersForBulkEditFormBlock
+  </div>
+</div>
+`;

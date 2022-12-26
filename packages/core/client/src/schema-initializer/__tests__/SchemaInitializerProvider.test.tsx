@@ -7,30 +7,35 @@ import { SchemaComponent } from '../../schema-component/core/SchemaComponent';
 import { SchemaInitializerProvider, SchemaInitializerContext } from '../SchemaInitializerProvider';
 
 function App() {
-  const ComponentA = () => {
-    // const initializes = useContext(SchemaInitializerContext);
-    // console.log(initializes);
-    return <div>66</div>;
-  };
+  const ComponentA = connect(() => {
+    const initializes = useContext(SchemaInitializerContext);
+    return (
+      <div>
+        {Object.keys(initializes).map((v, index) => {
+          return v;
+        })}
+      </div>
+    );
+  });
   const schema = {
     type: 'object',
     properties: {
       componentA: {
         type: 'void',
+        'x-decorator': 'SchemaInitializerProvider',
         'x-component': 'ComponentA',
       },
     },
   };
   return (
-    <SchemaInitializerProvider initializers={{}}>
-      <ComponentA />
-    </SchemaInitializerProvider>
+    <SchemaComponentProvider components={{ ComponentA, SchemaInitializerProvider }}>
+      <SchemaComponent schema={schema} />
+    </SchemaComponentProvider>
   );
 }
 describe('SchemaInitializerProvider', () => {
   it('SchemaInitializer', () => {
     const { container } = render(<App />);
-    console.log(container);
-    // expect(container).toMatchSnapshot();
+    expect(container).toMatchSnapshot();
   });
 });
