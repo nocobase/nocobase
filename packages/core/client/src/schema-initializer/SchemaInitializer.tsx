@@ -10,12 +10,13 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps,
+  SchemaInitializerItemProps
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
 
 export const SchemaInitializerItemContext = createContext(null);
+export const SchemaInitializerButtonContext = createContext<any>({});
 
 export const SchemaInitializer = () => null;
 
@@ -52,7 +53,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       }
       if (item.type === 'item' && item.component) {
         const Component = findComponent(item.component);
-        item.key = `${item.key || 'item'}-${indexA}`;
+        item.key = `${item.key || item.title}-${indexA}`;
         return (
           Component && (
             <SchemaInitializerItemContext.Provider
@@ -105,42 +106,44 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     return null;
   }
   return (
-    <Dropdown
-      className={classNames('nb-schema-initializer-button')}
-      openClassName={`nb-schema-initializer-button-open`}
-      overlayClassName={classNames(
-        'nb-schema-initializer-button-overlay',
-        css`
-          .ant-dropdown-menu-item-group-list {
-            max-height: 40vh;
-            overflow: auto;
-          }
-        `,
-      )}
-      visible={visible}
-      onVisibleChange={(visible) => {
-        setVisible(visible);
-      }}
-      {...dropdown}
-      overlay={menu}
-    >
-      {component ? (
-        component
-      ) : (
-        <Button
-          type={'dashed'}
-          style={{
-            borderColor: '#f18b62',
-            color: '#f18b62',
-            ...style,
-          }}
-          {...others}
-          icon={<Icon type={icon as string} />}
-        >
-          {compile(props.children || props.title)}
-        </Button>
-      )}
-    </Dropdown>
+    <SchemaInitializerButtonContext.Provider value={{ visible, setVisible }}>
+      <Dropdown
+        className={classNames('nb-schema-initializer-button')}
+        openClassName={`nb-schema-initializer-button-open`}
+        overlayClassName={classNames(
+          'nb-schema-initializer-button-overlay',
+          css`
+            .ant-dropdown-menu-item-group-list {
+              max-height: 40vh;
+              overflow: auto;
+            }
+          `,
+        )}
+        visible={visible}
+        onVisibleChange={(visible) => {
+          setVisible(visible);
+        }}
+        {...dropdown}
+        overlay={menu}
+      >
+        {component ? (
+          component
+        ) : (
+          <Button
+            type={'dashed'}
+            style={{
+              borderColor: '#f18b62',
+              color: '#f18b62',
+              ...style,
+            }}
+            {...others}
+            icon={<Icon type={icon as string} />}
+          >
+            {compile(props.children || props.title)}
+          </Button>
+        )}
+      </Dropdown>
+    </SchemaInitializerButtonContext.Provider>
   );
 });
 
@@ -158,6 +161,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
           return <Menu.Divider key={`divider-${indexA}`} />;
         }
         if (item.type === 'itemGroup') {
+          console.log(item.children);
           return (
             <Menu.ItemGroup
               // @ts-ignore

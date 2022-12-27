@@ -4,11 +4,13 @@ import { Space } from 'antd';
 import React from 'react';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext } from '../../common';
+import { useDesignable } from '../../hooks';
 
 export const ActionBar = observer((props: any) => {
   const { layout = 'tow-columns', style, ...others } = props;
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  const { designable } = useDesignable();
   if (layout === 'one-column') {
     return (
       <div style={{ display: 'flex', ...style }} {...others}>
@@ -25,16 +27,21 @@ export const ActionBar = observer((props: any) => {
       </div>
     );
   }
+  const hasActions = Object.keys(fieldSchema.properties ?? {}).length > 0;
   return (
     <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        overflowX: 'auto',
-        flexShrink: 0,
-        ...style,
-      }}
+      style={
+        !designable && !hasActions
+          ? undefined
+          : {
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              overflowX: 'auto',
+              flexShrink: 0,
+              ...style,
+            }
+      }
       {...others}
     >
       <div

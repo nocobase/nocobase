@@ -346,10 +346,11 @@ SchemaSettings.FormItemTemplate = (props) => {
 
 SchemaSettings.Item = (props) => {
   let { eventKey } = props;
+  const key = useMemo(() => uid(), []);
   return (
     <Menu.Item
-      key={eventKey}
-      eventKey={eventKey as any}
+      key={key}
+      eventKey={eventKey as any || key}
       {...props}
       onClick={(info) => {
         info.domEvent.preventDefault();
