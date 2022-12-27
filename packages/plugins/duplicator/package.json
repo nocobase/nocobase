@@ -12,6 +12,7 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
+    "@nocobase/client": "0.8.0-alpha.13",
     "@nocobase/database": "0.8.0-alpha.13",
     "@nocobase/server": "0.8.0-alpha.13",
     "archiver": "^5.3.1",
