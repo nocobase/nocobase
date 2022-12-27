@@ -6,66 +6,79 @@ import lodash from 'lodash';
 import decompress from 'decompress';
 import { FieldValueWriter } from './field-value-writer';
 import inquirer from 'inquirer';
+import { CollectionGroupManager } from './collection-group-manager';
 
 const optionsPlugins = ['users'];
 
 export class Restorer extends AppMigrator {
-  async restorePrompt() {
-    const results = await inquirer.prompt([
-      {
-        type: 'checkbox',
-        message: this.app.i18n.t('Select Import data'),
-        name: 'plugins',
-        pageSize: 20,
-        choices: [
-          {
-            name: 'Pepperoni',
-            disabled: true,
-            checked: true,
-          },
-
-          {
-            name: 'Ham',
-          },
-        ],
-      },
-
-      {
-        type: 'checkbox',
-        message: this.app.i18n.t('Select Import data'),
-        name: 'collections',
-        pageSize: 20,
-        choices: [
-          {
-            name: 'Pepperoni',
-            disabled: true,
-            checked: true,
-          },
-
-          {
-            name: 'Ham',
-          },
-        ],
-      },
-    ]);
-  }
+  direction = 'restore' as const;
 
   async restore(backupFilePath: string) {
     await this.decompressBackup(backupFilePath);
     await this.importCollections();
-    await this.clearWorkDir();
+    // await this.clearWorkDir();
+  }
+
+  async getImportPlugins() {
+    const meta = await this.getImportCollectionMeta('applicationPlugins');
+    const nameIndex = meta.columns.indexOf('name');
+
+    const plugins = await this.getImportCollectionData('applicationPlugins');
+    return plugins.map((plugin) => JSON.parse(plugin)[nameIndex]);
+  }
+
+  async getImportCustomCollections() {
+    const collections = await this.getImportCollections();
+    const meta = await this.getImportCollectionMeta('collections');
+    const data = await this.getImportCollectionData('collections');
+
+    return data
+      .map((row) => JSON.parse(row)[meta.columns.indexOf('name')])
+      .filter((name) => collections.includes(name));
+  }
+
+  async getImportCollections() {
+    const collectionsDir = path.resolve(this.workDir, 'collections');
+    const collections = await fsPromises.readdir(collectionsDir);
+    return collections;
+  }
+
+  async getImportCollectionData(collectionName) {
+    const dataFile = path.resolve(this.workDir, 'collections', collectionName, 'data');
+    return await readLines(dataFile);
+  }
+
+  async getImportCollectionMeta(collectionName) {
+    const metaData = path.resolve(this.workDir, 'collections', collectionName, 'meta');
+    const meta = JSON.parse(await fsPromises.readFile(metaData, 'utf8'));
+    return meta;
   }
 
   async importCollections(options?: { ignore?: string | string[] }) {
-    const collectionsDir = path.resolve(this.workDir, 'collections');
+    const coreCollections = ['applicationPlugins'];
+    const collections = await this.getImportCollections();
 
-    const collections = await fsPromises.readdir(collectionsDir);
+    const importCustomCollections = await this.getImportCustomCollections();
 
-    const ignore = lodash.castArray(options?.ignore);
+    const importPlugins = await this.getImportPlugins();
 
-    if (ignore.includes('users')) {
-      ignore.push('rolesUsers');
-    }
+    const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) => {
+      return (
+        importPlugins.includes(collectionGroup.pluginName) &&
+        collectionGroup.collections.every((collectionName) => collections.includes(collectionName))
+      );
+    });
+
+    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(collectionGroups);
+    const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
+
+    const optionalCollections = importCustomCollections.filter(
+      (collection) => !pluginsCollections.includes(collection) && !coreCollections.includes(collection),
+    );
+
+    const questions = this.buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections);
+
+    const results = await inquirer.prompt(questions);
 
     // import plugins
     await this.importCollection({
@@ -74,18 +87,8 @@ export class Restorer extends AppMigrator {
 
     await this.app.reload();
 
-    const metaCollections = [
-      'uiSchemas',
-      'uiRoutes',
-      'uiSchemaServerHooks',
-      'uiSchemaTemplates',
-      'uiSchemaTreePath',
-      'collections',
-      'fields',
-    ];
-
-    // import collections and uiSchemas
-    for (const collectionName of metaCollections) {
+    // import required collection
+    for (const collectionName of CollectionGroupManager.getGroupsCollections(requiredGroups)) {
       await this.importCollection({
         name: collectionName,
       });
@@ -101,16 +104,11 @@ export class Restorer extends AppMigrator {
       },
     });
 
-    const expectedCollections = [...metaCollections, 'applicationPlugins'];
-
     // import custom collections
-    for (const collectionName of collections.filter(
-      (collectionName) => !expectedCollections.includes(collectionName),
-    )) {
-      if (ignore.includes(collectionName)) {
-        continue;
-      }
-
+    for (const collectionName of [
+      ...CollectionGroupManager.getGroupsCollections(results.collectionGroups),
+      ...(results.userCollections || []),
+    ]) {
       await this.importCollection({
         name: collectionName,
       });

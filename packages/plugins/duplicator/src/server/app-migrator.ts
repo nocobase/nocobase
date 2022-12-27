@@ -4,10 +4,13 @@ import path from 'path';
 import lodash from 'lodash';
 import fsPromises from 'fs/promises';
 import crypto from 'crypto';
+import inquirer from 'inquirer';
 
 export abstract class AppMigrator {
   protected workDir: string;
   protected app: Application;
+
+  abstract direction: 'restore' | 'dump';
 
   constructor(
     app,
@@ -49,5 +52,51 @@ export abstract class AppMigrator {
 
   async clearWorkDir() {
     await this.rmDir(this.workDir);
+  }
+
+  buildInquirerPluginQuestion(requiredGroups, optionalGroups) {
+    return {
+      type: 'checkbox',
+      name: 'collectionGroups',
+      message: `选择需要${this.direction}的插件数据`,
+      loop: false,
+      pageSize: 100,
+      choices: [
+        new inquirer.Separator('== 必选数据 =='),
+        ...requiredGroups.map((collectionGroup) => ({
+          name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
+          value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
+          checked: true,
+          disabled: true,
+        })),
+
+        new inquirer.Separator('== 可选数据 =='),
+        ...optionalGroups.map((collectionGroup) => ({
+          name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
+          value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
+        })),
+      ],
+    };
+  }
+
+  buildInquirerCollectionQuestion(collections) {
+    return {
+      type: 'checkbox',
+      name: 'userCollections',
+      message: `选择需要${this.direction}的Collection数据`,
+      loop: false,
+      pageSize: 100,
+      choices: collections.map((collection) => ({ name: collection, value: collection })),
+    };
+  }
+
+  buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections) {
+    const questions = [this.buildInquirerPluginQuestion(requiredGroups, optionalGroups)];
+
+    if (optionalCollections.length > 0) {
+      questions.push(this.buildInquirerCollectionQuestion(optionalCollections));
+    }
+
+    return questions;
   }
 }

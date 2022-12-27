@@ -70,7 +70,7 @@ CollectionGroupManager.registerCollectionGroup({
 CollectionGroupManager.registerCollectionGroup({
   pluginName: 'acl',
   function: 'acl',
-  collections: ['roles', 'rolesUsers', 'rolesResources', 'rolesResourcesActions', 'rolesResourcesScopes'],
+  collections: ['roles', 'rolesResources', 'rolesResourcesActions', 'rolesResourcesScopes'],
   dumpable: 'required',
 });
 
@@ -98,7 +98,7 @@ CollectionGroupManager.registerCollectionGroup({
 CollectionGroupManager.registerCollectionGroup({
   pluginName: 'users',
   function: 'users',
-  collections: ['users'],
+  collections: ['users', 'rolesUsers'],
   dumpable: 'optional',
 });
 

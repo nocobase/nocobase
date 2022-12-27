@@ -13,6 +13,8 @@ import inquirer from 'inquirer';
 const finished = util.promisify(stream.finished);
 
 export class Dumper extends AppMigrator {
+  direction = 'dump' as const;
+
   async dump() {
     const appPlugins = await this.getAppPlugins();
 
@@ -26,43 +28,10 @@ export class Dumper extends AppMigrator {
 
     const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(collectionGroups);
     const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
+
     const optionalCollections = [...customCollections.filter((collection) => !pluginsCollections.includes(collection))];
 
-    const questions = [
-      {
-        type: 'checkbox',
-        name: 'collectionGroups',
-        message: '选择需要导出的插件数据',
-        loop: false,
-        pageSize: 100,
-        choices: [
-          new inquirer.Separator('== 必选数据 =='),
-          ...requiredGroups.map((collectionGroup) => ({
-            name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
-            value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
-            checked: true,
-            disabled: true,
-          })),
-
-          new inquirer.Separator('== 可选数据 =='),
-          ...optionalGroups.map((collectionGroup) => ({
-            name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
-            value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
-          })),
-        ],
-      },
-    ];
-
-    if (optionalCollections.length > 0) {
-      questions.push({
-        type: 'checkbox',
-        name: 'userCollections',
-        message: '选择需要导出的Collection数据',
-        loop: false,
-        pageSize: 100,
-        choices: optionalCollections.map((collection) => ({ name: collection, value: collection })),
-      });
-    }
+    const questions = this.buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections);
 
     const results = await inquirer.prompt(questions);
 
@@ -70,7 +39,7 @@ export class Dumper extends AppMigrator {
       coreCollections,
       CollectionGroupManager.getGroupsCollections(requiredGroups),
       CollectionGroupManager.getGroupsCollections(results.collectionGroups),
-      results.userCollections,
+      results.userCollections || [],
     ].flat();
 
     for (const collection of dumpedCollections) {
@@ -115,6 +84,7 @@ export class Dumper extends AppMigrator {
     // write collection data
     const dataFilePath = path.resolve(collectionDataDir, 'data');
     const dataStream = fs.createWriteStream(dataFilePath);
+
     // @ts-ignore
     const columns = Object.keys(collection.model.tableAttributes);
 
