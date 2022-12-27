@@ -15,11 +15,13 @@
     "@nocobase/database": "0.8.0-alpha.13",
     "@nocobase/server": "0.8.0-alpha.13",
     "@nocobase/utils": "0.8.0-alpha.13",
+    "antd": "4.22.8",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
-    "json-templates": "^4.2.0",
-    "react-js-cron": "^1.4.0",
     "ejs": "^3.1.8",
+    "json-templates": "^4.2.0",
+    "moment": "^2.29.2",
+    "react-js-cron": "^1.4.0",
     "react-copy-to-clipboard": "^5.1.0"
   },
   "devDependencies": {

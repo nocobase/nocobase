@@ -1,4 +1,4 @@
-import { DataTypes, Op } from 'sequelize';
+import { Op } from 'sequelize';
 import { ArrayField, StringField } from '../fields';
 import arrayOperators from './array';
 import lodash, { parseInt } from 'lodash';

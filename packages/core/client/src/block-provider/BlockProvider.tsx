@@ -1,16 +1,26 @@
+import { css } from '@emotion/css';
 import { Field } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
+import { Col, Row } from 'antd';
 import template from 'lodash/template';
 import React, { createContext, useContext } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ACLCollectionProvider, TableFieldResource, useAPIClient, useRecord, WithoutTableFieldResource } from '../';
+import { Link } from 'react-router-dom';
+import {
+  ACLCollectionProvider,
+  TableFieldResource,
+  useAPIClient,
+  useDesignable,
+  useRecord,
+  WithoutTableFieldResource,
+} from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
+import { SharedFilterProvider } from './SharedFilterProvider';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
-export const BlockRequestContext = createContext<any>(null);
+const BlockRequestContext = createContext<any>(null);
 
 export const useBlockResource = () => {
   return useContext(BlockResourceContext);
@@ -85,7 +95,6 @@ export const useResourceAction = (props, opts = {}) => {
   if (!Object.keys(params).includes('appends') && appends?.length) {
     params['appends'] = appends;
   }
-
   const result = useRequest(
     (opts) => {
       if (!action) {
@@ -144,6 +153,53 @@ export const useBlockRequestContext = () => {
   return useContext(BlockRequestContext);
 };
 
+export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
+  const fieldSchema = useFieldSchema();
+  const { findComponent } = useDesignable();
+  const field = useField();
+  const Component = findComponent(field.component?.[0]) || React.Fragment;
+  const associationFilterSchema = fieldSchema.reduceProperties((buf, s) => {
+    if (s['x-component'] === 'AssociationFilter') {
+      return s;
+    }
+    return buf;
+  }, null);
+
+  if (associationFilterSchema) {
+    return (
+      <Component {...field.componentProps}>
+        <Row gutter={16} wrap={false}>
+          <Col
+            className={css`
+              width: 200px;
+              flex: 0 0 auto;
+            `}
+          >
+            <RecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              filterProperties={(s) => s['x-component'] === 'AssociationFilter'}
+            />
+          </Col>
+          <Col
+            className={css`
+              flex: 1 1 auto;
+              min-width: 0;
+            `}
+          >
+            <RecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              filterProperties={(s) => s['x-component'] !== 'AssociationFilter'}
+            />
+          </Col>
+        </Row>
+      </Component>
+    );
+  }
+  return props.children;
+};
+
 export const BlockProvider = (props) => {
   const { collection, association } = props;
   const resource = useResource(props);
@@ -151,7 +207,9 @@ export const BlockProvider = (props) => {
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
         <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props}>{props.children}</BlockRequestProvider>
+          <BlockRequestProvider {...props}>
+            <SharedFilterProvider {...props} />
+          </BlockRequestProvider>
         </BlockResourceContext.Provider>
       </BlockAssociationContext.Provider>
     </MaybeCollectionProvider>

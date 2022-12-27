@@ -1,10 +1,48 @@
 import { MenuOutlined } from '@ant-design/icons';
-import { useFieldSchema } from '@formily/react';
+import { ISchema, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer } from '../..';
+import { SchemaInitializer, SchemaSettings } from '../..';
 import { useAPIClient } from '../../api-client';
 import { createDesignable, useDesignable } from '../../schema-component';
+
+const Resizable = (props) => {
+  const { t } = useTranslation();
+  const { dn } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Column width')}
+      schema={
+        {
+          type: 'object',
+          title: t('Column width'),
+          properties: {
+            width: {
+              'x-decorator': 'FormItem',
+              'x-component': 'InputNumber',
+              'x-component-props': {},
+              default: fieldSchema?.['x-component-props']?.width || 200,
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={({ width }) => {
+        const props = fieldSchema['x-component-props'] || {};
+        props['width'] = width;
+        const schema: ISchema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        schema['x-component-props'] = props;
+        fieldSchema['x-component-props'] = props;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
 
 export const TableActionColumnInitializers = (props: any) => {
   const fieldSchema = useFieldSchema();
@@ -173,6 +211,14 @@ export const TableActionColumnInitializers = (props: any) => {
               },
             },
           ],
+        },
+        {
+          type: 'divider',
+        },
+        {
+          type: 'item',
+          title: t('Column width'),
+          component: Resizable,
         },
       ]}
       component={<MenuOutlined style={{ cursor: 'pointer' }} />}

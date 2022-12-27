@@ -231,6 +231,9 @@ export const AddCollectionAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const items = templateOptions().map((option) => {
+    return { label: compile(option.title), key: option.name };
+  });
   return (
     <RecordProvider record={record}>
       <ActionContext.Provider value={{ visible, setVisible }}>
@@ -249,11 +252,8 @@ export const AddCollectionAction = (props) => {
                 setSchema(schema);
                 setVisible(true);
               }}
-            >
-              {templateOptions().map((option) => {
-                return <Menu.Item key={option.name}>{compile(option.title)}</Menu.Item>;
-              })}
-            </Menu>
+              items={items}
+            />
           }
         >
           {children || (

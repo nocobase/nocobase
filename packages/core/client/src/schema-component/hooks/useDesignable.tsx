@@ -113,7 +113,7 @@ export class Designable {
     }
     const updateColumnSize = (parent: Schema) => {
       if (!parent) {
-        return;
+        return [];
       }
       const len = Object.values(parent.properties).length;
       const schemas = [];

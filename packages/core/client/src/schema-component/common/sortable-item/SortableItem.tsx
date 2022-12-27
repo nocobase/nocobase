@@ -19,7 +19,7 @@ export const SortableProvider = (props) => {
 };
 
 export const Sortable = (props: any) => {
-  const { component, style, children, ...others } = props;
+  const { component, style, children, openMode, ...others } = props;
   const { droppable } = useContext(SortableContext);
   const { isOver, setNodeRef } = droppable;
   const droppableStyle = { ...style };

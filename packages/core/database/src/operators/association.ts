@@ -11,4 +11,4 @@ export default {
       [Op.is]: null,
     };
   },
-};
+} as Record<string, any>;
