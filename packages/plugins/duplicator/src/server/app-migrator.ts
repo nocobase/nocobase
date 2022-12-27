@@ -60,7 +60,7 @@ export abstract class AppMigrator {
       name: 'collectionGroups',
       message: `选择需要${this.direction}的插件数据`,
       loop: false,
-      pageSize: 100,
+      pageSize: 20,
       choices: [
         new inquirer.Separator('== 必选数据 =='),
         ...requiredGroups.map((collectionGroup) => ({
@@ -85,7 +85,7 @@ export abstract class AppMigrator {
       name: 'userCollections',
       message: `选择需要${this.direction}的Collection数据`,
       loop: false,
-      pageSize: 100,
+      pageSize: 20,
       choices: collections.map((collection) => ({ name: collection, value: collection })),
     };
   }

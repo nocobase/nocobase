@@ -8,8 +8,6 @@ import { FieldValueWriter } from './field-value-writer';
 import inquirer from 'inquirer';
 import { CollectionGroupManager } from './collection-group-manager';
 
-const optionsPlugins = ['users'];
-
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
 
