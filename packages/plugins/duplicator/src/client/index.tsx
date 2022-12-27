@@ -15,18 +15,20 @@ export default function (props) {
 
   return (
     <SettingsCenterProvider
-      settings={{
-        duplicator: {
-          title: '应用导入导出',
-          icon: 'CloudDownloadOutlined',
-          tabs: {
-            tab1: {
-              title: '应用导入导出',
-              component: DuplicatorPanel,
-            },
-          },
-        },
-      }}
+      settings={
+        {
+          // duplicator: {
+          //   title: '应用导入导出',
+          //   icon: 'CloudDownloadOutlined',
+          //   tabs: {
+          //     tab1: {
+          //       title: '应用导入导出',
+          //       component: DuplicatorPanel,
+          //     },
+          //   },
+          // },
+        }
+      }
     >
       {props.children}
     </SettingsCenterProvider>
