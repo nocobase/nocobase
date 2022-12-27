@@ -1,5 +1,14 @@
 import { PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
+import { Card } from 'antd';
+
+const DuplicatorPanel = () => {
+  return (
+    <Card bordered={false}>
+      <div>hello world</div>
+    </Card>
+  );
+};
 
 export default function (props) {
   const ctx = useContext(PluginManagerContext);
@@ -7,13 +16,13 @@ export default function (props) {
   return (
     <SettingsCenterProvider
       settings={{
-        'sample-hello': {
-          title: 'Hello',
-          icon: 'ApiOutlined',
+        duplicator: {
+          title: '应用导入导出',
+          icon: 'CloudDownloadOutlined',
           tabs: {
             tab1: {
-              title: 'Hello Tab',
-              component: <div>Hello WOrld</div>,
+              title: '应用导入导出',
+              component: DuplicatorPanel,
             },
           },
         },
