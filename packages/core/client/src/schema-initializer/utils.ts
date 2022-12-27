@@ -357,7 +357,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return fields
     ?.filter((field) => {
-      return field?.interface && !field?.uiSchema?.['x-read-pretty'];
+      return field?.interface && !field?.uiSchema?.['x-read-pretty'] && field.interface !== 'snapshot';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
