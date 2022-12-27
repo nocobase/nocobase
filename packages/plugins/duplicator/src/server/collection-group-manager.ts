@@ -7,15 +7,22 @@ interface CollectionGroup {
 }
 
 export class CollectionGroupManager {
-  static registerCollectionGroup(collectionGroup: CollectionGroup) {}
-}
+  static collectionGroups: CollectionGroup[] = [];
 
-CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'core',
-  function: 'core',
-  collections: ['applicationPlugins', 'migrations'],
-  dumpable: 'required',
-});
+  static registerCollectionGroup(collectionGroup: CollectionGroup) {
+    this.collectionGroups.push(collectionGroup);
+  }
+
+  static getGroupsCollections(groups: string[]) {
+    return this.collectionGroups
+      .filter((collectionGroup) => {
+        const groupKey = `${collectionGroup.pluginName}.${collectionGroup.function}`;
+        return groups.includes(groupKey);
+      })
+      .map((collectionGroup) => collectionGroup.collections)
+      .flat();
+  }
+}
 
 CollectionGroupManager.registerCollectionGroup({
   pluginName: 'collection-manager',
@@ -70,7 +77,7 @@ CollectionGroupManager.registerCollectionGroup({
   pluginName: 'users',
   function: 'users',
   collections: ['users'],
-  dumpable: 'required',
+  dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
@@ -97,7 +104,7 @@ CollectionGroupManager.registerCollectionGroup({
 CollectionGroupManager.registerCollectionGroup({
   pluginName: 'verification',
   function: 'verificationProviders',
-  collections: ['verification_providers'],
+  collections: ['verifications_providers'],
   dumpable: 'optional',
 });
 

@@ -7,48 +7,67 @@ import stream from 'stream';
 import { DUMPED_EXTENSION, humanFileSize } from './utils';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
+import { CollectionGroupManager } from './collection-group-manager';
+import inquirer from 'inquirer';
 
 const finished = util.promisify(stream.finished);
 
 export class Dumper extends AppMigrator {
   async dump() {
-    const fixedPlugins = [
-      'collection-manager',
-      'ui-schema-storage',
-      'ui-routes-storage',
-      'acl',
-      'workflow',
-      'sequence-field',
-    ];
-
-    const ignorePlugins = [
-      'error-handler',
-      'client',
-      'export',
-      'import',
-      'sample-hello',
-      'audit-logs',
-      'china-region',
-      'system-settings',
-      'verification',
-      'oidc',
-      'saml',
-      'map',
-      'duplicator',
-    ];
-
-    const fixedCollections = ['applicationPlugins'];
-
     const appPlugins = await this.getAppPlugins();
-    const excludePlugins = [...fixedPlugins, ...ignorePlugins];
-    const usersPlugins = appPlugins.filter((pluginName) => !excludePlugins.includes(pluginName));
+
+    // get system available collection groups
+    const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
+      appPlugins.includes(collectionGroup.pluginName),
+    );
+
+    const coreCollections = ['applicationPlugins'];
+
+    const customCollections = await this.getCustomCollections();
+    const requiredGroups = collectionGroups.filter((collectionGroup) => collectionGroup.dumpable === 'required');
+    const optionalGroups = collectionGroups.filter((collectionGroup) => collectionGroup.dumpable === 'optional');
+
+    const results = await inquirer.prompt([
+      {
+        type: 'checkbox',
+        name: 'collectionGroups',
+        message: '选择需要导出的插件数据',
+        loop: false,
+        pageSize: 100,
+        choices: [
+          new inquirer.Separator('== 必选数据 =='),
+          ...requiredGroups.map((collectionGroup) => ({
+            name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
+            value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
+            checked: true,
+            disabled: true,
+          })),
+
+          new inquirer.Separator('== 可选数据 =='),
+          ...optionalGroups.map((collectionGroup) => ({
+            name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
+            value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
+          })),
+        ],
+      },
+      {
+        type: 'checkbox',
+        name: 'userCollections',
+        message: '选择需要导出的Collection数据',
+        loop: false,
+        pageSize: 100,
+        choices: [...customCollections.map((collection) => ({ name: collection, value: collection }))],
+      },
+    ]);
 
     const dumpedCollections = [
-      ...fixedCollections,
-      ...this.getPluginCollections(fixedPlugins),
-      ...this.getPluginCollections(usersPlugins),
-      ...(await this.getCustomCollections()),
-    ];
+      coreCollections,
+      CollectionGroupManager.getGroupsCollections(
+        requiredGroups.map((collectionGroup) => `${collectionGroup.pluginName}.${collectionGroup.function}`),
+      ),
+      CollectionGroupManager.getGroupsCollections(results.collectionGroups),
+      results.userCollections,
+    ].flat();
 
     for (const collection of dumpedCollections) {
       await this.dumpCollection({
@@ -79,6 +98,11 @@ export class Dumper extends AppMigrator {
     app.log.info(`dumping collection ${collectionName}`);
 
     const collection = app.db.getCollection(collectionName);
+
+    if (!collection) {
+      this.app.log.warn(`collection ${collectionName} not found`);
+      return;
+    }
 
     const collectionDataDir = path.resolve(dir, 'collections', collectionName);
 
