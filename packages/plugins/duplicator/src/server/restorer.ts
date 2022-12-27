@@ -16,7 +16,7 @@ export class Restorer extends AppMigrator {
   async restore(backupFilePath: string) {
     await this.decompressBackup(backupFilePath);
     await this.importCollections();
-    // await this.clearWorkDir();
+    await this.clearWorkDir();
   }
 
   async getImportPlugins() {
