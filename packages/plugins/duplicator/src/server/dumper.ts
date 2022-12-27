@@ -27,7 +27,13 @@ export class Dumper extends AppMigrator {
     const requiredGroups = collectionGroups.filter((collectionGroup) => collectionGroup.dumpable === 'required');
     const optionalGroups = collectionGroups.filter((collectionGroup) => collectionGroup.dumpable === 'optional');
 
-    const results = await inquirer.prompt([
+    const pluginsCollections = CollectionGroupManager.getGroupsCollections(
+      collectionGroups.map((collectionGroup) => `${collectionGroup.pluginName}.${collectionGroup.function}`),
+    );
+
+    const optionalCollections = [...customCollections.filter((collection) => !pluginsCollections.includes(collection))];
+
+    const questions = [
       {
         type: 'checkbox',
         name: 'collectionGroups',
@@ -50,15 +56,20 @@ export class Dumper extends AppMigrator {
           })),
         ],
       },
-      {
+    ];
+
+    if (optionalCollections.length > 0) {
+      questions.push({
         type: 'checkbox',
         name: 'userCollections',
         message: '选择需要导出的Collection数据',
         loop: false,
         pageSize: 100,
-        choices: [...customCollections.map((collection) => ({ name: collection, value: collection }))],
-      },
-    ]);
+        choices: optionalCollections.map((collection) => ({ name: collection, value: collection })),
+      });
+    }
+
+    const results = await inquirer.prompt(questions);
 
     const dumpedCollections = [
       coreCollections,
