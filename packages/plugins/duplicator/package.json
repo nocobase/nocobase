@@ -17,7 +17,7 @@
     "archiver": "^5.3.1",
     "dayjs": "^1.11.7",
     "decompress": "^4.2.1",
-    "inquirer": "^9.1.4",
+    "inquirer": "^8.0.0",
     "lodash": "^4.17.21",
     "tar": "^6.1.13"
   },

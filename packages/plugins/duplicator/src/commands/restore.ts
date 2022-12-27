@@ -18,6 +18,8 @@ interface RestoreContext {
 
 async function restoreAction(app: Application, restoreFilePath: string, options) {
   const restorer = new Restorer(app);
-  await restorer.restore(restoreFilePath);
+  await restorer.restorePrompt();
+
+  // await restorer.restore(restoreFilePath);
   await app.stop();
 }

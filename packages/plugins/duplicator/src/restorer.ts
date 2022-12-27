@@ -5,8 +5,51 @@ import { readLines, sqlAdapter } from './utils';
 import lodash from 'lodash';
 import decompress from 'decompress';
 import { FieldValueWriter } from './field-value-writer';
+import inquirer from 'inquirer';
+
+const optionsPlugins = ['users'];
 
 export class Restorer extends AppMigrator {
+  async restorePrompt() {
+    const results = await inquirer.prompt([
+      {
+        type: 'checkbox',
+        message: this.app.i18n.t('Select Import data'),
+        name: 'plugins',
+        pageSize: 20,
+        choices: [
+          {
+            name: 'Pepperoni',
+            disabled: true,
+            checked: true,
+          },
+
+          {
+            name: 'Ham',
+          },
+        ],
+      },
+
+      {
+        type: 'checkbox',
+        message: this.app.i18n.t('Select Import data'),
+        name: 'collections',
+        pageSize: 20,
+        choices: [
+          {
+            name: 'Pepperoni',
+            disabled: true,
+            checked: true,
+          },
+
+          {
+            name: 'Ham',
+          },
+        ],
+      },
+    ]);
+  }
+
   async restore(backupFilePath: string) {
     await this.decompressBackup(backupFilePath);
     await this.importCollections();
