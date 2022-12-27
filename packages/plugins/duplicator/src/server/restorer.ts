@@ -2,7 +2,6 @@ import { AppMigrator } from './app-migrator';
 import path from 'path';
 import fsPromises from 'fs/promises';
 import { readLines, sqlAdapter } from './utils';
-import lodash from 'lodash';
 import decompress from 'decompress';
 import { FieldValueWriter } from './field-value-writer';
 import inquirer from 'inquirer';
@@ -12,6 +11,19 @@ export class Restorer extends AppMigrator {
   direction = 'restore' as const;
 
   async restore(backupFilePath: string) {
+    const results = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'confirm',
+        message: 'Danger !!! This action will overwrite your current data, please make sure you have a backup❗️❗️',
+        default: false,
+      },
+    ]);
+
+    if (results.confirm !== true) {
+      return;
+    }
+
     await this.decompressBackup(backupFilePath);
     await this.importCollections();
     await this.clearWorkDir();
