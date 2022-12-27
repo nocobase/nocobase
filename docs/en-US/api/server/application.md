@@ -95,9 +95,9 @@ app.runAsCLI()
 
 Please refer to the detailed guides of [plugin development](./plugin.md). Read more [examples](https://github.com/nocobase/nocobase/blob/main/examples/index.md) of the Application class.
 
-## Life Cycle
+## Lifecycle
 
-Application has three life cycle stages depends on the running mode.
+Application has three lifecycle stages depends on the running mode.
 
 ### Install
 
@@ -178,7 +178,6 @@ Database instance, refer to [Database](/api/database) for the related API.
 
 Resource route management instance created automatically during app initialization, refer to [Resourcer](/api/resourcer) for the related API.
 
-
 ### `acl`
 
 ACL instance, refer to [ACL](/api/acl) for the related API.
@@ -236,7 +235,7 @@ Register middleware, compatible with all [Koa plugins](https://www.npmjs.com/sea
 
 ### `on()`
 
-Subscribe to application-level events, mainly are related to life cycle. It is equivalent to `eventEmitter.on()`. Refer to [events](#events) for all subscribable events.
+Subscribe to application-level events, mainly are related to lifecycle. It is equivalent to `eventEmitter.on()`. Refer to [events](#events) for all subscribable events.
 
 ### `command()`
 
