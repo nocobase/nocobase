@@ -162,7 +162,7 @@ export const useBlockAssociationContext = () => {
 };
 
 export const useFilterByTk = () => {
-  const { resource, __parent } = useContext(BlockRequestContext);
+  const { resource, __parent } = useContext(BlockRequestContext)||{};
   const recordIndex = useRecordIndex();
   const record = useRecord();
   const collection = useCollection();
