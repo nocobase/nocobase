@@ -1,9 +1,8 @@
 import React from 'react';
-import { render, act } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { CollectionManagerProvider } from '../CollectionManagerProvider';
 import collectionsData from './collections';
-import data from '../../schema-component/antd/calendar/demos/data';
 
 const setup = () => {
   const returnVal = {};
