@@ -37,3 +37,8 @@ export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';
+// association filter
+export * from '../../schema-component/antd/association-filter/AssociationFilter';
+export * from '../../schema-component/antd/association-filter/ActionBarAssociationFilterAction';
+export * from '../../schema-component/antd/association-filter/AssociationFilterDesignerDisplayField';
+export * from '../../schema-component/antd/association-filter/AssociationFilterDesignerDelete';

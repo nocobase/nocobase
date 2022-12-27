@@ -64,7 +64,7 @@ hello world
 
 ### Inject Plugin
 
-NocoBase Application is designed as a highly extensible framework, plugins can be written and injected to extend the functionality of the application. For example, the above-mentioned Web service can be replaced with a plugin.
+NocoBase Application is designed as a highly extensible framework, plugins can be written and injected to the applicationto to extend its functionality. For example, the above-mentioned web service can be replaced with a plugin.
 
 ```javascript
 const { Application, Plugin } = require('@nocobase/server');
@@ -97,11 +97,11 @@ Please refer to the detailed guides of [plugin development](./plugin.md). Read m
 
 ## Life Cycle
 
-Depending on the running mode, the Application has three life cycle stages.
+Application has three life cycle stages depends on the running mode.
 
 ### Install
 
-Use the `install` command in `cli` to invoke the installation. Generally, if needs to write new tables or data to the database before using the plugin, you need to do it during installation. Installation is also required when using NocoBase for the first time.
+Use the `install` command in `cli` to invoke the installation. Generally, if needs to write new tables or data to the database before using the plugin, you have to do it during installation. Installation is also required when using NocoBase for the first time.
 
 * Call the `load` method to load registered plugins.
 * Trigger the `beforeInstall` event.
@@ -137,7 +137,7 @@ Use the `upgrade` command in `cli` to upgrade NocoBase Web service when needed.
 
 ### `constructor()`
 
-Create an instance.
+Create an application instance.
 
 **Signature**
 
@@ -151,7 +151,7 @@ Create an instance.
 | `options.resourcer` | `ResourcerOptions` | `{}` | Resource route configuration |
 | `options.logger` | `AppLoggerOptions` | `{}` | Log |
 | `options.cors` | [`CorsOptions`](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/koa__cors/index.d.ts#L24) | `{}` | Cross-domain configuration, refer to [@koa/cors](https://npmjs.com/package/@koa/cors) |
-| `options.dataWrapping` | `boolean` | `true` | Whether or not to wrap the response data, `true` will wrap the usual `ctx.body` into a `{ data, meta }` structure. |
+| `options.dataWrapping` | `boolean` | `true` | Whether or not to wrap the response data, `true` will wrap the usual `ctx.body` into a `{ data, meta }` structure |
 | `options.registerActions` | `boolean` | `true` | Whether or not to register the default [actions](#) |
 | `options.i18n` | `I18nOptions` | `{}` | Internationalization configuration, refer to [i18next](https://www.i18next.com/overview/api) |
 | `options.plugins` | `PluginConfiguration[]` | `[]` | Configuration of the plugins enabled by default |
@@ -215,86 +215,86 @@ Built-in middleware includes:
 
 Context inherited from koa, accessible via `app.context`, is used to inject context-accessible content to each request. Refer to [Koa Context](https://koajs.com/#app-context).
 
-NocoBase injects the following members to context by default, which can be used directly in the request function:
+NocoBase injects the following members to context by default, which can be used directly in the request handler function:
 
-| 变量名 | 类型 | 描述 |
+| Variable Name | Type | Description |
 | --- | --- | --- |
-| `ctx.app` | `Application` | 应用实例 |
-| `ctx.db` | `Database` | 数据库实例 |
-| `ctx.resourcer` | `Resourcer` | 资源路由管理器实例 |
-| `ctx.action` | `Action` | 资源操作相关对象实例 |
-| `ctx.logger` | `Winston` | 日志实例 |
-| `ctx.i18n` | `I18n` | 国际化实例 |
-| `ctx.t` | `i18n.t` | 国际化翻译函数快捷方式 |
-| `ctx.getBearerToken()` | `Function` | 获取请求头中的 bearer token |
+| `ctx.app` | `Application` | Application instance |
+| `ctx.db` | `Database` | Database instance |
+| `ctx.resourcer` | `Resourcer` | Resource route manager instance |
+| `ctx.action` | `Action` | Resource action related object instance |
+| `ctx.logger` | `Winston` | Log instance |
+| `ctx.i18n` | `I18n` | Internationlization instance |
+| `ctx.t` | `i18n.t` | Shortcut of internationalized translation function |
+| `ctx.getBearerToken()` | `Function` | Get the bearer token in the header of request |
 
-## 实例方法
+## Instance Methods
 
 ### `use()`
 
-注册中间件，兼容所有 [Koa 插件](https://www.npmjs.com/search?q=koa)
+Register middleware, compatible with all [Koa plugins](https://www.npmjs.com/search?q=koa).
 
 ### `on()`
 
-订阅应用级事件，主要与生命周期相关，等同于 `eventEmitter.on()`。所有可订阅事件参考 [事件](#事件)。
+Subscribe to application-level events, mainly are related to life cycle. It is equivalent to `eventEmitter.on()`. Refer to [events](#events) for all subscribable events.
 
 ### `command()`
 
-自定义 command
+Customize command.
 
 ### `findCommand()`
 
-查找已定义 command
+Find defined command.
 
 ### `runAsCLI()`
 
-以 CLI 的方式运行。
+Run as CLI.
 
 ### `load()`
 
-加载应用配置。
+Load application configuration.
 
-**签名**
+**Signature**
 
 * `async load(): Promise<void>`
 
 ### `reload()`
 
-重载应用配置。
+Reload application configuration.
 
 ### `install()`
 
-初始化安装应用，同步安装插件。
+Initialize the installation of the application, meanwhile, install the plugin.
 
 ### `upgrade()`
 
-升级应用，同步升级插件。
+Upgrade application, meanwhile, upgrade plugin.
 
 ### `start()`
 
-启动应用，如果配置了监听的端口，将启动监听，之后应用即可接受 HTTP 请求。
+Start application, listening will also be started if the listening port is configured, then the application can accept HTTP requests.
 
-**签名**
+**Signature**
 
 * `async start(options: StartOptions): Promise<void>`
 
-**参数**
+**Parameters**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.listen?` | `ListenOptions` | `{}` | HTTP 监听参数对象 |
-| `options.listen.port?` | `number` | 13000 | 端口 |
-| `options.listen.host?` | `string` | `'localhost'` | 域名 |
+| `options.listen?` | `ListenOptions` | `{}` | HTTP Listening parameters object |
+| `options.listen.port?` | `number` | 13000 | Port |
+| `options.listen.host?` | `string` | `'localhost'` | Domain name |
 
 ### `stop()`
 
-停止应用，此方法会关闭数据库连接，关闭 HTTP 端口，不会删除数据。
+Stop application. This method will deconnect database, close HTTP port, but will not delete data.
 
 ### `destroy()`
 
-删除应用，此方法会删除应用对应的数据库。
+Delete application. This methos will delete the corresponding database of application.
 
-## 事件
+## Events
 
 ### `'beforeLoad'` / `'afterLoad'`
 ### `'beforeInstall'` / `'afterInstall'`

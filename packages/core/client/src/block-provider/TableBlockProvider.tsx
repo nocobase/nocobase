@@ -3,8 +3,9 @@ import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useCollectionManager } from '../collection-manager';
+import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFixedSchema } from '../schema-component';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+
 
 export const TableBlockContext = createContext<any>({});
 
@@ -28,7 +29,7 @@ const InternalTableBlockProvider = (props) => {
         rowKey,
       }}
     >
-      {props.children}
+      <RenderChildrenWithAssociationFilter {...props} />
     </TableBlockContext.Provider>
   );
 };
