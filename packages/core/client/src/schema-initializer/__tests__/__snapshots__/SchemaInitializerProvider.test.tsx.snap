@@ -29,6 +29,7 @@ exports[`SchemaInitializerProvider SchemaInitializer 1`] = `
     TabPaneInitializers
     TabPaneInitializersForCreateFormBlock
     TabPaneInitializersForBulkEditFormBlock
+    AssociationFilter
   </div>
 </div>
 `;
