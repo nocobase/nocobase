@@ -1,3 +1,5 @@
+import lodash from 'lodash';
+
 interface CollectionGroup {
   pluginName: string;
   collections: string[];
@@ -13,14 +15,34 @@ export class CollectionGroupManager {
     this.collectionGroups.push(collectionGroup);
   }
 
-  static getGroupsCollections(groups: string[]) {
+  static getGroupsCollections(groups: string[] | CollectionGroup[]) {
+    if (groups.length == 0) {
+      return [];
+    }
+
+    if (lodash.isPlainObject(groups[0])) {
+      groups = (groups as CollectionGroup[]).map(
+        (collectionGroup) => `${collectionGroup.pluginName}.${collectionGroup.function}`,
+      );
+    }
+
     return this.collectionGroups
       .filter((collectionGroup) => {
         const groupKey = `${collectionGroup.pluginName}.${collectionGroup.function}`;
-        return groups.includes(groupKey);
+        return (groups as string[]).includes(groupKey);
       })
       .map((collectionGroup) => collectionGroup.collections)
       .flat();
+  }
+
+  static classifyCollectionGroups(collectionGroups: CollectionGroup[]) {
+    const requiredGroups = collectionGroups.filter((collectionGroup) => collectionGroup.dumpable === 'required');
+    const optionalGroups = collectionGroups.filter((collectionGroup) => collectionGroup.dumpable === 'optional');
+
+    return {
+      requiredGroups,
+      optionalGroups,
+    };
   }
 }
 

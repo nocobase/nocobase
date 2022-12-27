@@ -43,8 +43,6 @@ export abstract class AppMigrator {
     return collections.map((collection) => collection.get('name'));
   }
 
-  function;
-
   async rmDir(dir: string) {
     await fsPromises.rm(dir, { recursive: true });
   }

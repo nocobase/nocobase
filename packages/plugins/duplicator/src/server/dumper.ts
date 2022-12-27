@@ -22,15 +22,10 @@ export class Dumper extends AppMigrator {
     );
 
     const coreCollections = ['applicationPlugins'];
-
     const customCollections = await this.getCustomCollections();
-    const requiredGroups = collectionGroups.filter((collectionGroup) => collectionGroup.dumpable === 'required');
-    const optionalGroups = collectionGroups.filter((collectionGroup) => collectionGroup.dumpable === 'optional');
 
-    const pluginsCollections = CollectionGroupManager.getGroupsCollections(
-      collectionGroups.map((collectionGroup) => `${collectionGroup.pluginName}.${collectionGroup.function}`),
-    );
-
+    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(collectionGroups);
+    const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
     const optionalCollections = [...customCollections.filter((collection) => !pluginsCollections.includes(collection))];
 
     const questions = [
@@ -73,9 +68,7 @@ export class Dumper extends AppMigrator {
 
     const dumpedCollections = [
       coreCollections,
-      CollectionGroupManager.getGroupsCollections(
-        requiredGroups.map((collectionGroup) => `${collectionGroup.pluginName}.${collectionGroup.function}`),
-      ),
+      CollectionGroupManager.getGroupsCollections(requiredGroups),
       CollectionGroupManager.getGroupsCollections(results.collectionGroups),
       results.userCollections,
     ].flat();
