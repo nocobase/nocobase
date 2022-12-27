@@ -16,11 +16,11 @@ export const Tabs: any = observer((props: TabsProps) => {
   const {onClick} = useShareActionProps();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   const { t } = useTranslation();
-  debugger
   const { tabBarExtraContent = {} } = props;
   if (!tabBarExtraContent['right']) {
-    tabBarExtraContent['right'] = <Space> {render()} {fieldSchema['x-component-props']?.share ? <Button onClick={onClick} >{t('Share')}</Button>: null} </Space>;
+    tabBarExtraContent['right'] = <Space> {render()}  {fieldSchema['x-component-props']?.share && (<Button onClick={onClick} >{t('Share')}</Button>)} </Space>;
   }
+
   return (
     <DndContext>
       <AntdTabs {...props} tabBarExtraContent={tabBarExtraContent}>
