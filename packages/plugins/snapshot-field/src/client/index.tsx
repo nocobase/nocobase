@@ -5,19 +5,22 @@ import {
   SchemaInitializerContext,
   SchemaInitializerProvider,
 } from '@nocobase/client';
-import React, { useContext } from 'react';
-import { snapshot } from './interface';
+import React, { useContext, useState, useEffect } from 'react';
+import { useSnapshotInterface } from './interface';
 import { SnapshotRecordPicker } from './SnapshotRecordPicker';
 import { SnapshotBlockInitializers } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializers';
 import { useSnapshotTranslation } from './locale';
 import { SnapshotBlockInitializersDetailItem } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializersDetailItem';
 import { SnapshotBlockProvider } from './SnapshotBlock/SnapshotBlockProvider';
 
-registerField(snapshot.group, snapshot.name as string, snapshot);
-
 export default React.memo((props) => {
-  const t = useSnapshotTranslation();
   const initializers = useContext(SchemaInitializerContext);
+  const snapshot = useSnapshotInterface();
+
+  useEffect(() => {
+    registerField(snapshot.group, snapshot.name as string, snapshot);
+  }, []);
+
   return (
     <CollectionManagerProvider
       interfaces={{
