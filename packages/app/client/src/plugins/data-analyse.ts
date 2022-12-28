@@ -1,0 +1,1 @@
+export { default } from '@nocobase/plugin-data-analyse/client';
