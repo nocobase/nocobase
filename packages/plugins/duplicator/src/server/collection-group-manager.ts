@@ -211,3 +211,10 @@ CollectionGroupManager.registerCollectionGroup({
   collections: ['auditLogs', 'auditChanges'],
   dumpable: 'optional',
 });
+
+CollectionGroupManager.registerCollectionGroup({
+  pluginName: 'graph-collection-manager',
+  function: 'graphCollectionPositions',
+  collections: ['graphPositions'],
+  dumpable: 'optional',
+});
