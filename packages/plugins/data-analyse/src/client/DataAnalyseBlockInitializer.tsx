@@ -17,7 +17,7 @@ export const DataAnalyseBlockInitializer = (props) => {
       componentType={'Kanban'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const values = await FormDialog(t('Create data analyse block'), () => {
+        const values = await FormDrawer(t('Create data analyse block'), () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
