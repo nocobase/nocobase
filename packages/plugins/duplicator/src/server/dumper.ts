@@ -81,14 +81,6 @@ export class Dumper extends AppMigrator {
       return;
     }
 
-    const collectionDataDir = path.resolve(dir, 'collections', collectionName);
-
-    await fsPromises.mkdir(collectionDataDir, { recursive: true });
-
-    // write collection data
-    const dataFilePath = path.resolve(collectionDataDir, 'data');
-    const dataStream = fs.createWriteStream(dataFilePath);
-
     // @ts-ignore
     const columns = Object.keys(collection.model.tableAttributes);
 
@@ -96,6 +88,14 @@ export class Dumper extends AppMigrator {
       this.app.log.warn(`collection ${collectionName} has no columns`);
       return;
     }
+
+    const collectionDataDir = path.resolve(dir, 'collections', collectionName);
+
+    await fsPromises.mkdir(collectionDataDir, { recursive: true });
+
+    // write collection data
+    const dataFilePath = path.resolve(collectionDataDir, 'data');
+    const dataStream = fs.createWriteStream(dataFilePath);
 
     // read collection data
     const rows = await collection.repository.find({
