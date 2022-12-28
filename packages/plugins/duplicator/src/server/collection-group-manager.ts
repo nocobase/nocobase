@@ -1,4 +1,6 @@
+import { Application } from '@nocobase/server';
 import lodash from 'lodash';
+import { Restorer } from './restorer';
 
 interface CollectionGroup {
   pluginName: string;
@@ -6,6 +8,7 @@ interface CollectionGroup {
   function: string;
 
   dumpable: 'required' | 'optional' | 'skip';
+  delayRestore?: any;
 }
 
 export class CollectionGroupManager {
@@ -43,6 +46,10 @@ export class CollectionGroupManager {
       requiredGroups,
       optionalGroups,
     };
+  }
+
+  static getDelayRestoreCollectionGroups() {
+    return this.collectionGroups.filter((collectionGroup) => collectionGroup.delayRestore);
   }
 }
 
@@ -93,6 +100,46 @@ CollectionGroupManager.registerCollectionGroup({
   function: 'sequences',
   collections: ['sequences'],
   dumpable: 'required',
+  async delayRestore(restorer: Restorer) {
+    const app = restorer.app;
+    const importedCollections = restorer.importedCollections;
+
+    const sequenceFields = importedCollections
+      .map((collection) =>
+        [...app.db.getCollection(collection).fields.values()].filter((field) => field.type === 'sequence'),
+      )
+      .flat()
+      .filter(Boolean);
+
+    // a single sequence field refers to a single row in sequences table
+    const sequencesAttributes = sequenceFields
+      .map((field) => {
+        const patterns = field.get('patterns').filter((pattern) => pattern.type === 'integer');
+
+        return patterns.map((pattern) => {
+          return {
+            collection: field.collection.name,
+            field: field.name,
+            key: pattern.options.key,
+          };
+        });
+      })
+      .flat();
+
+    // import sequences
+    await restorer.importCollection({
+      name: 'sequences',
+      rowCondition(row) {
+        const results = sequencesAttributes.some((attributes) => {
+          return (
+            row.collection === attributes.collection && row.field === attributes.field && row.key === attributes.key
+          );
+        });
+
+        return results;
+      },
+    });
+  },
 });
 
 CollectionGroupManager.registerCollectionGroup({

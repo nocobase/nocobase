@@ -10,6 +10,8 @@ import { CollectionGroupManager } from './collection-group-manager';
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
 
+  importedCollections: string[] = [];
+
   async restore(backupFilePath: string) {
     const results = await inquirer.prompt([
       {
@@ -79,6 +81,9 @@ export class Restorer extends AppMigrator {
       );
     });
 
+    const delayGroups = CollectionGroupManager.getDelayRestoreCollectionGroups();
+    const delayCollections = CollectionGroupManager.getGroupsCollections(delayGroups);
+
     const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(collectionGroups);
     const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
 
@@ -97,16 +102,21 @@ export class Restorer extends AppMigrator {
 
     await this.app.reload();
 
-    // import required collection
-    for (const collectionName of CollectionGroupManager.getGroupsCollections(requiredGroups)) {
+    const requiredCollections = CollectionGroupManager.getGroupsCollections(requiredGroups).filter(
+      (collection) => !delayCollections.includes(collection),
+    );
+
+    // import required plugins collections
+    for (const collectionName of requiredCollections) {
       await this.importCollection({
         name: collectionName,
       });
     }
 
-    //@ts-ignore
-    await this.app.db.getRepository('collections').load();
+    // load imported collections into database object
+    await (this.app.db.getRepository('collections') as any).load();
 
+    // sync database
     await this.app.db.sync({
       force: false,
       alter: {
@@ -117,15 +127,22 @@ export class Restorer extends AppMigrator {
     const userCollections = results.userCollections || [];
     const throughCollections = this.findThroughCollections(userCollections);
 
-    // import custom collections
-    for (const collectionName of [
+    const customCollections = [
       ...CollectionGroupManager.getGroupsCollections(results.collectionGroups),
       ...userCollections,
       ...throughCollections,
-    ]) {
+    ];
+
+    // import custom collections
+    for (const collectionName of customCollections) {
       await this.importCollection({
         name: collectionName,
       });
+    }
+
+    // import delay groups
+    for (const collectionGroup of delayGroups) {
+      await collectionGroup.delayRestore(this);
     }
   }
 
@@ -133,7 +150,12 @@ export class Restorer extends AppMigrator {
     await decompress(backupFilePath, this.workDir);
   }
 
-  async importCollection(options: { name: string; insert?: boolean; clear?: boolean }) {
+  async importCollection(options: {
+    name: string;
+    insert?: boolean;
+    clear?: boolean;
+    rowCondition?: (row: any) => boolean;
+  }) {
     const app = this.app;
     const collectionName = options.name;
     const dir = this.workDir;
@@ -175,17 +197,30 @@ export class Restorer extends AppMigrator {
         return carry;
       }, {});
 
-    const rowsWithMeta = rows.map((row) =>
-      JSON.parse(row)
-        .map((val, index) => [columns[index], val])
-        .reduce((carry, [column, val]) => {
-          const field = fields[column];
+    const rowsWithMeta = rows
+      .map((row) =>
+        JSON.parse(row)
+          .map((val, index) => [columns[index], val])
+          .reduce((carry, [column, val]) => {
+            const field = fields[column];
 
-          carry[column] = field ? FieldValueWriter.write(field, val) : val;
+            carry[column] = field ? FieldValueWriter.write(field, val) : val;
 
-          return carry;
-        }, {}),
-    );
+            return carry;
+          }, {}),
+      )
+      .filter((row) => {
+        if (options.rowCondition) {
+          return options.rowCondition(row);
+        }
+
+        return true;
+      });
+
+    if (rowsWithMeta.length == 0) {
+      app.logger.info(`${collectionName} has no data to import`);
+      return;
+    }
 
     const model = collection.model;
 
@@ -221,6 +256,8 @@ export class Restorer extends AppMigrator {
       }
     }
 
-    app.logger.info(`${collectionName} imported with ${rows.length} rows`);
+    app.logger.info(`${collectionName} imported with ${rowsWithMeta.length} rows`);
+
+    this.importedCollections.push(collection.name);
   }
 }

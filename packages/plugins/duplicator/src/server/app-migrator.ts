@@ -8,7 +8,7 @@ import inquirer from 'inquirer';
 
 export abstract class AppMigrator {
   protected workDir: string;
-  protected app: Application;
+  public app: Application;
 
   abstract direction: 'restore' | 'dump';
 
@@ -113,6 +113,17 @@ export abstract class AppMigrator {
           .map((collection) =>
             [...collection.fields.values()].filter((field) => field.through).map((field) => field.through),
           )
+          .flat(),
+      ),
+    ];
+  }
+
+  findSequenceFields(collections: string[]) {
+    return [
+      ...new Set(
+        collections
+          .map((collectionName) => this.app.db.getCollection(collectionName))
+          .map((collection) => [...collection.fields.values()].filter((field) => field.type === 'sequence'))
           .flat(),
       ),
     ];
