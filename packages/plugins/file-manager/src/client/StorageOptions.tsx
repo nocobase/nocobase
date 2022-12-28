@@ -11,6 +11,7 @@ const schema = {
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
+        required: true,
       },
       path: {
         title: '{{t("Path")}}',
