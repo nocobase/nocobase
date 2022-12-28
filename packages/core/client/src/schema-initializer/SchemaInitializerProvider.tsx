@@ -2,6 +2,7 @@ import { useFieldSchema } from '@formily/react';
 import { isPlainObj } from '@formily/shared';
 import React, { createContext, useContext } from 'react';
 import { SchemaComponentOptions } from '../schema-component';
+import get from 'lodash/get';
 import * as globals from './buttons';
 import * as initializerComponents from './components';
 import * as items from './items';
@@ -25,7 +26,7 @@ export const useSchemaInitializer = (name: string, props = {}) => {
     return { exists: false, render: (props?: any) => render(null) };
   }
 
-  const initializer = initializers?.[name || fieldSchema?.['x-initializer']];
+  const initializer = get(initializers, name || fieldSchema?.['x-initializer']);
   const initializerProps = { ...props, ...fieldSchema?.['x-initializer-props'] };
 
   if (!initializer) {

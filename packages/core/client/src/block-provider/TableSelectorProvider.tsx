@@ -3,7 +3,7 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
 export const TableSelectorContext = createContext<any>({});
@@ -27,7 +27,7 @@ const InternalTableSelectorProvider = (props) => {
           rowKey,
         }}
       >
-        {props.children}
+        <RenderChildrenWithAssociationFilter {...props} />
       </TableSelectorContext.Provider>
     </RecordProvider>
   );
@@ -59,7 +59,6 @@ export const TableSelectorProvider = (props) => {
   // const value = ctx.form.query(collectionFieldSchema?.name).value();
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
 
-  console.log('TableSelectorProvider', collectionFieldSchema, collectionField, record);
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
   if (props.dragSort) {

@@ -1,11 +1,11 @@
 import { ISchema } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
-  Filter,
+  SharedFilter,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-  Select
+  Select,
 } from '@nocobase/client';
 import { Space } from 'antd';
 import React, { useState } from 'react';
