@@ -1,20 +1,21 @@
-import { PieChartOutlined } from '@ant-design/icons';
+import {PieChartOutlined} from '@ant-design/icons';
 import {
   SchemaComponentOptions,
   SchemaInitializer,
   SchemaInitializerContext, SettingsCenterProvider
 } from '@nocobase/client';
-import { Card } from 'antd';
-import React, { useContext } from 'react';
-import { useTranslation } from 'react-i18next';
+import {Card} from 'antd';
+import React, {useContext} from 'react';
+import {useTranslation} from 'react-i18next';
+import {DataAnalyseBlockInitializer} from "./DataAnalyseBlockInitializer";
 
 export const DataAnalyseInitializer = (props) => {
-  const { insert } = props;
-  const { t } = useTranslation();
+  const {insert} = props;
+  const {t} = useTranslation();
   return (
     <SchemaInitializer.Item
       {...props}
-      icon={<PieChartOutlined />}
+      icon={<PieChartOutlined/>}
       onClick={() => {
         insert({
           type: 'void',
@@ -24,7 +25,7 @@ export const DataAnalyseInitializer = (props) => {
             content: {
               type: 'void',
               'x-component': 'div',
-              'x-content': 'Hello World',
+              'x-content': 'Hello Data Analyse',
             },
           },
         });
@@ -41,7 +42,7 @@ export default React.memo((props) => {
     key: 'dataAnalyse',
     type: 'item',
     title: '{{t("DataAnalyse")}}',
-    component: 'DataAnalyseInitializer',
+    component: 'DataAnalyseBlockInitializer',
   });
   return (
     <SettingsCenterProvider
@@ -58,7 +59,7 @@ export default React.memo((props) => {
         },
       }}
     >
-      <SchemaComponentOptions components={{ DataAnalyseInitializer }}>
+      <SchemaComponentOptions components={{DataAnalyseBlockInitializer}}>
         <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
       </SchemaComponentOptions>
     </SettingsCenterProvider>
