@@ -114,10 +114,14 @@ export class Restorer extends AppMigrator {
       },
     });
 
+    const userCollections = results.userCollections || [];
+    const throughCollections = this.findThroughCollections(userCollections);
+
     // import custom collections
     for (const collectionName of [
       ...CollectionGroupManager.getGroupsCollections(results.collectionGroups),
-      ...(results.userCollections || []),
+      ...userCollections,
+      ...throughCollections,
     ]) {
       await this.importCollection({
         name: collectionName,
