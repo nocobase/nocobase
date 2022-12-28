@@ -68,7 +68,12 @@ async function middleware(app: Application) {
 
   app.use(async function (ctx, next) {
     for (const storage of storages.values()) {
-      const baseUrl = storage.get('baseUrl');
+      const baseUrl = storage.get('baseUrl').trim();
+      if (!baseUrl) {
+        console.error('"baseUrl" is not configured');
+        // return ctx.throw(500);
+        continue;
+      }
 
       let url;
       try {
