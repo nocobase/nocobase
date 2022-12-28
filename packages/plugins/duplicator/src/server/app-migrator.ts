@@ -74,7 +74,7 @@ export abstract class AppMigrator {
         ...optionalGroups.map((collectionGroup) => ({
           name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
           value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
-          checked: this.direction === 'restore',
+          checked: this.direction === 'dump',
         })),
       ],
     };
@@ -87,7 +87,11 @@ export abstract class AppMigrator {
       message: `选择需要${this.direction}的Collection数据`,
       loop: false,
       pageSize: 20,
-      choices: collections.map((collection) => ({ name: collection, value: collection })),
+      choices: collections.map((collection) => ({
+        name: collection,
+        value: collection,
+        checked: this.direction === 'dump',
+      })),
     };
   }
 
