@@ -30,16 +30,19 @@ export class Dumper extends AppMigrator {
     const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
 
     const optionalCollections = [...customCollections.filter((collection) => !pluginsCollections.includes(collection))];
-
     const questions = this.buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections);
-
     const results = await inquirer.prompt(questions);
+
+    const userCollections = results.userCollections || [];
+
+    const throughCollections = this.findThroughCollections(userCollections);
 
     const dumpedCollections = [
       coreCollections,
       CollectionGroupManager.getGroupsCollections(requiredGroups),
       CollectionGroupManager.getGroupsCollections(results.collectionGroups),
-      results.userCollections || [],
+      userCollections,
+      throughCollections,
     ].flat();
 
     for (const collection of dumpedCollections) {

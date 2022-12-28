@@ -104,4 +104,17 @@ export abstract class AppMigrator {
 
     return questions;
   }
+
+  findThroughCollections(collections: string[]) {
+    return [
+      ...new Set(
+        collections
+          .map((collectionName) => this.app.db.getCollection(collectionName))
+          .map((collection) =>
+            [...collection.fields.values()].filter((field) => field.through).map((field) => field.through),
+          )
+          .flat(),
+      ),
+    ];
+  }
 }
