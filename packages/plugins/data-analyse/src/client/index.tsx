@@ -48,11 +48,11 @@ export default React.memo((props) => {
       settings={{
         'data-analyse': {
           title: 'data-analyse',
-          icon: 'ApiOutlined',
+          icon: 'PieChartOutlined',
           tabs: {
             tab1: {
               title: 'data analyse tab',
-              component: () => <Card bordered={false}>Hello Settings</Card>,
+              component: () => <Card bordered={false}>Hello DataAnalyse</Card>,
             },
           },
         },
