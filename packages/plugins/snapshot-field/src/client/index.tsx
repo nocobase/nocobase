@@ -9,9 +9,9 @@ import React, { useContext, useState, useEffect } from 'react';
 import { useSnapshotInterface } from './interface';
 import { SnapshotRecordPicker } from './SnapshotRecordPicker';
 import { SnapshotBlockInitializers } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializers';
-import { useSnapshotTranslation } from './locale';
 import { SnapshotBlockInitializersDetailItem } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializersDetailItem';
 import { SnapshotBlockProvider } from './SnapshotBlock/SnapshotBlockProvider';
+import { CollectionHistoryProvider } from './CollectionHistoryProvider';
 
 export default React.memo((props) => {
   const initializers = useContext(SchemaInitializerContext);
@@ -27,22 +27,24 @@ export default React.memo((props) => {
         snapshot,
       }}
     >
-      <SchemaInitializerProvider
-        initializers={{
-          ...initializers,
-          SnapshotBlockInitializers,
-        }}
-      >
-        <SchemaComponentOptions
-          components={{
-            SnapshotRecordPicker,
-            SnapshotBlockProvider,
-            SnapshotBlockInitializersDetailItem,
+      <CollectionHistoryProvider>
+        <SchemaInitializerProvider
+          initializers={{
+            ...initializers,
+            SnapshotBlockInitializers,
           }}
         >
-          {props.children}
-        </SchemaComponentOptions>
-      </SchemaInitializerProvider>
+          <SchemaComponentOptions
+            components={{
+              SnapshotRecordPicker,
+              SnapshotBlockProvider,
+              SnapshotBlockInitializersDetailItem,
+            }}
+          >
+            {props.children}
+          </SchemaComponentOptions>
+        </SchemaInitializerProvider>
+      </CollectionHistoryProvider>
     </CollectionManagerProvider>
   );
 });
