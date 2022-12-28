@@ -19,3 +19,4 @@ docs-dist/
 dist/
 docker/**/storage
 cache/diskstore-*
+.eslintcache
