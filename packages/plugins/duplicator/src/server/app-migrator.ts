@@ -43,7 +43,7 @@ export abstract class AppMigrator {
 
   async getCustomCollections() {
     const collections = await this.app.db.getCollection('collections').repository.find();
-    return collections.map((collection) => collection.get('name'));
+    return collections.filter((collection) => !collection.get('isThrough')).map((collection) => collection.get('name'));
   }
 
   async rmDir(dir: string) {

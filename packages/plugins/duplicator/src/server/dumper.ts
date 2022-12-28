@@ -30,6 +30,7 @@ export class Dumper extends AppMigrator {
     const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
 
     const optionalCollections = [...customCollections.filter((collection) => !pluginsCollections.includes(collection))];
+
     const questions = this.buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections);
     const results = await inquirer.prompt(questions);
 
@@ -90,6 +91,11 @@ export class Dumper extends AppMigrator {
 
     // @ts-ignore
     const columns = Object.keys(collection.model.tableAttributes);
+
+    if (columns.length == 0) {
+      this.app.log.warn(`collection ${collectionName} has no columns`);
+      return;
+    }
 
     // read collection data
     const rows = await collection.repository.find({
