@@ -207,6 +207,16 @@ export class Restorer extends AppMigrator {
       type: 'INSERT',
     });
 
+    const primaryKeyAttribute = collection.model.rawAttributes[collection.model.primaryKeyAttribute];
+
+    if (primaryKeyAttribute && primaryKeyAttribute.autoIncrement) {
+      if (this.app.db.inDialect('postgres')) {
+        await app.db.sequelize.query(
+          `SELECT pg_catalog.setval(pg_get_serial_sequence('"${collection.model.tableName}"', '${primaryKeyAttribute.field}'), MAX("${primaryKeyAttribute.field}")) FROM "${collection.model.tableName}"`,
+        );
+      }
+    }
+
     app.logger.info(`${collectionName} imported with ${rows.length} rows`);
   }
 }

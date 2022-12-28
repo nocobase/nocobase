@@ -74,6 +74,7 @@ export abstract class AppMigrator {
         ...optionalGroups.map((collectionGroup) => ({
           name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
           value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
+          checked: this.direction === 'restore',
         })),
       ],
     };
