@@ -47,7 +47,33 @@ export class SnapshotFieldPlugin extends Plugin {
     });
   }
 
-  async install(options?: InstallOptions) {}
+  // 初始化安装的时候
+  async install(options?: InstallOptions) {
+    await this.app.db.sequelize.transaction(async (transaction) => {
+      const collectionsRepository = this.app.db.getCollection('collections').repository;
+      const collectionsHistoryRepository = this.app.db.getCollection('collectionsHistory').repository;
+
+      if ((await collectionsHistoryRepository.find()).length === 0) {
+        const collectionsModels: Model[] = await collectionsRepository.find();
+        await collectionsHistoryRepository.createMany({
+          records: collectionsModels.map((m) => m.get()),
+          transaction,
+        });
+      }
+
+      const fieldsRepository = this.app.db.getCollection('fields').repository;
+      const fieldsHistoryRepository = this.app.db.getCollection('fieldsHistory').repository;
+
+      if ((await fieldsHistoryRepository.find()).length === 0) {
+        const fieldsModels: Model[] = await fieldsRepository.find();
+
+        await fieldsHistoryRepository.createMany({
+          records: fieldsModels.map((m) => m.get()),
+          transaction,
+        });
+      }
+    });
+  }
 
   async afterEnable() {}
 
