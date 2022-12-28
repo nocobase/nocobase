@@ -47,7 +47,7 @@ export abstract class AppMigrator {
   }
 
   async rmDir(dir: string) {
-    await fsPromises.rm(dir, { recursive: true });
+    await fsPromises.rm(dir, { recursive: true, force: true });
   }
 
   async clearWorkDir() {
