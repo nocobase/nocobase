@@ -60,6 +60,7 @@ export default {
   'Delete this event?': 'Delete this event?',
   'Delete Event': 'Delete Event',
   "Kanban": "Kanban",
+  "Kanban card": "Kanban card",
   "Select grouping field": "Select grouping field",
   "Media": "Media",
   "Markdown": "Markdown",

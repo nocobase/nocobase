@@ -61,6 +61,7 @@ export default {
   'Delete this event?': '是否删除这个日程？',
   'Delete Event': '删除日程',
   "Kanban": "看板",
+  "Kanban card": "看板卡片",
   "Select grouping field": "选择分组字段",
   "Media": "多媒体",
   "Markdown": "Markdown",
