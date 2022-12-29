@@ -41,7 +41,7 @@ export default React.memo((props) => {
   children.push({
     key: 'chart',
     type: 'item',
-    title: '{{t("Charts")}}',
+    title: '{{t("Chart")}}',
     component: 'ChartBlockInitializer',
   });
   return (
