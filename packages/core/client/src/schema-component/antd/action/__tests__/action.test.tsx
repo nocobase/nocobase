@@ -1,11 +1,10 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { FormItem, Input } from '@formily/antd';
 import { ISchema, observer, useForm } from '@formily/react';
 import { Form, SchemaComponent, SchemaComponentProvider, useActionContext, ActionContext } from '@nocobase/client';
 import { Action } from '../Action';
 import React, { useState } from 'react';
 import { ActionLink } from '../Action.Link';
-import { exp } from 'mathjs';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
