@@ -51,6 +51,7 @@ const collection = {
         title: '{{t("Storage base URL")}}',
         type: 'string',
         'x-component': 'Input',
+        required: true,
       } as ISchema,
     },
     {
