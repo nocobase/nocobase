@@ -13,11 +13,22 @@ const FormItem = observer((props) => {
   return <BlockItem {...props} />;
 });
 
+const getCardItemProps = (schema) => {
+  if (schema?.['x-component'] == 'CardItem') {
+    return schema?.['x-component-props'];
+  }
+  if (schema.parent) {
+    return getCardItemProps(schema.parent);
+  }
+  return {};
+};
+
 export const KanbanCard: any = observer((props: any) => {
   const { setDisableCardDrag, cardViewerSchema, card, cardField, columnIndex, cardIndex } =
     useContext(KanbanCardContext);
   const fieldSchema = useFieldSchema();
   const [visible, setVisible] = useState(false);
+  const cardItemProps = getCardItemProps(fieldSchema);
   return (
     <>
       <Card
@@ -32,26 +43,32 @@ export const KanbanCard: any = observer((props: any) => {
           .ant-card-body {
             padding: 16px;
           }
+
           .nb-row-divider {
             height: 16px;
             margin-top: -16px;
+
             &:last-child {
               margin-top: 0;
             }
           }
+
           .ant-description-input {
             text-overflow: ellipsis;
             width: 100%;
             overflow: hidden;
           }
+
           .ant-description-textarea {
             text-overflow: ellipsis;
             width: 100%;
             overflow: hidden;
           }
+
           .ant-formily-item {
             margin-bottom: 12px;
           }
+
           .nb-grid-row:last-of-type {
             .nb-grid-col {
               .nb-form-item:last-of-type {
@@ -83,7 +100,7 @@ export const KanbanCard: any = observer((props: any) => {
         </SchemaComponentOptions>
       </Card>
       {cardViewerSchema && (
-        <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
+        <ActionContext.Provider value={{ openMode: cardItemProps?.openMode ?? 'drawer', openSize: cardItemProps?.openSize, visible, setVisible }}>
           <RecordProvider record={card}>
             <RecursionField
               basePath={cardField.address.concat(`${columnIndex}.cardViewer.${cardIndex}`)}

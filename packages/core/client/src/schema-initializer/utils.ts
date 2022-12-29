@@ -972,7 +972,7 @@ export const createCalendarBlockSchema = (options) => {
             properties: {
               drawer: {
                 type: 'void',
-                'x-component': 'Action.Drawer',
+                'x-component': 'Action.Container',
                 'x-component-props': {
                   className: 'nb-action-popup',
                 },
