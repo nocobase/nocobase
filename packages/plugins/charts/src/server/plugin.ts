@@ -1,6 +1,6 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 
-export class DataAnalysePlugin extends Plugin {
+export class ChartsPlugin extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
@@ -16,4 +16,4 @@ export class DataAnalysePlugin extends Plugin {
   async remove() {}
 }
 
-export default DataAnalysePlugin;
+export default ChartsPlugin;
