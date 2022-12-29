@@ -39,10 +39,7 @@ const InternalAssociationSelect = connect(
   (props: AssociationSelectProps) => {
     const { fieldNames, objectValue = true } = props;
     const service = useServiceOptions(props);
-    const field = useField();
-    const fieldSchema = useFieldSchema();
-    const { getField } = useCollection();
-    const collectionField = getField(fieldSchema.name);
+    useFieldTitle();
 
     const normalizeValues = useCallback(
       (obj) => {
@@ -117,7 +114,6 @@ AssociationSelect.Designer = () => {
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const defaultFilter = field.componentProps?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
-  useFieldTitle();
 
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
