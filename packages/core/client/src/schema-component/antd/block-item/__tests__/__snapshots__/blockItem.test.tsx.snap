@@ -1,0 +1,81 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`blockItem blockItem 1`] = `
+<div>
+  <div
+    class="nb-block-item css-r8u0a4"
+  >
+    <div
+      style="margin-bottom: 20px; padding: 0px 20px; height: 50px; line-height: 50px; background: rgb(241, 241, 241);"
+    >
+      Block 
+      block1
+      <div
+        style="display: inline-block; width: 12px; height: 12px; line-height: 12px; text-align: left;"
+      >
+        <div
+          aria-describedby="DndDescribedBy-0"
+          aria-roledescription="draggable"
+          role="button"
+          style="position: relative; z-index: 1; line-height: 0; height: 2px; width: 2px; font-size: 0; display: inline-block;"
+          tabindex="0"
+        >
+          <span
+            style="cursor: move; font-size: 14px;"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="nb-block-item css-r8u0a4"
+  >
+    <div
+      style="margin-bottom: 20px; padding: 0px 20px; height: 50px; line-height: 50px; background: rgb(241, 241, 241);"
+    >
+      Block 
+      block2
+      <div
+        style="display: inline-block; width: 12px; height: 12px; line-height: 12px; text-align: left;"
+      >
+        <div
+          aria-describedby="DndDescribedBy-0"
+          aria-roledescription="draggable"
+          role="button"
+          style="position: relative; z-index: 1; line-height: 0; height: 2px; width: 2px; font-size: 0; display: inline-block;"
+          tabindex="0"
+        >
+          <span
+            style="cursor: move; font-size: 14px;"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="nb-block-item css-r8u0a4"
+  >
+    <div
+      style="margin-bottom: 20px; padding: 0px 20px; height: 50px; line-height: 50px; background: rgb(241, 241, 241);"
+    >
+      Block 
+      block3
+      <div
+        style="display: inline-block; width: 12px; height: 12px; line-height: 12px; text-align: left;"
+      >
+        <div
+          aria-describedby="DndDescribedBy-0"
+          aria-roledescription="draggable"
+          role="button"
+          style="position: relative; z-index: 1; line-height: 0; height: 2px; width: 2px; font-size: 0; display: inline-block;"
+          tabindex="0"
+        >
+          <span
+            style="cursor: move; font-size: 14px;"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
