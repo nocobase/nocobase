@@ -32,10 +32,10 @@ export const ChartBlockInitializer = (props) => {
                         'x-component': 'Select',
                         'x-component-props': {
                           objectValue: true,
-                          fieldNames: {label: 'label', value: 'value'},
+                          fieldNames: {chartType: 'chartType'},
                         },
                         'x-decorator': 'FormItem',
-                        enum: [{label: 'Statistic', value: 'statistic'}],
+                        enum: [{chartType: 'Pie', value: 'Pie'},{chartType: 'Column', value: 'Column'}],
                       },
                       tabs1: {
                         type: 'void',
