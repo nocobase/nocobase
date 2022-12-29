@@ -20,7 +20,7 @@ import { SharedFilterProvider } from './SharedFilterProvider';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
-const BlockRequestContext = createContext<any>(null);
+export const BlockRequestContext = createContext<any>(null);
 
 export const useBlockResource = () => {
   return useContext(BlockResourceContext);

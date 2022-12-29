@@ -1,74 +1,23 @@
-import { css } from '@emotion/css';
-import { observer, RecursionField, SchemaExpressionScopeContext, useField, useFieldSchema } from '@formily/react';
-import React, { useContext } from 'react';
-import { createPortal } from 'react-dom';
+import { observer, useFieldSchema } from '@formily/react';
+import React from 'react';
+import { useHistory } from 'react-router-dom';
 import { useActionContext } from '.';
 import { ComposedActionDrawer } from './types';
+import { usePageMode } from '../../../block-provider/hooks';
 
-const useScope = (key: string) => {
-  const scope = useContext(SchemaExpressionScopeContext);
-  return scope[key];
-};
-
-export const ActionPage: ComposedActionDrawer = observer((props: any) => {
-  const { footerNodeName = 'Action.Page.Footer', ...others } = props;
-  const { containerRefKey, visible, setVisible } = useActionContext();
-  const containerRef = useScope(containerRefKey);
+export const ActionPage: ComposedActionDrawer = observer((props) => {
+  const { getPageSearchStr } = usePageMode();
+  const history = useHistory();
+  const { visible } = useActionContext();
   const schema = useFieldSchema();
-  const field = useField();
-  const footerSchema = schema.reduceProperties((buf, s) => {
-    if (s['x-component'] === footerNodeName) {
-      return s;
-    }
-    return buf;
-  });
-  return (
-    <>
-      {containerRef?.current &&
-        visible &&
-        createPortal(
-          <div>
-            <RecursionField
-              basePath={field.address}
-              schema={schema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s['x-component'] !== footerNodeName;
-              }}
-            />
-            {footerSchema && (
-              <div
-                className={css`
-                  display: flex;
-                  /* justify-content: flex-end; */
-                  /* flex-direction: row-reverse; */
-                  width: 100%;
-                  .ant-btn {
-                    margin-right: 8px;
-                  }
-                `}
-              >
-                <RecursionField
-                  basePath={field.address}
-                  schema={schema}
-                  onlyRenderProperties
-                  filterProperties={(s) => {
-                    return s['x-component'] === footerNodeName;
-                  }}
-                />
-              </div>
-            )}
-          </div>,
-          containerRef?.current,
-        )}
-    </>
-  );
-});
 
-ActionPage.Footer = observer(() => {
-  const field = useField();
-  const schema = useFieldSchema();
-  return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
+  if (visible) {
+    history.push({
+      search: window.location.search ? `${window.location.search}&${getPageSearchStr(schema)}` : getPageSearchStr(schema)
+    });
+    return null;
+  }
+  return null;
 });
 
 export default ActionPage;

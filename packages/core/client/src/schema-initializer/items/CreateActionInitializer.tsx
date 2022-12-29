@@ -28,6 +28,14 @@ export const CreateActionInitializer = (props) => {
             'x-component-props': {},
             'x-initializer': 'TabPaneInitializersForCreateFormBlock',
             properties: {
+              tabBarExtraContent_right: {
+                type: 'void',
+                'x-initializer': 'TabActionInitializers',
+                'x-component': 'ActionBar',
+                'x-component-props': {
+                },
+                properties: {},
+              },
               tab1: {
                 type: 'void',
                 title: '{{t("Add new")}}',

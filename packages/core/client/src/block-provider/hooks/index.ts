@@ -4,7 +4,7 @@ import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
@@ -16,6 +16,7 @@ import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import copy from 'copy-to-clipboard';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -113,6 +114,11 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
   return values;
 }
 
+const pageModeBack = (history) => {
+  const { query } = history.location as any;
+  history.push(history.location.pathname, { serviceParams: query?.serviceParams });
+};
+
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
@@ -126,6 +132,7 @@ export const useCreateActionProps = () => {
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
+  const { isPageMode } = usePageMode();
   const currentUser = currentUserContext?.data?.data;
   return {
     async onClick() {
@@ -155,6 +162,10 @@ export const useCreateActionProps = () => {
         __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
+          if (isPageMode) {
+            message.success(compile(t('Saved successfully')));
+            pageModeBack(history);
+          }
           return;
         }
         if (onSuccess?.manualClose) {
@@ -168,11 +179,16 @@ export const useCreateActionProps = () => {
                 } else {
                   history.push(onSuccess.redirectTo);
                 }
+              } else if (isPageMode) {
+                pageModeBack(history);
               }
             },
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
+          if (isPageMode) {
+            pageModeBack(history);
+          }
         }
       } catch (error) {
         actionField.data.loading = false;
@@ -483,6 +499,51 @@ export const useCustomizeRequestActionProps = () => {
   };
 };
 
+const getParentActionContainer = (schema) => {
+  if (!schema) {
+    return null;
+  }
+  if (schema?.['x-component'] == 'Action.Container') {
+    return schema;
+  }
+  return getParentActionContainer(schema.parent);
+};
+
+export const usePageMode = () => {
+  const location = useLocation();
+  const collection = useCollection();
+  const record = useRecord();
+  const filterTargetKey = collection.filterTargetKey || 'id';
+  const filterTargetVal = record?.[filterTargetKey];
+  return {
+    getPageSearchStr(schema) {
+      return `sub-page=/${schema?.['x-uid']}/${
+        collection.name
+      }/${filterTargetVal}`
+    },
+    isPageMode: !!(location as any)?.query?.['sub-page'],
+  };
+};
+
+export const useShareActionProps = () => {
+  const location = useLocation();
+  const schema = useFieldSchema();
+  const { t }  = useTranslation();
+  const { getPageSearchStr, isPageMode } = usePageMode();
+  const actionContainerSchema = getParentActionContainer(schema);
+
+  return {
+    async onClick() {
+      let url = isPageMode
+        ? window.location.href
+        : `${window.location.origin}${location.pathname}?${getPageSearchStr(actionContainerSchema)}`;
+      if (copy(url)) {
+        message.success(t('The link has been copied'));
+      }
+    },
+  };
+};
+
 export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
@@ -496,7 +557,10 @@ export const useUpdateActionProps = () => {
   const { updateAssociationValues } = useFormBlockContext();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
+  const { t } = useTranslation();
+  const { isPageMode } = usePageMode();
   const currentUser = currentUserContext?.data?.data;
+
   return {
     async onClick() {
       const {
@@ -528,15 +592,21 @@ export const useUpdateActionProps = () => {
           __parent?.__parent?.service?.refresh?.();
         }
         __parent?.service?.refresh?.();
+
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
+          if (isPageMode) {
+            message.success(compile(t('Saved successfully')));
+          }
           return;
         }
         if (onSuccess?.manualClose) {
           Modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
-              await form.reset();
+              if (!isPageMode) {
+                await form.reset();
+              }
               if (onSuccess?.redirecting && onSuccess?.redirectTo) {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;

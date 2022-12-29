@@ -5,7 +5,8 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext, useCompile, useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { requestSettingsSchema } from './utils';
+import {getActionContainerLevel, requestSettingsSchema} from './utils';
+import {usePageMode} from "../../../block-provider/hooks";
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -38,12 +39,24 @@ export const ActionDesigner = (props) => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const { isPageMode } = usePageMode();
   const compile = useCompile();
   const isPopupAction = ['create', 'update', 'view', 'customize:popup'].includes(fieldSchema['x-action'] || '');
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const context = useActionContext();
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] || '';
+
+  const level = getActionContainerLevel(fieldSchema);
+  const enablePageMode = !isPageMode && level == 0;
+
+  const openModeList = [
+    { label: t('Drawer'), value: 'drawer' },
+    { label: t('Dialog'), value: 'modal' },
+  ];
+  if (enablePageMode) {
+    openModeList.push({ label: t('Page'), value: 'page' });
+  }
 
   useEffect(() => {
     const schemaUid = uid();
@@ -135,10 +148,7 @@ export const ActionDesigner = (props) => {
         {isPopupAction && (
           <SchemaSettings.SelectItem
             title={t('Open mode')}
-            options={[
-              { label: t('Drawer'), value: 'drawer' },
-              { label: t('Dialog'), value: 'modal' },
-            ]}
+            options={openModeList}
             value={fieldSchema?.['x-component-props']?.['openMode']}
             onChange={(value) => {
               field.componentProps.openMode = value;

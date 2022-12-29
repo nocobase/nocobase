@@ -66,3 +66,15 @@ export const requestSettingsSchema: ISchema = {
     },
   },
 };
+
+export const getActionContainerLevel = (schema) => {
+  if (!schema) {
+    return 0;
+  }
+  let actionContainerLevel = 0;
+  if (schema?.['x-component'] == 'Action.Container') {
+    actionContainerLevel += 1;
+  }
+  actionContainerLevel += getActionContainerLevel(schema.parent);
+  return actionContainerLevel;
+};

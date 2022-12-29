@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
+import { Space, TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { Icon } from '../../../icon';
@@ -12,14 +12,21 @@ import { TabsDesigner } from './Tabs.Designer';
 export const Tabs: any = observer((props: TabsProps) => {
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  const { tabBarExtraContent = {} } = props;
+  tabBarExtraContent['right'] = (
+    <Space>
+      {render()}
+      <RecursionField name="tabBarExtraContent_right" schema={fieldSchema?.properties?.tabBarExtraContent_right} />
+    </Space>
+  );
+
   return (
     <DndContext>
-      <AntdTabs
-        tabBarExtraContent={{
-          right: render(),
-        }}
-      >
+      <AntdTabs {...props} tabBarExtraContent={tabBarExtraContent}>
         {fieldSchema.mapProperties((schema, key) => {
+          if (key === 'tabBarExtraContent_right') {
+            return;
+          }
           return (
             <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
               <RecursionField name={key} schema={schema} onlyRenderProperties />
@@ -33,11 +40,13 @@ export const Tabs: any = observer((props: TabsProps) => {
 
 const designerCss = css`
   position: relative;
+
   &:hover {
     > .general-schema-designer {
       display: block;
     }
   }
+
   &.nb-action-link {
     > .general-schema-designer {
       top: -10px;
@@ -46,6 +55,7 @@ const designerCss = css`
       right: -10px;
     }
   }
+
   > .general-schema-designer {
     position: absolute;
     z-index: 999;
@@ -61,12 +71,14 @@ const designerCss = css`
     left: 0;
     right: 0;
     pointer-events: none;
+
     > .general-schema-designer-icons {
       position: absolute;
       right: 2px;
       top: 2px;
       line-height: 16px;
       pointer-events: all;
+
       .ant-space-item {
         background-color: #f18b62;
         color: #fff;

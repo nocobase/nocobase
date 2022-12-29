@@ -46,7 +46,8 @@
     "react-router-dom": "^5.2.0",
     "react-to-print": "^2.14.7",
     "solarlunar-es": "^1.0.9",
-    "use-deep-compare-effect": "^1.8.1"
+    "use-deep-compare-effect": "^1.8.1",
+    "copy-to-clipboard": "^3.3.3"
   },
   "peerDependencies": {
     "@types/react": ">=16.8.0 || >=17.0.0",
