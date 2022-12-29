@@ -5,7 +5,7 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import {SchemaComponent, SchemaComponentOptions, useAPIClient, useCollectionManager} from "@nocobase/client";
 import {DataBlockInitializer} from '@nocobase/client'
-export const DataAnalyseBlockInitializer = (props) => {
+export const ChartBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
   const { getCollectionFields, getCollection } = useCollectionManager();
@@ -17,7 +17,7 @@ export const DataAnalyseBlockInitializer = (props) => {
       componentType={'Kanban'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const values = await FormDrawer(t('Create data analyse block'), () => {
+        const values = await FormDrawer(t('Create chart block'), () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
