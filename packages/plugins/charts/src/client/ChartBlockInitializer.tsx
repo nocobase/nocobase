@@ -35,7 +35,7 @@ export const ChartBlockInitializer = (props) => {
                           fieldNames: {chartType: 'chartType'},
                         },
                         'x-decorator': 'FormItem',
-                        enum: [{chartType: 'Pie', value: 'Pie'},{chartType: 'Column', value: 'Column'}],
+                        enum: [{chartType: 'Pie', value: 'Pie'},{chartType: 'Column', value: 'Column'},{chartType:'Statistic',value:'Statistic'}],
                       },
                       tabs1: {
                         type: 'void',
@@ -171,7 +171,19 @@ export const ChartBlockInitializer = (props) => {
         }).open({
           initialValues: {},
         });
-        console.log(values)
+        if (values) {
+          insert({
+            type: 'void',
+            'x-component': 'CardItem',
+            properties: {
+              hello: {
+                type: 'void',
+                'x-component': 'div',
+                'x-content': JSON.stringify(values),
+              },
+            },
+          })
+        }
       }}
     />
   );
