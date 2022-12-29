@@ -1,25 +1,27 @@
-import { FormOutlined } from '@ant-design/icons';
-import { FormDialog, FormLayout,FormDrawer } from '@formily/antd';
-import { SchemaOptionsContext } from '@formily/react';
-import React, { useContext } from 'react';
-import { useTranslation } from 'react-i18next';
+import {FormOutlined} from '@ant-design/icons';
+import {FormDialog, FormLayout, FormDrawer} from '@formily/antd';
+import {SchemaOptionsContext} from '@formily/react';
+import React, {useContext} from 'react';
+import {useTranslation} from 'react-i18next';
 import {SchemaComponent, SchemaComponentOptions, useAPIClient, useCollectionManager} from "@nocobase/client";
 import {DataBlockInitializer} from '@nocobase/client'
+import {useSaveRoleResourceAction} from "@nocobase/client/src/acl/Configuration/schemas/useSaveRoleResourceAction";
+
 export const ChartBlockInitializer = (props) => {
-  const { insert } = props;
-  const { t } = useTranslation();
-  const { getCollectionFields, getCollection } = useCollectionManager();
+  const {insert} = props;
+  const {t} = useTranslation();
+  const {getCollectionFields, getCollection} = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   return (
     <DataBlockInitializer
       {...props}
       componentType={'Kanban'}
-      icon={<FormOutlined />}
-      onCreateBlockSchema={async ({ item }) => {
-        const values = await FormDrawer(t('Create chart block'), () => {
+      icon={<FormOutlined/>}
+      onCreateBlockSchema={async ({item}) => {
+        const values = await FormDialog(t('Create chart block'), () => {
           return (
-            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+            <SchemaComponentOptions scope={options.scope} components={{...options.components}}>
               <FormLayout layout={'vertical'}>
                 <SchemaComponent
                   schema={{
@@ -30,10 +32,10 @@ export const ChartBlockInitializer = (props) => {
                         'x-component': 'Select',
                         'x-component-props': {
                           objectValue: true,
-                          fieldNames: { label: 'label', value: 'value' },
+                          fieldNames: {label: 'label', value: 'value'},
                         },
                         'x-decorator': 'FormItem',
-                        enum: [{ label: 'Statistic', value: 'statistic' }],
+                        enum: [{label: 'Statistic', value: 'statistic'}],
                       },
                       tabs1: {
                         type: 'void',
@@ -59,9 +61,9 @@ export const ChartBlockInitializer = (props) => {
                                 'x-decorator': 'FormItem',
                                 default: 'builtIn',
                                 enum: [
-                                  { label: 'Built-in', value: 'builtIn' },
-                                  { label: 'SQL', value: 'sql' },
-                                  { label: 'API', value: 'api' },
+                                  {label: 'Built-in', value: 'builtIn'},
+                                  {label: 'SQL', value: 'sql'},
+                                  {label: 'API', value: 'api'},
                                 ],
                               },
                               sql: {
@@ -96,9 +98,9 @@ export const ChartBlockInitializer = (props) => {
                                 'x-component': 'Radio.Group',
                                 'x-decorator': 'FormItem',
                                 enum: [
-                                  { label: 'SUM', value: 'SUM' },
-                                  { label: 'COUNT', value: 'COUNT' },
-                                  { label: 'AVG', value: 'AVG' },
+                                  {label: 'SUM', value: 'SUM'},
+                                  {label: 'COUNT', value: 'COUNT'},
+                                  {label: 'AVG', value: 'AVG'},
                                 ],
                                 'x-reactions': {
                                   dependencies: ['dataset.type'],
@@ -115,10 +117,10 @@ export const ChartBlockInitializer = (props) => {
                                 'x-component': 'Select',
                                 'x-component-props': {
                                   objectValue: true,
-                                  fieldNames: { label: 'label', value: 'value' },
+                                  fieldNames: {label: 'label', value: 'value'},
                                 },
                                 'x-decorator': 'FormItem',
-                                enum: [{ label: 'Statistic', value: 'statistic' }],
+                                enum: [{label: 'Statistic', value: 'statistic'}],
                                 'x-reactions': {
                                   dependencies: ['dataset.type'],
                                   fulfill: {
@@ -169,6 +171,7 @@ export const ChartBlockInitializer = (props) => {
         }).open({
           initialValues: {},
         });
+        console.log(values)
       }}
     />
   );
