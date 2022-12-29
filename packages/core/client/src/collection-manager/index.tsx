@@ -15,3 +15,4 @@ export * from './ResourceActionProvider';
 export { getConfigurableProperties } from './templates/properties';
 export * from './templates/types';
 export * from './types';
+export * from './CollectionHistoryProvider';

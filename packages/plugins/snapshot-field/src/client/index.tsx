@@ -1,4 +1,5 @@
 import {
+  CollectionHistoryProvider,
   CollectionManagerProvider,
   registerField,
   SchemaComponentOptions,
@@ -11,7 +12,6 @@ import { SnapshotRecordPicker } from './SnapshotRecordPicker';
 import { SnapshotBlockInitializers } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializers';
 import { SnapshotBlockInitializersDetailItem } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializersDetailItem';
 import { SnapshotBlockProvider } from './SnapshotBlock/SnapshotBlockProvider';
-import { CollectionHistoryProvider } from './CollectionHistoryProvider';
 
 export default React.memo((props) => {
   const initializers = useContext(SchemaInitializerContext);

@@ -1,11 +1,10 @@
-import { CollectionManagerContext } from '@nocobase/client';
+import { CollectionManagerContext, useHistoryCollectionByKey } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { useHistoryCollection } from './CollectionHistoryProvider';
 
 export const SnapshotHistoryCollectionProvider: React.FC<{ collectionKey?: string }> = (props) => {
   const { collectionKey } = props;
   const { collections: allCollections, ...rest } = useContext(CollectionManagerContext);
-  const historyCollection = useHistoryCollection(collectionKey);
+  const historyCollection = useHistoryCollectionByKey(collectionKey);
 
   const filterdAllCollection = allCollections.filter((c) => historyCollection?.key !== c.key);
 
