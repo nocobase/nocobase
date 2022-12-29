@@ -14,12 +14,14 @@ export class SnapshotFieldPlugin extends Plugin {
       const collectionsHistory = this.app.db.getCollection('collectionsHistory');
       await collectionsHistory.repository.create({
         values: collectionDoc,
+        transaction,
       });
 
       // 创建 collection 初始化 fields 历史记录
       const fieldsHistory = this.app.db.getCollection('fieldsHistory');
-      fieldsHistory.repository.createMany({
+      await fieldsHistory.repository.createMany({
         records: collectionDoc.fields,
+        transaction,
       });
     };
 
@@ -28,8 +30,9 @@ export class SnapshotFieldPlugin extends Plugin {
     const fieldHandler = async (model: Model, { transaction }) => {
       const fieldDoc = model.get();
       const fieldsHistory = this.app.db.getCollection('fieldsHistory');
-      fieldsHistory.repository.create({
+      await fieldsHistory.repository.create({
         values: fieldDoc,
+        transaction,
       });
     };
 
