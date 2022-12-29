@@ -56,7 +56,7 @@ const ObjectSelect = (props: Props) => {
         if (['tags', 'multiple'].includes(mode) || props.multiple) {
           onChange(current);
         } else {
-          onChange(current.shift());
+          onChange(current.shift() || null);
         }
       }}
       mode={mode}
