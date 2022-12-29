@@ -22,15 +22,15 @@ export class FieldValueWriter {
   static write(field: Field, val) {
     if (val === null) return val;
 
+    if (field.type == 'point' || field.type == 'lineString' || field.type == 'circle' || field.type === 'polygon') {
+      return getMapFieldWriter(field)(lodash.isString(val) ? JSON.parse(val) : val);
+    }
+
     const fieldType = field.typeToString();
     const writer = FieldValueWriter.writers[fieldType];
 
     if (writer) {
       val = writer(val);
-    }
-
-    if (field.type == 'point' || field.type == 'lineString' || field.type == 'circle' || field.type === 'polygon') {
-      return getMapFieldWriter(field)(JSON.parse(val));
     }
 
     return val;
@@ -58,8 +58,16 @@ export class FieldValueWriter {
   }
 }
 
-FieldValueWriter.registerWriter([DataTypes.JSON.toString(), DataTypes.JSONB.toString()], (val) =>
-  lodash.isString(val) ? JSON.parse(val) : val,
-);
+FieldValueWriter.registerWriter([DataTypes.JSON.toString(), DataTypes.JSONB.toString()], (val) => {
+  try {
+    return lodash.isString(val) ? JSON.parse(val) : val;
+  } catch (err) {
+    if (err instanceof SyntaxError && err.message.includes('Unexpected')) {
+      return val;
+    }
+
+    throw err;
+  }
+});
 
 FieldValueWriter.registerWriter(DataTypes.BOOLEAN.toString(), (val) => Boolean(val));
