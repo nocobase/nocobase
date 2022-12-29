@@ -1,7 +1,8 @@
 import { FormItem } from '@formily/antd';
-import { Cascader, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 import { render } from '@testing-library/react';
+import { Cascader } from '../Cascader';
+import { SchemaComponent, SchemaComponentProvider } from '../../../../schema-component';
 
 const options = [
   {
@@ -75,7 +76,7 @@ const schema = {
   },
 };
 
-const App=() => {
+const App = () => {
   return (
     <SchemaComponentProvider components={{ Cascader, FormItem }}>
       <SchemaComponent schema={schema} />
@@ -84,8 +85,8 @@ const App=() => {
 };
 
 describe('cascadaer', () => {
-    it('cascadaer', () => {
-      const { container } = render(<App />);
-      expect(container).toMatchSnapshot();
-    });
+  it('cascadaer', () => {
+    const { container } = render(<App />);
+    expect(container).toMatchSnapshot();
   });
+});
