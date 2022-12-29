@@ -24,6 +24,10 @@ export default defineCollection({
       name: 'collectionName',
     },
     {
+      type: 'text',
+      name: 'title',
+    },
+    {
       type: 'belongsTo',
       name: 'collection',
       target: 'collections',

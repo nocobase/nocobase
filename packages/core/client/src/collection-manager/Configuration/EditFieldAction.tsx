@@ -115,8 +115,8 @@ export const EditCollectionField = (props) => {
 };
 
 export const EditFieldAction = (props) => {
-  const { scope, getContainer, item: record,children } = props;
-  const { getInterface } = useCollectionManager();
+  const { scope, getContainer, item: record, children } = props;
+  const { getInterface, getCollection } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
@@ -133,7 +133,12 @@ export const EditFieldAction = (props) => {
               filterByTk: record.name,
               appends: ['uiSchema', 'reverseField'],
             });
-            setData(data?.data);
+            const fieldData = data?.data;
+            const collection = getCollection(record.collectionName);
+            if (collection?.titleField == fieldData?.name) {
+              fieldData.titleField = true;
+            }
+            setData(fieldData);
             const interfaceConf = getInterface(record.interface);
             const defaultValues: any = cloneDeep(data?.data) || {};
             if (!defaultValues?.reverseField) {
@@ -155,7 +160,7 @@ export const EditFieldAction = (props) => {
             setVisible(true);
           }}
         >
-          {children||t('Edit')}
+          {children || t('Edit')}
         </a>
         <SchemaComponent
           schema={schema}

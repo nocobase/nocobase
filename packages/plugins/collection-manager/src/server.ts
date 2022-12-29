@@ -17,7 +17,7 @@ import {
 } from './hooks';
 
 import { CollectionModel, FieldModel } from './models';
-import { InheritedCollection } from '@nocobase/database';
+import { Field, InheritedCollection } from '@nocobase/database';
 
 export class CollectionManagerPlugin extends Plugin {
   async beforeLoad() {
@@ -78,6 +78,30 @@ export class CollectionManagerPlugin extends Plugin {
         await fn(model, { database: this.app.db });
       }
     });
+
+    const _handleTitleFieldFunc = async (model, options) => {
+      const optionsVal = model.get('options');
+      optionsVal.hasOwnProperty('titleField');
+      if (optionsVal?.hasOwnProperty('titleField')) {
+
+        const titleField = optionsVal?.['titleField'] ? model.get('name') : ''
+        await this.db.getRepository('collections').update({
+          values: {
+            titleField,
+          },
+          filter: {
+            name: model.get('collectionName'),
+          },
+          transaction: options.transaction,
+        });
+        const collection = this.db.getCollection(model.get('collectionName'));
+        collection.options.titleField = titleField
+        delete optionsVal?.['titleField'];
+      }
+    }
+
+    this.app.db.on('fields.beforeUpdate', _handleTitleFieldFunc);
+    this.app.db.on('fields.beforeCreate', _handleTitleFieldFunc);
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 

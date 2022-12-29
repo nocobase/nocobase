@@ -306,6 +306,7 @@ export class Collection<
 
     this.context.database.emit('beforeUpdateCollection', this, newOptions);
 
+    this.options = newOptions;
     this.setFields(options.fields, false);
     this.setRepository(options.repository);
 

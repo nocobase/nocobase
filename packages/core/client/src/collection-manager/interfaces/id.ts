@@ -1,4 +1,4 @@
-import { operators } from './properties';
+import {operators, titleField} from './properties';
 import { IField } from './types';
 
 export const id: IField = {
@@ -40,6 +40,7 @@ export const id: IField = {
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },
+    titleField
   },
   filterable: {
     operators: operators.id,

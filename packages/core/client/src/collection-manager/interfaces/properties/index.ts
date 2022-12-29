@@ -39,6 +39,13 @@ export const unique = {
   'x-component': 'Checkbox',
 };
 
+export const titleField = {
+  type: 'boolean',
+  'x-content': '{{t("Used as the title field of the collection")}}',
+  'x-decorator': 'FormItem',
+  'x-component': 'Checkbox',
+};
+
 export const relationshipType: ISchema = {
   type: 'string',
   title: '{{t("Relationship type")}}',

@@ -137,6 +137,7 @@ export const collectionFieldSchema: ISchema = {
             'uiSchema.title': {
               type: 'number',
               'x-component': 'Input',
+              'x-component-props': {ellipsis: true},
               'x-read-pretty': true,
             },
           },
@@ -148,6 +149,7 @@ export const collectionFieldSchema: ISchema = {
           properties: {
             name: {
               'x-component': 'CollectionField',
+              'x-component-props': {ellipsis: true},
               'x-read-pretty': true,
             },
           },
@@ -160,6 +162,7 @@ export const collectionFieldSchema: ISchema = {
           properties: {
             interface: {
               'x-component': CollectionFieldInterface,
+              'x-component-props': {ellipsis: true},
               'x-read-pretty': true,
             },
           },

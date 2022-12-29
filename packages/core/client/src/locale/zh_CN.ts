@@ -130,6 +130,7 @@ export default {
   "General collection": "普通数据表",
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头。",
   "Storage type": "存储类型",
+  "Used as the title field of the collection": "用作数据表的标题字段",
   "Edit": "编辑",
   "Edit collection": "编辑数据表",
   "Configure fields": "配置字段",

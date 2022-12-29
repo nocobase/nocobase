@@ -108,6 +108,18 @@ export const AuditLogs: any = () => {
       },
     }
   }
+  ext['column32'] = {
+    type: 'void',
+    'x-component': 'TableV2.Column',
+    title: '{{t("Title")}}',
+    properties: {
+      title: {
+        'x-component': 'RichText',
+        'x-component-props': {ellipsis: true},
+        'x-read-pretty': true,
+      },
+    },
+  }
   return (
     <SchemaComponent
       memoized
@@ -293,6 +305,25 @@ export const AuditLogs: any = () => {
                                                                 type: 'string',
                                                                 title: '{{t("User")}}',
                                                                 'x-component': 'Username',
+                                                                'x-decorator': 'FormItem',
+                                                                'x-read-pretty': true,
+                                                              },
+                                                            },
+                                                          },
+                                                        },
+                                                      },
+                                                      row41: {
+                                                        type: 'void',
+                                                        'x-component': 'Grid.Row',
+                                                        properties: {
+                                                          col411: {
+                                                            type: 'void',
+                                                            'x-component': 'Grid.Col',
+                                                            properties: {
+                                                              title: {
+                                                                type: 'string',
+                                                                title: '{{t("Title")}}',
+                                                                'x-component': 'RichText',
                                                                 'x-decorator': 'FormItem',
                                                                 'x-read-pretty': true,
                                                               },

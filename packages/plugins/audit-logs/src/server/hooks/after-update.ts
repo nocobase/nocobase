@@ -31,12 +31,19 @@ export function afterUpdate(app: Application) {
     if (!changes.length) {
       return;
     }
+
+    let title = model.get(collection.options.titleField ?? model.constructor.primaryKeyAttribute) ?? '';
+    if (typeof title == 'object') {
+      title = title.toString();
+    }
+
     try {
       await AuditLog.repository.create({
         values: {
           type: LOG_TYPE_UPDATE,
           collectionName: model.constructor.name,
           recordId: model.get(model.constructor.primaryKeyAttribute),
+          title,
           createdAt: model.get('updatedAt'),
           userId: currentUserId,
           changes,
@@ -48,6 +55,7 @@ export function afterUpdate(app: Application) {
       //   await transaction.commit();
       // }
     } catch (error) {
+      console.warn(error);
       // if (!options.transaction) {
       //   await transaction.rollback();
       // }

@@ -27,11 +27,17 @@ export function afterCreate(app: Application) {
           }
         });
       }
+
+      let title = model.get(collection.options.titleField ?? model.constructor.primaryKeyAttribute) ?? '';
+      if (typeof title == 'object') {
+        title = title.toString();
+      }
       await AuditLog.repository.create({
         values: {
           type: LOG_TYPE_CREATE,
           collectionName: model.constructor.name,
           recordId: model.get(model.constructor.primaryKeyAttribute),
+          title,
           createdAt: model.get('createdAt'),
           userId: currentUserId,
           changes,

@@ -24,11 +24,17 @@ export function afterDestroy(app: Application) {
           });
         }
       });
+
+      let title = model.get(collection.options.titleField ?? model.constructor.primaryKeyAttribute) ?? '';
+      if (typeof title == 'object') {
+        title = title.toString();
+      }
       await AuditLog.repository.create({
         values: {
           type: LOG_TYPE_DESTROY,
           collectionName: model.constructor.name,
           recordId: model.get(model.constructor.primaryKeyAttribute),
+          title,
           userId: currentUserId,
           changes,
         },
