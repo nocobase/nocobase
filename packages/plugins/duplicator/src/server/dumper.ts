@@ -9,6 +9,7 @@ import archiver from 'archiver';
 import dayjs from 'dayjs';
 import { CollectionGroupManager } from './collection-group-manager';
 import inquirer from 'inquirer';
+import { FieldValueWriter } from './field-value-writer';
 
 const finished = util.promisify(stream.finished);
 
@@ -82,7 +83,7 @@ export class Dumper extends AppMigrator {
     }
 
     // @ts-ignore
-    const columns = Object.keys(collection.model.tableAttributes);
+    const columns: string[] = Object.keys(collection.model.tableAttributes);
 
     if (columns.length == 0) {
       this.app.log.warn(`collection ${collectionName} has no columns`);
@@ -105,7 +106,10 @@ export class Dumper extends AppMigrator {
     for (const row of rows) {
       const rowData = JSON.stringify(
         columns.map((col) => {
-          return row[col];
+          const val = row[col];
+          const field = collection.getField(col);
+
+          return field ? FieldValueWriter.toDumpedValue(field, val) : val;
         }),
       );
 

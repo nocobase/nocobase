@@ -3,6 +3,19 @@ import lodash from 'lodash';
 
 type WriterFunc = (val: any) => any;
 
+const getMapFieldWriter = (field: Field) => {
+  return (val) => {
+    const mockObj = {
+      setDataValue: (name, newVal) => {
+        val = newVal;
+      },
+    };
+
+    field.options.set.call(mockObj, val);
+    return val;
+  };
+};
+
 export class FieldValueWriter {
   static writers = new Map<string, WriterFunc>();
 
@@ -12,7 +25,30 @@ export class FieldValueWriter {
     const fieldType = field.typeToString();
     const writer = FieldValueWriter.writers[fieldType];
 
-    return writer ? writer(val) : val;
+    if (writer) {
+      val = writer(val);
+    }
+
+    if (field.type == 'point' || field.type == 'lineString' || field.type == 'circle' || field.type === 'polygon') {
+      return getMapFieldWriter(field)(JSON.parse(val));
+    }
+
+    return val;
+  }
+
+  static toDumpedValue(field: Field, val) {
+    if (val === null) return val;
+
+    if (field.type == 'point' || field.type == 'lineString' || field.type == 'circle' || field.type === 'polygon') {
+      const mockObj = {
+        getDataValue: () => val,
+      };
+
+      const newValue = field.options.get.call(mockObj);
+      return newValue;
+    }
+
+    return val;
   }
 
   static registerWriter(types: string | string[], writer: WriterFunc) {
@@ -27,7 +63,3 @@ FieldValueWriter.registerWriter([DataTypes.JSON.toString(), DataTypes.JSONB.toSt
 );
 
 FieldValueWriter.registerWriter(DataTypes.BOOLEAN.toString(), (val) => Boolean(val));
-
-FieldValueWriter.registerWriter('Point', (val) => {
-  return `(${val.x}, ${val.y})`;
-});
