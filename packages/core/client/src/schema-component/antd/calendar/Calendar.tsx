@@ -157,6 +157,15 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
     return events;
   }, [dataSource, fieldNames, date, view]);
 };
+const getCardItemProps = (schema) => {
+  if (schema?.['x-component'] == 'CardItem') {
+    return schema?.['x-component-props'];
+  }
+  if (schema.parent) {
+    return getCardItemProps(schema.parent);
+  }
+  return {};
+};
 
 const CalendarRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
@@ -177,10 +186,11 @@ const CalendarRecordViewer = (props) => {
     setVisible(false);
   }, []);
 
+  const cardItemProps = getCardItemProps(fieldSchema)
   return (
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
-        <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
+        <ActionContext.Provider value={{ openMode: cardItemProps?.openMode ?? 'drawer', openSize: cardItemProps?.openSize,visible, setVisible}}>
           <RecordProvider record={record}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
           </RecordProvider>
