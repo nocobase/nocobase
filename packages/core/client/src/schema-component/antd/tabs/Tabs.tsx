@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import {Button, Space, TabPaneProps, Tabs as AntdTabs, TabsProps} from 'antd';
+import { Space, TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { Icon } from '../../../icon';
@@ -8,23 +8,25 @@ import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks/useDesigner';
 import { TabsDesigner } from './Tabs.Designer';
-import {useShareActionProps} from "../../../block-provider/hooks";
-import {useTranslation} from "react-i18next";
 
 export const Tabs: any = observer((props: TabsProps) => {
   const fieldSchema = useFieldSchema();
-  const {onClick} = useShareActionProps();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
-  const { t } = useTranslation();
   const { tabBarExtraContent = {} } = props;
-  if (!tabBarExtraContent['right']) {
-    tabBarExtraContent['right'] = <Space> {render()}  {fieldSchema['x-component-props']?.share && (<Button onClick={onClick} >{t('Share')}</Button>)} </Space>;
-  }
+  tabBarExtraContent['right'] = (
+    <Space>
+      {render()}
+      <RecursionField name="tabBarExtraContent_right" schema={fieldSchema?.properties?.tabBarExtraContent_right} />
+    </Space>
+  );
 
   return (
     <DndContext>
       <AntdTabs {...props} tabBarExtraContent={tabBarExtraContent}>
         {fieldSchema.mapProperties((schema, key) => {
+          if (key === 'tabBarExtraContent_right') {
+            return;
+          }
           return (
             <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
               <RecursionField name={key} schema={schema} onlyRenderProperties />

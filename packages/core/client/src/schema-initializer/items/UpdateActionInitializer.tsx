@@ -28,6 +28,14 @@ export const UpdateActionInitializer = (props) => {
               'x-component-props': {},
               'x-initializer': 'TabPaneInitializers',
               properties: {
+                tabBarExtraContent_right: {
+                  type: 'void',
+                  'x-initializer': 'TabActionInitializers',
+                  'x-component': 'ActionBar',
+                  'x-component-props': {
+                  },
+                  properties: {},
+                },
                 tab1: {
                   type: 'void',
                   title: '{{t("Edit")}}',

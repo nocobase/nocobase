@@ -180,7 +180,7 @@ const CalendarRecordViewer = (props) => {
   return (
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
-        <ActionContext.Provider value={{ visible, setVisible }}>
+        <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
           <RecordProvider record={record}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
           </RecordProvider>
