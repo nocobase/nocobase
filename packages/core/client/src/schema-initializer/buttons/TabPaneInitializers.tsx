@@ -1,6 +1,6 @@
 import { useForm } from '@formily/react';
 import React from 'react';
-import { SchemaComponent, useActionContext, useDesignable, useRecordIndex } from '../..';
+import { SchemaComponent, useActionContext, useDesignable } from '../..';
 
 export const TabPaneInitializers = (props?: any) => {
   const { designable, insertBeforeEnd } = useDesignable();
@@ -10,13 +10,7 @@ export const TabPaneInitializers = (props?: any) => {
   const useSubmitAction = () => {
     const form = useForm();
     const ctx = useActionContext();
-    const index = useRecordIndex();
-    let initializer = 'RecordBlockInitializers';
-    if (props.isCreate || index === null) {
-      initializer = 'CreateFormBlockInitializers';
-    } else if (props.isBulkEdit) {
-      initializer = 'CreateFormBulkEditBlockInitializers';
-    }
+
     return {
       async run() {
         await form.submit();
@@ -33,8 +27,7 @@ export const TabPaneInitializers = (props?: any) => {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer':
-                props.isCreate || index === null ? 'CreateFormBlockInitializers' : 'RecordBlockInitializers',
+              'x-initializer': props?.tabInitializer ?? 'RecordBlockInitializers',
               properties: {},
             },
           },
@@ -121,9 +114,9 @@ export const TabPaneInitializers = (props?: any) => {
 };
 
 export const TabPaneInitializersForCreateFormBlock = (props) => {
-  return <TabPaneInitializers {...props} isCreate />;
+  return <TabPaneInitializers {...props} tabInitializer="CreateFormBlockInitializers" />;
 };
 
 export const TabPaneInitializersForBulkEditFormBlock = (props) => {
-  return <TabPaneInitializers {...props} isBulkEdit />;
+  return <TabPaneInitializers {...props} tabInitializer="CreateFormBulkEditBlockInitializers" />;
 };
