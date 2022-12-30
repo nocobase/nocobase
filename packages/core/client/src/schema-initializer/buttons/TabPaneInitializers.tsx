@@ -11,6 +11,15 @@ export const TabPaneInitializers = (props?: any) => {
     const form = useForm();
     const ctx = useActionContext();
     const index = useRecordIndex();
+    let initializer = props.gridInitializer;
+    if (!initializer) {
+      initializer = 'RecordBlockInitializers';
+      if (props.isCreate || index === null) {
+        initializer = 'CreateFormBlockInitializers';
+      } else if (props.isBulkEdit) {
+        initializer = 'CreateFormBulkEditBlockInitializers';
+      }
+    }
     return {
       async run() {
         await form.submit();
@@ -27,8 +36,7 @@ export const TabPaneInitializers = (props?: any) => {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': props?.tabInitializer
-                ?? (index == null ? 'CreateFormBlockInitializers' : 'RecordBlockInitializers'),
+              'x-initializer': initializer,
               properties: {},
             },
           },
@@ -115,9 +123,9 @@ export const TabPaneInitializers = (props?: any) => {
 };
 
 export const TabPaneInitializersForCreateFormBlock = (props) => {
-  return <TabPaneInitializers {...props} tabInitializer="CreateFormBlockInitializers" />;
+  return <TabPaneInitializers {...props} isCreate />;
 };
 
 export const TabPaneInitializersForBulkEditFormBlock = (props) => {
-  return <TabPaneInitializers {...props} tabInitializer="CreateFormBulkEditBlockInitializers" />;
+  return <TabPaneInitializers {...props} isBulkEdit />;
 };
