@@ -35,8 +35,8 @@ export const SharedFilterContext = createContext<SharedFilterContextValue>({
 });
 
 export const concatFilter = (f1: SharedFilter, f2: SharedFilter): SharedFilter => {
-  const newAnd = [f1.$and, f2.$and].filter((i) => i);
-  const newOr = [f1.$or, f2.$or].filter((i) => i);
+  const newAnd = [f1.$and, f2.$and].filter((i) => i).reduce((pre, cur) => pre.concat(cur), []);
+  const newOr = [f1.$or, f2.$or].filter((i) => i).reduce((pre, cur) => pre.concat(cur), []);
   const newFilter: SharedFilter = {};
   newAnd.length && (newFilter.$and = newAnd);
   newOr.length && (newFilter.$or = newOr);
