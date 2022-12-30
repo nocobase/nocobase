@@ -286,52 +286,78 @@ const SettingsCenter = (props) => {
     return <Redirect to={`/admin/settings/${pluginName}/${firstTabName}`} />;
   }
   const component = items[pluginName]?.tabs?.[tabName]?.component;
+  const menuItems: any = Object.keys(items)
+    .sort()
+    .map((key) => {
+      const item = items[key];
+      const tabKey = Object.keys(item.tabs).shift();
+      return {
+        label: compile(item.title),
+        key: key,
+        icon: item.icon ? <Icon type={item.icon} /> : null,
+      };
+    });
   return (
-    <div>
-      <Layout>
-        <Layout.Sider theme={'light'}>
-          <Menu selectedKeys={[pluginName]} style={{ height: 'calc(100vh - 46px)' }}>
-            {Object.keys(items)
-              .sort()
-              .map((key) => {
-                const item = items[key];
-                const tabKey = Object.keys(item.tabs).shift();
-                return (
-                  <Menu.Item
-                    key={key}
-                    icon={item.icon ? <Icon type={item.icon} /> : null}
-                    onClick={() => {
-                      history.push(`/admin/settings/${key}/${tabKey}`);
-                    }}
-                  >
-                    {compile(item.title)}
-                  </Menu.Item>
-                );
+    <Layout>
+      <div
+        style={
+          {
+            '--side-menu-width': '200px',
+          } as Record<string, string>
+        }
+        className={css`
+          width: var(--side-menu-width);
+          overflow: hidden;
+          flex: 0 0 var(--side-menu-width);
+          max-width: var(--side-menu-width);
+          min-width: var(--side-menu-width);
+          pointer-events: none;
+        `}
+      ></div>
+      <Layout.Sider
+        className={css`
+          height: 100%;
+          position: fixed;
+          padding-top: 46px;
+          left: 0;
+          top: 0;
+          background: rgba(0, 0, 0, 0);
+          z-index: 100;
+        `}
+        theme={'light'}
+      >
+        <Menu
+          selectedKeys={[pluginName]}
+          style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
+          onClick={(e) => {
+            const item = items[e.key];
+            const tabKey = Object.keys(item.tabs).shift();
+            history.push(`/admin/settings/${e.key}/${tabKey}`);
+          }}
+          items={menuItems as any}
+        />
+      </Layout.Sider>
+      <Layout.Content>
+        <PageHeader
+          ghost={false}
+          title={compile(items[pluginName]?.title)}
+          footer={
+            <Tabs
+              activeKey={tabName}
+              onChange={(activeKey) => {
+                history.push(`/admin/settings/${pluginName}/${activeKey}`);
+              }}
+            >
+              {Object.keys(items[pluginName]?.tabs).map((tabKey) => {
+                const tab = items[pluginName].tabs?.[tabKey];
+                return <Tabs.TabPane tab={compile(tab?.title)} key={tabKey} />;
               })}
-          </Menu>
-        </Layout.Sider>
-        <Layout.Content>
-          <PageHeader
-            ghost={false}
-            title={compile(items[pluginName]?.title)}
-            footer={
-              <Tabs
-                activeKey={tabName}
-                onChange={(activeKey) => {
-                  history.push(`/admin/settings/${pluginName}/${activeKey}`);
-                }}
-              >
-                {Object.keys(items[pluginName]?.tabs).map((tabKey) => {
-                  const tab = items[pluginName].tabs?.[tabKey];
-                  return <Tabs.TabPane tab={compile(tab?.title)} key={tabKey} />;
-                })}
-              </Tabs>
-            }
-          />
-          <div style={{ margin: 24 }}>{component && React.createElement(component)}</div>
-        </Layout.Content>
-      </Layout>
-    </div>
+            </Tabs>
+          }
+        />
+        <div style={{ margin: 24 }}>{component && React.createElement(component)}</div>
+      </Layout.Content>
+    </Layout>
   );
 };
 

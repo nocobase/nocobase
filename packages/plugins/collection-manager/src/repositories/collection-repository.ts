@@ -1,6 +1,6 @@
+import Topo from '@hapi/topo';
 import { Model, Repository } from '@nocobase/database';
 import { CollectionModel } from '../models/collection';
-import Topo from '@hapi/topo';
 
 interface LoadOptions {
   filter?: any;

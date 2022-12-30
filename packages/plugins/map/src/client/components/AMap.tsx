@@ -11,6 +11,7 @@ import Search from './Search';
 import { useMemoizedFn } from 'ahooks';
 import { useMapConfiguration } from '../hooks';
 import { useHistory } from 'react-router';
+import { SyncOutlined } from '@ant-design/icons';
 
 interface AMapComponentProps {
   accessKey: string;
@@ -177,6 +178,12 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     });
   };
 
+  const onFocusOverlay = () => {
+    if (overlay.current) {
+      map.current.setFitView([overlay.current]);
+    }
+  };
+
   // 编辑时
   useEffect(() => {
     if (!aMap.current) return;
@@ -301,6 +308,24 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
         height: '500px',
       }}
     >
+      {/* bottom: 20px; right: 50%; transform: translateX(50%); z-index: 2; */}
+      <div
+        className={css`
+          position: absolute;
+          bottom: 80px;
+          right: 20px;
+          z-index: 10;
+        `}
+      >
+        <Button
+          onClick={onFocusOverlay}
+          disabled={!overlay.current}
+          type="primary"
+          shape="round"
+          size="large"
+          icon={<SyncOutlined />}
+        ></Button>
+      </div>
       {!disabled ? (
         <>
           <Search toCenter={toCenter} aMap={aMap.current} />
@@ -330,6 +355,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
               }}
               onClick={onReset}
               type="primary"
+              danger
             >
               {t('Clear')}
             </Button>

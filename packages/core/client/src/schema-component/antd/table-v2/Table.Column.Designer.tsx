@@ -68,6 +68,37 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
+      <SchemaSettings.ModalItem
+        title={t('Column width')}
+        schema={
+          {
+            type: 'object',
+            title: t('Column width'),
+            properties: {
+              width: {
+                default: columnSchema?.['x-component-props']?.['width'] || 200,
+                'x-decorator': 'FormItem',
+                'x-component': 'InputNumber',
+                'x-component-props': {},
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={({ width }) => {
+          const props = columnSchema['x-component-props'] || {};
+          props['width'] = width;
+          const schema: ISchema = {
+            ['x-uid']: columnSchema['x-uid'],
+          };
+          schema['x-component-props'] = props;
+          columnSchema['x-component-props'] = props;
+          field.componentProps.width = width;
+          dn.emit('patch', {
+            schema,
+          });
+          dn.refresh();
+        }}
+      />
       {intefaceCfg && intefaceCfg.sortable === true && (
         <SchemaSettings.SwitchItem
           title={t('Sortable')}

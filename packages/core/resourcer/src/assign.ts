@@ -71,8 +71,8 @@ mergeStrategies.set('orMerge', (x, y) => {
 mergeStrategies.set('deepMerge', (x, y) => {
   return isPlainObject(x) && isPlainObject(y)
     ? deepmerge(x, y, {
-        arrayMerge: (x, y) => y,
-      })
+      arrayMerge: (x, y) => y,
+    })
     : y;
 });
 
@@ -90,7 +90,7 @@ mergeStrategies.set('union', (x, y) => {
   return lodash.uniq((x || []).concat(y || [])).filter(Boolean);
 });
 
-mergeStrategies.set('intersect', (x, y) => {
+mergeStrategies.set('intersect', (x, y) => (() => {
   if (typeof x === 'string') {
     x = x.split(',');
   }
@@ -104,7 +104,7 @@ mergeStrategies.set('intersect', (x, y) => {
     return x || [];
   }
   return x.filter((v) => y.includes(v));
-});
+})().filter(Boolean));
 
 export function assign(target: any, source: any, strategies: MergeStrategies = {}) {
   getKeys(source).forEach((sourceKey) => {

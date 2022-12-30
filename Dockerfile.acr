@@ -34,7 +34,7 @@ RUN cd /app \
   && yarn create nocobase-app my-nocobase-app -a \
   -e APP_ENV=production \
   -e PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro- \
-  -e PRESET_NOCOBASE_PLUGINS=error-handler,collection-manager,ui-schema-storage,ui-routes-storage,file-manager,system-settings,verification,users,acl,china-region,workflow,client,export,import,audit-logs,graph-collection-manager \
+  -e PRESET_NOCOBASE_PLUGINS=graph-collection-manager \
   && cd /app/my-nocobase-app \
   && yarn install --production \
   && yarn add @nocobase/plugin-pro-graph-collection-manager -W

@@ -1,15 +1,16 @@
 # Application
 
-## 概览
+## Overview
 
-### Web服务 
-Nocobase Application 是基于 [Koa](https://koajs.com/) 实现的 WEB 框架，兼容 Koa 的 API。
+### Web Service
+
+NocoBase Application is a web framework implemented based on [Koa](https://koajs.com/), compatible with Koa API.
 
 ```javascript
 // index.js
 const { Application } = require('@nocobase/server');
 
-// 创建App实例，并配置数据库连接信息
+// Create App instance and configure the database
 const app = new Application({
     database: {
         dialect: 'sqlite',
@@ -17,24 +18,25 @@ const app = new Application({
     }
 });
 
-// 注册中间件 响应请求
+// Register middleware, response to requests
 app.use(async ctx => {
   ctx.body = 'Hello World';
 });
 
-// 以命令行模式启动
+// Run in the CLI mode
 app.runAsCLI();
 ```
 
-在命令行中运行 `node index.js start` 启动服务后，使用 `curl` 请求服务。
+After running `node index.js start` in CLI to start service, use `curl` to request service.
 
 ```bash
 $> curl localhost:3000
 Hello World
 ```
 
-### 命令行工具
-Nocobase Application 中也内置了 `cli commander`，可以当作命令行工具运行。
+### CLI Tool
+
+NocoBase Application has a built-in `cli commander`, which can be run as CLI tool.
 
 ```javascript
 // cmd.js
@@ -53,22 +55,21 @@ app.cli.command('hello').action(async () => {
 app.runAsCLI()
 ```
 
-在命令行中运行
+Run in CLI:
 
 ```bash
 $> node cmd.js hello
 hello world
 ```
 
-### 插件注入
+### Inject Plugin
 
-Nocobase Application 被设计为高度可扩展的框架，可以编写插件注入到应用中扩展功能。
-例如上面的 Web 服务可以替换为插件形式。
+NocoBase Application is designed as a highly extensible framework, plugins can be written and injected to the applicationto to extend its functionality. For example, the above-mentioned web service can be replaced with a plugin.
 
 ```javascript
 const { Application, Plugin } = require('@nocobase/server');
 
-// 通过继承 Plugin 类来编写插件
+// Write plugin by inheriting the Plugin class
 class HelloWordPlugin extends Plugin {
   load() {
     this.app.use(async (ctx, next) => {
@@ -84,76 +85,76 @@ const app = new Application({
   }
 });
 
-// 注入插件
+// Inject plugin
 app.plugin(HelloWordPlugin, { name: 'hello-world-plugin'} );
 
 app.runAsCLI()
 ```
 
-### 更多示例
+### More Examples
 
-更加详细的插件开发文档请参考 [插件开发](./plugin.md)。
-Application 类的更多示例可参考 [examples](https://github.com/nocobase/nocobase/blob/main/examples/index.md)
+Please refer to the detailed guides of [plugin development](./plugin.md). Read more [examples](https://github.com/nocobase/nocobase/blob/main/examples/index.md) of the Application class.
 
-## 生命周期
+## Lifecycle
 
-根据不同运行模式，Application 有三种生命周期：
+Application has three lifecycle stages depends on the running mode.
 
-### 安装
-使用 `cli` 中的 `install` 命令调用安装。
-一般来说，插件在使用之前若需要在数据库中写入新表或者数据，都需要在安装时执行。在初次使用 Nocobase 时也需要调用安装。
+### Install
 
-* 调用 `load` 方法，载入已注册的插件。
-* 触发 `beforeInstall` 事件。
-* 调用 `db.sync` 方法，同步数据库。
-* 调用 `pm.install` 方法，执行已注册插件的 `install` 方法。
-* 写入 `nocobase` 版本。
-* 触发 `afterInstall`。
-* 调用 `stop` 方法，结束安装。
+Use the `install` command in `cli` to invoke the installation. Generally, if needs to write new tables or data to the database before using the plugin, you have to do it during installation. Installation is also required when using NocoBase for the first time.
 
-### 启动
-使用 `cli` 中的 `start` 命令来启动 Nocobase Web 服务。
+* Call the `load` method to load registered plugins.
+* Trigger the `beforeInstall` event.
+* Call the `db.sync` method to synchronize database. 
+* Call the `pm.install` method to execute the `install` methods of registered plugins.
+* Write the version of `nocobase`.
+* Trigger the `afterInstall` event.
+* Call the `stop` method to end installation.
 
-* 调用 `load` 方法，载入已注册的插件。
-* 调用 `start` 方法
-  * 触发 `beforeStart`
-  * 启动端口监听
-  * 触发 `afterStart`
+### Start
 
-### 更新
+Use the `start` command in `cli` to start NocoBase Web service.
 
-当需要更新 Nocobase 时，可使用 `cli` 中的 `upgrade` 命令。
+* Call the `load` method to load registered plugins.
+* Call the `start` medthod:
+  * Trigger the `beforeStart` event
+  * Start port listening
+  * Trigger the `afterStart` event
 
-* 调用 `load` 方法，载入已注册的插件。
-* 触发 `beforeUpgrade`。
-* 调用 `db.migrator.up` 方法，执行数据库迁移。
-* 调用 `db.sync` 方法，同步数据库。
-* 调用 `version.update` 方法，更新 `nocobase` 版本。
-* 触发 `afterUpgrade`。
-* 调用 `stop` 方法，结束更新。
+### Upgrade
 
-## 构造函数
+Use the `upgrade` command in `cli` to upgrade NocoBase Web service when needed.
+
+* Call the `load` method to load registered plugins.
+* Trigger the `beforeUpgrade` event.
+* Call the `db.migrator.up` method to migrate database.
+* Call the `db.sync` method to synchronize database.
+* Call the `version.update` method to update the version of `nocobase`.
+* Trigger the `afterUpgrade` event.
+* Call the `stop` medthod to end upgrade.
+
+## Constructor
 
 ### `constructor()`
 
-创建一个应用实例。
+Create an application instance.
 
-**签名**
+**Signature**
 
 * `constructor(options: ApplicationOptions)`
 
-**参数**
+**Parameters**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.database` | `IDatabaseOptions` or `Database` | `{}` | 数据库配置 |
-| `options.resourcer` | `ResourcerOptions` | `{}` | 资源路由配置 |
-| `options.logger` | `AppLoggerOptions` | `{}` | 日志 |
-| `options.cors` | [`CorsOptions`](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/koa__cors/index.d.ts#L24) | `{}` | 跨域配置，参考 [@koa/cors](https://npmjs.com/package/@koa/cors) |
-| `options.dataWrapping` | `boolean` | `true` | 是否包装响应数据，`true` 则将把通常的 `ctx.body` 包装为 `{ data, meta }` 的结构。 |
-| `options.registerActions` | `boolean` | `true` | 是否注册默认的 [actions](#) |
-| `options.i18n` | `I18nOptions` | `{}` | 国际化配置，参考 [i18next](https://www.i18next.com/overview/api) |
-| `options.plugins` | `PluginConfiguration[]` | `[]` | 默认启用的插件配置 |
+| `options.database` | `IDatabaseOptions` or `Database` | `{}` | Database configuration |
+| `options.resourcer` | `ResourcerOptions` | `{}` | Resource route configuration |
+| `options.logger` | `AppLoggerOptions` | `{}` | Log |
+| `options.cors` | [`CorsOptions`](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/koa__cors/index.d.ts#L24) | `{}` | Cross-domain configuration, refer to [@koa/cors](https://npmjs.com/package/@koa/cors) |
+| `options.dataWrapping` | `boolean` | `true` | Whether or not to wrap the response data, `true` will wrap the usual `ctx.body` into a `{ data, meta }` structure |
+| `options.registerActions` | `boolean` | `true` | Whether or not to register the default [actions](#) |
+| `options.i18n` | `I18nOptions` | `{}` | Internationalization configuration, refer to [i18next](https://www.i18next.com/overview/api) |
+| `options.plugins` | `PluginConfiguration[]` | `[]` | Configuration of the plugins enabled by default |
 
 Type
 
@@ -163,44 +164,43 @@ interface ApplicationOptions {
 }
 ```
 
-## 实例成员
+## Instance Members
 
 ### `cli`
 
-命令行工具实例，参考 npm 包 [Commander](https://www.npmjs.com/package/commander)。
+CLI tool instance, refer to the npm package [Commander](https://www.npmjs.com/package/commander)。
 
 ### `db`
 
-数据库实例，相关 API 参考 [Database](/api/database)。
+Database instance, refer to [Database](/api/database) for the related API.
 
 ### `resourcer`
 
-应用初始化自动创建的资源路由管理实例，相关 API 参考 [Resourcer](/api/resourcer)。
+Resource route management instance created automatically during app initialization, refer to [Resourcer](/api/resourcer) for the related API.
 
 ### `acl`
 
-ACL 实例，相关 API 参考 [ACL](/api/acl)。
-
+ACL instance, refer to [ACL](/api/acl) for the related API.
 
 ### `logger`
 
-Winston 实例，相关 API 参考 [Winston](https://github.com/winstonjs/winston#table-of-contents)。
+Winston instance, refer to [Winston](https://github.com/winstonjs/winston#table-of-contents) for the related API.
 
 ### `i18n`
 
-I18next 实例，相关 API 参考 [I18next](https://www.i18next.com/overview/api)。
+I18next instance, refer to [I18next](https://www.i18next.com/overview/api) for the related API.
 
 ### `pm`
 
-插件管理器实例，相关 API 参考 [PluginManager](./plugin-manager)。
+Plugin manager instance, refer to [PluginManager](./plugin-manager) for the related API.
 
 ### `version`
 
-应用版本实例，相关 API 参考 [ApplicationVersion](./application-version)。
+App version instance, refer to [ApplicationVersion](./application-version) for the related API.
 
 ### `middleware`
 
-内置的中间件有：
+Built-in middleware includes:
 
 - logger
 - i18next
@@ -212,88 +212,88 @@ I18next 实例，相关 API 参考 [I18next](https://www.i18next.com/overview/ap
 
 ### `context`
 
-继承自 koa 的 context，可以通过 `app.context` 访问，用于向每个请求注入上下文可访问的内容。参考 [Koa Context](https://koajs.com/#app-context)。
+Context inherited from koa, accessible via `app.context`, is used to inject context-accessible content to each request. Refer to [Koa Context](https://koajs.com/#app-context).
 
-NocoBase 默认对 context 注入了以下成员，可以在请求处理函数中直接使用：
+NocoBase injects the following members to context by default, which can be used directly in the request handler function:
 
-| 变量名 | 类型 | 描述 |
+| Variable Name | Type | Description |
 | --- | --- | --- |
-| `ctx.app` | `Application` | 应用实例 |
-| `ctx.db` | `Database` | 数据库实例 |
-| `ctx.resourcer` | `Resourcer` | 资源路由管理器实例 |
-| `ctx.action` | `Action` | 资源操作相关对象实例 |
-| `ctx.logger` | `Winston` | 日志实例 |
-| `ctx.i18n` | `I18n` | 国际化实例 |
-| `ctx.t` | `i18n.t` | 国际化翻译函数快捷方式 |
-| `ctx.getBearerToken()` | `Function` | 获取请求头中的 bearer token |
+| `ctx.app` | `Application` | Application instance |
+| `ctx.db` | `Database` | Database instance |
+| `ctx.resourcer` | `Resourcer` | Resource route manager instance |
+| `ctx.action` | `Action` | Resource action related object instance |
+| `ctx.logger` | `Winston` | Log instance |
+| `ctx.i18n` | `I18n` | Internationlization instance |
+| `ctx.t` | `i18n.t` | Shortcut of internationalized translation function |
+| `ctx.getBearerToken()` | `Function` | Get the bearer token in the header of request |
 
-## 实例方法
+## Instance Methods
 
 ### `use()`
 
-注册中间件，兼容所有 [Koa 插件](https://www.npmjs.com/search?q=koa)
+Register middleware, compatible with all [Koa plugins](https://www.npmjs.com/search?q=koa).
 
 ### `on()`
 
-订阅应用级事件，主要与生命周期相关，等同于 `eventEmitter.on()`。所有可订阅事件参考 [事件](#事件)。
+Subscribe to application-level events, mainly are related to lifecycle. It is equivalent to `eventEmitter.on()`. Refer to [events](#events) for all subscribable events.
 
 ### `command()`
 
-自定义 command
+Customize command.
 
 ### `findCommand()`
 
-查找已定义 command
+Find defined command.
 
 ### `runAsCLI()`
 
-以 CLI 的方式运行。
+Run as CLI.
 
 ### `load()`
 
-加载应用配置。
+Load application configuration.
 
-**签名**
+**Signature**
 
 * `async load(): Promise<void>`
 
 ### `reload()`
 
-重载应用配置。
+Reload application configuration.
 
 ### `install()`
 
-初始化安装应用，同步安装插件。
+Initialize the installation of the application, meanwhile, install the plugin.
 
 ### `upgrade()`
 
-升级应用，同步升级插件。
+Upgrade application, meanwhile, upgrade plugin.
 
 ### `start()`
 
-启动应用，如果配置了监听的端口，将启动监听，之后应用即可接受 HTTP 请求。
+Start application, listening will also be started if the listening port is configured, then the application can accept HTTP requests.
 
-**签名**
+**Signature**
 
 * `async start(options: StartOptions): Promise<void>`
 
-**参数**
+**Parameters**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.listen?` | `ListenOptions` | `{}` | HTTP 监听参数对象 |
-| `options.listen.port?` | `number` | 13000 | 端口 |
-| `options.listen.host?` | `string` | `'localhost'` | 域名 |
+| `options.listen?` | `ListenOptions` | `{}` | HTTP Listening parameters object |
+| `options.listen.port?` | `number` | 13000 | Port |
+| `options.listen.host?` | `string` | `'localhost'` | Domain name |
 
 ### `stop()`
 
-停止应用，此方法会关闭数据库连接，关闭 HTTP 端口，不会删除数据。
+Stop application. This method will deconnect database, close HTTP port, but will not delete data.
 
 ### `destroy()`
 
-删除应用，此方法会删除应用对应的数据库。
+Delete application. This methos will delete the corresponding database of application.
 
-## 事件
+## Events
 
 ### `'beforeLoad'` / `'afterLoad'`
 ### `'beforeInstall'` / `'afterInstall'`

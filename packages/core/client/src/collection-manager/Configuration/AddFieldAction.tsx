@@ -250,6 +250,7 @@ export const AddFieldAction = (props) => {
             getContainer,
             useCancelAction,
             createOnly: true,
+            isOverride: false,
             useCreateCollectionField,
             record,
             showReverseFieldConfig: true,

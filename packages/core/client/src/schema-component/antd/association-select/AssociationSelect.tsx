@@ -14,7 +14,7 @@ import {
   useCollectionFilterOptions,
 } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { useDesignable, useCompile, useFieldComponentOptions } from '../../hooks';
+import { useDesignable, useCompile, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
@@ -39,10 +39,7 @@ const InternalAssociationSelect = connect(
   (props: AssociationSelectProps) => {
     const { fieldNames, objectValue = true } = props;
     const service = useServiceOptions(props);
-    const field = useField();
-    const fieldSchema = useFieldSchema();
-    const { getField } = useCollection();
-    const collectionField = getField(fieldSchema.name);
+    useFieldTitle();
 
     const normalizeValues = useCallback(
       (obj) => {
@@ -65,12 +62,6 @@ const InternalAssociationSelect = connect(
         return normalizeValues(props.value);
       }
     }, [props.value, normalizeValues]);
-
-    useEffect(() => {
-      if (!field.title) {
-        field.title = collectionField.uiSchema.title;
-      }
-    }, collectionField.title);
 
     return <RemoteSelect {...props} objectValue={objectValue} value={value} service={service}></RemoteSelect>;
   },
@@ -118,11 +109,11 @@ AssociationSelect.Designer = () => {
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
-  const sortFields = useSortFields(collectionField.target);
+  const sortFields = useSortFields(collectionField?.target);
+
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const defaultFilter = field.componentProps?.service?.params?.filter || {};
-  const dataSource = useCollectionFilterOptions(collectionField.target);
-  console.log(collectionField?.target, ['CollectionField', 'AssociationSelect'].includes(fieldSchema['x-component']));
+  const dataSource = useCollectionFilterOptions(collectionField?.target);
 
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')

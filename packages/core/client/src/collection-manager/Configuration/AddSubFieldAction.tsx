@@ -101,6 +101,16 @@ export const AddSubFieldAction = () => {
   const compile = useCompile();
   const options = useOptions();
   const { t } = useTranslation();
+  const items = options.map((option) => {
+    const children = option.children.map((child) => {
+      return { label: compile(child.title), key: child.name };
+    });
+    return {
+      label: compile(option.label),
+      key: option.key,
+      children,
+    };
+  });
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
@@ -115,19 +125,8 @@ export const AddSubFieldAction = () => {
               setSchema(schema);
               setVisible(true);
             }}
-          >
-            {options.map((option) => {
-              return (
-                option.children.length > 0 && (
-                  <Menu.ItemGroup title={compile(option.label)}>
-                    {option.children.map((child) => {
-                      return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
-                    })}
-                  </Menu.ItemGroup>
-                )
-              );
-            })}
-          </Menu>
+            items={items}
+          />
         }
       >
         <Button icon={<PlusOutlined />} type={'primary'}>

@@ -1,28 +1,27 @@
 # Database
 
-## 概览
+## Overview
 
-Database 是 Nocobase 提供的数据库交互工具，为无代码、低代码应用提供了非常方便的数据库交互功能。目前支持的数据库为：
+Database is the database interaction tool provided by NocoBase, it provides very convenient database interaction features for no-code and low-code applications. The supported databases are:
 
 * SQLite 3.8.8+
 * MySQL 8.0.17+ 
 * PostgreSQL 10.0+
 
+### Connect to Database
 
-### 连接数据库
-
-在 `Database` 构造函数中，可以通过传入 `options` 参数来配置数据库连接。
+In `Database` constructor, database connection can be configured by passing the `options` parameter.
 
 ```javascript
 const { Database } = require('@nocobase/database');
 
-// SQLite 数据库配置参数
+// SQLite database configuration parameters
 const database = new Database({
   dialect: 'sqlite',
   storage: 'path/to/database.sqlite'
 })
 
-// MySQL \ PostgreSQL 数据库配置参数
+// MySQL \ PostgreSQL database configuration parameters
 const database = new Database({
   dialect: /* 'postgres' 或者 'mysql' */,
   database: 'database',
@@ -34,14 +33,14 @@ const database = new Database({
 
 ```
 
-详细的配置参数请参考 [构造函数](#构造函数)。
+Refer to [Constructor](#constructor) for detailed configurations.
 
-### 数据模型定义
+### Define Data Structure
 
-`Database` 通过 `Collection` 定义数据库结构，一个 `Collection` 对象代表了数据库中的一张表。
+`Database` defines database structure through `Collection`, one `Collection` object represents one table in the database.
 
 ```javascript
-// 定义 Collection 
+// Define Collection 
 const UserCollection = database.collection({
   name: 'users',
   fields: [
@@ -58,13 +57,13 @@ const UserCollection = database.collection({
 
 ```
 
-数据库结构定义完成之后，可使用 `sync()` 方法来同步数据库结构。
+After the database structure is defined, use `sync()` method to synchronize the database structure.
 
 ```javascript
 await database.sync();
 ```
 
-更加详细的 `Collection` 使用方法请参考 [Collection](/api/database/collection.md)。
+Refer to [Collection](/api/database/collection.md) for detailed usage of `Collection`.
 
 ### 数据读写
 
@@ -396,7 +395,7 @@ db.registerFieldTypes({
 
 **签名**
 
-* `registerModels(models: MapOf<ModelCtor<any>>): void`
+* `registerModels(models: MapOf<ModelStatic<any>>): void`
 
 **参数**
 

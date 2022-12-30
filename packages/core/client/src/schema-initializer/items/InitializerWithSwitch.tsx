@@ -1,7 +1,7 @@
 import React from 'react';
 import { merge } from '@formily/shared';
 
-import { SchemaInitializer } from "..";
+import { SchemaInitializer } from '..';
 import { useCurrentSchema } from '../utils';
 
 export const InitializerWithSwitch = (props) => {
