@@ -1,6 +1,6 @@
-import { APIClientContext, useRequest } from '@nocobase/client';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { APIClientContext, useRequest } from '../api-client';
 
 export interface CollectionHistoryContextValue {
   historyCollections: any[];

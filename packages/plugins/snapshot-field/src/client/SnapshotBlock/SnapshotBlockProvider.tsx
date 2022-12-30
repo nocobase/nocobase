@@ -5,7 +5,6 @@ import {
   BlockAssociationContext,
   BlockRequestContext,
   BlockResourceContext,
-  CollectionManagerContext,
   FormBlockContext,
   MaybeCollectionProvider,
   RecordProvider,
@@ -14,7 +13,6 @@ import {
   useCollectionManager,
   useDesignable,
   useRecord,
-  useRequest,
   useResource,
 } from '@nocobase/client';
 import { Spin } from 'antd';
