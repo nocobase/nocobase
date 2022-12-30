@@ -195,6 +195,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const actionCtx = useActionContext();
   const action = actionCtx?.fieldSchema?.['x-action'];
+  const { snapshot } = useActionContext();
 
   return currentFields
     ?.filter((field) => field?.interface && !field?.isForeignKey)
@@ -206,7 +207,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         name: field.name,
         // title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
-        'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
+        'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
@@ -282,6 +283,8 @@ export const useInheritsFormItemInitializerFields = (options?) => {
   const { name } = useCollection();
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
   const inherits = getInheritCollections(name);
+  const { snapshot } = useActionContext();
+
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
     const form = useForm();
@@ -297,7 +300,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             name: field.name,
             title: field?.uiSchema?.title || field.name,
             'x-designer': 'FormItem.Designer',
-            'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
+            'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {},
