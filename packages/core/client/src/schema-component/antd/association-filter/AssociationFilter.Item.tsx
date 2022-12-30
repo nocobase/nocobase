@@ -43,6 +43,8 @@ export const AssociationFilterItem = (props) => {
       action: 'list',
       params: {
         fields: [labelKey, valueKey],
+        pageSize: 200,
+        page: 1,
       },
     },
     {
@@ -89,7 +91,7 @@ export const AssociationFilterItem = (props) => {
 
     const paramFilter = getFilterParams(newAssociationFilterStore);
 
-    service.run({ ...service.params?.[0], page: 1, filter: paramFilter });
+    service.run({ ...service.params?.[0], pageSize: 200, page: 1, filter: paramFilter });
   };
 
   const handleSearchToggle = (e: MouseEvent) => {
@@ -179,7 +181,7 @@ export const AssociationFilterItem = (props) => {
           className={css`
             & .ant-collapse-content-box {
               padding: 0 8px !important;
-              max-height: 200px;
+              max-height: 400px;
               overflow: auto;
             }
             & .ant-collapse-header {

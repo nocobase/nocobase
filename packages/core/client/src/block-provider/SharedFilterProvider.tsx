@@ -17,10 +17,21 @@ export type SharedFilterContextValue = {
   getFilterParams: (filterStore?: SharedFilterStore) => any;
 };
 
+export const getFilterParams = (filterStore?: SharedFilterStore) => {
+  const newAssociationFilterList = Object.entries(filterStore).map(([key, filter]) => filter);
+  const newAssociationFilter = newAssociationFilterList.length
+    ? {
+        $and: newAssociationFilterList,
+      }
+    : {};
+
+  return newAssociationFilter;
+};
+
 export const SharedFilterContext = createContext<SharedFilterContextValue>({
   sharedFilterStore: {},
-  setSharedFilterStore: undefined!,
-  getFilterParams: undefined!,
+  setSharedFilterStore: () => {},
+  getFilterParams,
 });
 
 export const concatFilter = (f1: SharedFilter, f2: SharedFilter): SharedFilter => {
@@ -39,23 +50,14 @@ export const SharedFilterProvider: FC<{ params?: any }> = (props) => {
     setSharedFilterStoreUnwrap(associationFilter);
   };
 
-  const getFilterParams = (filterStore?: SharedFilterStore) => {
-    const newAssociationFilterList = Object.entries(filterStore ?? sharedFilterStore).map(([key, filter]) => filter);
-    const newAssociationFilter = newAssociationFilterList.length
-      ? {
-          $and: newAssociationFilterList,
-        }
-      : {};
-
-    return newAssociationFilter;
-  };
+  const getFilterParamsWrap = (filterStore?: SharedFilterStore) => getFilterParams(filterStore ?? sharedFilterStore);
 
   return (
     <SharedFilterContext.Provider
       value={{
         sharedFilterStore,
         setSharedFilterStore,
-        getFilterParams,
+        getFilterParams: getFilterParamsWrap,
       }}
     >
       {props.children}
