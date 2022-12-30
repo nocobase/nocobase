@@ -1,7 +1,6 @@
 import { ISchema } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
-  SharedFilter,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
@@ -9,6 +8,7 @@ import {
 } from '@nocobase/client';
 import { Space } from 'antd';
 import React, { useState } from 'react';
+import {Filter} from '../Filter';
 
 const options: any = [
   {

@@ -1,7 +1,6 @@
 import { ISchema, useForm } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
-  SharedFilter,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
@@ -9,6 +8,7 @@ import {
   useRequest,
 } from '@nocobase/client';
 import React from 'react';
+import {Filter} from '../Filter';
 
 const dataSource = [
   {

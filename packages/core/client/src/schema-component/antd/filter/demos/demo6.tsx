@@ -2,7 +2,6 @@ import {
   AntdSchemaComponentProvider,
   CollectionManagerProvider,
   CollectionProvider,
-  SharedFilter,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
@@ -12,6 +11,7 @@ import {
 } from '@nocobase/client';
 import { Select } from 'antd';
 import React, { useState } from 'react';
+import { Filter } from '../Filter';
 
 const collections = [
   {

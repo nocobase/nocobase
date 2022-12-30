@@ -13,7 +13,7 @@ exports[`checkbox checkbox 1`] = `
       >
         <span>
           <label>
-            编辑模式
+            edit
           </label>
         </span>
       </div>

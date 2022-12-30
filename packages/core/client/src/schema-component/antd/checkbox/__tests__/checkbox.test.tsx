@@ -2,14 +2,14 @@ import { FormItem } from '@formily/antd';
 import React from 'react';
 import { Checkbox } from '../Checkbox';
 import { SchemaComponent, SchemaComponentProvider } from '../../../../schema-component';
-import { render } from '@testing-library/react';
+import { render ,fireEvent,screen} from '@testing-library/react';
 
 const schema = {
   type: 'object',
   properties: {
     input: {
       type: 'boolean',
-      title: `编辑模式`,
+      title: `edit`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       'x-reactions': {
@@ -40,8 +40,11 @@ const App = () => {
 };
 
 describe('checkbox', () => {
-  it('checkbox', () => {
+  it('checkbox', async() => {
     const { container } = render(<App />);
     expect(container).toMatchSnapshot();
+    const checkbox=container.getElementsByClassName('ant-checkbox-wrapper')[0]
+    fireEvent.click(checkbox);
+     expect(checkbox).toHaveClass('ant-checkbox-wrapper-checked');
   });
 });

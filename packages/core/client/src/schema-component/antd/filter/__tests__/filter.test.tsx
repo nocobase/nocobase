@@ -1,11 +1,7 @@
-import {
-  AntdSchemaComponentProvider,
-  Input,
-  SchemaComponent,
-  SchemaComponentProvider,
-} from '@nocobase/client';
+import { AntdSchemaComponentProvider, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
-import {Filter} from '../Filter';
+import { Filter } from '../Filter';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const schema: any = {
   type: 'void',
@@ -96,7 +92,7 @@ const schema: any = {
   },
 };
 
-export default () => {
+const App = () => {
   return (
     <SchemaComponentProvider>
       <AntdSchemaComponentProvider>
@@ -105,3 +101,14 @@ export default () => {
     </SchemaComponentProvider>
   );
 };
+
+describe('Filter', () => {
+  it('filter add condition', () => {
+    const { container } = render(<App />);
+    expect(container).toMatchSnapshot();
+    const addBtn = screen.getByText('Add condition');
+    fireEvent.click(addBtn);
+    const selectField = container.getElementsByClassName('ant-select-selection-placeholder')[0];
+    expect(selectField.textContent).toBe('Select Field');
+  });
+});

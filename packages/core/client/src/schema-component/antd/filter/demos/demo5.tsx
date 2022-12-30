@@ -1,9 +1,13 @@
 import {
   AntdSchemaComponentProvider,
-  FilterAction, SchemaComponent,
-  SchemaComponentProvider
+  SchemaComponent,
+  SchemaComponentProvider,
+  Input,
+  InputNumber,
 } from '@nocobase/client';
 import React from 'react';
+import { FilterAction } from '../FilterAction';
+import { Filter } from '../Filter';
 
 const schema: any = {
   type: 'void',
@@ -87,7 +91,7 @@ const schema: any = {
           },
         ],
       },
-      'x-component': 'FilterAction',
+      'x-component': 'Filter',
       'x-component-props': {},
     },
   },
@@ -97,7 +101,7 @@ export default () => {
   return (
     <SchemaComponentProvider>
       <AntdSchemaComponentProvider>
-        <SchemaComponent components={{ FilterAction }} schema={schema} />
+        <SchemaComponent components={{ Filter, Input, InputNumber }} schema={schema} />
       </AntdSchemaComponentProvider>
     </SchemaComponentProvider>
   );
