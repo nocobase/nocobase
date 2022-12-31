@@ -143,7 +143,7 @@ Create an application instance.
 
 * `constructor(options: ApplicationOptions)`
 
-**Parameters**
+**Parameter**
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -277,7 +277,7 @@ Start application, listening will also be started if the listening port is confi
 
 * `async start(options: StartOptions): Promise<void>`
 
-**Parameters**
+**Parameter**
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
