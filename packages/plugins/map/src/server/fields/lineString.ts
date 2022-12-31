@@ -22,13 +22,14 @@ export class LineStringField extends Field {
           }
         },
         set(value) {
-          if (isPg(context)) {
+          if (!value?.length) value = null
+          else if (isPg(context)) {
             value = joinComma(value.map(joinComma))
           } else if (isMysql(context)) {
-            value = value?.length ? {
+            value = {
               type: 'LineString',
               coordinates: value
-            } : null
+            }
           }
           this.setDataValue(name, value)
         },

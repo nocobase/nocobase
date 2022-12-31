@@ -24,7 +24,8 @@ export class CircleField extends Field {
           }
         },
         set(value) {
-          if (isPg(context)) {
+          if (!value?.length) value = null
+          else if (isPg(context)) {
             value = value.join(',')
           }
           this.setDataValue(name, value)
