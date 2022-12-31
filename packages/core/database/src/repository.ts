@@ -269,7 +269,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           attributes: [primaryKeyField],
           group: `${model.name}.${primaryKeyField}`,
           transaction,
-        })
+          include: opts.include.filter((include) => {
+            return (
+              Object.keys(include.where || {}).length > 0 || JSON.stringify(opts?.filter)?.includes(include.association)
+            );
+          }),
+        } as any)
       ).map((row) => {
         return { row, pk: row.get(primaryKeyField) };
       });
@@ -277,6 +282,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       if (ids.length == 0) {
         return [];
       }
+
+      const templateModel = await model.findOne({
+        ...opts,
+        includeIgnoreAttributes: false,
+        attributes: [primaryKeyField],
+        group: `${model.name}.${primaryKeyField}`,
+        transaction,
+        limit: 1,
+        offset: 0,
+      } as any);
 
       const where = {
         [primaryKeyField]: {
@@ -297,7 +312,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
             return { rows, include };
           });
         }),
-        templateModel: ids[0].row,
+        templateModel: templateModel,
       });
     } else {
       rows = await model.findAll({
