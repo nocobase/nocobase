@@ -1,25 +1,24 @@
 import React from 'react';
-import { connect, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { connect, mapReadPretty, useFieldSchema } from '@formily/react';
 import {
   InputRecordPicker,
   ReadPrettyRecordPicker,
   useActionContext,
   useCollection,
-  useCollectionManager,
+  useCollectionHistory,
 } from '@nocobase/client';
 import { SnapshotHistoryCollectionProvider } from './SnapshotHistoryCollectionProvider';
 
-const useTargetCollectionKey = () => {
+const useSnapshotFieldTargetCollectionKey = () => {
   const fieldSchema = useFieldSchema();
-  const { getCollection } = useCollectionManager();
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
-  const targetCollection = getCollection(collectionField.target);
-  return targetCollection?.key;
+  const { historyCollections } = useCollectionHistory();
+  return historyCollections.find((i) => i.name === collectionField.target)?.key;
 };
 
 const ReadPrettyRecordPickerWrapper = (props) => {
-  const collectionKey = useTargetCollectionKey();
+  const collectionKey = useSnapshotFieldTargetCollectionKey();
 
   return (
     <SnapshotHistoryCollectionProvider collectionKey={collectionKey}>
@@ -42,7 +41,7 @@ const SnapshotRecordPickerInner: any = connect(
 
 export const SnapshotRecordPicker = (props) => {
   const { value, onChange, ...restProps } = props;
-  const collectionKey = useTargetCollectionKey();
+  const collectionKey = useSnapshotFieldTargetCollectionKey();
 
   const newProps = {
     ...restProps,
