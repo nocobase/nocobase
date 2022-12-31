@@ -13,11 +13,11 @@ import {
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions,
+  beforeInitOptions
 } from './hooks';
 
-import { CollectionModel, FieldModel } from './models';
 import { InheritedCollection } from '@nocobase/database';
+import { CollectionModel, FieldModel } from './models';
 
 export class CollectionManagerPlugin extends Plugin {
   async beforeLoad() {

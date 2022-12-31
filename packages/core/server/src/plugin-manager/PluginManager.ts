@@ -44,7 +44,7 @@ export class PluginManager {
     this.app.resourcer.define(resourceOptions);
 
     this.app.acl.allow('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
-
+    this.app.acl.allow('applicationPlugins', 'list', 'allowConfigure');
     this.server = net.createServer((socket) => {
       socket.on('data', async (data) => {
         const { method, plugins } = JSON.parse(data.toString());
@@ -72,8 +72,9 @@ export class PluginManager {
       if (options?.method !== 'install' || options.reload) {
         await this.repository.load();
       }
-
-      this.app.acl.allow('applicationPlugins', 'list');
+    });
+    this.app.on('beforeUpgrade', async () => {
+      await this.collection.sync();
     });
 
     this.addStaticMultiple(options.plugins);
@@ -236,23 +237,37 @@ export class PluginManager {
       transaction,
       filter: { name: plugin },
     });
-    if (model) {
-      throw new Error(`${plugin} plugin already exists`);
-    }
-    const { enabled, builtIn, installed, ...others } = options;
-    await this.repository.create({
-      transaction,
-      values: {
-        name: plugin,
-        version: packageJson.version,
-        enabled: !!enabled,
-        builtIn: !!builtIn,
-        installed: !!installed,
-        options: {
-          ...others,
+    if (!model) {
+      const { enabled, builtIn, installed, ...others } = options;
+      model = await this.repository.create({
+        transaction,
+        values: {
+          name: plugin,
+          version: packageJson.version,
+          enabled: !!enabled,
+          builtIn: !!builtIn,
+          installed: !!installed,
+          options: {
+            ...others,
+          },
         },
-      },
-    });
+      });
+    }
+    const file = resolve(
+      process.cwd(),
+      'packages',
+      process.env.APP_PACKAGE_ROOT || 'app',
+      'client/src/plugins',
+      `${plugin}.ts`,
+    );
+    if (!fs.existsSync(file)) {
+      try {
+        require.resolve(`${packageName}/client`);
+        await fs.promises.writeFile(file, `export { default } from '${packageName}/client';`);
+        const { run } = require('@nocobase/cli/src/util');
+        await run('yarn', ['nocobase', 'postinstall']);
+      } catch (error) {}
+    }
     return instance;
   }
 
