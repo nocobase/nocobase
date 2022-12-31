@@ -226,7 +226,7 @@ export const useFormItemInitializerFields = (options?: any) => {
       } as SchemaInitializerItemOptions;
       if (block == 'Kanban') {
         resultItem['find'] = (schema: Schema, key: string, action: string) => {
-          const s = findSchema(schema,'x-component',block)
+          const s = findSchema(schema, 'x-component', block);
           return findSchema(s, key, action);
         };
       }
@@ -336,7 +336,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return field?.interface && !field?.uiSchema?.['x-read-pretty'];
+      return field?.interface && !field?.uiSchema?.['x-read-pretty'] && field.interface !== 'snapshot';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -1000,7 +1000,7 @@ export const createCalendarBlockSchema = (options) => {
                             type: 'void',
                             'x-component': 'Grid',
                             'x-initializer-props': {
-                              actionInitializers: 'CalendarFormActionInitializers'
+                              actionInitializers: 'CalendarFormActionInitializers',
                             },
                             'x-initializer': 'RecordBlockInitializers',
                             properties: {},
