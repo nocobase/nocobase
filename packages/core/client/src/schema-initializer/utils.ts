@@ -204,10 +204,12 @@ export const useFormItemInitializerFields = (options?: any) => {
         name: field.name,
         // title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
-        'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
+        'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {},
+        'x-component-props': {
+          ...field?.uiSchema?.['x-component-props']
+        },
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
@@ -217,7 +219,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
+          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty, initialize: true });
         },
         schema,
       } as SchemaInitializerItemOptions;

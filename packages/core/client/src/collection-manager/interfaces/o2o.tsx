@@ -9,7 +9,7 @@ import {
 } from './properties';
 import { IField } from './types';
 
-const internalSchameInitialize = (schema: ISchema, { field, block, readPretty, action }) => {
+const internalSchameInitialize = (schema: ISchema, { field, block, readPretty, action, initialize = false }) => {
   if (block === 'Form') {
     if (schema['x-component'] === 'FormField') {
       const association = `${field.collectionName}.${field.name}`;
@@ -49,9 +49,10 @@ const internalSchameInitialize = (schema: ISchema, { field, block, readPretty, a
           },
         },
       };
-    } else if (schema['x-component'] === 'AssociationSelect') {
+    } else if (schema['x-component'] === 'AssociationSelect' || initialize) {
       Object.assign(schema, {
         type: 'string',
+        'x-component': 'AssociationSelect',
         'x-designer': 'AssociationSelect.Designer',
       });
     } else {
@@ -117,8 +118,9 @@ export const o2o: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    internalSchameInitialize(schema, { field, block, readPretty, action });
+  schemaInitialize(schema: ISchema, params) {
+    internalSchameInitialize(schema, params);
+    const { block } = params;
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
@@ -292,8 +294,9 @@ export const oho: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    internalSchameInitialize(schema, { field, block, readPretty, action });
+  schemaInitialize(schema: ISchema, params) {
+    internalSchameInitialize(schema, params);
+    const { block } = params;
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
@@ -458,8 +461,9 @@ export const obo: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    internalSchameInitialize(schema, { field, block, readPretty, action });
+  schemaInitialize(schema: ISchema, params) {
+    internalSchameInitialize(schema, params);
+    const { block } = params;
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;

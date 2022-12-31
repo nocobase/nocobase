@@ -50,7 +50,7 @@ export const o2m: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, block, readPretty }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, initialize = false }) {
     if (block === 'Form') {
       if (schema['x-component'] === 'TableField') {
         const association = `${field.collectionName}.${field.name}`;
@@ -92,9 +92,10 @@ export const o2m: IField = {
             },
           },
         };
-      } else if (schema['x-component'] === 'AssociationSelect') {
+      } else if (schema['x-component'] === 'AssociationSelect' || initialize) {
         Object.assign(schema, {
           type: 'string',
+          'x-component': 'AssociationSelect',
           'x-designer': 'AssociationSelect.Designer',
         });
       } else {

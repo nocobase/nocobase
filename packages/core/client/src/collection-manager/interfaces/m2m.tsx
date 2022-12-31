@@ -51,11 +51,12 @@ export const m2m: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { readPretty, block }) {
+  schemaInitialize(schema: ISchema, { readPretty, block, initialize = false }) {
     if (block === 'Form') {
-      if (schema['x-component'] === 'AssociationSelect') {
+      if (schema['x-component'] === 'AssociationSelect' || initialize) {
         Object.assign(schema, {
           type: 'string',
+          'x-component': 'AssociationSelect',
           'x-designer': 'AssociationSelect.Designer',
         });
       } else {
