@@ -50,6 +50,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
           attributes: [this.targetKey()],
           group: `${this.targetModel.name}.${this.targetKey()}`,
           transaction,
+          include: [],
         })
       ).map((row) => {
         return { row, pk: row.get(this.targetKey()) };

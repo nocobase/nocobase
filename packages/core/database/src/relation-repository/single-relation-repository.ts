@@ -61,6 +61,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
         transaction,
         attributes: [this.targetKey()],
         group: `${this.targetModel.name}.${this.targetKey()}`,
+        include: [],
       });
 
       const results = await handleAppendsQuery({
