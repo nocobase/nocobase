@@ -293,7 +293,6 @@ describe('has many repository', () => {
       appends: ['tags'],
     });
 
-    return;
     const post = posts[0];
 
     expect(post.tags.length).toEqual(3);
