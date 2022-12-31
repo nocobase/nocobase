@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import { CollectionGroupManager } from './collection-group-manager';
 import inquirer from 'inquirer';
 import { FieldValueWriter } from './field-value-writer';
+import lodash from 'lodash';
 
 const finished = util.promisify(stream.finished);
 
@@ -83,7 +84,7 @@ export class Dumper extends AppMigrator {
     }
 
     // @ts-ignore
-    const columns: string[] = Object.keys(collection.model.tableAttributes);
+    const columns: string[] = [...new Set(lodash.map(collection.model.tableAttributes, 'field'))];
 
     if (columns.length == 0) {
       this.app.log.warn(`collection ${collectionName} has no columns`);
