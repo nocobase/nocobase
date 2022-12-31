@@ -264,12 +264,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
       const ids = (
         await model.findAll({
-          ...opts,
+          ...lodash.omit(opts, ['include']),
           includeIgnoreAttributes: false,
           attributes: [primaryKeyField],
           group: `${model.name}.${primaryKeyField}`,
           transaction,
-        })
+        } as any)
       ).map((row) => {
         return { row, pk: row.get(primaryKeyField) };
       });
