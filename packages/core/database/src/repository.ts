@@ -589,7 +589,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const params = parser.toSequelizeParams();
     debug('sequelize query params %o', params);
-    console.log(params);
     return { where: {}, ...options, ...params };
   }
 
