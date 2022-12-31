@@ -270,7 +270,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           group: `${model.name}.${primaryKeyField}`,
           transaction,
           include: opts.include.filter((include) => {
-            return !lodash.isEmpty(include.where);
+            return (
+              Object.keys(include.where || {}).length > 0 || JSON.stringify(opts?.filter)?.includes(include.association)
+            );
           }),
         } as any)
       ).map((row) => {
@@ -587,6 +589,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const params = parser.toSequelizeParams();
     debug('sequelize query params %o', params);
+    console.log(params);
     return { where: {}, ...options, ...params };
   }
 
