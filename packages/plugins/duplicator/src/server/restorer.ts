@@ -248,10 +248,17 @@ export class Restorer extends AppMigrator {
 
     const primaryKeyAttribute = collection.model.rawAttributes[collection.model.primaryKeyAttribute];
 
+    console.log(primaryKeyAttribute);
     if (primaryKeyAttribute && primaryKeyAttribute.autoIncrement) {
       if (this.app.db.inDialect('postgres')) {
         await app.db.sequelize.query(
           `SELECT pg_catalog.setval(pg_get_serial_sequence('"${collection.model.tableName}"', '${primaryKeyAttribute.field}'), MAX("${primaryKeyAttribute.field}")) FROM "${collection.model.tableName}"`,
+        );
+      }
+
+      if (this.app.db.inDialect('sqlite')) {
+        await app.db.sequelize.query(
+          `UPDATE sqlite_sequence set seq = (SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}") WHERE name = "${collection.model.tableName}"`,
         );
       }
     }
