@@ -359,11 +359,11 @@ class Plugin {
 }
 ```
 
-## Extended Registration and Access
+## Extended Registration and Acquisition
 
 ### `registerFieldTypes()`
 
-Register custom field types.
+Register custom field type.
 
 **Signature**
 
@@ -389,7 +389,7 @@ db.registerFieldTypes({
 
 ### `registerModels()`
 
-Register custom data model classes.
+Register custom data model class.
 
 **Signature**
 
@@ -420,17 +420,17 @@ db.collection({
 
 ### `registerRepositories()`
 
-注册自定义数据仓库类。
+Register custom data repository class.
 
-**签名**
+**Signature**
 
 * `registerRepositories(repositories: MapOf<RepositoryType>): void`
 
-**参数**
+**Parameter**
 
-`repositories` 是一个键值对，键为数据仓库名称，值为数据仓库类。
+`repositories` is a key-value pair, where key is the data repository name and value is the data repository class.
 
-**示例**
+**Example**
 
 ```ts
 import { Repository } from '@nocobase/database';
@@ -451,17 +451,17 @@ db.collection({
 
 ### `registerOperators()`
 
-注册自定义数据查询操作符。
+Register custom data query operator.
 
-**签名**
+**Signature**
 
 * `registerOperators(operators: MapOf<OperatorFunc>)`
 
-**参数**
+**Parameter**
 
-`operators` 是一个键值对，键为操作符名称，值为操作符比较语句生成函数。
+`operators` is a key-value pair, where key is the operator name and value is the generating function of the comparison operator statement.
 
-**示例**
+**Example**
 
 ```ts
 db.registerOperators({
@@ -484,19 +484,19 @@ db.getRepository('books').count({
 
 ### `getModel()`
 
-获取已定义的数据模型类。如果没有在之前注册自定义模型类，将返回 Sequelize 默认的模型类。默认名称与 collection 定义的名称相同。
+Get the defined data model class. If no custom model class has been registered before, the default model class of Sequelize will be returned. The default name is the same as the name defined by collection.
 
-**签名**
+**Signature**
 
 * `getModel(name: string): Model`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 已注册的模型名 |
+| `name` | `string` | - | Registered model name |
 
-**示例**
+**Example**
 
 ```ts
 db.registerModels({
@@ -508,31 +508,31 @@ const ModelClass = db.getModel('books');
 console.log(ModelClass.prototype instanceof MyModel) // true
 ```
 
-注：从 collection 中获取的模型类并不与注册时的模型类严格相等，而是继承自注册时的模型类。由于 Sequelize 的模型类在初始化过程中属性会被修改，所以 NocoBase 自动处理了这个继承关系。除类不相等以外，其他所有定义都可以正常使用。
+Note: The model class retrieved from collection is not strictly equivalent to the model class at registration, but is inherited from the model class at registration. Since the properties of Sequelize's model class are modified during initialization, NocoBase automatically handles this inheritance relationship. All thr definitions work fine except that the classes are not equal.
 
 ### `getRepository()`
 
-获取自定义的数据仓库类。如果没有在之前注册自定义数据仓库类，将返回 NocoBase 默认的数据仓库类。默认名称与 collection 定义的名称相同。
+Get the defined data repository class. If no custom data repository class has been registered before, the default data repository class of NocoBase will be returned. The default name is the same as the name defined by collection.
 
-数据仓库类主要用于基于数据模型的增删改查等操作，参考 [数据仓库](/api/server/database/repository)。
+Data repository class is mainly used for the CRUD operations based on data model, refer to [Repository](/api/server/database/repository).
 
-**签名**
+**Signature**
 
 * `getRepository(name: string): Repository`
 * `getRepository(name: string, relationId?: string | number): Repository`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 已注册的数据仓库名 |
-| `relationId` | `string` \| `number` | - | 关系数据的外键值 |
+| `name` | `string` | - | Registered data repository name |
+| `relationId` | `string` \| `number` | - | Foreign key value for relational data |
 
-当名称是形如 `'tables.relactions'` 的带关联的名称时，将返回关联的数据仓库类。如果提供了第二个参数，数据仓库在使用时（查询、修改等）会基于关系数据的外键值。
+When the name contains relationship in the form of `'tables.relactions'`, the related data repository class is returned. If the second parameter is provided, the data repository will be used (query, modify, etc.) based on the foreign key values of the relational data.
 
-**示例**
+**Example**
 
-假设有两张数据表_文章_与_作者_，并且文章表中有一个外键指向作者表：
+Suppose there are two data tables <i>posts</i> and <i>authors</i>, and there is a foreign key in the <i>posts</i> table points to the <i>authors</i> table:
 
 ```ts
 const AuthorsRepo = db.getRepository('authors');
@@ -543,41 +543,43 @@ const post1 = AuthorsRepo.create({ title: 'post1' });
 asset(post1.authorId === author1.id); // true
 ```
 
-## 数据库事件 
+## Database Event 
 
 ### `on()`
 
-监听数据库事件。
+Listen for database events.
 
-**签名**
+**Signature**
 
 * `on(event: string, listener: (...args: any[]) => void | Promise<void>): void`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| event | string | - | 事件名称 |
-| listener | Function | - | 事件监听器 |
+| event | string | - | Event name |
+| listener | Function | - | Event listener |
 
-事件名称默认支持 Sequelize 的 Model 事件。针对全局事件，通过 `<sequelize_model_global_event>` 的名称方式监听，针对单 Model 事件，通过 `<model_name>.<sequelize_model_event>` 的名称方式监听。
+Event name supports Model event of Sequelize by default. Global event is listened to by the name `<sequelize_model_global_event>`, single Model event is listened to by the name `<model_name>. <sequelize_model_event>`.
 
-所有内置的事件类型的参数说明和详细示例参考 [内置事件](#内置事件) 部分内容。
+Refer to the [Built-in Events](#built-in-events) section for parameter descriptions and detailed examples of all built-in event types.
 
 ### `off()`
 
-移除事件监听函数。
+Remove the event listener function.
 
-**签名**
+**Signature**
 
 * `off(name: string, listener: Function)`
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| name | string | - | 事件名称 |
-| listener | Function | - | 事件监听器 |
+**Parameter**
 
-**示例**
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| name | string | - | Event name |
+| listener | Function | - | Event listener |
+
+**Example**
 
 ```ts
 const listener = async (model, options) => {
@@ -589,26 +591,26 @@ db.on('afterCreate', listener);
 db.off('afterCreate', listener);
 ```
 
-## 数据库操作
+## Database Operation
 
 ### `auth()`
 
-数据库连接验证。可以用于确保应用与数据已建立连接。
+Database connection verification. It can be used to ensure that the application has established connection to the data.
 
-**签名**
+**Signature**
 
 * `auth(options: QueryOptions & { retry?: number } = {}): Promise<boolean>`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options?` | `Object` | - | 验证选项 |
-| `options.retry?` | `number` | `10` | 验证失败时重试次数 |
-| `options.transaction?` | `Transaction` | - | 事务对象 |
-| `options.logging?` | `boolean \| Function` | `false` | 是否打印日志 |
+| `options?` | `Object` | - | Verification option |
+| `options.retry?` | `number` | `10` | Number of retries in case of verification failure |
+| `options.transaction?` | `Transaction` | - | Transaction object |
+| `options.logging?` | `boolean \| Function` | `false` | Whether to print the log |
 
-**示例**
+**Example**
   
 ```ts
 await db.auth();
@@ -616,9 +618,9 @@ await db.auth();
 
 ### `reconnect()`
 
-重新连接数据库。
+Reconnect to the database.
 
-**示例**
+**Example**
 
 ```ts
 await db.reconnect();
@@ -626,39 +628,39 @@ await db.reconnect();
 
 ### `closed()`
 
-判断数据库是否已关闭连接。
+Check whether database has closed the connection.
 
-**签名**
+**Signature**
 
 * `closed(): boolean`
 
 ### `close()`
 
-关闭数据库连接。等同于 `sequelize.close()`。
+Closes database connection. Equivalent to `sequelize.close()`.
 
 ### `sync()`
 
-同步数据库表结构。等同于 `sequelize.sync()`，参数参考 [Sequelize 文档](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-sync)。
+Synchronizes database table structure. Equivalent to `sequelize.sync()`, refer to [Sequelize documentation](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-sync) for parameters.
 
 ### `clean()`
 
-清空数据库，将删除所有数据表。
+Empty the database, it will delete all data tables.
 
-**签名**
+**Signature**
 
 * `clean(options: CleanOptions): Promise<void>`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.drop` | `boolean` | `false` | 是否移除所有数据表 |
-| `options.skip` | `string[]` | - | 跳过的表名配置 |
-| `options.transaction` | `Transaction` | - | 事务对象 |
+| `options.drop` | `boolean` | `false` | Whether to remove all data tables |
+| `options.skip` | `string[]` | - | Names of tables to skip |
+| `options.transaction` | `Transaction` | - | Transaction object |
 
-**示例**
+**Example**
 
-移除除 `users` 表以外的所有表。
+Removes all tables except for the `users` table.
 
 ```ts
 await db.clean({
@@ -667,25 +669,25 @@ await db.clean({
 })
 ```
 
-## 包级导出
+## Package-Level Export
 
 ### `defineCollection()`
 
-创建一个数据表的配置内容。
+Create the configuration content of a data table.
 
-**签名**
+**Signature**
 
 * `defineCollection(name: string, config: CollectionOptions): CollectionOptions`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `collectionOptions` | `CollectionOptions` | - | 与所有 `db.collection()` 的参数相同 |
+| `collectionOptions` | `CollectionOptions` | - | All parameters are the same with `db.collection()` |
 
-**示例**
+**Example**
 
-对于要被 `db.import()` 导入的数据表配置文件：
+For the data table configuration file to be imported by `db.import()`:
 
 ```ts
 import { defineCollection } from '@nocobase/database';
