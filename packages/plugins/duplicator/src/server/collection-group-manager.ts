@@ -77,7 +77,7 @@ CollectionGroupManager.registerCollectionGroup({
 CollectionGroupManager.registerCollectionGroup({
   pluginName: 'acl',
   function: 'acl',
-  collections: ['roles', 'rolesResources', 'rolesResourcesActions', 'rolesResourcesScopes'],
+  collections: ['roles', 'rolesResources', 'rolesResourcesActions', 'rolesResourcesScopes', 'rolesUischemas'],
   dumpable: 'required',
 });
 
@@ -216,5 +216,12 @@ CollectionGroupManager.registerCollectionGroup({
   pluginName: 'graph-collection-manager',
   function: 'graphCollectionPositions',
   collections: ['graphPositions'],
+  dumpable: 'optional',
+});
+
+CollectionGroupManager.registerCollectionGroup({
+  pluginName: 'iframeHtml',
+  function: 'iframe html storage',
+  collections: ['iframeHtml'],
   dumpable: 'optional',
 });

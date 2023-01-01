@@ -248,7 +248,6 @@ export class Restorer extends AppMigrator {
 
     const primaryKeyAttribute = collection.model.rawAttributes[collection.model.primaryKeyAttribute];
 
-    console.log(primaryKeyAttribute);
     if (primaryKeyAttribute && primaryKeyAttribute.autoIncrement) {
       if (this.app.db.inDialect('postgres')) {
         await app.db.sequelize.query(
