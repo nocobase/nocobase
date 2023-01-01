@@ -7,6 +7,7 @@ import {SchemaComponent, SchemaComponentOptions, useAPIClient, useCollectionMana
 import {DataBlockInitializer} from '@nocobase/client'
 import {useSaveRoleResourceAction} from "@nocobase/client/src/acl/Configuration/schemas/useSaveRoleResourceAction";
 import PieSchemaTemplate from "./PieSchemaTemplate";
+import { getChartBlockSchema, getChartData} from "./ChartUtils";
 
 export const ChartBlockInitializer = (props) => {
   const {insert} = props;
@@ -51,18 +52,12 @@ export const ChartBlockInitializer = (props) => {
           initialValues: {},
         });
         if (values) {
-          console.log(values)
-          insert({
-            type: 'void',
-            'x-component': 'CardItem',
-            properties: {
-              hello: {
-                type: 'void',
-                'x-component': 'div',
-                'x-content': JSON.stringify(values),
-              },
-            },
-          })
+          //解析values发送请求获取render数据
+          const data = await getChartData(api,values)
+          console.log(data,"==================")
+          //再生成schema insert
+          const chartBlockSchema = getChartBlockSchema(values, data);
+          insert(chartBlockSchema)
         }
       }}
     />
