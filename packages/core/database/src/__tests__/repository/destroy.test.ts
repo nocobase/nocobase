@@ -13,6 +13,7 @@ describe('destroy with targetKey', function () {
 
   beforeEach(async () => {
     db = mockDatabase();
+
     User = db.collection({
       name: 'users',
       autoGenId: false,
@@ -86,6 +87,10 @@ describe('destroy', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({
+      drop: true,
+    });
+
     User = db.collection({
       name: 'users',
       fields: [
@@ -103,6 +108,43 @@ describe('destroy', () => {
       ],
     });
     await db.sync();
+  });
+
+  test('destroy record has no primary key', async () => {
+    Post.addField('tags', {
+      type: 'belongsToMany',
+    });
+
+    const tags = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'belongsToMany', name: 'posts' },
+        { type: 'string', name: 'name' },
+      ],
+    });
+
+    await db.sync();
+
+    const post = await Post.repository.create({
+      values: {
+        title: 'p1',
+        tags: [{ name: 't1' }],
+      },
+    });
+
+    const throughCollection = db.getCollection(tags.getField('posts').options.through);
+
+    console.log(throughCollection.model.primaryKeyAttribute);
+
+    expect(await throughCollection.repository.count()).toEqual(1);
+
+    await throughCollection.repository.destroy({
+      filter: {
+        postId: post.get('id'),
+      },
+    });
+
+    expect(await throughCollection.repository.count()).toEqual(0);
   });
 
   test('destroy with filter and filterByPk', async () => {

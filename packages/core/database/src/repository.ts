@@ -545,6 +545,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (options.filter) {
+      console.log(modelFilterKey);
       let pks = (
         await this.find({
           filter: options.filter,
