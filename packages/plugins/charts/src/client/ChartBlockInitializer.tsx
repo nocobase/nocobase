@@ -21,8 +21,6 @@ export const ChartBlockInitializer = (props) => {
       icon={<FormOutlined/>}
       onCreateBlockSchema={async ({item}) => {
         const collectionFields = getCollectionFields(item.name);
-        const stringFields = collectionFields
-        console.log(item)
         const values = await FormDialog(t('Create chart block'), () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{...options.components}}>
@@ -42,7 +40,7 @@ export const ChartBlockInitializer = (props) => {
                         ],
                       },
                       //   template
-                      ...PieSchemaTemplate()
+                      ...PieSchemaTemplate({collectionFields})
                     },
                   }}
                 />
@@ -53,6 +51,7 @@ export const ChartBlockInitializer = (props) => {
           initialValues: {},
         });
         if (values) {
+          console.log(values)
           insert({
             type: 'void',
             'x-component': 'CardItem',
