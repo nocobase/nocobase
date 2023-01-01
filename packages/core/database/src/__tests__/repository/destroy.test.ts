@@ -77,7 +77,7 @@ describe('destroy with targetKey', function () {
 });
 
 describe('destroy', () => {
-  let db;
+  let db: Database;
   let User: Collection;
   let Post: Collection;
 
@@ -110,6 +110,50 @@ describe('destroy', () => {
     await db.sync();
   });
 
+  test('destroy records from tables without primary keys', async () => {
+    const Test = db.collection({
+      name: 'test',
+      timestamps: false,
+      autoGenId: false,
+      fields: [
+        {
+          type: 'string',
+          name: 'test',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const t1 = await Test.repository.create({
+      values: {
+        test: 't1',
+      },
+    });
+
+    await Test.repository.create({
+      values: {
+        test: 't2',
+      },
+    });
+
+    const destroy = async () => {
+      await Test.repository.destroy({
+        filterByTk: 111,
+      });
+    };
+
+    await expect(destroy()).rejects.toThrowError('filterByTk is not supported for collection that has no primary key');
+
+    await Test.repository.destroy({
+      filter: {
+        test: 't2',
+      },
+    });
+
+    expect(await Test.repository.count()).toEqual(1);
+  });
+
   test('destroy record has no primary key', async () => {
     Post.addField('tags', {
       type: 'belongsToMany',
@@ -133,8 +177,6 @@ describe('destroy', () => {
     });
 
     const throughCollection = db.getCollection(tags.getField('posts').options.through);
-
-    console.log(throughCollection.model.primaryKeyAttribute);
 
     expect(await throughCollection.repository.count()).toEqual(1);
 
