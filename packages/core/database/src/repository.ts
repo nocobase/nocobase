@@ -532,6 +532,18 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         ? [options.filterByTk]
         : (options.filterByTk as TargetKey[] | undefined);
 
+    if (
+      this.collection.model.primaryKeyAttributes.length !== 1 &&
+      filterByTk &&
+      !lodash.get(this.collection.options, 'filterTargetKey')
+    ) {
+      if (this.collection.model.primaryKeyAttributes.length > 1) {
+        throw new Error(`filterByTk is not supported for composite primary key`);
+      } else {
+        throw new Error(`filterByTk is not supported for collection that has no primary key`);
+      }
+    }
+
     if (filterByTk && !options.filter) {
       return await this.model.destroy({
         ...options,
@@ -545,6 +557,20 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (options.filter) {
+      if (
+        this.collection.model.primaryKeyAttributes.length !== 1 &&
+        !lodash.get(this.collection.options, 'filterTargetKey')
+      ) {
+        const queryOptions = {
+          ...this.buildQueryOptions(options),
+        };
+
+        return await this.model.destroy({
+          ...queryOptions,
+          transaction,
+        });
+      }
+
       let pks = (
         await this.find({
           filter: options.filter,
