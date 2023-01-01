@@ -4,7 +4,7 @@ import {
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
-  useCompile,
+  useCompile
 } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import { cloneDeep } from 'lodash';
@@ -39,13 +39,15 @@ export const useExportAction = () => {
       const { data } = await resource.export(
         {
           title: compile(title),
-          columns: JSON.stringify(compile(exportSettings)),
           appends: service.params[0]?.appends?.join(),
           filter: JSON.stringify(service.params[0]?.filter),
           sort: service.params[0]?.sort,
         },
         {
-          method: 'get',
+          method: 'post',
+          data: {
+            columns: compile(exportSettings),
+          },
           responseType: 'blob',
         },
       );
