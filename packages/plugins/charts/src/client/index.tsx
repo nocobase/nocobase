@@ -37,7 +37,7 @@ import {ChartBlockInitializer} from "./ChartBlockInitializer";
 
 export default React.memo((props) => {
   const items = useContext(SchemaInitializerContext);
-  const children = items.BlockInitializers.items[1].children;
+  const children = items.BlockInitializers.items[0].children;
   children.push({
     key: 'chart',
     type: 'item',

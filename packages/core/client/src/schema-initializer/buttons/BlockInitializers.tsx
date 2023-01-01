@@ -42,37 +42,37 @@ export const BlockInitializers = {
           title: '{{t("Kanban")}}',
           component: 'KanbanBlockInitializer',
         },
-        {
-          key: 'chart',
-          type: 'item',
-          title: '{{t("Chart")}}',
-          component: 'ChartBlockInitializer',
-        },
+        // {
+        //   key: 'chart',
+        //   type: 'item',
+        //   title: '{{t("Chart")}}',
+        //   component: 'ChartBlockInitializer',
+        // },
       ],
     },
-    {
-      key: 'g2plot',
-      type: 'itemGroup',
-      title: '{{t("Chart blocks")}}',
-      children: [
-        {
-          key: 'column',
-          type: 'item',
-          title: '{{t("Column chart")}}',
-          component: 'G2PlotInitializer',
-          icon: 'BarChartOutlined',
-          schema: {
-            type: 'void',
-            'x-designer': 'G2Plot.Designer',
-            'x-decorator': 'CardItem',
-            'x-component': 'G2Plot',
-            'x-component-props': {
-              plot: 'Column',
-              config: chartConfig.column,
-            },
-          },
-        },]
-    },
+    // {
+    //   key: 'g2plot',
+    //   type: 'itemGroup',
+    //   title: '{{t("Chart blocks")}}',
+    //   children: [
+    //     {
+    //       key: 'column',
+    //       type: 'item',
+    //       title: '{{t("Column chart")}}',
+    //       component: 'G2PlotInitializer',
+    //       icon: 'BarChartOutlined',
+    //       schema: {
+    //         type: 'void',
+    //         'x-designer': 'G2Plot.Designer',
+    //         'x-decorator': 'CardItem',
+    //         'x-component': 'G2Plot',
+    //         'x-component-props': {
+    //           plot: 'Column',
+    //           config: chartConfig.column,
+    //         },
+    //       },
+    //     },]
+    // },
     //     {
     //       key: 'bar',
     //       type: 'item',
