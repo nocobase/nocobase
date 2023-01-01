@@ -110,6 +110,42 @@ describe('destroy', () => {
     await db.sync();
   });
 
+  test('destroy records from no pk tables that filterTargetKey configured', async () => {
+    const Test = db.collection({
+      name: 'test',
+      timestamps: false,
+      autoGenId: false,
+      filterTargetKey: 'test',
+      fields: [
+        {
+          type: 'string',
+          name: 'test',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const t1 = await Test.repository.create({
+      values: {
+        test: 't1',
+      },
+    });
+
+    await Test.repository.create({
+      values: {
+        test: 't2',
+      },
+    });
+
+    await Test.repository.destroy({
+      filterByTk: 't2',
+    });
+
+    expect(await Test.repository.count()).toEqual(1);
+    expect((await Test.repository.findOne()).get('test')).toEqual('t1');
+  });
+
   test('destroy records from tables without primary keys', async () => {
     const Test = db.collection({
       name: 'test',
@@ -152,6 +188,7 @@ describe('destroy', () => {
     });
 
     expect(await Test.repository.count()).toEqual(1);
+    expect((await Test.repository.findOne()).get('test')).toEqual('t1');
   });
 
   test('destroy record has no primary key', async () => {
