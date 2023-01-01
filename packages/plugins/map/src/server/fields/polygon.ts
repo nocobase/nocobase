@@ -22,13 +22,14 @@ export class PolygonField extends Field {
           }
         },
         set(value) {
-          if (isPg(context)) {
-            value = value ? joinComma(value.map((item: any) => joinComma(item))) : null
+          if (!value?.length) value = null
+          else if (isPg(context)) {
+            value = joinComma(value.map((item: any) => joinComma(item)))
           } else if (isMysql(context)) {
-            value = value?.length ? {
+            value = {
               type: 'Polygon',
               coordinates: [value.concat([value[0]])]
-            } : null
+            }
           }
           this.setDataValue(name, value)
         },

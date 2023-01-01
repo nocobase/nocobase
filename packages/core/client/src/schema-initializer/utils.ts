@@ -223,7 +223,7 @@ export const useFormItemInitializerFields = (options?: any) => {
       } as SchemaInitializerItemOptions;
       if (block == 'Kanban') {
         resultItem['find'] = (schema: Schema, key: string, action: string) => {
-          const s = findSchema(schema,'x-component',block)
+          const s = findSchema(schema, 'x-component', block);
           return findSchema(s, key, action);
         };
       }
@@ -532,7 +532,7 @@ export const useCollectionDataSourceItems = (componentName) => {
           const b = !value || selected.includes(item.name);
           if (item.inherit) {
             return false;
-          } else if (!item.fields.find((v) => v.primaryKey)) {
+          } else if (item.autoGenId === false && !item.fields.find((v) => v.primaryKey)) {
             return false;
           } else {
             return b && !(item?.isThrough && item?.autoCreate);
@@ -1003,7 +1003,7 @@ export const createCalendarBlockSchema = (options) => {
                             type: 'void',
                             'x-component': 'Grid',
                             'x-initializer-props': {
-                              actionInitializers: 'CalendarFormActionInitializers'
+                              actionInitializers: 'CalendarFormActionInitializers',
                             },
                             'x-initializer': 'RecordBlockInitializers',
                             properties: {},
