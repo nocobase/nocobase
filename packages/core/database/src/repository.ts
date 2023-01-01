@@ -532,7 +532,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         ? [options.filterByTk]
         : (options.filterByTk as TargetKey[] | undefined);
 
-    if (this.collection.model.primaryKeyAttributes.length !== 1 && filterByTk) {
+    if (
+      this.collection.model.primaryKeyAttributes.length !== 1 &&
+      filterByTk &&
+      !lodash.get(this.collection.options, 'filterTargetKey')
+    ) {
       if (this.collection.model.primaryKeyAttributes.length > 1) {
         throw new Error(`filterByTk is not supported for composite primary key`);
       } else {
@@ -553,7 +557,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (options.filter) {
-      if (this.collection.model.primaryKeyAttributes.length !== 1) {
+      if (
+        this.collection.model.primaryKeyAttributes.length !== 1 &&
+        !lodash.get(this.collection.options, 'filterTargetKey')
+      ) {
         const queryOptions = {
           ...this.buildQueryOptions(options),
         };
