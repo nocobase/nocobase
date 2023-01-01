@@ -161,7 +161,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
           return <Menu.Divider key={`divider-${indexA}`} />;
         }
         if (item.type === 'itemGroup') {
-          console.log(item.children);
+          // console.log(item.children);
           return (
             <Menu.ItemGroup
               // @ts-ignore
