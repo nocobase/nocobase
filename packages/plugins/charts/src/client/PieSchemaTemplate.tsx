@@ -1,11 +1,23 @@
-import {useAPIClient, useCollectionManager} from "@nocobase/client";
+import {CollectionFieldOptions, useAPIClient, useCollectionManager} from "@nocobase/client";
 import {useContext} from "react";
 import {useTranslation} from "react-i18next";
 import {SchemaOptionsContext} from "@formily/react";
 
-const PieSchemaTemplate = () => {
+interface contextInfo {
+  collectionFields:  CollectionFieldOptions[];
+}
+
+const PieSchemaTemplate = (contextInfo: contextInfo) => {
+  const {collectionFields} = contextInfo
   const {t} = useTranslation();
-  const {getCollectionFields, getCollection} = useCollectionManager();
+  const computedFields = collectionFields
+    ?.filter((field) => ( field.type === 'double' || field.type === "bigInt") )
+    ?.map((field) => {
+      return {
+        label: field?.uiSchema?.title,
+        value: field.name,
+      };
+    });
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   return {
@@ -95,12 +107,8 @@ const PieSchemaTemplate = () => {
               title: t('Computed field'),
               required: true,
               'x-component': 'Select',
-              'x-component-props': {
-                objectValue: true,
-                fieldNames: {label: 'label', value: 'value'},
-              },
               'x-decorator': 'FormItem',
-              enum: [{label: 'Statistic', value: 'statistic'}],
+              enum: computedFields,
               'x-reactions': {
                 dependencies: ['dataset.type'],
                 fulfill: {
@@ -125,7 +133,7 @@ const PieSchemaTemplate = () => {
             },
           },
         },
-        chart: {
+        chartOption: {
           type: 'object',
           title: 'Chart options',
           'x-component': 'Tabs.TabPane',
