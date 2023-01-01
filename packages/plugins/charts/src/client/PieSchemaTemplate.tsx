@@ -1,4 +1,11 @@
-import {CollectionFieldOptions, useAPIClient, useCollectionManager} from "@nocobase/client";
+import {
+  CollectionFieldOptions,
+  useAPIClient,
+  useCollection,
+  useCollectionManager,
+  useFilterOptions,
+  useRequest
+} from "@nocobase/client";
 import {useContext} from "react";
 import {useTranslation} from "react-i18next";
 import {SchemaOptionsContext} from "@formily/react";
@@ -122,6 +129,7 @@ const PieSchemaTemplate = (contextInfo: contextInfo) => {
               title: t('Filter'),
               'x-component': 'Filter',
               'x-decorator': 'FormItem',
+              'x-component-props': {},
               'x-reactions': {
                 dependencies: ['dataset.type'],
                 fulfill: {
