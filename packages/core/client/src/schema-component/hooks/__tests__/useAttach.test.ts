@@ -1,8 +1,7 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { renderHook } from '@testing-library/react-hooks';
 import { createForm, Field } from '@formily/core';
 import { useField } from '@formily/react';
-import { render } from '@testing-library/react';
 import { useAttach } from '../useAttach';
 
 describe('useAttach', () => {
