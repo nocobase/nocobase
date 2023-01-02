@@ -36,7 +36,7 @@ export class Restorer extends AppMigrator {
     const nameIndex = meta.columns.indexOf('name');
 
     const plugins = await this.getImportCollectionData('applicationPlugins');
-    return plugins.map((plugin) => JSON.parse(plugin)[nameIndex]);
+    return ['core', ...plugins.map((plugin) => JSON.parse(plugin)[nameIndex])];
   }
 
   async getImportCustomCollections() {

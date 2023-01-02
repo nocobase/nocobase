@@ -38,7 +38,7 @@ export abstract class AppMigrator {
   async getAppPlugins() {
     const plugins = await this.app.db.getCollection('applicationPlugins').repository.find();
 
-    return plugins.map((plugin) => plugin.get('name'));
+    return ['core', ...plugins.map((plugin) => plugin.get('name'))];
   }
 
   async getCustomCollections() {

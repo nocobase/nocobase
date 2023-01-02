@@ -234,6 +234,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     };
 
     this.migrations = new Migrations(context);
+
     this.migrator = new Umzug({
       logger: migratorOptions.logger || console,
       migrations: this.migrations.callback(),
@@ -243,6 +244,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),
+    });
+
+    this.collection({
+      name: 'migrations',
+      autoGenId: false,
+      timestamps: false,
+      fields: [{ type: 'string', name: 'name' }],
     });
 
     this.sequelize.beforeDefine((model, opts) => {

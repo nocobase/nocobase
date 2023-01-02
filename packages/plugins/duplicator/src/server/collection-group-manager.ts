@@ -54,6 +54,20 @@ export class CollectionGroupManager {
 }
 
 CollectionGroupManager.registerCollectionGroup({
+  pluginName: 'core',
+  function: 'migration',
+  collections: ['migrations'],
+  dumpable: 'required',
+});
+
+CollectionGroupManager.registerCollectionGroup({
+  pluginName: 'multi-app-manager',
+  function: 'multi apps',
+  collections: ['applications'],
+  dumpable: 'optional',
+});
+
+CollectionGroupManager.registerCollectionGroup({
   pluginName: 'collection-manager',
   function: 'collections',
   collections: ['collections', 'fields'],
