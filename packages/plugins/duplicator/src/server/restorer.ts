@@ -95,10 +95,19 @@ export class Restorer extends AppMigrator {
 
     const results = await inquirer.prompt(questions);
 
-    // import plugins
-    await this.importCollection({
-      name: 'applicationPlugins',
-    });
+    const importCollection = async (collectionName: string) => {
+      try {
+        await this.importCollection({
+          name: collectionName,
+        });
+      } catch (err) {
+        this.app.log.warn(`import collection ${collectionName} failed`, {
+          err,
+        });
+      }
+    };
+
+    await importCollection('applicationPlugins');
 
     await this.app.reload();
 
@@ -108,9 +117,7 @@ export class Restorer extends AppMigrator {
 
     // import required plugins collections
     for (const collectionName of requiredCollections) {
-      await this.importCollection({
-        name: collectionName,
-      });
+      await importCollection(collectionName);
     }
 
     // load imported collections into database object
@@ -135,9 +142,7 @@ export class Restorer extends AppMigrator {
 
     // import custom collections
     for (const collectionName of customCollections) {
-      await this.importCollection({
-        name: collectionName,
-      });
+      await importCollection(collectionName);
     }
 
     // import delay groups
