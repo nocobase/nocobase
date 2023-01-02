@@ -25,15 +25,14 @@ export class PointField extends Field {
           }
         },
         set(value) {
-          if (isPg(context)) {
+          if (!value?.length) value = null;
+          else if (isPg(context)) {
             value = joinComma(value);
           } else if (isMysql(context)) {
-            value = value?.length
-              ? {
-                  type: 'Point',
-                  coordinates: value,
-                }
-              : null;
+            value = {
+              type: 'Point',
+              coordinates: value,
+            };
           }
           this.setDataValue(name, value);
         },

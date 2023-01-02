@@ -149,7 +149,12 @@ describe('fields', () => {
 
   it('empty', async () => {
     const Test = await createCollection();
-    const model = await Test.model.create();
+    const model = await Test.model.create({
+      circle: null,
+      lineString: null,
+      point: null,
+      polygon: null,
+    });
     await model.save();
 
     const findOne = () =>
