@@ -1,22 +1,8 @@
-// import { CollectionOptions } from '@nocobase/client';
-// import { collectionsCollection } from '@nocobase/plugin-collection-manager';
-
-// export default {
-//   ...collectionsCollection,
-//   name: 'collectionsHistory',
-//   title: 'Collection snapshot',
-//   fields: [
-//     ...collectionsCollection.fields.map((field) =>
-//       field.name === 'fields' ? { ...field, target: 'fieldsHistory' } : field,
-//     ),
-//   ],
-// } as CollectionOptions;
-
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'collectionsHistory',
-  title: '数据表配置',
+  title: '数据表历史',
   sortable: 'sort',
   autoGenId: false,
   model: 'CollectionModel',

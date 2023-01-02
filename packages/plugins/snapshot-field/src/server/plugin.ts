@@ -20,7 +20,7 @@ export class SnapshotFieldPlugin extends Plugin {
       // 创建 collection 初始化 fields 历史记录
       const fieldsHistory = this.app.db.getCollection('fieldsHistory');
       await fieldsHistory.repository.createMany({
-        records: collectionDoc.fields,
+        records: collectionDoc.fields ?? [],
         transaction,
       });
     };
@@ -69,7 +69,6 @@ export class SnapshotFieldPlugin extends Plugin {
 
       if ((await fieldsHistoryRepository.find()).length === 0) {
         const fieldsModels: Model[] = await fieldsRepository.find();
-
         await fieldsHistoryRepository.createMany({
           records: fieldsModels.map((m) => m.get()),
           transaction,

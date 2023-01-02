@@ -1,17 +1,3 @@
-// import { CollectionOptions } from '@nocobase/database';
-// import { fieldsCollection } from '@nocobase/plugin-collection-manager';
-
-// export default {
-//   ...fieldsCollection,
-//   name: 'fieldsHistory',
-//   title: '{{t("Fields history")}}',
-//   fields: [
-//     ...fieldsCollection.fields.map((field) =>
-//       field.name === 'collection' ? { ...field, target: 'collectionsHistory' } : field,
-//     ),
-//   ],
-// } as CollectionOptions;
-
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
