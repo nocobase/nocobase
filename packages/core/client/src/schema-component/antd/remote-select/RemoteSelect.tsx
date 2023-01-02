@@ -35,7 +35,7 @@ const InternalRemoteSelect = connect(
       },
       {
         debounceWait: wait,
-        refreshDeps: [service],
+        refreshDeps: [service, fieldNames.label, fieldNames.value],
       },
     );
 
