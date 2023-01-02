@@ -33,7 +33,8 @@ export class Dumper extends AppMigrator {
 
     const optionalCollections = [...customCollections.filter((collection) => !pluginsCollections.includes(collection))];
 
-    const questions = this.buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections);
+    const questions = await this.buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections);
+
     const results = await inquirer.prompt(questions);
 
     const userCollections = results.userCollections || [];

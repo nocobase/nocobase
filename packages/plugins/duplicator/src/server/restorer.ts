@@ -91,7 +91,7 @@ export class Restorer extends AppMigrator {
       (collection) => !pluginsCollections.includes(collection) && !coreCollections.includes(collection),
     );
 
-    const questions = this.buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections);
+    const questions = await this.buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections);
 
     const results = await inquirer.prompt(questions);
 
