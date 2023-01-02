@@ -28,6 +28,7 @@ function IconField(props: any) {
             <div style={{ width: '26em', maxHeight: '20em', overflowY: 'auto' }}>
               {[...icons.keys()].map((key) => (
                 <span
+                  key={key}
                   style={{ fontSize: 18, marginRight: 10, cursor: 'pointer' }}
                   onClick={() => {
                     onChange(key);

@@ -7,11 +7,11 @@ import { useCollectionManager, useCollectionFilterOptions, useCompile } from "@n
 
 
 export default function (props) {
-  const { collection, value, onChange } = props;
+  const { collection, fields, value, onChange } = props;
   const { t } = useTranslation();
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
-  const fields = getCollectionFields(collection)
+  const availableFields = (fields ?? getCollectionFields(collection))
     .filter(field => field.interface && (!field.target || field.type === 'belongsTo'))
     .map(field => field.type === 'belongsTo'
       ? {
@@ -29,7 +29,7 @@ export default function (props) {
       value={value}
       onChange={onChange}
     >
-      {fields
+      {availableFields
         .map(field => (
           <Select.Option key={field.name} value={field.name}>{field.title}</Select.Option>
         ))

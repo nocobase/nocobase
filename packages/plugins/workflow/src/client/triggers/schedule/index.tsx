@@ -1,13 +1,45 @@
 import React from 'react';
 import { Cascader } from 'antd';
 
-import { useCompile, useCollectionDataSource, useCollectionManager } from '@nocobase/client';
+import { useCompile, useCollectionDataSource, useCollectionManager, SchemaInitializerItemOptions } from '@nocobase/client';
 
 import { ScheduleConfig } from './ScheduleConfig';
 import { useFlowContext } from '../../FlowContext';
 import { BaseTypeSet, useOperandContext } from '../../calculators';
 import { SCHEDULE_MODE } from './constants';
 import { NAMESPACE, useWorkflowTranslation } from '../../locale';
+import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
+import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
+
+
+function ValueGetter({ onChange }) {
+  const { t } = useWorkflowTranslation();
+  const compile = useCompile();
+  const { collections = [] } = useCollectionManager();
+  const { workflow } = useFlowContext();
+  const { options } = useOperandContext();
+  const path = options?.path ? options.path.split('.') : [];
+  if (!options.type || options.type === 'date') {
+    return null;
+  }
+  const collection = collections.find(item => item.name === workflow.config.collection) ?? { fields: [] };
+  return (
+    <Cascader
+      placeholder={t('Trigger data')}
+      value={path}
+      options={collection.fields
+        .filter(field => BaseTypeSet.has(field?.uiSchema?.type))
+        .map(field => ({
+          value: field.name,
+          label: compile(field.uiSchema?.title),
+        }))}
+      onChange={(next) => {
+        onChange(`{{$context.${next.join('.')}}}`);
+      }}
+      allowClear={false}
+    />
+  );
+}
 
 export default {
   title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
@@ -43,32 +75,22 @@ export default {
   useFields(config) {
     return [];
   },
-  getter({ onChange }) {
-    const { t } = useWorkflowTranslation();
-    const compile = useCompile();
-    const { collections = [] } = useCollectionManager();
-    const { workflow } = useFlowContext();
-    const { options } = useOperandContext();
-    const path = options?.path ? options.path.split('.') : [];
-    if (!options.type || options.type === 'date') {
+  useValueGetter(config) {
+    return ValueGetter;
+  },
+  useInitializers(config): SchemaInitializerItemOptions {
+    if (!config.collection) {
       return null;
     }
-    const collection = collections.find(item => item.name === workflow.config.collection) ?? { fields: [] };
-    return (
-      <Cascader
-        placeholder={t('Trigger data')}
-        value={path}
-        options={collection.fields
-          .filter(field => BaseTypeSet.has(field?.uiSchema?.type))
-          .map(field => ({
-            value: field.name,
-            label: compile(field.uiSchema?.title),
-          }))}
-        onChange={(next) => {
-          onChange(`{{$context.${next.join('.')}}}`);
-        }}
-        allowClear={false}
-      />
-    );
+
+    return {
+      type: 'item',
+      title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      component: CollectionBlockInitializer,
+      collectionName: config.collection
+    };
+  },
+  initializers: {
+    CollectionFieldInitializers
   }
 };

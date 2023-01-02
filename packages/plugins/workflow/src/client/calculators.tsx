@@ -295,7 +295,8 @@ export const VariableTypes = {
         return null;
       }
       const instruction = instructions.get(node.type);
-      return instruction?.getter?.(props);
+      const getter = instruction?.useValueGetter?.(node);
+      return getter ? getter(props) : null;
     },
     appendTypeValue({ options = {} }: { type: string, options: any }) {
       return options.nodeId ? [Number.parseInt(options.nodeId, 10)] : [];
@@ -321,7 +322,8 @@ export const VariableTypes = {
     component(props) {
       const { workflow } = useFlowContext();
       const trigger = triggers.get(workflow.type);
-      return trigger?.getter?.(props);
+      const getter = trigger?.useValueGetter?.(workflow.config);
+      return getter ? getter(props) : null;
     },
     appendTypeValue({ options }) {
       return options.type ? [options.type] : [];
@@ -381,7 +383,7 @@ export function Operand({
         allowClear={false}
         value={[Types[type] ? type : '', ...(appendTypeValue ? appendTypeValue(operand) : [])]}
         options={Object.values(Types).map((item: any) => {
-          const options = typeof item.options === 'function' ? item.options() : item.options;
+          const options = typeof item.options === 'function' ? item.options().filter(Boolean) : item.options;
           return {
             label: compile(item.title),
             value: item.value,

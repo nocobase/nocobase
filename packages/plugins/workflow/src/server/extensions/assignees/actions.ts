@@ -21,13 +21,13 @@ export async function submit(context: Context, next) {
     context
   });
 
-  const { actions, assignees } = instance.node.config;
+  const { actions = [], assignees } = instance.node.config;
 
   // NOTE: validate status
   if (instance.status !== JOB_STATUS.PENDING
     || instance.job.status !== JOB_STATUS.PENDING
     || instance.execution.status !== EXECUTION_STATUS.STARTED
-    || (actions && !actions[values.status])
+    || !actions.includes(values.status)
   ) {
     context.throw(400);
   }

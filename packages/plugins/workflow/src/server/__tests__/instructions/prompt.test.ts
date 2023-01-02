@@ -7,7 +7,7 @@ import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 
 // NOTE: skipped because time is not stable on github ci, but should work in local
-describe.skip('workflow > instructions > prompt', () => {
+describe('workflow > instructions > prompt', () => {
   describe('base', () => {
     let app: MockServer;
     let agent;
@@ -39,9 +39,7 @@ describe.skip('workflow > instructions > prompt', () => {
       const n1 = await workflow.createNode({
         type: 'prompt',
         config: {
-          actions: {
-            [JOB_STATUS.RESOLVED]: 'submit'
-          }
+          actions: [JOB_STATUS.RESOLVED]
         }
       });
 
@@ -126,7 +124,8 @@ describe.skip('workflow > instructions > prompt', () => {
         const n1 = await workflow.createNode({
           type: 'prompt',
           config: {
-            assignees: [users[0].id]
+            assignees: [users[0].id],
+            actions: [JOB_STATUS.RESOLVED]
           }
         });
 
@@ -146,7 +145,8 @@ describe.skip('workflow > instructions > prompt', () => {
         expect(usersJobs[0].jobId).toBe(j1.id);
 
         const res1 = await agent.resource('jobs').submit({
-          filterByTk: j1.id
+          filterByTk: j1.id,
+          values: { status: JOB_STATUS.RESOLVED }
         });
         expect(res1.status).toBe(401);
 
@@ -192,7 +192,8 @@ describe.skip('workflow > instructions > prompt', () => {
         const n1 = await workflow.createNode({
           type: 'prompt',
           config: {
-            assignees: [users[0].id, users[1].id]
+            assignees: [users[0].id, users[1].id],
+            actions: [JOB_STATUS.RESOLVED]
           }
         });
 
@@ -234,7 +235,8 @@ describe.skip('workflow > instructions > prompt', () => {
         const n1 = await workflow.createNode({
           type: 'prompt',
           config: {
-            assignees: [users[0].id]
+            assignees: [users[0].id],
+            actions: [JOB_STATUS.RESOLVED]
           }
         });
 
@@ -273,7 +275,8 @@ describe.skip('workflow > instructions > prompt', () => {
           type: 'prompt',
           config: {
             assignees: [users[0].id, users[1].id],
-            mode: 1
+            mode: 1,
+            actions: [JOB_STATUS.RESOLVED]
           }
         });
 
@@ -331,7 +334,8 @@ describe.skip('workflow > instructions > prompt', () => {
           type: 'prompt',
           config: {
             assignees: [users[0].id, users[1].id],
-            mode: 1
+            mode: 1,
+            actions: [JOB_STATUS.REJECTED]
           }
         });
 
@@ -380,7 +384,8 @@ describe.skip('workflow > instructions > prompt', () => {
           type: 'prompt',
           config: {
             assignees: [users[0].id, users[1].id],
-            mode: 1
+            mode: 1,
+            actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED]
           }
         });
 
@@ -439,7 +444,8 @@ describe.skip('workflow > instructions > prompt', () => {
           type: 'prompt',
           config: {
             assignees: [users[0].id, users[1].id],
-            mode: -1
+            mode: -1,
+            actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED]
           }
         });
 
@@ -483,7 +489,8 @@ describe.skip('workflow > instructions > prompt', () => {
           type: 'prompt',
           config: {
             assignees: [users[0].id, users[1].id],
-            mode: -1
+            mode: -1,
+            actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED]
           }
         });
 
@@ -535,7 +542,8 @@ describe.skip('workflow > instructions > prompt', () => {
           type: 'prompt',
           config: {
             assignees: [users[0].id, users[1].id],
-            mode: -1
+            mode: -1,
+            actions: [JOB_STATUS.REJECTED]
           }
         });
 

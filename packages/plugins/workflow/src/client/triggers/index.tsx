@@ -50,8 +50,8 @@ export interface Trigger {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   useInitializers?(config): SchemaInitializerItemOptions;
+  useValueGetter?(config): ((props) => React.ReactNode) | null;
   initializers?: any;
-  getter?(node: any): React.ReactNode;
 };
 
 export const triggers = new Registry<Trigger>();

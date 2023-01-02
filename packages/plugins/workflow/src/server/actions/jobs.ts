@@ -1,4 +1,5 @@
 import { Context } from '@nocobase/actions';
+import Plugin from '..';
 import { JOB_STATUS } from '../constants';
 
 export async function submit(context: Context, next) {
@@ -21,7 +22,7 @@ export async function submit(context: Context, next) {
 
   await next();
 
-  const plugin = context.app.pm.get('workflow');
+  const plugin = context.app.pm.get('workflow') as Plugin;
   // NOTE: resume the process and no `await` for quick returning
   plugin.resume(instance);
 }

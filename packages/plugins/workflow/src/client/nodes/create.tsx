@@ -1,12 +1,11 @@
-import React from 'react';
-import { useCollectionDataSource } from '@nocobase/client';
+import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
 
 import { collection, values } from '../schemas/collection';
-import { useFlowContext } from '../FlowContext';
-import CollectionFieldSelect from '../components/CollectionFieldSelect';
 import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
-import { useOperandContext } from '../calculators';
+import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
+import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
+import { NodeCollectionFieldValueGetter } from '../components/NodeCollectionFieldValueGetter';
 
 
 
@@ -40,20 +39,22 @@ export default {
   components: {
     CollectionFieldset
   },
-  getter({ onChange }) {
-    const { options } = useOperandContext();
-    const { nodes } = useFlowContext();
-    const { config } = nodes.find(n => n.id == options.nodeId);
-    const value = options?.path;
+  useValueGetter(node) {
+    return NodeCollectionFieldValueGetter;
+  },
+  useInitializers(node): SchemaInitializerItemOptions {
+    if (!node.config.collection) {
+      return null;
+    }
 
-    return (
-      <CollectionFieldSelect
-        collection={config.collection}
-        value={value}
-        onChange={(path) => {
-          onChange(`{{$jobsMapByNodeId.${options.nodeId}.${path}}}`);
-        }}
-      />
-    );
+    return {
+      type: 'item',
+      title: node.title ?? `#${node.id}`,
+      component: CollectionBlockInitializer,
+      collectionName: node.config.collection
+    };
+  },
+  initializers: {
+    CollectionFieldInitializers
   }
 };

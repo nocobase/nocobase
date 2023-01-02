@@ -9,12 +9,19 @@ import { Instruction } from '.';
 
 
 export interface PromptConfig {
-  fields: [];
-  actions;
+  schema: {
+    collection: {
+      name: string;
+      fields: any[];
+    };
+    blocks: { [key: string]: any },
+    actions: { [key: string]: any },
+  };
+  actions: number[];
 }
 
 async function loadJob(context: Context, next) {
-  const { filterByTk, values } = context.action.params;
+  const { filterByTk, values = {} } = context.action.params;
   if (!context.body) {
     const jobRepo = utils.getRepositoryFromParams(context);
     const job = await jobRepo.findOne({
@@ -33,8 +40,7 @@ async function loadJob(context: Context, next) {
 
   const { type, config } = context.body.node;
   if (type === 'prompt'
-    && config.actions
-    && !config.actions[values.status]) {
+    && !config.actions?.includes(values.status)) {
     return context.throw(400);
   }
 
@@ -45,7 +51,7 @@ export default class implements Instruction {
   middlewares = [];
 
   constructor(protected plugin: Plugin) {
-    // plugin.app.resourcer.use(this.middleware);
+    plugin.app.resourcer.use(this.middleware);
   }
 
   middleware = async (context: Context, next) => {

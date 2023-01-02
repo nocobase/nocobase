@@ -1,7 +1,8 @@
 import React, { useState, useContext } from 'react';
-import { createForm } from '@formily/core';
 import { useForm, Schema } from '@formily/react';
 import { ArrayTable } from '@formily/antd';
+import { Tooltip } from 'antd';
+import { QuestionCircleOutlined } from '@ant-design/icons'
 import { cloneDeep, get, set } from 'lodash';
 
 import {
@@ -14,20 +15,18 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerProvider,
   useCollectionManager,
-  useCompile,
-  useDesignable,
-  useRequest,
   useSchemaComponentContext,
   gridRowColWrap,
-  InitializerWithSwitch
+  InitializerWithSwitch,
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 
-import { VariableComponent } from '../calculators';
-import { instructions, NodeContext, useAvailableUpstreams, useNodeContext } from '.';
+import { useOperandContext, VariableComponent } from '../calculators';
+import { instructions, useAvailableUpstreams } from '.';
 import { useFlowContext } from '../FlowContext';
 import { triggers } from '../triggers';
-import { NAMESPACE } from '../locale';
+import { lang, NAMESPACE } from '../locale';
+import CollectionFieldSelect from '../components/CollectionFieldSelect';
 
 function useTrigger() {
   const { workflow } = useFlowContext();
@@ -39,39 +38,6 @@ function useTriggerInitializers(): SchemaInitializerItemOptions | undefined {
   const trigger = useTrigger();
   return trigger.useInitializers?.(workflow.config);
 };
-
-
-function useNodeJobResultInitializerFields() {
-  const node = useNodeContext();
-
-  const upstreams = [];
-  for (let n = node.upstream; n; n = n.upstream) {
-    const { useFields } = instructions.get(n.type);
-    if (useFields) {
-      upstreams.push({
-        type: 'void',
-        'x-component': 'NodeJobResultContainer',
-        'x-context-block': 'nodeJobResult'
-      });
-    }
-  }
-  return upstreams;
-}
-
-const ActionOptions = [
-  {
-    value: 1,
-    label: 'Resolve',
-  },
-  {
-    value: -1,
-    label: 'Reject',
-  },
-  {
-    value: 0,
-    label: 'Save',
-  }
-] as const;
 
 const GroupLabels = {
   basic: '{{t("Basic")}}',
@@ -129,32 +95,13 @@ function SchemaComponentRefreshProvider(props) {
   );
 };
 
-function NodeResultInitializer(props) {
-  const { item, insert } = props;
-  const node = useNodeContext();
+function FormBlockInitializer({ insert, ...props }) {
   return (
     <SchemaInitializer.Item
       {...props}
       onClick={() => {
         insert({
           type: 'void',
-          'x-component': 'div',
-          'x-content': node.title ?? node.id,
-        });
-      }}
-    />
-  );
-}
-
-function FormBlockInitializer({ form, insert, ...props }) {
-  return (
-    <SchemaInitializer.Item
-      {...props}
-      onClick={() => {
-        insert({
-          type: 'void',
-          title: 'test form block',
-          'x-decorator': 'Form',
           'x-component': 'CardItem',
           'x-designer': 'FormV2.Designer',
           properties: {
@@ -162,7 +109,6 @@ function FormBlockInitializer({ form, insert, ...props }) {
               type: 'void',
               'x-component': 'Grid',
               'x-initializer': 'AddFormField',
-              properties: form
             }
           }
         });
@@ -172,35 +118,28 @@ function FormBlockInitializer({ form, insert, ...props }) {
 }
 
 function AddBlockButton(props: any) {
-  const { insertPosition = 'beforeEnd', component, form } = props;
   const nodes = useAvailableUpstreams();
   const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
+  const nodeBlockInitializers = nodes.map((node) => {
+    const instruction = instructions.get(node.type);
+    return instruction?.useInitializers?.(node);
+  }).filter(Boolean);
+  const dataBlockInitializers = [
+    ...triggerInitializers,
+    ...(nodeBlockInitializers.length ? [{
+      key: 'nodes',
+      type: 'subMenu',
+      title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+      children: nodeBlockInitializers
+    }] : []),
+  ].filter(Boolean);
 
   const items = [
-    {
+    ...(dataBlockInitializers.length ? [{
       type: 'itemGroup',
-      title: '{{t("Data")}}',
-      children: [
-        ...triggerInitializers,
-        {
-          key: 'nodes',
-          type: 'subMenu',
-          title: 'Node result',
-          children: nodes.map((node) => ({
-            key: node.id,
-            type: 'item',
-            title: node.title ?? `#${node.id}`,
-            component(p) {
-              return (
-                <NodeContext.Provider key={node.id} value={node}>
-                  <NodeResultInitializer {...p} />
-                </NodeContext.Provider>
-              );
-            },
-          }))
-        },
-      ]
-    },
+      title: '{{t("Data blocks")}}',
+      children: dataBlockInitializers
+    }] : []),
     {
       type: 'itemGroup',
       title: '{{t("Form")}}',
@@ -209,8 +148,7 @@ function AddBlockButton(props: any) {
           key: 'form',
           type: 'item',
           title: '{{t("Form")}}',
-          component: FormBlockInitializer,
-          form,
+          component: FormBlockInitializer
         },
       ],
     },
@@ -229,10 +167,9 @@ function AddBlockButton(props: any) {
 
   return (
     <SchemaInitializer.Button
-      insertPosition={insertPosition}
+      {...props}
       wrap={gridRowColWrap}
       items={items}
-      component={component}
       title="{{t('Add block')}}"
     />
   );
@@ -350,6 +287,7 @@ function AddFormField(props) {
                                 const defaultName = uid();
                                 options.name = values.name ?? defaultName;
                                 options.uiSchema.title = values.uiSchema?.title ?? defaultName;
+                                options.interface = interfaceOptions.name;
                                 collection.fields.push(merge(options, values) as any);
                                 insert({
                                   name: options.name,
@@ -399,16 +337,23 @@ function findFormFields(formSchema, fields) {
   });
 }
 
-function ActionInitializer({ action, actionType, ...props }) {
+function ActionInitializer({ action, actionProps, ...props }) {
   return (
     <InitializerWithSwitch
       {...props}
       schema={{
         type: 'void',
+        title: props.title,
+        'x-decorator': 'PromptActionStatusProvider',
+        'x-decorator-props': {
+          value: action
+        },
         'x-component': 'Action',
         'x-component-props': {
-          type: actionType
+          ...actionProps,
+          useAction: '{{ useSubmit }}',
         },
+        'x-designer': 'Action.Designer',
         'x-action': action,
       }}
       type="x-action"
@@ -422,47 +367,63 @@ function AddActionButton(props) {
       {...props}
       items={[
         {
-          key: 'resolve',
+          key: 1,
           type: 'item',
-          title: 'Resovle',
+          title: `{{t("Resolve", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
-          action: 'resolve',
-          actionType: 'primary'
+          action: 1,
+          actionProps: {
+            type: 'primary',
+          }
         },
         {
-          key: 'reject',
+          key: -1,
           type: 'item',
-          title: 'Reject',
+          title: `{{t("Reject", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
-          action: 'reject',
-          actionType: 'danger'
+          action: -1,
+          actionProps: {
+            type: 'danger',
+          }
         },
         {
-          key: 'save',
+          key: 0,
           type: 'item',
-          title: 'Save',
+          title: `{{t("Save", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
-          action: 'save',
+          action: 0,
         }
       ]}
-      title="{{t('Add Action')}}"
+      title="{{t('Configure actions')}}"
     />
   );
 }
 
 function FormConfig({ value, onChange }) {
   const ctx = useContext(SchemaComponentContext);
+  const trigger = useTrigger();
+  const nodes = useAvailableUpstreams();
+  const form = useForm();
+
   const { collection = {
     name: uid(),
     fields: []
   }, blocks, actions } = value ?? {};
-  const trigger = useTrigger();
+
+  const nodeInitializers = {};
+  const nodeComponents = {};
+  nodes.forEach(node => {
+    const instruction = instructions.get(node.type);
+    Object.assign(nodeInitializers, instruction.initializers);
+    Object.assign(nodeComponents, instruction.components);
+  });
 
   const schema = new Schema({
     properties: {
       drawer: {
         type: 'void',
         title: '{{t("Configure form")}}',
+        'x-decorator': 'Form',
         'x-component': 'Action.Drawer',
         'x-component-props': {
           className: 'nb-action-popup',
@@ -513,33 +474,51 @@ function FormConfig({ value, onChange }) {
         }
       }
     },
-    // properties: {
-    //   view: {
-    //     type: 'void',
-    //     'x-component': 'Grid',
-    //     'x-initializer': 'AddBlockButton',
-    //     'x-initializer-props': {
-    //       collection,
-    //     },
-    //     properties: blocks
-    //   },
-    // }
   });
-
-  const form = createForm();
 
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, designable: true }}>
-      <SchemaInitializerProvider initializers={{ AddBlockButton, AddFormField, AddActionButton, ...trigger.initializers }}>
+      <SchemaInitializerProvider initializers={{ AddBlockButton, AddFormField, AddActionButton, ...trigger.initializers, ...nodeInitializers }}>
         <SchemaComponentRefreshProvider
           onRefresh={() => {
-            const blocks = get(schema.toJSON(), 'properties.drawer.properties.tabs.properties');
-            console.log('---->', blocks, collection);
-            onChange({ ...value, blocks, collection });
+            const { tabs, footer } = get(schema.toJSON(), 'properties.drawer.properties');
+            const fields = [];
+            findFormFields(tabs, fields);
+
+            for(let i = collection.fields.length - 1; i >= 0; i--) {
+              if (!fields.find(field => field.name === collection.fields[i].name)) {
+                collection.fields.splice(i, 1);
+              }
+            }
+
+            const actionKeys = Object.values(footer.properties.actions.properties)
+              .reduce((actions: number[], { ['x-action']: status }) => actions.concat(status), []);
+            form.setValuesIn('config.actions', actionKeys);
+
+            onChange({
+              collection,
+              blocks: tabs.properties,
+              actions: footer.properties.actions.properties
+            });
           }}
         >
           <CollectionProvider collection={collection}>
-            <SchemaComponent schema={schema} />
+            <SchemaComponent
+              schema={schema}
+              components={{
+                ...nodeComponents,
+                // NOTE: fake provider component
+                PromptActionStatusProvider(props) {
+                  return props.children;
+                }
+              }}
+              scope={{
+                // NOTE: fake useAction for ui configuration
+                useSubmit() {
+                  return { run() {} }
+                }
+              }}
+            />
           </CollectionProvider>
         </SchemaComponentRefreshProvider>
       </SchemaInitializerProvider>
@@ -547,34 +526,19 @@ function FormConfig({ value, onChange }) {
   );
 }
 
-function FormActions({ value, onChange }) {
-  const ctx = useContext(SchemaComponentContext);
-  const { actions = {} } = value ?? {};
-  const schema = new Schema({
-    properties: {
-      actions: {
-        type: 'void',
-        'x-component': 'ActionBar',
-        'x-initializer': 'AddActionButton',
-        properties: actions
-      }
-    }
-  });
+function ValueGetter({ onChange }) {
+  const { options } = useOperandContext();
+  const { nodes } = useFlowContext();
+  const { config } = nodes.find(n => n.id == options.nodeId);
 
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: true }}>
-      <SchemaInitializerProvider initializers={{ AddActionButton }}>
-        <SchemaComponentRefreshProvider
-          onRefresh={() => {
-            const result = get(schema.toJSON(), 'properties.view.properties');
-            console.log(result);
-            // onChange({ ...value, actions });
-          }}
-        >
-          <SchemaComponent schema={schema} />
-        </SchemaComponentRefreshProvider>
-      </SchemaInitializerProvider>
-    </SchemaComponentContext.Provider>
+    <CollectionFieldSelect
+      fields={config.form.collection.fields}
+      value={options?.path}
+      onChange={(path) => {
+        onChange(`{{$jobsMapByNodeId.${options.nodeId}.${path}}}`);
+      }}
+    />
   );
 }
 
@@ -609,12 +573,26 @@ export default {
       'x-component': 'Radio.Group',
       enum: [
         {
-          label: `{{t("All", { ns: "${NAMESPACE}" })}}`,
-          value: 1
+          value: 1,
+          label: (
+            <Tooltip
+              title={lang('Everyone should pass')}
+              placement="bottom"
+            >
+              {lang('All pass')} <QuestionCircleOutlined style={{ color: '#999' }} />
+            </Tooltip>
+          )
         },
         {
-          label: `{{t("Any", { ns: "${NAMESPACE}" })}}`,
-          value: -1
+          value: -1,
+          label: (
+            <Tooltip
+              title={lang('Anyone pass')}
+              placement="bottom"
+            >
+              {lang('Any pass')} <QuestionCircleOutlined style={{ color: '#999' }} />
+            </Tooltip>
+          )
         },
       ],
       'x-reactions': {
@@ -626,62 +604,37 @@ export default {
         },
       }
     },
-    'config.form': {
+    'config.schema': {
       type: 'void',
-      title: '{{t("Prompt form")}}',
-      'x-decorator': 'FormItem',
+      title: `{{t("Operation user interface", { ns: "${NAMESPACE}" })}}`,
+      // 'x-decorator': 'FormItem',
       'x-component': 'Action',
       'x-component-props': {
         type: 'primary',
+        title: `{{t("Configure user interface", { ns: "${NAMESPACE}" })}}`,
       },
       properties: {
-        'config.form': {
+        schema: {
           type: 'object',
           'x-decorator': 'FormItem',
           'x-component': 'FormConfig',
         },
       }
-      // properties: {
-      //   drawer: {
-      //     type: 'void',
-      //     title: '{{t("Configure form")}}',
-      //     'x-component': 'Action.Drawer',
-      //     'x-component-props': {
-      //       className: 'nb-action-popup',
-      //     },
-      //     properties: {
-      //       'config.form': {
-      //         type: 'object',
-      //         // name: 'config.form',
-      //         'x-decorator': 'FormItem',
-      //         'x-component': 'FormConfig',
-      //       },
-      //       'config.actions': {
-      //         type: 'void',
-      //         'x-component': 'Action.Drawer.Footer',
-      //         properties: {
-      //           'config.actions': {
-      //             'x-decorator': 'FormItem',
-      //             'x-component': 'FormActions',
-      //           }
-      //         }
-      //       }
-      //     }
-      //   }
-      // }
     },
   },
   view: {
 
   },
   scope: {
-    useUserDataSource() {
-
-    }
   },
   components: {
     VariableComponent,
     FormConfig,
-    FormActions,
+  },
+  useValueGetter({ config }) {
+    if (!config.form?.collection?.fields?.length) {
+      return null;
+    }
+    return ValueGetter;
   }
 };

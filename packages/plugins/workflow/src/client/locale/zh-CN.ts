@@ -84,6 +84,7 @@ export default {
 
   'Resolve': '通过',
   'Reject': '拒绝',
+  'Save': '保存',
   'Operations': '操作',
 
   'This node contains branches, deleting will also be preformed to them, are you sure?': '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
@@ -126,7 +127,12 @@ export default {
 
   'Prompt': '填写',
   'Assignees': '负责人',
-  'Context': '上下文',
+  'Operation user interface': '操作界面',
+  'Configure user interface': '配置界面',
+  'All pass': '全部通过',
+  'Everyone should pass': '每个人通过才通过',
+  'Any pass': '任意通过',
+  'Anyone pass': '任何一人通过即通过',
 
   'Create record': '新增数据',
   'Update record': '更新数据',

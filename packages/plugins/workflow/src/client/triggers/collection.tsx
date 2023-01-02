@@ -2,22 +2,20 @@ import React from 'react';
 import { Select } from 'antd';
 import { onFieldValueChange } from '@formily/core';
 import { observer, useForm, useFormEffects } from '@formily/react';
-import { cloneDeep } from 'lodash';
 
 import {
-  InitializerWithSwitch,
   SchemaInitializer,
   SchemaInitializerItemOptions,
-  useCollection,
   useCollectionDataSource,
   useCollectionManager,
   useCompile,
-  gridRowColWrap
 } from '@nocobase/client';
 
 import { useFlowContext } from '../FlowContext';
 import { collection, filter } from '../schemas/collection';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
+import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
+import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
 import { useOperandContext } from '../calculators';
 
@@ -62,7 +60,20 @@ const collectionModeOptions = [
   { label: `{{t("After record deleted", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.DELETED },
 ];
 
+function ValueGetter({ onChange }) {
+  const { workflow } = useFlowContext();
+  const { options } = useOperandContext();
 
+  return (
+    <CollectionFieldSelect
+      collection={workflow.config.collection}
+      value={options?.path}
+      onChange={(path) => {
+        onChange(`{{$context.data.${path}}}`);
+      }}
+    />
+  );
+}
 
 export default {
   title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
@@ -151,20 +162,8 @@ export default {
     ];
     return options;
   },
-  getter(props) {
-    const { onChange } = props;
-    const { workflow } = useFlowContext();
-    const { options } = useOperandContext();
-
-    return (
-      <CollectionFieldSelect
-        collection={workflow.config.collection}
-        value={options?.path}
-        onChange={(path) => {
-          onChange(`{{$context.data.${path}}}`);
-        }}
-      />
-    );
+  useValueGetter(config) {
+    return ValueGetter;
   },
   useInitializers(config): SchemaInitializerItemOptions {
     if (!config.collection) {
@@ -174,82 +173,11 @@ export default {
     return {
       type: 'item',
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-      component: CollectionTriggerBlockInitializer,
+      component: CollectionBlockInitializer,
       collectionName: config.collection
     };
   },
   initializers: {
-    CollectionTriggerFieldInitializers
+    CollectionFieldInitializers
   }
 };
-
-function CollectionTriggerBlockInitializer({ insert, collectionName, ...props }) {
-  const { getCollection } = useCollectionManager();
-  const collection = getCollection(collectionName);
-  return (
-    <SchemaInitializer.Item
-      {...props}
-      onClick={() => {
-        insert({
-          type: 'void',
-          name: collectionName,
-          title: collection.title,
-          'x-decorator': 'CollectionProvider',
-          'x-decorator-props': {
-            name: collectionName
-          },
-          'x-component': 'CardItem',
-          'x-designer': 'DetailsDesigner',
-          properties: {
-            grid: {
-              type: 'void',
-              'x-decorator': 'Form',
-              'x-component': 'Grid',
-              'x-initializer': 'CollectionTriggerFieldInitializers',
-            }
-          }
-        });
-      }}
-    />
-  );
-}
-
-function CollectionTriggerFieldInitializers(props) {
-  const { fields } = useCollection();
-  const items = fields.map(field => ({
-    key: field.name,
-    type: 'item',
-    title: field.uiSchema?.title,
-    component: CollectionTriggerFieldInitializer,
-    field
-  }));
-
-  return (
-    <SchemaInitializer.Button
-      {...props}
-      items={items}
-      title="{{t('Configure fields')}}"
-      wrap={gridRowColWrap}
-    />
-  )
-}
-
-function CollectionTriggerFieldInitializer({ field, ...props }) {
-  const uiSchema = cloneDeep(field.uiSchema);
-  delete uiSchema['x-uid'];
-
-  return (
-    <InitializerWithSwitch
-      {...props}
-      schema={{
-        ...uiSchema,
-        title: uiSchema.title ?? field.name,
-        'x-decorator': 'FormItem',
-        'x-read-pretty': true,
-        'x-designer': 'FormItem.Designer',
-        'x-collection-field': field.name,
-      }}
-      type="x-collection-field"
-    />
-  );
-}

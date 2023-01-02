@@ -26,7 +26,7 @@ export default class Processor {
     [JOB_STATUS.CANCELED]: EXECUTION_STATUS.CANCELED,
   };
 
-  transaction: Transaction;
+  transaction?: Transaction;
 
   nodes: FlowNodeModel[] = [];
   nodesMap = new Map<number, FlowNodeModel>();
@@ -37,7 +37,7 @@ export default class Processor {
   }
 
   // make dual linked nodes list then cache
-  private makeNodes(nodes = []) {
+  private makeNodes(nodes: FlowNodeModel[] = []) {
     this.nodes = nodes;
 
     nodes.forEach((node) => {
@@ -46,11 +46,11 @@ export default class Processor {
 
     nodes.forEach((node) => {
       if (node.upstreamId) {
-        node.upstream = this.nodesMap.get(node.upstreamId);
+        node.upstream = this.nodesMap.get(node.upstreamId) as FlowNodeModel;
       }
 
       if (node.downstreamId) {
-        node.downstream = this.nodesMap.get(node.downstreamId);
+        node.downstream = this.nodesMap.get(node.downstreamId) as FlowNodeModel;
       }
     });
   }
@@ -244,7 +244,7 @@ export default class Processor {
   getBranches(node: FlowNodeModel): FlowNodeModel[] {
     return this.nodes
       .filter(item => item.upstream === node && item.branchIndex !== null)
-      .sort((a, b) => a.branchIndex - b.branchIndex);
+      .sort((a, b) => Number(a.branchIndex) - Number(b.branchIndex));
   }
 
   // find the first node in current branch
@@ -274,7 +274,7 @@ export default class Processor {
   }
 
   findBranchParentJob(job: JobModel, node: FlowNodeModel): JobModel | null {
-    for (let j = job; j; j = this.jobsMap.get(j.upstreamId)) {
+    for (let j: JobModel | undefined = job; j; j = this.jobsMap.get(j.upstreamId)) {
       if (j.nodeId === node.id) {
         return j;
       }

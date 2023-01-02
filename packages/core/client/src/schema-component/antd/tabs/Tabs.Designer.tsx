@@ -12,6 +12,7 @@ export const TabsDesigner = () => {
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
+        key="edit"
         title={t('Edit')}
         schema={
           {

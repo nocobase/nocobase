@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import parse from 'json-templates';
 
 import { Registry } from '@nocobase/utils/client';
-import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
+import { SchemaComponent, SchemaInitializerItemOptions, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
 
 import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { AddButton } from '../AddButton';
@@ -40,10 +40,11 @@ export interface Instruction {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactElement;
+  render?(props): React.ReactNode;
   endding?: boolean;
-  useFields?(): any[];
-  getter?(node: any): React.ReactElement;
+  useValueGetter?(node: any): (props) => React.ReactNode;
+  useInitializers?(node): SchemaInitializerItemOptions;
+  initializers?: { [key: string]: any };
 };
 
 export const instructions = new Registry<Instruction>();
@@ -98,9 +99,9 @@ export function useNodeContext() {
 export function useAvailableUpstreams(node = useNodeContext()) {
   const stack: any[] = [];
   for (let current = node.upstream; current; current = current.upstream) {
-    const { getter } = instructions.get(current.type);
-    // Note: consider `getter` as the key of a value available node
-    if (getter) {
+    const { useValueGetter } = instructions.get(current.type);
+    // Note: consider `useValueGetter()` as the key of a value available node
+    if (useValueGetter?.(current)) {
       stack.push(current);
     }
   }
