@@ -149,7 +149,7 @@ const LocalPlugins = () => {
   return (
     <>
       {data?.data?.map((item) => {
-        return <PluginCard data={item} />;
+        return <PluginCard key={item.id} data={item} />;
       })}
     </>
   );

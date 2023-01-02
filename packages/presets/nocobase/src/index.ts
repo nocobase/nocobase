@@ -69,7 +69,7 @@ export class PresetNocoBase extends Plugin {
         await this.addBuiltInPlugins();
       }
       const builtInPlugins = this.getBuiltInPlugins();
-      const plugins = await this.db.getRepository('applicationPlugins').find();
+      const plugins = await this.app.db.getRepository('applicationPlugins').find();
       const pluginNames = plugins.map((p) => p.name);
       await this.app.pm.add(
         builtInPlugins.filter((plugin) => !pluginNames.includes(plugin)),
