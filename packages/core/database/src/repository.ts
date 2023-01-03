@@ -87,10 +87,11 @@ export type AssociationKeysToBeUpdate = string[];
 
 export type Values = any;
 
-export interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'>, Transactionable {
-  filter?: Filter;
-  context?: any;
-}
+export type CountOptions = Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'> &
+  Transactionable & {
+    filter?: Filter;
+    context?: any;
+  } & FilterByTk;
 
 export interface FilterByTk {
   filterByTk?: TargetKey;
@@ -222,6 +223,17 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       options = {
         ...options,
         ...this.parseFilter(countOptions.filter, countOptions),
+      };
+    }
+
+    if (countOptions?.filterByTk) {
+      options['where'] = {
+        [Op.and]: [
+          options['where'] || {},
+          {
+            [this.collection.filterTargetKey]: options.filterByTk,
+          },
+        ],
       };
     }
 
@@ -608,7 +620,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return new RelationRepositoryBuilder<R>(this.collection, association);
   }
 
-  protected buildQueryOptions(options: any) {
+  public buildQueryOptions(options: any) {
     const parser = new OptionsParser(options, {
       collection: this.collection,
     });
