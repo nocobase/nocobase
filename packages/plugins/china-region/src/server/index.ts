@@ -12,7 +12,7 @@ export class PluginChinaRegion extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
-    this.app.acl.skip('chinaRegions', 'list', 'loggedIn');
+    this.app.acl.allow('chinaRegions', 'list', 'loggedIn');
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action.params;

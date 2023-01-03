@@ -18,10 +18,10 @@ export class ClientPlugin extends Plugin {
   }
 
   async load() {
-    this.app.acl.skip('app', 'getLang');
-    this.app.acl.skip('app', 'getInfo');
-    this.app.acl.skip('app', 'getPlugins');
-    this.app.acl.skip('plugins', 'getPinned', 'loggedIn');
+    this.app.acl.allow('app', 'getLang');
+    this.app.acl.allow('app', 'getInfo');
+    this.app.acl.allow('app', 'getPlugins');
+    this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
     const dialect = this.app.db.sequelize.getDialect();
     this.app.resource({
       name: 'app',

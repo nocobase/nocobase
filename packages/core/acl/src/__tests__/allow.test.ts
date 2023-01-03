@@ -26,7 +26,7 @@ describe('skip', () => {
     await middlewareFunc(ctx, nextFunc);
     expect(nextFunc).toHaveBeenCalledTimes(0);
 
-    acl.skip('users', 'login');
+    acl.allow('users', 'login');
 
     await middlewareFunc(ctx, nextFunc);
     expect(nextFunc).toHaveBeenCalledTimes(1);
@@ -53,7 +53,7 @@ describe('skip', () => {
 
     let skip = false;
 
-    acl.skip('users', 'login', (ctx) => {
+    acl.allow('users', 'login', (ctx) => {
       return skip;
     });
 
@@ -91,7 +91,7 @@ describe('skip', () => {
 
     const nextFunc = jest.fn();
 
-    acl.skip('users', 'login', 'superUser');
+    acl.allow('users', 'login', 'superUser');
 
     await middlewareFunc(ctx, nextFunc);
     expect(nextFunc).toHaveBeenCalledTimes(1);

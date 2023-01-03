@@ -416,20 +416,20 @@ export class PluginACL extends Plugin {
 
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'parseToken' });
 
-    this.app.acl.skip('users', 'setDefaultRole', 'loggedIn');
-    this.app.acl.skip('roles', 'check', 'loggedIn');
+    this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
+    this.app.acl.allow('roles', 'check', 'loggedIn');
 
     const importReader = new ImporterReader(resolve(__dirname, 'collections'));
     const modules = await importReader.read();
     for (const collectionDefinition of modules) {
       if (collectionDefinition.name) {
-        this.app.acl.skip(collectionDefinition.name, ['create', 'update', 'destroy'], 'allowConfigure');
+        this.app.acl.allow(collectionDefinition.name, ['create', 'update', 'destroy'], 'allowConfigure');
       }
     }
 
-    this.app.acl.skip('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
+    this.app.acl.allow('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
 
-    this.app.acl.skip('*', '*', (ctx) => {
+    this.app.acl.allow('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';
     });
 

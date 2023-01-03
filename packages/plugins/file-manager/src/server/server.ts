@@ -41,8 +41,8 @@ export default class PluginFileManager extends Plugin {
       await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
     }
 
-    this.app.acl.skip('attachments', 'upload', 'loggedIn');
-    this.app.acl.skip('storages', ['list', 'create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.allow('attachments', 'upload', 'loggedIn');
+    this.app.acl.allow('storages', ['list', 'create', 'update', 'destroy'], 'allowConfigure');
 
     const defaultStorageName = getStorageConfig(this.storageType()).defaults().name;
 

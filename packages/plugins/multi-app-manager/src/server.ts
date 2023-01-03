@@ -46,6 +46,6 @@ export class PluginMultiAppManager extends Plugin {
       },
     );
 
-    this.app.acl.skip('applications', '*', 'allowConfigure');
+    this.app.acl.allow('applications', '*', 'allowConfigure');
   }
 }

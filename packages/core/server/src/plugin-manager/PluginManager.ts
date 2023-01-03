@@ -48,8 +48,8 @@ export class PluginManager {
       actions: ['pm:*', 'applicationPlugins:list'],
     });
 
-    this.app.acl.skip('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
-    this.app.acl.skip('applicationPlugins', '*', 'allowConfigure');
+    this.app.acl.allow('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
+    this.app.acl.allow('applicationPlugins', '*', 'allowConfigure');
 
     this.server = net.createServer((socket) => {
       socket.on('data', async (data) => {

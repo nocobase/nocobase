@@ -111,8 +111,8 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
     const loggedInActions = ['signout', 'updateProfile', 'changePassword'];
 
-    publicActions.forEach((action) => this.app.acl.skip('users', action));
-    loggedInActions.forEach((action) => this.app.acl.skip('users', action, 'loggedIn'));
+    publicActions.forEach((action) => this.app.acl.allow('users', action));
+    loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
 
     this.app.on('beforeStart', () => this.initVerification());
   }

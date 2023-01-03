@@ -84,9 +84,9 @@ export class UiSchemaStoragePlugin extends Plugin {
       actions: uiSchemaActions,
     });
 
-    this.app.acl.skip('uiSchemas', ['getProperties', 'getJsonSchema'], 'loggedIn');
+    this.app.acl.allow('uiSchemas', ['getProperties', 'getJsonSchema'], 'loggedIn');
 
-    this.app.acl.skip(
+    this.app.acl.allow(
       'uiSchemas',
       [
         'insert',
@@ -104,8 +104,8 @@ export class UiSchemaStoragePlugin extends Plugin {
       'allowConfigure',
     );
 
-    this.app.acl.skip('uiSchemaTemplates', ['get', 'list'], 'loggedIn');
-    this.app.acl.skip('uiSchemaTemplates', ['create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.allow('uiSchemaTemplates', ['get', 'list'], 'loggedIn');
+    this.app.acl.allow('uiSchemaTemplates', ['create', 'update', 'destroy'], 'allowConfigure');
   }
 
   async load() {

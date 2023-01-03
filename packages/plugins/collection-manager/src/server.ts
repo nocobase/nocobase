@@ -8,12 +8,12 @@ import { Plugin } from '@nocobase/server';
 
 import { CollectionRepository } from '.';
 import {
-  afterCreateForForeignKeyField,
-  afterCreateForReverseField,
-  beforeCreateForChildrenCollection,
-  beforeCreateForReverseField,
-  beforeDestroyForeignKey,
-  beforeInitOptions
+    afterCreateForForeignKeyField,
+    afterCreateForReverseField,
+    beforeCreateForChildrenCollection,
+    beforeCreateForReverseField,
+    beforeDestroyForeignKey,
+    beforeInitOptions
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
@@ -217,10 +217,10 @@ export class CollectionManagerPlugin extends Plugin {
       await next();
     });
 
-    this.app.acl.skip('collections', 'list', 'loggedIn');
-    this.app.acl.skip('collections', ['create', 'update', 'destroy'], 'allowConfigure');
-    this.app.acl.skip('collections.fields', ['create', 'update', 'destroy'], 'allowConfigure');
-    this.app.acl.skip('fields', ['create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.allow('collections', 'list', 'loggedIn');
+    this.app.acl.allow('collections', ['create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.allow('collections.fields', ['create', 'update', 'destroy'], 'allowConfigure');
+    this.app.acl.allow('fields', ['create', 'update', 'destroy'], 'allowConfigure');
   }
 
   async load() {

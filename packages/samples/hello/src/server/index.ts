@@ -17,7 +17,7 @@ export class HelloPlugin extends Plugin {
         },
       },
     });
-    this.app.acl.skip('testHello', 'getInfo');
+    this.app.acl.allow('testHello', 'getInfo');
   }
 
   async disable() {

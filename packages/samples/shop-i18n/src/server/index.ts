@@ -52,9 +52,9 @@ export class ShopPlugin extends Plugin {
       },
     });
 
-    this.app.acl.skip('products', '*');
-    this.app.acl.skip('categories', '*');
-    this.app.acl.skip('orders', '*');
+    this.app.acl.allow('products', '*');
+    this.app.acl.allow('categories', '*');
+    this.app.acl.allow('orders', '*');
   }
 
   async install(options: InstallOptions) {
