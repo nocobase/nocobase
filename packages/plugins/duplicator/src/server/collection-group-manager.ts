@@ -234,7 +234,7 @@ CollectionGroupManager.registerCollectionGroup({
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'iframeHtml',
+  pluginName: 'iframe-block',
   function: 'iframe html storage',
   collections: ['iframeHtml'],
   dumpable: 'optional',

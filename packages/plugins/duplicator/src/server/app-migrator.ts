@@ -91,7 +91,7 @@ export abstract class AppMigrator {
       name: 'userCollections',
       message: `选择需要${this.direction}的Collection数据`,
       loop: false,
-      pageSize: 20,
+      pageSize: 30,
       choices: collections.map((collection) => {
         return {
           name: collection.title,
