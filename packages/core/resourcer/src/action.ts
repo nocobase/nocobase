@@ -246,6 +246,14 @@ export class Action {
   }
 
   mergeParams(params: ActionParams, strategies: MergeStrategies = {}) {
+    if (!this.params) {
+      this.params = {};
+    }
+
+    if (!params) {
+      return;
+    }
+
     assign(this.params, params, {
       filter: 'andMerge',
       fields: 'intersect',
@@ -291,16 +299,18 @@ export class Action {
     if (typeof handler !== 'function') {
       throw new Error('Handler must be a function!');
     }
+
     return handler;
   }
 
   getHandlers() {
-    const handers = [
+    const handlers = [
       ...this.resource.resourcer.getMiddlewares(),
       ...this.getMiddlewareHandlers(),
       this.getHandler(),
     ].filter(Boolean);
-    return handers;
+
+    return handlers;
   }
 
   async execute(context: any, next?: any) {
