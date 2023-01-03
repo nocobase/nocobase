@@ -1,7 +1,6 @@
-import { requireModule } from '@nocobase/utils';
+import { assign, MergeStrategies, requireModule } from '@nocobase/utils';
 import compose from 'koa-compose';
 import _ from 'lodash';
-import { assign, MergeStrategies } from './assign';
 import Middleware, { MiddlewareType } from './middleware';
 import Resource from './resource';
 import { HandlerType } from './resourcer';
