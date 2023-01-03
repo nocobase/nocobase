@@ -80,34 +80,33 @@ export abstract class AppMigrator {
     };
   }
 
-  async buildInquirerCollectionQuestion(collections) {
+  buildInquirerCollectionQuestion(
+    collections: {
+      name: string;
+      title: string;
+    }[],
+  ) {
     return {
       type: 'checkbox',
       name: 'userCollections',
       message: `选择需要${this.direction}的Collection数据`,
       loop: false,
       pageSize: 20,
-      choices: await Promise.all(
-        collections.map(async (collection) => {
-          const collectionInstance = await this.app.db.getRepository('collections').findOne({
-            filterByTk: collection,
-          });
-
-          return {
-            name: collectionInstance.get('title'),
-            value: collection,
-            checked: this.direction === 'dump',
-          };
-        }),
-      ),
+      choices: collections.map((collection) => {
+        return {
+          name: collection.title,
+          value: collection.name,
+          checked: this.direction === 'dump',
+        };
+      }),
     };
   }
 
-  async buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections) {
+  buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections) {
     const questions = [this.buildInquirerPluginQuestion(requiredGroups, optionalGroups)];
 
     if (optionalCollections.length > 0) {
-      questions.push(await this.buildInquirerCollectionQuestion(optionalCollections));
+      questions.push(this.buildInquirerCollectionQuestion(optionalCollections));
     }
 
     return questions;

@@ -33,7 +33,22 @@ export class Dumper extends AppMigrator {
 
     const optionalCollections = [...customCollections.filter((collection) => !pluginsCollections.includes(collection))];
 
-    const questions = await this.buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections);
+    const questions = this.buildInquirerQuestions(
+      requiredGroups,
+      optionalGroups,
+      await Promise.all(
+        optionalCollections.map(async (name) => {
+          const collectionInstance = await this.app.db.getRepository('collections').findOne({
+            filterByTk: name,
+          });
+
+          return {
+            name,
+            title: collectionInstance.get('title'),
+          };
+        }),
+      ),
+    );
 
     const results = await inquirer.prompt(questions);
 

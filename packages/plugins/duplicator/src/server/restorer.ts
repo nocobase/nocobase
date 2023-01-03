@@ -49,6 +49,21 @@ export class Restorer extends AppMigrator {
       .filter((name) => collections.includes(name));
   }
 
+  async getImportCollectionTitle(collectionName) {
+    const meta = await this.getImportCollectionMeta('collections');
+    const data = await this.getImportCollectionData('collections');
+
+    const index = meta.columns.indexOf('name');
+    const row = data.find((row) => JSON.parse(row)[index] === collectionName);
+    if (!row) {
+      throw new Error(`Collection ${collectionName} not found`);
+    }
+
+    const titleIndex = meta.columns.indexOf('title');
+
+    return JSON.parse(row)[titleIndex];
+  }
+
   async getImportCollections() {
     const collectionsDir = path.resolve(this.workDir, 'collections');
     const collections = await fsPromises.readdir(collectionsDir);
@@ -91,7 +106,15 @@ export class Restorer extends AppMigrator {
       (collection) => !pluginsCollections.includes(collection) && !coreCollections.includes(collection),
     );
 
-    const questions = await this.buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections);
+    const questions = this.buildInquirerQuestions(
+      requiredGroups,
+      optionalGroups,
+      await Promise.all(
+        optionalCollections.map(async (name) => {
+          return { name, title: await this.getImportCollectionTitle(name) };
+        }),
+      ),
+    );
 
     const results = await inquirer.prompt(questions);
 
