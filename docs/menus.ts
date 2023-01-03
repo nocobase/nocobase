@@ -3,6 +3,7 @@ export default {
     {
       title: 'Welcome',
       'title.zh-CN': '欢迎',
+      'title.tr-TR': 'Hoşgeldiniz',
       type: 'group',
       children: [
         '/welcome/introduction/index',
@@ -14,11 +15,13 @@ export default {
     {
       title: 'Getting started',
       'title.zh-CN': '快速开始',
+      'title.tr-TR': 'Başlangıç',
       type: 'group',
       children: [
         {
           title: 'Installation',
           'title.zh-CN': '安装',
+          'title.TR-TR': 'Kurulum',
           type: 'subMenu',
           children: [
             '/welcome/getting-started/installation/index',
@@ -30,6 +33,7 @@ export default {
         {
           title: 'Upgrading',
           'title.zh-CN': '升级',
+          'title.TR-TR': 'Güncelleme',
           type: 'subMenu',
           children: [
             '/welcome/getting-started/upgrading/index',
@@ -43,21 +47,20 @@ export default {
     {
       title: 'Release',
       'title.zh-CN': '版本发布',
+      'title.TR-TR': 'Sürüm',
       type: 'group',
-      children: [
-        '/welcome/release/index',
-        '/welcome/release/v08-changelog',
-      ],
+      children: ['/welcome/release/index', '/welcome/release/v08-changelog'],
     },
     {
       title: 'Community',
       'title.zh-CN': '社区',
+      'title.TR-TR': 'Topluluk',
       type: 'group',
       children: [
         '/welcome/community/contributing',
         // '/welcome/community/faq',
         '/welcome/community/translations',
-        
+
         '/welcome/community/thanks',
       ],
     },
@@ -66,6 +69,7 @@ export default {
     {
       title: 'Quick Start',
       'title.zh-CN': '快速上手',
+      'title.TR-TR': 'Hızlı Başlangıç',
       type: 'group',
       children: [
         '/manual/quick-start/the-first-app',
@@ -77,6 +81,7 @@ export default {
     {
       title: 'Core Concepts',
       'title.zh-CN': '核心概念',
+      'title.TR-TR': 'Temel Kavramlar',
       type: 'group',
       children: [
         '/manual/core-concepts/a-b-c',
@@ -90,16 +95,16 @@ export default {
     {
       title: 'Blocks Guide',
       'title.zh-CN': '区块指南',
+      'title.TR-TR': 'Blok Rehberi',
       type: 'group',
-      children: [
-        '/manual/blocks-guide/charts',
-      ],
+      children: ['/manual/blocks-guide/charts'],
     },
   ],
   '/development': [
     {
       title: 'Getting started',
       'title.zh-CN': '快速开始',
+      'title.TR-TR': 'Başlarken',
       type: 'group',
       children: [
         '/development/index',
@@ -113,12 +118,14 @@ export default {
     {
       title: 'Server',
       'title.zh-CN': '服务端',
+      'title.TR-TR': 'Sunucu',
       type: 'group',
       children: [
         '/development/server/index',
         {
           title: 'Collections & Fields',
           'title.zh-CN': '数据表和字段',
+          'title.TR-TR': 'Koleksiyonlar & Alanlar',
           type: 'subMenu',
           children: [
             '/development/server/collections/index',
@@ -142,11 +149,14 @@ export default {
     {
       title: 'Client',
       'title.zh-CN': '客户端',
+      'title.TR-TR': 'Ziyaretçi(Client)',
       type: 'group',
       children: [
         '/development/client/index',
         {
           title: 'UI 设计器',
+          'title.zh-CN': 'UI 设计器',
+          'title.TR-TR': 'Kullanıcı Arayüz Tasarımcısı',
           type: 'subMenu',
           children: [
             // '/development/client/ui-schema-designer/index',
@@ -174,17 +184,14 @@ export default {
     {
       title: 'HTTP API',
       type: 'subMenu',
-      children: [
-        '/api/http/index', 
-        '/api/http/rest-api', 
-      ],
+      children: ['/api/http/index', '/api/http/rest-api'],
     },
     {
       title: '@nocobase/server',
       type: 'subMenu',
       children: [
-        '/api/server/application', 
-        // '/api/server/plugin-manager', 
+        '/api/server/application',
+        // '/api/server/plugin-manager',
         '/api/server/plugin',
       ],
     },
@@ -236,6 +243,8 @@ export default {
         {
           title: 'SchemaDesigner',
           'title.zh-CN': 'SchemaDesigner',
+          'title.TR-TR': 'Şema Tasarımcısı',
+          
           type: 'subMenu',
           children: [
             '/api/client/schema-designer/schema-component',
@@ -246,6 +255,7 @@ export default {
         {
           title: 'Extensions',
           'title.zh-CN': 'Extensions',
+          'title.TR-TR': 'Eklentiler',
           type: 'subMenu',
           children: [
             // '/api/client/extensions/schema-component',

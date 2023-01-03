@@ -29,9 +29,11 @@ async function findUserByToken(ctx: Context) {
         id: userId,
       },
     });
+    ctx.logger.info(`Current user id: ${userId}`);
     return user;
   } catch (error) {
     console.log(error);
+    ctx.logger.error(error);
     return null;
   }
 }

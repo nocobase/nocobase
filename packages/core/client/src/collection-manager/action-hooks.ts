@@ -1,13 +1,12 @@
-import { message } from 'antd';
-import omit from 'lodash/omit';
-import { useEffect } from 'react';
 import { useForm } from '@formily/react';
+import { message } from 'antd';
+import { useEffect } from 'react';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
 import { useActionContext } from '../schema-component';
+import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
-import { useFilterFieldProps, useFilterFieldOptions } from '../schema-component/antd/filter/useFilterActionProps';
 
 export const useCancelAction = () => {
   const form = useForm();
@@ -18,6 +17,21 @@ export const useCancelAction = () => {
       form.reset();
     },
   };
+};
+
+export const useValuesFromRecord = (options) => {
+  const record = useRecord();
+  const result = useRequest(() => Promise.resolve({ data: record }), {
+    ...options,
+    manual: true,
+  });
+  const ctx = useActionContext();
+  useEffect(() => {
+    if (ctx.visible) {
+      result.run();
+    }
+  }, [ctx.visible]);
+  return result;
 };
 
 export const useResetFilterAction = () => {
@@ -257,40 +271,6 @@ export const useBulkDestroyAction = () => {
       refresh();
     },
   };
-};
-
-export const useUpdateCollectionActionAndRefreshCM = (options) => {
-  const { refreshCM } = useCollectionManager();
-  const form = useForm();
-  const ctx = useActionContext();
-  const { refresh } = useResourceActionContext();
-  const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
-  return {
-    async run() {
-      await form.submit();
-      await resource.update({ filterByTk, values: omit(form.values, ['fields']) });
-      ctx.setVisible(false);
-      await form.reset();
-      refresh();
-      await refreshCM();
-    },
-  };
-};
-
-export const useValuesFromRecord = (options) => {
-  const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: record }), {
-    ...options,
-    manual: true,
-  });
-  const ctx = useActionContext();
-  useEffect(() => {
-    if (ctx.visible) {
-      result.run();
-    }
-  }, [ctx.visible]);
-  return result;
 };
 
 export const useValuesFromRA = (options) => {

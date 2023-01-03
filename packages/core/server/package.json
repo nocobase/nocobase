@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/server",
-  "version": "0.8.0-alpha.8",
+  "version": "0.8.0-alpha.13",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
@@ -14,10 +14,11 @@
     "@hapi/topo": "^6.0.0",
     "@koa/cors": "^3.1.0",
     "@koa/router": "^9.4.0",
-    "@nocobase/acl": "0.8.0-alpha.8",
-    "@nocobase/actions": "0.8.0-alpha.8",
-    "@nocobase/database": "0.8.0-alpha.8",
-    "@nocobase/resourcer": "0.8.0-alpha.8",
+    "@nocobase/acl": "0.8.0-alpha.13",
+    "@nocobase/actions": "0.8.0-alpha.13",
+    "@nocobase/database": "0.8.0-alpha.13",
+    "@nocobase/resourcer": "0.8.0-alpha.13",
+    "@nocobase/logger": "0.8.0-alpha.13",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
     "find-package-json": "^1.2.0",
@@ -32,5 +33,5 @@
   "devDependencies": {
     "@types/semver": "^7.3.9"
   },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

@@ -8,9 +8,9 @@ import {
   Utils,
 } from 'sequelize';
 import { Collection } from '../collection';
+import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
-import { Reference } from '../features/ReferencesMap';
 
 export interface HasManyFieldOptions extends HasManyOptions {
   /**
@@ -74,6 +74,10 @@ export interface HasManyFieldOptions extends HasManyOptions {
 }
 
 export class HasManyField extends RelationField {
+  get dataType(): any {
+    return 'HasMany';
+  }
+
   get foreignKey() {
     if (this.options.foreignKey) {
       return this.options.foreignKey;
@@ -155,15 +159,18 @@ export class HasManyField extends RelationField {
     database.removePendingField(this);
     // 如果关系表内没有显式的创建外键字段，删除关系时，外键也删除掉
     const tcoll = database.getCollection(this.target);
-    const foreignKey = this.options.foreignKey;
-    const field = tcoll.findField((field) => {
-      if (field.name === foreignKey) {
-        return true;
+
+    if (tcoll) {
+      const foreignKey = this.options.foreignKey;
+      const field = tcoll.findField((field) => {
+        if (field.name === foreignKey) {
+          return true;
+        }
+        return field.type === 'belongsTo' && field.foreignKey === foreignKey;
+      });
+      if (!field) {
+        tcoll.model.removeAttribute(foreignKey);
       }
-      return field.type === 'belongsTo' && field.foreignKey === foreignKey;
-    });
-    if (!field) {
-      tcoll.model.removeAttribute(foreignKey);
     }
 
     const association = collection.model.associations[this.name];
@@ -172,6 +179,7 @@ export class HasManyField extends RelationField {
       this.database.referenceMap.removeReference(this.reference(association));
     }
 
+    this.clearAccessors();
     // 删掉 model 的关联字段
     delete collection.model.associations[this.name];
     // @ts-ignore

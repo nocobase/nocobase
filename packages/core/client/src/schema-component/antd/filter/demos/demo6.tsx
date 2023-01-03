@@ -2,13 +2,13 @@ import {
   AntdSchemaComponentProvider,
   CollectionManagerProvider,
   CollectionProvider,
-  Filter,
+  SharedFilter,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
   useCollection,
   useCollectionManager,
-  useFilterOptions
+  useFilterOptions,
 } from '@nocobase/client';
 import { Select } from 'antd';
 import React, { useState } from 'react';

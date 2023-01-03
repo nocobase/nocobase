@@ -18,18 +18,19 @@ import {
   RemoteRouteSwitchProvider,
   RouteSchemaComponent,
   RouteSwitch,
-  useRoutes
+  useRoutes,
 } from '../route-switch';
 import {
   AntdSchemaComponentProvider,
   DesignableSwitch,
   MenuItemInitializers,
-  SchemaComponentProvider
+  SchemaComponentProvider,
 } from '../schema-component';
 import { SchemaInitializerProvider } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage, SchemaTemplateShortcut } from '../schema-templates';
 import { SystemSettingsProvider, SystemSettingsShortcut } from '../system-settings';
 import { SigninPage, SignupPage } from '../user';
+import { SigninPageExtensionProvider } from '../user/SigninPageExtension';
 import { compose } from './compose';
 
 export interface ApplicationOptions {
@@ -112,6 +113,7 @@ export class Application {
     });
     this.use(BlockSchemaComponentProvider);
     this.use(AntdSchemaComponentProvider);
+    this.use(SigninPageExtensionProvider);
     this.use(ACLProvider);
     this.use(RemoteDocumentTitleProvider);
     this.use(PMProvider);

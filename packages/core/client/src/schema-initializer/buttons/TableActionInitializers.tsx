@@ -1,3 +1,5 @@
+import { ISchema, Schema } from '@formily/react';
+
 // 表格操作配置
 export const TableActionInitializers = {
   title: "{{t('Configure actions')}}",
@@ -37,9 +39,6 @@ export const TableActionInitializers = {
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
           },
         },
         {
@@ -48,13 +47,26 @@ export const TableActionInitializers = {
           component: 'RefreshActionInitializer',
           schema: {
             'x-align': 'right',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
           },
         },
       ],
+    },
+    {
+      type: 'divider',
+    },
+    {
+      type: 'item',
+      title: "{{t('Association fields filter')}}",
+      component: 'ActionBarAssociationFilterAction',
+      schema: {
+        'x-align': 'left',
+      },
+      find: (schema: Schema) => {
+        const resultSchema = Object.entries(schema.parent.properties).find(
+          ([, value]) => value['x-component'] === 'AssociationFilter',
+        )?.[1];
+        return resultSchema;
+      },
     },
     {
       type: 'divider',
@@ -72,6 +84,7 @@ export const TableActionInitializers = {
             title: '{{ t("Bulk update") }}',
             'x-component': 'Action',
             'x-align': 'right',
+            'x-acl-action': 'update',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action-props': {
               skipScopeCheck: true,
@@ -88,6 +101,7 @@ export const TableActionInitializers = {
               },
             },
             'x-component-props': {
+              icon: 'EditOutlined',
               useProps: '{{ useCustomizeBulkUpdateActionProps }}',
             },
           },
@@ -99,6 +113,7 @@ export const TableActionInitializers = {
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
+            'x-acl-action': 'update',
             'x-acl-action-props': {
               skipScopeCheck: true,
             },

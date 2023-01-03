@@ -3,6 +3,7 @@ import serve from 'koa-static';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
+import { Transactionable } from 'sequelize/types';
 import { URL } from 'url';
 import { STORAGE_TYPE_LOCAL } from '../constants';
 import { getFilename } from '../utils';
@@ -21,13 +22,14 @@ function match(basePath: string, pathname: string): boolean {
   return newPath[0] === '/';
 }
 
-async function update(app: Application, storages) {
+async function refresh(app: Application, storages, options?: Transactionable) {
   const Storage = app.db.getCollection('storages');
 
   const items = await Storage.repository.find({
     filter: {
       type: STORAGE_TYPE_LOCAL,
     },
+    transaction: options?.transaction
   });
 
   const primaryKey = Storage.model.primaryKeyAttribute;
@@ -39,9 +41,9 @@ async function update(app: Application, storages) {
 }
 
 function createLocalServerUpdateHook(app, storages) {
-  return async function (row) {
+  return async function (row, options) {
     if (row.get('type') === STORAGE_TYPE_LOCAL) {
-      await update(app, storages);
+      await refresh(app, storages, options);
     }
   };
 }
@@ -52,24 +54,26 @@ function getDocumentRoot(storage): string {
   return path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot));
 }
 
-async function middleware(app: Application, options?) {
-  const LOCALHOST = `http://localhost:${process.env.APP_PORT || '13000'}`;
-
+async function middleware(app: Application) {
   const Storage = app.db.getCollection('storages');
   const storages = new Map<string, any>();
 
   const localServerUpdateHook = createLocalServerUpdateHook(app, storages);
-  Storage.model.addHook('afterCreate', localServerUpdateHook);
-  Storage.model.addHook('afterUpdate', localServerUpdateHook);
+  Storage.model.addHook('afterSave', localServerUpdateHook);
   Storage.model.addHook('afterDestroy', localServerUpdateHook);
 
   app.on('beforeStart', async () => {
-    await update(app, storages);
+    await refresh(app, storages);
   });
 
   app.use(async function (ctx, next) {
     for (const storage of storages.values()) {
-      const baseUrl = storage.get('baseUrl');
+      const baseUrl = storage.get('baseUrl').trim();
+      if (!baseUrl) {
+        console.error('"baseUrl" is not configured');
+        // return ctx.throw(500);
+        continue;
+      }
 
       let url;
       try {
@@ -92,13 +96,15 @@ async function middleware(app: Application, options?) {
         continue;
       }
 
-      return serve(getDocumentRoot(storage), {
-        // for handle files after any api handlers
-        defer: true,
-      })(ctx, async () => {
-        if (ctx.path.startsWith(basePath)) {
-          ctx.path = ctx.path.replace(basePath, '');
+      ctx.path = ctx.path.replace(basePath, '');
+
+      const documentRoot = getDocumentRoot(storage);
+
+      return serve(documentRoot)(ctx, async () => {
+        if (ctx.status == 404) {
+          return;
         }
+
         await next();
       });
     }

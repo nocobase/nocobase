@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-verification",
-  "version": "0.8.0-alpha.8",
+  "version": "0.8.0-alpha.13",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -13,13 +13,13 @@
     "@alicloud/dysmsapi20170525": "2.0.17",
     "@alicloud/openapi-client": "0.4.1",
     "@alicloud/tea-util": "1.4.4",
-    "@nocobase/actions": "0.8.0-alpha.8",
-    "@nocobase/resourcer": "0.8.0-alpha.8",
-    "@nocobase/server": "0.8.0-alpha.8",
-    "@nocobase/utils": "0.8.0-alpha.8"
+    "@nocobase/actions": "0.8.0-alpha.13",
+    "@nocobase/resourcer": "0.8.0-alpha.13",
+    "@nocobase/server": "0.8.0-alpha.13",
+    "@nocobase/utils": "0.8.0-alpha.13"
   },
   "devDependencies": {
-    "@nocobase/test": "0.8.0-alpha.8"
+    "@nocobase/test": "0.8.0-alpha.13"
   },
-  "gitHead": "7e9556e489007577fc0ed89063b3a9ce2f9aae53"
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

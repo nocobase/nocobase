@@ -1,3 +1,4 @@
+import { useField } from '@formily/react';
 import React, { forwardRef, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import Column from './Column';
@@ -16,7 +17,9 @@ import {
 import { partialRight, when } from './utils';
 import withDroppable from './withDroppable';
 
-const Columns = forwardRef((props, ref: any) => <div ref={ref} style={{ whiteSpace: 'nowrap' }} {...props} />);
+const Columns = forwardRef((props, ref: any) => (
+  <div ref={ref} style={{ whiteSpace: 'nowrap', height: '100%', overflowY: 'hidden' }} {...props} />
+));
 
 const DroppableBoard = withDroppable(Columns);
 
@@ -241,6 +244,7 @@ function BoardContainer(props) {
     onCardNew,
     allowAddCard,
   } = props;
+
   function handleOnDragEnd(event) {
     const coordinates = getCoordinates(event, board);
     if (!coordinates.source) return;

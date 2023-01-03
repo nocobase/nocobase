@@ -1,12 +1,39 @@
 # Collection
 
-数据表结构管理类。
+## 概览
 
-大部分接口通常不会直接由开发者调用，除非进行较底层的扩展开发。
+`Collection` 用于定义系统中的数据模型，如模型名称、字段、索引、关联等信息。
+一般通过 `Database` 实例的 `collection` 方法作为代理入口调用。
+
+```javascript
+const { Database } = require('@nocobase/database')
+
+// 创建数据库实例
+const db = new Database({...}); 
+
+// 定义数据模型
+db.collection({
+  name: 'users',
+  // 定义模型字段
+  fields: [
+    // 标量字段  
+    {
+      name: 'name',
+      type: 'string',
+    },
+    
+    // 关联字段
+    {
+      name: 'profile',
+      type: 'hasOne' // 'hasMany', 'belongsTo', 'belongsToMany'
+    }
+  ],
+});
+```
+
+更多字段类型请参考 [Fields](/api/database/field.md)。
 
 ## 构造函数
-
-通常不会直接使用，主要通过 `Database` 实例的 `collection` 方法作为代理入口调用。
 
 **签名**
 
@@ -19,7 +46,7 @@
 | `options.name` | `string` | - | collection 标识 |
 | `options.tableName?` | `string` | - | 数据库表名，如不传则使用 `options.name` 的值 |
 | `options.fields?` | `FieldOptions[]` | - | 字段定义，详见 [Field](./field) |
-| `options.model?` | `string \| ModelCtor<Model>` | - | Sequelize 的 Model 类型，如果使用的是 `string`，则需要调用之前在 db 上注册过该模型名称 |
+| `options.model?` | `string \| ModelStatic<Model>` | - | Sequelize 的 Model 类型，如果使用的是 `string`，则需要调用之前在 db 上注册过该模型名称 |
 | `options.repository?` | `string \| RepositoryType` | - | 数据仓库类型，如果使用 `string`，则需要调用之前在 db 上注册过该仓库类型 |
 | `options.sortable?` | `string \| boolean \| { name?: string; scopeKey?: string }` | - | 数据可排序字段配置，默认不排序 |
 | `options.autoGenId?` | `boolean` | `true` | 是否自动生成唯一主键，默认为 `true` |

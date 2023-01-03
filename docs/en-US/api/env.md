@@ -1,15 +1,15 @@
-# 环境变量
+# Environment Variables
 
-## 全局环境变量
+## Global Environment Variables
 
-保存在 `.env` 文件里
+Saved in the `.env` file
 
 ### APP_ENV
 
-应用环境，默认值 `development`，可选项包括：
+Application environment, default is `development`, options include
 
-- `production` 生产环境
-- `development` 开发环境
+- `production` production environment
+- `development` development environment
 
 ```bash
 APP_ENV=production
@@ -17,7 +17,7 @@ APP_ENV=production
 
 ### APP_HOST
 
-应用主机，默认值 `0.0.0.0`
+Application host, default is `0.0.0.0`
 
 ```bash
 APP_HOST=192.168.3.154
@@ -25,7 +25,7 @@ APP_HOST=192.168.3.154
 
 ### APP_PORT
 
-应用端口，默认值 `13000`
+Application port, default is `13000`
 
 ```bash
 APP_PORT=13000
@@ -33,7 +33,7 @@ APP_PORT=13000
 
 ### APP_KEY
 
-秘钥，用于 jwt 等场景
+Secret key, for scenarios such as jwt
 
 ```bash
 APP_KEY=app-key-test
@@ -41,7 +41,7 @@ APP_KEY=app-key-test
 
 ### API_BASE_PATH
 
-NocoBase API 地址前缀，默认值 `/api/`
+NocoBase API address prefix, default is `/api/`
 
 ```bash
 API_BASE_PATH=/api/
@@ -49,25 +49,25 @@ API_BASE_PATH=/api/
 
 ### PLUGIN_PACKAGE_PREFIX
 
-插件包前缀，默认值 `@nocobase/plugin-,@nocobase/preset-`
+Plugin package prefix, default is `@nocobase/plugin-,@nocobase/preset-`
 
-例如，有一名为 `my-nocobase-app` 的项目，新增了 `hello` 插件，包名为 `@my-nocobase-app/plugin-hello`。
+For example, add plugin `hello` into project `my-nocobase-app`, the plugin package name is `@my-nocobase-app/plugin-hello`.
 
-PLUGIN_PACKAGE_PREFIX 配置如下：
+PLUGIN_PACKAGE_PREFIX is configured as follows:
 
 ```bash
-PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@my-nocobase-app/plugin-
+PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
 ```
 
-插件名和包名的对应关系为：
+The correspondence between plugin name and package name is:
 
-- `users` 插件包名为 `@nocobase/plugin-users`
-- `nocobase` 插件包名为 `@nocobase/preset-nocobase`
-- `hello` 插件包名为 `@my-nocobase-app/plugin-hello`
+- `users` plugin package name is `@nocobase/plugin-users`
+- `nocobase` plugin package name is `@nocobase/preset-nocobase`
+- `hello` plugin package name is `@my-nocobase-app/plugin-hello`
 
 ### DB_DIALECT
 
-数据库类型，默认值 `sqlite`，可选项包括：
+Database type, default is `sqlite`, options include
 
 - `sqlite`
 - `mysql`
@@ -79,20 +79,20 @@ DB_DIALECT=mysql
 
 ### DB_STORAGE
 
-数据库文件路径（使用 SQLite 数据库时配置）
+Database file path (required when using a SQLite database)
 
 ```bash
-# 相对路径
+### Relative path
 DB_HOST=storage/db/nocobase.db
-# 绝对路径
+# Absolute path
 DB_HOST=/your/path/nocobase.db
 ```
 
 ### DB_HOST
 
-数据库主机（使用 mysql 或 postgres 数据库时需要配置）
+Database host (required when using MySQL or PostgreSQL databases)
 
-默认值 `localhost`
+Default is `localhost`
 
 ```bash
 DB_HOST=localhost
@@ -100,10 +100,10 @@ DB_HOST=localhost
 
 ### DB_PORT
 
-数据库端口（使用 mysql 或 postgres 数据库时需要配置）
+Database port (required when using MySQL or PostgreSQL databases)
 
-- MySQL 默认端口 3306
-- PostgreSQL 默认端口 5432
+- Default port of MySQL is 3306
+- Default port of PostgreSQL is 5432
 
 ```bash
 DB_PORT=3306
@@ -111,7 +111,7 @@ DB_PORT=3306
 
 ### DB_DATABASE
 
-数据库名（使用 mysql 或 postgres 数据库时需要配置）
+Database name (required when using MySQL or PostgreSQL databases)
 
 ```bash
 DB_DATABASE=nocobase
@@ -119,7 +119,7 @@ DB_DATABASE=nocobase
 
 ### DB_USER
 
-数据库用户（使用 mysql 或 postgres 数据库时需要配置）
+Database user (required when using MySQL or PostgreSQL databases)
 
 ```bash
 DB_USER=nocobase
@@ -127,7 +127,7 @@ DB_USER=nocobase
 
 ### DB_PASSWORD
 
-数据库密码（使用 mysql 或 postgres 数据库时需要配置）
+Database password (required when using MySQL or PostgreSQL databases)
 
 ```bash
 DB_PASSWORD=nocobase
@@ -135,7 +135,7 @@ DB_PASSWORD=nocobase
 
 ### DB_TABLE_PREFIX
 
-数据表前缀
+Data table prefix
 
 ```bash
 DB_TABLE_PREFIX=nocobase_
@@ -143,18 +143,29 @@ DB_TABLE_PREFIX=nocobase_
 
 ### DB_LOGGING
 
-数据库日志开关，默认值 `off`，可选项包括：
+Database log switch, default is `off`, options include
 
-- `on` 打开
-- `off` 关闭
+- `on` on
+- `off` off
 
 ```bash
 DB_LOGGING=on
 ```
 
-## 临时环境变量
+### LOGGER_TRANSPORT
 
-安装 NocoBase 时，可以通过设置临时的环境变量来辅助安装，如：
+Log transport, default is `console,dailyRotateFile`, options include
+
+- `console`
+- `dailyRotateFile`
+
+### DAILY_ROTATE_FILE_DIRNAME
+
+Path to save `dailyRotateFile` logs, default is `storage/logs`
+
+## Temporary Environment Variables
+
+The installation of NocoBase can be assited by setting temporary environment variables, such as:
 
 ```bash
 yarn cross-env \
@@ -164,23 +175,23 @@ yarn cross-env \
   INIT_ROOT_NICKNAME="Super Admin" \
   nocobase install
 
-# 等同于
+# Equivalent to
 yarn nocobase install \
-  --lang=zh-CN  \
+  --lang=zh-CN \
   --root-email=demo@nocobase.com \
   --root-password=admin123 \
   --root-nickname="Super Admin"
 
-# 等同于
+# Equivalent to
 yarn nocobase install -l zh-CN -e demo@nocobase.com -p admin123 -n "Super Admin"
 ```
 
 ### INIT_APP_LANG
 
-安装时的语言，默认值 `en-US`，可选项包括：
+Language at the time of installation, default is `en-US`, options include
 
-- `en-US`
-- `zh-CN`
+- `en-US` English
+- `zh-CN` Chinese (Simplified)
 
 ```bash
 yarn cross-env \
@@ -190,7 +201,7 @@ yarn cross-env \
 
 ### INIT_ROOT_EMAIL
 
-Root 用户邮箱
+Root user mailbox
 
 ```bash
 yarn cross-env \
@@ -201,7 +212,7 @@ yarn cross-env \
 
 ### INIT_ROOT_PASSWORD
 
-Root 用户密码
+Root user password
 
 ```bash
 yarn cross-env \
@@ -213,7 +224,7 @@ yarn cross-env \
 
 ### INIT_ROOT_NICKNAME
 
-Root 用户昵称
+Root user nickname
 
 ```bash
 yarn cross-env \

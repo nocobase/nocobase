@@ -7,22 +7,32 @@ export const defaultFieldNames = {
   options: 'children',
 };
 
+
+
 export const getCurrentOptions = (values, dataSource, fieldNames) => {
+  function flatData(data) {
+    let newArr = [];
+    for (let i = 0; i < data.length; i++) {
+      const children = data[i][fieldNames.options];
+      if (Array.isArray(children)) {
+        newArr.push(...flatData(children))
+      }
+      newArr.push({ ...data[i] });
+    }
+    return newArr;
+  }
+  const result = flatData(dataSource);
   values = castArray(values)
-    .filter(item => item != null)
+    .filter((item) => item != null)
     .map((val) => (typeof val === 'object' ? val[fieldNames.value] : val));
   const findOptions = (options: any[]) => {
+    if (!options) return []
     let current = [];
-    for (const option of options) {
-      if (values.includes(option[fieldNames.value])) {
-        current.push(option);
-      }
-      const children = option[fieldNames.options];
-      if (Array.isArray(children)) {
-        current.push(...findOptions(children));
-      }
+    for (const value of values) {
+      const option = options.find((v) => v[fieldNames.value] === value) || { value: value, label: value };
+      current.push(option);
     }
     return current;
   };
-  return findOptions(dataSource);
+  return findOptions(result);
 };

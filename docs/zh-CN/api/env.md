@@ -90,7 +90,7 @@ DB_HOST=/your/path/nocobase.db
 
 ### DB_HOST
 
-数据库主机（使用 mysql 或 postgres 数据库时需要配置）
+数据库主机（使用 MySQL 或 PostgreSQL 数据库时需要配置）
 
 默认值 `localhost`
 
@@ -100,7 +100,7 @@ DB_HOST=localhost
 
 ### DB_PORT
 
-数据库端口（使用 mysql 或 postgres 数据库时需要配置）
+数据库端口（使用 MySQL 或 PostgreSQL 数据库时需要配置）
 
 - MySQL 默认端口 3306
 - PostgreSQL 默认端口 5432
@@ -111,7 +111,7 @@ DB_PORT=3306
 
 ### DB_DATABASE
 
-数据库名（使用 mysql 或 postgres 数据库时需要配置）
+数据库名（使用 MySQL 或 PostgreSQL 数据库时需要配置）
 
 ```bash
 DB_DATABASE=nocobase
@@ -119,7 +119,7 @@ DB_DATABASE=nocobase
 
 ### DB_USER
 
-数据库用户（使用 mysql 或 postgres 数据库时需要配置）
+数据库用户（使用 MySQL 或 PostgreSQL 数据库时需要配置）
 
 ```bash
 DB_USER=nocobase
@@ -127,7 +127,7 @@ DB_USER=nocobase
 
 ### DB_PASSWORD
 
-数据库密码（使用 mysql 或 postgres 数据库时需要配置）
+数据库密码（使用 MySQL 或 PostgreSQL 数据库时需要配置）
 
 ```bash
 DB_PASSWORD=nocobase
@@ -151,6 +151,17 @@ DB_TABLE_PREFIX=nocobase_
 ```bash
 DB_LOGGING=on
 ```
+
+### LOGGER_TRANSPORT
+
+日志 transport，默认值 `console,dailyRotateFile`，可选项
+
+- `console`
+- `dailyRotateFile`
+
+### DAILY_ROTATE_FILE_DIRNAME
+
+`dailyRotateFile` 日志的存储路径，默认为 `storage/logs`
 
 ## 临时环境变量
 

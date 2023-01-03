@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import { Model } from './model';
 import { IdentifierError } from './errors/identifier-error';
+import { Model } from './model';
 
 type HandleAppendsQueryOptions = {
   templateModel: any;
@@ -9,6 +9,10 @@ type HandleAppendsQueryOptions = {
 
 export async function handleAppendsQuery(options: HandleAppendsQueryOptions) {
   const { templateModel, queryPromises } = options;
+
+  if (!templateModel) {
+    return [];
+  }
 
   const primaryKey = templateModel.constructor.primaryKeyAttribute;
 

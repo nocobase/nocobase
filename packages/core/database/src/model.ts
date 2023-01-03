@@ -1,15 +1,19 @@
 import lodash from 'lodash';
-import { Model as SequelizeModel, ModelCtor } from 'sequelize';
+import { DataTypes, Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
+import type { InheritedCollection } from './inherited-collection';
+import { SyncRunner } from './sync-runner';
+
+const _ = lodash;
 
 interface IModel {
   [key: string]: any;
 }
 
 interface JSONTransformerOptions {
-  model: ModelCtor<any>;
+  model: ModelStatic<any>;
   collection: Collection;
   db: Database;
   key?: string;
@@ -78,7 +82,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     };
 
     const opts = {
-      model: this.constructor as ModelCtor<any>,
+      model: this.constructor as ModelStatic<any>,
       collection: (this.constructor as any).collection,
       db: (this.constructor as any).database as Database,
     };
@@ -144,5 +148,41 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     });
 
     return lodash.orderBy(data, orderItems, orderDirections);
+  }
+
+  static async sync(options) {
+    const model = this as any;
+
+    // fix sequelize sync with model that not have any column
+    if (Object.keys(model.tableAttributes).length === 0) {
+      if (this.database.inDialect('sqlite', 'mysql')) {
+        throw new Error(`Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`);
+      }
+
+      // @ts-ignore
+      const queryInterface = this.sequelize.queryInterface;
+
+      if (!queryInterface.patched) {
+        const oldDescribeTable = queryInterface.describeTable;
+        queryInterface.describeTable = async function (...args) {
+          try {
+            return await oldDescribeTable.call(this, ...args);
+          } catch (err) {
+            if (err.message.includes('No description found for')) {
+              return [];
+            } else {
+              throw err;
+            }
+          }
+        };
+        queryInterface.patched = true;
+      }
+    }
+
+    if (this.collection.isInherited()) {
+      return SyncRunner.syncInheritModel(model, options);
+    }
+
+    return SequelizeModel.sync.call(this, options);
   }
 }

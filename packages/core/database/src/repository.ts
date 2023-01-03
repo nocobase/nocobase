@@ -7,17 +7,18 @@ import {
   DestroyOptions as SequelizeDestroyOptions,
   FindAndCountOptions as SequelizeAndCountOptions,
   FindOptions as SequelizeFindOptions,
-  ModelCtor,
+  ModelStatic,
   Op,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
+  WhereOperators,
 } from 'sequelize';
-import { WhereOperators } from 'sequelize/types/lib/model';
 import { Collection } from './collection';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
-import { RelationField } from './fields';
+import { ArrayFieldRepository } from './field-repository/array-field-repository';
+import { ArrayField, RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
@@ -135,6 +136,10 @@ export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
   context?: any;
 }
 
+interface UpdateManyOptions extends UpdateOptions {
+  records: Values[];
+}
+
 interface RelatedQueryOptions {
   database: Database;
   field: RelationField;
@@ -157,19 +162,29 @@ const transaction = transactionWrapperBuilder(function () {
 class RelationRepositoryBuilder<R extends RelationRepository> {
   collection: Collection;
   associationName: string;
-  association: Association;
+  association: Association | { associationType: string };
 
   builderMap = {
     HasOne: HasOneRepository,
     BelongsTo: BelongsToRepository,
     BelongsToMany: BelongsToManyRepository,
     HasMany: HasManyRepository,
+    ArrayField: ArrayFieldRepository,
   };
 
   constructor(collection: Collection, associationName: string) {
     this.collection = collection;
     this.associationName = associationName;
     this.association = this.collection.model.associations[this.associationName];
+
+    if (!this.association) {
+      const field = collection.getField(associationName);
+      if (field && field instanceof ArrayField) {
+        this.association = {
+          associationType: 'ArrayField',
+        };
+      }
+    }
   }
 
   protected builder() {
@@ -187,7 +202,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 {
   database: Database;
   collection: Collection;
-  model: ModelCtor<Model>;
+  model: ModelStatic<Model>;
 
   constructor(collection: Collection) {
     this.database = collection.context.database;
@@ -210,12 +225,21 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       };
     }
 
-    const count = await this.collection.model.count({
+    const queryOptions: any = {
       ...options,
-      distinct: true,
+      distinct: Boolean(this.collection.model.primaryKeyAttribute),
+    };
+
+    if (queryOptions.include?.length === 0) {
+      delete queryOptions.include;
+    }
+
+    const count = await this.collection.model.count({
+      ...queryOptions,
       transaction,
     });
 
+    // @ts-ignore
     return count;
   }
 
@@ -232,6 +256,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       ...this.buildQueryOptions(options),
     };
 
+    let rows;
+
     if (opts.include && opts.include.length > 0) {
       // @ts-ignore
       const primaryKeyField = model.primaryKeyField || model.primaryKeyAttribute;
@@ -243,7 +269,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           attributes: [primaryKeyField],
           group: `${model.name}.${primaryKeyField}`,
           transaction,
-        })
+          include: opts.include.filter((include) => {
+            return (
+              Object.keys(include.where || {}).length > 0 || JSON.stringify(opts?.filter)?.includes(include.association)
+            );
+          }),
+        } as any)
       ).map((row) => {
         return { row, pk: row.get(primaryKeyField) };
       });
@@ -252,33 +283,54 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return [];
       }
 
+      const templateModel = await model.findOne({
+        ...opts,
+        includeIgnoreAttributes: false,
+        attributes: [primaryKeyField],
+        group: `${model.name}.${primaryKeyField}`,
+        transaction,
+        limit: 1,
+        offset: 0,
+      } as any);
+
       const where = {
         [primaryKeyField]: {
           [Op.in]: ids.map((id) => id['pk']),
         },
       };
 
-      return await handleAppendsQuery({
+      rows = await handleAppendsQuery({
         queryPromises: opts.include.map((include) => {
-          return model
-            .findAll({
-              ...omit(opts, ['limit', 'offset']),
-              include: include,
-              where,
-              transaction,
-            })
-            .then((rows) => {
-              return { rows, include };
-            });
+          const options = {
+            ...omit(opts, ['limit', 'offset']),
+            include: include,
+            where,
+            transaction,
+          };
+
+          return model.findAll(options).then((rows) => {
+            return { rows, include };
+          });
         }),
-        templateModel: ids[0].row,
+        templateModel: templateModel,
+      });
+    } else {
+      rows = await model.findAll({
+        ...opts,
+        transaction,
       });
     }
 
-    return await model.findAll({
-      ...opts,
-      transaction,
-    });
+    if (this.collection.isParent()) {
+      for (const row of rows) {
+        const rowCollectionName = this.database.tableNameCollectionMap.get(row.get('__tableName')).name;
+        row.set('__collection', rowCollectionName, {
+          raw: true,
+        });
+      }
+    }
+
+    return rows;
   }
 
   /**
@@ -338,7 +390,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const guard = UpdateGuard.fromOptions(this.model, { ...options, action: 'create' });
     const values = guard.sanitize(options.values || {});
 
-
     const instance = await this.model.create<any>(values, {
       ...options,
       transaction,
@@ -397,7 +448,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   @transaction()
   @mustHaveFilter()
   async update(options: UpdateOptions & { forceUpdate?: boolean }) {
+    if (Array.isArray(options.values)) {
+      return this.updateMany({
+        ...options,
+        records: options.values,
+      });
+    }
     const transaction = await this.getTransaction(options);
+
     const guard = UpdateGuard.fromOptions(this.model, options);
 
     const values = guard.sanitize(options.values);
@@ -434,6 +492,24 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return instances;
   }
 
+  @transaction()
+  async updateMany(options: UpdateManyOptions) {
+    const transaction = await this.getTransaction(options);
+    const { records } = options;
+    const instances = [];
+
+    for (const values of records) {
+      const filterByTk = values[this.model.primaryKeyAttribute];
+      if (!filterByTk) {
+        throw new Error('filterByTk invalid');
+      }
+      const instance = await this.update({ values, filterByTk, transaction });
+      instances.push(instance);
+    }
+
+    return instances;
+  }
+
   @transaction((args, transaction) => {
     return {
       filterByTk: args[0],
@@ -456,6 +532,18 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         ? [options.filterByTk]
         : (options.filterByTk as TargetKey[] | undefined);
 
+    if (
+      this.collection.model.primaryKeyAttributes.length !== 1 &&
+      filterByTk &&
+      !lodash.get(this.collection.options, 'filterTargetKey')
+    ) {
+      if (this.collection.model.primaryKeyAttributes.length > 1) {
+        throw new Error(`filterByTk is not supported for composite primary key`);
+      } else {
+        throw new Error(`filterByTk is not supported for collection that has no primary key`);
+      }
+    }
+
     if (filterByTk && !options.filter) {
       return await this.model.destroy({
         ...options,
@@ -469,6 +557,20 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (options.filter) {
+      if (
+        this.collection.model.primaryKeyAttributes.length !== 1 &&
+        !lodash.get(this.collection.options, 'filterTargetKey')
+      ) {
+        const queryOptions = {
+          ...this.buildQueryOptions(options),
+        };
+
+        return await this.model.destroy({
+          ...queryOptions,
+          transaction,
+        });
+      }
+
       let pks = (
         await this.find({
           filter: options.filter,

@@ -2,11 +2,11 @@ import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
 import {
-  ModelCtor,
   ModelOptions,
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
+  ModelStatic,
   Utils,
 } from 'sequelize';
 import { Database } from './database';
@@ -22,9 +22,10 @@ export type CollectionSortable = string | boolean | { name?: string; scopeKey?: 
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   tableName?: string;
+  inherits?: string[] | string;
   filterTargetKey?: string;
   fields?: FieldOptions[];
-  model?: string | ModelCtor<Model>;
+  model?: string | ModelStatic<Model>;
   repository?: string | RepositoryType;
   sortable?: CollectionSortable;
   /**
@@ -50,7 +51,7 @@ export class Collection<
   context: CollectionContext;
   isThrough?: boolean;
   fields: Map<string, any> = new Map<string, any>();
-  model: ModelCtor<Model>;
+  model: ModelStatic<Model>;
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get filterTargetKey() {
@@ -74,9 +75,14 @@ export class Collection<
 
     this.bindFieldEventListener();
     this.modelInit();
-    this.db.modelCollection.set(this.model, this);
 
-    this.setFields(options.fields);
+    this.db.modelCollection.set(this.model, this);
+    this.db.tableNameCollectionMap.set(this.model.tableName, this);
+
+    if (!options.inherits) {
+      this.setFields(options.fields);
+    }
+
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
   }
@@ -103,7 +109,7 @@ export class Collection<
       return;
     }
     const { name, model, autoGenId = true } = this.options;
-    let M: ModelCtor<Model> = Model;
+    let M: ModelStatic<Model> = Model;
     if (this.context.database.sequelize.isDefined(name)) {
       const m = this.context.database.sequelize.model(name);
       if ((m as any).isThrough) {
@@ -144,8 +150,13 @@ export class Collection<
   }
 
   private bindFieldEventListener() {
-    this.on('field.afterAdd', (field: Field) => field.bind());
-    this.on('field.afterRemove', (field: Field) => field.unbind());
+    this.on('field.afterAdd', (field: Field) => {
+      field.bind();
+    });
+
+    this.on('field.afterRemove', (field: Field) => {
+      field.unbind();
+    });
   }
 
   forEachField(callback: (field: Field) => void) {
@@ -181,9 +192,39 @@ export class Collection<
       },
     );
 
+    const oldField = this.fields.get(name);
+
+    if (oldField && oldField.options.inherit && field.typeToString() != oldField.typeToString()) {
+      throw new Error(
+        `Field type conflict: cannot set "${name}" on "${this.name}" to ${options.type}, parent "${name}" type is ${oldField.options.type}`,
+      );
+    }
+
+    if (this.options.autoGenId !== false && options.primaryKey) {
+      this.model.removeAttribute('id');
+    }
+
     this.removeField(name);
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
+
+    // refresh children models
+    if (this.isParent()) {
+      for (const child of this.context.database.inheritanceMap.getChildren(this.name, {
+        deep: false,
+      })) {
+        const childCollection = this.db.getCollection(child);
+        const existField = childCollection.getField(name);
+
+        if (!existField || existField.options.inherit) {
+          childCollection.setField(name, {
+            ...options,
+            inherit: true,
+          });
+        }
+      }
+    }
+
     return field;
   }
 
@@ -232,11 +273,27 @@ export class Collection<
     if (!this.fields.has(name)) {
       return;
     }
+
     const field = this.fields.get(name);
+
     const bool = this.fields.delete(name);
+
     if (bool) {
+      if (this.isParent()) {
+        for (const child of this.db.inheritanceMap.getChildren(this.name, {
+          deep: false,
+        })) {
+          const childCollection = this.db.getCollection(child);
+          const existField = childCollection.getField(name);
+          if (existField && existField.options.inherit) {
+            childCollection.removeField(name);
+          }
+        }
+      }
+
       this.emit('field.afterRemove', field);
     }
+
     return field as Field;
   }
 
@@ -349,6 +406,7 @@ export class Collection<
         }
         return item;
       });
+    this.refreshIndexes();
   }
 
   removeIndex(fields: any) {
@@ -361,6 +419,21 @@ export class Collection<
     this.model._indexes = indexes.filter((item) => {
       return !lodash.isEqual(item.fields, fields);
     });
+    this.refreshIndexes();
+  }
+
+  refreshIndexes() {
+    // @ts-ignore
+    const indexes: any[] = this.model._indexes;
+    // @ts-ignore
+    this.model._indexes = indexes.filter((item) => {
+      for (const field of item.fields) {
+        if (!this.model.rawAttributes[field]) {
+          return false;
+        }
+      }
+      return true;
+    });
   }
 
   async sync(syncOptions?: SyncOptions) {
@@ -371,12 +444,13 @@ export class Collection<
     for (const associationKey in associations) {
       const association = associations[associationKey];
       modelNames.add(association.target.name);
+
       if ((<any>association).through) {
         modelNames.add((<any>association).through.model.name);
       }
     }
 
-    const models: ModelCtor<Model>[] = [];
+    const models: ModelStatic<Model>[] = [];
     // @ts-ignore
     this.context.database.sequelize.modelManager.forEachModel((model) => {
       if (modelNames.has(model.name)) {
@@ -387,5 +461,13 @@ export class Collection<
     for (const model of models) {
       await model.sync(syncOptions);
     }
+  }
+
+  public isInherited() {
+    return false;
+  }
+
+  public isParent() {
+    return this.context.database.inheritanceMap.isParentNode(this.name);
   }
 }

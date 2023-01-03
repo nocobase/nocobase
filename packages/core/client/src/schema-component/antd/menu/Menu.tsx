@@ -269,7 +269,7 @@ export const Menu: ComposedMenu = observer((props) => {
             selectedKeys={defaultSelectedKeys}
           >
             {designable && (
-              <AntdMenu.Item disabled style={{ padding: '0 8px', order: 9999 }}>
+              <AntdMenu.Item disabled key="x-designer-button" style={{ padding: '0 8px', order: 9999 }}>
                 {render({ style: { background: 'none' } })}
               </AntdMenu.Item>
             )}
@@ -290,6 +290,9 @@ export const Menu: ComposedMenu = observer((props) => {
                       onSelect && onSelect(info);
                     }}
                     className={css`
+                      height: 100%;
+                      overflow-y: auto;
+                      overflow-x: hidden;
                       .ant-menu-item {
                         > .ant-menu-title-content {
                           margin-left: -24px;

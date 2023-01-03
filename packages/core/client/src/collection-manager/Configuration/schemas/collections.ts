@@ -1,6 +1,10 @@
 import { ISchema, Schema } from '@formily/react';
+import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
+import { CollectionTemplate } from '../components/CollectionTemplate';
 import { collectionFieldSchema } from './collectionFields';
 
 const compile = (source) => {
@@ -11,6 +15,7 @@ export const collection: CollectionOptions = {
   name: 'collections',
   filterTargetKey: 'name',
   targetKey: 'name',
+  sortable: true,
   fields: [
     {
       type: 'integer',
@@ -36,6 +41,16 @@ export const collection: CollectionOptions = {
       },
     },
     {
+      type: 'string',
+      name: 'template',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Collection Template") }}',
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
       type: 'hasMany',
       name: 'fields',
       target: 'fields',
@@ -43,6 +58,19 @@ export const collection: CollectionOptions = {
       sourceKey: 'name',
       targetKey: 'name',
       uiSchema: {},
+    },
+    {
+      type: 'hasMany',
+      name: 'inherits',
+      interface: 'select',
+      uiSchema: {
+        title: '{{ t("Inherits") }}',
+        type: 'string',
+        'x-component': 'Select',
+        'x-component-props': {
+          mode: 'multiple',
+        },
+      },
     },
   ],
 };
@@ -55,24 +83,21 @@ export const collectionSchema: ISchema = {
       'x-collection': 'collections',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
-        collection,
+        collection: collection,
+        dragSort: true,
         request: {
           resource: 'collections',
           action: 'list',
           params: {
             pageSize: 50,
+            sort: 'sort',
             filter: {
-              inherit: false,
+              'hidden.$isFalsy': true,
             },
-            sort: ['sort'],
             appends: [],
           },
         },
       },
-      // 'x-component': 'CollectionProvider',
-      // 'x-component-props': {
-      //   collection,
-      // },
       properties: {
         actions: {
           type: 'void',
@@ -102,6 +127,7 @@ export const collectionSchema: ISchema = {
               title: '{{ t("Delete") }}',
               'x-component': 'Action',
               'x-component-props': {
+                icon: 'DeleteOutlined',
                 useAction: '{{ cm.useBulkDestroyActionAndRefreshCM }}',
                 confirm: {
                   title: "{{t('Delete record')}}",
@@ -112,52 +138,9 @@ export const collectionSchema: ISchema = {
             create: {
               type: 'void',
               title: '{{ t("Create collection") }}',
-              'x-component': 'Action',
+              'x-component': 'AddCollection',
               'x-component-props': {
                 type: 'primary',
-              },
-              properties: {
-                drawer: {
-                  type: 'void',
-                  title: '{{ t("Create collection") }}',
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    useValues: '{{ useCollectionValues }}',
-                  },
-                  properties: {
-                    title: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    name: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                      'x-validator': 'uid',
-                    },
-                    footer: {
-                      type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        action1: {
-                          title: '{{ t("Cancel") }}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
-                          },
-                        },
-                        action2: {
-                          title: '{{ t("Submit") }}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                            useAction: '{{ cm.useCreateActionAndRefreshCM }}',
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
               },
             },
           },
@@ -172,6 +155,20 @@ export const collectionSchema: ISchema = {
               type: 'checkbox',
             },
             useDataSource: '{{ cm.useDataSourceFromRAC }}',
+            useAction() {
+              const api = useAPIClient();
+              const { t } = useTranslation();
+              return {
+                async move(from, to) {
+                  console.log(from, to);
+                  await api.resource('collections').move({
+                    sourceId: from.key,
+                    targetId: to.key,
+                  });
+                  message.success(t('Saved successfully'), 0.2);
+                },
+              };
+            },
           },
           properties: {
             column1: {
@@ -199,6 +196,18 @@ export const collectionSchema: ISchema = {
             },
             column3: {
               type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              title: '{{t("Collection template")}}',
+              properties: {
+                template: {
+                  'x-component': CollectionTemplate,
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column4: {
+              type: 'void',
               title: '{{ t("Actions") }}',
               'x-component': 'Table.Column',
               properties: {
@@ -218,6 +227,9 @@ export const collectionSchema: ISchema = {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
+                          'x-component-props': {
+                            destroyOnClose: true,
+                          },
                           'x-reactions': (field) => {
                             const i = field.path.segments[1];
                             const table = field.form.getValuesIn(`table.${i}`);
@@ -234,52 +246,9 @@ export const collectionSchema: ISchema = {
                     update: {
                       type: 'void',
                       title: '{{ t("Edit") }}',
-                      'x-component': 'Action.Link',
+                      'x-component': 'EditCollection',
                       'x-component-props': {
                         type: 'primary',
-                      },
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useValues: '{{ cm.useValuesFromRecord }}',
-                          },
-                          title: '{{ t("Edit collection") }}',
-                          properties: {
-                            title: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            name: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                              'x-disabled': true,
-                            },
-                            footer: {
-                              type: 'void',
-                              'x-component': 'Action.Drawer.Footer',
-                              properties: {
-                                action1: {
-                                  title: '{{ t("Cancel") }}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
-                                  },
-                                },
-                                action2: {
-                                  title: '{{ t("Submit") }}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                    useAction: '{{ cm.useUpdateCollectionActionAndRefreshCM }}',
-                                  },
-                                },
-                              },
-                            },
-                          },
-                        },
                       },
                     },
                     delete: {

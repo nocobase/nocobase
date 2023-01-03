@@ -15,6 +15,7 @@ export const type: ISchema = {
     { label: 'String', value: 'string' },
     { label: 'Text', value: 'text' },
     { label: 'Integer', value: 'integer' },
+    { label: 'BigInteger', value: 'bigInt' },
     { label: 'Float', value: 'float' },
     { label: 'Double', value: 'double' },
     { label: 'Decimal', value: 'decimal' },
@@ -59,6 +60,7 @@ export const constraintsProps = {
     title: '{{t("ON DELETE")}}',
     required: true,
     default: 'SET NULL',
+    'x-disabled': '{{ !createOnly }}',
     'x-decorator': 'FormItem',
     'x-component': 'Select',
     enum: [
@@ -78,7 +80,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
     properties: {
       autoCreateReverseField: {
         type: 'boolean',
-        default: true,
+        default: false,
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox',
         'x-content': '{{t("Create inverse field in the target collection")}}',

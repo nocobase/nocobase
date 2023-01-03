@@ -22,7 +22,7 @@ import {
   useAPIClient,
   useCollection,
   useCompile,
-  useDesignable,
+  useDesignable
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -346,10 +346,11 @@ SchemaSettings.FormItemTemplate = (props) => {
 
 SchemaSettings.Item = (props) => {
   let { eventKey } = props;
+  const key = useMemo(() => uid(), []);
   return (
     <Menu.Item
-      key={eventKey}
-      eventKey={eventKey as any}
+      key={key}
+      eventKey={eventKey as any || key}
       {...props}
       onClick={(info) => {
         info.domEvent.preventDefault();
@@ -385,6 +386,7 @@ SchemaSettings.Remove = (props: any) => {
   const form = useForm();
   return (
     <SchemaSettings.Item
+      eventKey="remove"
       onClick={() => {
         Modal.confirm({
           title: t('Delete block'),
@@ -573,7 +575,18 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
 });
 
 SchemaSettings.ModalItem = (props) => {
-  const { hidden, title, components, scope, effects, schema, onSubmit, initialValues, ...others } = props;
+  const {
+    hidden,
+    title,
+    components,
+    scope,
+    effects,
+    schema,
+    onSubmit,
+    asyncGetInitialValues,
+    initialValues,
+    ...others
+  } = props;
   const options = useContext(SchemaOptionsContext);
   const cm = useContext(CollectionManagerContext);
   if (hidden) {
@@ -582,7 +595,8 @@ SchemaSettings.ModalItem = (props) => {
   return (
     <SchemaSettings.Item
       {...others}
-      onClick={() => {
+      onClick={async () => {
+        const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
         FormDialog(schema.title || title, () => {
           return (
             <CollectionManagerContext.Provider value={cm}>
@@ -595,7 +609,7 @@ SchemaSettings.ModalItem = (props) => {
           );
         })
           .open({
-            initialValues,
+            initialValues: values,
             effects,
           })
           .then((values) => {

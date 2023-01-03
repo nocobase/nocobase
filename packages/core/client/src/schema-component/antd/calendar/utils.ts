@@ -19,3 +19,7 @@ export const getLunarDay = (date: moment.MomentInput) => {
   const result = solarLunar.solar2lunar(md.year(), md.month() + 1, md.date());
   return typeof result !== 'number' ? result.lunarFestival || result.term || result.dayCn : result;
 };
+
+export const formatDate = (date: moment.Moment) => {
+  return date.format('YYYY-MM-DDTHH:mm:ss.SSSZ')
+}

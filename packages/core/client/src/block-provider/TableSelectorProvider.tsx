@@ -1,9 +1,10 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
+import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCollectionManager } from '../collection-manager';
-import { useRecord } from '../record-provider';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { RecordProvider, useRecord } from '../record-provider';
+import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
 export const TableSelectorContext = createContext<any>({});
@@ -16,22 +17,24 @@ const InternalTableSelectorProvider = (props) => {
   //   return <Spin />;
   // }
   return (
-    <TableSelectorContext.Provider
-      value={{
-        field,
-        service,
-        resource,
-        params,
-        extraFilter,
-        rowKey,
-      }}
-    >
-      {props.children}
-    </TableSelectorContext.Provider>
+    <RecordProvider record={{}}>
+      <TableSelectorContext.Provider
+        value={{
+          field,
+          service,
+          resource,
+          params,
+          extraFilter,
+          rowKey,
+        }}
+      >
+        <RenderChildrenWithAssociationFilter {...props} />
+      </TableSelectorContext.Provider>
+    </RecordProvider>
   );
 };
 
-const useAssociationNames = (collection) => {
+const useAssociationNames2 = (collection) => {
   const { getCollectionFields } = useCollectionManager();
   const names = getCollectionFields(collection)
     ?.filter((field) => field.target)
@@ -47,6 +50,53 @@ const recursiveParent = (schema: Schema, component) => {
     : null;
 };
 
+const useAssociationNames = (collection) => {
+  const { getCollectionFields } = useCollectionManager();
+  const collectionFields = getCollectionFields(collection);
+  const associationFields = new Set();
+  for (const collectionField of collectionFields) {
+    if (collectionField.target) {
+      associationFields.add(collectionField.name);
+      const fields = getCollectionFields(collectionField.target);
+      for (const field of fields) {
+        if (field.target) {
+          associationFields.add(`${collectionField.name}.${field.name}`);
+        }
+      }
+    }
+  }
+  const fieldSchema = useFieldSchema();
+  const tableSchema = fieldSchema.reduceProperties((buf, schema) => {
+    if (schema['x-component'] === 'TableV2.Selector') {
+      return schema;
+    }
+    return buf;
+  }, new Schema({}));
+  return uniq(
+    tableSchema.reduceProperties((buf, schema) => {
+      if (schema['x-component'] === 'TableV2.Column') {
+        const s = schema.reduceProperties((buf, s) => {
+          const [name] = (s.name as string).split('.');
+          if (s['x-collection-field'] && associationFields.has(name)) {
+            return s;
+          }
+          return buf;
+        }, null);
+        if (s) {
+          // 关联字段和关联的关联字段
+          const [firstName] = s.name.split('.');
+          if (associationFields.has(s.name)) {
+            buf.push(s.name);
+          } else if (associationFields.has(firstName)) {
+            buf.push(firstName);
+          }
+        }
+      }
+      return buf;
+    }, []),
+  );
+};
+
 export const TableSelectorProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const ctx = useFormBlockContext();
@@ -57,7 +107,6 @@ export const TableSelectorProvider = (props) => {
   // const value = ctx.form.query(collectionFieldSchema?.name).value();
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
 
-  console.log('TableSelectorProvider', collectionFieldSchema, collectionField, record);
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
   if (props.dragSort) {

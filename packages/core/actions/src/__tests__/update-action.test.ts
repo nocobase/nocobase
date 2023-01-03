@@ -104,6 +104,7 @@ describe('update action', () => {
           content: 'c0',
         },
       });
+    expect(response.statusCode).toEqual(200);
 
     await c1.reload();
     expect(c1.get('content')).toEqual('c0');

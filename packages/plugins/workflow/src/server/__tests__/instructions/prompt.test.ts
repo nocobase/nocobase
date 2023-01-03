@@ -6,6 +6,7 @@ import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 
 
+// NOTE: skipped because time is not stable on github ci, but should work in local
 describe.skip('workflow > instructions > prompt', () => {
   describe('base', () => {
     let app: MockServer;
@@ -45,6 +46,8 @@ describe.skip('workflow > instructions > prompt', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
 
       const [pending] = await workflow.getExecutions();
       expect(pending.status).toBe(EXECUTION_STATUS.STARTED);
@@ -129,6 +132,8 @@ describe.skip('workflow > instructions > prompt', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
+        await sleep(500);
+
         const [pending] = await workflow.getExecutions();
         expect(pending.status).toBe(EXECUTION_STATUS.STARTED);
         const [j1] = await pending.getJobs();
@@ -193,6 +198,8 @@ describe.skip('workflow > instructions > prompt', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
+        await sleep(500);
+
         const [pending] = await workflow.getExecutions();
         expect(pending.status).toBe(EXECUTION_STATUS.STARTED);
         const [j1] = await pending.getJobs();
@@ -233,6 +240,8 @@ describe.skip('workflow > instructions > prompt', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
+        await sleep(500);
+
         const UserJobModel = db.getModel('users_jobs');
         const usersJobs = await UserJobModel.findAll();
         expect(usersJobs.length).toBe(1);
@@ -269,6 +278,8 @@ describe.skip('workflow > instructions > prompt', () => {
         });
 
         const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
 
         const UserJobModel = db.getModel('users_jobs');
         const pendingJobs = await UserJobModel.findAll({
@@ -326,6 +337,8 @@ describe.skip('workflow > instructions > prompt', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
+        await sleep(500);
+
         const UserJobModel = db.getModel('users_jobs');
         const pendingJobs = await UserJobModel.findAll({
           order: [[ 'userId', 'ASC' ]]
@@ -372,6 +385,8 @@ describe.skip('workflow > instructions > prompt', () => {
         });
 
         const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
 
         const UserJobModel = db.getModel('users_jobs');
         const pendingJobs = await UserJobModel.findAll({
@@ -430,6 +445,8 @@ describe.skip('workflow > instructions > prompt', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
+        await sleep(500);
+
         const UserJobModel = db.getModel('users_jobs');
         const pendingJobs = await UserJobModel.findAll({
           order: [[ 'userId', 'ASC' ]]
@@ -471,6 +488,8 @@ describe.skip('workflow > instructions > prompt', () => {
         });
 
         const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
 
         const UserJobModel = db.getModel('users_jobs');
         const pendingJobs = await UserJobModel.findAll({
@@ -521,6 +540,8 @@ describe.skip('workflow > instructions > prompt', () => {
         });
 
         const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
 
         const UserJobModel = db.getModel('users_jobs');
         const pendingJobs = await UserJobModel.findAll({

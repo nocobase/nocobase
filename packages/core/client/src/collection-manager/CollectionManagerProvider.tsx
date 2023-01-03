@@ -1,18 +1,24 @@
 import { Spin } from 'antd';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
+import { keyBy } from 'lodash';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionManagerContext } from './context';
 import * as defaultInterfaces from './interfaces';
 import { CollectionManagerOptions } from './types';
+import { templateOptions } from '../collection-manager/Configuration/templates';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
-  const { service, interfaces, collections = [], refreshCM } = props;
+  const { service, interfaces, collections = [], refreshCM, templates } = props;
+  const defaultTemplates = keyBy(templateOptions(), (item) => item.name);
+  const ctx = useContext(CollectionManagerContext);
   return (
     <CollectionManagerContext.Provider
       value={{
+        ...ctx,
         service,
-        interfaces: { ...defaultInterfaces, ...interfaces },
+        interfaces: { ...defaultInterfaces, ...ctx.interfaces, ...interfaces },
+        templates: { ...defaultTemplates, ...templates },
         collections,
         refreshCM,
       }}

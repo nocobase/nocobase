@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/utils",
-  "version": "0.8.0-alpha.8",
+  "version": "0.8.0-alpha.13",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
@@ -19,5 +19,5 @@
     "moment": "2.x",
     "rc-input-number": "7.x"
   },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

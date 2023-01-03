@@ -3,6 +3,7 @@ import { InputNumber, Select } from "antd";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Cron } from 'react-js-cron';
+import { useWorkflowTranslation } from "../../locale";
 import CronZhCN from './locale/Cron.zh-CN';
 
 
@@ -41,7 +42,7 @@ function getRepeatTypeValue(v) {
 
 
 function CommonRepeatField({ value, onChange }) {
-  const { t } = useTranslation();
+  const { t } = useWorkflowTranslation();
   const option = getNumberOption(value);
 
   return (
@@ -56,7 +57,7 @@ function CommonRepeatField({ value, onChange }) {
 }
 
 export function RepeatField({ value = null, onChange }) {
-  const { t } = useTranslation();
+  const { t } = useWorkflowTranslation();
   const typeValue = getRepeatTypeValue(value);
   function onTypeChange(v) {
     if (v === 'none') {

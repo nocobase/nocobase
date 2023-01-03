@@ -74,6 +74,7 @@ describe('destroy action', () => {
         filterByTk: p1.get('id'),
       });
 
+    expect(response.statusCode).toEqual(200);
     expect(await Post.repository.count()).toEqual(0);
   });
 
@@ -142,10 +143,7 @@ describe('destroy action', () => {
 
     const postProfile = await Profile.repository.findOne();
 
-    const response = await app
-      .agent()
-      .resource('posts.profile', p1.get('id'))
-      .destroy();
+    const response = await app.agent().resource('posts.profile', p1.get('id')).destroy();
 
     expect(await Profile.repository.count()).toEqual(0);
   });

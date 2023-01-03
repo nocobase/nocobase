@@ -5,8 +5,8 @@ import {
   HasMany,
   HasOne,
   Hookable,
-  ModelCtor,
-  Transactionable
+  ModelStatic,
+  Transactionable,
 } from 'sequelize';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
@@ -64,6 +64,7 @@ interface UpdateAssociationOptions extends Transactionable, Hookable {
   sourceModel?: Model;
   context?: any;
   associationContext?: any;
+  recursive?: boolean;
 }
 
 export async function updateModelByValues(instance: Model, values: UpdateValue, options?: UpdateOptions) {
@@ -118,6 +119,10 @@ export async function updateAssociations(instance: Model, values: any, options: 
   // if no values set, return
   if (!values) {
     return;
+  }
+
+  if (options?.updateAssociationValues) {
+    options.recursive = true;
   }
 
   let newTransaction = false;
@@ -262,7 +267,7 @@ export async function updateSingleAssociation(
     throw new Error(`The value of '${key}' cannot be in array format`);
   }
 
-  const { context, updateAssociationValues = [], transaction } = options;
+  const { recursive, context, updateAssociationValues = [], transaction } = options;
   const keys = getKeysByPrefix(updateAssociationValues, key);
 
   try {
@@ -292,13 +297,13 @@ export async function updateSingleAssociation(
 
     const createAccessor = association.accessors.create;
     let dataKey: string;
-    let M: ModelCtor<Model>;
+    let M: ModelStatic<Model>;
     if (association.associationType === 'BelongsTo') {
-      M = association.target as ModelCtor<Model>;
+      M = association.target as ModelStatic<Model>;
       // @ts-ignore
       dataKey = association.targetKey;
     } else {
-      M = association.target as ModelCtor<Model>;
+      M = association.target as ModelStatic<Model>;
       dataKey = M.primaryKeyAttribute;
     }
 
@@ -312,6 +317,10 @@ export async function updateSingleAssociation(
 
       if (instance) {
         await model[setAccessor](instance, { context, transaction });
+
+        if (!recursive) {
+          return;
+        }
 
         if (updateAssociationValues.includes(key)) {
           await instance.update(value, { ...options, transaction });
@@ -368,13 +377,14 @@ export async function updateMultipleAssociation(
     return false;
   }
 
-  const { context, updateAssociationValues = [], transaction } = options;
+  const { recursive, context, updateAssociationValues = [], transaction } = options;
   const keys = getKeysByPrefix(updateAssociationValues, key);
 
   try {
     const setAccessor = association.accessors.set;
 
     const createAccessor = association.accessors.create;
+
     if (isUndefinedOrNull(value)) {
       await model[setAccessor](null, { transaction, context });
       model.setDataValue(key, null);
@@ -442,9 +452,15 @@ export async function updateMultipleAssociation(
         const instance = await association.target.findByPk<any>(item[pk], {
           transaction,
         });
+        if (!instance) {
+          continue;
+        }
         const addAccessor = association.accessors.add;
 
         await model[addAccessor](item[pk], accessorOptions);
+        if (!recursive) {
+          continue;
+        }
         if (updateAssociationValues.includes(key)) {
           await instance.update(item, { ...options, transaction });
         }

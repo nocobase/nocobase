@@ -10,7 +10,8 @@ import { workflowSchema } from './schemas/workflows';
 import { WorkflowLink } from './WorkflowLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { ExecutionLink } from './ExecutionLink';
-
+import { lang } from './locale';
+import OpenDrawer from './components/OpenDrawer';
 
 
 export const WorkflowPane = () => {
@@ -21,7 +22,8 @@ export const WorkflowPane = () => {
         components={{
           WorkflowLink,
           ExecutionResourceProvider,
-          ExecutionLink
+          ExecutionLink,
+          OpenDrawer
         }}
       />
     </Card>
@@ -29,12 +31,12 @@ export const WorkflowPane = () => {
 };
 
 export const WorkflowShortcut = () => {
-  const { t } = useTranslation();
   const history = useHistory();
   return (
     <PluginManager.Toolbar.Item
+      key="workflow"
       icon={<PartitionOutlined />}
-      title={t('Workflow')}
+      title={lang('Workflow')}
       onClick={() => {
         history.push('/admin/settings/workflow/workflows');
       }}

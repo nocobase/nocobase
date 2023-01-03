@@ -1,15 +1,17 @@
 import _ from 'lodash';
+
 import {
   DataType,
   ModelAttributeColumnOptions,
   ModelIndexesOptions,
   QueryInterfaceOptions,
   SyncOptions,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { ModelEventTypes } from '../types';
+import { InheritedCollection } from '../inherited-collection';
 
 export interface FieldContext {
   database: Database;
@@ -19,6 +21,7 @@ export interface FieldContext {
 export interface BaseFieldOptions {
   name?: string;
   hidden?: boolean;
+
   [key: string]: any;
 }
 
@@ -32,7 +35,16 @@ export abstract class Field {
   context: FieldContext;
   database: Database;
   collection: Collection;
+
   [key: string]: any;
+
+  constructor(options?: any, context?: FieldContext) {
+    this.context = context;
+    this.database = context.database;
+    this.collection = context.collection;
+    this.options = options || {};
+    this.init();
+  }
 
   get name() {
     return this.options.name;
@@ -42,17 +54,7 @@ export abstract class Field {
     return this.options.type;
   }
 
-  get dataType() {
-    return this.options.dataType;
-  }
-
-  constructor(options?: any, context?: FieldContext) {
-    this.context = context;
-    this.database = context.database;
-    this.collection = context.collection;
-    this.options = options || {};
-    this.init();
-  }
+  abstract get dataType();
 
   async sync(syncOptions: SyncOptions) {
     await this.collection.sync({
@@ -88,11 +90,18 @@ export abstract class Field {
   }
 
   async removeFromDb(options?: QueryInterfaceOptions) {
-    if (!this.collection.model.rawAttributes[this.name]) {
+    const attribute = this.collection.model.rawAttributes[this.name];
+
+    if (!attribute) {
       this.remove();
       // console.log('field is not attribute');
       return;
     }
+
+    if (this.collection.isInherited() && (<InheritedCollection>this.collection).parentFields().has(this.name)) {
+      return;
+    }
+
     if ((this.collection.model as any)._virtualAttributes.has(this.name)) {
       this.remove();
       // console.log('field is virtual attribute');
@@ -195,5 +204,9 @@ export abstract class Field {
 
   isSqlite() {
     return this.database.sequelize.getDialect() === 'sqlite';
+  }
+
+  typeToString() {
+    return this.dataType.toString();
   }
 }

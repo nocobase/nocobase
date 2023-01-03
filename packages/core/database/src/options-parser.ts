@@ -1,4 +1,4 @@
-import { FindAttributeOptions, ModelCtor, Op, Sequelize } from 'sequelize';
+import { FindAttributeOptions, ModelStatic, Op, Sequelize } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import FilterParser from './filter-parser';
@@ -15,7 +15,7 @@ export class OptionsParser {
   options: FindOptions;
   database: Database;
   collection: Collection;
-  model: ModelCtor<any>;
+  model: ModelStatic<any>;
   filterParser: FilterParser;
   context: OptionsParserContext;
 
@@ -104,6 +104,13 @@ export class OptionsParser {
     return filterParams;
   }
 
+  protected inheritFromSubQuery(): any {
+    return [
+      Sequelize.literal(`(select relname from pg_class where pg_class.oid = "${this.collection.name}".tableoid)`),
+      '__tableName',
+    ];
+  }
+
   protected parseFields(filterParams: any) {
     const appends = this.options?.appends || [];
     const except = [];
@@ -112,6 +119,10 @@ export class OptionsParser {
       include: [],
       exclude: [],
     }; // out put all fields by default
+
+    if (this.collection.isParent()) {
+      attributes.include.push(this.inheritFromSubQuery());
+    }
 
     if (this.options?.fields) {
       // 将fields拆分为 attributes 和 appends
@@ -196,7 +207,7 @@ export class OptionsParser {
      * @param queryParams
      * @param append
      */
-    const setInclude = (model: ModelCtor<any>, queryParams: any, append: string) => {
+    const setInclude = (model: ModelStatic<any>, queryParams: any, append: string) => {
       const appendFields = append.split('.');
       const appendAssociation = appendFields[0];
 

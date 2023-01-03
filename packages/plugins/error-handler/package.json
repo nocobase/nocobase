@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-error-handler",
-  "version": "0.8.0-alpha.8",
+  "version": "0.8.0-alpha.13",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -13,12 +13,12 @@
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@formily/json-schema": "^2.0.15",
-    "@nocobase/server": "0.8.0-alpha.8"
+    "@nocobase/server": "0.8.0-alpha.13"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugin-error-handler"
   },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

@@ -63,7 +63,7 @@ export const SettingsCenterDropdown = () => {
       path: 'system-settings/system-settings',
     },
     {
-      title: t('Workflow'),
+      title: t('workflow:Workflow'),
       path: 'workflow/workflows',
     },
     // {
@@ -95,6 +95,7 @@ export const SettingsCenterDropdown = () => {
               onClick={() => {
                 history.push('/admin/settings');
               }}
+              key="/admin/settings"
             >
               {t('Settings center')}
             </Menu.Item>

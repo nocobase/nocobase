@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/test",
-  "version": "0.8.0-alpha.8",
+  "version": "0.8.0-alpha.13",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
@@ -11,7 +11,7 @@
     }
   ],
   "dependencies": {
-    "@nocobase/server": "0.8.0-alpha.8",
+    "@nocobase/server": "0.8.0-alpha.13",
     "@types/supertest": "^2.0.11",
     "mockjs": "^1.1.0",
     "mysql2": "^2.3.3",
@@ -20,5 +20,5 @@
     "sqlite3": "^5.0.8",
     "supertest": "^6.1.6"
   },
-  "gitHead": "b17d1ecae5dd0b9d4e7170dcf9663bb225598990"
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

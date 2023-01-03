@@ -19,7 +19,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class MyPlugin extends Plugin {
   afterAdd() {
-    // 插件 pm.add 注册进来之后，主要用于放置 app beforeLoad 事件的监听
+    // 插件 pm.add 注册进来之后。主要用于放置 app beforeLoad 事件的监听
     this.app.on('beforeLoad');
   }
   beforeLoad() {

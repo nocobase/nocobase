@@ -1,59 +1,47 @@
 # Plugin
 
-## 示例
+## Overview
 
-```ts
-const app = new Application();
+Plugins in NocoBase are in the form of `Class`. Custom plugins need to inherit the `Plugin` class.
+
+```typescript
+import { Plugin } from '@nocobase/server';
 
 class MyPlugin extends Plugin {
-  afterAdd() {}
-  beforeLoad() {}
-  load() {}
-  install() {}
-  afterEnable() {}
-  afterDisable() {}
-  remove() {}
+  // ...
 }
 
 app.plugin(MyPlugin, { name: 'my-plugin' });
 ```
 
-## 属性
+## Plugin Lifecycle
 
-### `options`
-
-插件配置信息
-
-### `name`
-
-插件标识，只读
-
-## 实例方法
-
-### `afterAdd()`
-
-插件 add/addStatic 之后
+Each plugin contains lifecycle methods, you can override these methods in order to execute them at certain stages during runtime. Lifecycle methods will be called by `Application` at certain stages, refer to [`Application` LifeCycle](./application.md).
 
 ### `beforeLoad()`
 
-插件加载前，如事件或类注册
+To implement the logic before plugin is loaded, such as event or class registration. The core interface can be accessed here, while other plugins are not available.
 
 ### `load()`
 
-加载插件，配置之类
+To implement the logic to load plugin, configurations and so on. Other plugin instances can be called in `load`, but not in `beforeLoad`.
 
 ### `install()`
 
-插件安装逻辑，如初始化数据
+To implement the logic to install plugin, such as data initialization.
+
+### `afterAdd()`
+
+To implement the logic after the add/addStatic of plugin.
 
 ### `afterEnable()`
 
-插件激活之后的逻辑
+To implement the logic after plugin is enabled.
 
 ### `afterDisable()`
 
-插件禁用之后的逻辑
+To implement the logic after plugin is disabled.
 
 ### `remove()`
 
-用于实现插件删除逻辑
+To implement the logic to remove plugin.

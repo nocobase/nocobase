@@ -12,7 +12,9 @@ export default {
     const options = processor.getParsedValue(params);
     const result = await repo.destroy({
       ...options,
-      context: processor.options._context,
+      context: {
+        executionId: processor.execution.id
+      },
       transaction: processor.transaction
     });
 

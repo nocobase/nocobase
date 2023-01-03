@@ -2,7 +2,14 @@ import Database from '@nocobase/database';
 
 export function afterCreateForForeignKeyField(db: Database) {
   function generateFkOptions(collectionName: string, foreignKey: string) {
-    const M = db.getModel(collectionName);
+    const collection = db.getCollection(collectionName);
+
+    if (!collection) {
+      throw new Error('collection not found');
+    }
+
+    const M = collection.model;
+
     const attr = M.rawAttributes[foreignKey];
     if (!attr) {
       throw new Error(`${collectionName}.${foreignKey} does not exists`);
@@ -12,7 +19,12 @@ export function afterCreateForForeignKeyField(db: Database) {
 
   // Foreign key types are only integer and string
   function attribute2field(attribute: any) {
-    const type = attribute.type.constructor.name === 'INTEGER' ? 'integer' : 'string';
+    let type = 'bigInt';
+    if (attribute.type.constructor.name === 'INTEGER') {
+      type = 'integer';
+    } else if (attribute.type.constructor.name === 'STRING') {
+      type = 'string';
+    }
     const name = attribute.fieldName;
     const data = {
       interface: 'integer',
@@ -50,23 +62,39 @@ export function afterCreateForForeignKeyField(db: Database) {
       },
       transaction,
     });
+
     if (instance) {
       if (instance.type !== values.type) {
         throw new Error(`fk type invalid`);
       }
-      instance.set('sort',1);
+      instance.set('sort', 1);
       instance.set('isForeignKey', true);
       await instance.save({ transaction });
     } else {
-      await r.create({
+      const creatInstance = await r.create({
         values: {
           isForeignKey: true,
-          sort:1,
           ...values,
         },
         transaction,
       });
+      // SortField#setSortValue instance._previousDataValues[scopeKey] judgment cause create set sort:1 invalid, need update
+      creatInstance.set('sort', 1);
+      await creatInstance.save({ transaction });
     }
+    // update ID sort:0
+    await r.update({
+      filter: {
+        collectionName,
+        options: {
+          primaryKey: true,
+        },
+      },
+      values: {
+        sort: 0,
+      },
+      transaction,
+    });
   }
 
   return async (model, { transaction, context }) => {
@@ -74,7 +102,9 @@ export function afterCreateForForeignKeyField(db: Database) {
     if (!context) {
       return;
     }
+
     const { type, interface: interfaceType, collectionName, target, through, foreignKey, otherKey } = model.get();
+
     // foreign key in target collection
     if (['oho', 'o2m'].includes(interfaceType)) {
       const values = generateFkOptions(target, foreignKey);
@@ -86,6 +116,7 @@ export function afterCreateForForeignKeyField(db: Database) {
         transaction,
       });
     }
+
     // foreign key in source collection
     else if (['obo', 'm2o'].includes(interfaceType)) {
       const values = generateFkOptions(collectionName, foreignKey);
@@ -94,6 +125,7 @@ export function afterCreateForForeignKeyField(db: Database) {
         transaction,
       });
     }
+
     // foreign key in through collection
     else if (['linkTo', 'm2m'].includes(interfaceType)) {
       if (type !== 'belongsToMany') {
@@ -111,8 +143,9 @@ export function afterCreateForForeignKeyField(db: Database) {
           values: {
             name: through,
             title: through,
-            timestamps: false,
+            timestamps: true,
             autoGenId: false,
+            hidden: true,
             autoCreate: true,
             isThrough: true,
           },

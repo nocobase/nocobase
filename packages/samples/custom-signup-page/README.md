@@ -23,6 +23,6 @@ yarn build
 yarn start
 ```
 
-## Visit the custom page
+## Visit the custom sign up page
 
-Open http://localhost:13000/hello-world in a web browser.
+Open [http://localhost:13000/signup](http://localhost:13000/signup) in a web browser.

@@ -1,4 +1,4 @@
-import { Plugin } from '@nocobase/server';
+import { Plugin, PluginManager } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
 import { isAbsolute, resolve } from 'path';
@@ -22,6 +22,7 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('app', 'getInfo');
     this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
+    const dialect = this.app.db.sequelize.getDialect();
     this.app.resource({
       name: 'app',
       actions: {
@@ -35,6 +36,9 @@ export class ClientPlugin extends Plugin {
             lang = currentUser?.appLang;
           }
           ctx.body = {
+            database: {
+              dialect,
+            },
             version: await ctx.app.version.get(),
             lang,
           };
@@ -64,7 +68,8 @@ export class ClientPlugin extends Plugin {
           ctx.body = items
             .filter((item) => {
               try {
-                require.resolve(`@nocobase/plugin-${item.name}/client`);
+                const packageName = PluginManager.getPackageName(item.name);
+                require.resolve(`${packageName}/client`);
                 return true;
               } catch (error) {}
               return false;
@@ -96,16 +101,19 @@ export class ClientPlugin extends Plugin {
       root = resolve(process.cwd(), root);
     }
     if (process.env.APP_ENV !== 'production' && root) {
-      this.app.middleware.nodes.unshift(async (ctx, next) => {
-        if (ctx.path.startsWith(this.app.resourcer.options.prefix)) {
-          return next();
-        }
-        await serve(root)(ctx, next);
-        // console.log('koa-send', root, ctx.status);
-        if (ctx.status == 404) {
-          return send(ctx, 'index.html', { root });
-        }
-      });
+      this.app.use(
+        async (ctx, next) => {
+          if (ctx.path.startsWith(this.app.resourcer.options.prefix)) {
+            return next();
+          }
+          await serve(root)(ctx, next);
+          // console.log('koa-send', root, ctx.status);
+          if (ctx.status == 404) {
+            return send(ctx, 'index.html', { root });
+          }
+        },
+        { tag: 'clientStatic', before: 'cors' },
+      );
     }
   }
 }

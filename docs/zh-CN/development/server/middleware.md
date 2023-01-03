@@ -57,7 +57,7 @@ app.use(async (ctx, next) => {
    3. `acl`
       1. `acl.use()` 添加的其他中间件
    4. `resourcer.use()` 添加的其他中间件
-   5. action handler
+   5. `action handler`
 7. `app.use()` 添加的其他中间件
 
 也可以使用 `before` 或 `after` 将中间件插入到前面的某个 `tag` 标记的位置，如：

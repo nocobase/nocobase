@@ -4,13 +4,12 @@ import { Button, Select } from "antd";
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { Trans, useTranslation } from "react-i18next";
 
-import { i18n } from "@nocobase/client";
-
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
 import { useFlowContext } from '../FlowContext';
 import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { Calculation } from "../calculators";
+import { lang, NAMESPACE } from "../locale";
 
 
 
@@ -19,7 +18,7 @@ function CalculationItem({ value, onChange, onRemove }) {
     return null;
   }
 
-  const { calculator, operands = [] } = value;
+  const { calculator, operands = [null] } = value;
 
   return (
     <div className={css`
@@ -140,14 +139,14 @@ function CalculationConfig({ value, onChange }) {
 }
 
 export default {
-  title: '{{t("Condition")}}',
+  title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
   type: 'condition',
   group: 'control',
   fieldset: {
     'config.rejectOnFalse': {
       type: 'boolean',
       name: 'config.rejectOnFalse',
-      title: '{{t("Mode")}}',
+      title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       'x-component-props': {
@@ -156,18 +155,18 @@ export default {
       enum: [
         {
           value: true,
-          label: i18n.t('Continue when "Yes"')
+          label: lang('Continue when "Yes"')
         },
         {
           value: false,
-          label: i18n.t('Branch into "Yes" and "No"')
+          label: lang('Branch into "Yes" and "No"')
         }
       ],
     },
     'config.calculation': {
       type: 'string',
       name: 'config.calculation',
-      title: '{{t("Conditions")}}',
+      title: `{{t("Conditions", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',
     }
@@ -176,12 +175,13 @@ export default {
 
   },
   options: [
-    { label: i18n.t('Continue when "Yes"'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
-    { label: i18n.t('Branch into "Yes" and "No"'), key: 'branch', value: { rejectOnFalse: false } }
+    { label: lang('Continue when "Yes"'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
+    { label: lang('Branch into "Yes" and "No"'), key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
-    const { id, config: { rejectOnFalse } } = data;
+    const { t } = useTranslation();
     const { nodes } = useFlowContext();
+    const { id, config: { rejectOnFalse } } = data;
     const trueEntry = nodes.find(item => item.upstreamId === id && item.branchIndex === 1);
     const falseEntry = nodes.find(item => item.upstreamId === id && item.branchIndex === 0);
     return (
@@ -216,8 +216,8 @@ export default {
                 }
               `}
             >
-              <span className={css`right: 4em;`}>{i18n.t('No')}</span>
-              <span className={css`left: 4em;`}>{i18n.t('Yes')}</span>
+              <span className={css`right: 4em;`}>{t('No')}</span>
+              <span className={css`left: 4em;`}>{t('Yes')}</span>
             </div>
           </div>
         )}
