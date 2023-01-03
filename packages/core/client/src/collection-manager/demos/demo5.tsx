@@ -1,9 +1,11 @@
-import { FormLayout } from '@formily/antd';
+import { FormDrawer, FormLayout } from '@formily/antd';
 import { createForm } from '@formily/core';
-import { FormContext, ISchema } from '@formily/react';
+import { FormContext, ISchema, SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
+  AntdSchemaComponentProvider,
   CardItem,
+  CollectionManagerContext,
   CollectionManagerProvider,
   CollectionProvider,
   FormItem,
@@ -12,13 +14,14 @@ import {
   InputNumber,
   Markdown,
   SchemaComponent,
+  SchemaComponentOptions,
   SchemaComponentProvider,
   SchemaInitializer,
   SchemaInitializerProvider,
   useCollectionManager
 } from '@nocobase/client';
 import cloneDeep from 'lodash/cloneDeep';
-import React from 'react';
+import React, { useContext } from 'react';
 
 const collection: any = {
   name: 'posts',
@@ -63,9 +66,11 @@ const form = createForm({
 const FormItemInitializer = (props) => {
   const { item, insert } = props;
   const { getInterface } = useCollectionManager();
+  const schemaOptions = useContext(SchemaOptionsContext);
+  const cm = useContext(CollectionManagerContext);
   return (
     <SchemaInitializer.Item
-      onClick={() => {
+      onClick={async () => {
         const interfaceOptions = getInterface(item.fieldInterface);
         if (!interfaceOptions) {
           return;
@@ -76,6 +81,27 @@ const FormItemInitializer = (props) => {
         options.uiSchema.title = name;
         collection.fields.push(options);
         form.setValuesIn(name, uid());
+
+        const { values } = await FormDrawer('Add field', () => {
+          return (
+            <CollectionManagerContext.Provider value={cm}>
+              <AntdSchemaComponentProvider>
+                <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
+                  <FormLayout layout={'vertical'}>
+                    <SchemaComponent
+                      schema={{
+                        properties: interfaceOptions.properties,
+                      }}
+                    />
+                  </FormLayout>
+                </SchemaComponentOptions>
+              </AntdSchemaComponentProvider>
+            </CollectionManagerContext.Provider>
+          );
+        }).open({
+          initialValues: {},
+        });
+
         insert({
           name,
           type: 'string',

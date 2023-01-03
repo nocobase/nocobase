@@ -74,7 +74,9 @@ export class PluginManager {
       if (options?.method !== 'install' || options.reload) {
         await this.repository.load();
       }
-      this.app.acl.skip('applicationPlugins', 'list');
+    });
+    this.app.on('beforeUpgrade', async () => {
+      await this.collection.sync();
     });
     this.addStaticMultiple(options.plugins);
   }
@@ -217,23 +219,22 @@ export class PluginManager {
       transaction,
       filter: { name: plugin },
     });
-    if (model) {
-      throw new Error(`${plugin} plugin already exists`);
-    }
-    const { enabled, builtIn, installed, ...others } = options;
-    await this.repository.create({
-      transaction,
-      values: {
-        name: plugin,
-        version: packageJson.version,
-        enabled: !!enabled,
-        builtIn: !!builtIn,
-        installed: !!installed,
-        options: {
-          ...others,
+    if (!model) {
+      const { enabled, builtIn, installed, ...others } = options;
+      model = await this.repository.create({
+        transaction,
+        values: {
+          name: plugin,
+          version: packageJson.version,
+          enabled: !!enabled,
+          builtIn: !!builtIn,
+          installed: !!installed,
+          options: {
+            ...others,
+          },
         },
-      },
-    });
+      });
+    }
     const file = resolve(
       process.cwd(),
       'packages',

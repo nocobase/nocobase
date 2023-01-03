@@ -15,6 +15,30 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should create inherits with table name contains upperCase', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'date' }],
+    });
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+    db.collection({
+      name: 'abcABC',
+      inherits: ['parent'],
+      fields: [{ type: 'string', name: 'name' }],
+    });
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+  });
+
   it('should create inherits from empty table', async () => {
     const empty = db.collection({
       name: 'empty',

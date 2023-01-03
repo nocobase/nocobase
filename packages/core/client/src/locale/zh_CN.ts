@@ -138,6 +138,7 @@ export default {
   "Override": "重写",
   "Override field": "重写字段",
   "Configure fields of {{title}}": "「{{title}}」的字段配置",
+  "Association fields filter": "关系筛选",
   "PK & FK fields": "主外键字段",
   "Association fields": "关系字段",
   "System fields": "系统字段",
@@ -326,6 +327,7 @@ export default {
 
   "Configure calendar": "配置日历",
   "Title field": "标题字段",
+  "Custom title": "自定义标题",
   "Show lunar": "展示农历",
   "Start date field": "开始日期字段",
   "End date field": "结束日期字段",

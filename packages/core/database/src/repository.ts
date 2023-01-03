@@ -281,7 +281,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           attributes: [primaryKeyField],
           group: `${model.name}.${primaryKeyField}`,
           transaction,
-        })
+          include: opts.include.filter((include) => {
+            return (
+              Object.keys(include.where || {}).length > 0 || JSON.stringify(opts?.filter)?.includes(include.association)
+            );
+          }),
+        } as any)
       ).map((row) => {
         return { row, pk: row.get(primaryKeyField) };
       });
@@ -289,6 +294,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       if (ids.length == 0) {
         return [];
       }
+
+      const templateModel = await model.findOne({
+        ...opts,
+        includeIgnoreAttributes: false,
+        attributes: [primaryKeyField],
+        group: `${model.name}.${primaryKeyField}`,
+        transaction,
+        limit: 1,
+        offset: 0,
+      } as any);
 
       const where = {
         [primaryKeyField]: {
@@ -309,7 +324,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
             return { rows, include };
           });
         }),
-        templateModel: ids[0].row,
+        templateModel: templateModel,
       });
     } else {
       rows = await model.findAll({
@@ -529,6 +544,18 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         ? [options.filterByTk]
         : (options.filterByTk as TargetKey[] | undefined);
 
+    if (
+      this.collection.model.primaryKeyAttributes.length !== 1 &&
+      filterByTk &&
+      !lodash.get(this.collection.options, 'filterTargetKey')
+    ) {
+      if (this.collection.model.primaryKeyAttributes.length > 1) {
+        throw new Error(`filterByTk is not supported for composite primary key`);
+      } else {
+        throw new Error(`filterByTk is not supported for collection that has no primary key`);
+      }
+    }
+
     if (filterByTk && !options.filter) {
       return await this.model.destroy({
         ...options,
@@ -542,6 +569,20 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (options.filter) {
+      if (
+        this.collection.model.primaryKeyAttributes.length !== 1 &&
+        !lodash.get(this.collection.options, 'filterTargetKey')
+      ) {
+        const queryOptions = {
+          ...this.buildQueryOptions(options),
+        };
+
+        return await this.model.destroy({
+          ...queryOptions,
+          transaction,
+        });
+      }
+
       let pks = (
         await this.find({
           filter: options.filter,

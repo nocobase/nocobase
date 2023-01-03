@@ -1,30 +1,29 @@
 # Database
 
-## 概览
+## Overview
 
-Database 是 Nocobase 提供的数据库交互工具，为无代码、低代码应用提供了非常方便的数据库交互功能。目前支持的数据库为：
+Database is the database interaction tool provided by NocoBase, it provides very convenient database interaction features for no-code and low-code applications. The supported databases are:
 
 * SQLite 3.8.8+
 * MySQL 8.0.17+ 
 * PostgreSQL 10.0+
 
+### Connect to Database
 
-### 连接数据库
-
-在 `Database` 构造函数中，可以通过传入 `options` 参数来配置数据库连接。
+In `Database` constructor, database connection can be configured by passing the `options` parameter.
 
 ```javascript
 const { Database } = require('@nocobase/database');
 
-// SQLite 数据库配置参数
+// SQLite database configuration parameters
 const database = new Database({
   dialect: 'sqlite',
   storage: 'path/to/database.sqlite'
 })
 
-// MySQL \ PostgreSQL 数据库配置参数
+// MySQL \ PostgreSQL database configuration parameters
 const database = new Database({
-  dialect: /* 'postgres' 或者 'mysql' */,
+  dialect: /* 'postgres' or 'mysql' */,
   database: 'database',
   username: 'username',
   password: 'password',
@@ -34,14 +33,14 @@ const database = new Database({
 
 ```
 
-详细的配置参数请参考 [构造函数](#构造函数)。
+Refer to [Constructor](#constructor) for detailed configurations.
 
-### 数据模型定义
+### Define Data Structure
 
-`Database` 通过 `Collection` 定义数据库结构，一个 `Collection` 对象代表了数据库中的一张表。
+`Database` defines database structure through `Collection`, one `Collection` object represents one table in the database.
 
 ```javascript
-// 定义 Collection 
+// Define Collection 
 const UserCollection = database.collection({
   name: 'users',
   fields: [
@@ -58,95 +57,93 @@ const UserCollection = database.collection({
 
 ```
 
-数据库结构定义完成之后，可使用 `sync()` 方法来同步数据库结构。
+After the database structure is defined, use `sync()` method to synchronize the database structure.
 
 ```javascript
 await database.sync();
 ```
 
-更加详细的 `Collection` 使用方法请参考 [Collection](/api/database/collection.md)。
+Refer to [Collection](/api/database/collection.md) for detailed usage of `Collection`.
 
-### 数据读写
+### CRUD Data
 
-`Database` 通过 `Repository` 对数据进行操作。
+`Database` operates data through `Repository`.
 
 ```javascript
 
 const UserRepository = UserCollection.repository();
 
-// 创建
+// Create
 await UserRepository.create({
-  name: '张三',
+  name: 'Mark',
   age: 18,
 });
 
-// 查询
+// Query
 const user = await UserRepository.findOne({
   filter: {
-    name: '张三',
+    name: 'Mark',
   },
 });
 
-// 修改
+// Update
 await UserRepository.update({
   values: {
     age: 20,
   },
 });
 
-// 删除
+// Delete
 await UserRepository.destroy(user.id);
 ```
 
-更加详细的数据 CRUD 使用方法请参考 [Repository](/api/database/repository.md)。
+Refer to [Repository](/api/database/repository.md) for details of data CRUD.
 
+## Constructor
 
-## 构造函数
-
-**签名**
+**Signature**
 
 * `constructor(options: DatabaseOptions)`
 
-创建一个数据库实例。
+Create a database instance.
 
-**参数**
+**Parameter**
 
-
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.host` | `string` | `'localhost'` | 数据库主机 |
-| `options.port` | `number` | - | 数据库服务端口，根据使用的数据库有对应默认端口 |
-| `options.username` | `string` | - | 数据库用户名 |
-| `options.password` | `string` | - | 数据库密码 |
-| `options.database` | `string` | - | 数据库名称 |
-| `options.dialect` | `string` | `'mysql'` | 数据库类型 |
-| `options.storage?` | `string` | `':memory:'` | SQLite 的存储模式 |
-| `options.logging?` | `boolean` | `false` | 是否开启日志 |
-| `options.define?` | `Object` | `{}` | 默认的表定义参数 |
-| `options.tablePrefix?` | `string` | `''` | NocoBase 扩展，表名前缀 |
-| `options.migrator?` | `UmzugOptions` | `{}` | NocoBase 扩展，迁移管理器相关参数，参考 [Umzug](https://github.com/sequelize/umzug/blob/main/src/types.ts#L15) 实现 |
+| `options.host` | `string` | `'localhost'` | Database host |
+| `options.port` | `number` | - | Database service port, there is a default port depending on the database used |
+| `options.username` | `string` | - | Database username |
+| `options.password` | `string` | - | Database password|
+| `options.database` | `string` | - | Database name |
+| `options.dialect` | `string` | `'mysql'` | Database type |
+| `options.storage?` | `string` | `':memory:'` | Storage mode for SQLite |
+| `options.logging?` | `boolean` | `false` | Whether to enable logging |
+| `options.define?` | `Object` | `{}` | Default table definition parameters |
+| `options.tablePrefix?` | `string` | `''` | NocoBase extension, table prefix |
+| `options.migrator?` | `UmzugOptions` | `{}` | NocoBase extension, parameters for migrator, refer to [Umzug](https://github.com/sequelize/umzug/blob/main/src/types.ts#L15) for the implementation |
 
-## 迁移相关方法
+## Migration Methods
 
 ### `addMigration()`
 
-添加单个迁移文件。
+Add single migration file.
 
-**签名**
+**Signature**
 
 * `addMigration(options: MigrationItem)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.name` | `string` | - | 迁移文件名称 |
-| `options.context?` | `string` | - | 迁移文件的 `up` 方法 |
-| `options.migration?` | `typeof Migration` | - | 迁移文件的自定义类 |
-| `options.up` | `Function` | - | 迁移文件的 `up` 方法 |
-| `options.down` | `Function` | - | 迁移文件的 `down` 方法 |
+| `options.name` | `string` | - | Name of the migration file |
+| `options.context?` | `string` | - | Context of the migration file |
+| `options.migration?` | `typeof Migration` | - | Custom type of the migration file |
+| `options.up` | `Function` | - | `up` method of the migration file |
+| `options.down` | `Function` | - | `down` method of the migration file |
 
-**示例**
+**Example**
 
 ```ts
 db.addMigration({
@@ -160,22 +157,22 @@ db.addMigration({
 
 ### `addMigrations()`
 
-添加指定目录下的迁移文件。
+Add the migration files in the specified directory.
 
-**签名**
+**Signature**
 
 * `addMigrations(options: AddMigrationsOptions): void`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.directory` | `string` | `''` | 迁移文件所在目录 |
-| `options.extensions` | `string[]` | `['js', 'ts']` | 文件扩展名 |
-| `options.namespace?` | `string` | `''` | 命名空间 |
-| `options.context?` | `Object` | `{ db }` | 迁移文件的上下文 |
+| `options.directory` | `string` | `''` | Directory where the migration files are located |
+| `options.extensions` | `string[]` | `['js', 'ts']` | File extensions |
+| `options.namespace?` | `string` | `''` | Namespace |
+| `options.context?` | `Object` | `{ db }` | Context of the migration files |
 
-**示例**
+**Example**
 
 ```ts
 db.addMigrations({
@@ -184,50 +181,50 @@ db.addMigrations({
 });
 ```
 
-## 工具方法
+## Tool Methods
 
 ### `inDialect()`
 
-判断当前数据库类型是否为指定类型。
+Check whether the current database type is the specified type.
 
-**签名**
+**Signature**
 
 * `inDialect(dialect: string[]): boolean`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `dialect` | `string[]` | - | 数据库类型，可选值为 `mysql`/`postgres`/`sqlite` |
+| `dialect` | `string[]` | - | Database type, options are `mysql`, `postgres` and `sqlite` |
 
 ### `getTablePrefix()`
 
-获取配置中的表名前缀。
+Get the table name prefix in the configuration.
 
-**签名**
+**Signature**
 
 * `getTablePrefix(): string`
 
-## 数据表配置
+## Data Table Configuration
 
 ### `collection()`
 
-定义一个数据表。该调用类似与 Sequelize 的 `define` 方法，只在内存中创建表结构，如需持久化到数据库，需要调用 `sync` 方法。
+Define a data table. This is similar to the `define` method of Sequelize, which only creates table structure in memory. Call the `sync` method if it is needed to be persisted to the database.
 
-**签名**
+**Signature**
 
 * `collection(options: CollectionOptions): Collection`
 
-**参数**
+**Parameter**
 
-`options` 所有配置参数与 `Collection` 类的构造函数一致，参考 [Collection](/api/server/database/collection#构造函数)。
+All configuration parameters of `options` is consistent with the constructor of the `Collection` class, refer to [Collection](/api/server/database/collection#Constructor).
 
-**事件**
+**Event**
 
-* `'beforeDefineCollection'`：在定义表之前触发。
-* `'afterDefineCollection'`：在定义表之后触发。
+* `'beforeDefineCollection'`: Trigger before defining the table.
+* `'afterDefineCollection'`: Trigger after defining the table.
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -250,19 +247,19 @@ await db.sync();
 
 ### `getCollection()`
 
-获取已定义的数据表。
+Gets a defined data table.
 
-**签名**
+**Signature**
 
 * `getCollection(name: string): Collection`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name	 | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 表名 |
+| `name` | `string` | - | Table name |
 
-**示例**
+**Example**
 
 ```ts
 const collection = db.getCollection('books');
@@ -270,19 +267,19 @@ const collection = db.getCollection('books');
 
 ### `hasCollection()`
 
-判断是否已定义指定的数据表。
+Check whether if a specified data table has been defined.
 
-**签名**
+**Signature**
 
 * `hasCollection(name: string): boolean`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 表名 |
+| `name` | `string` | - | Table name |
 
-**示例**
+**Example**
 
 ```ts
 db.collection({ name: 'books' });
@@ -294,24 +291,24 @@ db.hasCollection('authors'); // false
 
 ### `removeCollection()`
 
-移除已定义的数据表。仅在内存中移除，如需持久化，需要调用 `sync` 方法。
+Remove a defined data table; remove from memory only. Call the `sync` method if it is needed to be persisted to the database.
 
-**签名**
+**Signature**
 
 * `removeCollection(name: string): void`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 表名 |
+| `name` | `string` | - | Table name |
 
-**事件**
+**Event**
 
-* `'beforeRemoveCollection'`：在移除表之前触发。
-* `'afterRemoveCollection'`：在移除表之后触发。
+* `'beforeRemoveCollection'`: Trigger before removing the table.
+* `'afterRemoveCollection'`: Trigger after removing the table
 
-**示例**
+**Example**
 
 ```ts
 db.collection({ name: 'books' });
@@ -321,22 +318,22 @@ db.removeCollection('books');
 
 ### `import()`
 
-导入文件目录下所有文件作为 collection 配置载入内存。
+Load all files in the import file directory into memory as the  configuration of collection.
 
-**签名**
+**Signature**
 
 * `async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>>`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.directory` | `string` | - | 要导入的目录路径 |
-| `options.extensions` | `string[]` | `['ts', 'js']` | 扫描特定后缀 |
+| `options.directory` | `string` | - | Path of directory to be imported |
+| `options.extensions` | `string[]` | `['ts', 'js']` | Scan for specific suffixes |
 
-**示例**
+**Example**
 
-`./collections/books.ts` 文件定义的 collection 如下：
+The collection defined by file `./collections/books.ts` is as below:
 
 ```ts
 export default {
@@ -350,7 +347,7 @@ export default {
 };
 ```
 
-在插件加载时导入相关配置：
+Import the relevant configurations when loading the plugin:
 
 ```ts
 class Plugin {
@@ -362,21 +359,21 @@ class Plugin {
 }
 ```
 
-## 扩展注册与获取
+## Extended Registration and Acquisition
 
 ### `registerFieldTypes()`
 
-注册自定义字段类型。
+Register custom field type.
 
-**签名**
+**Signature**
 
 * `registerFieldTypes(fieldTypes: MapOf<typeof Field>): void`
 
-**参数**
+**Parameter**
 
-`fieldTypes` 是一个键值对，键为字段类型名称，值为字段类型类。
+`fieldTypes` is a key-value pair, where key is the field type name and value is the field type class.
 
-**示例**
+**Example**
 
 ```ts
 import { Field } from '@nocobase/database';
@@ -392,17 +389,17 @@ db.registerFieldTypes({
 
 ### `registerModels()`
 
-注册自定义数据模型类。
+Register custom data model class.
 
-**签名**
+**Signature**
 
 * `registerModels(models: MapOf<ModelStatic<any>>): void`
 
-**参数**
+**Parameter**
 
-`models` 是一个键值对，键为数据模型名称，值为数据模型类。
+`models` is a key-value pair, where key is the data model name and value is the data model class.
 
-**示例**
+**Example**
 
 ```ts
 import { Model } from '@nocobase/database';
@@ -423,17 +420,17 @@ db.collection({
 
 ### `registerRepositories()`
 
-注册自定义数据仓库类。
+Register custom data repository class.
 
-**签名**
+**Signature**
 
 * `registerRepositories(repositories: MapOf<RepositoryType>): void`
 
-**参数**
+**Parameter**
 
-`repositories` 是一个键值对，键为数据仓库名称，值为数据仓库类。
+`repositories` is a key-value pair, where key is the data repository name and value is the data repository class.
 
-**示例**
+**Example**
 
 ```ts
 import { Repository } from '@nocobase/database';
@@ -454,17 +451,17 @@ db.collection({
 
 ### `registerOperators()`
 
-注册自定义数据查询操作符。
+Register custom data query operator.
 
-**签名**
+**Signature**
 
 * `registerOperators(operators: MapOf<OperatorFunc>)`
 
-**参数**
+**Parameter**
 
-`operators` 是一个键值对，键为操作符名称，值为操作符比较语句生成函数。
+`operators` is a key-value pair, where key is the operator name and value is the generating function of the comparison operator statement.
 
-**示例**
+**Example**
 
 ```ts
 db.registerOperators({
@@ -487,19 +484,19 @@ db.getRepository('books').count({
 
 ### `getModel()`
 
-获取已定义的数据模型类。如果没有在之前注册自定义模型类，将返回 Sequelize 默认的模型类。默认名称与 collection 定义的名称相同。
+Get the defined data model class. If no custom model class has been registered before, the default model class of Sequelize will be returned. The default name is the same as the name defined by collection.
 
-**签名**
+**Signature**
 
 * `getModel(name: string): Model`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 已注册的模型名 |
+| `name` | `string` | - | Registered model name |
 
-**示例**
+**Example**
 
 ```ts
 db.registerModels({
@@ -511,31 +508,31 @@ const ModelClass = db.getModel('books');
 console.log(ModelClass.prototype instanceof MyModel) // true
 ```
 
-注：从 collection 中获取的模型类并不与注册时的模型类严格相等，而是继承自注册时的模型类。由于 Sequelize 的模型类在初始化过程中属性会被修改，所以 NocoBase 自动处理了这个继承关系。除类不相等以外，其他所有定义都可以正常使用。
+Note: The model class retrieved from collection is not strictly equivalent to the model class at registration, but is inherited from the model class at registration. Since the properties of Sequelize's model class are modified during initialization, NocoBase automatically handles this inheritance relationship. All thr definitions work fine except that the classes are not equal.
 
 ### `getRepository()`
 
-获取自定义的数据仓库类。如果没有在之前注册自定义数据仓库类，将返回 NocoBase 默认的数据仓库类。默认名称与 collection 定义的名称相同。
+Get the defined data repository class. If no custom data repository class has been registered before, the default data repository class of NocoBase will be returned. The default name is the same as the name defined by collection.
 
-数据仓库类主要用于基于数据模型的增删改查等操作，参考 [数据仓库](/api/server/database/repository)。
+Data repository class is mainly used for the CRUD operations based on data model, refer to [Repository](/api/server/database/repository).
 
-**签名**
+**Signature**
 
 * `getRepository(name: string): Repository`
 * `getRepository(name: string, relationId?: string | number): Repository`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 已注册的数据仓库名 |
-| `relationId` | `string` \| `number` | - | 关系数据的外键值 |
+| `name` | `string` | - | Registered data repository name |
+| `relationId` | `string` \| `number` | - | Foreign key value for relational data |
 
-当名称是形如 `'tables.relactions'` 的带关联的名称时，将返回关联的数据仓库类。如果提供了第二个参数，数据仓库在使用时（查询、修改等）会基于关系数据的外键值。
+When the name contains relationship in the form of `'tables.relactions'`, the related data repository class is returned. If the second parameter is provided, the data repository will be used (query, modify, etc.) based on the foreign key values of the relational data.
 
-**示例**
+**Example**
 
-假设有两张数据表_文章_与_作者_，并且文章表中有一个外键指向作者表：
+Suppose there are two data tables <i>posts</i> and <i>authors</i>, and there is a foreign key in the <i>posts</i> table points to the <i>authors</i> table:
 
 ```ts
 const AuthorsRepo = db.getRepository('authors');
@@ -546,41 +543,43 @@ const post1 = AuthorsRepo.create({ title: 'post1' });
 asset(post1.authorId === author1.id); // true
 ```
 
-## 数据库事件 
+## Database Event 
 
 ### `on()`
 
-监听数据库事件。
+Listen for database events.
 
-**签名**
+**Signature**
 
 * `on(event: string, listener: (...args: any[]) => void | Promise<void>): void`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| event | string | - | 事件名称 |
-| listener | Function | - | 事件监听器 |
+| event | string | - | Event name |
+| listener | Function | - | Event listener |
 
-事件名称默认支持 Sequelize 的 Model 事件。针对全局事件，通过 `<sequelize_model_global_event>` 的名称方式监听，针对单 Model 事件，通过 `<model_name>.<sequelize_model_event>` 的名称方式监听。
+Event name supports Model event of Sequelize by default. Global event is listened to by the name `<sequelize_model_global_event>`, single Model event is listened to by the name `<model_name>. <sequelize_model_event>`.
 
-所有内置的事件类型的参数说明和详细示例参考 [内置事件](#内置事件) 部分内容。
+Refer to the [Built-in Events](#built-in-events) section for parameter descriptions and detailed examples of all built-in event types.
 
 ### `off()`
 
-移除事件监听函数。
+Remove the event listener function.
 
-**签名**
+**Signature**
 
 * `off(name: string, listener: Function)`
 
-| 参数名 | 类型 | 默认值 | 描述 |
-| --- | --- | --- | --- |
-| name | string | - | 事件名称 |
-| listener | Function | - | 事件监听器 |
+**Parameter**
 
-**示例**
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| name | string | - | Event name |
+| listener | Function | - | Event listener |
+
+**Example**
 
 ```ts
 const listener = async (model, options) => {
@@ -592,26 +591,26 @@ db.on('afterCreate', listener);
 db.off('afterCreate', listener);
 ```
 
-## 数据库操作
+## Database Operation
 
 ### `auth()`
 
-数据库连接验证。可以用于确保应用与数据已建立连接。
+Database connection verification. It can be used to ensure that the application has established connection to the data.
 
-**签名**
+**Signature**
 
 * `auth(options: QueryOptions & { retry?: number } = {}): Promise<boolean>`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options?` | `Object` | - | 验证选项 |
-| `options.retry?` | `number` | `10` | 验证失败时重试次数 |
-| `options.transaction?` | `Transaction` | - | 事务对象 |
-| `options.logging?` | `boolean \| Function` | `false` | 是否打印日志 |
+| `options?` | `Object` | - | Verification option |
+| `options.retry?` | `number` | `10` | Number of retries in case of verification failure |
+| `options.transaction?` | `Transaction` | - | Transaction object |
+| `options.logging?` | `boolean \| Function` | `false` | Whether to print the log |
 
-**示例**
+**Example**
   
 ```ts
 await db.auth();
@@ -619,9 +618,9 @@ await db.auth();
 
 ### `reconnect()`
 
-重新连接数据库。
+Reconnect to the database.
 
-**示例**
+**Example**
 
 ```ts
 await db.reconnect();
@@ -629,39 +628,39 @@ await db.reconnect();
 
 ### `closed()`
 
-判断数据库是否已关闭连接。
+Check whether database has closed the connection.
 
-**签名**
+**Signature**
 
 * `closed(): boolean`
 
 ### `close()`
 
-关闭数据库连接。等同于 `sequelize.close()`。
+Closes database connection. Equivalent to `sequelize.close()`.
 
 ### `sync()`
 
-同步数据库表结构。等同于 `sequelize.sync()`，参数参考 [Sequelize 文档](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-sync)。
+Synchronizes database table structure. Equivalent to `sequelize.sync()`, refer to [Sequelize documentation](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-sync) for parameters.
 
 ### `clean()`
 
-清空数据库，将删除所有数据表。
+Empty the database, it will delete all data tables.
 
-**签名**
+**Signature**
 
 * `clean(options: CleanOptions): Promise<void>`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.drop` | `boolean` | `false` | 是否移除所有数据表 |
-| `options.skip` | `string[]` | - | 跳过的表名配置 |
-| `options.transaction` | `Transaction` | - | 事务对象 |
+| `options.drop` | `boolean` | `false` | Whether to remove all data tables |
+| `options.skip` | `string[]` | - | Names of tables to skip |
+| `options.transaction` | `Transaction` | - | Transaction object |
 
-**示例**
+**Example**
 
-移除除 `users` 表以外的所有表。
+Removes all tables except for the `users` table.
 
 ```ts
 await db.clean({
@@ -670,25 +669,25 @@ await db.clean({
 })
 ```
 
-## 包级导出
+## Package-Level Export
 
 ### `defineCollection()`
 
-创建一个数据表的配置内容。
+Create the configuration content of a data table.
 
-**签名**
+**Signature**
 
 * `defineCollection(name: string, config: CollectionOptions): CollectionOptions`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `collectionOptions` | `CollectionOptions` | - | 与所有 `db.collection()` 的参数相同 |
+| `collectionOptions` | `CollectionOptions` | - | All parameters are the same with `db.collection()` |
 
-**示例**
+**Example**
 
-对于要被 `db.import()` 导入的数据表配置文件：
+For the data table configuration file to be imported by `db.import()`:
 
 ```ts
 import { defineCollection } from '@nocobase/database';
