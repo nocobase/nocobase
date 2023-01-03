@@ -1,19 +1,18 @@
 import React from "react";
 import { Cascader, Input, InputNumber, Select } from "antd";
 import { css } from "@emotion/css";
+import { useTranslation } from "react-i18next";
 
 import { useCompile } from "@nocobase/client";
+import { Registry } from "@nocobase/utils/client";
 
-import { instructions, useAvailableUpstreams, useNodeContext } from "./nodes";
+import { instructions, useAvailableUpstreams } from "./nodes";
 import { useFlowContext } from "./FlowContext";
 import { triggers } from "./triggers";
-import { useTranslation } from "react-i18next";
-import { Registry } from "@nocobase/utils/client";
 import { lang, NAMESPACE, useWorkflowTranslation } from "./locale";
+import { NullRender } from './components/NullRender';
 
-function NullRender() {
-  return null;
-}
+
 
 interface Calculator {
   name: string;
@@ -392,7 +391,7 @@ export function Operand({
             isLeaf: !options
           };
         })}
-        onChange={(next: string[]) => {
+        onChange={(next: any) => {
           // 类型变化，包括主类型和子类型
           const { onTypeChange, stringify } = Types[next[0]];
           // 自定义处理
@@ -402,11 +401,14 @@ export function Operand({
           // 主类型变化
           if (next[0] !== type) {
             if (next[0] === 'constant') {
-              return onChange(null);
+              onChange(null);
+              return;
             } else if (stringify) {
-              return onChange(stringify(next));
+              onChange(stringify(next));
+              return;
             }
-            return onChange({ type: next[0], value: null });
+            onChange({ type: next[0], value: null });
+            return;
           }
         }}
       />

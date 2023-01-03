@@ -49,7 +49,7 @@ export interface Trigger {
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
-  useInitializers?(config): SchemaInitializerItemOptions;
+  useInitializers?(config): SchemaInitializerItemOptions | null;
   useValueGetter?(config): ((props) => React.ReactNode) | null;
   initializers?: any;
 };
@@ -222,4 +222,9 @@ export const TriggerConfig = () => {
       />
     </div>
   );
+}
+
+export function useTrigger() {
+  const { workflow } = useFlowContext();
+  return triggers.get(workflow.type);
 }

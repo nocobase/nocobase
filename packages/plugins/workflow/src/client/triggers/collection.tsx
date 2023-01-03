@@ -165,7 +165,7 @@ export default {
   useValueGetter(config) {
     return ValueGetter;
   },
-  useInitializers(config): SchemaInitializerItemOptions {
+  useInitializers(config): SchemaInitializerItemOptions | null {
     if (!config.collection) {
       return null;
     }

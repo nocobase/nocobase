@@ -22,7 +22,7 @@ export const executionCollection = {
       } as ISchema,
     },
     {
-      interface: 'object',
+      interface: 'm2o',
       type: 'belongsTo',
       name: 'workflowId',
       uiSchema: {

@@ -50,7 +50,7 @@ export default {
   useValueGetter(node) {
     return NodeCollectionFieldValueGetter;
   },
-  useInitializers(node): SchemaInitializerItemOptions {
+  useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
       return null;
     }

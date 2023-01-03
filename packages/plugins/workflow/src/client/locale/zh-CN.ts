@@ -125,7 +125,6 @@ export default {
   'Succeed and continue': '通过并继续',
   'Fail and exit': '失败并退出',
 
-  'Prompt': '填写',
   'Assignees': '负责人',
   'Operation user interface': '操作界面',
   'Configure user interface': '配置界面',
@@ -162,5 +161,7 @@ export default {
   'Default headers is Content-Type: application/json': '默认请求头是 Content-Type: application/json',
   'Ignore fail request and continue workflow': '忽略失败请求并继续工作流',
   'Syntax see': '语法参考',
-  'Show available variable tool':'显示可用变量工具'
+  'Show available variable tool':'显示可用变量工具',
+
+  'Workflow todos': '工作流待办',
 };

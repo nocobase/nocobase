@@ -21,7 +21,7 @@ import condition from './condition';
 import parallel from './parallel';
 import delay from './delay';
 
-import prompt from './prompt';
+import manual from './manual';
 
 import query from './query';
 import create from './create';
@@ -43,7 +43,7 @@ export interface Instruction {
   render?(props): React.ReactNode;
   endding?: boolean;
   useValueGetter?(node: any): (props) => React.ReactNode;
-  useInitializers?(node): SchemaInitializerItemOptions;
+  useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
 };
 
@@ -54,7 +54,7 @@ instructions.register('parallel', parallel);
 instructions.register('calculation', calculation);
 instructions.register('delay', delay);
 
-instructions.register('prompt', prompt);
+instructions.register('manual', manual);
 
 instructions.register('query', query);
 instructions.register('create', create);
@@ -77,7 +77,7 @@ function useUpdateAction() {
       }
       // TODO: how to do validation separately for each field? especially disabled for dynamic fields?
       // await form.submit();
-      await api.resource('flow_nodes', data.id).update({
+      await api.resource('flow_nodes', data.id).update?.({
         filterByTk: data.id,
         values: {
           title: form.values.title,
@@ -161,7 +161,7 @@ export function RemoveButton() {
 
   async function onRemove() {
     async function onOk() {
-      const { data: { data: node } } = await resource.destroy({
+      const { data: { data: node } } = await resource.destroy?.({
         filterByTk: current.id
       });
       onNodeRemoved(node);
@@ -338,7 +338,7 @@ export function NodeDefaultView(props) {
           schema={{
             type: 'void',
             properties: {
-              view: instruction.view,
+              ...(instruction.view ? { view: instruction.view } : {}),
               config: {
                 type: 'void',
                 title: detailText,
