@@ -151,7 +151,7 @@ const LocalPlugins = () => {
   return (
     <>
       {data?.data?.map((item) => {
-        return <PluginCard key={item.id} data={item} />;
+        return <PluginCard data={item} />;
       })}
     </>
   );
@@ -317,88 +317,84 @@ const SettingsCenter = (props) => {
     return <Redirect to={`/admin/settings/${pluginName}/${firstTabName}`} />;
   }
   const component = items[pluginName]?.tabs?.[tabName]?.component;
+  const plugin: any = pluginsTabs.find((v) => v.key === pluginName);
   const menuItems: any = pluginsTabs
-    .filter((p) => p.isAllow)
-    .sort()
-    .map((key) => {
-      const item = items[key];
-      const tabKey = Object.keys(item.tabs).shift();
+    .filter((plugin) => plugin.isAllow)
+    .map((plugin) => {
       return {
-        label: compile(item.title),
-        key: key,
-        icon: item.icon ? <Icon type={item.icon} /> : null,
+        label: compile(plugin.title),
+        key: plugin.key,
+        icon: plugin.icon ? <Icon type={plugin.icon} /> : null,
       };
     });
-
-  const plugin: any = pluginsTabs.find((v) => v.key === pluginName);
-
   return (
-    <Layout>
-      <div
-        style={
-          {
-            '--side-menu-width': '200px',
-          } as Record<string, string>
-        }
-        className={css`
-          width: var(--side-menu-width);
-          overflow: hidden;
-          flex: 0 0 var(--side-menu-width);
-          max-width: var(--side-menu-width);
-          min-width: var(--side-menu-width);
-          pointer-events: none;
-        `}
-      ></div>
-      <Layout.Sider
-        className={css`
-          height: 100%;
-          position: fixed;
-          padding-top: 46px;
-          left: 0;
-          top: 0;
-          background: rgba(0, 0, 0, 0);
-          z-index: 100;
-        `}
-        theme={'light'}
-      >
-        <Menu
-          selectedKeys={[pluginName]}
-          style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
-          onClick={(e) => {
-            const item = items[e.key];
-            const tabKey = Object.keys(item.tabs).shift();
-            history.push(`/admin/settings/${e.key}/${tabKey}`);
-          }}
-          items={menuItems as any}
-        />
-      </Layout.Sider>
-      <Layout.Content>
-        <PageHeader
-          ghost={false}
-          title={compile(items[pluginName]?.title)}
-          footer={
-            <Tabs
-              activeKey={tabName}
-              onChange={(activeKey) => {
-                history.push(`/admin/settings/${pluginName}/${activeKey}`);
-              }}
-            >
-              {Object.keys(items[pluginName]?.tabs).map((tabKey) => {
-                const tab = items[pluginName].tabs?.[tabKey];
-                return tab.isAllow && <Tabs.TabPane tab={compile(tab?.title)} key={tabKey} />;
-              })}
-            </Tabs>
+    <div>
+      <Layout>
+        <div
+          style={
+            {
+              '--side-menu-width': '200px',
+            } as Record<string, string>
           }
-        />
-        <div style={{ margin: 24 }}>
-          {aclPluginTabCheck ? (
-            component && React.createElement(component)
-          ) : (
-            <Result status="403" title="403" subTitle="Sorry, you are not authorized to access this page." />
-          )}
-        </div>
-      </Layout.Content>
-    </Layout>
+          className={css`
+            width: var(--side-menu-width);
+            overflow: hidden;
+            flex: 0 0 var(--side-menu-width);
+            max-width: var(--side-menu-width);
+            min-width: var(--side-menu-width);
+            pointer-events: none;
+          `}
+        ></div>
+        <Layout.Sider
+          className={css`
+            height: 100%;
+            position: fixed;
+            padding-top: 46px;
+            left: 0;
+            top: 0;
+            background: rgba(0, 0, 0, 0);
+            z-index: 100;
+          `}
+          theme={'light'}
+        >
+          <Menu
+            selectedKeys={[pluginName]}
+            style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
+            onClick={(e) => {
+              const item = items[e.key];
+              const tabKey = Object.keys(item.tabs).shift();
+              history.push(`/admin/settings/${e.key}/${tabKey}`);
+            }}
+            items={menuItems as any}
+          />
+        </Layout.Sider>
+        <Layout.Content>
+          <PageHeader
+            ghost={false}
+            title={compile(items[pluginName]?.title)}
+            footer={
+              <Tabs
+                activeKey={tabName}
+                onChange={(activeKey) => {
+                  history.push(`/admin/settings/${pluginName}/${activeKey}`);
+                }}
+              >
+                {plugin.tabs?.map((tab) => {
+                  return tab.isAllow && <Tabs.TabPane tab={compile(tab?.title)} key={tab.key} />;
+                })}
+              </Tabs>
+            }
+          />
+          <div style={{ margin: 24 }}>
+            {aclPluginTabCheck ? (
+              component && React.createElement(component)
+            ) : (
+              <Result status="403" title="403" subTitle="Sorry, you are not authorized to access this page." />
+            )}
+          </div>
+        </Layout.Content>
+      </Layout>
+    </div>
   );
 };
 
