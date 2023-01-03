@@ -74,8 +74,8 @@ export class SnapshotFieldPlugin extends Plugin {
   // 初始化安装的时候
   async install(options?: InstallOptions) {
     await this.app.db.sequelize.transaction(async (transaction) => {
-      const collectionsRepository = this.app.db.getCollection('collections').repository;
-      const collectionsHistoryRepository = this.app.db.getCollection('collectionsHistory').repository;
+      const collectionsRepository = this.app.db.getRepository('collections');
+      const collectionsHistoryRepository = this.app.db.getRepository('collectionsHistory');
 
       if ((await collectionsHistoryRepository.find()).length === 0) {
         const collectionsModels: Model[] = await collectionsRepository.find();
@@ -85,8 +85,8 @@ export class SnapshotFieldPlugin extends Plugin {
         });
       }
 
-      const fieldsRepository = this.app.db.getCollection('fields').repository;
-      const fieldsHistoryRepository = this.app.db.getCollection('fieldsHistory').repository;
+      const fieldsRepository = this.app.db.getRepository('fields');
+      const fieldsHistoryRepository = this.app.db.getRepository('fieldsHistory');
 
       if ((await fieldsHistoryRepository.find()).length === 0) {
         const fieldsModels: Model[] = await fieldsRepository.find();
