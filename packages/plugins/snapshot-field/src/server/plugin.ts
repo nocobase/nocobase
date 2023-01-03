@@ -9,16 +9,31 @@ export class SnapshotFieldPlugin extends Plugin {
   async beforeLoad() {
     const collectionHandler = async (model: Model, { transaction }) => {
       const collectionDoc = model.toJSON();
-
-      // 创建 collection 历史记录
       const collectionsHistoryRepository = this.app.db.getRepository('collectionsHistory');
-      await collectionsHistoryRepository.create({
-        values: collectionDoc,
-        transaction,
+      const fieldsHistoryRepository = this.app.db.getRepository('fieldsHistory');
+
+      const existCollection: Model = await collectionsHistoryRepository.findOne({
+        filter: {
+          name: collectionDoc.name,
+        },
       });
 
-      // 创建 collection 初始化 fields 历史记录
-      const fieldsHistoryRepository = this.app.db.getRepository('fieldsHistory');
+      if (existCollection) {
+        await existCollection.update(collectionDoc, {
+          transaction,
+        });
+        await fieldsHistoryRepository.destroy({
+          filter: {
+            collectionName: collectionDoc.name,
+          },
+          transaction,
+        });
+      } else {
+        await collectionsHistoryRepository.create({
+          values: collectionDoc,
+          transaction,
+        });
+      }
       await fieldsHistoryRepository.createMany({
         records: collectionDoc.fields ?? [],
         transaction,
@@ -30,10 +45,21 @@ export class SnapshotFieldPlugin extends Plugin {
     const fieldHandler = async (model: Model, { transaction }) => {
       const fieldDoc = model.get();
       const fieldsHistoryRepository = this.app.db.getRepository('fieldsHistory');
-      await fieldsHistoryRepository.create({
-        values: fieldDoc,
-        transaction,
+      const existField: Model = await fieldsHistoryRepository.findOne({
+        filter: {
+          name: fieldDoc.name,
+        },
       });
+      if (existField) {
+        await existField.update(fieldDoc, {
+          transaction,
+        });
+      } else {
+        await fieldsHistoryRepository.create({
+          values: fieldDoc,
+          transaction,
+        });
+      }
     };
 
     this.app.db.on('fields.afterCreateWithAssociations', fieldHandler);
