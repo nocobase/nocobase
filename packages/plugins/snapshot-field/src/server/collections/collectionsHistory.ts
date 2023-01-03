@@ -48,6 +48,7 @@ export default {
       sourceKey: 'name',
       targetKey: 'name',
       foreignKey: 'collectionName',
+      onDelete: 'CASCADE',
       sortBy: 'sort',
     },
   ],

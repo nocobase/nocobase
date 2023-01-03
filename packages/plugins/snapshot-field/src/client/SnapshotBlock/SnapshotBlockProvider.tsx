@@ -81,7 +81,7 @@ const BlockProvider = (props) => {
   const snapshotData = snapshotRecordsubRecord.__parent[association.split('.').pop()];
 
   return (
-    <SnapshotHistoryCollectionProvider collectionKey={snapshotData.collectionKey}>
+    <SnapshotHistoryCollectionProvider collectionName={snapshotData.collectionName}>
       <MaybeCollectionProvider collection={collection}>
         <BlockAssociationContext.Provider value={association}>
           <BlockResourceContext.Provider value={resource}>

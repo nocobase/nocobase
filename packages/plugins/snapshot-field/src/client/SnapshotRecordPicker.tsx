@@ -9,19 +9,19 @@ import {
 } from '@nocobase/client';
 import { SnapshotHistoryCollectionProvider } from './SnapshotHistoryCollectionProvider';
 
-const useSnapshotFieldTargetCollectionKey = () => {
+const useSnapshotFieldTargetCollectionName = () => {
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
   const { historyCollections } = useCollectionHistory();
-  return historyCollections.find((i) => i.name === collectionField.target)?.key;
+  return historyCollections.find((i) => i.name === collectionField.target)?.name;
 };
 
 const ReadPrettyRecordPickerWrapper = (props) => {
-  const collectionKey = useSnapshotFieldTargetCollectionKey();
+  const collectionName = useSnapshotFieldTargetCollectionName();
 
   return (
-    <SnapshotHistoryCollectionProvider collectionKey={collectionKey}>
+    <SnapshotHistoryCollectionProvider collectionName={collectionName}>
       <ReadPrettyRecordPicker {...props} />
     </SnapshotHistoryCollectionProvider>
   );
@@ -41,12 +41,12 @@ const SnapshotRecordPickerInner: any = connect(
 
 export const SnapshotRecordPicker = (props) => {
   const { value, onChange, ...restProps } = props;
-  const collectionKey = useSnapshotFieldTargetCollectionKey();
+  const collectionName = useSnapshotFieldTargetCollectionName();
 
   const newProps = {
     ...restProps,
     value: value?.data,
-    onChange: (value) => onChange({ data: value, collectionKey }),
+    onChange: (value) => onChange({ data: value, collectionName }),
   };
 
   return <SnapshotRecordPickerInner {...newProps} />;

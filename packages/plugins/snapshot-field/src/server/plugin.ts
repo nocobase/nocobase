@@ -19,21 +19,17 @@ export class SnapshotFieldPlugin extends Plugin {
       });
 
       if (existCollection) {
-        await existCollection.update(collectionDoc, {
-          transaction,
-        });
-        await fieldsHistoryRepository.destroy({
-          filter: {
-            collectionName: collectionDoc.name,
-          },
-          transaction,
-        });
-      } else {
-        await collectionsHistoryRepository.create({
-          values: collectionDoc,
+        // 删除表和其关联字段
+        await existCollection.destroy({
           transaction,
         });
       }
+
+      await collectionsHistoryRepository.create({
+        values: collectionDoc,
+        transaction,
+      });
+
       await fieldsHistoryRepository.createMany({
         records: collectionDoc.fields ?? [],
         transaction,
@@ -51,15 +47,14 @@ export class SnapshotFieldPlugin extends Plugin {
         },
       });
       if (existField) {
-        await existField.update(fieldDoc, {
-          transaction,
-        });
-      } else {
-        await fieldsHistoryRepository.create({
-          values: fieldDoc,
+        await existField.destroy({
           transaction,
         });
       }
+      await fieldsHistoryRepository.create({
+        values: fieldDoc,
+        transaction,
+      });
     };
 
     this.app.db.on('fields.afterCreateWithAssociations', fieldHandler);

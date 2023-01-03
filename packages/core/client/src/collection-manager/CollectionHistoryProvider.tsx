@@ -53,9 +53,9 @@ export const CollectionHistoryProvider: React.FC = (props) => {
   );
 };
 
-export const useHistoryCollectionByKey = (key: string) => {
+export const useHistoryCollection = (collectionName: string) => {
   const { historyCollections } = useContext(CollectionHistoryContext);
-  return historyCollections.find((i) => i.key === key);
+  return historyCollections.find((i) => i.name === collectionName);
 };
 
 export const useCollectionHistory = () => {
