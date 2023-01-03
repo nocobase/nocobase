@@ -1,4 +1,4 @@
-import Database, { Collection as DBCollection } from '@nocobase/database';
+import Database, { Collection as DBCollection, HasManyRepository } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
 
@@ -33,7 +33,7 @@ describe('collections repository', () => {
 
     const fields = await Field.repository.find();
 
-    await Field.repository.destroy({
+    await (Collection.repository.relation('fields').of('posts') as HasManyRepository).destroy({
       filterByTk: fields.map((f) => f.get('key')),
     });
 

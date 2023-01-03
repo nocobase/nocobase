@@ -28,9 +28,7 @@ describe('remove field', () => {
     const fields = await app.db.getCollection('fields').repository.find();
 
     const response = await agent.resource('collections.fields', 'posts').destroy({
-      values: {
-        filterByTk: fields.map((f) => f.get('key')),
-      },
+      filterByTk: fields.map((f) => f.get('key')),
     });
 
     expect(await app.db.getCollection('fields').repository.count()).toEqual(0);

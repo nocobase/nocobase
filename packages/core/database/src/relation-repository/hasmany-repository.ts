@@ -84,10 +84,11 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
       }
 
       where.push({
-        [this.targetKey()]: options,
+        [this.targetCollection.filterTargetKey]: options,
       });
     }
 
+    console.log(JSON.stringify(where, null, 2));
     await this.targetModel.destroy({
       where: {
         [Op.and]: where,
