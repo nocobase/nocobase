@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import React, { useContext, useMemo, useRef } from 'react';
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import {
@@ -16,7 +16,6 @@ import {
   useResource,
 } from '@nocobase/client';
 import { Spin } from 'antd';
-import { SnapshotHistoryCollectionProvider } from '../SnapshotHistoryCollectionProvider';
 
 const InternalFormBlockProvider = (props) => {
   const { action, readPretty } = props;
@@ -76,20 +75,15 @@ const BlockRequestProvider = (props) => {
 const BlockProvider = (props) => {
   const { collection, association } = props;
   const resource = useResource(props);
-  const snapshotRecordsubRecord = useRecord();
-  // 真实的 record 值
-  const snapshotData = snapshotRecordsubRecord.__parent[association.split('.').pop()];
 
   return (
-    <SnapshotHistoryCollectionProvider collectionName={snapshotData.collectionName}>
-      <MaybeCollectionProvider collection={collection}>
-        <BlockAssociationContext.Provider value={association}>
-          <BlockResourceContext.Provider value={resource}>
-            <BlockRequestProvider {...props}>{props.children}</BlockRequestProvider>
-          </BlockResourceContext.Provider>
-        </BlockAssociationContext.Provider>
-      </MaybeCollectionProvider>
-    </SnapshotHistoryCollectionProvider>
+    <MaybeCollectionProvider collection={collection}>
+      <BlockAssociationContext.Provider value={association}>
+        <BlockResourceContext.Provider value={resource}>
+          <BlockRequestProvider {...props}>{props.children}</BlockRequestProvider>
+        </BlockResourceContext.Provider>
+      </BlockAssociationContext.Provider>
+    </MaybeCollectionProvider>
   );
 };
 

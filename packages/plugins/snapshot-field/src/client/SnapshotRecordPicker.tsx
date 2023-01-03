@@ -41,12 +41,11 @@ const SnapshotRecordPickerInner: any = connect(
 
 export const SnapshotRecordPicker = (props) => {
   const { value, onChange, ...restProps } = props;
-  const collectionName = useSnapshotFieldTargetCollectionName();
 
   const newProps = {
     ...restProps,
     value: value?.data,
-    onChange: (value) => onChange({ data: value, collectionName }),
+    onChange: (value) => onChange({ data: value }),
   };
 
   return <SnapshotRecordPickerInner {...newProps} />;
