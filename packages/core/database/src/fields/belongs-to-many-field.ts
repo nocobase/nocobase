@@ -63,6 +63,10 @@ export class BelongsToManyField extends RelationField {
       Object.defineProperty(Through.model, 'isThrough', { value: true });
     }
 
+    if (!this.options.onDelete) {
+      this.options.onDelete = 'CASCADE';
+    }
+
     const association = collection.model.belongsToMany(Target, {
       constraints: false,
       ...omit(this.options, ['name', 'type', 'target']),
