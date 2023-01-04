@@ -103,6 +103,13 @@ CollectionGroupManager.registerCollectionGroup({
 });
 
 CollectionGroupManager.registerCollectionGroup({
+  pluginName: 'snapshot-field',
+  function: 'snapshot-field',
+  collections: ['collectionsHistory', 'fieldsHistory'],
+  dumpable: 'required',
+});
+
+CollectionGroupManager.registerCollectionGroup({
   pluginName: 'workflow',
   function: 'executionLogs',
   collections: ['executions', 'jobs'],
