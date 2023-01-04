@@ -5,13 +5,13 @@ import React, { createContext, useContext } from 'react';
 import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { useCollection, useCollectionManager } from '../collection-manager';
+import { useCollection } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { InternalAdminLayout } from '../route-switch/antd/admin-layout';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
-export const ACLContext = createContext(null);
+export const ACLContext = createContext<any>({});
 
 export const ACLProvider = (props) => {
   return (
@@ -105,8 +105,7 @@ export const ACLActionParamsContext = createContext<any>({});
 
 export const useACLRolesCheck = () => {
   const ctx = useContext(ACLContext);
-  const { getCollectionField } = useCollectionManager();
-  const data = ctx.data?.data;
+  const data = ctx?.data?.data;
   const getActionAlias = (actionPath: string) => {
     const actionName = actionPath.split(':').pop();
     return data?.actionAlias?.[actionName] || actionName;
