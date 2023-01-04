@@ -9,12 +9,9 @@ export default {
   filterTargetKey: 'name',
   fields: [
     {
-      type: 'uid',
+      type: 'string',
       name: 'name',
-      unique: true,
-      prefix: 'c_',
     },
-
     {
       type: 'double',
       name: 'sort',
@@ -26,12 +23,12 @@ export default {
       defaultValue: 'gray',
     },
     {
-        type: 'belongsToMany',
-        name: 'collection',
-        target: 'collections',
-        foreignKey: 'category',
-        targetKey: 'name',
-        onDelete: 'CASCADE',
-      },
+      type: 'belongsToMany',
+      name: 'collection',
+      target: 'collections',
+      foreignKey: 'category',
+      targetKey: 'name',
+      onDelete: 'CASCADE',
+    },
   ],
 } as CollectionOptions;

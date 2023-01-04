@@ -34,6 +34,8 @@ export default {
   "UI editor": "UI エディタ",
   "Collection": "コレクション",
   "Collections & Fields": "コレクションとフィールド",
+  "All collections":"すべてのデータテーブル",
+  "Add category":"分類の追加",
   "Roles & Permissions": "役割と権限",
   "Edit profile": "プロフィール",
   "Change password": "パスワード変更",

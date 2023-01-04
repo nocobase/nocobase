@@ -34,6 +34,8 @@ export default {
   "UI editor": "界面配置",
   "Collection": "数据表",
   "Collections & Fields": "数据表配置",
+  "All collections":"全部数据表",
+  "Add category":"添加分类",
   "Roles & Permissions": "角色和权限",
   "Edit profile": "个人资料",
   "Change password": "修改密码",

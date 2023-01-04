@@ -34,6 +34,8 @@ export default {
   "UI editor": "UI editor",
   "Collection": "Collection",
   "Collections & Fields": "Collections & Fields",
+  "All collections":"All collections",
+  "Add category":"Add category",
   "Roles & Permissions": "Roles & Permissions",
   "Edit profile": "Edit profile",
   "Change password": "Change password",
