@@ -49,7 +49,7 @@ const EditTabTitle: React.FC<EditTabTitleProps> = ({ title, handleSave, editable
 
 export const ConfigurationTabs = () => {
   const { data, refresh } = useContext(CollectionCategroriesContext);
-  const tabsItems = data.sort((a, b) => a.sort - b.sort);
+  const tabsItems = data.sort((a, b) => a.sort - b.sort).concat();
   !tabsItems.find((v) => v.id === 'all') &&
     tabsItems.unshift({
       label: '{{t("All collections")}}',
@@ -60,15 +60,17 @@ export const ConfigurationTabs = () => {
   const compile = useCompile();
   const [activeKey, setActiveKey] = useState('all');
   const api = useAPIClient();
-  const { run, defaultRequest } = useResourceActionContext();
+  const { run, defaultRequest, setState } = useResourceActionContext();
   const onChange = (key: string) => {
     setActiveKey(key);
     if (key !== 'all') {
       const prevFilter = defaultRequest?.params?.filter;
       const filter = { $and: [prevFilter, { 'category.id': key }] };
       run({ filter });
+      setState?.({ category: [+key] });
     } else {
       run();
+      setState?.({ category: [] });
     }
   };
 
@@ -106,7 +108,7 @@ export const ConfigurationTabs = () => {
     await refresh();
   };
   const loadCategories = async () => {
-    return tabsItems.map((item: any) => ({
+    return data.map((item: any) => ({
       label: compile(item.name),
       value: item.id,
     }));
