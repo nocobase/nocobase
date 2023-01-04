@@ -3,7 +3,7 @@ import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect } from 'react';
-import { useCompile, useComponent, useFormBlockContext } from '..';
+import { useActionContext, useCompile, useComponent, useFormBlockContext, useRecord } from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
 
@@ -77,11 +77,32 @@ const InternalField: React.FC = (props) => {
   return React.createElement(component, props, props.children);
 };
 
+export const InternalFallbackField = () => {
+  const { uiSchema } = useCollectionField();
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
+  const record = useRecord();
+
+  const valueKey = fieldSchema['x-component-props']?.fieldNames?.label ?? 'id';
+
+  useEffect(() => {
+    field.title = fieldSchema.title ?? fieldSchema.name;
+  }, [uiSchema?.title]);
+
+  return <div>{JSON.stringify(record[valueKey])}</div>;
+};
+
 export const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   const field = fieldSchema?.['x-component-props']?.['field'];
+  const { snapshot } = useActionContext();
+
   return (
-    <CollectionFieldProvider name={fieldSchema.name} field={field}>
+    <CollectionFieldProvider
+      name={fieldSchema.name}
+      field={field}
+      fallback={snapshot ? <InternalFallbackField /> : null}
+    >
       <InternalField {...props} />
     </CollectionFieldProvider>
   );
