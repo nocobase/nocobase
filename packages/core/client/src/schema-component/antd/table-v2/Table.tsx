@@ -2,7 +2,7 @@ import { MenuOutlined } from '@ant-design/icons';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
-import { ISchema, observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
@@ -12,14 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-
-const isColumnComponent = (schema: Schema) => {
-  return schema['x-component']?.endsWith('.Column') > -1;
-};
-
-const isCollectionFieldComponent = (schema: ISchema) => {
-  return schema['x-component'] === 'CollectionField';
-};
+import { isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useTableColumns = () => {
   const field = useField<ArrayField>();
@@ -27,38 +20,39 @@ const useTableColumns = () => {
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
-  const columns =
-    schema
-      .reduceProperties((buf, s) => {
-        if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
+  const columns = schema
+    .reduceProperties((buf, s) => {
+      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
+        return buf.concat([s]);
+      }
+      return buf;
+    }, [])
+    ?.map((s: Schema) => {
+      const collectionFields = s.reduceProperties((buf, s) => {
+        if (isCollectionFieldComponent(s)) {
           return buf.concat([s]);
         }
-        return buf;
-      }, [])
-      ?.map((s: Schema) => {
-        const collectionFields = s.reduceProperties((buf, s) => {
-          if (isCollectionFieldComponent(s)) {
-            return buf.concat([s]);
-          }
-        }, []);
-        const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
-        return {
-          title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
-          dataIndex,
-          key: s.name,
-          sorter: s['x-component-props']?.['sorter'],
-          render: (v, record) => {
-            const index = field.value?.indexOf(record);
-            return (
-              <RecordIndexProvider index={index}>
-                <RecordProvider record={record}>
-                  <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
-                </RecordProvider>
-              </RecordIndexProvider>
-            );
-          },
-        } as TableColumnProps<any>;
-      }) || [];
+      }, []);
+      const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
+      return {
+        title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
+        dataIndex,
+        key: s.name,
+        sorter: s['x-component-props']?.['sorter'],
+        width: 200,
+        ...s['x-component-props'],
+        render: (v, record) => {
+          const index = field.value?.indexOf(record);
+          return (
+            <RecordIndexProvider index={record.__index || index}>
+              <RecordProvider record={record}>
+                <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
+              </RecordProvider>
+            </RecordIndexProvider>
+          );
+        },
+      } as TableColumnProps<any>;
+    });
   if (!exists) {
     return columns;
   }

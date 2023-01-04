@@ -2,6 +2,7 @@ import { ArrayField, Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { APIClient } from '../api-client';
+import { useCollectionField } from '../collection-manager';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 import { useFormFieldContext } from './FormFieldProvider';

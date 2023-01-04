@@ -165,7 +165,11 @@ export default class WorkflowPlugin extends Plugin {
   }
 
   private prepare = async () => {
-    const [workflow, context, options] = this.events[0];
+    const event = this.events.shift();
+    if (!event) {
+      return;
+    }
+    const [workflow, context, options] = event;
 
     if (options.context?.executionId) {
       // NOTE: no transaction here for read-uncommitted execution
@@ -227,8 +231,6 @@ export default class WorkflowPlugin extends Plugin {
     if (!this.executing && !this.pending.length) {
       this.pending.push([execution]);
     }
-
-    this.events.shift();
 
     if (this.events.length) {
       await this.prepare();

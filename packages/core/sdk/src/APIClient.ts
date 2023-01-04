@@ -113,8 +113,8 @@ export class Auth {
       url: 'users:signin',
       data: values,
       params: {
-        authenticator
-      }
+        authenticator,
+      },
     });
     const data = response?.data?.data;
     this.setToken(data?.token);
