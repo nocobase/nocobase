@@ -11,14 +11,7 @@ import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState }
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
-
-const isColumnComponent = (schema: Schema) => {
-  return schema['x-component']?.endsWith('.Column') > -1;
-};
-
-const isCollectionFieldComponent = (schema: ISchema) => {
-  return schema['x-component'] === 'CollectionField';
-};
+import { isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useTableColumns = () => {
   const start = Date.now();
@@ -48,7 +41,6 @@ const useTableColumns = () => {
         ...s['x-component-props'],
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          // console.log((Date.now() - start) / 1000);
           return (
             <RecordIndexProvider index={index}>
               <RecordProvider record={record}>

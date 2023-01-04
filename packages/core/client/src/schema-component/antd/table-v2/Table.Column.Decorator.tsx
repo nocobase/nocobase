@@ -2,6 +2,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import React, { useLayoutEffect } from 'react';
 import { SortableItem, useCollection, useCollectionManager, useCompile, useDesignable, useDesigner } from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
+import { isCollectionFieldComponent } from './utils';
 
 export const useColumnSchema = () => {
   const { getField } = useCollection();
@@ -9,7 +10,7 @@ export const useColumnSchema = () => {
   const columnSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager();
   const fieldSchema = columnSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'CollectionField') {
+    if (isCollectionFieldComponent(s)) {
       return s;
     }
     return buf;
@@ -17,7 +18,7 @@ export const useColumnSchema = () => {
   if (!fieldSchema) {
     return {};
   }
-  
+
   const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
   return { columnSchema, fieldSchema, collectionField, uiSchema: compile(collectionField?.uiSchema) };
 };
@@ -41,7 +42,7 @@ export const TableColumnDecorator = (props) => {
   }, [uiSchema?.title]);
   return (
     <SortableItem className={designerCss}>
-      <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField}/>
+      <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
       {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
       {field?.title || compile(uiSchema?.title)}
       {/* <div
