@@ -115,10 +115,12 @@ export class Dumper extends AppMigrator {
     const dataFilePath = path.resolve(collectionDataDir, 'data');
     const dataStream = fs.createWriteStream(dataFilePath);
 
-    // read collection data
-    const rows = await collection.repository.find({
-      raw: true,
-    });
+    const rows = await app.db.sequelize.query(
+      `SELECT * FROM ${collection.isParent() ? 'ONLY' : ''} ${collection.model.tableName}`,
+      {
+        type: 'SELECT',
+      },
+    );
 
     for (const row of rows) {
       const rowData = JSON.stringify(
