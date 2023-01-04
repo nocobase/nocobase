@@ -3,7 +3,7 @@ import React, { useContext, useState } from 'react';
 import { keyBy } from 'lodash';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
-import { CollectionManagerContext } from './context';
+import { CollectionManagerContext, CollectionCategroriesContext } from './context';
 import * as defaultInterfaces from './interfaces';
 import { CollectionManagerOptions } from './types';
 import { templateOptions } from '../collection-manager/Configuration/templates';
@@ -64,5 +64,34 @@ export const RemoteCollectionManagerProvider = (props: any) => {
       }}
       {...props}
     />
+  );
+};
+
+export const CollectionCategroriesProvider = (props) => {
+  const api = useAPIClient();
+  const options={
+    url: 'collection_categories:list',
+    params: {
+      paginate: false,
+    },
+  }
+  const result = useRequest(options);
+  if (result.loading) {
+    return <Spin />;
+  }
+  return (
+    <CollectionCategroriesContext.Provider
+      value={{
+        ...result,
+        data: result.data.data,
+        refresh:async ()=>{
+          const { data } = await api.request(options);
+          result.mutate(data);
+          return data?.data || [];
+        }
+      }}
+    >
+      {props.children}
+    </CollectionCategroriesContext.Provider>
   );
 };

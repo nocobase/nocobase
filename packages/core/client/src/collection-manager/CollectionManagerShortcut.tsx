@@ -19,9 +19,13 @@ import {
   ViewFieldAction,
   AddCollection,
   AddCollectionAction,
+  AddCategoryAction,
+  AddCategory,
   EditCollection,
   EditCollectionAction,
+  ConfigurationTabs,
 } from './Configuration';
+import { CollectionCategroriesProvider } from './CollectionManagerProvider';
 
 const schema: ISchema = {
   type: 'object',
@@ -43,6 +47,7 @@ const schema2: ISchema = {
   type: 'object',
   properties: {
     [uid()]: {
+      'x-decorator': 'CollectionCategroriesProvider',
       'x-component': 'ConfigurationTable',
     },
   },
@@ -54,11 +59,15 @@ export const CollectionManagerPane = () => {
       <SchemaComponent
         schema={schema2}
         components={{
+          CollectionCategroriesProvider,
           ConfigurationTable,
+          ConfigurationTabs,
           AddFieldAction,
           AddCollectionField,
           AddCollection,
           AddCollectionAction,
+          AddCategoryAction,
+          AddCategory,
           EditCollection,
           EditCollectionAction,
           EditFieldAction,
@@ -103,12 +112,14 @@ export const CollectionManagerShortcut2 = () => {
         schema={schema}
         components={{
           ConfigurationTable,
+          ConfigurationTabs,
           AddFieldAction,
           EditFieldAction,
           OverridingFieldAction,
           ViewFieldAction,
           AddCollectionAction,
           EditCollectionAction,
+          AddCategoryAction,
         }}
       />
     </ActionContext.Provider>

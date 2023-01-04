@@ -102,6 +102,17 @@ export const defaultConfigurableProperties = {
     'x-visible': '{{ enableInherits}}',
     'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
   },
+  categories: {
+    title: '{{t("Categories")}}',
+    type: 'hasMany',
+    name: 'categories',
+    'x-decorator': 'FormItem',
+    'x-component': 'Select',
+    'x-component-props': {
+      mode: 'multiple',
+    },
+    'x-reactions': ['{{useAsyncDataSource(loadCategories)}}'],
+  },
   ...moreOptions,
   moreOptions: {
     title: '{{t("More options")}}',
@@ -124,6 +135,7 @@ export type DefaultConfigurableKeys =
   | 'name'
   | 'title'
   | 'inherits'
+  | 'categories'
   | 'autoGenId'
   | 'createdBy'
   | 'updatedBy'
