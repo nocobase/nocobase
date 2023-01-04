@@ -36,6 +36,7 @@ export class ArrayFieldRepository {
   async set(
     options: Transactionable & {
       values: Array<string | number> | string | number;
+      hooks?: boolean;
     },
   ) {
     const { transaction } = options;
@@ -45,7 +46,19 @@ export class ArrayFieldRepository {
     });
 
     instance.set(this.fieldName, lodash.castArray(options.values));
+
     await instance.save({ transaction });
+
+    if (options.hooks !== false) {
+      await this.emitAfterSave(instance, options);
+    }
+  }
+
+  protected async emitAfterSave(instance, options) {
+    await this.collection.db.emitAsync(`${this.collection.name}.afterSaveWithAssociations`, instance, {
+      ...options,
+    });
+    instance.clearChangedWithAssociations();
   }
 
   @transaction((args, transaction) => {
@@ -57,6 +70,7 @@ export class ArrayFieldRepository {
   async toggle(
     options: Transactionable & {
       value: string | number;
+      hooks?: boolean;
     },
   ) {
     const { transaction } = options;
@@ -71,6 +85,10 @@ export class ArrayFieldRepository {
       : [...oldValue, options.value];
     instance.set(this.fieldName, newValue);
     await instance.save({ transaction });
+
+    if (options.hooks !== false) {
+      await this.emitAfterSave(instance, options);
+    }
   }
 
   @transaction((args, transaction) => {
@@ -82,6 +100,7 @@ export class ArrayFieldRepository {
   async add(
     options: Transactionable & {
       values: Array<string | number> | string | number;
+      hooks?: boolean;
     },
   ) {
     const { transaction } = options;
@@ -95,6 +114,10 @@ export class ArrayFieldRepository {
     const newValue = [...oldValue, ...lodash.castArray(options.values)];
     instance.set(this.fieldName, newValue);
     await instance.save({ transaction });
+
+    if (options.hooks !== false) {
+      await this.emitAfterSave(instance, options);
+    }
   }
 
   @transaction((args, transaction) => {
@@ -106,6 +129,7 @@ export class ArrayFieldRepository {
   async remove(
     options: Transactionable & {
       values: Array<string | number> | string | number;
+      hooks?: boolean;
     },
   ) {
     const { transaction } = options;
@@ -117,6 +141,10 @@ export class ArrayFieldRepository {
     const oldValue = instance.get(this.fieldName) || [];
     instance.set(this.fieldName, lodash.without(oldValue, ...lodash.castArray(options.values)));
     await instance.save({ transaction });
+
+    if (options.hooks !== false) {
+      await this.emitAfterSave(instance, options);
+    }
   }
 
   protected getInstance(options: Transactionable) {
