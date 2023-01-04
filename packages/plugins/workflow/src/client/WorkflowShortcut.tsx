@@ -1,34 +1,12 @@
 import React from 'react';
-import { Card } from 'antd';
 import { PartitionOutlined } from '@ant-design/icons';
-import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 
-import { PluginManager, SchemaComponent } from '@nocobase/client';
+import { PluginManager } from '@nocobase/client';
 
-import { workflowSchema } from './schemas/workflows';
-import { WorkflowLink } from './WorkflowLink';
-import { ExecutionResourceProvider } from './ExecutionResourceProvider';
-import { ExecutionLink } from './ExecutionLink';
 import { lang } from './locale';
-import OpenDrawer from './components/OpenDrawer';
 
 
-export const WorkflowPane = () => {
-  return (
-    <Card bordered={false}>
-      <SchemaComponent
-        schema={workflowSchema}
-        components={{
-          WorkflowLink,
-          ExecutionResourceProvider,
-          ExecutionLink,
-          OpenDrawer
-        }}
-      />
-    </Card>
-  );
-};
 
 export const WorkflowShortcut = () => {
   const history = useHistory();
