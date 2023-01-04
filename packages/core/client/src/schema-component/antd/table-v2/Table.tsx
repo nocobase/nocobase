@@ -7,11 +7,11 @@ import { reaction } from '@formily/reactive';
 import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
-import { ACLcollectionParamsContext } from '../../../acl/ACLProvider';
-import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState, useContext } from 'react';
+import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
+import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
+import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -21,22 +21,16 @@ const isCollectionFieldComponent = (schema: ISchema) => {
   return schema['x-component'] === 'CollectionField';
 };
 
-const useAclCheck = (schema: Schema, params) => {
-  const fieldName = Object.keys(schema.properties)?.[0];
-  const fieldWhiteList = params?.whitelist || params?.fields?.concat(params?.appends);
-  return fieldWhiteList && schema['x-action-column'] !== 'actions' ? fieldWhiteList?.includes(fieldName) : true;
-};
-
 const useTableColumns = () => {
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
-  const data = useContext(ACLcollectionParamsContext);
+  const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns =
     schema
       .reduceProperties((buf, s) => {
-        if (isColumnComponent(s) && useAclCheck(s, data)) {
+        if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
           return buf.concat([s]);
         }
         return buf;

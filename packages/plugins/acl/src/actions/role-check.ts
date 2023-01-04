@@ -23,9 +23,11 @@ export async function checkAction(ctx, next) {
     });
 
     const role = ctx.app.acl.getRole(currentRole);
+    const availableActions = ctx.app.acl.getAvailableActions();
 
     ctx.body = {
       ...role.toJSON(),
+      availableActions: [...availableActions.keys()],
       resources: [...role.resources.keys()],
       actionAlias: map2obj(ctx.app.acl.actionAlias),
       allowAll: currentRole === 'root',

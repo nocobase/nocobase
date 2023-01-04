@@ -45,27 +45,27 @@ const roleCollectionsResource = {
 
         const c = db.getCollection(collection.get('name'));
 
-        const children = [...c.fields.values()]
-          .filter(
-            (f) => f.options.interface && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(f.options.type),
-          )
-          .map((f, j) => {
-            const name = `${collection.get('name')}.${f.options.name}`;
-            const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(name)
-              ? 'resourceAction'
-              : 'strategy';
-            const exists = roleResourcesNames.includes(name);
-            return {
-              type: 'association',
-              __index: `${i}.children.${j}`,
-              name,
-              collectionName: f.options.target,
-              title: f.options?.uiSchema?.title,
-              roleName: role,
-              usingConfig,
-              exists,
-            };
-          });
+        // const children = [...c.fields.values()]
+        //   .filter(
+        //     (f) => f.options.interface && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(f.options.type),
+        //   )
+        //   .map((f, j) => {
+        //     const name = `${collection.get('name')}.${f.options.name}`;
+        //     const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(name)
+        //       ? 'resourceAction'
+        //       : 'strategy';
+        //     const exists = roleResourcesNames.includes(name);
+        //     return {
+        //       type: 'association',
+        //       __index: `${i}.children.${j}`,
+        //       name,
+        //       collectionName: f.options.target,
+        //       title: f.options?.uiSchema?.title,
+        //       roleName: role,
+        //       usingConfig,
+        //       exists,
+        //     };
+        //   });
 
         return {
           type: 'collection',
@@ -75,7 +75,7 @@ const roleCollectionsResource = {
           roleName: role,
           usingConfig,
           exists,
-          children: children.length > 0 ? children : null,
+          // children: children.length > 0 ? children : null,
         };
       });
 

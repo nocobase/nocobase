@@ -3,7 +3,6 @@ import { uid } from '@formily/shared';
 import { useRequest } from '../../../api-client';
 import { useActionContext } from '../../../schema-component';
 import { roleCollectionsSchema } from './roleCollections';
-import { useRecord } from '../../../record-provider';
 
 const collection = {
   name: 'roles',

@@ -114,18 +114,18 @@ export const roleCollectionsSchema: ISchema = {
             },
           },
         },
-        column1: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          properties: {
-            type: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
-            },
-          },
-        },
+        // column1: {
+        //   type: 'void',
+        //   'x-decorator': 'Table.Column.Decorator',
+        //   'x-component': 'Table.Column',
+        //   properties: {
+        //     type: {
+        //       type: 'string',
+        //       'x-component': 'CollectionField',
+        //       'x-read-pretty': true,
+        //     },
+        //   },
+        // },
         column2: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',

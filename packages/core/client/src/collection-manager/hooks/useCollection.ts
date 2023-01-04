@@ -32,7 +32,13 @@ export const useCollection = () => {
       return fields?.find((field) => field.name === name);
     },
     fields: totalFields,
-    getPrimaryKeyField:(name: string)=> getCurrentCollectionFields(name).find((field) => field.primaryKey),
+    getPrimaryKey: () => {
+      if (collection.targetKey || collection.filterTargetKey) {
+        return collection.targetKey || collection.filterTargetKey;
+      }
+      const field = currentFields.find((field) => field.primaryKey);
+      return field ? field.name : 'id';
+    },
     currentFields,
     inheritedFields,
   };

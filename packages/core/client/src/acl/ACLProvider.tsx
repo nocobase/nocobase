@@ -1,17 +1,15 @@
-import { useFieldSchema, useField } from '@formily/react';
-import { Spin, Result } from 'antd';
-import React, { createContext, useContext, useEffect } from 'react';
-import { last } from 'lodash';
+import { Schema, useFieldSchema } from '@formily/react';
+import { Result, Spin } from 'antd';
+import pathToRegexp from 'path-to-regexp';
+import React, { createContext, useContext } from 'react';
 import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
-import { useCollection } from '../collection-manager';
-import { useRecordIsOwn } from '../record-provider';
-import { useRecord } from '../record-provider';
-import { SchemaComponentOptions, useDesignable, FormItem } from '../schema-component';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
+import { useCollection, useCollectionManager } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
+import { useRecord } from '../record-provider';
 import { InternalAdminLayout } from '../route-switch/antd/admin-layout';
-import pathToRegexp from 'path-to-regexp';
+import { FormItem, SchemaComponentOptions, useDesignable } from '../schema-component';
 
 export const ACLContext = createContext(null);
 
@@ -103,144 +101,179 @@ export const useACLContext = () => {
   return useContext(ACLContext);
 };
 
-function transOptionsMap(options) {
-  let newOptions = new Map();
-  for (const [action, conditions] of [...options.entries()]) {
-    conditions.forEach((condition) => newOptions.set(condition, action));
-  }
-  return newOptions;
-}
+export const ACLActionParamsContext = createContext<any>({});
 
-function getActionName(name) {
-  const options = new Map([
-    ['destroy', ['delete', 'destroy', 'deleteEvent']],
-    ['update', ['update', 'edit', 'bulkUpdate', 'bulkEdit']],
-    ['view', ['view', 'list', '', null, undefined]],
-  ]);
-
-  let newOptions = transOptionsMap(options);
-  return newOptions.get(name) ? newOptions.get(name) : name;
-}
-export const useACLRoleContext = () => {
+export const useACLRolesCheck = () => {
   const ctx = useContext(ACLContext);
-  const record = useRecord();
-  const fieldSchema = useFieldSchema();
+  const { getCollectionField } = useCollectionManager();
   const data = ctx.data?.data;
-  const { name, getPrimaryKeyField } = useCollection();
-  const result = useBlockRequestContext() || { service: useResourceActionContext() };
+  const getActionAlias = (actionPath: string) => {
+    const actionName = actionPath.split(':').pop();
+    return data?.actionAlias?.[actionName] || actionName;
+  };
   return {
-    ...data,
-    getActionParams(actionPath: string, { skipOwnCheck, isOwn }) {
-      const path = actionPath;
-      const isAclScope = fieldSchema['x-acl-scope'];
-      const aclData = path.split(':');
-      const resourceName = aclData[0];
-      const actionName = last(aclData);
-      const act = getActionName(actionName);
-      if (isAclScope) {
-        const { meta } = result?.service?.data || {};
-        const { allowedActions } = meta || {};
-        const aclActionScope = allowedActions?.[act] || [];
-        return Object.keys(record).length && meta && aclActionScope.length >= 0
-          ? aclActionScope?.includes(record[getPrimaryKeyField(name).name])
-          : true;
-      }
-      const currentAction = data?.actionAlias?.[act] || act;
-      const hasResource = data?.resources?.includes(resourceName);
-      const params = data?.actions?.[`${resourceName}:${currentAction}`] || data?.actions?.[`${resourceName}:${act}`];
-      if (hasResource) {
-        if (!skipOwnCheck && params?.own) {
-          return isOwn ? params : null;
-        }
-        return params;
-      }
-      const strategyActions = data?.strategy?.actions || [];
-      const strategyAction = strategyActions?.find((action) => {
+    data,
+    getActionAlias,
+    inResources: (resourceName: string) => {
+      return data?.resources?.includes?.(resourceName);
+    },
+    getResourceActionParams: (actionPath: string) => {
+      const [resourceName] = actionPath.split(':');
+      const actionAlias = getActionAlias(actionPath);
+      return data?.actions?.[`${resourceName}:${actionAlias}`] || data?.actions?.[actionPath];
+    },
+    getStrategyActionParams: (actionPath: string) => {
+      const actionAlias = getActionAlias(actionPath);
+      const strategyAction = data?.strategy?.actions.find((action) => {
         const [value] = action.split(':');
-        return value === currentAction;
+        return value === actionAlias;
       });
-      if (!strategyAction) {
-        return;
-      }
-      if (skipOwnCheck) {
-        return {};
-      }
-      const [, actionScope] = strategyAction.split(':');
-      if (actionScope === 'own') {
-        return isOwn;
-      }
-      return {};
+      return strategyAction ? {} : null;
     },
   };
 };
 
-const ACLActionParamsContext = createContext<any>({});
+const getIgnoreScope = (options: any = {}) => {
+  const { schema, recordPkValue } = options;
+  let ignoreScope = false;
+  if (options.ignoreScope) {
+    ignoreScope = true;
+  }
+  if (schema['x-acl-ignore-scope']) {
+    ignoreScope = true;
+  }
+  if (schema['x-acl-action-props']?.['skipScopeCheck']) {
+    ignoreScope = true;
+  }
+  if (!recordPkValue) {
+    ignoreScope = true;
+  }
+  return ignoreScope;
+};
 
-export const ACLcollectionParamsContext = createContext<any>({});
+const useAllowedActions = () => {
+  const result = useBlockRequestContext() || { service: useResourceActionContext() };
+  return result?.service?.data?.meta?.allowedActions;
+};
+
+const useResourceName = () => {
+  const result = useBlockRequestContext() || { service: useResourceActionContext() };
+  return result?.props?.resource || result?.service?.defaultRequest?.resource;
+};
+
+export function useACLRoleContext() {
+  const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
+  const allowedActions = useAllowedActions();
+  const verifyScope = (actionName: string, recordPkValue: any) => {
+    const actionAlias = getActionAlias(actionName);
+    if (!Array.isArray(allowedActions?.[actionAlias])) {
+      return null;
+    }
+    return allowedActions[actionAlias].includes(recordPkValue);
+  };
+  return {
+    ...data,
+    parseAction: (actionPath: string, options: any = {}) => {
+      const [resourceName, actionName] = actionPath.split(':');
+      if (!getIgnoreScope(options)) {
+        const r = verifyScope(actionName, options.recordPkValue);
+        console.log('verifyScope', actionPath, options.recordPkValue)
+        if (r !== null) {
+          return r ? {} : null;
+        }
+      }
+      if (inResources(resourceName)) {
+        return getResourceActionParams(actionPath);
+      }
+      return getStrategyActionParams(actionPath);
+    },
+  };
+}
 
 export const ACLCollectionProvider = (props) => {
-  const { allowAll, getActionParams, resources } = useACLRoleContext();
-  const fieldSchema = useFieldSchema();
-  const isOwn = useRecordIsOwn();
+  const { allowAll, parseAction } = useACLRoleContext();
+  const schema = useFieldSchema();
   if (allowAll) {
     return <>{props.children}</>;
   }
-
-  const aclAction = fieldSchema['x-acl-action'];
-  const aclResource = fieldSchema['x-acl-resource'];
-  const resourceName = aclResource?.find((v) => resources.includes(v));
-  const path = resourceName ? `${resourceName}:${last(aclAction.split(':'))}` : aclAction;
-  const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
-  if (!path) {
+  const actionPath = schema['x-acl-action'];
+  if (!actionPath) {
     return <>{props.children}</>;
   }
-  const params = getActionParams(path, { isOwn, skipOwnCheck: skipScopeCheck === false ? false : true });
+  const params = parseAction(actionPath, { schema });
   if (!params) {
     return null;
-  }
-  return <ACLcollectionParamsContext.Provider value={params}>{props.children}</ACLcollectionParamsContext.Provider>;
-};
-
-export const ACLActionProvider = (props) => {
-  const fieldSchema = useFieldSchema();
-  const field = useField<any>();
-  const { name } = useCollection();
-  const isOwn = useRecordIsOwn();
-  const record = useRecord();
-  const { allowAll, getActionParams, resources } = useACLRoleContext();
-  const actionName = fieldSchema['x-action'];
-  const aclResource = fieldSchema.parent['x-acl-resource'] || [];
-  const resourceName = aclResource.find((v) => resources.includes(v));
-  fieldSchema['x-acl-scope'] = Object.keys(record).length > 0;
-  const path = fieldSchema['x-acl-action']?.includes(':')
-    ? fieldSchema['x-acl-action']
-    : `${resourceName || name}:${fieldSchema['x-acl-action'] || actionName}`;
-  const skipScopeCheck = fieldSchema['x-acl-action-props']?.skipScopeCheck;
-  const params = getActionParams(path, { skipOwnCheck: skipScopeCheck, isOwn });
-  useEffect(() => {
-    if (allowAll) {
-      field.disabled = false;
-    } else {
-      field.disabled = !params;
-    }
-  });
-  if (!name || allowAll) {
-    return <>{props.children}</>;
   }
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
 
+export const useACLActionParamsContext = () => {
+  return useContext(ACLActionParamsContext);
+};
+
+export const useRecordPkValue = () => {
+  const { getPrimaryKey } = useCollection();
+  const record = useRecord();
+  const primaryKey = getPrimaryKey();
+  return record?.[primaryKey];
+};
+
+export const ACLActionProvider = (props) => {
+  const recordPkValue = useRecordPkValue();
+  const resource = useResourceName();
+  const { allowAll, parseAction } = useACLRoleContext();
+  const schema = useFieldSchema();
+  if (allowAll) {
+    return <>{props.children}</>;
+  }
+  let actionPath = schema['x-acl-action'];
+  if (!actionPath && resource && schema['x-action']) {
+    actionPath = `${resource}:${schema['x-action']}`;
+  }
+  if (!actionPath) {
+    return <>{props.children}</>;
+  }
+  const params = parseAction(actionPath, { schema, recordPkValue });
+  if (!params) {
+    return null;
+  }
+  return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
+};
+
+export const useACLFieldWhitelist = () => {
+  const params = useContext(ACLActionParamsContext);
+  const whitelist = []
+    .concat(params?.whitelist || [])
+    .concat(params?.fields || [])
+    .concat(params?.appends || []);
+  return {
+    whitelist,
+    schemaInWhitelist(fieldSchema: Schema) {
+      if (whitelist.length === 0) {
+        return true;
+      }
+      if (!fieldSchema) {
+        return true;
+      }
+      if (!fieldSchema['x-collection-field']) {
+        return true;
+      }
+      const [, ...keys] = fieldSchema['x-collection-field'].split('.');
+      return whitelist?.includes(keys.join('.'));
+    },
+  };
+};
+
 export const ACLCollectionFieldProvider = (props) => {
-  const { name } = useCollection();
   const fieldSchema = useFieldSchema();
   const { allowAll } = useACLRoleContext();
-  const params = useContext(ACLcollectionParamsContext);
-  if (!name || allowAll) {
+  const params = useContext(ACLActionParamsContext);
+  if (allowAll) {
     return <FormItem>{props.children}</FormItem>;
   }
-  const fieldWhiteList = params?.whitelist || params?.fields?.concat(params?.appends);
-  const aclFieldCheck = fieldWhiteList ? fieldWhiteList?.includes(fieldSchema.name) : true;
-  if (!aclFieldCheck) {
+  const { whitelist } = useACLFieldWhitelist();
+  const allowed = whitelist.length > 0 ? whitelist.includes(fieldSchema.name) : true;
+  if (!allowed) {
     return null;
   }
   return (
