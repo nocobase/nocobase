@@ -83,13 +83,24 @@ export const InternalFallbackField = () => {
   const fieldSchema = useFieldSchema();
   const record = useRecord();
 
-  const valueKey = fieldSchema['x-component-props']?.fieldNames?.label ?? 'id';
+  const displayKey = fieldSchema['x-component-props']?.fieldNames?.label ?? 'id';
+
+  const value = record[fieldSchema.name];
 
   useEffect(() => {
     field.title = fieldSchema.title ?? fieldSchema.name;
   }, [uiSchema?.title]);
 
-  return <div>{JSON.stringify(record[valueKey])}</div>;
+  let displayText = value;
+
+  if (Array.isArray(value) || typeof value === 'object') {
+    displayText = []
+      .concat(value)
+      .map((i) => i[displayKey])
+      .join(', ');
+  }
+
+  return <div>{displayText}</div>;
 };
 
 export const CollectionField = connect((props) => {

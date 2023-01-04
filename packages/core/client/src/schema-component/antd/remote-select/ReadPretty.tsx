@@ -15,11 +15,9 @@ export const ReadPretty = observer((props: any) => {
 
   const { data } = useRequest(
     snapshot
-      ? async () => {
-          return {
-            data: record[fieldSchema.name],
-          };
-        }
+      ? async () => ({
+          data: record[fieldSchema.name],
+        })
       : {
           action: 'list',
           ...props.service,
@@ -36,8 +34,6 @@ export const ReadPretty = observer((props: any) => {
       refreshDeps: [props.service, field.value],
     },
   );
-
-  console.log(data);
 
   return <Select.ReadPretty {...props} options={data?.data}></Select.ReadPretty>;
 });

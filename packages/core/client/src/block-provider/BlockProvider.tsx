@@ -8,13 +8,16 @@ import React, { createContext, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ACLCollectionProvider,
+  TableFieldContext,
   TableFieldResource,
+  useActionContext,
   useAPIClient,
   useDesignable,
   useRecord,
+  useTableFieldContext,
   WithoutTableFieldResource,
 } from '../';
-import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
+import { CollectionProvider, useCollection, useCollectionField, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
 
@@ -86,26 +89,36 @@ const useActionParams = (props) => {
 };
 
 export const useResourceAction = (props, opts = {}) => {
-  const { resource, action } = props;
+  /**
+   * fieldName: 来自 TableFieldProvider
+   */
+  const { resource, action, fieldName: tableFieldName } = props;
   const { fields } = useCollection();
   const appends = fields?.filter((field) => field.target && field.interface !== 'snapshot').map((field) => field.name);
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
+  const { snapshot } = useActionContext();
+  const record = useRecord();
+
   if (!Object.keys(params).includes('appends') && appends?.length) {
     params['appends'] = appends;
   }
   const result = useRequest(
-    (opts) => {
-      if (!action) {
-        return Promise.resolve({});
-      }
-      const actionParams = { ...opts };
-      if (params.appends) {
-        actionParams.appends = params.appends;
-      }
-      return resource[action](actionParams).then((res) => res.data);
-    },
+    snapshot
+      ? async () => ({
+          data: record[tableFieldName] ?? [],
+        })
+      : (opts) => {
+          if (!action) {
+            return Promise.resolve({});
+          }
+          const actionParams = { ...opts };
+          if (params.appends) {
+            actionParams.appends = params.appends;
+          }
+          return resource[action](actionParams).then((res) => res.data);
+        },
     {
       ...opts,
       onSuccess(data, params) {
