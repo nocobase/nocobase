@@ -5,7 +5,6 @@ import React, {useContext} from 'react';
 import {useTranslation} from 'react-i18next';
 import {SchemaComponent, SchemaComponentOptions, useAPIClient, useCollectionManager} from "@nocobase/client";
 import {DataBlockInitializer} from '@nocobase/client'
-import {useSaveRoleResourceAction} from "@nocobase/client/src/acl/Configuration/schemas/useSaveRoleResourceAction";
 import PieSchemaTemplate from "./PieSchemaTemplate";
 import { getChartBlockSchema, getChartData} from "./ChartUtils";
 
