@@ -4,7 +4,7 @@ import fsPromises from 'fs/promises';
 import fs from 'fs';
 import util from 'util';
 import stream from 'stream';
-import { DUMPED_EXTENSION, humanFileSize } from './utils';
+import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
 import { CollectionGroupManager } from './collection-group-manager';
@@ -116,7 +116,7 @@ export class Dumper extends AppMigrator {
     const dataStream = fs.createWriteStream(dataFilePath);
 
     const rows = await app.db.sequelize.query(
-      `SELECT * FROM ${collection.isParent() ? 'ONLY' : ''} ${collection.model.tableName}`,
+      sqlAdapter(app.db, `SELECT * FROM ${collection.isParent() ? 'ONLY' : ''} "${collection.model.tableName}"`),
       {
         type: 'SELECT',
       },
