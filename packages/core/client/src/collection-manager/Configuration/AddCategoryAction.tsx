@@ -47,7 +47,7 @@ export const AddCategoryAction = (props) => {
       <ActionContext.Provider value={{ visible, setVisible }}>
         {children || (
           <Button icon={<PlusOutlined />} type={'primary'} onClick={() => setVisible(true)}>
-            {t('Create category')}
+            {t('Add category')}
           </Button>
         )}
         <SchemaComponent

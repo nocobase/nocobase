@@ -36,6 +36,7 @@ export default {
   "Collections & Fields": "Collections & Fields",
   "All collections":"All collections",
   "Add category":"Add category",
+  "Delete category":"Delete category",
   "Roles & Permissions": "Roles & Permissions",
   "Edit profile": "Edit profile",
   "Change password": "Change password",

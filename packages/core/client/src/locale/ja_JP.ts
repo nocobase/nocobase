@@ -36,6 +36,7 @@ export default {
   "Collections & Fields": "コレクションとフィールド",
   "All collections":"すべてのデータテーブル",
   "Add category":"分類の追加",
+  "Delete category":"分類の削除",
   "Roles & Permissions": "役割と権限",
   "Edit profile": "プロフィール",
   "Change password": "パスワード変更",

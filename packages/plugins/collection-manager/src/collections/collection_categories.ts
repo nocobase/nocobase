@@ -3,7 +3,6 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   name: 'collection_categories',
   title: '数据表类别',
-  sortable: 'sort',
   autoGenId: true,
   timestamps: false,
   filterTargetKey: 'name',
@@ -13,7 +12,7 @@ export default {
       name: 'name',
     },
     {
-      type: 'double',
+      type: 'integer',
       name: 'sort',
       defaultValue: 0,
     },

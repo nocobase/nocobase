@@ -24,7 +24,10 @@ import {
   EditCollection,
   EditCollectionAction,
   ConfigurationTabs,
+  EditCategory,
+  EditCategoryAction,
 } from './Configuration';
+
 import { CollectionCategroriesProvider } from './CollectionManagerProvider';
 
 const schema: ISchema = {
@@ -76,6 +79,8 @@ export const CollectionManagerPane = () => {
           OverridingFieldAction,
           ViewCollectionField,
           ViewFieldAction,
+          EditCategory,
+          EditCategoryAction,
         }}
       />
     </Card>
@@ -120,6 +125,7 @@ export const CollectionManagerShortcut2 = () => {
           AddCollectionAction,
           EditCollectionAction,
           AddCategoryAction,
+          EditCategoryAction,
         }}
       />
     </ActionContext.Provider>

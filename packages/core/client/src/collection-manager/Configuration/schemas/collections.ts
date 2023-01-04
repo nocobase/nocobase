@@ -353,3 +353,67 @@ export const collectionCategorySchema: ISchema = {
     },
   },
 };
+
+export const collectionCategoryEditSchema: ISchema = {
+  type: 'object',
+  properties: {
+    form: {
+      type: 'void',
+      'x-decorator': 'Form',
+      'x-decorator-props': {
+        useValues: '{{ useValuesFromRecord }}',
+      },
+      'x-component': 'Action.Modal',
+      title: '{{ t("Edit category") }}',
+      'x-component-props': {
+        width: 520,
+        getContainer: '{{ getContainer }}',
+      },
+      properties: {
+        name: {
+          type: 'string',
+          title: '{{t("Category name")}}',
+          required: true,
+          'x-disabled': '{{ !createOnly }}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+        sort: {
+          type: 'double',
+          title: '{{t("Sort")}}',
+          required: false,
+          'x-decorator': 'FormItem',
+          'x-component': 'InputNumber',
+        },
+        color: {
+          type: 'string',
+          title: '{{t("Color")}}',
+          required: false,
+          'x-decorator': 'FormItem',
+          'x-component': 'ColorSelect',
+        },
+        footer: {
+          type: 'void',
+          'x-component': 'Action.Modal.Footer',
+          properties: {
+            action1: {
+              title: '{{ t("Cancel") }}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ useCancelAction }}',
+              },
+            },
+            action2: {
+              title: '{{ t("Submit") }}',
+              'x-component': 'Action',
+              'x-component-props': {
+                type: 'primary',
+                useAction: '{{ useEditCategry }}',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
