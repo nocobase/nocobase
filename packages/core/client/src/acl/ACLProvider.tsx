@@ -176,10 +176,12 @@ export function useACLRoleContext() {
       const [resourceName, actionName] = actionPath.split(':');
       if (!getIgnoreScope(options)) {
         const r = verifyScope(actionName, options.recordPkValue);
-        console.log('verifyScope', actionPath, options.recordPkValue);
         if (r !== null) {
           return r ? {} : null;
         }
+      }
+      if (data?.allowAll) {
+        return {};
       }
       if (inResources(resourceName)) {
         return getResourceActionParams(actionPath);
@@ -220,11 +222,8 @@ export const useRecordPkValue = () => {
 export const ACLActionProvider = (props) => {
   const recordPkValue = useRecordPkValue();
   const resource = useResourceName();
-  const { allowAll, parseAction } = useACLRoleContext();
+  const { parseAction } = useACLRoleContext();
   const schema = useFieldSchema();
-  if (allowAll) {
-    return <>{props.children}</>;
-  }
   let actionPath = schema['x-acl-action'];
   if (!actionPath && resource && schema['x-action']) {
     actionPath = `${resource}:${schema['x-action']}`;
