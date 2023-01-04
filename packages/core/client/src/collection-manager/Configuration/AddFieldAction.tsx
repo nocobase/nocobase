@@ -11,6 +11,7 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
+import { useOptions } from '../hooks/useOptions';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
@@ -148,6 +149,7 @@ export const AddFieldAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const options = useOptions();
   const getFieldOptions = () => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = availableFieldInterfaces || {};
