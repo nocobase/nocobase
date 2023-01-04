@@ -229,7 +229,6 @@ export const roleSchema: ISchema = {
                       'x-component': 'Action.Link',
                       'x-decorator': 'ACLActionProvider',
                       'x-acl-action': 'roles:update',
-                      'x-acl-scope':true,
                       'x-component-props': {},
                       properties: {
                         drawer: {
@@ -299,7 +298,6 @@ export const roleSchema: ISchema = {
                       title: '{{t("Edit")}}',
                       'x-decorator': 'ACLActionProvider',
                       'x-acl-action': 'roles:update',
-                      'x-acl-scope':true,
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         type: 'primary',
@@ -358,7 +356,6 @@ export const roleSchema: ISchema = {
                       type: 'void',
                       title: '{{ t("Delete") }}',
                       'x-acl-action': 'roles:destroy',
-                      'x-acl-scope':true,
                       'x-decorator': 'ACLActionProvider',
                       'x-component': 'Action.Link',
                       'x-component-props': {

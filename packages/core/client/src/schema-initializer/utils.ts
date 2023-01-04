@@ -125,7 +125,6 @@ export const useAssociatedTableColumnInitializerFields = () => {
             'x-read-pretty': true,
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
             'x-component-props': {},
-            'x-collection-name': subField.collectionName,
           };
 
           return {
@@ -203,7 +202,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         name: field.name,
         'x-designer': 'FormItem.Designer',
         'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
-        'x-decorator': 'ACLCollectionFieldProvider',
+        'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
@@ -255,7 +254,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             'x-component-props': {
               'pattern-disable': block === 'Form' && readPretty,
             },
-            'x-decorator': 'ACLCollectionFieldProvider',
+            'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
           };
           return {
@@ -299,7 +298,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             title: field?.uiSchema?.title || field.name,
             'x-designer': 'FormItem.Designer',
             'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
-            'x-decorator': 'ACLCollectionFieldProvider',
+            'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {},
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
@@ -336,7 +335,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
         title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
         'x-component': 'AssignedField',
-        'x-decorator': 'ACLCollectionFieldProvider',
+        'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
       };
       return {
@@ -370,7 +369,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
         title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
         'x-component': 'BulkEditField',
-        'x-decorator': 'ACLCollectionFieldProvider',
+        'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
       };
       return {

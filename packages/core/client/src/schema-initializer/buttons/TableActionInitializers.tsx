@@ -1,4 +1,4 @@
-import { ISchema, Schema } from '@formily/react';
+import { Schema } from '@formily/react';
 
 // 表格操作配置
 export const TableActionInitializers = {
@@ -85,7 +85,6 @@ export const TableActionInitializers = {
             'x-component': 'Action',
             'x-align': 'right',
             'x-acl-action': 'update',
-            'x-acl-scope': false,
             'x-decorator': 'ACLActionProvider',
             'x-acl-action-props': {
               skipScopeCheck: true,
@@ -115,7 +114,6 @@ export const TableActionInitializers = {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action': 'update',
-            'x-acl-scope': false,
             'x-acl-action-props': {
               skipScopeCheck: true,
             },

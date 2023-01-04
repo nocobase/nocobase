@@ -9,7 +9,7 @@ import { useCollection, useCollectionManager } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { InternalAdminLayout } from '../route-switch/antd/admin-layout';
-import { FormItem, SchemaComponentOptions, useDesignable } from '../schema-component';
+import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 export const ACLContext = createContext(null);
 
@@ -177,7 +177,7 @@ export function useACLRoleContext() {
       const [resourceName, actionName] = actionPath.split(':');
       if (!getIgnoreScope(options)) {
         const r = verifyScope(actionName, options.recordPkValue);
-        console.log('verifyScope', actionPath, options.recordPkValue)
+        console.log('verifyScope', actionPath, options.recordPkValue);
         if (r !== null) {
           return r ? {} : null;
         }
@@ -267,20 +267,15 @@ export const useACLFieldWhitelist = () => {
 export const ACLCollectionFieldProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const { allowAll } = useACLRoleContext();
-  const params = useContext(ACLActionParamsContext);
   if (allowAll) {
-    return <FormItem>{props.children}</FormItem>;
+    return <>{props.children}</>;
   }
   const { whitelist } = useACLFieldWhitelist();
   const allowed = whitelist.length > 0 ? whitelist.includes(fieldSchema.name) : true;
   if (!allowed) {
     return null;
   }
-  return (
-    <ACLActionParamsContext.Provider value={params}>
-      <FormItem>{props.children}</FormItem>
-    </ACLActionParamsContext.Provider>
-  );
+  return <>{props.children}</>;
 };
 
 export const ACLMenuItemProvider = (props) => {
