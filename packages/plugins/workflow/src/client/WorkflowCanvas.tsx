@@ -8,21 +8,43 @@ import { useTranslation } from 'react-i18next';
 
 import {
   ActionContext,
+  ResourceActionProvider,
   SchemaComponent,
   useDocumentTitle,
   useResourceActionContext,
   useResourceContext
 } from '@nocobase/client';
 
-import { FlowContext } from './FlowContext';
+import { FlowContext, useFlowContext } from './FlowContext';
 import { branchBlockClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
 import { TriggerConfig } from './triggers';
 import { Branch } from './Branch';
 import { executionSchema } from './schemas/executions';
 import { ExecutionLink } from './ExecutionLink';
-import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { lang } from './locale';
 
+
+
+function ExecutionResourceProvider({ request, filter = {}, ...others }) {
+  const { workflow } = useFlowContext();
+  const props = {
+    ...others,
+    request: {
+      ...request,
+      params: {
+        ...request?.params,
+        filter: {
+          ...(request?.params?.filter),
+          key: workflow.key,
+        }
+      }
+    }
+  };
+
+  return (
+    <ResourceActionProvider {...props} />
+  );
+}
 
 
 function makeNodes(nodes): void {
@@ -168,7 +190,7 @@ export function WorkflowCanvas() {
           <Dropdown
             overlay={
               <Menu onClick={onMenuCommand}>
-                <Menu.Item key="history" disabled={!workflow.executed}>{lang('Execution history')}</Menu.Item>
+                <Menu.Item key="history" disabled={!workflow.allExecuted}>{lang('Execution history')}</Menu.Item>
                 <Menu.Item key="revision" disabled={!revisionable}>{lang('Copy to new version')}</Menu.Item>
               </Menu>
             }
