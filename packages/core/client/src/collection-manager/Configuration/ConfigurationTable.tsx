@@ -78,7 +78,6 @@ export const ConfigurationTable = () => {
     data: { database },
   } = useCurrentAppInfo();
   const data = useContext(CollectionCategroriesContext);
-  console.log(data)
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
@@ -97,7 +96,6 @@ export const ConfigurationTable = () => {
       }));
   };
   const loadCategories = async () => {
-    console.log(data.data);
     return data.data.map((item: any) => ({
       label: compile(item.name),
       value: item.id,

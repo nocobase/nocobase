@@ -1,10 +1,50 @@
-import { Button, Tabs, Modal } from 'antd';
-import React, { useRef, useState, useContext } from 'react';
+import { Button, Tabs, Modal, Input } from 'antd';
+import React, { useRef, useState, useContext, useEffect } from 'react';
 import { SchemaOptionsContext } from '@formily/react';
 import { CollectionCategroriesContext } from '../context';
 import { useAPIClient } from '../../api-client';
 import { SchemaComponent, SchemaComponentContext, useCompile } from '../../schema-component';
 import { collectionTableSchema } from './schemas/collections';
+
+interface EditTabTitleProps {
+  title: React.ReactNode;
+  handleSave: (args) => void;
+  editable: boolean;
+}
+
+const EditTabTitle: React.FC<EditTabTitleProps> = ({ title, handleSave, editable }) => {
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef(null);
+  useEffect(() => {
+    if (editing) {
+      inputRef.current!.focus();
+    }
+  }, [editing]);
+
+  const toggleEdit = () => {
+    setEditing(!editing);
+  };
+
+  const save = async () => {
+    try {
+      const name = inputRef.current.input.value;
+      toggleEdit();
+      name && handleSave({ name });
+    } catch (errInfo) {
+      console.log('Save failed:', errInfo);
+    }
+  };
+  if (editable) {
+    return editing ? (
+      <Input ref={inputRef} onPressEnter={save} onBlur={save} defaultValue={title as string} />
+    ) : (
+      <div style={{ paddingRight: 24 }} onDoubleClick={toggleEdit}>
+        {title}
+      </div>
+    );
+  }
+  return <span>{title}</span>;
+};
 
 export const ConfigurationTabs = () => {
   const { data, refresh } = useContext(CollectionCategroriesContext);
@@ -19,7 +59,6 @@ export const ConfigurationTabs = () => {
   const compile = useCompile();
   const [activeKey, setActiveKey] = useState('all');
   const api = useAPIClient();
-  const newTabIndex = useRef(0);
   const onChange = (key: string) => {
     setActiveKey(key);
   };
@@ -32,7 +71,6 @@ export const ConfigurationTabs = () => {
       cancelText: '取消',
       onOk: async () => {
         await api.resource('collection_categories').destroy({
-          //   filterByTk: targetKey,
           filter: {
             id: targetKey,
           },
@@ -40,18 +78,23 @@ export const ConfigurationTabs = () => {
         await refresh();
       },
     });
-    const targetIndex = tabsItems.findIndex((pane) => pane.key === targetKey);
-    const newPanes = tabsItems.filter((pane) => pane.key !== targetKey);
-    if (newPanes.length && targetKey === activeKey) {
-      const { key } = newPanes[targetIndex === newPanes.length ? targetIndex - 1 : targetIndex];
-      setActiveKey(key);
-    }
   };
   const onEdit = (targetKey: string, action: 'add' | 'remove') => {
     if (action === 'add') {
     } else {
       remove(targetKey);
     }
+  };
+  const saveCategory = async (data) => {
+    await api.resource('collection_categories').update({
+      filter: {
+        id: data.id,
+      },
+      values: {
+        ...data,
+      },
+    });
+    await refresh();
   };
   const loadCategories = async () => {
     return tabsItems.map((item: any) => ({
@@ -61,12 +104,23 @@ export const ConfigurationTabs = () => {
   };
   const ctx = useContext(SchemaComponentContext);
   const scopeCxt = useContext(SchemaOptionsContext);
-  console.log(tabsItems, data);
   return (
     <Tabs hideAdd onChange={onChange} activeKey={activeKey} type="editable-card" onEdit={onEdit}>
       {tabsItems.map((item) => {
         return (
-          <Tabs.TabPane tab={compile(item.label || item.name)} key={item.key || item.id} closable={item.closable}>
+          <Tabs.TabPane
+            tab={
+              <EditTabTitle
+                title={compile(item.label || item.name)}
+                handleSave={(args) => {
+                  saveCategory({ ...item, ...args });
+                }}
+                editable={item.id}
+              />
+            }
+            key={item.key || item.id}
+            closable={item.closable}
+          >
             <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
               <SchemaComponent schema={collectionTableSchema} scope={{ ...scopeCxt, loadCategories }} />
             </SchemaComponentContext.Provider>
