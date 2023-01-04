@@ -1,9 +1,9 @@
-import { useFieldSchema } from "@formily/react";
-import { useMemo } from "react";
-import { useCollection } from "../../../collection-manager";
+import { useFieldSchema } from '@formily/react';
+import { useMemo } from 'react';
+import { useCollection } from '../../../collection-manager';
 
 export default function useServiceOptions(props) {
-  const { action = 'list', service } = props
+  const { action = 'list', service } = props;
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = useMemo(() => {
@@ -12,9 +12,9 @@ export default function useServiceOptions(props) {
 
   return useMemo(() => {
     return {
-      resource: collectionField.target,
+      resource: collectionField?.target,
       action,
       ...service,
     };
-  }, [collectionField.target, action, service]);
+  }, [collectionField?.target, action, service]);
 }
