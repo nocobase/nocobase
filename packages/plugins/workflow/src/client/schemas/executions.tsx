@@ -66,7 +66,7 @@ export const executionSchema = {
           action: 'list',
           params: {
             appends: ['workflow.id', 'workflow.title'],
-            pageSize: 50,
+            pageSize: 20,
             sort: ['-createdAt'],
             filter: {}
           },
