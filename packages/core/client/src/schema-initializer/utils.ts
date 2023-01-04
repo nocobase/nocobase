@@ -718,7 +718,6 @@ export const createFormBlockSchema = (options) => {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': formItemInitializers,
-            'x-acl-action': action ? `${resourceName}:update` : `${resourceName}:create`,
             properties: {},
           },
           actions: {
@@ -755,7 +754,6 @@ export const createReadPrettyFormBlockSchema = (options) => {
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resourceName}:get`,
-    'x-acl-resource': [association,collection],
     'x-decorator': 'FormBlockProvider',
     'x-decorator-props': {
       resource: resourceName,
@@ -781,7 +779,6 @@ export const createReadPrettyFormBlockSchema = (options) => {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
-            'x-acl-resource': [association,collection],
             'x-component-props': {
               style: {
                 marginBottom: 24,
@@ -793,14 +790,13 @@ export const createReadPrettyFormBlockSchema = (options) => {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': formItemInitializers,
-            'x-acl-action': `${resourceName}:view`,
             properties: {},
           },
         },
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
+  // console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
@@ -872,7 +868,7 @@ export const createTableBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
+  // console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 

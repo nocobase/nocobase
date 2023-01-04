@@ -131,7 +131,6 @@ export const ReadPrettyFormActionInitializers = {
             title: '{{ t("Custom request") }}',
             'x-component': 'Action',
             'x-action': 'customize:form:request',
-            'x-decorator': 'ACLActionProvider',
             'x-designer': 'Action.Designer',
             'x-action-settings': {
               requestSettings: {},

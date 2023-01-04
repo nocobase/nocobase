@@ -5,7 +5,7 @@ import {
   recordPickerSelector,
   recordPickerViewer,
   relationshipType,
-  reverseFieldProperties,
+  reverseFieldProperties
 } from './properties';
 import { IField } from './types';
 
@@ -59,7 +59,7 @@ export const o2m: IField = {
           block: {
             type: 'void',
             'x-decorator': 'TableFieldProvider',
-            'x-acl-action': `${field.target}:list`,
+            'x-acl-action': `${association}:list`,
             'x-decorator-props': {
               collection: field.target,
               association: association,
