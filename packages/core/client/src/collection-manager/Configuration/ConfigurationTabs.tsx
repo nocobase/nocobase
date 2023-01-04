@@ -60,12 +60,16 @@ export const ConfigurationTabs = () => {
   const compile = useCompile();
   const [activeKey, setActiveKey] = useState('all');
   const api = useAPIClient();
-  const ctx = useResourceActionContext();
+  const { run, defaultRequest } = useResourceActionContext();
   const onChange = (key: string) => {
     setActiveKey(key);
-    const prevFilter = ctx.defaultRequest?.params?.filter;
-    const filter = { $and: [prevFilter, { 'category.id': key }] };
-    ctx.run({ filter });
+    if (key !== 'all') {
+      const prevFilter = defaultRequest?.params?.filter;
+      const filter = { $and: [prevFilter, { 'category.id': key }] };
+      run({ filter });
+    } else {
+      run();
+    }
   };
 
   const remove = (targetKey: string) => {
