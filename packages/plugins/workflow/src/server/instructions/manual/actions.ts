@@ -21,6 +21,10 @@ export async function submit(context: Context, next) {
     context
   });
 
+  if (!instance) {
+    return context.throw(404);
+  }
+
   const { actions = [], assignees } = instance.node.config;
 
   // NOTE: validate status
@@ -29,13 +33,13 @@ export async function submit(context: Context, next) {
     || instance.execution.status !== EXECUTION_STATUS.STARTED
     || !actions.includes(values.status)
   ) {
-    context.throw(400);
+    return context.throw(400);
   }
 
   if (!assignees.includes(currentUser.id)
     || instance.userId !== currentUser.id
   ) {
-    return context.throw(404);
+    return context.throw(403);
   }
 
   // NOTE: validate assignee

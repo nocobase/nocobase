@@ -335,7 +335,7 @@ function ActionInitializer({ action, actionProps, ...props }) {
       schema={{
         type: 'void',
         title: props.title,
-        'x-decorator': 'PromptActionStatusProvider',
+        'x-decorator': 'ManualActionStatusProvider',
         'x-decorator-props': {
           value: action
         },
@@ -431,7 +431,7 @@ export function SchemaConfig({ value, onChange }) {
             properties: blocks ?? {
               tab1: {
                 type: 'void',
-                title: `{{t("Prompt")}}`,
+                title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
                 'x-component': 'Tabs.TabPane',
                 'x-designer': 'Tabs.Designer',
                 properties: {
@@ -499,7 +499,7 @@ export function SchemaConfig({ value, onChange }) {
               components={{
                 ...nodeComponents,
                 // NOTE: fake provider component
-                PromptActionStatusProvider(props) {
+                ManualActionStatusProvider(props) {
                   return props.children;
                 }
               }}

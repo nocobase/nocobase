@@ -39,7 +39,7 @@ export default function<T extends Instruction>(
     'condition',
     'parallel',
     'delay',
-    'prompt',
+    'manual',
     'query',
     'create',
     'update',

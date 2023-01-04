@@ -7,7 +7,6 @@ import { Registry } from '@nocobase/utils';
 import initActions from './actions';
 import calculators from './calculators';
 import { EXECUTION_STATUS } from './constants';
-import extensions from './extensions';
 import initInstructions, { Instruction } from './instructions';
 import ExecutionModel from './models/Execution';
 import WorkflowModel from './models/Workflow';
@@ -21,7 +20,6 @@ export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   calculators = calculators;
-  extensions = extensions;
   executing: ExecutionModel | null = null;
   pending: Pending[] = [];
   events: [WorkflowModel, any, { context?: any }][] = [];
@@ -91,10 +89,6 @@ export default class WorkflowPlugin extends Plugin {
     db.on('workflows.beforeSave', this.onBeforeSave);
     db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));
     db.on('workflows.afterDestroy', (model: WorkflowModel) => this.toggle(model, false));
-
-    this.app.on('afterLoad', async () => {
-      this.extensions.reduce((promise, extend) => promise.then(() => extend(this)), Promise.resolve());
-    });
 
     // [Life Cycle]:
     //   * load all workflows in db
