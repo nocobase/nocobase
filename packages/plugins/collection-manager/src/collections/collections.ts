@@ -51,12 +51,13 @@ export default {
       sortBy: 'sort',
     },
     {
-      type: 'hasMany',
-      name: 'categories',
+      type: 'belongsToMany',
+      name: 'category',
       target: 'collection_categories',
       sourceKey: 'name',
-      targetKey: 'id',
       foreignKey: 'collectionName',
+      targetKey: 'id',
+      onDelete: 'CASCADE',
     },
   ],
 } as CollectionOptions;

@@ -1,10 +1,11 @@
-import { Button, Tabs, Modal, Input } from 'antd';
+import { Tabs, Modal, Input } from 'antd';
 import React, { useRef, useState, useContext, useEffect } from 'react';
 import { SchemaOptionsContext } from '@formily/react';
 import { CollectionCategroriesContext } from '../context';
 import { useAPIClient } from '../../api-client';
-import { SchemaComponent, SchemaComponentContext, useCompile } from '../../schema-component';
+import { SchemaComponent, useCompile } from '../../schema-component';
 import { collectionTableSchema } from './schemas/collections';
+import { useResourceActionContext } from '../ResourceActionProvider';
 
 interface EditTabTitleProps {
   title: React.ReactNode;
@@ -49,18 +50,22 @@ const EditTabTitle: React.FC<EditTabTitleProps> = ({ title, handleSave, editable
 export const ConfigurationTabs = () => {
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const tabsItems = data.sort((a, b) => a.sort - b.sort);
-  !tabsItems.find((v) => v.key === 'all') &&
+  !tabsItems.find((v) => v.id === 'all') &&
     tabsItems.unshift({
       label: '{{t("All collections")}}',
-      key: 'all',
+      id: 'all',
       sort: 0,
       closable: false,
     });
   const compile = useCompile();
   const [activeKey, setActiveKey] = useState('all');
   const api = useAPIClient();
+  const ctx = useResourceActionContext();
   const onChange = (key: string) => {
     setActiveKey(key);
+    const prevFilter = ctx.defaultRequest?.params?.filter;
+    const filter = { $and: [prevFilter, { 'category.id': key }] };
+    ctx.run({ filter });
   };
 
   const remove = (targetKey: string) => {
@@ -102,7 +107,6 @@ export const ConfigurationTabs = () => {
       value: item.id,
     }));
   };
-  const ctx = useContext(SchemaComponentContext);
   const scopeCxt = useContext(SchemaOptionsContext);
   return (
     <Tabs
@@ -116,7 +120,6 @@ export const ConfigurationTabs = () => {
       {tabsItems.map((item) => {
         return (
           <Tabs.TabPane
-            forceRender={false}
             tab={
               <EditTabTitle
                 title={compile(item.label || item.name)}
@@ -129,12 +132,7 @@ export const ConfigurationTabs = () => {
             key={item.key || item.id}
             closable={item.closable}
           >
-            <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-              <SchemaComponent
-                schema={collectionTableSchema(item.id ? { 'options.category.$contains': item.id } : {})}
-                scope={{ ...scopeCxt, loadCategories }}
-              />
-            </SchemaComponentContext.Provider>
+            <SchemaComponent schema={collectionTableSchema} scope={{ ...scopeCxt, loadCategories }} />
           </Tabs.TabPane>
         );
       })}

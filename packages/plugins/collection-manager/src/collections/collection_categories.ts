@@ -25,13 +25,13 @@ export default {
       name: 'color',
       defaultValue: 'gray',
     },
-    // {
-    //     type: 'belongsTo',
-    //     name: 'collection',
-    //     target: 'collections',
-    //     foreignKey: 'collectionName',
-    //     targetKey: 'name',
-    //     onDelete: 'CASCADE',
-    //   },
+    {
+        type: 'belongsToMany',
+        name: 'collection',
+        target: 'collections',
+        foreignKey: 'category',
+        targetKey: 'name',
+        onDelete: 'CASCADE',
+      },
   ],
 } as CollectionOptions;
