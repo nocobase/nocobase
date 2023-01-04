@@ -105,10 +105,18 @@ export const ConfigurationTabs = () => {
   const ctx = useContext(SchemaComponentContext);
   const scopeCxt = useContext(SchemaOptionsContext);
   return (
-    <Tabs hideAdd onChange={onChange} activeKey={activeKey} type="editable-card" onEdit={onEdit}>
+    <Tabs
+      hideAdd
+      onChange={onChange}
+      activeKey={activeKey}
+      type="editable-card"
+      onEdit={onEdit}
+      destroyInactiveTabPane={true}
+    >
       {tabsItems.map((item) => {
         return (
           <Tabs.TabPane
+            forceRender={false}
             tab={
               <EditTabTitle
                 title={compile(item.label || item.name)}
@@ -122,7 +130,10 @@ export const ConfigurationTabs = () => {
             closable={item.closable}
           >
             <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-              <SchemaComponent schema={collectionTableSchema} scope={{ ...scopeCxt, loadCategories }} />
+              <SchemaComponent
+                schema={collectionTableSchema(item.id ? { 'options.category.$contains': item.id } : {})}
+                scope={{ ...scopeCxt, loadCategories }}
+              />
             </SchemaComponentContext.Provider>
           </Tabs.TabPane>
         );
