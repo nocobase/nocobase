@@ -1,7 +1,7 @@
 import React from 'react';
 import { TableOutlined } from '@ant-design/icons';
 
-import { SchemaInitializer } from "@nocobase/client";
+import { SchemaInitializer, useCollectionManager } from "@nocobase/client";
 
 import { JobStatusOptions } from "../../constants";
 import { NAMESPACE } from "../../locale";
@@ -37,7 +37,7 @@ const todoCollection = {
       interface: 'm2o',
       uiSchema: {
         type: 'number',
-        title: '{{t("Title")}}',
+        title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
         'x-component': 'RemoteSelect',
         'x-component-props': {
           fieldNames: {
@@ -65,6 +65,7 @@ const todoCollection = {
 }
 
 export function WorkflowTodoBlockInitializer({ insert, ...props }) {
+  const { collections, ...ctx } = useCollectionManager();
   return (
     <SchemaInitializer.Item
       icon={<TableOutlined />}
@@ -72,90 +73,103 @@ export function WorkflowTodoBlockInitializer({ insert, ...props }) {
       onClick={() => {
         insert({
           type: 'void',
-          'x-decorator': 'TableBlockProvider',
+          'x-decorator': 'CollectionManagerProvider',
           'x-decorator-props': {
-            collection: todoCollection,
-            resource: 'users_jobs',
-            action: 'list',
-            params: {
-              pageSize: 20,
-              sort: ['-createdAt'],
-              appends: ['job', 'user', 'node', 'workflow'],
-            },
-            rowKey: 'id',
-            showIndex: true,
-            dragSort: false,
+            ...ctx,
+            collections: [
+              ...collections,
+              todoCollection
+            ],
           },
-          'x-component': 'CardItem',
-          'x-designer': 'TableBlockDesigner',
+          'x-component': 'div',
           properties: {
-            actions: {
-              type: 'void',
-              'x-component': 'ActionBar',
-              'x-component-props': {
-                style: {
-                  marginBottom: 16,
+            block: {
+              'x-decorator': 'TableBlockProvider',
+              'x-decorator-props': {
+                collection: todoCollection,
+                resource: 'users_jobs',
+                action: 'list',
+                params: {
+                  pageSize: 20,
+                  sort: ['-createdAt'],
+                  appends: ['job', 'user', 'node', 'workflow'],
                 },
-              },
-              properties: {
-                filter: {
-                  type: 'void',
-                  title: '{{ t("Filter") }}',
-                  'x-action': 'filter',
-                  'x-designer': 'Filter.Action.Designer',
-                  'x-component': 'Filter.Action',
-                  'x-component-props': {
-                    icon: 'FilterOutlined',
-                    useProps: '{{ useFilterActionProps }}',
-                  },
-                  'x-align': 'left',
-                }
-              },
-            },
-            table: {
-              type: 'array',
-              'x-component': 'TableV2',
-              'x-component-props': {
                 rowKey: 'id',
-                useProps: '{{ useTableBlockProps }}',
+                showIndex: true,
+                dragSort: false,
               },
+              'x-component': 'CardItem',
+              'x-designer': 'TableBlockDesigner',
               properties: {
-                node: {
-                  type: 'void',
-                  'x-decorator': 'TableV2.Column.Decorator',
-                  'x-component': 'TableV2.Column',
-                  properties: {
-                    node: {
-                      type: 'object',
-                      'x-component': 'CollectionField',
-                      'x-read-pretty': true,
-                    },
-                  },
-                },
-                status: {
-                  type: 'void',
-                  'x-decorator': 'TableV2.Column.Decorator',
-                  'x-component': 'TableV2.Column',
-                  properties: {
-                    status: {
-                      type: 'number',
-                      'x-component': 'CollectionField',
-                      'x-read-pretty': true,
-                    },
-                  },
-                },
                 actions: {
                   type: 'void',
-                  'x-decorator': 'TableV2.Column.Decorator',
-                  'x-component': 'TableV2.Column',
+                  'x-component': 'ActionBar',
+                  'x-component-props': {
+                    style: {
+                      marginBottom: 16,
+                    },
+                  },
                   properties: {
-                    view: {
+                    filter: {
                       type: 'void',
-                      'x-component': 'Action',
-                      title: 'View',
+                      title: '{{ t("Filter") }}',
+                      'x-action': 'filter',
+                      'x-designer': 'Filter.Action.Designer',
+                      'x-component': 'Filter.Action',
+                      'x-component-props': {
+                        icon: 'FilterOutlined',
+                        useProps: '{{ useFilterActionProps }}',
+                      },
+                      'x-align': 'left',
+                    }
+                  },
+                },
+                table: {
+                  type: 'array',
+                  'x-component': 'TableV2',
+                  'x-component-props': {
+                    rowKey: 'id',
+                    useProps: '{{ useTableBlockProps }}',
+                  },
+                  properties: {
+                    node: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
                       properties: {
-                        drawer: {
-                          'x-component': 'Action.Drawer',
+                        node: {
+                          type: 'object',
+                          'x-component': 'CollectionField',
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                    status: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
+                      properties: {
+                        status: {
+                          type: 'number',
+                          'x-component': 'CollectionField',
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                    actions: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
+                      properties: {
+                        view: {
+                          type: 'void',
+                          'x-component': 'Action',
+                          title: 'View',
+                          properties: {
+                            drawer: {
+                              'x-component': 'Action.Drawer',
+                            }
+                          }
                         }
                       }
                     }

@@ -128,6 +128,11 @@ export default {
   'Assignees': '负责人',
   'Operation user interface': '操作界面',
   'Configure user interface': '配置界面',
+  'Separately': '分别处理',
+  'Each user has own task': '每个人处理各自的任务',
+  'Collaboratively': '协作处理',
+  'Everyone shares one task': '所有人共享同一个任务',
+  'Negotiation': '协商机制',
   'All pass': '全部通过',
   'Everyone should pass': '每个人通过才通过',
   'Any pass': '任意通过',
@@ -164,4 +169,5 @@ export default {
   'Show available variable tool':'显示可用变量工具',
 
   'Workflow todos': '工作流待办',
+  'Task': '任务'
 };

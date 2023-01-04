@@ -1,15 +1,12 @@
-import React from 'react';
-import { Tooltip } from 'antd';
-import { QuestionCircleOutlined } from '@ant-design/icons';
-
 import { BlockInitializers } from '@nocobase/client';
 
 import { VariableComponent } from '../../calculators';
-import { lang, NAMESPACE } from '../../locale';
+import { NAMESPACE } from '../../locale';
 import { ValueGetter } from './ValueGetter';
 import { SchemaConfig } from './SchemaConfig';
 import { WorkflowTodoBlockInitializer } from './WorkflowTodoBlockInitializer';
 import { NullRender } from '../../components/NullRender';
+import { ModeConfig } from './ModeConfig';
 
 
 
@@ -52,31 +49,8 @@ export default {
       name: 'config.mode',
       title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Radio.Group',
-      enum: [
-        {
-          value: 1,
-          label: (
-            <Tooltip
-              title={lang('Everyone should pass')}
-              placement="bottom"
-            >
-              {lang('All pass')} <QuestionCircleOutlined style={{ color: '#999' }} />
-            </Tooltip>
-          )
-        },
-        {
-          value: -1,
-          label: (
-            <Tooltip
-              title={lang('Anyone pass')}
-              placement="bottom"
-            >
-              {lang('Any pass')} <QuestionCircleOutlined style={{ color: '#999' }} />
-            </Tooltip>
-          )
-        },
-      ],
+      'x-component': 'ModeConfig',
+      default: 1,
       'x-reactions': {
         dependencies: ['config.assignees'],
         fulfill: {
@@ -111,6 +85,7 @@ export default {
   components: {
     VariableComponent,
     SchemaConfig,
+    ModeConfig
   },
   useValueGetter({ config }) {
     if (!config.form?.collection?.fields?.length) {
