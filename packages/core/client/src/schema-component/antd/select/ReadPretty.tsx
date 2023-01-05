@@ -3,6 +3,7 @@ import { observer, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Tag } from 'antd';
 import React from 'react';
+import { useCompile } from '../../hooks';
 import { defaultFieldNames, getCurrentOptions } from './shared';
 
 type Composed = {
@@ -13,6 +14,8 @@ type Composed = {
 export const ReadPretty = observer((props: any) => {
   const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
   const field = useField<any>();
+  const compile = useCompile();
+
   if (!isValid(props.value)) {
     return <div />;
   }
@@ -25,7 +28,7 @@ export const ReadPretty = observer((props: any) => {
     <div>
       {options.map((option, key) => (
         <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
-          {option[fieldNames.label]}
+          {compile(option[fieldNames.label])}
         </Tag>
       ))}
     </div>

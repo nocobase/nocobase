@@ -47,18 +47,21 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
       return (
         <Fragment key={`${record.id}_${index}`}>
           <span>
-            <a
-              onClick={(e) => {
-                if (snapshot) return;
-                e.stopPropagation();
-                e.preventDefault();
-                setVisible(true);
-                setRecord(record);
-                ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
-              }}
-            >
-              {getLabelFormatValue(labelUiSchema, val)}
-            </a>
+            {snapshot ? (
+              getLabelFormatValue(labelUiSchema, val)
+            ) : (
+              <a
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setVisible(true);
+                  setRecord(record);
+                  ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
+                }}
+              >
+                {getLabelFormatValue(labelUiSchema, val)}
+              </a>
+            )}
           </span>
           {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
         </Fragment>
