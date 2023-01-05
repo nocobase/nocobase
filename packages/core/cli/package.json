@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "0.8.0-alpha.13",
+  "version": "0.8.1-alpha.2",
   "description": "",
   "license": "Apache-2.0",
   "licenses": [
@@ -23,7 +23,7 @@
     "serve": "^13.0.2"
   },
   "devDependencies": {
-    "@nocobase/devtools": "0.8.0-alpha.13"
+    "@nocobase/devtools": "0.8.1-alpha.2"
   },
   "repository": {
     "type": "git",

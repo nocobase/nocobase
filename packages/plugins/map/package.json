@@ -1,18 +1,18 @@
 {
   "name": "@nocobase/plugin-map",
-  "version": "0.8.0-alpha.13",
+  "version": "0.8.1-alpha.2",
   "main": "lib/server/index.js",
   "devDependencies": {
-    "@nocobase/server": "0.8.0-alpha.13",
-    "@nocobase/test": "0.8.0-alpha.13"
+    "@nocobase/server": "0.8.1-alpha.2",
+    "@nocobase/test": "0.8.1-alpha.2"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
     "@amap/amap-jsapi-types": "^0.0.10",
-    "@formily/react": "2.0.20",
     "@emotion/css": "^11.7.1",
+    "@formily/react": "2.0.20",
+    "ahooks": "^3.7.2",
     "antd": "~4.19.5",
-    "sequelize": "^6.26.0",
-    "ahooks": "^3.7.2"
+    "sequelize": "^6.26.0"
   }
 }
