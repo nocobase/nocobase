@@ -157,14 +157,6 @@ export const collectionTableSchema: ISchema = {
             type: 'primary',
           },
         },
-        addCategories: {
-          type: 'void',
-          title: '{{ t("Add category") }}',
-          'x-component': 'AddCategory',
-          'x-component-props': {
-            type: 'primary',
-          },
-        },
       },
     },
     table: {

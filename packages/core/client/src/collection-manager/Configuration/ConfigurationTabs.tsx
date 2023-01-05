@@ -1,4 +1,5 @@
 import { Tabs, Modal } from 'antd';
+import { UpOutlined } from '@ant-design/icons';
 import React, { useState, useContext } from 'react';
 import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -65,7 +66,24 @@ export const ConfigurationTabs = () => {
   const scopeCxt = useContext(SchemaOptionsContext);
   return (
     <Tabs
-      hideAdd
+      //hideAdd
+      addIcon={
+        <SchemaComponent
+          schema={{
+            type: 'void',
+            properties: {
+              addCategories: {
+                type: 'void',
+                title: '{{ t("Add category") }}',
+                'x-component': 'AddCategory',
+                'x-component-props': {
+                  type: 'primary',
+                },
+              },
+            },
+          }}
+        />
+      }
       onChange={onChange}
       activeKey={activeKey}
       type="editable-card"

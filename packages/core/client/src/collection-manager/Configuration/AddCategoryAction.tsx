@@ -1,11 +1,10 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { useForm } from '@formily/react';
-import { Button } from 'antd';
 import { cloneDeep } from 'lodash';
+import { Button } from 'antd';
 import React, { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
-import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import * as components from './components';
@@ -34,36 +33,29 @@ const useCreateCategry = () => {
 };
 
 export const AddCategory = (props) => {
-  const record = useRecord();
-  return <AddCategoryAction item={record} {...props} />;
+  return <AddCategoryAction {...props} />;
 };
 
 export const AddCategoryAction = (props) => {
-  const { scope, getContainer, item: record, children } = props;
+  const { scope, getContainer, children } = props;
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   return (
-    <RecordProvider record={record}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
-        {children || (
-          <Button icon={<PlusOutlined />} type={'primary'} onClick={() => setVisible(true)}>
-            {t('Add category')}
-          </Button>
-        )}
-        <SchemaComponent
-          schema={collectionCategorySchema}
-          components={{ ...components }}
-          scope={{
-            getContainer,
-            useCancelAction,
-            createOnly: true,
-            useCreateCategry,
-            record,
-            showReverseFieldConfig: true,
-            ...scope,
-          }}
-        />
-      </ActionContext.Provider>
-    </RecordProvider>
+    <ActionContext.Provider value={{ visible, setVisible }}>
+      <Button type="text" onClick={() => setVisible(true)} title={t('Add category')}>
+        {children || <PlusOutlined />}
+      </Button>
+      <SchemaComponent
+        schema={collectionCategorySchema}
+        components={{ ...components }}
+        scope={{
+          getContainer,
+          useCancelAction,
+          createOnly: true,
+          useCreateCategry,
+          ...scope,
+        }}
+      />
+    </ActionContext.Provider>
   );
 };

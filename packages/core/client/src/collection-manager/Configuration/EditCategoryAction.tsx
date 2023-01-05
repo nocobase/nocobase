@@ -53,7 +53,7 @@ export const EditCategory = (props) => {
 };
 
 export const EditCategoryAction = (props) => {
-  const { scope, getContainer, item } = props;
+  const { scope, getContainer, item, children } = props;
   const [visible, setVisible] = useState(false);
   const compile = useCompile();
   return (
@@ -64,7 +64,7 @@ export const EditCategoryAction = (props) => {
             item.id !== 'all' && setVisible(true);
           }}
         >
-          {compile(item.name)}
+          {children || compile(item.name)}
         </div>
         <SchemaComponent
           schema={collectionCategoryEditSchema}
