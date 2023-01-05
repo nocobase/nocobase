@@ -38,12 +38,11 @@ describe('fixed params', () => {
 
   it('should add fixed params to acl action', async () => {
     const acl = new ACL();
-    acl.registerConfigResources(['collections']);
 
     const adminRole = acl.define({
       role: 'admin',
-      strategy: {
-        allowConfigure: true,
+      actions: {
+        'collections:destroy': {},
       },
     });
 
