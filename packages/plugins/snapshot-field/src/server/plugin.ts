@@ -69,6 +69,8 @@ export class SnapshotFieldPlugin extends Plugin {
     this.app.db.registerFieldTypes({
       snapshot: SnapshotField,
     });
+
+    this.app.acl.allow('collectionsHistory', 'list', 'loggedIn');
   }
 
   // 初始化安装的时候

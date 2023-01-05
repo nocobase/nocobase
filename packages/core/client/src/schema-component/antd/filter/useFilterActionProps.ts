@@ -104,7 +104,7 @@ export const useFilterFieldProps = ({ options, service, params }) => {
     options,
     onSubmit(values) {
       // filter parameter for the block
-      const defaultFilter = removeNullCondition(params.filter);
+      const defaultFilter = params.filter;
       // filter parameter for the filter action
       const filter = removeNullCondition(values?.filter);
 
@@ -126,7 +126,7 @@ export const useFilterFieldProps = ({ options, service, params }) => {
       }
     },
     onReset() {
-      const filter = removeNullCondition(params.filter);
+      const filter = params.filter;
       service.run({ ...service.params?.[0], filter, page: 1 });
       field.title = t('Filter');
     },

@@ -1,17 +1,38 @@
 import React, { useContext } from 'react';
-import { PluginManagerContext, RouteSwitchContext, SettingsCenterProvider } from '@nocobase/client';
+import { Card } from 'antd';
+import { PluginManagerContext, RouteSwitchContext, SchemaComponent, SettingsCenterProvider } from '@nocobase/client';
 import { WorkflowPage } from './WorkflowPage';
-import { WorkflowPane, WorkflowShortcut } from './WorkflowShortcut';
 import { ExecutionPage } from './ExecutionPage';
 import { triggers } from './triggers';
 import { instructions } from './nodes';
 import { lang } from './locale';
+import { workflowSchema } from './schemas/workflows';
+import { WorkflowLink } from './WorkflowLink';
+import { ExecutionResourceProvider } from './ExecutionResourceProvider';
+import { ExecutionLink } from './ExecutionLink';
+import OpenDrawer from './components/OpenDrawer';
 
 export const WorkflowContext = React.createContext({});
 
 export function useWorkflowContext() {
   return useContext(WorkflowContext);
 }
+
+function WorkflowPane() {
+  return (
+    <Card bordered={false}>
+      <SchemaComponent
+        schema={workflowSchema}
+        components={{
+          WorkflowLink,
+          ExecutionResourceProvider,
+          ExecutionLink,
+          OpenDrawer
+        }}
+      />
+    </Card>
+  );
+};
 
 export const WorkflowProvider = (props) => {
   const ctx = useContext(PluginManagerContext);
