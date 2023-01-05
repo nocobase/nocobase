@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-manager",
-  "version": "0.8.1-alpha.3",
+  "version": "0.8.1-alpha.4",
   "main": "lib/index.js",
   "license": "Apache-2.0",
   "licenses": [
@@ -11,13 +11,13 @@
   ],
   "dependencies": {
     "@hapi/topo": "^6.0.0",
-    "@nocobase/database": "0.8.1-alpha.3",
-    "@nocobase/plugin-error-handler": "0.8.1-alpha.3",
-    "@nocobase/server": "0.8.1-alpha.3",
+    "@nocobase/database": "0.8.1-alpha.4",
+    "@nocobase/plugin-error-handler": "0.8.1-alpha.4",
+    "@nocobase/server": "0.8.1-alpha.4",
     "sequelize": "^6.26.0"
   },
   "devDependencies": {
-    "@nocobase/test": "0.8.1-alpha.3"
+    "@nocobase/test": "0.8.1-alpha.4"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }
