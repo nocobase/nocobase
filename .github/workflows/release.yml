@@ -19,3 +19,4 @@ jobs:
           git config --global --add safe.directory /__w/nocobase/nocobase
           echo "# test" >> Release.md
           git add .
+          git commit -m "chore(versions): test publish packages xxx"
