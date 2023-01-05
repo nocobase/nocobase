@@ -7,6 +7,7 @@ import { CollectionManagerContext, CollectionCategroriesContext } from './contex
 import * as defaultInterfaces from './interfaces';
 import { CollectionManagerOptions } from './types';
 import { templateOptions } from '../collection-manager/Configuration/templates';
+import { useCollectionHistory } from './CollectionHistoryProvider';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { service, interfaces, collections = [], refreshCM, templates } = props;
@@ -31,6 +32,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
 export const RemoteCollectionManagerProvider = (props: any) => {
   const api = useAPIClient();
   const [contentLoading, setContentLoading] = useState(false);
+  const { refreshCH } = useCollectionHistory();
   const options = {
     resource: 'collections',
     action: 'list',
@@ -47,21 +49,25 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   if (service.loading) {
     return <Spin />;
   }
+
+  const refreshCM = async (opts) => {
+    if (opts?.reload) {
+      setContentLoading(true);
+    }
+    const { data } = await api.request(options);
+    service.mutate(data);
+    await refreshCH();
+    if (opts?.reload) {
+      setContentLoading(false);
+    }
+    return data?.data || [];
+  };
+
   return (
     <CollectionManagerProvider
       service={{ ...service, contentLoading, setContentLoading }}
       collections={service?.data?.data}
-      refreshCM={async (opts) => {
-        if (opts?.reload) {
-          setContentLoading(true);
-        }
-        const { data } = await api.request(options);
-        service.mutate(data);
-        if (opts?.reload) {
-          setContentLoading(false);
-        }
-        return data?.data || [];
-      }}
+      refreshCM={refreshCM}
       {...props}
     />
   );

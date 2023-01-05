@@ -120,7 +120,7 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
-      {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho'].includes(collectionField?.interface) && (
+      {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Title field')}
           options={options}

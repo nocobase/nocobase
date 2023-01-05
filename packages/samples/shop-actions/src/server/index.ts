@@ -3,7 +3,6 @@ import path from 'path';
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class ShopPlugin extends Plugin {
-
   beforeLoad() {
     // TODO
   }
@@ -19,7 +18,7 @@ export class ShopPlugin extends Plugin {
         create: {
           blacklist: ['id', 'totalPrice', 'status', 'createdAt', 'updatedAt'],
           values: {
-            status: 0
+            status: 0,
           },
           middlewares: [
             async (ctx, next) => {
@@ -30,9 +29,9 @@ export class ShopPlugin extends Plugin {
                 filter: {
                   enabled: true,
                   inventory: {
-                    $gt: 0
-                  }
-                }
+                    $gt: 0,
+                  },
+                },
               });
 
               if (!product) {
@@ -42,7 +41,7 @@ export class ShopPlugin extends Plugin {
               ctx.state.product = product;
 
               await next();
-            }
+            },
           ],
           async handler(ctx, next) {
             const { product } = ctx.state;
@@ -51,22 +50,22 @@ export class ShopPlugin extends Plugin {
                 ...ctx.action.params.values,
                 productId: product.id,
                 quantity: 1,
-                totalPrice: product.price
-              }
+                totalPrice: product.price,
+              },
             });
 
             ctx.body = order;
-          }
+          },
         },
         list: {
           filter: {
             // 由 users 插件扩展的过滤器运算符
             $isCurrentUser: true,
             status: {
-              $ne: -1
-            }
+              $ne: -1,
+            },
           },
-          fields: ['id', 'status', 'createdAt', 'updatedAt']
+          fields: ['id', 'status', 'createdAt', 'updatedAt'],
         },
         async deliver(ctx, next) {
           const { filterByTk } = ctx.action.params;
@@ -78,17 +77,17 @@ export class ShopPlugin extends Plugin {
               status: 2,
               delivery: {
                 ...ctx.action.params.values,
-                status: 0
-              }
-            }
+                status: 0,
+              },
+            },
           });
           order.delivery = await order.getDelivery();
 
           ctx.body = order;
 
           next();
-        }
-      }
+        },
+      },
     });
 
     this.app.acl.allow('products', '*');

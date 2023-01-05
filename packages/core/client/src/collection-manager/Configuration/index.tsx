@@ -3,7 +3,6 @@ import { registerValidateFormats } from '@formily/core';
 export * from './AddFieldAction';
 export * from './ConfigurationTable';
 export * from './EditFieldAction';
-export * from './interfaces';
 export * from './components';
 export * from './templates';
 export * from './CollectionFieldsTable';
