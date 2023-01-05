@@ -147,9 +147,15 @@ CollectionGroupManager.registerCollectionGroup({
       })
       .flat();
 
-    // import sequences
+    await app.db.getRepository('sequences').destroy({
+      filter: {
+        $or: sequencesAttributes,
+      },
+    });
+
     await restorer.importCollection({
       name: 'sequences',
+      clear: false,
       rowCondition(row) {
         const results = sequencesAttributes.some((attributes) => {
           return (

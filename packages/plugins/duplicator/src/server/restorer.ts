@@ -172,6 +172,8 @@ export class Restorer extends AppMigrator {
     for (const collectionGroup of delayGroups) {
       await collectionGroup.delayRestore(this);
     }
+
+    await this.emitAsync('restoreCollectionsFinished');
   }
 
   async decompressBackup(backupFilePath: string) {
@@ -277,17 +279,39 @@ export class Restorer extends AppMigrator {
     const primaryKeyAttribute = collection.model.rawAttributes[collection.model.primaryKeyAttribute];
 
     if (primaryKeyAttribute && primaryKeyAttribute.autoIncrement) {
-      if (this.app.db.inDialect('postgres')) {
-        await app.db.sequelize.query(
-          `SELECT pg_catalog.setval(pg_get_serial_sequence('"${collection.model.tableName}"', '${primaryKeyAttribute.field}'), MAX("${primaryKeyAttribute.field}")) FROM "${collection.model.tableName}"`,
-        );
-      }
+      this.on('restoreCollectionsFinished', async () => {
+        if (this.app.db.inDialect('postgres')) {
+          const sequenceNameResult = await app.db.sequelize.query(
+            `SELECT column_default FROM information_schema.columns WHERE
+          table_name='${collection.model.tableName}' and "column_name" = 'id';`,
+          );
 
-      if (this.app.db.inDialect('sqlite')) {
-        await app.db.sequelize.query(
-          `UPDATE sqlite_sequence set seq = (SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}") WHERE name = "${collection.model.tableName}"`,
-        );
-      }
+          if (sequenceNameResult[0].length) {
+            const columnDefault = sequenceNameResult[0][0]['column_default'];
+            if (columnDefault.includes(`${collection.model.tableName}_id_seq`)) {
+              const regex = new RegExp(/nextval\('("?\w+"?)\'.*\)/);
+              const match = regex.exec(columnDefault);
+              const sequenceName = match[1];
+
+              const maxVal = await app.db.sequelize.query(
+                `SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}"`,
+                {
+                  type: 'SELECT',
+                },
+              );
+
+              const updateSeqSQL = `SELECT setval('${sequenceName}', ${maxVal[0]['max']})`;
+              await app.db.sequelize.query(updateSeqSQL);
+            }
+          }
+        }
+
+        if (this.app.db.inDialect('sqlite')) {
+          await app.db.sequelize.query(
+            `UPDATE sqlite_sequence set seq = (SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}") WHERE name = "${collection.model.tableName}"`,
+          );
+        }
+      });
     }
 
     app.logger.info(`${collectionName} imported with ${rowsWithMeta.length} rows`);

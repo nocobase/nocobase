@@ -5,12 +5,16 @@ import lodash from 'lodash';
 import fsPromises from 'fs/promises';
 import crypto from 'crypto';
 import inquirer from 'inquirer';
+import EventEmitter from 'events';
+import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 
-export abstract class AppMigrator {
+abstract class AppMigrator extends EventEmitter {
   protected workDir: string;
   public app: Application;
 
   abstract direction: 'restore' | 'dump';
+
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
   constructor(
     app,
@@ -18,6 +22,8 @@ export abstract class AppMigrator {
       workDir?: string;
     },
   ) {
+    super();
+
     this.app = app;
     this.workDir = options?.workDir || this.tmpDir();
   }
@@ -136,3 +142,6 @@ export abstract class AppMigrator {
     ];
   }
 }
+
+applyMixins(AppMigrator, [AsyncEmitter]);
+export { AppMigrator };
