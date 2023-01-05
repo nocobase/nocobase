@@ -50,13 +50,25 @@ export const ChartBlockInitializer = (props) => {
         }).open({
           initialValues: {},
         });
+        //拿到数据插入engine，给engine用户配制好的数据, engine返回schema
         if (values) {
           //解析values发送请求获取render数据
           const data = await getChartData(api,values)
           console.log(data,"==================")
           //再生成schema insert
           const chartBlockSchema = getChartBlockSchema(values, data);
-          insert(chartBlockSchema)
+          // render data
+          const {renderData} = data
+          insert({
+            type: 'void',
+            'x-designer': 'G2Plot.Designer',
+            'x-decorator': 'CardItem',
+            'x-component': 'ChartBlockEngine',
+            'x-component-props': {
+              plot: 'Pie',
+              config: renderData,
+            },
+          })
         }
       }}
     />

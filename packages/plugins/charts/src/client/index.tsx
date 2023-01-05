@@ -8,6 +8,7 @@ import {Card} from 'antd';
 import React, {useContext} from 'react';
 import {useTranslation} from 'react-i18next';
 import {ChartBlockInitializer} from "./ChartBlockInitializer";
+import {ChartBlockEngine} from "./ChartBlockEngine";
 
 // export const DataAnalyseInitializer = (props) => {
 //   const {insert} = props;
@@ -59,7 +60,7 @@ export default React.memo((props) => {
         },
       }}
     >
-      <SchemaComponentOptions components={{ChartBlockInitializer}}>
+      <SchemaComponentOptions components={{ChartBlockInitializer,ChartBlockEngine}}>
         <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
       </SchemaComponentOptions>
     </SettingsCenterProvider>
