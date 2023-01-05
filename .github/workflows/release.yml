@@ -11,12 +11,12 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v3
-      -
-        name: yarn install and build
-        run: |
-          yarn config set registry https://registry.npmjs.org/
-          yarn install
-          yarn build
+      # -
+      #   name: yarn install and build
+      #   run: |
+      #     yarn config set registry https://registry.npmjs.org/
+      #     yarn install
+      #     yarn build
       -
         name: publish npmjs.org
         run: |
@@ -28,7 +28,7 @@ jobs:
           echo "# test" >> Release.md
           git add .
           git commit -m "chore(versions): test publish packages xxx"
-          yarn release:force --registry https://registry.npmjs.org/
+          # yarn release:force --registry https://registry.npmjs.org/
   push-docker:
     runs-on: ubuntu-latest
     needs: publish-npm
