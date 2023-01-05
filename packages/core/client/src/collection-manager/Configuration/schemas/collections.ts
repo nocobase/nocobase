@@ -7,6 +7,7 @@ import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
 import { CollectionTemplate } from '../components/CollectionTemplate';
+import { CollectionCategory } from '../components/CollectionCategory';
 import { collectionFieldSchema } from './collectionFields';
 
 const compile = (source) => {
@@ -96,7 +97,7 @@ export const collectionSchema: ISchema = {
             filter: {
               'hidden.$isFalsy': true,
             },
-            appends: [],
+            appends: ['category'],
           },
         },
       },
@@ -221,6 +222,21 @@ export const collectionTableSchema: ISchema = {
         },
         column4: {
           type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          'x-component-props': {
+            visible: false,
+          },
+          title: '{{t("Collection category")}}',
+          properties: {
+            category: {
+              'x-component': CollectionCategory,
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column5: {
+          type: 'void',
           title: '{{ t("Actions") }}',
           'x-component': 'Table.Column',
           properties: {
@@ -292,7 +308,7 @@ export const collectionCategorySchema: ISchema = {
       type: 'void',
       'x-decorator': 'Form',
       'x-component': 'Action.Modal',
-      title: '{{ t("Create category") }}',
+      title: '{{ t("Add category") }}',
       'x-component-props': {
         width: 520,
         getContainer: '{{ getContainer }}',
