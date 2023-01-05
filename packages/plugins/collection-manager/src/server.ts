@@ -8,12 +8,12 @@ import { Plugin } from '@nocobase/server';
 
 import { CollectionRepository } from '.';
 import {
-    afterCreateForForeignKeyField,
-    afterCreateForReverseField,
-    beforeCreateForChildrenCollection,
-    beforeCreateForReverseField,
-    beforeDestroyForeignKey,
-    beforeInitOptions
+  afterCreateForForeignKeyField,
+  afterCreateForReverseField,
+  beforeCreateForChildrenCollection,
+  beforeCreateForReverseField,
+  beforeDestroyForeignKey,
+  beforeInitOptions
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
@@ -40,7 +40,10 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.registerACLSettingSnippet({
       name: 'collections',
-      actions: ['collections:*'],
+      actions: [
+        'collections:*',
+        'collections.fields:*',
+      ],
     });
 
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
