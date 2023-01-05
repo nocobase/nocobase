@@ -16,3 +16,6 @@ jobs:
         run: |
           git config --global user.email "test@mail.com"
           git config --global user.name "test"
+          echo "# test" >> Release.md
+          git add .
+          git commit -m "chore(versions): test publish packages xxx"
