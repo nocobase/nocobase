@@ -570,6 +570,7 @@ export class PluginACL extends Plugin {
       },
     );
 
+    // append allowedActions to list & get response
     this.app.use(
       async (ctx: any, next) => {
         await next();
@@ -591,6 +592,8 @@ export class PluginACL extends Plugin {
           if (actionName == 'get') {
             listData = lodash.castArray(listData);
           }
+
+          console.log(listData.map((i) => i.toJSON()));
 
           const actions = ['view', 'update', 'destroy'];
 

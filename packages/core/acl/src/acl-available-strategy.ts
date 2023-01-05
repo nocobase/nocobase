@@ -62,10 +62,6 @@ export class ACLAvailableStrategy {
   }
 
   allow(resourceName: string, actionName: string) {
-    if (this.allowConfigure) {
-      return true;
-    }
-
     return this.matchAction(this.acl.resolveActionAlias(actionName));
   }
 }
