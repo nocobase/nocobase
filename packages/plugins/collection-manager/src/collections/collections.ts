@@ -57,7 +57,6 @@ export default {
       sourceKey: 'name',
       foreignKey: 'collectionName',
       targetKey: 'id',
-      onDelete: 'CASCADE',
     },
   ],
 } as CollectionOptions;

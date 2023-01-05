@@ -2,10 +2,9 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'collection_categories',
-  title: '数据表类别',
+//   title: '数据表类别',
   autoGenId: true,
-  timestamps: false,
-  filterTargetKey: 'name',
+//   filterTargetKey: 'id',
   fields: [
     {
       type: 'string',
@@ -25,9 +24,9 @@ export default {
       type: 'belongsToMany',
       name: 'collection',
       target: 'collections',
-      foreignKey: 'category',
+      foreignKey: 'collectionCategoryId',
       targetKey: 'name',
-      onDelete: 'CASCADE',
     },
   ],
 } as CollectionOptions;
+
