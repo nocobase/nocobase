@@ -1,4 +1,5 @@
 import { useForm } from '@formily/react';
+import { Badge } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useState, useContext, useEffect } from 'react';
 import { useAPIClient } from '../../api-client';
@@ -64,7 +65,12 @@ export const EditCategoryAction = (props) => {
             item.id !== 'all' && setVisible(true);
           }}
         >
-          {children || compile(item.name)}
+          {children || (
+            <span>
+              <Badge color={item.color} />
+              {compile(item.name)}
+            </span>
+          )}
         </div>
         <SchemaComponent
           schema={collectionCategoryEditSchema}
