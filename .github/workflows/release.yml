@@ -14,8 +14,8 @@ jobs:
       -
         name: publish npmjs.org
         run: |
-          git config user.email "test@mail.com"
-          git config user.name "test" 
+          git config --global user.email "test@mail.com"
+          git config --global user.name "test" 
           rm -rf .git
           git init
           git add .
