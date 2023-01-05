@@ -147,11 +147,13 @@ CollectionGroupManager.registerCollectionGroup({
       })
       .flat();
 
-    await app.db.getRepository('sequences').destroy({
-      filter: {
-        $or: sequencesAttributes,
-      },
-    });
+    if (sequencesAttributes.length > 0) {
+      await app.db.getRepository('sequences').destroy({
+        filter: {
+          $or: sequencesAttributes,
+        },
+      });
+    }
 
     await restorer.importCollection({
       name: 'sequences',
