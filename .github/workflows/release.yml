@@ -28,7 +28,7 @@ jobs:
           git commit -m "chore(versions): test publish packages xxx"
           npm config set registry https://registry.npmjs.org/
           npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
-          yarn release:force --registry https://registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+          yarn release:force --registry https://registry.npmjs.org/
   push-docker:
     runs-on: ubuntu-latest
     needs: publish-npm
