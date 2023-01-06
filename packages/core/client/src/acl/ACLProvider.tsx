@@ -1,6 +1,5 @@
 import { Schema, useFieldSchema } from '@formily/react';
-import { Result, Spin } from 'antd';
-import pathToRegexp from 'path-to-regexp';
+import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
@@ -8,7 +7,6 @@ import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useCollection } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
-import { InternalAdminLayout } from '../route-switch/antd/admin-layout';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 export const ACLContext = createContext<any>({});
@@ -63,26 +61,12 @@ export const ACLRolesCheckProvider = (props) => {
       },
     },
   );
-  const routeAclCheck = route ? !result.loading && getRouteAclCheck(route, result.data?.data.snippets) : true;
   if (result.loading) {
     return <Spin />;
   }
   if (result.error) {
     return <Redirect to={'/signin'} />;
   }
-  if (pathToRegexp('/admin/settings/:pluginName?/:tabName?').test(route.url)) {
-    return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
-  }
-  if (!routeAclCheck) {
-    return (
-      <ACLContext.Provider value={result}>
-        <InternalAdminLayout {...props}>
-          <Result status="403" title="403" subTitle="Sorry, you are not authorized to access this page." />
-        </InternalAdminLayout>
-      </ACLContext.Provider>
-    );
-  }
-
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };
 

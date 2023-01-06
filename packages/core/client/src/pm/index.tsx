@@ -190,8 +190,9 @@ const PluginList = (props) => {
   const { tabName = 'local' } = match.params || {};
   const { setTitle } = useDocumentTitle();
   const { t } = useTranslation();
+  const { snippets = [] } = useACLRoleContext();
 
-  return (
+  return snippets.includes('pm') ? (
     <div>
       <PageHeader
         ghost={false}
@@ -219,6 +220,8 @@ const PluginList = (props) => {
         )}
       </div>
     </div>
+  ) : (
+    <Result status="404" title="404" subTitle="Sorry, the page you visited does not exist." />
   );
 };
 
@@ -276,7 +279,7 @@ export const getPluginsTabs = (items, snippets) => {
         return {
           key: tab,
           ...tabsObj[tab],
-          isAllow: !snippets?.includes('!pm.' + plugin + '.' + tab),
+          isAllow: snippets.includes('pm.*') && !snippets?.includes(`!pm.${plugin}.${tab}`),
         };
       }),
       (o) => !o.isAllow,
@@ -369,27 +372,29 @@ const SettingsCenter = (props) => {
           />
         </Layout.Sider>
         <Layout.Content>
-          <PageHeader
-            ghost={false}
-            title={compile(items[pluginName]?.title)}
-            footer={
-              <Tabs
-                activeKey={tabName}
-                onChange={(activeKey) => {
-                  history.push(`/admin/settings/${pluginName}/${activeKey}`);
-                }}
-              >
-                {plugin.tabs?.map((tab) => {
-                  return tab.isAllow && <Tabs.TabPane tab={compile(tab?.title)} key={tab.key} />;
-                })}
-              </Tabs>
-            }
-          />
+          {aclPluginTabCheck && (
+            <PageHeader
+              ghost={false}
+              title={compile(items[pluginName]?.title)}
+              footer={
+                <Tabs
+                  activeKey={tabName}
+                  onChange={(activeKey) => {
+                    history.push(`/admin/settings/${pluginName}/${activeKey}`);
+                  }}
+                >
+                  {plugin.tabs?.map((tab) => {
+                    return tab.isAllow && <Tabs.TabPane tab={compile(tab?.title)} key={tab.key} />;
+                  })}
+                </Tabs>
+              }
+            />
+          )}
           <div style={{ margin: 24 }}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (
-              <Result status="403" title="403" subTitle="Sorry, you are not authorized to access this page." />
+              <Result status="404" title="404" subTitle="Sorry, the page you visited does not exist." />
             )}
           </div>
         </Layout.Content>
