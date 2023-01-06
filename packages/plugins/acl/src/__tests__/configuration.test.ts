@@ -23,7 +23,7 @@ describe('configuration', () => {
     await db.getRepository('roles').create({
       values: {
         name: 'test1',
-        snippets: ['settings-center.*'],
+        snippets: ['pm.*'],
       },
     });
 

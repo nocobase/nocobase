@@ -134,7 +134,7 @@ describe('association field acl', () => {
     await db.getRepository('roles').create({
       values: {
         name: 'testAdmin',
-        snippets: ['settings-center.*'],
+        snippets: ['pm.*'],
       },
     });
 

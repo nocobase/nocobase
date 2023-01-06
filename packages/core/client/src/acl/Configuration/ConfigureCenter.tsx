@@ -1,10 +1,9 @@
 import { Checkbox, message, Table } from 'antd';
-import React, { useState, useContext, createContext } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
-import { uniq } from 'lodash';
 
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
@@ -51,14 +50,14 @@ const formatPluginTabs = (data) => {
   arr.forEach((v) => {
     const children = Object.entries(v[1].tabs).map((k: any) => {
       return {
-        key: 'settings-center.' + v[0] + '.' + k[0],
+        key: 'pm.' + v[0] + '.' + k[0],
         title: k[1].title,
       };
     });
 
     pluginsTabs.push({
       title: v[1].title,
-      key: 'settings-center.' + v[0],
+      key: 'pm.' + v[0],
       children,
     });
   });
@@ -110,7 +109,7 @@ export const SettingsCenterConfigure = () => {
         columns={[
           {
             dataIndex: 'title',
-            title: t('Plugin Tab Name'),
+            title: t('Plugin tab name'),
             render: (value) => {
               return compile(value);
             },

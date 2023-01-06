@@ -78,8 +78,8 @@ export default class WorkflowPlugin extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
-    this.registerACLSettingSnippet({
-      name: 'workflows',
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.workflows`,
       actions: [
         'workflows:*',
         'workflows.nodes:*',

@@ -7,7 +7,7 @@ export default class SetRoleSnippetsMigration extends Migration {
         allowConfigure: true,
       },
       values: {
-        snippets: ['ui-editor', 'plugin-manager', 'settings-center.*'],
+        snippets: ['ui.*', 'pm', 'pm.*'],
         allowConfigure: false,
       },
     });

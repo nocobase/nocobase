@@ -31,6 +31,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
     this.afterAdd();
   }
 
+  get name() {
+    return this.options.name as string;
+  }
+
   get db() {
     return this.app.db;
   }
@@ -65,9 +69,9 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async remove() {}
 
-  registerACLSettingSnippet({ name, actions }: { name: string; actions: string[] }) {
+  registerPluginACLSnippet({ name, actions }: { name: string; actions: string[] }) {
     this.app.acl.registerSnippet({
-      name: `settings-center.${this.getName()}.${name}`,
+      name: `pm.${this.getName()}.${name}`,
       actions,
     });
   }

@@ -6,8 +6,8 @@ import { get } from 'lodash';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { PluginManagerContext } from './context';
 import { useACLRoleContext } from '../acl/ACLProvider';
+import { PluginManagerContext } from './context';
 
 export const usePrefixCls = (
   tag?: string,
@@ -148,9 +148,9 @@ export const RemotePluginManagerToolbar = () => {
     return allowAll || snippets?.includes(aclKey);
   };
   const items = [
-    { component: 'DesignableSwitch', pin: true, isAllow: getSnippetsAllow('ui-editor') },
-    { component: 'PluginManagerLink', pin: true, isAllow: getSnippetsAllow('plugin-manager') },
-    { component: 'SettingsCenterDropdown', pin: true, isAllow: getSnippetsAllow('settings-center.*') },
+    { component: 'DesignableSwitch', pin: true, isAllow: getSnippetsAllow('ui.*') },
+    { component: 'PluginManagerLink', pin: true, isAllow: getSnippetsAllow('pm') },
+    { component: 'SettingsCenterDropdown', pin: true, isAllow: getSnippetsAllow('pm.*') },
     // ...data?.data,
   ];
   return <PluginManager.Toolbar items={items.filter((v) => v.isAllow)} />;

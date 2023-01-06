@@ -28,8 +28,8 @@ export default class PluginFileManager extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
-    this.registerACLSettingSnippet({
-      name: 'storages',
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.storages`,
       actions: ['storages:*'],
     });
 

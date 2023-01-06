@@ -37,7 +37,7 @@ export const RoleConfigure = () => {
           },
         },
         properties: {
-          'ui-editor.*': {
+          'ui.*': {
             title: t('Configure permissions'),
             type: 'boolean',
             'x-decorator': 'FormItem',
@@ -50,7 +50,7 @@ export const RoleConfigure = () => {
               `,
             },
           },
-          'plugin-manager': {
+          'pm': {
             type: 'boolean',
             'x-decorator': 'FormItem',
             'x-component': 'Checkbox',
@@ -61,7 +61,7 @@ export const RoleConfigure = () => {
             },
             'x-content': t('Allow to manage plugins'),
           },
-          'settings-center.*': {
+          'pm.*': {
             type: 'boolean',
             'x-decorator': 'FormItem',
             'x-component': 'Checkbox',

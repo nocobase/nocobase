@@ -48,11 +48,9 @@ export class OidcPlugin extends Plugin {
 
     this.app.acl.allow('oidc', '*', 'public');
 
-    this.registerACLSettingSnippet({
-      name: 'oidc',
-      actions: [
-        'oidcProviders:*',
-      ],
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.providers`,
+      actions: ['oidcProviders:*'],
     });
   }
 

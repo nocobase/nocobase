@@ -37,11 +37,9 @@ export class SAMLPlugin extends Plugin {
     // 开放访问权限
     this.app.acl.allow('saml', '*', 'public');
 
-    this.registerACLSettingSnippet({
-      name: 'saml',
-      actions: [
-        'samlProviders:*',
-      ],
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.providers`,
+      actions: ['samlProviders:*'],
     });
   }
 

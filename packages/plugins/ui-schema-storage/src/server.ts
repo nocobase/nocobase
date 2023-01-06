@@ -26,13 +26,13 @@ export class UiSchemaStoragePlugin extends Plugin {
 
     this.registerRepository();
 
-    this.registerACLSettingSnippet({
-      name: 'block-templates',
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.block-templates`,
       actions: ['uiSchemaTemplates:*'],
     });
 
     this.app.acl.registerSnippet({
-      name: 'ui-editor.uiSchemas',
+      name: 'ui.uiSchemas',
       actions: [
         'uiSchemas:insert',
         'uiSchemas:insertNewSchema',

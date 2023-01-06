@@ -44,7 +44,7 @@ export class PluginManager {
     this.app.resourcer.define(resourceOptions);
 
     this.app.acl.registerSnippet({
-      name: 'plugin-manager',
+      name: 'pm',
       actions: ['pm:*', 'applicationPlugins:list'],
     });
 

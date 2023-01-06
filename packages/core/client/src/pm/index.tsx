@@ -276,7 +276,7 @@ export const getPluginsTabs = (items, snippets) => {
         return {
           key: tab,
           ...tabsObj[tab],
-          isAllow: !snippets?.includes('!settings-center.' + plugin + '.' + tab),
+          isAllow: !snippets?.includes('!pm.' + plugin + '.' + tab),
         };
       }),
       (o) => !o.isAllow,

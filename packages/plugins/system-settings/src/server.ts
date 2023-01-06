@@ -29,8 +29,8 @@ export class SystemSettingsPlugin extends Plugin {
       cmd.option('-l, --lang [lang]');
     }
 
-    this.registerACLSettingSnippet({
-      name: 'system-settings',
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.system-settings`,
       actions: ['systemSettings:update'],
     });
   }

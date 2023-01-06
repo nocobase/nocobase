@@ -33,12 +33,12 @@ const getRouteUrl = (props) => {
 const getRouteAclCheck = (match, snippets) => {
   const { url, params } = match;
   if (url === '/admin/pm/list' || params?.pluginName || params?.name?.includes('settings')) {
-    const pmAclCheck = url === '/admin/pm/list' && snippets.includes('plugin-manager');
+    const pmAclCheck = url === '/admin/pm/list' && snippets.includes('pm');
     const pluginTabByName = params?.name.split('/');
     pluginTabByName.shift();
     const pluginName = params.pluginName || pluginTabByName[0];
     const tabName = params.tabName || pluginTabByName[1];
-    const pluginTabSnippet = pluginName && tabName && `!settings-center.${pluginName}.${tabName}`;
+    const pluginTabSnippet = pluginName && tabName && `!pm.${pluginName}.${tabName}`;
     const pluginTabAclCheck = pluginTabSnippet && !snippets.includes(pluginTabSnippet);
     return pmAclCheck || pluginTabAclCheck;
   }
@@ -54,7 +54,7 @@ export const ACLRolesCheckProvider = (props) => {
     },
     {
       onSuccess(data) {
-        if (!data?.data?.snippets.includes('ui-editor')) {
+        if (!data?.data?.snippets.includes('ui.*')) {
           setDesignable(false);
         }
         if (data?.data?.role !== api.auth.role) {
@@ -279,7 +279,7 @@ export const ACLCollectionFieldProvider = (props) => {
 export const ACLMenuItemProvider = (props) => {
   const { allowAll, allowMenuItemIds = [], snippets } = useACLRoleContext();
   const fieldSchema = useFieldSchema();
-  if (allowAll || snippets.includes('ui-editor')) {
+  if (allowAll || snippets.includes('ui.*')) {
     return <>{props.children}</>;
   }
   if (!fieldSchema['x-uid']) {

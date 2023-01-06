@@ -38,8 +38,8 @@ export class CollectionManagerPlugin extends Plugin {
       CollectionRepository,
     });
 
-    this.registerACLSettingSnippet({
-      name: 'collections',
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.collections`,
       actions: [
         'collections:*',
         // 'fields:*',

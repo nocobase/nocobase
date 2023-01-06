@@ -46,8 +46,8 @@ export class PluginMultiAppManager extends Plugin {
       },
     );
 
-    this.registerACLSettingSnippet({
-      name: 'applications',
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.applications`,
       actions: [
         'applications:*',
       ],

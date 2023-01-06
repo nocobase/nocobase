@@ -1,14 +1,13 @@
-import React, { useContext, createContext, useState } from 'react';
 import { message } from 'antd';
-import { observer, ISchema, useForm } from '@formily/react';
+import React, { createContext, useContext, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
-import { useRecord } from '../../record-provider';
 import { useAPIClient } from '../../api-client';
+import { useRecord } from '../../record-provider';
 
 export const SettingCenterPermissionProvider = (props) => {
   const { currentRecord } = useContext(PermissionContext);
-  if (!currentRecord['settings-center.*']) {
+  if (!currentRecord['pm.*']) {
     return null;
   }
   return <div>{props.children}</div>;
@@ -32,7 +31,7 @@ export const PermissionProvider = (props) => {
         currentRecord,
         update: async (field, form) => {
           const { path, value } = field.getState() as any;
-          if (['ui-editor', 'plugin-manager', 'settings-center.*'].includes(path)) {
+          if (['ui.*', 'pm', 'pm.*'].includes(path)) {
             const resource = api.resource('roles.snippets', record.name);
             if (value) {
               await resource.add({
