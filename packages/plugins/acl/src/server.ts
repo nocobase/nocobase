@@ -593,8 +593,6 @@ export class PluginACL extends Plugin {
             listData = lodash.castArray(listData);
           }
 
-          console.log(listData.map((i) => i.toJSON()));
-
           const actions = ['view', 'update', 'destroy'];
 
           const actionsParams = [];
