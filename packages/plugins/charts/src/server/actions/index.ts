@@ -29,7 +29,7 @@ async function handleGetChartData(ctx: Context) {
   const {chartType,collectionName,filter,computedField,aggregateFunction} =values
   const repo = ctx.db.getRepository(collectionName);
   let chartData
-  //处理不同collection chartType 查询条件 对应的数据
+  //处理不同collection chartType filter 对应的数据
   switch (chartType) {
     case 'Pie': {
       //根据filter computedField aggregateFunction 分组查询聚合函数（SUM，COUNT，AVG）的值,这里只模拟Count
