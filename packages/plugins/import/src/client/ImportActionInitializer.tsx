@@ -50,7 +50,6 @@ export const ImportActionInitializer = (props) => {
     type: 'void',
     title: '{{ t("Import") }}',
     'x-action': 'importXlsx',
-    'x-acl-scope':false,
     'x-action-settings': {
       importSettings: { importColumns: [], explain: '' },
     },

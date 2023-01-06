@@ -51,7 +51,6 @@ export const ExportActionInitializer = (props) => {
     'x-action-settings': {
       exportSettings: [],
     },
-    'x-acl-scope': false,
     'x-designer': 'ExportDesigner',
     'x-decorator': 'ACLActionProvider',
     'x-component': 'Action',

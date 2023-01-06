@@ -252,6 +252,9 @@ export const ACLCollectionFieldProvider = (props) => {
   if (allowAll) {
     return <>{props.children}</>;
   }
+  if (!fieldSchema['x-collection-field']) {
+    return <>{props.children}</>;
+  }
   const { whitelist } = useACLFieldWhitelist();
   const allowed = whitelist.length > 0 ? whitelist.includes(fieldSchema.name) : true;
   if (!allowed) {
