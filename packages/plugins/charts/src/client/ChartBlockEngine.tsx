@@ -1,29 +1,38 @@
-import {G2Plot} from "@nocobase/client";
-import React, {useEffect} from "react";
-import {Spin} from "antd";
+import {G2Plot, useAPIClient} from "@nocobase/client";
+import React, {useEffect, useState} from "react";
+import {Card, Spin} from "antd";
+import {generateRenderConfig, getChartData} from "./ChartUtils";
 
-const ChartBlockEngine = (formData) => {
-  const [loading, setLoading] = React.useState(true);
+interface ChartBlockEngineFormData {
+  collectionName: string
+  chartType: string
+  dataset: object
+  chartOption: object
+}
+
+const useGetRenderConfig = (formData: ChartBlockEngineFormData) => {
+  const [loading, setLoading] = useState(true)
+  const [renderConfig, setRenderConfig] = useState({})
+  const apiClient = useAPIClient();
+  const {dataset, collectionName, chartType, chartOption} = formData
   useEffect(() => {
-    const timer = setTimeout(() => {
+    //1.发送请求获取聚合后的数据data
+    getChartData(apiClient, chartType, dataset, collectionName).then((data) => {
+      console.log(data)
+      //2.根据查询后的聚合数据和chartOption,chartType生成renderConfig
+      const renderConfig = generateRenderConfig(chartType, data.chartData, chartOption)
+      setRenderConfig(renderConfig)
       setLoading(false)
-    }, 3000)
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [])
-  const {plot, config} = formData
-  //根据不同的chartType 来生成不同的图表schema
-  // const engineSchema = {
-  //   type: 'void',
-  //   'x-designer': 'G2Plot.Designer',
-  //   'x-decorator': 'CardItem',
-  //   'x-component': 'G2Plot',
-  //   'x-component-props': {
-  //     plot: 'Pie',
-  //     config: renderData,
-  //   },
-  // }
+    })
+  }, [formData])
+  return {
+    loading,
+    renderConfig
+  }
+};
+
+const ChartBlockEngine = ({formData}: { formData: ChartBlockEngineFormData }) => {
+  const {loading, renderConfig} = useGetRenderConfig(formData);
   return (
     <>
       {
@@ -31,7 +40,7 @@ const ChartBlockEngine = (formData) => {
           ?
           <Spin/>
           :
-          <G2Plot plot='Pie' config={config}/>
+          <G2Plot plot='Pie' config={renderConfig}/>
       }
     </>
   )
