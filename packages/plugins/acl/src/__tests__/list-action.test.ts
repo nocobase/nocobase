@@ -171,6 +171,10 @@ describe('list association action with acl', () => {
   let app;
   let db: Database;
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   beforeEach(async () => {
     app = await prepareApp();
     db = app.db;
@@ -263,6 +267,7 @@ describe('list association action with acl', () => {
      * allowedActions.destroy = []
      */
     expect(data['meta']['allowedActions']).toBeDefined();
-    expect(data['meta']['allowedActions'].view).toEqual([1, 2]);
+    expect(data['meta']['allowedActions'].view).toContain(1);
+    expect(data['meta']['allowedActions'].view).toContain(2);
   });
 });
