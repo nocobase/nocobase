@@ -4,7 +4,6 @@ import { VariableComponent } from '../../calculators';
 import { NAMESPACE } from '../../locale';
 import { ValueGetter } from './ValueGetter';
 import { SchemaConfig } from './SchemaConfig';
-import { WorkflowTodoBlockInitializer } from './WorkflowTodoBlockInitializer';
 import { NullRender } from '../../components/NullRender';
 import { ModeConfig } from './ModeConfig';
 
@@ -17,7 +16,7 @@ if (!initializerGroup.children.find(item => item.key === 'workflowTodos')) {
     key: 'workflowTodos',
     type: 'item',
     title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-    component: WorkflowTodoBlockInitializer
+    component: 'WorkflowTodoBlockInitializer'
   });
 }
 

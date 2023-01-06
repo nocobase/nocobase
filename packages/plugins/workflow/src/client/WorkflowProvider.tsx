@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Card } from 'antd';
-import { PluginManagerContext, RouteSwitchContext, SchemaComponent, SettingsCenterProvider } from '@nocobase/client';
+import { PluginManagerContext, RouteSwitchContext, SchemaComponent, SchemaComponentOptions, SettingsCenterProvider } from '@nocobase/client';
 import { WorkflowPage } from './WorkflowPage';
 import { ExecutionPage } from './ExecutionPage';
 import { triggers } from './triggers';
@@ -11,6 +11,8 @@ import { WorkflowLink } from './WorkflowLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { ExecutionLink } from './ExecutionLink';
 import OpenDrawer from './components/OpenDrawer';
+import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
+import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
 
 export const WorkflowContext = React.createContext({});
 
@@ -71,9 +73,11 @@ export const WorkflowProvider = (props) => {
         }}
       >
         <RouteSwitchContext.Provider value={{ components: { ...components, WorkflowPage, ExecutionPage }, ...others, routes }}>
-          <WorkflowContext.Provider value={{ triggers, instructions }}>
-            {props.children}
-          </WorkflowContext.Provider>
+          <SchemaComponentOptions components={{ WorkflowTodo, WorkflowTodoBlockInitializer }}>
+            <WorkflowContext.Provider value={{ triggers, instructions }}>
+              {props.children}
+            </WorkflowContext.Provider>
+          </SchemaComponentOptions>
         </RouteSwitchContext.Provider>
       </PluginManagerContext.Provider>
     </SettingsCenterProvider>

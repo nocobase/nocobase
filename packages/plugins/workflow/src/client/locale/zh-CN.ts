@@ -125,6 +125,7 @@ export default {
   'Succeed and continue': '通过并继续',
   'Fail and exit': '失败并退出',
 
+  'Assignee': '负责人',
   'Assignees': '负责人',
   'Operation user interface': '操作界面',
   'Configure user interface': '配置界面',
