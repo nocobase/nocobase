@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { Op, Transactionable } from '@nocobase/database';
+import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -10,10 +10,10 @@ import { EXECUTION_STATUS } from './constants';
 import extensions from './extensions';
 import initInstructions, { Instruction } from './instructions';
 import ExecutionModel from './models/Execution';
+import JobModel from './models/Job';
 import WorkflowModel from './models/Workflow';
 import Processor from './Processor';
 import initTriggers, { Trigger } from './triggers';
-import JobModel from './models/Job';
 
 type Pending = [ExecutionModel, JobModel?];
 export default class WorkflowPlugin extends Plugin {
@@ -80,8 +80,17 @@ export default class WorkflowPlugin extends Plugin {
 
     this.registerACLSettingSnippet({
       name: 'workflows',
-      actions: ['workflows:*'],
+      actions: [
+        'workflows:*',
+        'workflows.nodes:*',
+        'executions:list',
+        'executions:get',
+        'flow_nodes:update',
+        'flow_nodes:destroy',
+      ],
     });
+
+    this.app.acl.allow('users_jobs', ['list', 'get', 'submit'], 'loggedIn');
 
     this.db.addMigrations({
       namespace: 'workflow',

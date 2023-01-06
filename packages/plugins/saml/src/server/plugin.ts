@@ -37,6 +37,13 @@ export class SAMLPlugin extends Plugin {
     // 开放访问权限
     this.app.acl.allow('samlProviders', '*', 'allowConfigure');
     this.app.acl.allow('saml', '*');
+
+    this.registerACLSettingSnippet({
+      name: 'saml',
+      actions: [
+        'samlProviders:*',
+      ],
+    });
   }
 
   async install(options?: InstallOptions) {}

@@ -310,11 +310,6 @@ export class ACL extends EventEmitter {
     });
   }
 
-  /**
-   * Please use skip instead
-   *
-   * @deprecated
-   */
   allow(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
     return this.skip(resourceName, actionNames, condition);
   }

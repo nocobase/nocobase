@@ -1,7 +1,7 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { CircleField, LineStringField, PointField, PolygonField } from './fields';
 import { resolve } from 'path';
 import { getConfiguration, setConfiguration } from './actions';
+import { CircleField, LineStringField, PointField, PolygonField } from './fields';
 
 export class MapPlugin extends Plugin {
   afterAdd() { }
@@ -30,7 +30,14 @@ export class MapPlugin extends Plugin {
         set: setConfiguration
       },
       only: ['get', 'set']
-    }))
+    }));
+
+    this.registerACLSettingSnippet({
+      name: 'map-configuration',
+      actions: [
+        'map-configuration:*',
+      ],
+    });
 
   }
 
