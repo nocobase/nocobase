@@ -38,12 +38,13 @@ export const CollectionHistoryProvider: React.FC = (props) => {
   });
 
   const isAdminPage = location.pathname.startsWith('/admin');
+  const token = api.auth.getToken() || '';
 
   useEffect(() => {
-    if (isAdminPage) {
+    if (isAdminPage && token) {
       service.run();
     }
-  }, [isAdminPage]);
+  }, [isAdminPage, token]);
 
   // 刷新 collecionHistory
   const refreshCH = async () => {
