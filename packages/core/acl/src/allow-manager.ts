@@ -12,6 +12,10 @@ export class AllowManager {
       return ctx.state.currentUser;
     });
 
+    this.registerAllowCondition('public', (ctx) => {
+      return true;
+    });
+
     this.registerAllowCondition('allowConfigure', async (ctx) => {
       const roleName = ctx.state.currentRole;
       if (!roleName) {

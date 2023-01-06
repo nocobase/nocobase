@@ -42,6 +42,7 @@ export class CollectionManagerPlugin extends Plugin {
       name: 'collections',
       actions: [
         'collections:*',
+        // 'fields:*',
         'collections.fields:*',
       ],
     });
@@ -221,9 +222,6 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.acl.allow('collections', 'list', 'loggedIn');
-    this.app.acl.allow('collections', ['create', 'update', 'destroy'], 'allowConfigure');
-    this.app.acl.allow('collections.fields', ['create', 'update', 'destroy'], 'allowConfigure');
-    this.app.acl.allow('fields', ['create', 'update', 'destroy'], 'allowConfigure');
   }
 
   async load() {

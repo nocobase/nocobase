@@ -32,7 +32,7 @@ export class UiSchemaStoragePlugin extends Plugin {
     });
 
     this.app.acl.registerSnippet({
-      name: 'ui-editor',
+      name: 'ui-editor.uiSchemas',
       actions: [
         'uiSchemas:insert',
         'uiSchemas:insertNewSchema',
@@ -85,27 +85,7 @@ export class UiSchemaStoragePlugin extends Plugin {
     });
 
     this.app.acl.allow('uiSchemas', ['getProperties', 'getJsonSchema'], 'loggedIn');
-
-    this.app.acl.allow(
-      'uiSchemas',
-      [
-        'insert',
-        'insertNewSchema',
-        'remove',
-        'patch',
-        'clearAncestor',
-        'insertAdjacent',
-        'insertBeforeBegin',
-        'insertAfterBegin',
-        'insertBeforeEnd',
-        'insertAfterEnd',
-        'saveAsTemplate',
-      ],
-      'allowConfigure',
-    );
-
     this.app.acl.allow('uiSchemaTemplates', ['get', 'list'], 'loggedIn');
-    this.app.acl.allow('uiSchemaTemplates', ['create', 'update', 'destroy'], 'allowConfigure');
   }
 
   async load() {

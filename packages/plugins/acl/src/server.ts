@@ -1,6 +1,6 @@
 import { NoPermissionError } from '@nocobase/acl';
 import { Context, utils as actionUtils } from '@nocobase/actions';
-import { Collection, ImporterReader, RelationField } from '@nocobase/database';
+import { Collection, RelationField } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { resolve } from 'path';
@@ -418,16 +418,6 @@ export class PluginACL extends Plugin {
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
     this.app.acl.allow('roles', 'check', 'loggedIn');
-
-    const importReader = new ImporterReader(resolve(__dirname, 'collections'));
-    const modules = await importReader.read();
-    for (const collectionDefinition of modules) {
-      if (collectionDefinition.name) {
-        this.app.acl.allow(collectionDefinition.name, ['create', 'update', 'destroy'], 'allowConfigure');
-      }
-    }
-
-    this.app.acl.allow('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
 
     this.app.acl.allow('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';

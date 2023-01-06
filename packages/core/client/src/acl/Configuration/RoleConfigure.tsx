@@ -1,6 +1,6 @@
+import { css } from '@emotion/css';
 import { onFieldChange } from '@formily/core';
 import React, { useContext } from 'react';
-import { css } from '@emotion/css';
 
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
@@ -37,7 +37,7 @@ export const RoleConfigure = () => {
           },
         },
         properties: {
-          'ui-editor': {
+          'ui-editor.*': {
             title: t('Configure permissions'),
             type: 'boolean',
             'x-decorator': 'FormItem',

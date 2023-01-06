@@ -89,16 +89,6 @@ export class UiRoutesStoragePlugin extends Plugin {
     });
 
     this.app.acl.allow('uiRoutes', 'getAccessible');
-
-    this.app.resourcer.use(async (ctx, next) => {
-      const { resourceName, actionName } = ctx.action.params;
-
-      if (resourceName == 'uiRoutes' && actionName !== 'getAccessible') {
-        ctx.throw(404, 'Not Found');
-      } else {
-        await next();
-      }
-    });
   }
 }
 

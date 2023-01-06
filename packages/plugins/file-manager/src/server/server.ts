@@ -33,6 +33,8 @@ export default class PluginFileManager extends Plugin {
       actions: ['storages:*'],
     });
 
+    this.app.acl.allow('attachments', 'upload', 'loggedIn');
+
     // 暂时中间件只能通过 use 加进来
     this.app.resourcer.use(uploadMiddleware);
     this.app.resourcer.registerActionHandler('upload', uploadAction);
@@ -41,8 +43,6 @@ export default class PluginFileManager extends Plugin {
       await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
     }
 
-    this.app.acl.allow('attachments', 'upload', 'loggedIn');
-    this.app.acl.allow('storages', ['list', 'create', 'update', 'destroy'], 'allowConfigure');
 
     const defaultStorageName = getStorageConfig(this.storageType()).defaults().name;
 

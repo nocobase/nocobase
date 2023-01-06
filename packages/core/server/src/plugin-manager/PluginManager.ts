@@ -48,9 +48,6 @@ export class PluginManager {
       actions: ['pm:*', 'applicationPlugins:list'],
     });
 
-    this.app.acl.allow('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
-    this.app.acl.allow('applicationPlugins', '*', 'allowConfigure');
-
     this.server = net.createServer((socket) => {
       socket.on('data', async (data) => {
         const { method, plugins } = JSON.parse(data.toString());

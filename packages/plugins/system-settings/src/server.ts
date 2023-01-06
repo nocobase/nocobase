@@ -47,7 +47,6 @@ export class SystemSettingsPlugin extends Plugin {
     });
 
     this.app.acl.allow('systemSettings', 'get');
-    this.app.acl.allow('systemSettings', 'update', 'allowConfigure');
   }
 }
 

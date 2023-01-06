@@ -121,11 +121,6 @@ export default class VerificationPlugin extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
-    this.registerACLSettingSnippet({
-      name: 'providers',
-      actions: ['verifications_providers:*'],
-    });
-
     initProviders(this);
     initActions(this);
 
@@ -141,8 +136,11 @@ export default class VerificationPlugin extends Plugin {
       return this.intercept(context, next);
     });
 
-    app.acl.allow('verifications', 'create');
-    app.acl.allow('verifications_providers', '*', 'allowConfigure');
+    app.acl.allow('verifications', 'create', 'public');
+    this.registerACLSettingSnippet({
+      name: 'providers',
+      actions: ['verifications_providers:*'],
+    });
   }
 
   async getDefault() {

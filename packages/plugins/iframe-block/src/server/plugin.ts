@@ -11,10 +11,16 @@ export class IframeBlockPlugin extends Plugin {
     await this.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
-    this.app.acl.allow('iframeHtml', ['get', 'create', 'update', 'destroy'], 'allowConfigure');
-    this.app.acl.allow('iframeHtml', 'getHtml', 'loggedIn');
     this.app.actions({
       'iframeHtml:getHtml': getHtml,
+    });
+
+    this.app.acl.allow('iframeHtml', 'getHtml', 'loggedIn');
+    this.app.acl.registerSnippet({
+      name: 'ui-editor.iframeHtml',
+      actions: [
+        'iframeHtml:*',
+      ],
     });
   }
 
