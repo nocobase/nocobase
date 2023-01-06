@@ -16,22 +16,28 @@ const useGetRenderConfig = (formData: ChartBlockEngineFormData) => {
   const apiClient = useAPIClient();
   const {dataset, collectionName, chartType, chartOption} = formData
   useEffect(() => {
-    //1.发送请求获取聚合后的数据data
-    getChartData(apiClient, chartType, dataset, collectionName).then((data) => {
-      console.log(data)
-      //2.根据查询后的聚合数据和chartOption,chartType生成renderConfig
-      const renderConfig = generateRenderConfig(chartType, data.chartData, chartOption)
-      setRenderConfig(renderConfig)
-      setLoading(false)
-    })
+    try {
+      //1.发送请求获取聚合后的数据data
+      getChartData(apiClient, chartType, dataset, collectionName).then((data) => {
+        console.log(data)
+        //2.根据查询后的聚合数据和chartOption,chartType生成renderConfig
+        const renderConfig = generateRenderConfig(chartType, data.chartData, chartOption)
+        setRenderConfig(renderConfig)
+        setLoading(false)
+      })
+    } catch (e) {
+      console.log(e)
+    }
   }, [formData])
   return {
     loading,
-    renderConfig
+    renderConfig,
+    chartType
   }
 };
 
 const ChartBlockEngine = ({formData}: { formData: ChartBlockEngineFormData }) => {
+  const {chartType} = formData
   const {loading, renderConfig} = useGetRenderConfig(formData);
   return (
     <>
@@ -40,7 +46,7 @@ const ChartBlockEngine = ({formData}: { formData: ChartBlockEngineFormData }) =>
           ?
           <Spin/>
           :
-          <G2Plot plot='Pie' config={renderConfig}/>
+          <G2Plot plot={chartType} config={renderConfig}/>
       }
     </>
   )

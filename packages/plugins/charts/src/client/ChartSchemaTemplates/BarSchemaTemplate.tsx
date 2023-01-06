@@ -11,14 +11,14 @@ import {useTranslation} from "react-i18next";
 import {SchemaOptionsContext} from "@formily/react";
 
 interface contextInfo {
-  collectionFields:  CollectionFieldOptions[];
+  collectionFields: CollectionFieldOptions[];
 }
 
-const PieSchemaTemplate = (contextInfo: contextInfo) => {
+const BarSchemaTemplate = (contextInfo: contextInfo) => {
   const {collectionFields} = contextInfo
   const {t} = useTranslation();
   const computedFields = collectionFields
-    ?.filter((field) => ( field.type === 'double' || field.type === "bigInt") )
+    ?.filter((field) => (field.type === 'double' || field.type === "bigInt"))
     ?.map((field) => {
       return {
         label: field?.uiSchema?.title,
@@ -28,7 +28,7 @@ const PieSchemaTemplate = (contextInfo: contextInfo) => {
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   return {
-    tab1: {
+    BarTab: {
       type: 'void',
       'x-component': 'Tabs',
       'x-component-props': {
@@ -40,7 +40,7 @@ const PieSchemaTemplate = (contextInfo: contextInfo) => {
         dependencies: ['chartType'],
         fulfill: {
           state: {
-            visible: '{{$deps[0] === "Pie"}}',
+            visible: '{{$deps[0] === "Bar"}}',
           },
         },
       },
@@ -149,10 +149,21 @@ const PieSchemaTemplate = (contextInfo: contextInfo) => {
             tab: 'Chart options',
           },
           properties: {
-            title: {
-              title: t('Title'),
-              'x-component': 'Input',
+            xField: {
+              title: t('xField'),
+              required: true,
+              'x-component': 'Select',
               'x-decorator': 'FormItem',
+              default: 'builtIn',
+              enum: [{label:'value',value:'value'},...computedFields],
+            },
+            yField: {
+              title: t('yField'),
+              required: true,
+              'x-component': 'Select',
+              'x-decorator': 'FormItem',
+              default: 'builtIn',
+              enum: [{label:'value',value:'value'},...computedFields],
             },
           },
         },
@@ -161,4 +172,6 @@ const PieSchemaTemplate = (contextInfo: contextInfo) => {
   }
 }
 
-export default PieSchemaTemplate
+export {
+  BarSchemaTemplate
+}

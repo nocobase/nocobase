@@ -5,7 +5,7 @@ import React, {useContext} from 'react';
 import {useTranslation} from 'react-i18next';
 import {SchemaComponent, SchemaComponentOptions, useAPIClient, useCollectionManager} from "@nocobase/client";
 import {DataBlockInitializer} from '@nocobase/client'
-import PieSchemaTemplate from "./PieSchemaTemplate";
+import {BarSchemaTemplate, PieSchemaTemplate} from "./ChartSchemaTemplates";
 
 export const ChartBlockInitializer = (props) => {
   const {insert} = props;
@@ -34,12 +34,14 @@ export const ChartBlockInitializer = (props) => {
                         'x-decorator': 'FormItem',
                         enum: [
                           {label: 'Pie', value: 'Pie'},
+                          {label: 'Bar', value: 'Bar'},
                           {label: 'Column', value: 'Column'},
                           {label: 'Statistic', value: 'Statistic'}
                         ],
                       },
                       //   template
-                      ...PieSchemaTemplate({collectionFields})
+                      ...PieSchemaTemplate({collectionFields}),
+                      ...BarSchemaTemplate({collectionFields})
                     },
                   }}
                 />
