@@ -46,9 +46,11 @@ export class AllowManager {
     for (const fetchActionStep of fetchActionSteps) {
       const resource = this.skipActions.get(fetchActionStep);
       if (resource) {
-        const condition = resource.get('*') || resource.get(actionName);
-        if (condition) {
-          results.push(typeof condition === 'string' ? this.registeredCondition.get(condition) : condition);
+        for (const fetchActionStep of ['*', actionName]) {
+          const condition = resource.get(fetchActionStep);
+          if (condition) {
+            results.push(typeof condition === 'string' ? this.registeredCondition.get(condition) : condition);
+          }
         }
       }
     }
