@@ -22,13 +22,20 @@ jobs:
       -
         name: publish npmjs.org
         run: |
-          npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
-          git config user.email "test@mail.com"
-          git config user.name "test" && git add .
+          git config --global user.email "test@mail.com"
+          git config --global user.name "test"
+          git config --global --add safe.directory /__w/nocobase/nocobase
           echo "# test" >> Release.md
           git add .
           git commit -m "chore(versions): test publish packages xxx"
-          yarn release:force --registry https://registry.npmjs.org/
+          npm config set access public
+          npm config set registry https://registry.npmjs.org/
+          npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+          yarn config set access public
+          yarn config set registry https://registry.npmjs.org/
+          yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+          npm whoami
+          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/
   push-docker:
     runs-on: ubuntu-latest
     needs: publish-npm
