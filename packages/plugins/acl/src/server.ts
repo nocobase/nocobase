@@ -589,7 +589,7 @@ export class PluginACL extends Plugin {
           const Model = collection.model;
           const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
 
-          const dataPath = ctx.paginate ? 'body.rows' : 'body';
+          const dataPath = ctx.body?.rows ? 'body.rows' : 'body';
           let listData = lodash.get(ctx, dataPath);
 
           if (actionName == 'get') {
@@ -648,7 +648,7 @@ export class PluginACL extends Plugin {
             ]);
           }
 
-          const ids = listData.map((item) => item.get(primaryKeyField));
+          const ids = listData.map((item) => item[primaryKeyField]);
 
           const conditions = [];
 
