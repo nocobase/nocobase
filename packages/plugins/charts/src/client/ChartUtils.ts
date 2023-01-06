@@ -1,6 +1,12 @@
 import type {APIClient} from "@nocobase/client";
+import {bar, pie} from "./chart-config";
 
-const getChartData = async (api: APIClient, values) => {
+const getChartData = async (api: APIClient, chartType, values, collectionName) => {
+  values = {
+    collectionName,
+    chartType,
+    ...values
+  }
   return await api.request({
     method: 'post',
     url: `chartData:data`,
@@ -10,20 +16,19 @@ const getChartData = async (api: APIClient, values) => {
   })
 }
 
-const getChartBlockSchema = (values, data) => {
-  const {renderData} = data
-  //根据不同的chartType 来生成不同的图表schema
-  const pieSchema = {
-    type: 'void',
-    'x-designer': 'G2Plot.Designer',
-    'x-decorator': 'CardItem',
-    'x-component': 'G2Plot',
-    'x-component-props': {
-      plot: 'Pie',
-      config: renderData,
-    },
+const generateRenderConfig = (chartType, data, chartOption) => {
+  let renderConfig
+  switch (chartType) {
+    case 'Pie': {
+      renderConfig = pie(data, chartOption)
+      break
+    }
+    case 'Bar': {
+      renderConfig = bar(data, chartOption)
+      break
+    }
   }
-  return pieSchema
+  return renderConfig
 }
 
-export {getChartBlockSchema, getChartData}
+export {generateRenderConfig, getChartData}
