@@ -60,28 +60,32 @@ export class AllowManager {
     this.registeredCondition.set(name, condition);
   }
 
+  async isAllowed(resourceName: string, actionName: string, ctx: any) {
+    const skippedConditions = this.getAllowedConditions(resourceName, actionName);
+
+    for (const skippedCondition of skippedConditions) {
+      if (skippedCondition) {
+        let skipResult = false;
+
+        if (typeof skippedCondition === 'function') {
+          skipResult = await skippedCondition(ctx);
+        } else if (skippedCondition) {
+          skipResult = true;
+        }
+
+        if (skipResult) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   aclMiddleware() {
     return async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
-      const skippedConditions = this.acl.allowManager.getAllowedConditions(resourceName, actionName);
-      let skip = false;
-
-      for (const skippedCondition of skippedConditions) {
-        if (skippedCondition) {
-          let skipResult = false;
-
-          if (typeof skippedCondition === 'function') {
-            skipResult = await skippedCondition(ctx);
-          } else if (skippedCondition) {
-            skipResult = true;
-          }
-
-          if (skipResult) {
-            skip = true;
-            break;
-          }
-        }
-      }
+      let skip = await this.acl.allowManager.isAllowed(resourceName, actionName, ctx);
 
       if (skip) {
         ctx.permission = {
