@@ -1,4 +1,5 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
+import { getChartData } from './actions';
 
 export class ChartsPlugin extends Plugin {
   afterAdd() {}
@@ -9,34 +10,7 @@ export class ChartsPlugin extends Plugin {
     this.app.resource({
       name: 'chartData',
       actions: {
-        data: {
-          values: {
-            status: 0
-          },
-          middlewares: [
-            async (ctx, next) => {
-              await next();
-            }
-          ],
-          async handler(ctx, next) {
-            //处理不同chartType对应的数据
-            console.log(ctx.action.params,"=======================")
-            //data 聚合数据
-            const chartData = [
-              { type: '分类一', value: 27 },
-              { type: '分类二', value: 25 },
-              { type: '分类三', value: 18 },
-              { type: '分类四', value: 15 },
-              { type: '分类五', value: 10 },
-              { type: '其他', value: 5 },
-            ];
-            //图表数据
-            ctx.body = {
-              chartData
-            };
-            next()
-          }
-        },
+        data: getChartData,
       }
     });
 
