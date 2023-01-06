@@ -66,7 +66,6 @@ export const ConfigurationTabs = () => {
   const scopeCxt = useContext(SchemaOptionsContext);
   return (
     <Tabs
-      //hideAdd
       addIcon={
         <SchemaComponent
           schema={{
@@ -108,10 +107,13 @@ export const ConfigurationTabs = () => {
                 }}
               />
             }
-            key={item.key || item.id}
+            key={item.id}
             closable={item.closable}
           >
-            <SchemaComponent schema={collectionTableSchema} scope={{ ...scopeCxt, loadCategories }} />
+            <SchemaComponent
+              schema={collectionTableSchema}
+              scope={{ ...scopeCxt, loadCategories, categoryVisible: item.id === 'all' }}
+            />
           </Tabs.TabPane>
         );
       })}

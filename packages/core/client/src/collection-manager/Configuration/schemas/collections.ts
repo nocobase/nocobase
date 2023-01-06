@@ -2,7 +2,6 @@ import { ISchema, Schema } from '@formily/react';
 import { message } from 'antd';
 import { uid } from '@formily/shared';
 import { useTranslation } from 'react-i18next';
-import { useRequest } from '../../../api-client';
 import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
@@ -160,7 +159,7 @@ export const collectionTableSchema: ISchema = {
         },
       },
     },
-    table: {
+    [uid()]: {
       type: 'void',
       'x-uid': 'input',
       'x-component': 'Table.Void',
@@ -224,9 +223,7 @@ export const collectionTableSchema: ISchema = {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
           'x-component': 'Table.Column',
-          'x-component-props': {
-            visible: false,
-          },
+          'x-visible': 'categoryVisible',
           title: '{{t("Collection category")}}',
           properties: {
             category: {

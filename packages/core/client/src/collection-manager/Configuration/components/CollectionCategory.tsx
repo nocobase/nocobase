@@ -9,7 +9,7 @@ export const CollectionCategory = observer((props: any) => {
   return (
     <>
       {value.map((item) => {
-        return <Tag>{compile(item?.name)}</Tag>;
+        return <Tag color={item.color}>{compile(item?.name)}</Tag>;
       })}
     </>
   );
