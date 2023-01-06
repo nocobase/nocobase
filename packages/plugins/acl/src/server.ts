@@ -54,7 +54,7 @@ export class PluginACL extends Plugin {
 
     this.registerAssociationFieldAction('hasOne', {
       view: {
-        associationActions: ['list', 'get'],
+        associationActions: ['list', 'get', 'view'],
       },
       create: {
         associationActions: ['create', 'set'],
@@ -66,7 +66,7 @@ export class PluginACL extends Plugin {
 
     this.registerAssociationFieldAction('hasMany', {
       view: {
-        associationActions: ['list', 'get'],
+        associationActions: ['list', 'get', 'view'],
       },
       create: {
         associationActions: ['create', 'set', 'add'],
@@ -78,7 +78,7 @@ export class PluginACL extends Plugin {
 
     this.registerAssociationFieldAction('belongsTo', {
       view: {
-        associationActions: ['list', 'get'],
+        associationActions: ['list', 'get', 'view'],
       },
       create: {
         associationActions: ['create', 'set'],
@@ -90,7 +90,7 @@ export class PluginACL extends Plugin {
 
     this.registerAssociationFieldAction('belongsToMany', {
       view: {
-        associationActions: ['list', 'get'],
+        associationActions: ['list', 'get', 'view'],
       },
       create: {
         associationActions: ['create', 'set', 'add'],
@@ -498,6 +498,7 @@ export class PluginACL extends Plugin {
     this.app.acl.use(
       async (ctx: Context, next) => {
         const { actionName, resourceName, resourceOf } = ctx.action;
+        // is association request
         if (resourceName.includes('.') && resourceOf) {
           if (!ctx?.permission?.can?.params) {
             return next();
@@ -507,7 +508,9 @@ export class PluginACL extends Plugin {
           // 关联数据能不能处理取决于 source 是否有权限
           const [collectionName] = resourceName.split('.');
           const action = ctx.can({ resource: collectionName, action: actionName });
+
           const availableAction = this.app.acl.getAvailableAction(actionName);
+
           if (availableAction?.options?.onNewRecord) {
             if (action) {
               ctx.permission.skip = true;
@@ -537,7 +540,7 @@ export class PluginACL extends Plugin {
       async (ctx: any, next) => {
         const action = ctx.permission?.can?.action;
 
-        if (action == 'destroy') {
+        if (action == 'destroy' && !ctx.action.resourceName.includes('.')) {
           const repository = actionUtils.getRepositoryFromParams(ctx);
 
           // params after merge with fixed params
@@ -570,7 +573,17 @@ export class PluginACL extends Plugin {
         }
 
         const { resourceName, actionName } = ctx.action;
-        const collection = ctx.db.getCollection(resourceName);
+
+        const getCollectionFromResourceName = (resourceName) => {
+          if (resourceName.includes('.')) {
+            const [collectionName, associationName] = resourceName.split('.');
+            return associationName;
+          }
+
+          return resourceName;
+        };
+
+        const collection = ctx.db.getCollection(getCollectionFromResourceName(resourceName));
 
         if (collection && (actionName == 'list' || actionName == 'get') && ctx.status === 200) {
           const Model = collection.model;
@@ -595,6 +608,7 @@ export class PluginACL extends Plugin {
                 name: action,
                 params: {},
                 resourceName: ctx.action.resourceName,
+                resourceOf: ctx.action.resourceOf,
                 mergeParams() {},
               },
               state: {
@@ -615,6 +629,7 @@ export class PluginACL extends Plugin {
                 throw new NoPermissionError(...args);
               },
             };
+
             try {
               await this.app.acl.getActionParams(actionCtx);
             } catch (e) {

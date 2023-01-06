@@ -1,4 +1,5 @@
 import { prepareApp } from './prepare';
+import { Database } from '@nocobase/database';
 
 describe('list action with acl', () => {
   let app;
@@ -163,5 +164,105 @@ describe('list action with acl', () => {
     const getBody = getResponse.body;
 
     expect(getBody.meta.allowedActions).toBeDefined();
+  });
+});
+
+describe('list association action with acl', () => {
+  let app;
+  let db: Database;
+
+  beforeEach(async () => {
+    app = await prepareApp();
+    db = app.db;
+
+    app.db.collection({
+      name: 'posts',
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+        {
+          type: 'hasMany',
+          name: 'comments',
+        },
+      ],
+    });
+
+    app.db.collection({
+      name: 'comments',
+      fields: [
+        {
+          type: 'string',
+          name: 'content',
+        },
+        {
+          type: 'belongsTo',
+          name: 'post',
+        },
+      ],
+    });
+
+    await app.db.sync();
+  });
+
+  it('should list allowedActions', async () => {
+    await db.getRepository('roles').create({
+      values: {
+        name: 'newRole',
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['newRole'],
+      },
+    });
+
+    await db.getRepository('roles.resources', 'newRole').create({
+      values: {
+        name: 'posts',
+        usingActionConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['title', 'comments'],
+          },
+          {
+            name: 'create',
+            fields: ['title', 'comments'],
+          },
+        ],
+      },
+    });
+
+    const userPlugin = app.getPlugin('users');
+    const userAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: user.get('id'),
+      }),
+      { type: 'bearer' },
+    );
+
+    await userAgent.resource('posts').create({
+      values: {
+        title: 'post1',
+        comments: [{ content: 'comment1' }, { content: 'comment2' }],
+      },
+    });
+
+    const response = await userAgent.resource('posts').list({});
+    expect(response.statusCode).toEqual(200);
+
+    const commentsResponse = await userAgent.resource('posts.comments', 1).list({});
+    const data = commentsResponse.body;
+
+    /**
+     * allowedActions.view == [1]
+     * allowedActions.update = []
+     * allowedActions.destroy = []
+     */
+    expect(data['meta']['allowedActions']).toBeDefined();
+    expect(data['meta']['allowedActions'].view).toEqual([1, 2]);
   });
 });
