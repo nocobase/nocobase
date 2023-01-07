@@ -3,7 +3,7 @@ import { onFieldChange } from '@formily/core';
 import React, { useContext } from 'react';
 
 import { useTranslation } from 'react-i18next';
-import { useRequest } from '../../api-client';
+import { useAPIClient, useRequest } from '../../api-client';
 import { SchemaComponent } from '../../schema-component';
 import { PermissionContext } from './PermisionProvider';
 
@@ -18,12 +18,21 @@ export const RoleConfigure = () => {
         'x-component': 'Form',
         'x-component-props': {
           useValues: (options) => {
-          
+            const api = useAPIClient();
             return useRequest(
               () =>
-                Promise.resolve({
-                  data: currentRecord,
-                }),
+                api
+                  .resource('roles')
+                  .get({
+                    filterByTk: currentRecord.name,
+                  })
+                  .then((res) => {
+                    const record = res?.data?.data;
+                    record.snippets?.forEach((key) => {
+                      record[key] = true;
+                    });
+                    return { data: record };
+                  }),
               options,
             );
           },
@@ -43,14 +52,13 @@ export const RoleConfigure = () => {
             'x-decorator': 'FormItem',
             'x-component': 'Checkbox',
             'x-content': t('Allow to desgin pages'),
-
             'x-decorator-props': {
               className: css`
                 margin-bottom: 5px;
               `,
             },
           },
-          'pm': {
+          pm: {
             type: 'boolean',
             'x-decorator': 'FormItem',
             'x-component': 'Checkbox',
