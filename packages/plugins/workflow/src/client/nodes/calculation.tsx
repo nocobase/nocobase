@@ -42,7 +42,9 @@ export default {
         return t('Calculation result');
       }
       const job = execution.jobs.find(item => item.nodeId === nodeId);
-      return job.result;
+      return (
+        <pre>{job.result}</pre>
+      );
     }
   },
   useValueGetter(node) {

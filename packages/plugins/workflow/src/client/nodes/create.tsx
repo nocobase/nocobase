@@ -51,7 +51,13 @@ export default {
       type: 'item',
       title: node.title ?? `#${node.id}`,
       component: CollectionBlockInitializer,
-      collectionName: node.config.collection
+      collectionName: node.config.collection,
+      context: {
+        type: '$jobsMapByNodeId',
+        options: {
+          nodeId: node.id
+        }
+      }
     };
   },
   initializers: {

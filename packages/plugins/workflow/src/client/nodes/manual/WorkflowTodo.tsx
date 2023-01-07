@@ -1,13 +1,15 @@
-import React, { useContext, createContext, useMemo } from "react";
+import React, { useContext, createContext, useMemo, useEffect, useState } from "react";
 import { createForm } from '@formily/core';
-import { observer, useForm, useField } from '@formily/react';
+import { observer, useForm, useField, useFieldSchema } from '@formily/react';
 import { Tag } from 'antd';
+import { get } from 'lodash';
 
-import { CollectionManagerProvider, CollectionProvider, SchemaComponent, SchemaComponentContext, TableBlockProvider, useActionContext, useAPIClient, useCollectionManager, useRecord, useTableBlockContext } from "@nocobase/client";
+import { CollectionManagerProvider, CollectionProvider, SchemaComponent, SchemaComponentContext, TableBlockProvider, useActionContext, useAPIClient, useCollectionManager, useRecord, useRequest, useTableBlockContext } from "@nocobase/client";
 import { uid } from "@nocobase/utils/client";
 
 import { JobStatusOptions, JobStatusOptionsMap } from "../../constants";
 import { NAMESPACE } from "../../locale";
+import { FlowContext, useFlowContext } from "../../FlowContext";
 
 
 
@@ -265,12 +267,84 @@ function ManualActionStatusProvider({ value, children }) {
   )
 }
 
+function useSubmit() {
+  const api = useAPIClient();
+  const { setVisible } = useActionContext();
+  const { values, submit } = useForm();
+  const nextStatus = useManualActionStatusContext();
+  const { service } = useTableBlockContext();
+  const { id } = useRecord();
+  return {
+    async run() {
+      await submit();
+      await api.resource('users_jobs').submit({
+        filterByTk: id,
+        values: {
+          status: nextStatus,
+          result: values
+        }
+      });
+      setVisible(false);
+      service.refresh();
+    }
+  }
+}
+
+function useFlowRecordFromBlock(opts) {
+  const { ['x-context-datasource']: { type, options } } = useFieldSchema();
+  const { execution, jobs } = useFlowContext();
+  let result = {};
+  switch (type) {
+    case '$context':
+      result = get(execution?.context, options.path);
+      break;
+    case '$jobsMapByNodeId':
+      result = jobs?.find(job => job.nodeId === options.nodeId)?.result;
+      break;
+    default:
+      break;
+  }
+
+  return useRequest(() => {
+    console.log('------', result);
+    return Promise.resolve({ data: result })
+  }, opts);
+}
+
 WorkflowTodo.Drawer = function () {
   const ctx = useContext(SchemaComponentContext);
-  const { node, workflow, id, status, result, updatedAt } = useRecord();
+  const { node, workflow, executionId, status, result, updatedAt } = useRecord();
+  const api = useAPIClient();
+  const [flowContext, setFlowContext] = useState<any>(null);
+
+  useEffect(() => {
+    if (!executionId) {
+      return;
+    }
+    api.resource('executions').get?.({
+      filterByTk: executionId,
+      appends: ['workflow', 'workflow.nodes', 'jobs'],
+    })
+      .then(({ data }) => {
+        const {
+          jobs = [],
+          workflow: { nodes = [], ...workflow } = {},
+          ...execution
+        } = data?.data ?? {};
+        setFlowContext({
+          workflow,
+          nodes,
+          jobs,
+          execution
+        });
+      });
+  }, [executionId]);
+
   const form = useMemo(() => createForm({
-    readPretty: Boolean(status)
-  }), []);
+    readPretty: Boolean(status),
+    initialValues: result
+  }), [result]);
+
   const { blocks, collection, actions } = node.config.schema ?? {};
 
   const statusOption = JobStatusOptionsMap[status];
@@ -293,66 +367,52 @@ WorkflowTodo.Drawer = function () {
     }
     : actions;
 
+  if (!flowContext) {
+    return null;
+  }
+
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-      <CollectionProvider collection={collection}>
-        <SchemaComponent
-          components={{
-            Tag,
-            ManualActionStatusProvider
-          }}
-          schema={{
-            type: 'void',
-            name: 'drawer',
-            'x-decorator': 'Form',
-            'x-decorator-props': {
-              form,
-              initialValue: result
-            },
-            'x-component': 'Action.Drawer',
-            'x-component-props': {
-              className: 'nb-action-popup',
-            },
-            title: `${workflow.title} - ${node.title ?? `#${node.id}`}`,
-            properties: {
-              tabs: {
-                type: 'void',
-                'x-component': 'Tabs',
-                properties: blocks,
+    <FlowContext.Provider value={flowContext}>
+      <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+        <CollectionProvider collection={collection}>
+          <SchemaComponent
+            components={{
+              Tag,
+              ManualActionStatusProvider
+            }}
+            schema={{
+              type: 'void',
+              name: 'drawer',
+              'x-decorator': 'Form',
+              'x-decorator-props': {
+                form,
               },
-              footer: {
-                type: 'void',
-                'x-component': 'Action.Drawer.Footer',
-                properties: actionSchema
-              }
-            }
-          }}
-          scope={{
-            useSubmit() {
-              const api = useAPIClient();
-              const { setVisible } = useActionContext();
-              const { values, submit } = useForm();
-              const nextStatus = useManualActionStatusContext();
-              const { service } = useTableBlockContext();
-              return {
-                async run() {
-                  await submit();
-                  await api.resource('users_jobs').submit({
-                    filterByTk: id,
-                    values: {
-                      status: nextStatus,
-                      result: values
-                    }
-                  });
-                  setVisible(false);
-                  service.refresh();
+              'x-component': 'Action.Drawer',
+              'x-component-props': {
+                className: 'nb-action-popup',
+              },
+              title: `${workflow.title} - ${node.title ?? `#${node.id}`}`,
+              properties: {
+                tabs: {
+                  type: 'void',
+                  'x-component': 'Tabs',
+                  properties: blocks,
+                },
+                footer: {
+                  type: 'void',
+                  'x-component': 'Action.Drawer.Footer',
+                  properties: actionSchema
                 }
               }
-            }
-          }}
-        />
-      </CollectionProvider>
-    </SchemaComponentContext.Provider>
+            }}
+            scope={{
+              useSubmit,
+              useFlowRecordFromBlock
+            }}
+          />
+        </CollectionProvider>
+      </SchemaComponentContext.Provider>
+    </FlowContext.Provider>
   )
 }
 

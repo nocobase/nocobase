@@ -16,8 +16,9 @@ if (!initializerGroup.children.find(item => item.key === 'workflowTodos')) {
     key: 'workflowTodos',
     type: 'item',
     title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-    component: 'WorkflowTodoBlockInitializer'
-  });
+    component: 'WorkflowTodoBlockInitializer',
+    icon: 'CheckSquareOutlined',
+  } as any);
 }
 
 export default {

@@ -390,6 +390,15 @@ function AddActionButton(props) {
   );
 }
 
+// NOTE: fake useAction for ui configuration
+function useSubmit() {
+  return { run() {} }
+}
+
+function useFlowRecordFromBlock() {
+  return {};
+}
+
 export function SchemaConfig({ value, onChange }) {
   const ctx = useContext(SchemaComponentContext);
   const trigger = useTrigger();
@@ -504,10 +513,8 @@ export function SchemaConfig({ value, onChange }) {
                 }
               }}
               scope={{
-                // NOTE: fake useAction for ui configuration
-                useSubmit() {
-                  return { run() {} }
-                }
+                useSubmit,
+                useFlowRecordFromBlock
               }}
             />
           </CollectionProvider>

@@ -4,7 +4,7 @@ import { SchemaInitializer, useCollectionManager } from '@nocobase/client';
 
 
 
-export function CollectionBlockInitializer({ insert, collectionName, ...props }) {
+export function CollectionBlockInitializer({ insert, collectionName, context, ...props }) {
   const { getCollection } = useCollectionManager();
   const collection = getCollection(collectionName);
   return (
@@ -28,9 +28,12 @@ export function CollectionBlockInitializer({ insert, collectionName, ...props })
             grid: {
               type: 'void',
               'x-decorator': 'Form',
-              'x-decorator-props': {},
+              'x-decorator-props': {
+                useValues: '{{ useFlowRecordFromBlock }}'
+              },
               'x-component': 'Grid',
               'x-initializer': 'CollectionFieldInitializers',
+              'x-context-datasource': context
             }
           }
         });
