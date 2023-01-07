@@ -622,6 +622,7 @@ describe('acl', () => {
         strategy: {
           actions: ['*'],
         },
+        snippets: ['pm.*'],
       },
     });
     const UserRepo = db.getCollection('users').repository;
