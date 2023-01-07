@@ -439,6 +439,14 @@ export class PluginACL extends Plugin {
       };
     });
 
+    this.app.acl.addFixedParams('rolesResourcesScopes', 'update', () => {
+      return {
+        filter: {
+          $and: [{ 'key.$ne': 'all' }, { 'key.$ne': 'own' }],
+        },
+      };
+    });
+
     this.app.acl.addFixedParams('roles', 'destroy', () => {
       return {
         filter: {
