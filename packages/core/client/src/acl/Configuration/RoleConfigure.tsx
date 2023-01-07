@@ -41,7 +41,7 @@ export const RoleConfigure = () => {
               if (!form.modified) {
                 return;
               }
-              update(field, form);
+              await update(field, form);
             });
           },
         },

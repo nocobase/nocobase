@@ -1,6 +1,9 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import pick from 'lodash/pick';
+import { useEffect } from 'react';
 import { useRequest } from '../../../api-client';
+import { useRecord } from '../../../record-provider';
 import { useActionContext } from '../../../schema-component';
 import { roleCollectionsSchema } from './roleCollections';
 
@@ -308,7 +311,23 @@ export const roleSchema: ISchema = {
                           'x-component': 'Action.Drawer',
                           'x-decorator': 'Form',
                           'x-decorator-props': {
-                            useValues: '{{ cm.useValuesFromRecord }}',
+                            useValues: (options) => {
+                              const record = useRecord();
+                              const result = useRequest(
+                                () => Promise.resolve({ data: pick(record, ['title', 'name', 'default']) }),
+                                {
+                                  ...options,
+                                  manual: true,
+                                },
+                              );
+                              const ctx = useActionContext();
+                              useEffect(() => {
+                                if (ctx.visible) {
+                                  result.run();
+                                }
+                              }, [ctx.visible]);
+                              return result;
+                            },
                           },
                           title: '{{t("Edit role")}}',
                           properties: {
