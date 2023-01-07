@@ -106,8 +106,8 @@ export class ACL extends EventEmitter {
 
     const filterParams = (ctx, resourceName, params) => {
       if (params?.filter?.createdById) {
-        const collection = ctx.db.getCollection(resourceName);
-        if (collection && !collection.getField('createdById')) {
+        const collection = ctx.db.getRepository(resourceName)?.collection;
+        if (!collection || !collection.getField('createdById')) {
           return lodash.omit(params, 'filter.createdById');
         }
       }
