@@ -92,7 +92,7 @@ export const workflowSchema: ISchema = {
           resource: 'workflows',
           action: 'list',
           params: {
-            pageSize: 50,
+            pageSize: 20,
             filter: {
               current: true
             },

@@ -1,7 +1,6 @@
 import { ISchema } from '@formily/react';
 import { CollectionOptions } from '../../types';
 import { CollectionFieldInterface } from '../components/CollectionFieldInterface';
-import { options } from '../interfaces';
 
 const collection: CollectionOptions = {
   name: 'fields',
@@ -31,7 +30,7 @@ const collection: CollectionOptions = {
         title: '{{ t("Field interface") }}',
         type: 'string',
         'x-component': 'Select',
-        enum: options as any,
+        enum: '{{interfaces}}',
       },
     },
     {

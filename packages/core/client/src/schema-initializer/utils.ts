@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItemOptions } from '../';
 import { useCollection, useCollectionManager } from '../collection-manager';
-import { useDesignable } from '../schema-component';
+import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { SelectCollection } from './SelectCollection';
 
@@ -193,6 +193,9 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { getInterface } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
+  const actionCtx = useActionContext();
+  const action = actionCtx?.fieldSchema?.['x-action'];
+  const { snapshot } = useActionContext();
 
   return currentFields
     ?.filter((field) => field?.interface && !field?.isForeignKey)
@@ -204,7 +207,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         name: field.name,
         // title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
-        'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
+        'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
@@ -217,7 +220,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
+          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty, action });
         },
         schema,
       } as SchemaInitializerItemOptions;
@@ -288,6 +291,8 @@ export const useInheritsFormItemInitializerFields = (options?) => {
   const { name } = useCollection();
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
   const inherits = getInheritCollections(name);
+  const { snapshot } = useActionContext();
+
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
     const form = useForm();
@@ -303,7 +308,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             name: field.name,
             title: field?.uiSchema?.title || field.name,
             'x-designer': 'FormItem.Designer',
-            'x-component': field.interface === 'o2m' ? 'TableField' : 'CollectionField',
+            'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {},
@@ -331,7 +336,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return field?.interface && !field?.uiSchema?.['x-read-pretty'];
+      return field?.interface && !field?.uiSchema?.['x-read-pretty'] && field.interface !== 'snapshot';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -365,7 +370,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return fields
     ?.filter((field) => {
-      return field?.interface && !field?.uiSchema?.['x-read-pretty'];
+      return field?.interface && !field?.uiSchema?.['x-read-pretty'] && field.interface !== 'snapshot';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);

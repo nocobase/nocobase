@@ -8,10 +8,9 @@ import {
   useCollectionManager,
   useRecord,
   useRecordIndex,
-  useRequest
+  useRequest,
 } from '../';
 import { useAPIClient } from '../api-client';
-import { options } from './Configuration/interfaces';
 
 const collection: CollectionOptions = {
   name: 'fields',
@@ -42,7 +41,7 @@ const collection: CollectionOptions = {
         title: '{{ t("Field interface") }}',
         type: 'string',
         'x-component': 'Select',
-        enum: options as any,
+        enum: '{{interfaces}}',
       },
     },
     {

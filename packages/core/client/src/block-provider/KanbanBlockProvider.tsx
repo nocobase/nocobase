@@ -75,7 +75,7 @@ const useAssociationNames = (collection) => {
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
-    if (collectionField.target) {
+    if (collectionField.target && collectionField.interface !== 'snapshot') {
       associationFields.add(collectionField.name);
       const fields = getCollectionFields(collectionField.target);
       for (const field of fields) {
@@ -104,7 +104,6 @@ const useAssociationNames = (collection) => {
 export const KanbanBlockProvider = (props) => {
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
-  console.log('KanbanBlockProvider', appends);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }

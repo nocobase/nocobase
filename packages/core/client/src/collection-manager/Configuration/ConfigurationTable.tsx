@@ -72,7 +72,7 @@ const useNewId = (prefix) => {
 };
 
 export const ConfigurationTable = () => {
-  const { collections = [] } = useCollectionManager();
+  const { collections = [], interfaces } = useCollectionManager();
   const {
     data: { database },
   } = useCurrentAppInfo();
@@ -114,6 +114,7 @@ export const ConfigurationTable = () => {
             useCurrentFields,
             useNewId,
             useCancelAction,
+            interfaces,
             enableInherits: database?.dialect === 'postgres',
           }}
         />

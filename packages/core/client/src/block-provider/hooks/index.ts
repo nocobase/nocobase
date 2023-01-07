@@ -70,6 +70,7 @@ const filterValue = (value) => {
 };
 
 function getFormValues(filterByTk, field, form, fieldNames, getField, resource) {
+  return form.values;
   let values = {};
   return form.values;
   for (const key in form.values) {
