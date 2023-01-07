@@ -392,6 +392,7 @@ export class PluginACL extends Plugin {
             allowNewMenu: true,
             strategy: { actions: ['view', 'update:own', 'destroy:own', 'create'] },
             default: true,
+            snippets: ['!ui.*', '!pm', '!pm.*'],
           },
         ],
       });

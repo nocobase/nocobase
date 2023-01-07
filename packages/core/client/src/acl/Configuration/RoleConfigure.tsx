@@ -1,17 +1,60 @@
-import { css } from '@emotion/css';
 import { onFieldChange } from '@formily/core';
+import { connect } from '@formily/react';
+import { Checkbox } from 'antd';
+import uniq from 'lodash/uniq';
 import React, { useContext } from 'react';
-
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { SchemaComponent } from '../../schema-component';
 import { PermissionContext } from './PermisionProvider';
+
+const SnippetCheckboxGroup = connect((props) => {
+  const { t } = useTranslation();
+  return (
+    <Checkbox.Group
+      style={{
+        width: '100%',
+      }}
+      value={props.value}
+      onChange={(values) => {
+        const value = uniq([...(props.value || []), ...values])
+          .filter((key) => key && !['!ui.*', '!pm', '!pm.*'].includes(key))
+          .map((key) => {
+            if (!['ui.*', 'pm', 'pm.*'].includes(key)) {
+              return key;
+            }
+            if (values?.includes(key)) {
+              return key;
+            }
+            return `!${key}`;
+          });
+        for (const key of ['ui.*', 'pm', 'pm.*']) {
+          if (!value.includes(key) && !value.includes(`!${key}`)) {
+            value.push(`!${key}`);
+          }
+        }
+        props.onChange(value);
+      }}
+    >
+      <div style={{ marginTop: 16 }}>
+        <Checkbox value="ui.*">{t('Allows to configure interface')}</Checkbox>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <Checkbox value="pm">{t('Allows to install, activate, disable plugins')}</Checkbox>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <Checkbox value="pm.*">{t('Allows to configure plugins')}</Checkbox>
+      </div>
+    </Checkbox.Group>
+  );
+});
 
 export const RoleConfigure = () => {
   const { update, currentRecord } = useContext(PermissionContext);
   const { t } = useTranslation();
   return (
     <SchemaComponent
+      components={{ SnippetCheckboxGroup }}
       schema={{
         type: 'void',
         name: 'form',
@@ -46,39 +89,11 @@ export const RoleConfigure = () => {
           },
         },
         properties: {
-          'ui.*': {
+          snippets: {
             title: t('Configure permissions'),
             type: 'boolean',
             'x-decorator': 'FormItem',
-            'x-component': 'Checkbox',
-            'x-content': t('Allow to desgin pages'),
-            'x-decorator-props': {
-              className: css`
-                margin-bottom: 5px;
-              `,
-            },
-          },
-          pm: {
-            type: 'boolean',
-            'x-decorator': 'FormItem',
-            'x-component': 'Checkbox',
-            'x-decorator-props': {
-              className: css`
-                margin-bottom: 5px;
-              `,
-            },
-            'x-content': t('Allow to manage plugins'),
-          },
-          'pm.*': {
-            type: 'boolean',
-            'x-decorator': 'FormItem',
-            'x-component': 'Checkbox',
-            'x-decorator-props': {
-              className: css`
-                margin-bottom: 5px;
-              `,
-            },
-            'x-content': t('Allow to configure plugins'),
+            'x-component': 'SnippetCheckboxGroup',
           },
           'strategy.actions': {
             title: t('Global action permissions'),

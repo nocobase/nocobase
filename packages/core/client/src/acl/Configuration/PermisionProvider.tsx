@@ -7,7 +7,7 @@ import { useRecord } from '../../record-provider';
 
 export const SettingCenterPermissionProvider = (props) => {
   const { currentRecord } = useContext(PermissionContext);
-  if (!currentRecord['pm.*']) {
+  if (!currentRecord?.snippets?.includes('pm.*')) {
     return null;
   }
   return <div>{props.children}</div>;
@@ -48,6 +48,7 @@ export const PermissionProvider = (props) => {
               filterByTk: record.name,
               values: form.values,
             });
+            setCurrentRecord({ ...currentRecord, ...form.values });
           }
 
           message.success(t('Saved successfully'));

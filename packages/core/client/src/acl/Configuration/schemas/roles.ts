@@ -115,6 +115,7 @@ export const roleSchema: ISchema = {
                           Promise.resolve({
                             data: {
                               name: `r_${uid()}`,
+                              snippets: ['!ui.*', '!pm', '!pm.*'],
                             },
                           }),
                         { ...options, refreshDeps: [ctx.visible] },
