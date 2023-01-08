@@ -42,6 +42,7 @@ export class PluginManager {
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
+
     this.app.acl.allow('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
     this.app.acl.allow('applicationPlugins', 'list', 'allowConfigure');
     this.server = net.createServer((socket) => {
@@ -56,14 +57,18 @@ export class PluginManager {
       });
       socket.pipe(socket);
     });
+
     this.app.on('beforeLoad', async (app, options) => {
       if (options?.method && ['install', 'upgrade'].includes(options.method)) {
         await this.collection.sync();
       }
+
       const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
+
       if (!exists) {
         return;
       }
+
       if (options?.method !== 'install' || options.reload) {
         await this.repository.load();
       }
@@ -71,6 +76,7 @@ export class PluginManager {
     this.app.on('beforeUpgrade', async () => {
       await this.collection.sync();
     });
+
     this.addStaticMultiple(options.plugins);
   }
 
@@ -190,6 +196,24 @@ export class PluginManager {
     return instance;
   }
 
+  async generateClientFile(plugin: string, packageName: string) {
+    const file = resolve(
+      process.cwd(),
+      'packages',
+      process.env.APP_PACKAGE_ROOT || 'app',
+      'client/src/plugins',
+      `${plugin}.ts`,
+    );
+    if (!fs.existsSync(file)) {
+      try {
+        require.resolve(`${packageName}/client`);
+        await fs.promises.writeFile(file, `export { default } from '${packageName}/client';`);
+        const { run } = require('@nocobase/cli/src/util');
+        await run('yarn', ['nocobase', 'postinstall']);
+      } catch (error) {}
+    }
+  }
+
   async add(plugin: any, options: any = {}, transaction?: any) {
     if (Array.isArray(plugin)) {
       const t = transaction || (await this.app.db.sequelize.transaction());
@@ -204,6 +228,7 @@ export class PluginManager {
     }
     const packageName = await PluginManager.findPackage(plugin);
     const packageJson = require(`${packageName}/package.json`);
+    await this.generateClientFile(plugin, packageName);
     const instance = this.addStatic(plugin, {
       ...options,
       async: true,
