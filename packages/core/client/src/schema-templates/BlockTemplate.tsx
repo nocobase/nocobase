@@ -19,10 +19,8 @@ export const BlockTemplate = observer((props: any) => {
   const { t } = useTranslation();
   const template = useMemo(() => getTemplateById(templateId), [templateId]);
   return template ? (
-    <div>
-      <BlockTemplateContext.Provider value={{ dn, field, fieldSchema, template }}>
-        <RemoteSchemaComponent noForm uid={template?.uid} />
-      </BlockTemplateContext.Provider>
-    </div>
+    <BlockTemplateContext.Provider value={{ dn, field, fieldSchema, template }}>
+      <RemoteSchemaComponent noForm uid={template?.uid} />
+    </BlockTemplateContext.Provider>
   ) : null;
 });

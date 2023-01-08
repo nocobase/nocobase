@@ -68,7 +68,7 @@ sequencePatterns.register('integer', {
 
     let next;
     if (lastSeq && lastSeq.get('current') != null) {
-      next = lastSeq.get('current') + 1;
+      next = Math.max(lastSeq.get('current') + 1, start);
 
       // cycle as cron string
       if (cycle) {

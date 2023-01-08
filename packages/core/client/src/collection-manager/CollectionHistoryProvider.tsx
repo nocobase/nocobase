@@ -1,5 +1,6 @@
 import { Spin } from 'antd';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { APIClientContext, useRequest } from '../api-client';
 
 export interface CollectionHistoryContextValue {
@@ -28,7 +29,22 @@ export const CollectionHistoryProvider: React.FC = (props) => {
     },
   };
 
-  const service = useRequest(options);
+  const location = useLocation();
+
+  // console.log('location', location);
+
+  const service = useRequest(options, {
+    manual: true,
+  });
+
+  const isAdminPage = location.pathname.startsWith('/admin');
+  const token = api.auth.getToken() || '';
+
+  useEffect(() => {
+    if (isAdminPage && token) {
+      service.run();
+    }
+  }, [isAdminPage, token]);
 
   // 刷新 collecionHistory
   const refreshCH = async () => {

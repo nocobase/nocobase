@@ -2,8 +2,9 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
 import _ from 'lodash';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
+import { useCompile } from '../../hooks';
 import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
 
@@ -18,6 +19,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
     const { fieldNames = {}, service = {}, wait = 300, ...others } = props;
+    const compile = useCompile();
 
     const { data, run } = useRequest(
       {
@@ -54,6 +56,15 @@ const InternalRemoteSelect = connect(
       });
     };
 
+    const options = useMemo(() => {
+      return (
+        data?.data?.map((item) => ({
+          ...item,
+          [fieldNames.label]: compile(item[fieldNames.label]),
+        })) || []
+      );
+    }, [data, fieldNames.label]);
+
     return (
       <Select
         autoClearSearchValue
@@ -62,7 +73,7 @@ const InternalRemoteSelect = connect(
         fieldNames={fieldNames}
         onSearch={onSearch}
         {...others}
-        options={data?.data || []}
+        options={options}
       />
     );
   },
