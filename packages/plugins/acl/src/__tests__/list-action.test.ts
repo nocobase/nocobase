@@ -1,5 +1,5 @@
-import { prepareApp } from './prepare';
 import { Database } from '@nocobase/database';
+import { prepareApp } from './prepare';
 
 describe('list action with acl', () => {
   let app;
@@ -74,8 +74,8 @@ describe('list action with acl', () => {
         before: 'acl',
       },
     );
-
-    const response = await app.agent().resource('tests').list({});
+    
+    const response = await app.agent().set('X-With-ACL-Meta', true).resource('tests').list({});
 
     const data = response.body;
     expect(data.meta.allowedActions.view).toEqual(['t1', 't2', 't3']);
@@ -116,7 +116,7 @@ describe('list action with acl', () => {
       },
     );
 
-    const response = await app.agent().resource('posts').list({});
+    const response = await app.agent().set('X-With-ACL-Meta', true).resource('posts').list({});
 
     const data = response.body;
     expect(data.meta.allowedActions.view).toEqual([1, 2, 3]);
@@ -157,7 +157,7 @@ describe('list action with acl', () => {
       },
     );
 
-    const getResponse = await app.agent().resource('posts').get({
+    const getResponse = await app.agent().set('X-With-ACL-Meta', true).resource('posts').get({
       filterByTk: 1,
     });
 
@@ -241,7 +241,7 @@ describe('list association action with acl', () => {
     });
 
     const userPlugin = app.getPlugin('users');
-    const userAgent = app.agent().auth(
+    const userAgent = app.agent().set('X-With-ACL-Meta', true).auth(
       userPlugin.jwtService.sign({
         userId: user.get('id'),
       }),
