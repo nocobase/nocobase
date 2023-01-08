@@ -45,8 +45,22 @@ export const SettingCenterProvider = (props) => {
 };
 
 const formatPluginTabs = (data) => {
+  const tabs = [];
+  for (const key in data) {
+    const plugin = data?.[key];
+    for (const tabKey in plugin?.tabs || {}) {
+      const tab = plugin?.tabs[tabKey];
+      tabs.push({
+        pluginTitle: plugin.title,
+        ...tab,
+        key: `pm.${key}.${tabKey}`,
+      });
+    }
+  }
+  return tabs;
   const arr: any[] = Object.entries(data);
   const pluginsTabs = [];
+  console.log(tabs);
   arr.forEach((v) => {
     const children = Object.entries(v[1].tabs).map((k: any) => {
       return {
@@ -103,13 +117,17 @@ export const SettingsCenterConfigure = () => {
         loading={loading}
         rowKey={'key'}
         pagination={false}
-        expandable={{
-          defaultExpandAllRows: true,
-        }}
         columns={[
           {
             dataIndex: 'title',
             title: t('Plugin tab name'),
+            render: (value) => {
+              return compile(value);
+            },
+          },
+          {
+            dataIndex: 'pluginTitle',
+            title: t('Plugin name'),
             render: (value) => {
               return compile(value);
             },

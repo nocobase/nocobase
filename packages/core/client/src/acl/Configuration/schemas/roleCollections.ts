@@ -12,7 +12,7 @@ const collection = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Collections & Associations")}}',
+        title: '{{t("Collection display name")}}',
         type: 'number',
         'x-component': 'Input',
         required: true,
@@ -23,7 +23,7 @@ const collection = {
       name: 'name',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Resource name")}}',
+        title: '{{t("Collection name")}}',
         type: 'string',
         'x-component': 'Input',
       } as ISchema,

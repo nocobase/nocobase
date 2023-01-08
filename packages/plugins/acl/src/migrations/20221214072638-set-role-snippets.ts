@@ -1,10 +1,10 @@
 import { Migration } from '@nocobase/server';
 
-export default class SetRoleSnippetsMigration extends Migration {
+export default class extends Migration {
   async up() {
     await this.app.db.getRepository('roles').update({
       filter: {
-        allowConfigure: true,
+        $or: [{ allowConfigure: true }, { name: 'root' }],
       },
       values: {
         snippets: ['ui.*', 'pm', 'pm.*'],

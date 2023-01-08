@@ -621,5 +621,7 @@ export default {
   "Search and select collection": "搜索并选择数据表",
   'Please fill in the iframe URL': '请填写嵌入的地址',
 
-  'Fix block': '固定区块'
+  'Fix block': '固定区块',
+  'Plugin name': '插件',
+  'Plugin tab name': '插件标签页',
 }

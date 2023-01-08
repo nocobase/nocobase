@@ -136,6 +136,15 @@ export class PluginACL extends Plugin {
   }
 
   async beforeLoad() {
+
+    this.db.addMigrations({
+      namespace: this.name,
+      directory: resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+
     this.app.db.registerModels({
       RoleResourceActionModel,
       RoleResourceModel,
