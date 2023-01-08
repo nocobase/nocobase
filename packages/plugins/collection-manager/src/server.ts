@@ -225,9 +225,7 @@ export class CollectionManagerPlugin extends Plugin {
   }
 
   async load() {
-    await this.app.db.import({
-      directory: path.resolve(__dirname, './collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, './collections'));
 
     const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('error-handler');
     errorHandlerPlugin.errorHandler.register(

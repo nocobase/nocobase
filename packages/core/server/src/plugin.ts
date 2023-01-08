@@ -3,7 +3,9 @@ import { InstallOptions } from './plugin-manager';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
+
   load();
+
   getName(): string;
 }
 
@@ -16,6 +18,7 @@ export interface PluginOptions {
   install?: (this: Plugin) => void;
   load?: (this: Plugin) => void;
   plugin?: typeof Plugin;
+
   [key: string]: any;
 }
 
@@ -26,6 +29,8 @@ export abstract class Plugin<O = any> implements PluginInterface {
   app: Application;
 
   constructor(app: Application, options?: any) {
+    this.setOptions(options);
+
     this.app = app;
     this.setOptions(options);
     this.afterAdd();
@@ -69,10 +74,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async remove() {}
 
-  registerPluginACLSnippet({ name, actions }: { name: string; actions: string[] }) {
-    this.app.acl.registerSnippet({
-      name: `pm.${this.getName()}.${name}`,
-      actions,
+  async importCollections(collectionsPath: string) {
+    await this.db.import({
+      directory: collectionsPath,
+      from: this.getName(),
     });
   }
 }

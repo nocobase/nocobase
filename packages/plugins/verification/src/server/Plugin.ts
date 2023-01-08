@@ -15,8 +15,11 @@ import initProviders, { Provider } from './providers';
 export interface Interceptor {
   manual?: boolean;
   expiresIn?: number;
+
   getReceiver(ctx): string;
+
   getCode?(ctx): string;
+
   validate?(ctx: Context, receiver: string): boolean | Promise<boolean>;
 }
 
@@ -117,9 +120,7 @@ export default class VerificationPlugin extends Plugin {
 
     app.i18n.addResources('zh-CN', namespace, zhCN);
 
-    await db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     initProviders(this);
     initActions(this);

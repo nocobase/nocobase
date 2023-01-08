@@ -24,9 +24,7 @@ export default class PluginFileManager extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, './collections'));
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.storages`,
@@ -42,7 +40,6 @@ export default class PluginFileManager extends Plugin {
     if (process.env.APP_ENV !== 'production') {
       await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
     }
-
 
     const defaultStorageName = getStorageConfig(this.storageType()).defaults().name;
 
