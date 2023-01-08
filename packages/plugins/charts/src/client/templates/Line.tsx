@@ -1,6 +1,6 @@
-export const pieTemplate = {
-  title: 'Pie',
-  type: "Pie",
+export const lineTemplate = {
+  title: 'Line',
+  type: "Line",
   component: 'G2Plot',
   defaultChartOptions: {
     appendPadding: 10,
@@ -32,7 +32,7 @@ export const pieTemplate = {
         title: 'Dataset options',
         'x-component': 'Tabs.TabPane',
         'x-component-props': {
-          tab: 'Dataset options',
+          tab: 'Dataset options - test',
         },
         properties: {
           type: {
