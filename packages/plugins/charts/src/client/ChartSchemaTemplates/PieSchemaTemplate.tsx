@@ -11,14 +11,14 @@ import {useTranslation} from "react-i18next";
 import {SchemaOptionsContext} from "@formily/react";
 
 interface contextInfo {
-  collectionFields: CollectionFieldOptions[];
+  collectionFields:  CollectionFieldOptions[];
 }
 
 const PieSchemaTemplate = (contextInfo: contextInfo) => {
   const {collectionFields} = contextInfo
   const {t} = useTranslation();
   const computedFields = collectionFields
-    ?.filter((field) => (field.type === 'double' || field.type === "bigInt"))
+    ?.filter((field) => ( field.type === 'double' || field.type === "bigInt") )
     ?.map((field) => {
       return {
         label: field?.uiSchema?.title,
@@ -28,7 +28,7 @@ const PieSchemaTemplate = (contextInfo: contextInfo) => {
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   return {
-    PieTab: {
+    tab1: {
       type: 'void',
       'x-component': 'Tabs',
       'x-component-props': {
@@ -161,6 +161,4 @@ const PieSchemaTemplate = (contextInfo: contextInfo) => {
   }
 }
 
-export {
-  PieSchemaTemplate
-}
+export default PieSchemaTemplate

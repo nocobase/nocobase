@@ -1,2 +1,2 @@
 export * from './BarSchemaTemplate'
-export * from './PieSchemaTemplate'
+export * from './ChartConfigurationSchemaTemplate'
