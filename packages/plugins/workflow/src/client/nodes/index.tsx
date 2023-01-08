@@ -237,21 +237,24 @@ export function JobButton() {
       schema={{
         type: 'void',
         properties: {
-          job: {
+          [`${job.id}-button`]: {
             type: 'void',
             'x-component': 'Action',
             'x-component-props': {
-              title: icon,
+              title: <Tag color={color}>{icon}</Tag>,
               shape: 'circle',
               className: ['workflow-node-job-button', css`
-                background-color: ${color};
-                &:hover,&:focus{
-                  background-color: ${color}
+                .ant-tag{
+                  padding: 0;
+                  width: 100%;
+                  line-height: 18px;
+                  margin-right: 0;
+                  border-radius: 50%;
                 }
               `]
             },
             properties: {
-              [job.id]: {
+              [`${job.id}-modal`]: {
                 type: 'void',
                 'x-decorator': 'Form',
                 'x-decorator-props': {

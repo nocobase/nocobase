@@ -4,7 +4,6 @@ import { onFieldValueChange } from '@formily/core';
 import { observer, useForm, useFormEffects } from '@formily/react';
 
 import {
-  SchemaInitializer,
   SchemaInitializerItemOptions,
   useCollectionDataSource,
   useCollectionManager,
@@ -175,12 +174,7 @@ export default {
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       component: CollectionBlockInitializer,
       collectionName: config.collection,
-      context: {
-        type: '$context',
-        options: {
-          path: 'data'
-        }
-      }
+      dataSource: '{{$context.data}}'
     };
   },
   initializers: {

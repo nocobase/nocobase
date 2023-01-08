@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tag } from 'antd';
 import { css } from '@emotion/css';
+import parse from 'json-templates';
 
 import { Calculation } from '../calculators';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
@@ -35,15 +36,22 @@ export default {
         <Calculation {...value} onChange={onChange} />
       );
     },
-    CalculationResult({ nodeId }) {
+    CalculationResult({ dataSource }) {
       const { t } = useWorkflowTranslation();
       const { execution } = useFlowContext();
       if (!execution) {
         return t('Calculation result');
       }
-      const job = execution.jobs.find(item => item.nodeId === nodeId);
+      const result = parse(dataSource)({
+        $jobsMapByNodeId: (execution.jobs ?? []).reduce((map, job) => Object.assign(map, { [job.nodeId]: job.result }), {})
+      });
+
       return (
-        <pre>{job.result}</pre>
+        <pre className={css`
+          margin: 0;
+        `}>
+          {JSON.stringify(result, null, 2)}
+        </pre>
       );
     }
   },
@@ -70,13 +78,17 @@ function CalculationInitializer({ node, insert, ...props }) {
           name: node.id,
           title: node.title,
           'x-component': 'CardItem',
+          'x-component-props': {
+            title: node.title ?? `#${node.id}`
+          },
           'x-designer': 'DetailsDesigner',
           properties: {
             result: {
               type: 'void',
               'x-component': 'CalculationResult',
               'x-component-props': {
-                nodeId: node.id
+                // NOTE: as same format as other reference for migration of revision
+                dataSource: `{{$jobsMapByNodeId.${node.id}}}`
               },
             }
           }

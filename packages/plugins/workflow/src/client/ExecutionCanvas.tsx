@@ -16,24 +16,17 @@ import { TriggerConfig } from './triggers';
 import { Branch } from './Branch';
 import { ExecutionStatusOptionsMap } from './constants';
 import { lang } from './locale';
+import { linkNodes } from './utils';
 
 
 
 
-function makeNodes(nodes, jobs: any[] = []): void {
+function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
   nodes.forEach(item => nodesMap.set(item.id, item));
   const jobsMap = new Map();
   jobs.forEach(item => jobsMap.set(item.nodeId, item));
   for (let node of nodesMap.values()) {
-    if (node.upstreamId) {
-      node.upstream = nodesMap.get(node.upstreamId);
-    }
-
-    if (node.downstreamId) {
-      node.downstream = nodesMap.get(node.downstreamId);
-    }
-
     if (jobsMap.has(node.id)) {
       node.job = jobsMap.get(node.id);
     }
@@ -63,7 +56,8 @@ export function ExecutionCanvas() {
     ...execution
   } = data?.data ?? {};
 
-  makeNodes(nodes, jobs);
+  linkNodes(nodes);
+  attachJobs(nodes, jobs);
 
   const entry = nodes.find(item => !item.upstream);
 

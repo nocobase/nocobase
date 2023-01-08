@@ -4,7 +4,7 @@ import { SchemaInitializer, useCollectionManager } from '@nocobase/client';
 
 
 
-export function CollectionBlockInitializer({ insert, collectionName, context, ...props }) {
+export function CollectionBlockInitializer({ insert, collectionName, dataSource, ...props }) {
   const { getCollection } = useCollectionManager();
   const collection = getCollection(collectionName);
   return (
@@ -33,7 +33,7 @@ export function CollectionBlockInitializer({ insert, collectionName, context, ..
               },
               'x-component': 'Grid',
               'x-initializer': 'CollectionFieldInitializers',
-              'x-context-datasource': context
+              'x-context-datasource': dataSource
             }
           }
         });

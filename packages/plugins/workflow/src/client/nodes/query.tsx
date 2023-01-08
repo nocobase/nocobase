@@ -60,12 +60,7 @@ export default {
       title: node.title ?? `#${node.id}`,
       component: CollectionBlockInitializer,
       collectionName: node.config.collection,
-      context: {
-        type: '$jobsMapByNodeId',
-        options: {
-          nodeId: node.id
-        }
-      }
+      dataSrouce: `{{$jobsMapByNodeId.${node.id}}}`
     };
   },
   initializers: {

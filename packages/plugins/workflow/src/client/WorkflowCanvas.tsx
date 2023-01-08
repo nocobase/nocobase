@@ -22,6 +22,7 @@ import { Branch } from './Branch';
 import { executionSchema } from './schemas/executions';
 import { ExecutionLink } from './ExecutionLink';
 import { lang } from './locale';
+import { linkNodes } from './utils';
 
 
 
@@ -47,19 +48,6 @@ function ExecutionResourceProvider({ request, filter = {}, ...others }) {
 }
 
 
-function makeNodes(nodes): void {
-  const nodesMap = new Map();
-  nodes.forEach(item => nodesMap.set(item.id, item));
-  for (let node of nodesMap.values()) {
-    if (node.upstreamId) {
-      node.upstream = nodesMap.get(node.upstreamId);
-    }
-
-    if (node.downstreamId) {
-      node.downstream = nodesMap.get(node.downstreamId);
-    }
-  }
-}
 
 export function WorkflowCanvas() {
   const history = useHistory();
@@ -79,7 +67,7 @@ export function WorkflowCanvas() {
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
 
-  makeNodes(nodes);
+  linkNodes(nodes);
 
   const entry = nodes.find(item => !item.upstream);
 

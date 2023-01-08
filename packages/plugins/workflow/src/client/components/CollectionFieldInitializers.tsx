@@ -13,6 +13,7 @@ function CollectionFieldInitializer({ field, ...props }) {
       {...props}
       schema={{
         ...uiSchema,
+        name: field.name,
         title: uiSchema.title ?? field.name,
         'x-decorator': 'FormItem',
         'x-read-pretty': true,

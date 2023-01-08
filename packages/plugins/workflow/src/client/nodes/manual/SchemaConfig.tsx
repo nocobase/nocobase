@@ -19,7 +19,7 @@ import {
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 import { useTrigger } from '../../triggers';
-import { instructions, useAvailableUpstreams } from '..';
+import { instructions, useAvailableUpstreams, useNodeContext } from '..';
 import { useFlowContext } from '../../FlowContext';
 import { NAMESPACE } from '../../locale';
 
@@ -402,7 +402,8 @@ function useFlowRecordFromBlock() {
 export function SchemaConfig({ value, onChange }) {
   const ctx = useContext(SchemaComponentContext);
   const trigger = useTrigger();
-  const nodes = useAvailableUpstreams();
+  const node = useNodeContext();
+  const nodes = useAvailableUpstreams(node);
   const form = useForm();
 
   const { collection = {
@@ -412,8 +413,8 @@ export function SchemaConfig({ value, onChange }) {
 
   const nodeInitializers = {};
   const nodeComponents = {};
-  nodes.forEach(node => {
-    const instruction = instructions.get(node.type);
+  nodes.forEach(item => {
+    const instruction = instructions.get(item.type);
     Object.assign(nodeInitializers, instruction.initializers);
     Object.assign(nodeComponents, instruction.components);
   });
@@ -477,7 +478,7 @@ export function SchemaConfig({ value, onChange }) {
   });
 
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: true }}>
+    <SchemaComponentContext.Provider value={{ ...ctx, designable: !node.job }}>
       <SchemaInitializerProvider initializers={{ AddBlockButton, AddFormField, AddActionButton, ...trigger.initializers, ...nodeInitializers }}>
         <SchemaComponentRefreshProvider
           onRefresh={() => {

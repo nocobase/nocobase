@@ -2,16 +2,77 @@ import React, { useContext, createContext, useMemo, useEffect, useState } from "
 import { createForm } from '@formily/core';
 import { observer, useForm, useField, useFieldSchema } from '@formily/react';
 import { Tag } from 'antd';
-import { get } from 'lodash';
+import parse from 'json-templates';
+import { css } from "@emotion/css";
+import moment from 'moment';
 
-import { CollectionManagerProvider, CollectionProvider, SchemaComponent, SchemaComponentContext, TableBlockProvider, useActionContext, useAPIClient, useCollectionManager, useRecord, useRequest, useTableBlockContext } from "@nocobase/client";
+import { CollectionManagerProvider, CollectionProvider, SchemaComponent, SchemaComponentContext, SchemaComponentOptions, TableBlockProvider, useActionContext, useAPIClient, useCollectionManager, useRecord, useRequest, useTableBlockContext } from "@nocobase/client";
 import { uid } from "@nocobase/utils/client";
 
 import { JobStatusOptions, JobStatusOptionsMap } from "../../constants";
 import { NAMESPACE } from "../../locale";
 import { FlowContext, useFlowContext } from "../../FlowContext";
+import { instructions, useAvailableUpstreams } from '..';
+import { linkNodes } from "../../utils";
 
+const nodeCollection = {
+  title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
+  name: 'flow_nodes',
+  fields: [
+    {
+      type: 'bigInt',
+      name: 'id',
+      interface: 'm2o',
+      uiSchema: {
+        type: 'number',
+        title: 'ID',
+        'x-component': 'RemoteSelect',
+        'x-component-props': {
+          fieldNames: {
+            label: 'title',
+            value: 'id',
+          },
+          service: {
+            resource: 'flow_nodes',
+            params: {
+              filter: {
+                type: 'manual'
+              }
+            }
+          },
+        }
+      }
+    },
+    {
+      type: 'string',
+      name: 'title',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Title")}}',
+        'x-component': 'Input'
+      }
+    },
+  ]
+};
 
+const workflowCollection = {
+  title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
+  name: 'workflows',
+  fields: [
+    {
+      type: 'string',
+      name: 'title',
+      interface: 'input',
+      uiSchema: {
+        title: '{{t("Name")}}',
+        type: 'string',
+        'x-component': 'Input',
+        required: true,
+      },
+    },
+  ]
+};
 
 const todoCollection = {
   title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
@@ -44,6 +105,7 @@ const todoCollection = {
       target: 'flow_nodes',
       foreignKey: 'nodeId',
       interface: 'm2o',
+      isAssociation: true,
       uiSchema: {
         type: 'number',
         title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -75,7 +137,7 @@ const todoCollection = {
             value: 'id',
           },
           service: {
-            resource: 'workflow'
+            resource: 'workflows'
           },
         }
       }
@@ -156,7 +218,19 @@ export function WorkflowTodo() {
                   useProps: '{{ useFilterActionProps }}',
                 },
                 'x-align': 'left',
-              }
+              },
+              refresher: {
+                type: 'void',
+                title: '{{ t("Refresh") }}',
+                'x-action': 'refresh',
+                'x-component': 'Action',
+                'x-designer': 'Action.Designer',
+                'x-component-props': {
+                  icon: 'ReloadOutlined',
+                  useProps: '{{ useRefreshActionProps }}',
+                },
+                'x-align': 'right',
+              },
             },
           },
           table: {
@@ -291,30 +365,22 @@ function useSubmit() {
 }
 
 function useFlowRecordFromBlock(opts) {
-  const { ['x-context-datasource']: { type, options } } = useFieldSchema();
-  const { execution, jobs } = useFlowContext();
-  let result = {};
-  switch (type) {
-    case '$context':
-      result = get(execution?.context, options.path);
-      break;
-    case '$jobsMapByNodeId':
-      result = jobs?.find(job => job.nodeId === options.nodeId)?.result;
-      break;
-    default:
-      break;
-  }
+  const { ['x-context-datasource']: dataSource } = useFieldSchema();
+  const { execution } = useFlowContext();
+  const context = {
+    $context: execution?.context,
+    $jobsMapByNodeId: (execution?.jobs ?? []).reduce((map, job) => Object.assign(map, { [job.nodeId]: job.result }),{})
+  };
+  let result = parse(dataSource)(context);
 
   return useRequest(() => {
-    console.log('------', result);
     return Promise.resolve({ data: result })
   }, opts);
 }
 
-WorkflowTodo.Drawer = function () {
-  const ctx = useContext(SchemaComponentContext);
-  const { node, workflow, executionId, status, result, updatedAt } = useRecord();
+function FlowContextProvider(props) {
   const api = useAPIClient();
+  const { node, executionId } = useRecord();
   const [flowContext, setFlowContext] = useState<any>(null);
 
   useEffect(() => {
@@ -327,18 +393,37 @@ WorkflowTodo.Drawer = function () {
     })
       .then(({ data }) => {
         const {
-          jobs = [],
           workflow: { nodes = [], ...workflow } = {},
           ...execution
         } = data?.data ?? {};
+        linkNodes(nodes);
         setFlowContext({
           workflow,
           nodes,
-          jobs,
           execution
         });
       });
   }, [executionId]);
+
+  if (!flowContext) {
+    return null;
+  }
+
+  const nodes = useAvailableUpstreams(flowContext.nodes.find(item => item.id === node.id));
+  const nodeComponents = nodes.reduce((components, { type }) => Object.assign(components, instructions.get(type).components), {});
+
+  return (
+    <FlowContext.Provider value={flowContext}>
+      <SchemaComponentOptions components={{ ...nodeComponents }}>
+        {props.children}
+      </SchemaComponentOptions>
+    </FlowContext.Provider>
+  );
+}
+
+WorkflowTodo.Drawer = function () {
+  const ctx = useContext(SchemaComponentContext);
+  const { node, workflow, status, result, updatedAt } = useRecord();
 
   const form = useMemo(() => createForm({
     readPretty: Boolean(status),
@@ -353,7 +438,12 @@ WorkflowTodo.Drawer = function () {
       date: {
         type: 'void',
         'x-component': 'time',
-        'x-content': (new Date(Date.parse(updatedAt))).toLocaleString()
+        'x-component-props': {
+          className: css`
+            margin-right: .5em;
+          `
+        },
+        'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss')
       },
       status: {
         type: 'void',
@@ -367,52 +457,48 @@ WorkflowTodo.Drawer = function () {
     }
     : actions;
 
-  if (!flowContext) {
-    return null;
-  }
-
   return (
-    <FlowContext.Provider value={flowContext}>
-      <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-        <CollectionProvider collection={collection}>
-          <SchemaComponent
-            components={{
-              Tag,
-              ManualActionStatusProvider
-            }}
-            schema={{
-              type: 'void',
-              name: 'drawer',
-              'x-decorator': 'Form',
-              'x-decorator-props': {
-                form,
+    <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+      <CollectionProvider collection={collection}>
+        <SchemaComponent
+          components={{
+            Tag,
+            ManualActionStatusProvider,
+            FlowContextProvider
+          }}
+          schema={{
+            type: 'void',
+            name: `drawer-${status}`,
+            'x-decorator': 'Form',
+            'x-decorator-props': {
+              form,
+            },
+            'x-component': 'Action.Drawer',
+            'x-component-props': {
+              className: 'nb-action-popup',
+            },
+            title: `${workflow.title} - ${node.title ?? `#${node.id}`}`,
+            properties: {
+              tabs: {
+                type: 'void',
+                'x-decorator': 'FlowContextProvider',
+                'x-component': 'Tabs',
+                properties: blocks,
               },
-              'x-component': 'Action.Drawer',
-              'x-component-props': {
-                className: 'nb-action-popup',
-              },
-              title: `${workflow.title} - ${node.title ?? `#${node.id}`}`,
-              properties: {
-                tabs: {
-                  type: 'void',
-                  'x-component': 'Tabs',
-                  properties: blocks,
-                },
-                footer: {
-                  type: 'void',
-                  'x-component': 'Action.Drawer.Footer',
-                  properties: actionSchema
-                }
+              footer: {
+                type: 'void',
+                'x-component': 'Action.Drawer.Footer',
+                properties: actionSchema
               }
-            }}
-            scope={{
-              useSubmit,
-              useFlowRecordFromBlock
-            }}
-          />
-        </CollectionProvider>
-      </SchemaComponentContext.Provider>
-    </FlowContext.Provider>
+            }
+          }}
+          scope={{
+            useSubmit,
+            useFlowRecordFromBlock
+          }}
+        />
+      </CollectionProvider>
+    </SchemaComponentContext.Provider>
   )
 }
 
@@ -434,7 +520,7 @@ WorkflowTodo.Decorator = function ({ children }) {
   };
 
   return (
-    <CollectionManagerProvider {...cm} collections={[...collections, todoCollection]}>
+    <CollectionManagerProvider {...cm} collections={[...collections, nodeCollection, workflowCollection, todoCollection]}>
       <TableBlockProvider {...blockProps}>{children}</TableBlockProvider>
     </CollectionManagerProvider>
   );

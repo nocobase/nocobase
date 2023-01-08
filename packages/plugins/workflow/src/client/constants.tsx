@@ -3,7 +3,7 @@ import {
   CloseOutlined,
   ClockCircleOutlined,
   CheckOutlined,
-  ExclamationOutlined,
+  MinusOutlined,
 } from '@ant-design/icons';
 import { NAMESPACE } from './locale';
 
@@ -33,10 +33,10 @@ export const JOB_STATUS = {
 };
 
 export const JobStatusOptions = [
-  { value: JOB_STATUS.PENDING, label: `{{t("Pending", { ns: "${NAMESPACE}" })}}`, color: '#d4c306', icon: <ClockCircleOutlined /> },
-  { value: JOB_STATUS.RESOLVED, label: `{{t("Succeeded", { ns: "${NAMESPACE}" })}}`, color: '#67c068', icon: <CheckOutlined /> },
-  { value: JOB_STATUS.REJECTED, label: `{{t("Failed", { ns: "${NAMESPACE}" })}}`, color: '#f40', icon: <ExclamationOutlined /> },
-  { value: JOB_STATUS.CANCELED, label: `{{t("Canceled", { ns: "${NAMESPACE}" })}}`, color: '#f40', icon: <CloseOutlined /> }
+  { value: JOB_STATUS.PENDING, label: `{{t("Pending", { ns: "${NAMESPACE}" })}}`, color: 'gold', icon: <ClockCircleOutlined /> },
+  { value: JOB_STATUS.RESOLVED, label: `{{t("Succeeded", { ns: "${NAMESPACE}" })}}`, color: 'green', icon: <CheckOutlined /> },
+  { value: JOB_STATUS.REJECTED, label: `{{t("Failed", { ns: "${NAMESPACE}" })}}`, color: 'red', icon: <CloseOutlined /> },
+  { value: JOB_STATUS.CANCELED, label: `{{t("Canceled", { ns: "${NAMESPACE}" })}}`, color: 'volcano', icon: <MinusOutlined /> }
 ];
 
 export const JobStatusOptionsMap = JobStatusOptions.reduce((map, option) => Object.assign(map, { [option.value]: option }), {});
