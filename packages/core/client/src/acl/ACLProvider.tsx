@@ -122,10 +122,10 @@ const getIgnoreScope = (options: any = {}) => {
   if (options.ignoreScope) {
     ignoreScope = true;
   }
-  if (schema['x-acl-ignore-scope']) {
+  if (schema?.['x-acl-ignore-scope']) {
     ignoreScope = true;
   }
-  if (schema['x-acl-action-props']?.['skipScopeCheck']) {
+  if (schema?.['x-acl-action-props']?.['skipScopeCheck']) {
     ignoreScope = true;
   }
   if (!recordPkValue) {
