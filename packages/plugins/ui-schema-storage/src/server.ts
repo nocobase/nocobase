@@ -1,7 +1,7 @@
 import { MagicAttributeModel } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
-import path from 'path';
+import { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
 import { UiSchemaModel } from './model';
 import UiSchemaRepository from './repository';
@@ -66,9 +66,7 @@ export class UiSchemaStoragePlugin extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
   }
 }
 

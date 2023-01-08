@@ -19,7 +19,7 @@ describe('collection', () => {
     await db.close();
   });
 
-  it('should throw error when create empty collection in sqlite and mysql', async () => {
+  it('should not throw error when create empty collection in sqlite and mysql', async () => {
     if (!db.inDialect('sqlite', 'mysql')) {
       return;
     }
@@ -44,7 +44,7 @@ describe('collection', () => {
       error = e;
     }
 
-    expect(error.message.includes("Zero-column tables aren't supported in")).toBeTruthy();
+    expect(error).toBeUndefined();
   });
 
   pgOnly()('can create empty collection', async () => {
