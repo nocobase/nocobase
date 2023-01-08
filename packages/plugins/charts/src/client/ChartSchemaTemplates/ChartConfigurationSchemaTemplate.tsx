@@ -51,9 +51,7 @@ const  ChartConfigurationOptions = observer((props: any) => {
   useEffect(() => {
     const chartType = form.values.chartType
     console.log(form.values)
-    const chartConfigurationSchema = templates.find(template => {
-      return template.type === chartType
-    })?.configurableProperties
+    const chartConfigurationSchema = templates?.get(chartType)?.configurableProperties
     // form.clearFormGraph('options.*');
     console.log(chartConfigurationSchema,"chartConfigurationSchema")
     setSchema(new Schema(chartConfigurationSchema || {})

@@ -1,7 +1,7 @@
-import { FormOutlined } from '@ant-design/icons';
-import { FormDialog, FormLayout } from '@formily/antd';
-import { Field } from '@formily/core';
-import { observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm } from '@formily/react';
+import {FormOutlined} from '@ant-design/icons';
+import {FormDialog, FormLayout} from '@formily/antd';
+import {Field} from '@formily/core';
+import {observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm} from '@formily/react';
 import {
   DataBlockInitializer,
   SchemaComponent,
@@ -9,10 +9,10 @@ import {
   useAPIClient,
   useCollectionManager
 } from '@nocobase/client';
-import React, { useContext, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ChartConfigurationOptions } from './ChartSchemaTemplates';
-import { templates } from './templates';
+import React, {useContext, useEffect, useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {ChartConfigurationOptions} from './ChartSchemaTemplates';
+import {templates} from './templates';
 
 export const Options = observer((props) => {
   const form = useForm();
@@ -25,32 +25,42 @@ export const Options = observer((props) => {
       setSchema(new Schema(template.configurableProperties || {}));
     }
   }, [form.values.chartType]);
-  return <RecursionField name={form.values.chartType || 'default'} schema={s} />;
+  return <RecursionField name={form.values.chartType || 'default'} schema={s}/>;
 });
 
 export const ChartBlockInitializer = (props) => {
-  const { insert } = props;
-  const { t } = useTranslation();
-  const { getCollectionFields, getCollection } = useCollectionManager();
+  const {insert} = props;
+  const {t} = useTranslation();
+  const {getCollectionFields, getCollection} = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   return (
     <DataBlockInitializer
       {...props}
       componentType={'Kanban'}
-      icon={<FormOutlined />}
-      onCreateBlockSchema={async ({ item }) => {
+      icon={<FormOutlined/>}
+      onCreateBlockSchema={async ({item}) => {
         const collectionFields = getCollectionFields(item.name);
+        const computedFields = collectionFields
+          ?.filter((field) => (field.type === 'double' || field.type === "bigInt"))
+          ?.map((field) => {
+            return {
+              label: field.name,
+              value: field.name,
+            };
+          });
+        console.log(collectionFields,"computedFields")
+        console.log(computedFields,"computedFields")
         let values = await FormDialog(t('Create chart block'), () => {
           return (
             <SchemaComponentOptions
               scope={options.scope}
-              components={{ ...options.components, ChartConfigurationOptions }}
+              components={{...options.components, ChartConfigurationOptions}}
             >
               <FormLayout layout={'vertical'}>
                 <SchemaComponent
-                  scope={{ computedFields: [] }}
-                  components={{ Options }}
+                  scope={{computedFields: computedFields || []}}
+                  components={{Options}}
                   schema={{
                     properties: {
                       chartType: {
