@@ -15,7 +15,7 @@ export class OidcPlugin extends Plugin {
 
   async load() {
     // 导入 collection
-    await this.importCollections(resolve(__dirname, '../collections'));
+    await this.importCollections(resolve(__dirname, './collections'));
 
     // 获取 User 插件
     const userPlugin = this.app.getPlugin<any>('users');
