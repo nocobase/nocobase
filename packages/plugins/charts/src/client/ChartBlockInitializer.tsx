@@ -5,7 +5,8 @@ import React, {useContext} from 'react';
 import {useTranslation} from 'react-i18next';
 import {SchemaComponent, SchemaComponentOptions, useAPIClient, useCollectionManager} from "@nocobase/client";
 import {DataBlockInitializer} from '@nocobase/client'
-import {BarSchemaTemplate, PieSchemaTemplate} from "./ChartSchemaTemplates";
+import {ChartConfigurationOptions, ChartConfigurationSchemaTemplate} from "./ChartSchemaTemplates";
+import {templates} from "./templates";
 
 export const ChartBlockInitializer = (props) => {
   const {insert} = props;
@@ -22,7 +23,7 @@ export const ChartBlockInitializer = (props) => {
         const collectionFields = getCollectionFields(item.name);
         let values = await FormDialog(t('Create chart block'), () => {
           return (
-            <SchemaComponentOptions scope={options.scope} components={{...options.components}}>
+            <SchemaComponentOptions scope={options.scope} components={{...options.components,ChartConfigurationOptions}}>
               <FormLayout layout={'vertical'}>
                 <SchemaComponent
                   schema={{
@@ -32,16 +33,15 @@ export const ChartBlockInitializer = (props) => {
                         required: true,
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
-                        enum: [
-                          {label: 'Pie', value: 'Pie'},
-                          {label: 'Bar', value: 'Bar'},
-                          {label: 'Column', value: 'Column'},
-                          {label: 'Statistic', value: 'Statistic'}
-                        ],
+                        enum: templates.map(template => {
+                          return {
+                            label: template.type,
+                            value: template.type,
+                          }
+                        })
                       },
                       //   template
-                      ...PieSchemaTemplate({collectionFields}),
-                      ...BarSchemaTemplate({collectionFields})
+                      ...ChartConfigurationSchemaTemplate({collectionFields}),
                     },
                   }}
                 />
