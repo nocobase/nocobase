@@ -20,6 +20,7 @@
     "decompress": "^4.2.1",
     "inquirer": "^8.0.0",
     "lodash": "^4.17.21",
+    "mkdirp": "^1.0.4",
     "tar": "^6.1.13"
   },
   "repository": {

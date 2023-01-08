@@ -1,16 +1,17 @@
-import { AppMigrator } from './app-migrator';
-import path from 'path';
-import fsPromises from 'fs/promises';
-import fs from 'fs';
-import util from 'util';
-import stream from 'stream';
-import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
-import { CollectionGroupManager } from './collection-group-manager';
+import fs from 'fs';
+import fsPromises from 'fs/promises';
 import inquirer from 'inquirer';
-import { FieldValueWriter } from './field-value-writer';
 import lodash from 'lodash';
+import mkdirp from 'mkdirp';
+import path from 'path';
+import stream from 'stream';
+import util from 'util';
+import { AppMigrator } from './app-migrator';
+import { CollectionGroupManager } from './collection-group-manager';
+import { FieldValueWriter } from './field-value-writer';
+import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 
 const finished = util.promisify(stream.finished);
 
@@ -150,7 +151,9 @@ export class Dumper extends AppMigrator {
   }
 
   async packDumpedDir() {
-    const filePath = path.resolve(process.cwd(), `dump-${dayjs().format('YYYYMMDDTHHmmss')}.${DUMPED_EXTENSION}`);
+    const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
+    mkdirp.sync(dirname);
+    const filePath = path.resolve(dirname, `dump-${dayjs().format('YYYYMMDDTHHmmss')}.${DUMPED_EXTENSION}`);
 
     const output = fs.createWriteStream(filePath);
 

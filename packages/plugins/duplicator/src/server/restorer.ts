@@ -1,11 +1,11 @@
-import { AppMigrator } from './app-migrator';
-import path from 'path';
-import fsPromises from 'fs/promises';
-import { readLines, sqlAdapter } from './utils';
 import decompress from 'decompress';
-import { FieldValueWriter } from './field-value-writer';
+import fsPromises from 'fs/promises';
 import inquirer from 'inquirer';
+import path from 'path';
+import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
+import { FieldValueWriter } from './field-value-writer';
+import { readLines, sqlAdapter } from './utils';
 
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
@@ -13,6 +13,9 @@ export class Restorer extends AppMigrator {
   importedCollections: string[] = [];
 
   async restore(backupFilePath: string) {
+    const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
+    const filePath = path.isAbsolute(backupFilePath) ? backupFilePath : path.resolve(dirname, backupFilePath);
+
     const results = await inquirer.prompt([
       {
         type: 'confirm',
@@ -26,7 +29,7 @@ export class Restorer extends AppMigrator {
       return;
     }
 
-    await this.decompressBackup(backupFilePath);
+    await this.decompressBackup(filePath);
     await this.importCollections();
     await this.clearWorkDir();
   }
