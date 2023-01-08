@@ -43,8 +43,11 @@ export class PluginManager {
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
 
-    this.app.acl.allow('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
-    this.app.acl.allow('applicationPlugins', 'list', 'allowConfigure');
+    this.app.acl.registerSnippet({
+      name: 'pm',
+      actions: ['pm:*', 'applicationPlugins:list'],
+    });
+
     this.server = net.createServer((socket) => {
       socket.on('data', async (data) => {
         const { method, plugins } = JSON.parse(data.toString());
@@ -252,21 +255,6 @@ export class PluginManager {
           },
         },
       });
-    }
-    const file = resolve(
-      process.cwd(),
-      'packages',
-      process.env.APP_PACKAGE_ROOT || 'app',
-      'client/src/plugins',
-      `${plugin}.ts`,
-    );
-    if (!fs.existsSync(file)) {
-      try {
-        require.resolve(`${packageName}/client`);
-        await fs.promises.writeFile(file, `export { default } from '${packageName}/client';`);
-        const { run } = require('@nocobase/cli/src/util');
-        await run('yarn', ['nocobase', 'postinstall']);
-      } catch (error) {}
     }
     return instance;
   }

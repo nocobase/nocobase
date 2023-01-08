@@ -15,7 +15,7 @@ export default function (props) {
             title: t('OIDC manager'),
             icon: 'FileOutlined',
             tabs: {
-              storages: {
+              providers: {
                 title: t('OIDC Providers'),
                 component: OIDCPanel,
               },

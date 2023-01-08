@@ -26,6 +26,29 @@ export class UiSchemaStoragePlugin extends Plugin {
 
     this.registerRepository();
 
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.block-templates`,
+      actions: ['uiSchemaTemplates:*'],
+    });
+
+    this.app.acl.registerSnippet({
+      name: 'ui.uiSchemas',
+      actions: [
+        'uiSchemas:insert',
+        'uiSchemas:insertNewSchema',
+        'uiSchemas:remove',
+        'uiSchemas:patch',
+        'uiSchemas:batchPatch',
+        'uiSchemas:clearAncestor',
+        'uiSchemas:insertBeforeBegin',
+        'uiSchemas:insertAfterBegin',
+        'uiSchemas:insertBeforeEnd',
+        'uiSchemas:insertAfterEnd',
+        'uiSchemas:insertAdjacent',
+        'uiSchemas:saveAsTemplate',
+      ],
+    });
+
     db.on('uiSchemas.beforeCreate', function setUid(model) {
       if (!model.get('name')) {
         model.set('name', uid());
@@ -61,8 +84,8 @@ export class UiSchemaStoragePlugin extends Plugin {
       actions: uiSchemaActions,
     });
 
-    this.app.acl.allow('uiSchemas', '*', 'loggedIn');
-    this.app.acl.allow('uiSchemaTemplates', '*', 'loggedIn');
+    this.app.acl.allow('uiSchemas', ['getProperties', 'getJsonSchema'], 'loggedIn');
+    this.app.acl.allow('uiSchemaTemplates', ['get', 'list'], 'loggedIn');
   }
 
   async load() {

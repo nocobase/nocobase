@@ -2,10 +2,11 @@ import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '../../api-client';
 import { SchemaComponent } from '../../schema-component';
-import { roleSchema } from './schemas/roles';
 import { MenuItemsProvider } from '../Configuration/MenuItemsProvider';
+import { PermissionProvider, SettingCenterPermissionProvider } from '../Configuration/PermisionProvider';
+import { roleSchema } from './schemas/roles';
 
-const AvailableActionsContext = createContext(null);
+const AvailableActionsContext = createContext([]);
 
 const AvailableActionsProver: React.FC = (props) => {
   const { data, loading } = useRequest({
@@ -26,7 +27,7 @@ export const RoleTable = () => {
   return (
     <div>
       <AvailableActionsProver>
-        <SchemaComponent schema={roleSchema} components={{ MenuItemsProvider }} />
+        <SchemaComponent schema={roleSchema} components={{ MenuItemsProvider, SettingCenterPermissionProvider,PermissionProvider }} />
       </AvailableActionsProver>
     </div>
   );

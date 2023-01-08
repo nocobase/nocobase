@@ -18,7 +18,7 @@ import { ImportStatus } from './ImportModal';
 
 const useImportSchema = (s: Schema) => {
   let schema = s;
-  while (schema && schema['x-action'] !== 'import') {
+  while (schema && schema['x-action'] !== 'importXlsx') {
     schema = schema.parent;
   }
   return { schema };

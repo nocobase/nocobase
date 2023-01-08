@@ -46,6 +46,10 @@ export function dataWrapping() {
         ctx.body = {
           data: ctx.body,
         };
+
+        if (ctx.bodyMeta) {
+          ctx.body.meta = ctx.bodyMeta;
+        }
       }
     } else if (ctx.action) {
       ctx.body = {
