@@ -356,7 +356,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
    * @param name
    */
   getCollection(name: string): Collection {
-    return this.collections.get(name);
+    const [collectionName, associationName] = name.split('.');
+    let collection = this.collections.get(collectionName);
+
+    if (associationName) {
+      const target = collection.getField(associationName)?.target;
+      return target ? this.collections.get(target) : null;
+    }
+
+    return collection;
   }
 
   hasCollection(name: string): boolean {

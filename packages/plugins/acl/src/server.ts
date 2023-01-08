@@ -136,7 +136,6 @@ export class PluginACL extends Plugin {
   }
 
   async beforeLoad() {
-
     this.db.addMigrations({
       namespace: this.name,
       directory: resolve(__dirname, './migrations'),
@@ -581,175 +580,179 @@ export class PluginACL extends Plugin {
       },
     );
 
+    const withACLMeta = async (ctx: any, next) => {
+      await next();
+
+      if (!ctx.action) {
+        return;
+      }
+
+      const { resourceName, actionName } = ctx.action;
+
+      if (!ctx.get('X-With-ACL-Meta')) {
+        return;
+      }
+
+      const collection = ctx.db.getCollection(resourceName);
+
+      if (!collection) {
+        return;
+      }
+
+      if (ctx.status !== 200) {
+        return;
+      }
+
+      if (!['list', 'get'].includes(actionName)) {
+        return;
+      }
+
+      const Model = collection.model;
+
+      const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
+
+      const dataPath = ctx.body?.rows ? 'body.rows' : 'body';
+      let listData = lodash.get(ctx, dataPath);
+
+      if (actionName == 'get') {
+        listData = lodash.castArray(listData);
+      }
+
+      const actions = ['view', 'update', 'destroy'];
+
+      const actionsParams = [];
+
+      for (const action of actions) {
+        const actionCtx: any = {
+          db: ctx.db,
+          action: {
+            actionName: action,
+            name: action,
+            params: {},
+            resourceName: ctx.action.resourceName,
+            resourceOf: ctx.action.resourceOf,
+            mergeParams() {},
+          },
+          state: {
+            currentRole: ctx.state.currentRole,
+            currentUser: (() => {
+              if (!ctx.state.currentUser) {
+                return null;
+              }
+              if (ctx.state.currentUser.toJSON) {
+                return ctx.state.currentUser?.toJSON();
+              }
+
+              return ctx.state.currentUser;
+            })(),
+          },
+          permission: {},
+          throw(...args) {
+            throw new NoPermissionError(...args);
+          },
+        };
+
+        try {
+          await this.app.acl.getActionParams(actionCtx);
+        } catch (e) {
+          if (e instanceof NoPermissionError) {
+            continue;
+          }
+
+          throw e;
+        }
+
+        actionsParams.push([
+          action,
+          actionCtx.permission?.can === null && !actionCtx.permission.skip
+            ? null
+            : actionCtx.permission?.parsedParams || {},
+        ]);
+      }
+
+      const ids = listData.map((item) => item[primaryKeyField]);
+
+      const conditions = [];
+
+      const allAllowed = [];
+
+      for (const [action, params] of actionsParams) {
+        if (!params) {
+          continue;
+        }
+
+        if (lodash.isEmpty(params) || lodash.isEmpty(params.filter)) {
+          allAllowed.push(action);
+          continue;
+        }
+
+        const queryParams = collection.repository.buildQueryOptions(params);
+
+        const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
+          Model.getTableName(),
+          {
+            // ...queryParams,
+            where: queryParams.where,
+            attributes: [primaryKeyField],
+            includeIgnoreAttributes: false,
+            // include: queryParams.include,
+          },
+          Model,
+        );
+
+        const whereCase = actionSql.match(/WHERE (.*?);/)[1];
+        conditions.push({
+          whereCase,
+          action,
+          include: queryParams.include,
+        });
+      }
+
+      const results = await collection.model.findAll({
+        where: {
+          [primaryKeyField]: ids,
+        },
+        attributes: [
+          primaryKeyField,
+          ...conditions.map((condition) => {
+            return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
+          }),
+        ],
+        include: conditions.map((condition) => condition.include).flat(),
+      });
+
+      const allowedActions = actions
+        .map((action) => {
+          if (allAllowed.includes(action)) {
+            return [action, ids];
+          }
+
+          return [action, results.filter((item) => Boolean(item.get(action))).map((item) => item.get(primaryKeyField))];
+        })
+        .reduce((acc, [action, ids]) => {
+          acc[action] = ids;
+          return acc;
+        }, {});
+
+      if (actionName == 'get') {
+        ctx.bodyMeta = {
+          ...(ctx.bodyMeta || {}),
+          allowedActions: allowedActions,
+        };
+      }
+
+      if (actionName == 'list') {
+        ctx.body.allowedActions = allowedActions;
+      }
+    };
+
     // append allowedActions to list & get response
     this.app.use(
-      async (ctx: any, next) => {
-        await next();
-
-        if (!ctx.action) {
-          return;
-        }
-
-        const { resourceName, actionName } = ctx.action;
-
-        if (!ctx.get('X-With-ACL-Meta')) {
-          return;
-        }
-
-        const collection = ctx.db.getRepository(resourceName)?.collection;
-
-        if (!collection) {
-          return;
-        }
-
-        if (ctx.status !== 200) {
-          return;
-        }
-
-        if (!['list', 'get'].includes(actionName)) {
-          return;
-        }
-
-        const Model = collection.model;
-        const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
-
-        const dataPath = ctx.body?.rows ? 'body.rows' : 'body';
-        let listData = lodash.get(ctx, dataPath);
-
-        if (actionName == 'get') {
-          listData = lodash.castArray(listData);
-        }
-
-        const actions = ['view', 'update', 'destroy'];
-
-        const actionsParams = [];
-
-        for (const action of actions) {
-          const actionCtx: any = {
-            db: ctx.db,
-            action: {
-              actionName: action,
-              name: action,
-              params: {},
-              resourceName: ctx.action.resourceName,
-              resourceOf: ctx.action.resourceOf,
-              mergeParams() {},
-            },
-            state: {
-              currentRole: ctx.state.currentRole,
-              currentUser: (() => {
-                if (!ctx.state.currentUser) {
-                  return null;
-                }
-                if (ctx.state.currentUser.toJSON) {
-                  return ctx.state.currentUser?.toJSON();
-                }
-
-                return ctx.state.currentUser;
-              })(),
-            },
-            permission: {},
-            throw(...args) {
-              throw new NoPermissionError(...args);
-            },
-          };
-
-          try {
-            await this.app.acl.getActionParams(actionCtx);
-          } catch (e) {
-            if (e instanceof NoPermissionError) {
-              continue;
-            }
-
-            throw e;
-          }
-
-          actionsParams.push([
-            action,
-            actionCtx.permission?.can === null && !actionCtx.permission.skip
-              ? null
-              : actionCtx.permission?.parsedParams || {},
-          ]);
-        }
-
-        const ids = listData.map((item) => item[primaryKeyField]);
-
-        const conditions = [];
-
-        const allAllowed = [];
-
-        for (const [action, params] of actionsParams) {
-          if (!params) {
-            continue;
-          }
-
-          if (lodash.isEmpty(params) || lodash.isEmpty(params.filter)) {
-            allAllowed.push(action);
-            continue;
-          }
-
-          const queryParams = collection.repository.buildQueryOptions(params);
-
-          // console.log(JSON.stringify(queryParams, null, 2));
-
-          const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
-            Model.getTableName(),
-            {
-              // ...queryParams,
-              where: queryParams.where,
-              attributes: [primaryKeyField],
-              includeIgnoreAttributes: false,
-              // include: queryParams.include,
-            },
-            Model,
-          );
-
-          const whereCase = actionSql.match(/WHERE (.*?);/)[1];
-          conditions.push({
-            whereCase,
-            action,
-            include: queryParams.include,
-          });
-        }
-
-        const results = await collection.model.findAll({
-          where: {
-            [primaryKeyField]: ids,
-          },
-          attributes: [
-            primaryKeyField,
-            ...conditions.map((condition) => {
-              return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
-            }),
-          ],
-          include: conditions.map((condition) => condition.include).flat(),
-        });
-
-        const allowedActions = actions
-          .map((action) => {
-            if (allAllowed.includes(action)) {
-              return [action, ids];
-            }
-
-            return [
-              action,
-              results.filter((item) => Boolean(item.get(action))).map((item) => item.get(primaryKeyField)),
-            ];
-          })
-          .reduce((acc, [action, ids]) => {
-            acc[action] = ids;
-            return acc;
-          }, {});
-
-        if (actionName == 'get') {
-          ctx.bodyMeta = {
-            ...(ctx.bodyMeta || {}),
-            allowedActions: allowedActions,
-          };
-        }
-
-        if (actionName == 'list') {
-          ctx.body.allowedActions = allowedActions;
+      async (ctx, next) => {
+        try {
+          await withACLMeta(ctx, next);
+        } catch (error) {
+          ctx.logger.error(error);
         }
       },
       { after: 'restApi', group: 'after' },
