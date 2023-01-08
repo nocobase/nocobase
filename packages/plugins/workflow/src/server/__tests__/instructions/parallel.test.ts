@@ -359,8 +359,8 @@ describe('workflow > instructions > parallel', () => {
       });
 
       const n2 = await workflow.createNode({
-        title: 'prompt',
-        type: 'prompt',
+        title: 'manual',
+        type: 'manual',
         upstreamId: n1.id,
         branchIndex: 0
       });

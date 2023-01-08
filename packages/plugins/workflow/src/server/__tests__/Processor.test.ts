@@ -134,7 +134,7 @@ describe('workflow > Processor', () => {
   describe('manual nodes', () => {
     it('manual node should suspend execution, and could be manually resume', async () => {
       const n1 = await workflow.createNode({
-        type: 'prompt',
+        type: 'manual',
       });
 
       const n2 = await workflow.createNode({
@@ -245,7 +245,7 @@ describe('workflow > Processor', () => {
       });
 
       const n2 = await workflow.createNode({
-        type: 'prompt',
+        type: 'manual',
         branchIndex: BRANCH_INDEX.ON_TRUE,
         upstreamId: n1.id
       });
@@ -328,7 +328,7 @@ describe('workflow > Processor', () => {
       });
 
       const n3 = await workflow.createNode({
-        type: 'prompt',
+        type: 'manual',
         upstreamId: n2.id,
         branchIndex: 0
       });
@@ -376,7 +376,7 @@ describe('workflow > Processor', () => {
       });
 
       const n2 = await workflow.createNode({
-        type: 'prompt',
+        type: 'manual',
         upstreamId: n1.id,
         branchIndex: 0
       });
