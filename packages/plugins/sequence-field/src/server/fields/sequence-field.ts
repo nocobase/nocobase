@@ -6,13 +6,23 @@ import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from
 import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
 
-
 export interface Pattern {
   validate?(options): string | null;
-  generate(this: SequenceField, instance: Model, opts: { [key: string]: any }, options: Transactionable): Promise<string> | string;
+  generate(
+    this: SequenceField,
+    instance: Model,
+    opts: { [key: string]: any },
+    options: Transactionable,
+  ): Promise<string> | string;
   getLength(options): number;
   getMatcher(options): string;
-  update?(this: SequenceField, instance: Model, value: string, options, transactionable: Transactionable): Promise<void>;
+  update?(
+    this: SequenceField,
+    instance: Model,
+    value: string,
+    options,
+    transactionable: Transactionable,
+  ): Promise<void>;
 }
 
 export const sequencePatterns = new Registry<Pattern>();
@@ -32,7 +42,7 @@ sequencePatterns.register('string', {
   },
   getMatcher(options) {
     return escapeRegExp(options.value);
-  }
+  },
 });
 
 sequencePatterns.register('integer', {
@@ -51,9 +61,9 @@ sequencePatterns.register('integer', {
       filter: {
         collection: this.collection.name,
         field: this.name,
-        key
+        key,
       },
-      transaction
+      transaction,
     });
 
     let next;
@@ -86,9 +96,9 @@ sequencePatterns.register('integer', {
           field: this.name,
           key,
           current: next,
-          lastGeneratedAt: recordTime
+          lastGeneratedAt: recordTime,
         },
-        transaction
+        transaction,
       });
     }
 
@@ -113,9 +123,9 @@ sequencePatterns.register('integer', {
       filter: {
         collection: this.collection.name,
         field: this.name,
-        key
+        key,
       },
-      transaction
+      transaction,
     });
     const current = Number.parseInt(value, base);
     if (!lastSeq) {
@@ -125,16 +135,19 @@ sequencePatterns.register('integer', {
           field: this.name,
           key,
           current,
-          lastGeneratedAt: recordTime
+          lastGeneratedAt: recordTime,
         },
-        transaction
+        transaction,
       });
     }
     if (lastSeq.get('current') == null) {
-      return lastSeq.update({
-        current,
-        lastGeneratedAt: recordTime
-      }, { transaction });
+      return lastSeq.update(
+        {
+          current,
+          lastGeneratedAt: recordTime,
+        },
+        { transaction },
+      );
     }
 
     if (cycle) {
@@ -143,13 +156,13 @@ sequencePatterns.register('integer', {
       if (recordTime.getTime() >= nextTime.getTime()) {
         lastSeq.set({
           current,
-          lastGeneratedAt: recordTime
+          lastGeneratedAt: recordTime,
         });
       } else {
         if (current > lastSeq.get('current')) {
           lastSeq.set({
             current,
-            lastGeneratedAt: recordTime
+            lastGeneratedAt: recordTime,
           });
         }
       }
@@ -157,13 +170,13 @@ sequencePatterns.register('integer', {
       if (current > lastSeq.get('current')) {
         lastSeq.set({
           current,
-          lastGeneratedAt: recordTime
+          lastGeneratedAt: recordTime,
         });
       }
     }
 
     return lastSeq.save({ transaction });
-  }
+  },
 });
 
 sequencePatterns.register('date', {
@@ -175,7 +188,7 @@ sequencePatterns.register('date', {
   },
   getMatcher(options = {}) {
     return `.{${options?.format?.length ?? 8}}`;
-  }
+  },
 });
 
 interface PatternConfig {
@@ -185,7 +198,7 @@ interface PatternConfig {
 }
 export interface SequenceFieldOptions extends BaseColumnFieldOptions {
   type: 'sequence';
-  patterns: PatternConfig[]
+  patterns: PatternConfig[];
 }
 
 export class SequenceField extends Field {
@@ -200,7 +213,7 @@ export class SequenceField extends Field {
     if (!options.patterns || !options.patterns.length) {
       throw new Error('at least one pattern should be defined for sequence type');
     }
-    options.patterns.forEach(pattern => {
+    options.patterns.forEach((pattern) => {
       const P = sequencePatterns.get(pattern.type);
       if (!P) {
         throw new Error(`pattern type ${pattern.type} is not registered`);
@@ -213,9 +226,8 @@ export class SequenceField extends Field {
       }
     });
 
-    const patterns = options.patterns
-      .map(({ type, options }) => sequencePatterns.get(type).getMatcher(options));
-    this.matcher = new RegExp(`^${patterns.map(p => `(${p})`).join('')}$`, 'i');
+    const patterns = options.patterns.map(({ type, options }) => sequencePatterns.get(type).getMatcher(options));
+    this.matcher = new RegExp(`^${patterns.map((p) => `(${p})`).join('')}$`, 'i');
   }
 
   validate = (instance: Model) => {
@@ -232,7 +244,7 @@ export class SequenceField extends Field {
           'sequence_pattern_not_match',
           name,
           [],
-        )
+        ),
       ]);
     }
   };
@@ -244,10 +256,14 @@ export class SequenceField extends Field {
       return this.update(instance, options);
     }
 
-    const results = await patterns.reduce((promise, p, i) => promise.then(async (result) => {
-      const item = await (sequencePatterns.get(p.type)).generate.call(this, instance, p.options, options);
-      return result.concat(item);
-    }), Promise.resolve([]));
+    const results = await patterns.reduce(
+      (promise, p, i) =>
+        promise.then(async (result) => {
+          const item = await sequencePatterns.get(p.type).generate.call(this, instance, p.options, options);
+          return result.concat(item);
+        }),
+      Promise.resolve([]),
+    );
     instance.set(name, results.join(''));
   };
 
@@ -259,14 +275,19 @@ export class SequenceField extends Field {
     const { name, patterns } = this.options;
     const matched = this.match(instance.get(name));
     if (matched) {
-      await (matched.slice(1)
+      await matched
+        .slice(1)
         .map((_, i) => sequencePatterns.get(patterns[i].type).update)
-        .reduce((promise, update, i) => promise.then(() => {
-          if (!update) {
-            return;
-          }
-          return update.call(this, instance, matched[i + 1], patterns[i].options, options)
-        }), Promise.resolve()));
+        .reduce(
+          (promise, update, i) =>
+            promise.then(() => {
+              if (!update) {
+                return;
+              }
+              return update.call(this, instance, matched[i + 1], patterns[i].options, options);
+            }),
+          Promise.resolve(),
+        );
     }
   }
 

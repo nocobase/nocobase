@@ -4,32 +4,37 @@ import { css } from '@emotion/css';
 import { SchemaSettings } from '../../../schema-settings';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks';
-import { useGridContext } from '../grid';
 import { useRecord } from '../../../record-provider';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
 
 const FixedBlockContext = React.createContext({
   setFixedSchema: (schema: Schema) => {},
   height: 0,
-  schema: {} as unknown as Schema,
+  fixedSchemaRef: {} as unknown as React.MutableRefObject<Schema>,
 });
 
 export const useFixedSchema = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { setFixedSchema } = useFixedBlock();
+  const { setFixedSchema, fixedSchemaRef } = useFixedBlock();
+  const { fieldSchema: templateFieldSchema } = useBlockTemplateContext();
   const hasSet = useRef(false);
 
   useEffect(() => {
     if (fieldSchema?.['x-decorator-props']?.fixedBlock) {
-      setFixedSchema(fieldSchema);
+      const nextSchema = templateFieldSchema || fieldSchema;
+      setFixedSchema(nextSchema);
       hasSet.current = true;
+    } else if (hasSet.current) {
+      setFixedSchema(null);
     }
   }, [field?.decoratorProps?.fixedBlock, fieldSchema?.['x-decorator-props']?.fixedBlock]);
 
   useEffect(
     () => () => {
-      if (hasSet.current) {
+      if (hasSet.current && fixedSchemaRef.current) {
         setFixedSchema(null);
+        fixedSchemaRef.current = null;
       }
     },
     [],
@@ -54,16 +59,19 @@ export const useFixedBlockDesignerSetting = () => {
     return (
       <SchemaSettings.SwitchItem
         title={t('Fix block')}
-        checked={fieldSchema['x-decorator-props']?.['fixedBlock']}
-        onChange={(fixedBlock) => {
-          field.decoratorProps.fixedBlock = fixedBlock;
-          fieldSchema['x-decorator-props'].fixedBlock = fixedBlock;
-          dn.emit('patch', {
+        checked={fieldSchema['x-decorator-props']?.fixedBlock}
+        onChange={async (fixedBlock) => {
+          const decoratorProps = {
+            ...fieldSchema['x-decorator-props'],
+            fixedBlock,
+          };
+          await dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
-              'x-decorator-props': fieldSchema['x-decorator-props'],
+              'x-decorator-props': decoratorProps,
             },
           });
+          field.decoratorProps = fieldSchema['x-decorator-props'] = decoratorProps;
         }}
       />
     );
@@ -76,14 +84,22 @@ interface FixedBlockProps {
 
 const FixedBlock: React.FC<FixedBlockProps> = (props) => {
   const { height } = props;
-  const [fixedSchema, setFixedSchema] = useState<Schema>();
+  const [fixedSchema, _setFixedSchema] = useState<Schema>();
+  const fixedSchemaRef = useRef(fixedSchema);
+
+  const setFixedSchema = (next) => {
+    if (fixedSchema && next) {
+      fixedSchemaRef.current = next;
+    }
+    _setFixedSchema(next);
+  };
+
   const schema = useMemo<Schema>(() => {
-    if (!fixedSchema || fixedSchema['x-decorator-props']?.fixedBlock !== true) return;
-    return fixedSchema.parent;
-  }, [fixedSchema, fixedSchema?.['x-decorator-props']['fixedBlock']]);
+    return fixedSchema?.parent;
+  }, [fixedSchema]);
 
   return (
-    <FixedBlockContext.Provider value={{ schema: fixedSchema, height, setFixedSchema }}>
+    <FixedBlockContext.Provider value={{ height, setFixedSchema, fixedSchemaRef }}>
       {schema ? (
         <div
           className={css`
