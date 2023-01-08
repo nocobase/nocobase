@@ -25,8 +25,8 @@ describe('actions', () => {
     pluginUser = app.getPlugin('users');
     adminUser = await db.getRepository('users').findOne({
       filter: {
-        email: process.env.INIT_ROOT_EMAIL
-      }
+        email: process.env.INIT_ROOT_EMAIL,
+      },
     });
 
     agent = app.agent();
@@ -67,16 +67,16 @@ describe('actions', () => {
     const res1 = await agent.resource('users').updateProfile({
       filterByTk: adminUser.id,
       values: {
-        nickname: 'a'
-      }
+        nickname: 'a',
+      },
     });
     expect(res1.status).toBe(401);
 
     const res2 = await adminAgent.resource('users').updateProfile({
       filterByTk: adminUser.id,
       values: {
-        nickname: 'a'
-      }
+        nickname: 'a',
+      },
     });
     expect(res2.status).toBe(200);
   });

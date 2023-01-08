@@ -23,7 +23,7 @@ describe('configuration', () => {
     await db.getRepository('roles').create({
       values: {
         name: 'test1',
-        allowConfigure: true,
+        snippets: ['pm.*'],
       },
     });
 
@@ -36,23 +36,29 @@ describe('configuration', () => {
     const UserRepo = db.getCollection('users').repository;
     admin = await UserRepo.create({
       values: {
-        roles: ['test1']
-      }
+        roles: ['test1'],
+      },
     });
     user = await UserRepo.create({
       values: {
-        roles: ['test2']
-      }
+        roles: ['test2'],
+      },
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().auth(userPlugin.jwtService.sign({
-      userId: admin.get('id'),
-    }), { type: 'bearer' });
+    adminAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: admin.get('id'),
+      }),
+      { type: 'bearer' },
+    );
 
-    userAgent = app.agent().auth(userPlugin.jwtService.sign({
-      userId: user.get('id'),
-    }), { type: 'bearer' });
+    userAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: user.get('id'),
+      }),
+      { type: 'bearer' },
+    );
 
     guestAgent = app.agent();
   });

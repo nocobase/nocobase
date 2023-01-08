@@ -222,6 +222,7 @@ export const scopesSchema: ISchema = {
                               type: 'void',
                               title: '{{ t("Edit") }}',
                               'x-action': 'update',
+                              'x-decorator': 'ACLActionProvider',
                               'x-component': 'Action.Link',
                               'x-component-props': {
                                 openMode: 'drawer',
@@ -308,6 +309,7 @@ export const scopesSchema: ISchema = {
                             destroy: {
                               title: '{{ t("Delete") }}',
                               'x-action': 'destroy',
+                              'x-decorator': 'ACLActionProvider',
                               'x-component': 'Action.Link',
                               'x-designer': 'Action.Designer',
                               'x-component-props': {

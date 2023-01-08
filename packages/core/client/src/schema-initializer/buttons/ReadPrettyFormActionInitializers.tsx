@@ -108,6 +108,7 @@ export const ReadPrettyFormActionInitializers = {
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-action': 'customize:update',
+            'x-decorator': 'ACLActionProvider',
             'x-acl-action': 'update',
             'x-action-settings': {
               assignedValues: {},

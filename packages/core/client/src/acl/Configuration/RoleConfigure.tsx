@@ -1,31 +1,81 @@
 import { onFieldChange } from '@formily/core';
-import { message } from 'antd';
-import React from 'react';
+import { connect } from '@formily/react';
+import { Checkbox } from 'antd';
+import uniq from 'lodash/uniq';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useRecord } from '../../record-provider';
 import { SchemaComponent } from '../../schema-component';
+import { PermissionContext } from './PermisionProvider';
+
+const SnippetCheckboxGroup = connect((props) => {
+  const { t } = useTranslation();
+  return (
+    <Checkbox.Group
+      style={{
+        width: '100%',
+      }}
+      value={props.value}
+      onChange={(values) => {
+        const value = uniq([...(props.value || []), ...values])
+          .filter((key) => key && !['!ui.*', '!pm', '!pm.*'].includes(key))
+          .map((key) => {
+            if (!['ui.*', 'pm', 'pm.*'].includes(key)) {
+              return key;
+            }
+            if (values?.includes(key)) {
+              return key;
+            }
+            return `!${key}`;
+          });
+        for (const key of ['ui.*', 'pm', 'pm.*']) {
+          if (!value.includes(key) && !value.includes(`!${key}`)) {
+            value.push(`!${key}`);
+          }
+        }
+        props.onChange(value);
+      }}
+    >
+      <div style={{ marginTop: 16 }}>
+        <Checkbox value="ui.*">{t('Allows to configure interface')}</Checkbox>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <Checkbox value="pm">{t('Allows to install, activate, disable plugins')}</Checkbox>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <Checkbox value="pm.*">{t('Allows to configure plugins')}</Checkbox>
+      </div>
+    </Checkbox.Group>
+  );
+});
 
 export const RoleConfigure = () => {
-  const api = useAPIClient();
-  const record = useRecord();
+  const { update, currentRecord } = useContext(PermissionContext);
   const { t } = useTranslation();
   return (
     <SchemaComponent
+      components={{ SnippetCheckboxGroup }}
       schema={{
         type: 'void',
         name: 'form',
         'x-component': 'Form',
         'x-component-props': {
           useValues: (options) => {
+            const api = useAPIClient();
             return useRequest(
-              {
-                resource: 'roles',
-                action: 'get',
-                params: {
-                  filterByTk: record.name,
-                },
-              },
+              () =>
+                api
+                  .resource('roles')
+                  .get({
+                    filterByTk: currentRecord.name,
+                  })
+                  .then((res) => {
+                    const record = res?.data?.data;
+                    record.snippets?.forEach((key) => {
+                      record[key] = true;
+                    });
+                    return { data: record };
+                  }),
               options,
             );
           },
@@ -34,24 +84,22 @@ export const RoleConfigure = () => {
               if (!form.modified) {
                 return;
               }
-              await api.resource('roles').update({
-                filterByTk: record.name,
-                values: form.values,
-              });
-              message.success(t('Saved successfully'));
+              await update(field, form);
             });
           },
         },
         properties: {
-          allowConfigure: {
+          snippets: {
             title: t('Configure permissions'),
+            type: 'boolean',
             'x-decorator': 'FormItem',
-            'x-component': 'Checkbox',
-            'x-content': t('Allows configuration of the whole system, including UI, collections, permissions, etc.'),
+            'x-component': 'SnippetCheckboxGroup',
           },
           'strategy.actions': {
             title: t('Global action permissions'),
-            description: t('All collections use general action permissions by default; permission configured individually will override the default one.'),
+            description: t(
+              'All collections use general action permissions by default; permission configured individually will override the default one.',
+            ),
             'x-component': 'StrategyActions',
             'x-decorator': 'FormItem',
           },

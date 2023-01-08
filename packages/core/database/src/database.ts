@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,7 +58,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener,
+  ValidateListener
 } from './types';
 
 export interface MergeOptions extends merge.Options {}
@@ -356,7 +356,19 @@ export class Database extends EventEmitter implements AsyncEmitter {
    * @param name
    */
   getCollection(name: string): Collection {
-    return this.collections.get(name);
+    if (!name) {
+      return null;
+    }
+
+    const [collectionName, associationName] = name.split('.');
+    let collection = this.collections.get(collectionName);
+
+    if (associationName) {
+      const target = collection.getField(associationName)?.target;
+      return target ? this.collections.get(target) : null;
+    }
+
+    return collection;
   }
 
   hasCollection(name: string): boolean {
@@ -389,11 +401,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   getRepository<R extends ArrayFieldRepository>(name: string, relationId: string | number): R;
 
   getRepository<R extends RelationRepository>(name: string, relationId?: string | number): Repository | R {
-    if (relationId) {
-      const [collection, relation] = name.split('.');
+    const [collection, relation] = name.split('.');
+    if (relation) {
       return this.getRepository(collection)?.relation(relation)?.of(relationId) as R;
     }
-
     return this.getCollection(name)?.repository;
   }
 

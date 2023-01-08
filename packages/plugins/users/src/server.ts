@@ -92,6 +92,22 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
     this.app.resourcer.use(parseToken, { tag: 'parseToken' });
 
+    this.app.acl.addFixedParams('users', 'destroy', () => {
+      return {
+        filter: {
+          'id.$ne': 1,
+        },
+      };
+    });
+
+    this.app.acl.addFixedParams('collections', 'destroy', () => {
+      return {
+        filter: {
+          'name.$ne': 'users',
+        },
+      };
+    });
+
     const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
     const loggedInActions = ['signout', 'updateProfile', 'changePassword'];
 
