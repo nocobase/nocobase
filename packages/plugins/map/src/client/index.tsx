@@ -2,7 +2,7 @@ import {
   CollectionManagerContext,
   CurrentAppInfoProvider,
   SchemaComponentOptions,
-  SettingsCenterProvider,
+  SettingsCenterProvider
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import Configuration from './components/Configuration';
@@ -19,7 +19,7 @@ export default React.memo((props) => {
       <Initialize>
         <SettingsCenterProvider
           settings={{
-            'map-configuration': {
+            map: {
               title: t('Map Manager'),
               icon: 'EnvironmentOutlined',
               tabs: {

@@ -280,7 +280,7 @@ export const roleSchema: ISchema = {
                                 },
                                 tab4: {
                                   type: 'void',
-                                  title: '{{t("Plugin permissions")}}',
+                                  title: '{{t("Plugin settings permissions")}}',
                                   'x-decorator': 'SettingCenterPermissionProvider',
                                   'x-component': 'Tabs.TabPane',
                                   'x-component-props': {},
