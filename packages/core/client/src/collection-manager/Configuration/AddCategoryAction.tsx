@@ -1,7 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { Button } from 'antd';
 import React, { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
@@ -14,7 +13,7 @@ import { CollectionCategroriesContext } from '../context';
 const useCreateCategry = () => {
   const form = useForm();
   const ctx = useActionContext();
-  const CategroriesCtx = useContext(CollectionCategroriesContext);
+  const { refresh } = useContext(CollectionCategroriesContext);
   const api = useAPIClient();
   return {
     async run() {
@@ -27,7 +26,7 @@ const useCreateCategry = () => {
       });
       ctx.setVisible(false);
       await form.reset();
-      await CategroriesCtx.refresh();
+      await refresh();
     },
   };
 };
@@ -42,9 +41,9 @@ export const AddCategoryAction = (props) => {
   const { t } = useTranslation();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
-      <Button type="text" onClick={() => setVisible(true)} title={t('Add category')}>
+      <div  onClick={() => setVisible(true)} title={t('Add category')}>
         {children || <PlusOutlined />}
-      </Button>
+      </div>
       <SchemaComponent
         schema={collectionCategorySchema}
         components={{ ...components }}

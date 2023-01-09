@@ -79,6 +79,7 @@ export const CollectionCategroriesProvider = (props) => {
     url: 'collection_categories:list',
     params: {
       paginate: false,
+      sort:['sort']
     },
   }
   const result = useRequest(options);

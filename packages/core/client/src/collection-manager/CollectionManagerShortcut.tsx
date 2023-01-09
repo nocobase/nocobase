@@ -58,7 +58,7 @@ const schema2: ISchema = {
 
 export const CollectionManagerPane = () => {
   return (
-    <Card bordered={false}>
+    // <Card bordered={false}>
       <SchemaComponent
         schema={schema2}
         components={{
@@ -83,7 +83,7 @@ export const CollectionManagerPane = () => {
           EditCategoryAction,
         }}
       />
-    </Card>
+    // </Card>
   );
 };
 

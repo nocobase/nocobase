@@ -2,19 +2,18 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'collection_categories',
-//   title: '数据表类别',
   autoGenId: true,
-//   filterTargetKey: 'id',
+  sortable: true,
   fields: [
     {
       type: 'string',
       name: 'name',
     },
-    {
-      type: 'integer',
-      name: 'sort',
-      defaultValue: 0,
-    },
+    // {
+    //   type: 'integer',
+    //   name: 'sort',
+    //   defaultValue: 0,
+    // },
     {
       type: 'string',
       name: 'color',
@@ -29,4 +28,3 @@ export default {
     },
   ],
 } as CollectionOptions;
-

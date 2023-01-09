@@ -319,13 +319,6 @@ export const collectionCategorySchema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
-        sort: {
-          type: 'double',
-          title: '{{t("Sort")}}',
-          required: false,
-          'x-decorator': 'FormItem',
-          'x-component': 'InputNumber',
-        },
         color: {
           type: 'string',
           title: '{{t("Color")}}',
@@ -382,13 +375,6 @@ export const collectionCategoryEditSchema: ISchema = {
           'x-disabled': '{{ !createOnly }}',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-        },
-        sort: {
-          type: 'double',
-          title: '{{t("Sort")}}',
-          required: false,
-          'x-decorator': 'FormItem',
-          'x-component': 'InputNumber',
         },
         color: {
           type: 'string',
