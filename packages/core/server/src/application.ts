@@ -45,6 +45,7 @@ export interface ApplicationOptions {
 
 export interface DefaultState extends KoaDefaultState {
   currentUser?: any;
+
   [key: string]: any;
 }
 
@@ -53,6 +54,7 @@ export interface DefaultContext extends KoaDefaultContext {
   cache: Cache;
   resourcer: Resourcer;
   i18n: any;
+
   [key: string]: any;
 }
 

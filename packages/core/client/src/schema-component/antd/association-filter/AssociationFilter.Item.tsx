@@ -3,10 +3,10 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
-import React, { ChangeEvent, MouseEvent, useContext, useState } from 'react';
+import React, { ChangeEvent, MouseEvent, useState } from 'react';
 import { useRequest } from '../../../api-client';
 import { useBlockRequestContext } from '../../../block-provider';
-import { SharedFilterContext } from '../../../block-provider/SharedFilterProvider';
+import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner } from '../../hooks';
 import { AssociationFilter } from './AssociationFilter';
@@ -24,7 +24,6 @@ export const AssociationFilterItem = (props) => {
   const Designer = useDesigner();
   const compile = useCompile();
   const { service } = useBlockRequestContext();
-  const { setSharedFilterStore, sharedFilterStore, getFilterParams } = useContext(SharedFilterContext);
   const [searchVisible, setSearchVisible] = useState(false);
 
   const collectionFieldName = collectionField.name;
@@ -67,31 +66,17 @@ export const AssociationFilterItem = (props) => {
   const onSelect = (selectedKeysValue: React.Key[]) => {
     setSelectedKeys(selectedKeysValue);
 
-    const orList = selectedKeysValue.map((item) => ({
-      [collectionFieldName]: {
-        [valueKey]: {
-          $eq: item,
-        },
-      },
-    }));
+    const filters = service.params?.[1]?.filters || {};
 
-    const newFilter =
-      orList.length > 0
-        ? {
-            $or: orList,
-          }
-        : {};
+    if (selectedKeysValue.length) {
+      filters[`af.${collectionFieldName}`] = {
+        [`${collectionFieldName}.${valueKey}.$in`]: selectedKeysValue,
+      };
+    } else {
+      delete filters[`af.${collectionFieldName}`];
+    }
 
-    const newAssociationFilterStore = {
-      ...sharedFilterStore,
-      [collectionFieldName]: newFilter,
-    };
-
-    setSharedFilterStore(newAssociationFilterStore);
-
-    const paramFilter = getFilterParams(newAssociationFilterStore);
-
-    service.run({ ...service.params?.[0], pageSize: 200, page: 1, filter: paramFilter });
+    service.run({ ...service.params?.[0], pageSize: 200, page: 1, filter: mergeFilter(Object.values(filters)) }, { filters });
   };
 
   const handleSearchToggle = (e: MouseEvent) => {

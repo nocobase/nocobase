@@ -48,7 +48,7 @@ const useTableColumns = () => {
           return (
             <RecordIndexProvider index={index}>
               <RecordProvider record={record}>
-                <RecursionField schema={s} name={index} onlyRenderProperties />
+                <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
               </RecordProvider>
             </RecordIndexProvider>
           );

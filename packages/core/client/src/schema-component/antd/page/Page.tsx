@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { FormDialog, FormLayout } from '@formily/antd';
-import { RecursionField, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { Button, PageHeader as AntdPageHeader, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useContext, useEffect, useState } from 'react';
@@ -246,6 +246,29 @@ export const Page = (props) => {
       <div style={{ margin: 24 }}>
         {loading ? (
           <Spin />
+        ) : !disablePageHeader && enablePageTabs ? (
+          fieldSchema.mapProperties((schema) => {
+            if (schema.name !== activeKey) return null;
+            return (
+              <FixedBlock
+                key={schema.name}
+                height={
+                  // header 46 margin 48
+                  height + 46 + 48
+                }
+              >
+                <SchemaComponent
+                  schema={
+                    new Schema({
+                      properties: {
+                        [schema.name]: schema,
+                      },
+                    })
+                  }
+                />
+              </FixedBlock>
+            );
+          })
         ) : (
           <FixedBlock
             height={
@@ -253,27 +276,17 @@ export const Page = (props) => {
               height + 46 + 48
             }
           >
-            {!disablePageHeader && enablePageTabs ? (
-              <RecursionField
-                schema={fieldSchema}
-                onlyRenderProperties
-                filterProperties={(s) => {
-                  return s.name === activeKey;
-                }}
-              />
-            ) : (
-              <div
-                className={css`
-                  > .nb-grid:not(:last-child) {
-                    > .nb-schema-initializer-button {
-                      display: none;
-                    }
+            <div
+              className={css`
+                > .nb-grid:not(:last-child) {
+                  > .nb-schema-initializer-button {
+                    display: none;
                   }
-                `}
-              >
-                {props.children}
-              </div>
-            )}
+                }
+              `}
+            >
+              {props.children}
+            </div>
           </FixedBlock>
         )}
       </div>

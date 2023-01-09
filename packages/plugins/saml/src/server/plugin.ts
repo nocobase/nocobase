@@ -13,9 +13,7 @@ export class SAMLPlugin extends Plugin {
 
   async load() {
     // 导入 collection
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, './collections'));
 
     // 获取 User 插件
     const userPlugin = this.app.getPlugin<any>('users');
@@ -35,8 +33,12 @@ export class SAMLPlugin extends Plugin {
     });
 
     // 开放访问权限
-    this.app.acl.allow('samlProviders', '*', 'allowConfigure');
-    this.app.acl.allow('saml', '*');
+    this.app.acl.allow('saml', '*', 'public');
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.providers`,
+      actions: ['samlProviders:*'],
+    });
   }
 
   async install(options?: InstallOptions) {}

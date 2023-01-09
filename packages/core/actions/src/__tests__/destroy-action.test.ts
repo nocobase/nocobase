@@ -1,8 +1,8 @@
-import { MockServer, mockServer } from './index';
 import { registerActions } from '@nocobase/actions';
+import { mockServer } from './index';
 
 describe('destroy action', () => {
-  let app: MockServer;
+  let app;
   let Post;
   let Comment;
   let Tag;

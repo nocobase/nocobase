@@ -120,11 +120,11 @@ export const useKanbanBlockContext = () => {
 
 const useDisableCardDrag = () => {
   const ctx = useKanbanBlockContext();
-  const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
+  const { allowAll, allowConfigure, parseAction } = useACLRoleContext();
   if (allowAll || allowConfigure) {
     return false;
   }
-  const result = getActionParams(`${ctx?.props?.resource}:update`, { skipOwnCheck: true });
+  const result = parseAction(`${ctx?.props?.resource}:update`, { ignoreScope: true });
   return !result;
 };
 

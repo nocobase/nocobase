@@ -40,6 +40,9 @@ describe('skip', () => {
         resourceName: 'users',
         actionName: 'login',
       },
+      log: {
+        info() {},
+      },
       app: {
         acl,
       },
@@ -49,6 +52,7 @@ describe('skip', () => {
     const nextFunc = jest.fn();
 
     let skip = false;
+
     acl.allow('users', 'login', (ctx) => {
       return skip;
     });
@@ -75,6 +79,9 @@ describe('skip', () => {
       action: {
         resourceName: 'users',
         actionName: 'login',
+      },
+      log: {
+        info() {},
       },
       app: {
         acl,

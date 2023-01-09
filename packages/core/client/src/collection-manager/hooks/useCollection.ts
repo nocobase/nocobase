@@ -21,8 +21,8 @@ export const useCollection = () => {
     },
     [],
   );
-  const totalFields = unionBy(currentFields?.concat(inheritedFields),'name').filter((v)=>{
-    return !v.isForeignKey
+  const totalFields = unionBy(currentFields?.concat(inheritedFields), 'name').filter((v) => {
+    return !v.isForeignKey;
   });
   return {
     ...collection,
@@ -32,7 +32,14 @@ export const useCollection = () => {
       return fields?.find((field) => field.name === name);
     },
     fields: totalFields,
+    getPrimaryKey: () => {
+      if (collection.targetKey || collection.filterTargetKey) {
+        return collection.targetKey || collection.filterTargetKey;
+      }
+      const field = currentFields.find((field) => field.primaryKey);
+      return field ? field.name : 'id';
+    },
     currentFields,
-    inheritedFields
+    inheritedFields,
   };
 };
