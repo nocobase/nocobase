@@ -419,7 +419,7 @@ export default {
   "General permissions": "General permissions",
   "Global action permissions": "Global action permissions",
   "General action permissions": "General action permissions",
-  "Settings center permissions":"Settings center permissions",
+  "Plugin permissions":"Plugin permissions",
   "Allow to desgin pages":"Allow to desgin pages",
   "Allow to manage plugins":"Allow to manage plugins",
   "Allow to configure plugins":"Allow to configure plugins",
