@@ -6,10 +6,11 @@ import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
+import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
 
@@ -26,27 +27,29 @@ const divWrap = (schema: ISchema) => {
 export const FormItem: any = (props) => {
   const field = useField();
   return (
-    <BlockItem className={'nb-form-item'}>
-      <Item
-        className={`${css`
-          & .ant-space {
-            flex-wrap: wrap;
+    <ACLCollectionFieldProvider>
+      <BlockItem className={'nb-form-item'}>
+        <Item
+          className={`${css`
+            & .ant-space {
+              flex-wrap: wrap;
+            }
+          `}`}
+          {...props}
+          extra={
+            typeof field.description === 'string' ? (
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+                }}
+              />
+            ) : (
+              field.description
+            )
           }
-        `}`}
-        {...props}
-        extra={
-          typeof field.description === 'string' ? (
-            <div
-              dangerouslySetInnerHTML={{
-                __html: HTMLEncode(field.description).split('\n').join('<br/>'),
-              }}
-            />
-          ) : (
-            field.description
-          )
-        }
-      />
-    </BlockItem>
+        />
+      </BlockItem>
+    </ACLCollectionFieldProvider>
   );
 };
 

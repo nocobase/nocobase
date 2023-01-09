@@ -1,6 +1,8 @@
 import { ACL, DefineOptions } from './acl';
-import { AvailableStrategyOptions } from './acl-available-strategy';
+import { ACLAvailableStrategy, AvailableStrategyOptions } from './acl-available-strategy';
 import { ACLResource } from './acl-resource';
+import lodash from 'lodash';
+import minimatch from 'minimatch';
 
 export interface RoleActionParams {
   fields?: string[];
@@ -18,6 +20,7 @@ export interface ResourceActionsOptions {
 export class ACLRole {
   strategy: string | AvailableStrategyOptions;
   resources = new Map<string, ACLResource>();
+  snippets: Set<string> = new Set();
 
   constructor(public acl: ACL, public name: string) {}
 
@@ -27,6 +30,16 @@ export class ACLRole {
 
   public setStrategy(value: string | AvailableStrategyOptions) {
     this.strategy = value;
+  }
+
+  public getStrategy() {
+    if (!this.strategy) {
+      return null;
+    }
+
+    return lodash.isString(this.strategy)
+      ? this.acl.availableStrategy.get(this.strategy)
+      : new ACLAvailableStrategy(this.acl, this.strategy);
   }
 
   public getResourceActionsParams(resourceName: string) {
@@ -67,6 +80,64 @@ export class ACLRole {
     resource.removeAction(actionName);
   }
 
+  public effectiveSnippets(): { allowed: Array<string>; rejected: Array<string> } {
+    const allowedSnippets = new Set<string>();
+    const rejectedSnippets = new Set<string>();
+
+    const availableSnippets = this.acl.snippetManager.snippets;
+
+    for (let snippetRule of this.snippets) {
+      const negated = snippetRule.startsWith('!');
+      snippetRule = negated ? snippetRule.slice(1) : snippetRule;
+
+      for (const [_, availableSnippet] of availableSnippets) {
+        if (minimatch(availableSnippet.name, snippetRule)) {
+          if (negated) {
+            rejectedSnippets.add(availableSnippet.name);
+          } else {
+            allowedSnippets.add(availableSnippet.name);
+          }
+        }
+      }
+    }
+
+    // get difference of allowed and rejected snippets
+    const effectiveSnippets = new Set([...allowedSnippets].filter((x) => !rejectedSnippets.has(x)));
+    return {
+      allowed: [...effectiveSnippets],
+      rejected: [...rejectedSnippets],
+    };
+  }
+
+  public snippetAllowed(actionPath: string) {
+    const effectiveSnippets = this.effectiveSnippets();
+
+    const getActions = (snippets) => {
+      return snippets.map((snippetName) => this.acl.snippetManager.snippets.get(snippetName).actions).flat();
+    };
+
+    const allowedActions = getActions(effectiveSnippets.allowed);
+    const rejectedActions = getActions(effectiveSnippets.rejected);
+
+    const actionMatched = (actionPath, actionRule) => {
+      return minimatch(actionPath, actionRule);
+    };
+
+    for (const action of allowedActions) {
+      if (actionMatched(actionPath, action)) {
+        return true;
+      }
+    }
+
+    for (const action of rejectedActions) {
+      if (actionMatched(actionPath, action)) {
+        return false;
+      }
+    }
+
+    return null;
+  }
+
   public toJSON(): DefineOptions {
     const actions = {};
 
@@ -81,6 +152,7 @@ export class ACLRole {
       role: this.name,
       strategy: this.strategy,
       actions,
+      snippets: Array.from(this.snippets),
     };
   }
 

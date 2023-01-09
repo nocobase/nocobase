@@ -201,11 +201,9 @@ export const useFormItemInitializerFields = (options?: any) => {
     ?.filter((field) => field?.interface && !field?.isForeignKey)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
-
       const schema = {
         type: 'string',
         name: field.name,
-        // title: field?.uiSchema?.title || field.name,
         'x-designer': 'FormItem.Designer',
         'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
@@ -241,7 +239,6 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
-
   const groups = fields
     ?.filter((field) => {
       return interfaces.includes(field.interface);
@@ -255,7 +252,6 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
           const schema = {
             type: 'string',
             name: `${field.name}.${subField.name}`,
-            // title: subField?.uiSchema?.title || subField.name,
             'x-designer': 'FormItem.Designer',
             'x-component': 'CollectionField',
             'x-read-pretty': readPretty,
@@ -265,7 +261,6 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
           };
-          // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
           return {
             type: 'item',
             title: subField?.uiSchema?.title || subField.name,
@@ -630,7 +625,7 @@ export const createDetailsBlockSchema = (options) => {
   const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
-    'x-acl-action': `${resourceName}:get`,
+    'x-acl-action': `${resourceName}:view`,
     'x-decorator': 'DetailsBlockProvider',
     'x-decorator-props': {
       resource: resourceName,
@@ -807,7 +802,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
+  // console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
@@ -879,7 +874,7 @@ export const createTableBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
+  // console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 

@@ -17,6 +17,7 @@ export function db2resource(ctx: ResourcerContext & { db: Database }, next: () =
   if (!params) {
     return next();
   }
+
   const resourceName = getNameByParams(params);
   // 如果资源名称未被定义
   if (resourcer.isDefined(resourceName)) {

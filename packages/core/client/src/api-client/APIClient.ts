@@ -22,6 +22,10 @@ export class APIClient extends APIClientSDK {
   }
 
   interceptors() {
+    this.axios.interceptors.request.use((config) => {
+      config.headers['X-With-ACL-Meta'] = true;
+      return config;
+    });
     super.interceptors();
     this.notification();
   }
@@ -37,11 +41,11 @@ export class APIClient extends APIClientSDK {
         if (error.response.data.type === 'application/json') {
           handleErrorMessage(error);
         } else {
-            notification.error({
-              message: error?.response?.data?.errors?.map?.((error: any) => {
-                return React.createElement('div', { children: error.message });
-              }),
-            });
+          notification.error({
+            message: error?.response?.data?.errors?.map?.((error: any) => {
+              return React.createElement('div', { children: error.message });
+            }),
+          });
         }
         throw error;
       },

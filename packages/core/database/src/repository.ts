@@ -11,7 +11,7 @@ import {
   Op,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
-  WhereOperators,
+  WhereOperators
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -193,6 +193,9 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
   }
 
   of(id: string | number): R {
+    if (!this.association) {
+      return;
+    }
     const klass = this.builder()[this.association.associationType];
     return new klass(this.collection, this.associationName, id);
   }
@@ -335,10 +338,15 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     if (this.collection.isParent()) {
       for (const row of rows) {
-        const rowCollectionName = this.database.tableNameCollectionMap.get(row.get('__tableName')).name;
-        row.set('__collection', rowCollectionName, {
-          raw: true,
-        });
+        const rowCollectionName = this.database.tableNameCollectionMap.get(
+          options.raw ? row['__tableName'] : row.get('__tableName'),
+        ).name;
+
+        options.raw
+          ? (row['__collection'] = rowCollectionName)
+          : row.set('__collection', rowCollectionName, {
+              raw: true,
+            });
       }
     }
 

@@ -75,5 +75,10 @@ export default {
       sourceKey: 'name',
       targetKey: 'name',
     },
+    {
+      type: 'set',
+      name: 'snippets',
+      defaultValue: ['!ui.*', '!pm', '!pm.*'],
+    },
   ],
 } as CollectionOptions;
