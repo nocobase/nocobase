@@ -447,6 +447,7 @@ export default {
   'exists': '存在',
   'not exists': '不存在',
   'is current logged-in user': '为当前登录用户',
+  'is not current logged-in user': '不为当前登录用户',
   '=': '=',
   '≠': '≠',
   '>': '>',
