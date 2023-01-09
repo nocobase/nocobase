@@ -90,7 +90,7 @@ export const CollectionCategroriesProvider = (props) => {
     <CollectionCategroriesContext.Provider
       value={{
         ...result,
-        data: result.data.data,
+        data: result?.data?.data,
         refresh:async ()=>{
           const { data } = await api.request(options);
           result.mutate(data);
