@@ -113,7 +113,7 @@ export const collectionSchema: ISchema = {
 export const collectionTableSchema: ISchema = {
   type: 'object',
   properties: {
-    actions: {
+    [uid()]: {
       type: 'void',
       'x-component': 'ActionBar',
       'x-component-props': {

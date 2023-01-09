@@ -71,44 +71,46 @@ const TabBar = ({ item }) => {
     </span>
   );
 };
-export const ConfigurationTabs = () => {
-  const DndProvider = observer((props) => {
-    const [activeTab, setActiveId] = useState(null);
-    const { refresh } = useContext(CollectionCategroriesContext);
-    const api = useAPIClient();
-    const onDragEnd = async (props: DragEndEvent) => {
-      const { active, over } = props;
-      setTimeout(() => {
-        setActiveId(null);
-      });
-      if (over && over.id !== active.id) {
-        await api.resource('collection_categories').move({
-          sourceId: active.id,
-          targetId: over.id,
-        });
-        await refresh();
-      }
-    };
-
-    function onDragStart(event) {
-      setActiveId(event.active?.data.current);
-    }
-
-    const mouseSensor = useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
+const DndProvider = observer((props) => {
+  const [activeTab, setActiveId] = useState(null);
+  const { refresh } = useContext(CollectionCategroriesContext);
+  const { refresh: refreshCM } = useResourceActionContext();
+  const api = useAPIClient();
+  const onDragEnd = async (props: DragEndEvent) => {
+    const { active, over } = props;
+    setTimeout(() => {
+      setActiveId(null);
     });
-    const sensors = useSensors(mouseSensor);
-    return (
-      <DndContext sensors={sensors} onDragEnd={onDragEnd} onDragStart={onDragStart}>
-        {props.children}
-        <DragOverlay>
-          {activeTab ? <span style={{ whiteSpace: 'nowrap' }}>{<TabBar item={activeTab} />}</span> : null}
-        </DragOverlay>
-      </DndContext>
-    );
+    if (over && over.id !== active.id) {
+      await api.resource('collection_categories').move({
+        sourceId: active.id,
+        targetId: over.id,
+      });
+      await refresh();
+      await refreshCM();
+    }
+  };
+
+  function onDragStart(event) {
+    setActiveId(event.active?.data.current);
+  }
+
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      distance: 10,
+    },
   });
+  const sensors = useSensors(mouseSensor);
+  return (
+    <DndContext sensors={sensors} onDragEnd={onDragEnd} onDragStart={onDragStart}>
+      {props.children}
+      <DragOverlay>
+        {activeTab ? <span style={{ whiteSpace: 'nowrap' }}>{<TabBar item={activeTab} />}</span> : null}
+      </DragOverlay>
+    </DndContext>
+  );
+});
+export const ConfigurationTabs = (props) => {
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const { refresh: refreshCM } = useResourceActionContext();
   const tabsItems = data.sort((a, b) => b.sort - a.sort).concat();
