@@ -90,7 +90,7 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
               }}
               icon={<SettingOutlined />}
             >
-              {t('Settings center')}
+              {t('All plugin settings')}
             </Menu.Item>
           </Menu.SubMenu>
         )}
