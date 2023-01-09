@@ -1,8 +1,8 @@
-import { Tabs, Modal } from 'antd';
-import { UpOutlined } from '@ant-design/icons';
+import { Tabs, Modal, Badge } from 'antd';
 import React, { useState, useContext } from 'react';
 import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
+import { CloseOutlined } from '@ant-design/icons';
 import { CollectionCategroriesContext } from '../context';
 import { useAPIClient } from '../../api-client';
 import { SchemaComponent, useCompile } from '../../schema-component';
@@ -52,6 +52,7 @@ export const ConfigurationTabs = () => {
     });
   };
   const onEdit = (targetKey: string, action: 'add' | 'remove') => {
+    console.log(targetKey, action);
     if (action === 'add') {
     } else {
       remove(targetKey);
@@ -86,29 +87,37 @@ export const ConfigurationTabs = () => {
       onChange={onChange}
       activeKey={activeKey}
       type="editable-card"
-      onEdit={onEdit}
       destroyInactiveTabPane={true}
     >
       {tabsItems.map((item) => {
         return (
           <Tabs.TabPane
             tab={
-              <SchemaComponent
-                schema={{
-                  type: 'void',
-                  properties: {
-                    [uid()]: {
-                      'x-component': 'EditCategory',
-                      'x-component-props': {
-                        item: item,
-                      },
-                    },
-                  },
-                }}
-              />
+              <span>
+                <Badge color={item.color} />
+                {compile(item.name)}
+              </span>
             }
             key={item.id}
             closable={item.closable}
+            closeIcon={
+              <div style={{ display: 'inline-flex' }}>
+                <SchemaComponent
+                  schema={{
+                    type: 'void',
+                    properties: {
+                      [uid()]: {
+                        'x-component': 'EditCategory',
+                        'x-component-props': {
+                          item: item,
+                        },
+                      },
+                    },
+                  }}
+                />
+                <CloseOutlined style={{ marginLeft: '15px' }} onClick={() => onEdit(item.id, 'remove')} />
+              </div>
+            }
           >
             <SchemaComponent
               schema={collectionTableSchema}

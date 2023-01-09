@@ -1,9 +1,9 @@
 import { useForm } from '@formily/react';
-import { Badge } from 'antd';
 import { cloneDeep } from 'lodash';
+import { EditOutlined } from '@ant-design/icons';
 import React, { useState, useContext, useEffect } from 'react';
 import { useAPIClient } from '../../api-client';
-import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { ActionContext, SchemaComponent, useActionContext } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { RecordProvider, useRecord } from '../../record-provider';
 import * as components from './components';
@@ -56,22 +56,10 @@ export const EditCategory = (props) => {
 export const EditCategoryAction = (props) => {
   const { scope, getContainer, item, children } = props;
   const [visible, setVisible] = useState(false);
-  const compile = useCompile();
   return (
     <RecordProvider record={item}>
       <ActionContext.Provider value={{ visible, setVisible }}>
-        <div
-          onDoubleClick={(e) => {
-            item.id !== 'all' && setVisible(true);
-          }}
-        >
-          {children || (
-            <span>
-              <Badge color={item.color} />
-              {compile(item.name)}
-            </span>
-          )}
-        </div>
+        <>{children || <EditOutlined onClick={() => setVisible(true)} />}</>
         <SchemaComponent
           schema={collectionCategoryEditSchema}
           components={{ ...components }}
