@@ -4,6 +4,7 @@ import { EditOutlined } from '@ant-design/icons';
 import React, { useState, useContext, useEffect } from 'react';
 import { useAPIClient } from '../../api-client';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { RecordProvider, useRecord } from '../../record-provider';
 import * as components from './components';
@@ -14,7 +15,9 @@ import { CollectionCategroriesContext } from '../context';
 const useEditCategry = () => {
   const form = useForm();
   const ctx = useActionContext();
-  const CategroriesCtx = useContext(CollectionCategroriesContext);
+  const { refresh } = useContext(CollectionCategroriesContext);
+  const { refresh: refreshCM } = useResourceActionContext();
+
   const api = useAPIClient();
   const { id } = useRecord();
   return {
@@ -29,7 +32,8 @@ const useEditCategry = () => {
       });
       ctx.setVisible(false);
       await form.reset();
-      await CategroriesCtx.refresh();
+      await refresh();
+      await refreshCM();
     },
   };
 };

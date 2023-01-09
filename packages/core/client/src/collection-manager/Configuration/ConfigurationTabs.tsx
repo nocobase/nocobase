@@ -110,6 +110,7 @@ export const ConfigurationTabs = () => {
     );
   });
   const { data, refresh } = useContext(CollectionCategroriesContext);
+  const { refresh: refreshCM } = useResourceActionContext();
   const tabsItems = data.sort((a, b) => b.sort - a.sort).concat();
   !tabsItems.find((v) => v.id === 'all') &&
     tabsItems.unshift({
@@ -147,6 +148,7 @@ export const ConfigurationTabs = () => {
         });
         key === +activeKey && setActiveKey('all');
         await refresh();
+        await refreshCM();
       },
     });
   };
