@@ -21,21 +21,13 @@ import { collectionTableSchema } from './schemas/collections';
 import { useResourceActionContext } from '../ResourceActionProvider';
 
 function Draggable(props) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef } = useDraggable({
     id: props.id,
     data: props.data,
   });
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
   return (
-    <div ref={setNodeRef} {...listeners} {...attributes} style={{ display: 'flex' }}>
-      <div style={style}>{props.children}</div>
-      <div style={{ display: style ? 'inline-block' : 'none', position: 'absolute', left: '16px' }}>
-        {props.children}
-      </div>
+    <div ref={setNodeRef} {...listeners} {...attributes}>
+      <div>{props.children}</div>
     </div>
   );
 }
@@ -57,44 +49,6 @@ function Droppable(props) {
     </div>
   );
 }
-
-const DndProvider = observer((props) => {
-  const [activeTab, setActiveId] = useState(null);
-  const { refresh } = useContext(CollectionCategroriesContext);
-  const api = useAPIClient();
-  const onDragEnd = async (props: DragEndEvent) => {
-    const { active, over } = props;
-    setTimeout(() => {
-      setActiveId(null);
-    });
-    if (over && over.id !== active.id) {
-      await api.resource('collection_categories').move({
-        sourceId: active.id,
-        targetId: over.id,
-      });
-      await refresh();
-    }
-  };
-
-  function onDragStart(event) {
-    setActiveId(event.active?.data.current);
-  }
-
-  const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint: {
-      distance: 10,
-    },
-  });
-  const sensors = useSensors(mouseSensor);
-  return (
-    <DndContext sensors={sensors} onDragEnd={onDragEnd} onDragStart={onDragStart}>
-      {props.children}
-      <DragOverlay>
-        {activeTab ? <span style={{ whiteSpace: 'nowrap' }}>{<TabBar item={activeTab} />}</span> : null}
-      </DragOverlay>
-    </DndContext>
-  );
-});
 
 const TabTitle = observer(({ item }: { item: any }) => {
   return (
@@ -118,6 +72,43 @@ const TabBar = ({ item }) => {
   );
 };
 export const ConfigurationTabs = () => {
+  const DndProvider = observer((props) => {
+    const [activeTab, setActiveId] = useState(null);
+    const { refresh } = useContext(CollectionCategroriesContext);
+    const api = useAPIClient();
+    const onDragEnd = async (props: DragEndEvent) => {
+      const { active, over } = props;
+      setTimeout(() => {
+        setActiveId(null);
+      });
+      if (over && over.id !== active.id) {
+        await api.resource('collection_categories').move({
+          sourceId: active.id,
+          targetId: over.id,
+        });
+        await refresh();
+      }
+    };
+
+    function onDragStart(event) {
+      setActiveId(event.active?.data.current);
+    }
+
+    const mouseSensor = useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    });
+    const sensors = useSensors(mouseSensor);
+    return (
+      <DndContext sensors={sensors} onDragEnd={onDragEnd} onDragStart={onDragStart}>
+        {props.children}
+        <DragOverlay>
+          {activeTab ? <span style={{ whiteSpace: 'nowrap' }}>{<TabBar item={activeTab} />}</span> : null}
+        </DragOverlay>
+      </DndContext>
+    );
+  });
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const tabsItems = data.sort((a, b) => b.sort - a.sort).concat();
   !tabsItems.find((v) => v.id === 'all') &&
@@ -144,7 +135,7 @@ export const ConfigurationTabs = () => {
     }
   };
 
-  const remove = (key: string) => {
+  const remove = (key: any) => {
     Modal.confirm({
       title: compile("{{t('Delete category')}}"),
       content: compile("{{t('Are you sure you want to delete it?')}}"),
@@ -154,6 +145,7 @@ export const ConfigurationTabs = () => {
             id: key,
           },
         });
+        key === +activeKey && setActiveKey('all');
         await refresh();
       },
     });
