@@ -1,9 +1,9 @@
 import { Checkbox, message, Table } from 'antd';
+import { uniq } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
-import { uniq } from 'lodash';
 import { useMenuItems } from './MenuItemsProvider';
 
 const findUids = (items) => {
@@ -117,7 +117,7 @@ export const MenuConfigure = () => {
                   message.success(t('Saved successfully'));
                 }}
               />
-              {t('Accessible')}
+              {' '}{t('Accessible')}
             </>
           ),
           render: (_, schema) => {

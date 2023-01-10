@@ -11,7 +11,7 @@ import {
   Op,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
-  WhereOperators,
+  WhereOperators
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -193,6 +193,9 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
   }
 
   of(id: string | number): R {
+    if (!this.association) {
+      return;
+    }
     const klass = this.builder()[this.association.associationType];
     return new klass(this.collection, this.associationName, id);
   }

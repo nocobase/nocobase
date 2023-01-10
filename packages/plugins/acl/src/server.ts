@@ -1,6 +1,8 @@
-import { Context } from '@nocobase/actions';
-import { Collection } from '@nocobase/database';
+import { NoPermissionError } from '@nocobase/acl';
+import { Context, utils as actionUtils } from '@nocobase/actions';
+import { Collection, RelationField } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import lodash from 'lodash';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { checkAction } from './actions/role-check';
@@ -49,41 +51,52 @@ export class PluginACL extends Plugin {
   registerAssociationFieldsActions() {
     // if grant create action to role, it should
     // also grant add action and association target's view action
-    this.registerAssociationFieldAction('linkTo', {
+
+    this.registerAssociationFieldAction('hasOne', {
       view: {
-        associationActions: ['list', 'get'],
+        associationActions: ['list', 'get', 'view'],
       },
       create: {
-        associationActions: ['add'],
-        targetActions: ['view'],
+        associationActions: ['create', 'set'],
       },
       update: {
-        associationActions: ['add', 'remove', 'toggle'],
-        targetActions: ['view'],
+        associationActions: ['update', 'remove', 'set'],
       },
     });
 
-    this.registerAssociationFieldAction('attachments', {
+    this.registerAssociationFieldAction('hasMany', {
       view: {
-        associationActions: ['list', 'get'],
+        associationActions: ['list', 'get', 'view'],
       },
-      add: {
-        associationActions: ['upload', 'add'],
+      create: {
+        associationActions: ['create', 'set', 'add'],
       },
       update: {
-        associationActions: ['update', 'add', 'remove', 'toggle'],
+        associationActions: ['update', 'remove', 'set'],
       },
     });
 
-    this.registerAssociationFieldAction('subTable', {
+    this.registerAssociationFieldAction('belongsTo', {
       view: {
-        associationActions: ['list', 'get'],
+        associationActions: ['list', 'get', 'view'],
       },
       create: {
-        associationActions: ['create'],
+        associationActions: ['create', 'set'],
       },
       update: {
-        associationActions: ['update', 'destroy'],
+        associationActions: ['update', 'remove', 'set'],
+      },
+    });
+
+    this.registerAssociationFieldAction('belongsToMany', {
+      view: {
+        associationActions: ['list', 'get', 'view'],
+      },
+      create: {
+        associationActions: ['create', 'set', 'add'],
+      },
+      update: {
+        associationActions: ['update', 'remove', 'set', 'toggle'],
       },
     });
   }
@@ -123,10 +136,60 @@ export class PluginACL extends Plugin {
   }
 
   async beforeLoad() {
+    this.db.addMigrations({
+      namespace: this.name,
+      directory: resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+
     this.app.db.registerModels({
       RoleResourceActionModel,
       RoleResourceModel,
       RoleModel,
+    });
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.roles`,
+      actions: [
+        'roles:*',
+        'roles.snippets:*',
+        'availableActions:list',
+        'roles.collections:list',
+        'roles.resources:*',
+        'uiSchemas:getProperties',
+        'roles.menuUiSchemas:*',
+      ],
+    });
+
+    // change resource fields to association fields
+    this.app.acl.beforeGrantAction((ctx) => {
+      const actionName = this.app.acl.resolveActionAlias(ctx.actionName);
+      const collection = this.app.db.getCollection(ctx.resourceName);
+
+      if (!collection) {
+        return;
+      }
+
+      const fieldsParams = ctx.params.fields;
+
+      if (!fieldsParams) {
+        return;
+      }
+
+      if (actionName == 'view' || actionName == 'export') {
+        const associationsFields = fieldsParams.filter((fieldName) => {
+          const field = collection.getField(fieldName);
+          return field instanceof RelationField;
+        });
+
+        ctx.params = {
+          ...ctx.params,
+          fields: lodash.difference(fieldsParams, associationsFields),
+          appends: associationsFields,
+        };
+      }
     });
 
     this.registerAssociationFieldsActions();
@@ -147,6 +210,7 @@ export class PluginACL extends Plugin {
         },
         transaction,
       });
+
       if (defaultRole && (await model.countRoles({ transaction })) == 0) {
         await model.addRoles(defaultRole, { transaction });
       }
@@ -269,7 +333,7 @@ export class PluginACL extends Plugin {
 
     // sync database role data to acl
     this.app.on('afterLoad', async (app, options) => {
-      if (options?.method === 'install') {
+      if (options?.method === 'install' || options?.method === 'upgrade') {
         return;
       }
       const exists = await this.app.db.collectionExistsInDb('roles');
@@ -320,6 +384,7 @@ export class PluginACL extends Plugin {
             name: 'root',
             title: '{{t("Root")}}',
             hidden: true,
+            snippets: ['ui.*', 'pm', 'pm.*'],
           },
           {
             name: 'admin',
@@ -327,6 +392,7 @@ export class PluginACL extends Plugin {
             allowConfigure: true,
             allowNewMenu: true,
             strategy: { actions: ['create', 'view', 'update', 'destroy'] },
+            snippets: ['ui.*', 'pm', 'pm.*'],
           },
           {
             name: 'member',
@@ -334,6 +400,7 @@ export class PluginACL extends Plugin {
             allowNewMenu: true,
             strategy: { actions: ['view', 'update:own', 'destroy:own', 'create'] },
             default: true,
+            snippets: ['!ui.*', '!pm', '!pm.*'],
           },
         ],
       });
@@ -359,14 +426,42 @@ export class PluginACL extends Plugin {
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'parseToken' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
-
     this.app.acl.allow('roles', 'check', 'loggedIn');
-    this.app.acl.allow('roles', ['create', 'update', 'destroy'], 'allowConfigure');
-
-    this.app.acl.allow('roles.menuUiSchemas', ['set', 'toggle', 'list'], 'allowConfigure');
 
     this.app.acl.allow('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';
+    });
+
+    this.app.acl.addFixedParams('collections', 'destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'name.$ne': 'roles' }, { 'name.$ne': 'rolesUsers' }],
+        },
+      };
+    });
+
+    this.app.acl.addFixedParams('rolesResourcesScopes', 'destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'key.$ne': 'all' }, { 'key.$ne': 'own' }],
+        },
+      };
+    });
+
+    this.app.acl.addFixedParams('rolesResourcesScopes', 'update', () => {
+      return {
+        filter: {
+          $and: [{ 'key.$ne': 'all' }, { 'key.$ne': 'own' }],
+        },
+      };
+    });
+
+    this.app.acl.addFixedParams('roles', 'destroy', () => {
+      return {
+        filter: {
+          $and: [{ 'name.$ne': 'root' }, { 'name.$ne': 'admin' }, { 'name.$ne': 'member' }],
+        },
+      };
     });
 
     this.app.resourcer.use(async (ctx, next) => {
@@ -381,11 +476,13 @@ export class PluginACL extends Plugin {
           });
         }
       }
+
       if (actionName === 'update' && resourceName === 'roles.resources') {
         ctx.action.mergeParams({
           updateAssociationValues: ['actions'],
         });
       }
+
       await next();
     });
 
@@ -405,6 +502,7 @@ export class PluginACL extends Plugin {
         } else {
           collection = ctx.db.getCollection(resourceName);
         }
+
         if (collection && collection.hasField('createdById')) {
           ctx.permission.can.params.fields.push('createdById');
         }
@@ -413,37 +511,252 @@ export class PluginACL extends Plugin {
     });
 
     const parseJsonTemplate = this.app.acl.parseJsonTemplate;
-    this.app.acl.use(async (ctx: Context, next) => {
-      const { actionName, resourceName, resourceOf } = ctx.action;
-      if (resourceName.includes('.') && resourceOf) {
-        if (!ctx?.permission?.can?.params) {
-          return next();
-        }
-        // 关联数据去掉 filter
-        delete ctx.permission.can.params.filter;
-        // 关联数据能不能处理取决于 source 是否有权限
-        const [collectionName] = resourceName.split('.');
-        const action = ctx.can({ resource: collectionName, action: actionName });
-        const availableAction = this.app.acl.getAvailableAction(actionName);
-        if (availableAction?.options?.onNewRecord) {
-          if (action) {
-            ctx.permission.skip = true;
+
+    this.app.acl.use(
+      async (ctx: Context, next) => {
+        const { actionName, resourceName, resourceOf } = ctx.action;
+        // is association request
+        if (resourceName.includes('.') && resourceOf) {
+          if (!ctx?.permission?.can?.params) {
+            return next();
+          }
+          // 关联数据去掉 filter
+          delete ctx.permission.can.params.filter;
+          // 关联数据能不能处理取决于 source 是否有权限
+          const [collectionName] = resourceName.split('.');
+          const action = ctx.can({ resource: collectionName, action: actionName });
+
+          const availableAction = this.app.acl.getAvailableAction(actionName);
+
+          if (availableAction?.options?.onNewRecord) {
+            if (action) {
+              ctx.permission.skip = true;
+            } else {
+              ctx.permission.can = false;
+            }
           } else {
-            ctx.permission.can = false;
-          }
-        } else {
-          const filter = parseJsonTemplate(action?.params?.filter || {}, ctx);
-          const sourceInstance = await ctx.db.getRepository(collectionName).findOne({
-            filterByTk: resourceOf,
-            filter,
-          });
-          if (!sourceInstance) {
-            ctx.permission.can = false;
+            const filter = parseJsonTemplate(action?.params?.filter || {}, ctx);
+            const sourceInstance = await ctx.db.getRepository(collectionName).findOne({
+              filterByTk: resourceOf,
+              filter,
+            });
+            if (!sourceInstance) {
+              ctx.permission.can = false;
+            }
           }
         }
-      }
+        await next();
+      },
+      {
+        before: 'core',
+      },
+    );
+
+    // throw error when user has no fixed params permissions
+    this.app.acl.use(
+      async (ctx: any, next) => {
+        const action = ctx.permission?.can?.action;
+
+        if (action == 'destroy' && !ctx.action.resourceName.includes('.')) {
+          const repository = actionUtils.getRepositoryFromParams(ctx);
+
+          // params after merge with fixed params
+          const filteredCount = await repository.count(ctx.permission.mergedParams);
+
+          // params user requested
+          const queryCount = await repository.count(ctx.permission.rawParams);
+
+          if (queryCount > filteredCount) {
+            ctx.throw(403, 'No permissions');
+            return;
+          }
+        }
+
+        await next();
+      },
+      {
+        after: 'core',
+        group: 'after',
+      },
+    );
+
+    const withACLMeta = async (ctx: any, next) => {
       await next();
-    });
+
+      if (!ctx.action) {
+        return;
+      }
+
+      const { resourceName, actionName } = ctx.action;
+
+      if (!ctx.get('X-With-ACL-Meta')) {
+        return;
+      }
+
+      const collection = ctx.db.getCollection(resourceName);
+
+      if (!collection) {
+        return;
+      }
+
+      if (ctx.status !== 200) {
+        return;
+      }
+
+      if (!['list', 'get'].includes(actionName)) {
+        return;
+      }
+
+      const Model = collection.model;
+
+      const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
+
+      const dataPath = ctx.body?.rows ? 'body.rows' : 'body';
+      let listData = lodash.get(ctx, dataPath);
+
+      if (actionName == 'get') {
+        listData = lodash.castArray(listData);
+      }
+
+      const actions = ['view', 'update', 'destroy'];
+
+      const actionsParams = [];
+
+      for (const action of actions) {
+        const actionCtx: any = {
+          db: ctx.db,
+          action: {
+            actionName: action,
+            name: action,
+            params: {},
+            resourceName: ctx.action.resourceName,
+            resourceOf: ctx.action.resourceOf,
+            mergeParams() {},
+          },
+          state: {
+            currentRole: ctx.state.currentRole,
+            currentUser: (() => {
+              if (!ctx.state.currentUser) {
+                return null;
+              }
+              if (ctx.state.currentUser.toJSON) {
+                return ctx.state.currentUser?.toJSON();
+              }
+
+              return ctx.state.currentUser;
+            })(),
+          },
+          permission: {},
+          throw(...args) {
+            throw new NoPermissionError(...args);
+          },
+        };
+
+        try {
+          await this.app.acl.getActionParams(actionCtx);
+        } catch (e) {
+          if (e instanceof NoPermissionError) {
+            continue;
+          }
+
+          throw e;
+        }
+
+        actionsParams.push([
+          action,
+          actionCtx.permission?.can === null && !actionCtx.permission.skip
+            ? null
+            : actionCtx.permission?.parsedParams || {},
+        ]);
+      }
+
+      const ids = listData.map((item) => item[primaryKeyField]);
+
+      const conditions = [];
+
+      const allAllowed = [];
+
+      for (const [action, params] of actionsParams) {
+        if (!params) {
+          continue;
+        }
+
+        if (lodash.isEmpty(params) || lodash.isEmpty(params.filter)) {
+          allAllowed.push(action);
+          continue;
+        }
+
+        const queryParams = collection.repository.buildQueryOptions(params);
+
+        const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
+          Model.getTableName(),
+          {
+            // ...queryParams,
+            where: queryParams.where,
+            attributes: [primaryKeyField],
+            includeIgnoreAttributes: false,
+            // include: queryParams.include,
+          },
+          Model,
+        );
+
+        const whereCase = actionSql.match(/WHERE (.*?);/)[1];
+        conditions.push({
+          whereCase,
+          action,
+          include: queryParams.include,
+        });
+      }
+
+      const results = await collection.model.findAll({
+        where: {
+          [primaryKeyField]: ids,
+        },
+        attributes: [
+          primaryKeyField,
+          ...conditions.map((condition) => {
+            return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
+          }),
+        ],
+        include: conditions.map((condition) => condition.include).flat(),
+      });
+
+      const allowedActions = actions
+        .map((action) => {
+          if (allAllowed.includes(action)) {
+            return [action, ids];
+          }
+
+          return [action, results.filter((item) => Boolean(item.get(action))).map((item) => item.get(primaryKeyField))];
+        })
+        .reduce((acc, [action, ids]) => {
+          acc[action] = ids;
+          return acc;
+        }, {});
+
+      if (actionName == 'get') {
+        ctx.bodyMeta = {
+          ...(ctx.bodyMeta || {}),
+          allowedActions: allowedActions,
+        };
+      }
+
+      if (actionName == 'list') {
+        ctx.body.allowedActions = allowedActions;
+      }
+    };
+
+    // append allowedActions to list & get response
+    this.app.use(
+      async (ctx, next) => {
+        try {
+          await withACLMeta(ctx, next);
+        } catch (error) {
+          ctx.logger.error(error);
+        }
+      },
+      { after: 'restApi', group: 'after' },
+    );
   }
 
   async install() {

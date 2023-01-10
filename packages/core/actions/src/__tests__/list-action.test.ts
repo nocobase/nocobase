@@ -1,10 +1,10 @@
 import { registerActions } from '@nocobase/actions';
-import { mockServer } from './index';
+import { mockServer as actionMockServer } from './index';
 
 describe('list action', () => {
   let app;
   beforeEach(async () => {
-    app = mockServer();
+    app = actionMockServer();
     registerActions(app);
 
     const Post = app.collection({

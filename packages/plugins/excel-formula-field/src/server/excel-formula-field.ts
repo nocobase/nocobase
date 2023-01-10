@@ -1,19 +1,18 @@
+import { BaseFieldOptions, Field } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field } from './field';
-import * as math from 'mathjs';
+import { evaluate } from '../utils/evaluate';
 
-export class FormulaField extends Field {
+export class ExcelFormulaField extends Field {
   get dataType() {
-    return DataTypes.FLOAT;
+    const { dataType } = this.options;
+    return dataType === 'string' ? DataTypes.STRING : DataTypes.DOUBLE;
   }
 
-  caculate(expression, scope) {
-    let result = null;
+  calculate(expression, scope) {
     try {
-      result = math.evaluate(expression, scope);
-      result = math.round(result, 9);
+      return evaluate(expression, scope);
     } catch {}
-    return result;
+    return null;
   }
 
   initFieldData = async ({ transaction }) => {
@@ -26,7 +25,7 @@ export class FormulaField extends Field {
 
     for (const record of records) {
       const scope = record.toJSON();
-      const result = this.caculate(expression, scope);
+      const result = this.calculate(expression, scope);
       if (result) {
         await record.update(
           {
@@ -42,15 +41,11 @@ export class FormulaField extends Field {
     }
   };
 
-  caculateField = async (instance) => {
+  calculateField = async (instance) => {
     const { expression, name } = this.options;
     const scope = instance.toJSON();
-    let result;
-    try {
-      result = math.evaluate(expression, scope);
-      result = math.round(result, 9);
-    } catch {}
-    if (result === 0 || result) {
+    let result = this.calculate(expression, scope);
+    if (result) {
       instance.set(name, result);
     }
   };
@@ -67,7 +62,7 @@ export class FormulaField extends Field {
 
       for (const record of records) {
         const scope = record.toJSON();
-        const result = this.caculate(expression, scope);
+        const result = this.calculate(expression, scope);
         await record.update(
           {
             [name]: result,
@@ -87,20 +82,27 @@ export class FormulaField extends Field {
     this.on('afterSync', this.initFieldData);
     // TODO: should not depends on fields table (which is defined by other plugin)
     this.database.on('fields.afterUpdate', this.updateFieldData);
-    this.on('beforeSave', this.caculateField);
+    this.on('beforeSave', this.calculateField);
   }
 
   unbind() {
     super.unbind();
-    this.off('beforeSave', this.caculateField);
+    this.off('beforeSave', this.calculateField);
     // TODO: should not depends on fields table
     this.database.off('fields.afterUpdate', this.updateFieldData);
     this.off('afterSync', this.initFieldData);
   }
+
+  toSequelize() {
+    const opts = super.toSequelize();
+    delete opts.dataType;
+    return opts;
+  }
+
 }
 
-export interface FormulaFieldOptions extends BaseColumnFieldOptions {
-  type: 'formula';
-
+export interface ExcelFormulaFieldOptions extends BaseFieldOptions {
+  type: 'excelFormula';
+  dataType?: 'number' | 'string';
   expression: string;
 }

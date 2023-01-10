@@ -3,7 +3,6 @@ import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
-  ACLAllowConfigure,
   ACLRolesCheckProvider,
   CurrentUser,
   CurrentUserProvider,
@@ -25,8 +24,8 @@ import { PoweredBy } from '../../../powered-by';
 import { useMutationObserver } from 'ahooks';
 
 const filterByACL = (schema, options) => {
-  const { allowAll, allowConfigure, allowMenuItemIds = [] } = options;
-  if (allowAll || allowConfigure) {
+  const { allowAll, allowMenuItemIds = [] } = options;
+  if (allowAll) {
     return schema;
   }
   const filterSchema = (s) => {
@@ -123,7 +122,7 @@ const MenuEditor = (props) => {
   );
 };
 
-const InternalAdminLayout = (props: any) => {
+export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
   const [sideMenuWidth, setSideMenuWidth] = useState(0);
 
@@ -192,9 +191,7 @@ const InternalAdminLayout = (props: any) => {
             </div>
           </div>
           <div style={{ position: 'absolute', height: '100%', zIndex: 10, top: 0, right: 0 }}>
-            <ACLAllowConfigure>
-              <RemotePluginManagerToolbar />
-            </ACLAllowConfigure>
+            <RemotePluginManagerToolbar />
             <CurrentUser />
           </div>
         </div>

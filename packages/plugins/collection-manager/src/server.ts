@@ -38,6 +38,15 @@ export class CollectionManagerPlugin extends Plugin {
       CollectionRepository,
     });
 
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.collections`,
+      actions: [
+        'collections:*',
+        // 'fields:*',
+        'collections.fields:*',
+      ],
+    });
+
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
       const newValue = options.values;
       if (
@@ -213,7 +222,6 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.acl.allow('collections', 'list', 'loggedIn');
-    this.app.acl.allow('collections', ['create', 'update', 'destroy'], 'allowConfigure');
   }
 
   async load() {

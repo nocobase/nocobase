@@ -137,8 +137,11 @@ export default class VerificationPlugin extends Plugin {
       return this.intercept(context, next);
     });
 
-    app.acl.allow('verifications', 'create');
-    app.acl.allow('verifications_providers', '*', 'allowConfigure');
+    app.acl.allow('verifications', 'create', 'public');
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.providers`,
+      actions: ['verifications_providers:*'],
+    });
   }
 
   async getDefault() {

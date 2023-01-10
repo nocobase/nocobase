@@ -44,9 +44,12 @@ export class OidcPlugin extends Plugin {
       await next();
     });
 
-    // 开放访问权限
-    this.app.acl.allow('oidcProviders', '*', 'allowConfigure');
-    this.app.acl.allow('oidc', '*');
+    this.app.acl.allow('oidc', '*', 'public');
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.providers`,
+      actions: ['oidcProviders:*'],
+    });
   }
 
   async install(options?: InstallOptions) {}

@@ -39,15 +39,18 @@ function WorkflowPane() {
 export const WorkflowProvider = (props) => {
   const ctx = useContext(PluginManagerContext);
   const { routes, components, ...others } = useContext(RouteSwitchContext);
-  routes[1].routes.unshift({
-    type: 'route',
-    path: '/admin/settings/workflow/workflows/:id',
-    component: 'WorkflowPage',
-  }, {
-    type: 'route',
-    path: '/admin/settings/workflow/executions/:id',
-    component: 'ExecutionPage',
-  });
+  routes[1].routes.unshift(
+    {
+      type: 'route',
+      path: '/admin/settings/workflow/workflows/:id',
+      component: 'WorkflowPage',
+    },
+    {
+      type: 'route',
+      path: '/admin/settings/workflow/executions/:id',
+      component: 'ExecutionPage',
+    },
+  );
   return (
     <SettingsCenterProvider
       settings={{
@@ -57,6 +60,7 @@ export const WorkflowProvider = (props) => {
           title: lang('Workflow'),
           tabs: {
             workflows: {
+              isBookmark: true,
               title: lang('Workflow'),
               component: WorkflowPane,
             },
