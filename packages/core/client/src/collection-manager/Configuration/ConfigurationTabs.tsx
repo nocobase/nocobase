@@ -1,6 +1,7 @@
 import { Tabs, Modal, Badge, Card, Dropdown, Menu } from 'antd';
 import React, { useState, useContext } from 'react';
-import { SchemaOptionsContext } from '@formily/react';
+import { RecursionField } from '@formily/react';
+import { SchemaComponentOptions } from '../../schema-component';
 import { uid } from '@formily/shared';
 import { MenuOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
@@ -110,21 +111,29 @@ const DndProvider = observer((props) => {
     </DndContext>
   );
 });
-export const ConfigurationTabs = (props) => {
+export const ConfigurationTabs = () => {
   const { data, refresh } = useContext(CollectionCategroriesContext);
-  const { refresh: refreshCM } = useResourceActionContext();
-  const tabsItems = data.sort((a, b) => b.sort - a.sort).concat();
+  const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
+  const tabsItems = data
+    .sort((a, b) => b.sort - a.sort)
+    .concat()
+    .map((v) => {
+      return {
+        ...v,
+        schema: collectionTableSchema,
+      };
+    });
   !tabsItems.find((v) => v.id === 'all') &&
     tabsItems.unshift({
       name: '{{t("All collections")}}',
       id: 'all',
       sort: 0,
       closable: false,
+      schema: collectionTableSchema,
     });
   const compile = useCompile();
   const [activeKey, setActiveKey] = useState('all');
   const api = useAPIClient();
-  const { run, defaultRequest, setState } = useResourceActionContext();
   const onChange = (key: string) => {
     setActiveKey(key);
     if (key !== 'all') {
@@ -161,7 +170,6 @@ export const ConfigurationTabs = (props) => {
       value: item.id,
     }));
   };
-  const scopeCxt = useContext(SchemaOptionsContext);
   const menu = (item) => (
     <Menu>
       <Menu.Item key={'edit'}>
@@ -232,10 +240,9 @@ export const ConfigurationTabs = (props) => {
               }
             >
               <Card bordered={false}>
-                <SchemaComponent
-                  schema={collectionTableSchema}
-                  scope={{ ...scopeCxt, loadCategories, categoryVisible: item.id === 'all' }}
-                />
+                <SchemaComponentOptions inherit scope={{ loadCategories, categoryVisible: item.id === 'all' }}>
+                  <RecursionField name={item.id} schema={item.schema} onlyRenderProperties />
+                </SchemaComponentOptions>
               </Card>
             </Tabs.TabPane>
           );

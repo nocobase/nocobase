@@ -17,7 +17,7 @@ export default {
     {
       type: 'string',
       name: 'color',
-      defaultValue: 'gray',
+      defaultValue: 'default',
     },
     {
       type: 'belongsToMany',
