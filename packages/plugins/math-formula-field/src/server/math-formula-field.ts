@@ -5,7 +5,8 @@ import { evaluate } from '../utils/evaluate';
 
 export class MathFormulaField extends Field {
   get dataType() {
-    return DataTypes.DOUBLE;
+    const { dataType } = this.options;
+    return dataType === 'string' ? DataTypes.STRING : DataTypes.DOUBLE;
   }
 
   calculate(expression, scope) {
