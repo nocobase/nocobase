@@ -13,10 +13,11 @@ import {
   DoubleFieldOptions,
   FloatFieldOptions,
   IntegerFieldOptions,
-  RealFieldOptions,
+  RealFieldOptions
 } from './number-field';
 import { PasswordFieldOptions } from './password-field';
 import { RadioFieldOptions } from './radio-field';
+import { SetFieldOptions } from './set-field';
 import { SortFieldOptions } from './sort-field';
 import { StringFieldOptions } from './string-field';
 import { TextFieldOptions } from './text-field';
@@ -24,11 +25,8 @@ import { TimeFieldOptions } from './time-field';
 import { UidFieldOptions } from './uid-field';
 import { UUIDFieldOptions } from './uuid-field';
 import { VirtualFieldOptions } from './virtual-field';
-import { FormulaFieldOptions } from './formula-field';
-import { SetFieldOptions } from './set-field';
 
 export * from './array-field';
-export * from './set-field';
 export * from './belongs-to-field';
 export * from './belongs-to-many-field';
 export * from './boolean-field';
@@ -42,6 +40,7 @@ export * from './number-field';
 export * from './password-field';
 export * from './radio-field';
 export * from './relation-field';
+export * from './set-field';
 export * from './sort-field';
 export * from './string-field';
 export * from './text-field';
@@ -49,7 +48,6 @@ export * from './time-field';
 export * from './uid-field';
 export * from './uuid-field';
 export * from './virtual-field';
-export * from './formula-field';
 
 export type FieldOptions =
   | BaseFieldOptions
@@ -66,7 +64,6 @@ export type FieldOptions =
   | SortFieldOptions
   | TextFieldOptions
   | VirtualFieldOptions
-  | FormulaFieldOptions
   | ArrayFieldOptions
   | SetFieldOptions
   | TimeFieldOptions

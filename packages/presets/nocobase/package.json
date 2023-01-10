@@ -21,6 +21,8 @@
     "@nocobase/plugin-export": "0.8.1-alpha.4",
     "@nocobase/plugin-file-manager": "0.8.1-alpha.4",
     "@nocobase/plugin-iframe-block": "0.8.1-alpha.4",
+    "@nocobase/plugin-math-formula-field": "0.8.1-alpha.4",
+    "@nocobase/plugin-excel-formula-field": "0.8.1-alpha.4",
     "@nocobase/plugin-import": "0.8.1-alpha.4",
     "@nocobase/plugin-map": "0.8.1-alpha.4",
     "@nocobase/plugin-oidc": "0.8.1-alpha.4",

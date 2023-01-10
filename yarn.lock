@@ -355,7 +355,7 @@
   resolved "https://registry.npmjs.org/@antv/x6-react-shape/-/x6-react-shape-1.6.3.tgz#053660bd555c4356e9719134e3e2a857b51301e2"
   integrity sha512-iCsRVkvKCVs7HUUblF/ALg5XxeeEPXDLHuYzRvbvNlCKKLbXLbaz6vJQSgTTrk2i4lrD+7xl4riA76FyWA3k/g==
 
-"@antv/x6@^1.9.0":
+"@antv/x6@^1.34.2":
   version "1.34.6"
   resolved "https://registry.npmjs.org/@antv/x6/-/x6-1.34.6.tgz#b802b09b52c8620acf01734397714ea5e3f715b6"
   integrity sha512-cl8ywN7CTNVT94/ZEbq2mnZQTQe6FUgIlGOAjNOPL8sljZTBrpE6OsuGw4BDA2/XllwELfUfvVpgBvbdwRKrxw==
@@ -3274,6 +3274,14 @@
   dependencies:
     "@formily/shared" "2.0.20"
 
+"@formulajs/formulajs@^3.1.7":
+  version "3.2.0"
+  resolved "https://registry.npmjs.org/@formulajs/formulajs/-/formulajs-3.2.0.tgz#78425f4d49cee49d7d2169c2b9d0bccf2f92afa6"
+  integrity sha512-6rkarI3MTpOTWlvjG1AqRvF/M15Dga/Y6qDGOpxI5ekJGDZKpKRiItTAZ9VEZiDKvlZc42qkRy6tIV5FwHPuAw==
+  dependencies:
+    bessel "^1.0.2"
+    jstat "^1.9.6"
+
 "@gar/promisify@^1.0.1":
   version "1.1.2"
   resolved "https://registry.npmjs.org/@gar/promisify/-/promisify-1.1.2.tgz#30aa825f11d438671d585bd44e7fd564535fc210"
@@ -4410,6 +4418,153 @@
   dependencies:
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
+
+"@nocobase/acl@0.8.0-alpha.9":
+  version "0.8.0-alpha.9"
+  resolved "https://registry.npmjs.org/@nocobase/acl/-/acl-0.8.0-alpha.9.tgz#7ffab4a367befc74daa681b1d5c2c907126cb280"
+  integrity sha512-jEgpjO6gGi4GwSyWxlmcwd368/AQgmrdsODDTLhhrJJI9+ovj2mxO664lQgh3FkDGtmduKlBiZ+qcgK+/RWa1w==
+  dependencies:
+    "@nocobase/resourcer" "0.8.0-alpha.9"
+    json-templates "^4.2.0"
+
+"@nocobase/actions@0.8.0-alpha.9":
+  version "0.8.0-alpha.9"
+  resolved "https://registry.npmjs.org/@nocobase/actions/-/actions-0.8.0-alpha.9.tgz#3804bbf30f7c4e8aa205b9802ec4f56a58c18c72"
+  integrity sha512-EvdNjXa+TTMU2Xn+MnA7tSa5rooGFtzsvJsSYbkpODtsVQsmTDRIZYZsOYFk/XcezxjzTTsxxXMSA7sLq6wifQ==
+  dependencies:
+    "@nocobase/cache" "0.8.0-alpha.9"
+    "@nocobase/database" "0.8.0-alpha.9"
+    "@nocobase/resourcer" "0.8.0-alpha.9"
+
+"@nocobase/cache@0.8.0-alpha.9":
+  version "0.8.0-alpha.9"
+  resolved "https://registry.npmjs.org/@nocobase/cache/-/cache-0.8.0-alpha.9.tgz#99f7ca196dacd41b69ed7b7f179fcc1c4c5baa27"
+  integrity sha512-GCi7OE9nLrXKq/Og6SPtPcjtreUxxAL9x7CwmD2x3Zb7gNTc2GvQ9NWoAlO8KTLlWuzuNcJXegBhxaxV8Lt5ew==
+  dependencies:
+    cache-manager "^4.1.0"
+
+"@nocobase/client@0.8.0-alpha.9":
+  version "0.8.0-alpha.9"
+  resolved "https://registry.npmjs.org/@nocobase/client/-/client-0.8.0-alpha.9.tgz#03446b4c4160a7ebda9dfd8aa80e2203541eb72c"
+  integrity sha512-cvh01k8Ujhc9D7kDYQ7QKP5tnLF+wBOqixtisivti9aeklMBaOKj1oLmxKHZlB2IJzKpT+rUntpsxGxUS6co9A==
+  dependencies:
+    "@antv/g2plot" "^2.4.18"
+    "@dnd-kit/core" "^5.0.1"
+    "@dnd-kit/sortable" "^6.0.0"
+    "@emotion/css" "^11.7.1"
+    "@formily/antd" "2.0.20"
+    "@formily/core" "2.0.20"
+    "@formily/react" "2.0.20"
+    "@nocobase/sdk" "0.8.0-alpha.9"
+    "@nocobase/utils" "0.8.0-alpha.9"
+    ahooks "^3.0.5"
+    antd "~4.19.5"
+    axios "^0.26.1"
+    classnames "^2.3.1"
+    cron-parser "^4.6.0"
+    cronstrue "^2.11.0"
+    file-saver "^2.0.5"
+    i18next "^21.6.0"
+    json-templates "^4.2.0"
+    marked "^4.0.12"
+    mathjs "^10.6.0"
+    react-beautiful-dnd "^13.1.0"
+    react-big-calendar "^0.38.7"
+    react-contenteditable "^3.3.6"
+    react-drag-listview "^0.1.9"
+    react-helmet "^6.1.0"
+    react-hotkeys-hook "^3.4.7"
+    react-i18next "^11.15.1"
+    react-image-lightbox "^5.1.4"
+    react-js-cron "^1.4.0"
+    react-quill "^1.3.5"
+    react-router-dom "^5.2.0"
+    react-to-print "^2.14.7"
+    solarlunar-es "^1.0.9"
+    use-deep-compare-effect "^1.8.1"
+
+"@nocobase/database@0.8.0-alpha.9":
+  version "0.8.0-alpha.9"
+  resolved "https://registry.npmjs.org/@nocobase/database/-/database-0.8.0-alpha.9.tgz#9684b4ddcfc5396df2ef3d4ae9cd2ce59142df81"
+  integrity sha512-zkLTW2iFg1tlbSTlW40oEmM7O2GxHXmIzErnDR4it0GWoLqjDgzNHP5QjODOxiiB/+/unNFudfGTNCoXxu2ZvA==
+  dependencies:
+    "@nocobase/utils" "0.8.0-alpha.9"
+    async-mutex "^0.3.2"
+    cron-parser "4.4.0"
+    deepmerge "^4.2.2"
+    flat "^5.0.2"
+    glob "^7.1.6"
+    mathjs "^10.6.1"
+    moment "2.x"
+    semver "^7.3.7"
+    sequelize "^6.9.0"
+    umzug "^3.1.1"
+
+"@nocobase/resourcer@0.8.0-alpha.9":
+  version "0.8.0-alpha.9"
+  resolved "https://registry.npmjs.org/@nocobase/resourcer/-/resourcer-0.8.0-alpha.9.tgz#5415af5944b31293e5e2da73bf5c999866a90fab"
+  integrity sha512-6v9bfUex2RfT8C3xX+SUhj8/zECCY6pQA3ce8GV3xd9cu6ku8c7hIiNM3KwgPOD189aND3FxNwxqpECNaoWQ1A==
+  dependencies:
+    "@nocobase/utils" "0.8.0-alpha.9"
+    deepmerge "^4.2.2"
+    koa-compose "^4.1.0"
+    lodash "^4.17.21"
+    path-to-regexp "^6.1.0"
+    qs "^6.9.4"
+
+"@nocobase/sdk@0.8.0-alpha.9":
+  version "0.8.0-alpha.9"
+  resolved "https://registry.npmjs.org/@nocobase/sdk/-/sdk-0.8.0-alpha.9.tgz#5306e7bf4aabf00894a65036c584508d93bda379"
+  integrity sha512-v+GF4N5ldYwmoqQIukGWzz/eOm2TgxcUZq3uE+YeP/aiDa4XAfkLrpBNsvCS24k3s/U+84FYrvTWRRStJGSzBA==
+  dependencies:
+    axios "^0.26.1"
+    qs "^6.10.1"
+
+"@nocobase/server@0.8.0-alpha.9":
+  version "0.8.0-alpha.9"
+  resolved "https://registry.npmjs.org/@nocobase/server/-/server-0.8.0-alpha.9.tgz#bc1955e41b2ac9f6640fdf109516376604d4092c"
+  integrity sha512-/mHk2Uc8RS/3GcGvnMnFKlbf2aCufGuc+GOr5gEKuyWa50ibD4nZ7LKJx023uEO07rxWkFkhR6+ExuZ+BGRDGQ==
+  dependencies:
+    "@hapi/topo" "^6.0.0"
+    "@koa/cors" "^3.1.0"
+    "@koa/router" "^9.4.0"
+    "@nocobase/acl" "0.8.0-alpha.9"
+    "@nocobase/actions" "0.8.0-alpha.9"
+    "@nocobase/database" "0.8.0-alpha.9"
+    "@nocobase/resourcer" "0.8.0-alpha.9"
+    chalk "^4.1.1"
+    commander "^9.2.0"
+    find-package-json "^1.2.0"
+    i18next "^21.6.0"
+    koa "^2.13.4"
+    koa-bodyparser "^4.3.0"
+    koa-static "^5.0.0"
+    lodash "^4.17.21"
+    semver "^7.3.7"
+    xpipe "^1.0.5"
+
+"@nocobase/test@0.8.0-alpha.9":
+  version "0.8.0-alpha.9"
+  resolved "https://registry.npmjs.org/@nocobase/test/-/test-0.8.0-alpha.9.tgz#40aaed50af9b8fd23c0666156c806273c75b0a3f"
+  integrity sha512-bpzcogPKzfq8mjIsLDy0xlsd0dNAUgmju9kk+RPV5wNZfhvofaA7YduexawbL+dLJQC+iyjmhAhARxl8rVhKuA==
+  dependencies:
+    "@nocobase/server" "0.8.0-alpha.9"
+    "@types/supertest" "^2.0.11"
+    mockjs "^1.1.0"
+    mysql2 "^2.3.3"
+    pg "^8.7.3"
+    pg-hstore "^2.3.4"
+    sqlite3 "^5.0.8"
+    supertest "^6.1.6"
+
+"@nocobase/utils@0.8.0-alpha.9":
+  version "0.8.0-alpha.9"
+  resolved "https://registry.npmjs.org/@nocobase/utils/-/utils-0.8.0-alpha.9.tgz#fa7e203412e91ab7a6ebb12a6d53d83e09465591"
+  integrity sha512-oEqKs4+0sO4x0TFEtf+Tf1nIkb9q+9y9YmrqOn6MyMo/ejTSh6nlNt1rAYgs02gTP4uHkSOb2/4K4oDm0JXLdg==
+  dependencies:
+    "@hapi/topo" "^6.0.0"
+    deepmerge "^4.2.2"
+    flat-to-nested "^1.1.1"
 
 "@node-saml/node-saml@^4.0.2":
   version "4.0.2"
@@ -6234,6 +6389,21 @@ ahooks-v3-count@^1.0.0:
   resolved "https://registry.yarnpkg.com/ahooks-v3-count/-/ahooks-v3-count-1.0.0.tgz#ddeb392e009ad6e748905b3cbf63a9fd8262ca80"
   integrity sha512-V7uUvAwnimu6eh/PED4mCDjE7tokeZQLKlxg9lCTMPhN+NjsSbtdacByVlR1oluXQzD3MOw55wylDmQo4+S9ZQ==
 
+ahooks@^3.0.5:
+  version "3.7.4"
+  resolved "https://registry.npmjs.org/ahooks/-/ahooks-3.7.4.tgz#25e76a989da324a855eb75758b789ab0644b7a59"
+  integrity sha512-hvgdqzPUKXn95mK3cGlDCi/ZZqv+FRibCUCFT8zW3hCwLGvixVfnHrIW2/2lgzPdLo8mLjp/XOdIJvcPvE2lgQ==
+  dependencies:
+    "@types/js-cookie" "^2.x.x"
+    ahooks-v3-count "^1.0.0"
+    dayjs "^1.9.1"
+    intersection-observer "^0.12.0"
+    js-cookie "^2.x.x"
+    lodash "^4.17.21"
+    resize-observer-polyfill "^1.5.1"
+    screenfull "^5.0.0"
+    tslib "^2.4.1"
+
 ahooks@^3.7.2:
   version "3.7.2"
   resolved "https://registry.yarnpkg.com/ahooks/-/ahooks-3.7.2.tgz#0afa42625e77ae1cc4b60b19c45cf12a8cf29b56"
@@ -7379,6 +7549,11 @@ before-after-hook@^2.2.0:
   version "2.2.2"
   resolved "https://registry.npmjs.org/before-after-hook/-/before-after-hook-2.2.2.tgz#a6e8ca41028d90ee2c24222f201c90956091613e"
   integrity sha512-3pZEU3NT5BFUo/AD5ERPWOgQOCZITni6iavr5AUw5AUwQjMlI0kzu5btnyD39AF0gUEsDPwJT+oY1ORBJijPjQ==
+
+bessel@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/bessel/-/bessel-1.0.2.tgz#828812291e0b62e94959cdea43fac186e8a7202d"
+  integrity sha512-Al3nHGQGqDYqqinXhQzmwmcRToe/3WyBv4N8aZc5Pef8xw2neZlR9VPi84Sa23JtgWcucu18HxVZrnI0fn2etw==
 
 big.js@^5.2.2:
   version "5.2.2"
@@ -14747,6 +14922,11 @@ jsprim@^1.2.2:
     json-schema "0.2.3"
     verror "1.10.0"
 
+jstat@^1.9.6:
+  version "1.9.6"
+  resolved "https://registry.npmjs.org/jstat/-/jstat-1.9.6.tgz#60e801b0d4c26e37aab0f375d1859fe9d60e10c0"
+  integrity sha512-rPBkJbK2TnA8pzs93QcDDPlKcrtZWuuCo2dVR0TFLOJSxhqfWOVCSp8aV3/oSbn+4uY4yw1URtLpHQedtmXfug==
+
 jstoxml@^2.0.0:
   version "2.2.9"
   resolved "https://registry.yarnpkg.com/jstoxml/-/jstoxml-2.2.9.tgz#2eebd5e55383fe66a375022ca0aa88f77bc4fb84"
@@ -21020,6 +21200,11 @@ retry-as-promised@^6.1.0:
   resolved "https://registry.yarnpkg.com/retry-as-promised/-/retry-as-promised-6.1.0.tgz#11eca9a0f97804d552ec8e74bc4eb839bd226dc4"
   integrity sha512-Hj/jY+wFC+SB9SDlIIFWiGOHnNG0swYbGYsOj2BJ8u2HKUaobNKab0OIC0zOLYzDy0mb7A4xA5BMo4LMz5YtEA==
 
+retry-as-promised@^7.0.3:
+  version "7.0.3"
+  resolved "https://registry.npmjs.org/retry-as-promised/-/retry-as-promised-7.0.3.tgz#ca3c13b15525a7bfbf0f56d2996f0e75649d068b"
+  integrity sha512-SEvMa4khHvpU/o6zgh7sK24qm6rxVgKnrSyzb5POeDvZx5N9Bf0s5sQsQ4Fl+HjRp0X+w2UzACGfUnXtx6cJ9Q==
+
 retry@^0.12.0:
   version "0.12.0"
   resolved "https://registry.npmjs.org/retry/-/retry-0.12.0.tgz#1b42a6266a21f07421d1b0b54b7dc167b01c013b"
@@ -21445,6 +21630,28 @@ sequelize@^6.26.0:
     moment-timezone "^0.5.34"
     pg-connection-string "^2.5.0"
     retry-as-promised "^6.1.0"
+    semver "^7.3.5"
+    sequelize-pool "^7.1.0"
+    toposort-class "^1.0.1"
+    uuid "^8.3.2"
+    validator "^13.7.0"
+    wkx "^0.5.0"
+
+sequelize@^6.9.0:
+  version "6.28.0"
+  resolved "https://registry.npmjs.org/sequelize/-/sequelize-6.28.0.tgz#d6bc4e36647e8501635467c0777c45a33f5d5ba8"
+  integrity sha512-+WHqvUQgTp19GLkt+gyQ+F6qg+FIEO2O5F9C0TOYV/PjZ2a/XwWvVkL1NCkS4VSIjVVvAUutiW6Wv9ofveGaVw==
+  dependencies:
+    "@types/debug" "^4.1.7"
+    "@types/validator" "^13.7.1"
+    debug "^4.3.3"
+    dottie "^2.0.2"
+    inflection "^1.13.2"
+    lodash "^4.17.21"
+    moment "^2.29.1"
+    moment-timezone "^0.5.34"
+    pg-connection-string "^2.5.0"
+    retry-as-promised "^7.0.3"
     semver "^7.3.5"
     sequelize-pool "^7.1.0"
     toposort-class "^1.0.1"
@@ -23071,6 +23278,11 @@ tslib@^2.1.0, tslib@^2.2.0:
   version "2.4.0"
   resolved "https://registry.npmjs.org/tslib/-/tslib-2.4.0.tgz#7cecaa7f073ce680a05847aa77be941098f36dc3"
   integrity sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==
+
+tslib@^2.4.1:
+  version "2.4.1"
+  resolved "https://registry.npmjs.org/tslib/-/tslib-2.4.1.tgz#0d0bfbaac2880b91e22df0768e55be9753a5b17e"
+  integrity sha512-tGyy4dAjRIEwI7BzsB0lynWgOpfqjUdq91XXAlIWD2OwKBH7oCl/GZG/HT4BOHrTlPMOASlMQ7veyTqpmRcrNA==
 
 tsscmp@1.0.6:
   version "1.0.6"
