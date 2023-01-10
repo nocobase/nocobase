@@ -25,17 +25,27 @@ export const mathFormula: IField = {
   },
   properties: {
     ...defaultProps,
-    expression: {
+    dataType: {
       type: 'string',
-      title: '{{t("Expression")}}',
-      required: true,
-      description: '{{mathExpressionDescription}}',
-      'x-component': 'MathFormula.Expression',
+      title: '{{t("Data type")}}',
+      'x-component': 'Select',
       'x-decorator': 'FormItem',
-      'x-component-props': {
-        supports: ['number', 'percent', 'integer'],
-        useCurrentFields: '{{ useCurrentFields }}',
-      },
+      default: 'number',
+      'x-disabled': '{{ !createOnly }}',
+      'x-reactions': [
+        {
+          target: 'uiSchema.x-component-props.step',
+          fulfill: {
+            state: {
+              display: '{{$self.value !== "string" ? "visible" : "none"}}',
+            },
+          },
+        },
+      ],
+      enum: [
+        { value: 'string', label: '{{t("String")}}' },
+        { value: 'number', label: '{{t("Number")}}' },
+      ],
     },
     'uiSchema.x-component-props.step': {
       type: 'string',
@@ -52,6 +62,18 @@ export const mathFormula: IField = {
         { value: '0.0001', label: '1.0000' },
         { value: '0.00001', label: '1.00000' },
       ],
+    },
+    expression: {
+      type: 'string',
+      title: '{{t("Expression")}}',
+      required: true,
+      description: '{{mathExpressionDescription}}',
+      'x-component': 'MathFormula.Expression',
+      'x-decorator': 'FormItem',
+      'x-component-props': {
+        supports: ['number', 'percent', 'integer'],
+        useCurrentFields: '{{ useCurrentFields }}',
+      },
     },
   },
   filterable: {

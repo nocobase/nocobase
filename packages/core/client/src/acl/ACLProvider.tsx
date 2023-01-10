@@ -107,7 +107,7 @@ export const useACLRolesCheck = () => {
     },
     getStrategyActionParams: (actionPath: string) => {
       const actionAlias = getActionAlias(actionPath);
-      const strategyAction = data?.strategy?.actions.find((action) => {
+      const strategyAction = data?.strategy?.actions?.find((action) => {
         const [value] = action.split(':');
         return value === actionAlias;
       });
