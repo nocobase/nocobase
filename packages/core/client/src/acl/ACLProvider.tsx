@@ -1,6 +1,7 @@
-import { Schema, useFieldSchema } from '@formily/react';
+import { Field } from '@formily/core';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
@@ -251,6 +252,7 @@ export const useACLFieldWhitelist = () => {
 
 export const ACLCollectionFieldProvider = (props) => {
   const fieldSchema = useFieldSchema();
+  const field = useField<Field>();
   const { allowAll } = useACLRoleContext();
   if (allowAll) {
     return <>{props.children}</>;
@@ -260,6 +262,12 @@ export const ACLCollectionFieldProvider = (props) => {
   }
   const { whitelist } = useACLFieldWhitelist();
   const allowed = whitelist.length > 0 ? whitelist.includes(fieldSchema.name) : true;
+  useEffect(() => {
+    if (!allowed) {
+      field.required = false;
+      field.display = 'hidden';
+    }
+  }, [allowed]);
   if (!allowed) {
     return null;
   }
