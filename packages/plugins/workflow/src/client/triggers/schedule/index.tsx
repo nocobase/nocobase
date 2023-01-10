@@ -87,7 +87,7 @@ export default {
       type: 'item',
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       component: CollectionBlockInitializer,
-      collectionName: config.collection,
+      collection: config.collection,
       dataSource: '{{$context.data}}'
     };
   },

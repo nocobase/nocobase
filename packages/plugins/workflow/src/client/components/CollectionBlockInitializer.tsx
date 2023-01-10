@@ -4,20 +4,20 @@ import { SchemaInitializer, useCollectionManager } from '@nocobase/client';
 
 
 
-export function CollectionBlockInitializer({ insert, collectionName, dataSource, ...props }) {
+export function CollectionBlockInitializer({ insert, collection, dataSource, ...props }) {
   const { getCollection } = useCollectionManager();
-  const collection = getCollection(collectionName);
+  const resovledCollection = getCollection(collection);
   return (
     <SchemaInitializer.Item
       {...props}
       onClick={() => {
         insert({
           type: 'void',
-          name: collectionName,
-          title: collection.title,
+          name: resovledCollection.name,
+          title: resovledCollection.title,
           'x-decorator': 'CollectionProvider',
           'x-decorator-props': {
-            name: collectionName
+            name: resovledCollection.name
           },
           'x-component': 'CardItem',
           'x-component-props': {

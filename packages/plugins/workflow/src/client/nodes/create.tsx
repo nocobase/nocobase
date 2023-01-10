@@ -51,7 +51,7 @@ export default {
       type: 'item',
       title: node.title ?? `#${node.id}`,
       component: CollectionBlockInitializer,
-      collectionName: node.config.collection,
+      collection: node.config.collection,
       dataSrouce: `{{$jobsMapByNodeId.${node.id}}}`
     };
   },
