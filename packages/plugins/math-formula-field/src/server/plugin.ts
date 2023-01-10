@@ -1,4 +1,5 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
+import { resolve } from 'path';
 import { MathFormulaField } from './math-formula-field';
 
 export class MathFormulaFieldPlugin extends Plugin {
@@ -6,7 +7,16 @@ export class MathFormulaFieldPlugin extends Plugin {
 
   beforeLoad() {
     this.db.registerFieldTypes({
+      formula: MathFormulaField,
       mathFormula: MathFormulaField,
+    });
+
+    this.db.addMigrations({
+      namespace: this.name,
+      directory: resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
     });
   }
 
