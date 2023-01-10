@@ -329,5 +329,9 @@ export const useFilterActionProps = () => {
   const { collection } = useResourceContext();
   const options = useFilterFieldOptions(collection.fields);
   const service = useResourceActionContext();
-  return useFilterFieldProps({ options, params: service.params, service });
+  return useFilterFieldProps({
+    options,
+    params: service.state?.params?.[0] || service.params,
+    service,
+  });
 };

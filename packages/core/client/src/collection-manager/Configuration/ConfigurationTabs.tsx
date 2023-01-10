@@ -142,10 +142,10 @@ export const ConfigurationTabs = () => {
       const prevFilter = defaultRequest?.params?.filter;
       const filter = { $and: [prevFilter, { 'category.id': key }] };
       run({ filter });
-      setState?.({ category: [+key] });
+      setState?.({ category: [+key], params: [{ filter }] });
     } else {
       run();
-      setState?.({ category: [] });
+      setState?.({ category: [], params: [] });
     }
   };
 
@@ -241,7 +241,10 @@ export const ConfigurationTabs = () => {
               }
             >
               <Card bordered={false}>
-                <SchemaComponentOptions inherit scope={{ loadCategories, categoryVisible: item.id === 'all' }}>
+                <SchemaComponentOptions
+                  inherit
+                  scope={{ loadCategories, categoryVisible: item.id === 'all', categoryId: item.id }}
+                >
                   <RecursionField name={key} schema={item.schema} onlyRenderProperties />
                 </SchemaComponentOptions>
               </Card>
