@@ -263,6 +263,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   initListener() {
+    this.on('beforeDefine', (model, options) => {
+      if (options.underscored) {
+        options.tableName = lodash.snakeCase(options.tableName);
+      }
+    });
+
     this.on('afterCreate', async (instance) => {
       instance?.toChangedWithAssociations?.();
     });

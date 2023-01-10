@@ -98,7 +98,7 @@ export class Collection<
       ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
       modelName: name,
       sequelize: this.context.database.sequelize,
-      tableName: tableName || getTableName(name, this.options),
+      tableName: tableName || name,
     };
   }
 
