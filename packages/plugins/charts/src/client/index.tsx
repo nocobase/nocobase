@@ -1,14 +1,14 @@
-import {PieChartOutlined} from '@ant-design/icons';
+import { PieChartOutlined } from '@ant-design/icons';
 import {
   SchemaComponentOptions,
   SchemaInitializer,
-  SchemaInitializerContext, SettingsCenterProvider
+  SchemaInitializerContext, SettingsCenterProvider,
 } from '@nocobase/client';
-import {Card} from 'antd';
-import React, {useContext} from 'react';
-import {useTranslation} from 'react-i18next';
-import {ChartBlockInitializer} from "./ChartBlockInitializer";
-import {ChartBlockEngine} from "./ChartBlockEngine";
+import { Card } from 'antd';
+import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ChartBlockInitializer } from './ChartBlockInitializer';
+import { ChartBlockEngine } from './ChartBlockEngine';
 
 export default React.memo((props) => {
   const items = useContext(SchemaInitializerContext);
@@ -34,7 +34,7 @@ export default React.memo((props) => {
         },
       }}
     >
-      <SchemaComponentOptions components={{ChartBlockInitializer,ChartBlockEngine}}>
+      <SchemaComponentOptions components={{ ChartBlockInitializer, ChartBlockEngine }}>
         <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
       </SchemaComponentOptions>
     </SettingsCenterProvider>
