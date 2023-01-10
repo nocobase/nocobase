@@ -27,7 +27,6 @@ import {templates} from "../templates";
 import {FormLayout} from "@formily/antd";
 import {Field} from "@formily/core";
 import {ChartBlockInitializer} from "../ChartBlockInitializer";
-import {ChartBlockEngine} from "../ChartBlockEngine";
 
 interface contextInfo {
   collectionFields: CollectionFieldOptions[];

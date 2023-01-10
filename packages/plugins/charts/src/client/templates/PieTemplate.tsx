@@ -1,7 +1,7 @@
 export const pieTemplate = {
   title: 'Pie',
   type: "Pie",
-  component: 'G2Plot',
+  renderComponent: 'G2Plot',
   defaultChartOptions: {
     appendPadding: 10,
     angleField: 'value',
@@ -10,7 +10,7 @@ export const pieTemplate = {
     label: {
       type: 'inner',
       offset: '-30%',
-      content: "{{({percent}) => `${(percent * 100).toFixed(0)}%`}}",
+      content: ({percent}) => `${(percent * 100).toFixed(0)}%`,
       style: {
         fontSize: 14,
         textAlign: 'center',
@@ -123,7 +123,7 @@ export const pieTemplate = {
           },
         },
       },
-      chartOption: {
+      chartOptions: {
         type: 'object',
         title: 'Chart options',
         'x-component': 'Tabs.TabPane',
