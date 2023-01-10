@@ -25,6 +25,8 @@ export class PresetNocoBase extends Plugin {
         'audit-logs',
         'duplicator',
         'iframe-block',
+        'math-formula-field',
+        'excel-formula-field',
       ].concat(plugins),
     );
   }
