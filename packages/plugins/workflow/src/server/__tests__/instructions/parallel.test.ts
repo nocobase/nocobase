@@ -1,7 +1,7 @@
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
-import { EXECUTION_STATUS } from '../../constants';
+import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 
 
@@ -388,7 +388,10 @@ describe('workflow > instructions > parallel', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
 
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
-      pending.set('result', 123);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123
+      });
       pending.execution = execution;
       await plugin.resume(pending);
 

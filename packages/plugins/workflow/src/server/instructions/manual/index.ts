@@ -138,7 +138,7 @@ export default class implements Instruction {
     const submitted = distribution.reduce((count, item) => item.status !== JOB_STATUS.PENDING ? count + item.count : count, 0);
     const result = mode ? (submitted || 0) / assignees.length : job.latestUserJob?.result ?? job.result;
     job.set({
-      status: getMode(mode).getStatus(distribution, assignees) ?? JOB_STATUS.PENDING,
+      status: job.status || (getMode(mode).getStatus(distribution, assignees) ?? JOB_STATUS.PENDING),
       result
     });
 

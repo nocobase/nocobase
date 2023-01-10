@@ -154,7 +154,10 @@ describe('workflow > Processor', () => {
       expect(pending.status).toEqual(JOB_STATUS.PENDING);
       expect(pending.result).toEqual(null);
 
-      pending.set('result', 123);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123
+      });
       pending.execution = execution;
       await plugin.resume(pending);
 
@@ -265,7 +268,10 @@ describe('workflow > Processor', () => {
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
 
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
-      pending.set('result', 123);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123
+      });
       pending.execution = execution;
       await plugin.resume(pending);
 
@@ -359,7 +365,10 @@ describe('workflow > Processor', () => {
       expect(pendingJobs.length).toBe(4);
 
       const pending = pendingJobs.find(item => item.nodeId === n3.id );
-      pending.set('result', 123);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123
+      });
       pending.execution = execution;
       await plugin.resume(pending);
 
@@ -413,7 +422,10 @@ describe('workflow > Processor', () => {
       expect(pendingJobs.length).toBe(4);
 
       const pending = pendingJobs.find(item => item.nodeId === n2.id );
-      pending.set('result', 123);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123
+      });
       pending.execution = e1;
       await plugin.resume(pending);
 

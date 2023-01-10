@@ -268,7 +268,7 @@ export default class WorkflowPlugin extends Plugin {
 
     const processor = this.createProcessor(execution);
 
-    this.app.logger.info(`[Workflow] execution ${execution.id} ${job ? 'resuming' : 'starting'} ...`);
+    this.app.logger.info(`[Workflow] execution ${execution.id} ${job ? 'resuming' : 'starting'}...`);
 
     try {
       await (job ? processor.resume(job) : processor.start());

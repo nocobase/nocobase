@@ -12,7 +12,7 @@ export function ValueGetter({ onChange }) {
 
   return (
     <CollectionFieldSelect
-      fields={config.form.collection.fields}
+      fields={config.schema.collection.fields}
       value={options?.path}
       onChange={(path) => {
         onChange(`{{$jobsMapByNodeId.${options.nodeId}.${path}}}`);

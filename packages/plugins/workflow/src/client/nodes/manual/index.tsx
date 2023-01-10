@@ -42,6 +42,7 @@ export default {
           resource: 'users'
         },
       },
+      required: true,
       default: [],
     },
     'config.mode': {

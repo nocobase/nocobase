@@ -22,6 +22,7 @@ import { useTrigger } from '../../triggers';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
 import { useFlowContext } from '../../FlowContext';
 import { NAMESPACE } from '../../locale';
+import { JOB_STATUS } from '../../constants';
 
 
 
@@ -358,31 +359,31 @@ function AddActionButton(props) {
       {...props}
       items={[
         {
-          key: 1,
+          key: JOB_STATUS.RESOLVED,
           type: 'item',
           title: `{{t("Resolve", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
-          action: 1,
+          action: JOB_STATUS.RESOLVED,
           actionProps: {
             type: 'primary',
           }
         },
         {
-          key: -1,
+          key: JOB_STATUS.REJECTED,
           type: 'item',
           title: `{{t("Reject", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
-          action: -1,
+          action: JOB_STATUS.REJECTED,
           actionProps: {
             type: 'danger',
           }
         },
         {
-          key: 0,
+          key: JOB_STATUS.PENDING,
           type: 'item',
           title: `{{t("Save", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
-          action: 0,
+          action: JOB_STATUS.PENDING,
         }
       ]}
       title="{{t('Configure actions')}}"
@@ -468,7 +469,23 @@ export function SchemaConfig({ value, onChange }) {
                 type: 'void',
                 'x-component': 'ActionBar',
                 'x-initializer': 'AddActionButton',
-                properties: actions ?? {}
+                properties: actions ?? {
+                  resolve: {
+                    type: 'void',
+                    title: `{{t("Resolve", { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'ManualActionStatusProvider',
+                    'x-decorator-props': {
+                      value: JOB_STATUS.RESOLVED
+                    },
+                    'x-component': 'Action',
+                    'x-component-props': {
+                      type: 'primary',
+                      useAction: '{{ useSubmit }}',
+                    },
+                    'x-designer': 'Action.Designer',
+                    'x-action': JOB_STATUS.RESOLVED,
+                  }
+                }
               }
             }
           }
