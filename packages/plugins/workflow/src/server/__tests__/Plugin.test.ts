@@ -215,11 +215,22 @@ describe('workflow > Plugin', () => {
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      // NOTE: second trigger to ensure no skipped event
+      const p3 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
+      const posts2 = await PostRepo.find();
+      expect(posts2.length).toBe(4);
+
+      const [execution2] = await workflow.getExecutions({ order: [['createdAt', 'DESC']] });
+      expect(execution2.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
   });
 
   describe('dispatcher', () => {
-    it.skip('multiple triggers in same event', async () => {
+    it('multiple triggers in same event', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'collection',

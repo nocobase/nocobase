@@ -5,6 +5,7 @@ import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useACLRoleContext } from '../acl';
 import { useCollection, useCollectionManager } from '../collection-manager';
+import { useFixedSchema } from '../schema-component';
 import { toColumns } from '../schema-component/antd/kanban/Kanban';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
@@ -23,6 +24,8 @@ const useGroupField = (props) => {
 
 const InternalKanbanBlockProvider = (props) => {
   const field = useField<any>();
+  const fieldSchema = useFieldSchema();
+  useFixedSchema();
   const { resource, service } = useBlockRequestContext();
   const groupField = useGroupField(props);
   if (!groupField) {
@@ -42,6 +45,7 @@ const InternalKanbanBlockProvider = (props) => {
         service,
         resource,
         groupField,
+        fixedBlock: fieldSchema?.['x-decorator-props']?.fixedBlock,
       }}
     >
       {props.children}
@@ -71,7 +75,7 @@ const useAssociationNames = (collection) => {
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
-    if (collectionField.target) {
+    if (collectionField.target && collectionField.interface !== 'snapshot') {
       associationFields.add(collectionField.name);
       const fields = getCollectionFields(collectionField.target);
       for (const field of fields) {
@@ -93,14 +97,13 @@ const useAssociationNames = (collection) => {
   if (gridSchema) {
     recursiveProperties(gridSchema, 'CollectionField', associationFields, appends);
   }
-  
+
   return uniq(appends);
 };
 
 export const KanbanBlockProvider = (props) => {
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
-  console.log('KanbanBlockProvider', appends);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
@@ -117,11 +120,11 @@ export const useKanbanBlockContext = () => {
 
 const useDisableCardDrag = () => {
   const ctx = useKanbanBlockContext();
-  const { allowAll, allowConfigure, getActionParams } = useACLRoleContext();
+  const { allowAll, allowConfigure, parseAction } = useACLRoleContext();
   if (allowAll || allowConfigure) {
     return false;
   }
-  const result = getActionParams(`${ctx?.props?.resource}:update`, { skipOwnCheck: true });
+  const result = parseAction(`${ctx?.props?.resource}:update`, { ignoreScope: true });
   return !result;
 };
 

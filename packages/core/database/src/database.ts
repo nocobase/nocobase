@@ -7,7 +7,7 @@ import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
 import {
   DataTypes,
-  ModelCtor,
+  ModelStatic,
   Op,
   Options,
   QueryInterfaceDropAllTablesOptions,
@@ -22,6 +22,7 @@ import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import ReferencesMap from './features/ReferencesMap';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
+import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
 import { InheritedCollection } from './inherited-collection';
@@ -64,7 +65,7 @@ export interface MergeOptions extends merge.Options {}
 
 export interface PendingOptions {
   field: RelationField;
-  model: ModelCtor<Model>;
+  model: ModelStatic<Model>;
 }
 
 interface MapOf<T> {
@@ -146,16 +147,18 @@ export class Database extends EventEmitter implements AsyncEmitter {
   migrations: Migrations;
   fieldTypes = new Map();
   options: IDatabaseOptions;
-  models = new Map<string, ModelCtor<Model>>();
+  models = new Map<string, ModelStatic<Model>>();
   repositories = new Map<string, RepositoryType>();
   operators = new Map();
   collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
-  modelCollection = new Map<ModelCtor<any>, Collection>();
+  modelCollection = new Map<ModelStatic<any>, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
 
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
+
+  importedFrom = new Map<string, Array<string>>();
 
   modelHook: ModelHook;
   version: DatabaseVersion;
@@ -231,6 +234,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     };
 
     this.migrations = new Migrations(context);
+
     this.migrator = new Umzug({
       logger: migratorOptions.logger || console,
       migrations: this.migrations.callback(),
@@ -240,6 +244,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),
+    });
+
+    this.collection({
+      name: 'migrations',
+      autoGenId: false,
+      timestamps: false,
+      fields: [{ type: 'string', name: 'name' }],
     });
 
     this.sequelize.beforeDefine((model, opts) => {
@@ -345,7 +356,19 @@ export class Database extends EventEmitter implements AsyncEmitter {
    * @param name
    */
   getCollection(name: string): Collection {
-    return this.collections.get(name);
+    if (!name) {
+      return null;
+    }
+
+    const [collectionName, associationName] = name.split('.');
+    let collection = this.collections.get(collectionName);
+
+    if (associationName) {
+      const target = collection.getField(associationName)?.target;
+      return target ? this.collections.get(target) : null;
+    }
+
+    return collection;
   }
 
   hasCollection(name: string): boolean {
@@ -370,18 +393,18 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   getModel<M extends Model>(name: string) {
-    return this.getCollection(name).model as ModelCtor<M>;
+    return this.getCollection(name).model as ModelStatic<M>;
   }
 
   getRepository<R extends Repository>(name: string): R;
   getRepository<R extends RelationRepository>(name: string, relationId: string | number): R;
+  getRepository<R extends ArrayFieldRepository>(name: string, relationId: string | number): R;
 
   getRepository<R extends RelationRepository>(name: string, relationId?: string | number): Repository | R {
-    if (relationId) {
-      const [collection, relation] = name.split('.');
+    const [collection, relation] = name.split('.');
+    if (relation) {
       return this.getRepository(collection)?.relation(relation)?.of(relationId) as R;
     }
-
     return this.getCollection(name)?.repository;
   }
 
@@ -407,7 +430,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  registerModels(models: MapOf<ModelCtor<any>>) {
+  registerModels(models: MapOf<ModelStatic<any>>) {
     for (const [type, schemaType] of Object.entries(models)) {
       this.models.set(type, schemaType);
     }
@@ -445,6 +468,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   buildField(options, context: FieldContext) {
     const { type } = options;
+
     const Field = this.fieldTypes.get(type);
 
     if (!Field) {
@@ -576,7 +600,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>> {
+  async import(options: {
+    directory: string;
+    from?: string;
+    extensions?: ImportFileExtension[];
+  }): Promise<Map<string, Collection>> {
     const reader = new ImporterReader(options.directory, options.extensions);
     const modules = await reader.read();
     const result = new Map<string, Collection>();
@@ -586,6 +614,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
         this.extendCollection(module.collectionOptions, module.mergeOptions);
       } else {
         const collection = this.collection(module);
+
+        if (options.from) {
+          this.importedFrom.set(options.from, [...(this.importedFrom.get(options.from) || []), collection.name]);
+        }
+
         result.set(collection.name, collection);
       }
     }

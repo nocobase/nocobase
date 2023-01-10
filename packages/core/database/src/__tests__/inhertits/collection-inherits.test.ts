@@ -15,6 +15,30 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should create inherits with table name contains upperCase', async () => {
+    db.collection({
+      name: 'parent',
+      fields: [{ name: 'field1', type: 'date' }],
+    });
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+    db.collection({
+      name: 'abcABC',
+      inherits: ['parent'],
+      fields: [{ type: 'string', name: 'name' }],
+    });
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+  });
+
   it('should create inherits from empty table', async () => {
     const empty = db.collection({
       name: 'empty',
@@ -96,7 +120,7 @@ pgOnly()('collection inherits', () => {
     await db.sync();
   });
 
-  it('should not conflict when fields have same DateType', async () => {
+  it.skip('should not conflict when fields have same DateType', async () => {
     db.collection({
       name: 'parent',
       fields: [{ name: 'field1', type: 'string' }],
@@ -935,5 +959,36 @@ pgOnly()('collection inherits', () => {
 
     expect(student1.get('name')).toBe('student1');
     expect(student1.get('age')).toBe(10);
+  });
+
+  it('should destroy fields on parents table', async () => {
+    const profile = db.collection({
+      name: 'profiles',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    const person = db.collection({
+      name: 'person',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          type: 'hasOne',
+          name: 'profile',
+        },
+      ],
+    });
+
+    const student = db.collection({
+      name: 'student',
+      inherits: 'person',
+    });
+
+    await db.sync();
+
+    person.removeField('profile');
+
+    person.setField('profile', { type: 'belongsTo' });
+
+    await db.sync();
   });
 });

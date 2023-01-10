@@ -1,4 +1,4 @@
-export { DataTypes, ModelCtor, Op, SyncOptions } from 'sequelize';
+export { DataTypes, ModelStatic, Op, SyncOptions } from 'sequelize';
 export * from './collection';
 export * from './inherited-collection';
 export * from './database';
@@ -15,3 +15,6 @@ export * from './relation-repository/multiple-relation-repository';
 export * from './relation-repository/single-relation-repository';
 export * from './repository';
 export * from './update-associations';
+export * from './collection-importer';
+export * from './filter-match';
+export * from './field-repository/array-field-repository';

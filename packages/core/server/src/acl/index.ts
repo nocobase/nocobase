@@ -3,7 +3,10 @@ import { availableActions } from './available-action';
 
 const configureResources = [
   'roles',
+  'users',
   'collections',
+  'fields',
+  'collections.fields',
   'roles.collections',
   'roles.resources',
   'rolesResourcesScopes',

@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/plugin-oidc",
-  "version": "0.8.0-alpha.13",
+  "version": "0.8.1-alpha.4",
   "main": "lib/server/index.js",
   "devDependencies": {
-    "@nocobase/server": "0.8.0-alpha.13",
-    "@nocobase/test": "0.8.0-alpha.13"
+    "@nocobase/server": "0.8.1-alpha.4",
+    "@nocobase/test": "0.8.1-alpha.4"
   },
   "dependencies": {
     "openid-client": "^5.3.0"

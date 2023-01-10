@@ -286,6 +286,7 @@ export class Resourcer {
       }
       try {
         const resource = this.getResource(getNameByParams(params));
+
         // 为关系资源时，暂时需要再执行一遍 parseRequest
         if (resource.options.type && resource.options.type !== 'single') {
           params = parseRequest(
@@ -299,6 +300,7 @@ export class Resourcer {
               accessors: this.options.accessors || accessors,
             },
           );
+
           if (!params) {
             return next();
           }

@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { Op, Transactionable } from '@nocobase/database';
+import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -10,10 +10,10 @@ import { EXECUTION_STATUS } from './constants';
 import extensions from './extensions';
 import initInstructions, { Instruction } from './instructions';
 import ExecutionModel from './models/Execution';
+import JobModel from './models/Job';
 import WorkflowModel from './models/Workflow';
 import Processor from './Processor';
 import initTriggers, { Trigger } from './triggers';
-import JobModel from './models/Job';
 
 
 type Pending = [ExecutionModel, JobModel?];
@@ -22,7 +22,7 @@ export default class WorkflowPlugin extends Plugin {
   triggers: Registry<Trigger> = new Registry();
   calculators = calculators;
   extensions = extensions;
-  executing: ExecutionModel = null;
+  executing: ExecutionModel | null = null;
   pending: Pending[] = [];
   events: [WorkflowModel, any, { context?: any }][] = [];
 
@@ -72,8 +72,30 @@ export default class WorkflowPlugin extends Plugin {
   async load() {
     const { db, options } = this;
 
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.workflows`,
+      actions: [
+        'workflows:*',
+        'workflows.nodes:*',
+        'executions:list',
+        'executions:get',
+        'flow_nodes:update',
+        'flow_nodes:destroy',
+      ],
+    });
+
+    this.app.acl.allow('users_jobs', ['list', 'get', 'submit'], 'loggedIn');
+
     await db.import({
       directory: path.resolve(__dirname, 'collections'),
+    });
+
+    this.db.addMigrations({
+      namespace: 'workflow',
+      directory: path.resolve(__dirname, 'migrations'),
+      context: {
+        plugin: this,
+      },
     });
 
     initActions(this);
@@ -133,13 +155,15 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  public trigger(workflow: WorkflowModel, context: Object, options: { context?: any } = {}): Promise<void> {
+  public trigger(workflow: WorkflowModel, context: Object, options: { context?: any } = {}): void {
     // `null` means not to trigger
     if (context == null) {
       return;
     }
 
     this.events.push([workflow, context, options]);
+
+    this.app.logger.debug(`[Workflow] new event triggered, now events: ${this.events.length}`);
 
     if (this.events.length > 1) {
       return;
@@ -150,8 +174,13 @@ export default class WorkflowPlugin extends Plugin {
   }
 
   private prepare = async () => {
-    const [workflow, context, options] = this.events[0];
+    const event = this.events.shift();
+    if (!event) {
+      return;
+    }
+    const [workflow, context, options] = event;
 
+    let valid = true;
     if (options.context?.executionId) {
       // NOTE: no transaction here for read-uncommitted execution
       const existed = await workflow.countExecutions({
@@ -161,46 +190,53 @@ export default class WorkflowPlugin extends Plugin {
       });
 
       if (existed) {
-        console.warn(`workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`);
-        return;
+        this.app.logger.warn(`[Workflow] workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`);
+        valid = false;
       }
     }
 
-    await this.db.sequelize.transaction(async transaction => {
-      const execution = await workflow.createExecution({
-        context,
-        key: workflow.key,
-        status: EXECUTION_STATUS.CREATED,
-        useTransaction: workflow.useTransaction,
-      }, { transaction });
+    if (valid) {
+      const execution = await this.db.sequelize.transaction(async transaction => {
+        const execution = await workflow.createExecution({
+          context,
+          key: workflow.key,
+          status: EXECUTION_STATUS.CREATED,
+          useTransaction: workflow.useTransaction,
+        }, { transaction });
 
-      const executed = await workflow.countExecutions({ transaction });
+        const executed = await workflow.countExecutions({ transaction });
 
-      // NOTE: not to trigger afterUpdate hook here
-      await workflow.update({ executed }, { transaction, hooks: false });
+        // NOTE: not to trigger afterUpdate hook here
+        await workflow.update({ executed }, { transaction, hooks: false });
 
-      const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
-        where: {
-          key: workflow.key
-        },
-        transaction
+        const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
+          where: {
+            key: workflow.key
+          },
+          transaction
+        });
+        await (<typeof WorkflowModel>workflow.constructor).update({
+          allExecuted
+        }, {
+          where: {
+            key: workflow.key
+          },
+          individualHooks: true,
+          transaction
+        });
+
+        execution.workflow = workflow;
+
+        return execution;
       });
-      await (<typeof WorkflowModel>workflow.constructor).update({
-        allExecuted
-      }, {
-        where: {
-          key: workflow.key
-        },
-        individualHooks: true,
-        transaction
-      });
 
-      execution.workflow = workflow;
+      this.app.logger.debug(`[Workflow] execution of workflow ${workflow.id} created as ${execution.id}`);
 
-      return execution;
-    });
-
-    this.events.shift();
+      // NOTE: cache first execution for most cases
+      if (!this.executing && !this.pending.length) {
+        this.pending.push([execution]);
+      }
+    }
 
     if (this.events.length) {
       await this.prepare();
@@ -223,10 +259,10 @@ export default class WorkflowPlugin extends Plugin {
       return;
     }
 
-    let next: Pending;
+    let next: Pending | null = null;
     // resuming has high priority
     if (this.pending.length) {
-      next = this.pending.shift();
+      next = this.pending.shift() as Pending;
     } else {
       const execution = await this.db.getRepository('executions').findOne({
         filter: {
@@ -252,9 +288,13 @@ export default class WorkflowPlugin extends Plugin {
 
     const processor = this.createProcessor(execution);
 
-    console.log('workflow processing:', new Date(), execution.workflowId, execution.id);
+    this.app.logger.info(`[Workflow] execution ${execution.id} ${job ? 'resuming' : 'starting'} ...`);
 
-    await (job ? processor.resume(job) : processor.start());
+    try {
+      await (job ? processor.resume(job) : processor.start());
+    } catch (err) {
+      this.app.logger.error(`[Workflow] ${err.message}`, err);
+    }
 
     this.executing = null;
 

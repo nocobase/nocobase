@@ -1,16 +1,29 @@
+import { css } from '@emotion/css';
 import { Field } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
+import { Col, Row } from 'antd';
 import template from 'lodash/template';
 import React, { createContext, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { ACLCollectionProvider, TableFieldResource, useAPIClient, useRecord, WithoutTableFieldResource } from '../';
-import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
+import {
+  ACLCollectionProvider,
+  TableFieldContext,
+  TableFieldResource,
+  useActionContext,
+  useAPIClient,
+  useDesignable,
+  useRecord,
+  useTableFieldContext,
+  WithoutTableFieldResource,
+} from '../';
+import { CollectionProvider, useCollection, useCollectionField, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
+import { SharedFilterProvider } from './SharedFilterProvider';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
-const BlockRequestContext = createContext<any>(null);
+export const BlockRequestContext = createContext<any>(null);
 
 export const useBlockResource = () => {
   return useContext(BlockResourceContext);
@@ -76,26 +89,36 @@ const useActionParams = (props) => {
 };
 
 export const useResourceAction = (props, opts = {}) => {
-  const { resource, action } = props;
+  /**
+   * fieldName: 来自 TableFieldProvider
+   */
+  const { resource, action, fieldName: tableFieldName } = props;
   const { fields } = useCollection();
-  const appends = fields?.filter((field) => field.target).map((field) => field.name);
+  const appends = fields?.filter((field) => field.target && field.interface !== 'snapshot').map((field) => field.name);
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
+  const { snapshot } = useActionContext();
+  const record = useRecord();
+
   if (!Object.keys(params).includes('appends') && appends?.length) {
     params['appends'] = appends;
   }
   const result = useRequest(
-    (opts) => {
-      if (!action) {
-        return Promise.resolve({});
-      }
-      const actionParams = { ...opts };
-      if (params.appends) {
-        actionParams.appends = params.appends;
-      }
-      return resource[action](actionParams).then((res) => res.data);
-    },
+    snapshot
+      ? async () => ({
+          data: record[tableFieldName] ?? [],
+        })
+      : (opts) => {
+          if (!action) {
+            return Promise.resolve({});
+          }
+          const actionParams = { ...opts };
+          if (params.appends) {
+            actionParams.appends = params.appends;
+          }
+          return resource[action](actionParams).then((res) => res.data);
+        },
     {
       ...opts,
       onSuccess(data, params) {
@@ -111,7 +134,7 @@ export const useResourceAction = (props, opts = {}) => {
   return result;
 };
 
-const MaybeCollectionProvider = (props) => {
+export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
     <CollectionProvider collection={collection}>
@@ -143,6 +166,53 @@ export const useBlockRequestContext = () => {
   return useContext(BlockRequestContext);
 };
 
+export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
+  const fieldSchema = useFieldSchema();
+  const { findComponent } = useDesignable();
+  const field = useField();
+  const Component = findComponent(field.component?.[0]) || React.Fragment;
+  const associationFilterSchema = fieldSchema.reduceProperties((buf, s) => {
+    if (s['x-component'] === 'AssociationFilter') {
+      return s;
+    }
+    return buf;
+  }, null);
+
+  if (associationFilterSchema) {
+    return (
+      <Component {...field.componentProps}>
+        <Row gutter={16} wrap={false}>
+          <Col
+            className={css`
+              width: 200px;
+              flex: 0 0 auto;
+            `}
+          >
+            <RecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              filterProperties={(s) => s['x-component'] === 'AssociationFilter'}
+            />
+          </Col>
+          <Col
+            className={css`
+              flex: 1 1 auto;
+              min-width: 0;
+            `}
+          >
+            <RecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              filterProperties={(s) => s['x-component'] !== 'AssociationFilter'}
+            />
+          </Col>
+        </Row>
+      </Component>
+    );
+  }
+  return props.children;
+};
+
 export const BlockProvider = (props) => {
   const { collection, association } = props;
   const resource = useResource(props);
@@ -150,7 +220,9 @@ export const BlockProvider = (props) => {
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
         <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props}>{props.children}</BlockRequestProvider>
+          <BlockRequestProvider {...props}>
+            <SharedFilterProvider {...props} />
+          </BlockRequestProvider>
         </BlockResourceContext.Provider>
       </BlockAssociationContext.Provider>
     </MaybeCollectionProvider>

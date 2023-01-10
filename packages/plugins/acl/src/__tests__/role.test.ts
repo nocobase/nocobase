@@ -1,4 +1,4 @@
-import { Database, Model } from '@nocobase/database';
+import { ArrayFieldRepository, Database, Model } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 
@@ -95,5 +95,30 @@ describe('role api', () => {
 
     expect(defaultRole.length).toEqual(1);
     expect(defaultRole[0].get('name')).toEqual('role2');
+  });
+
+  it('should sync snippet patterns', async () => {
+    app.acl.registerSnippet({
+      name: 'collections',
+      actions: ['collection:*'],
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'role1',
+      },
+    });
+
+    await db.getRepository<ArrayFieldRepository>('roles.snippets', 'role1').set({
+      values: ['collections'],
+    });
+
+    const role1Instance = await db.getRepository('roles').findOne({
+      filterByTk: 'role1',
+    });
+
+    const role1 = app.acl.getRole('role1');
+
+    expect(role1.toJSON()['snippets']).toEqual(['collections']);
   });
 });

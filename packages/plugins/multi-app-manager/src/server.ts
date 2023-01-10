@@ -3,7 +3,6 @@ import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
 
 export class PluginMultiAppManager extends Plugin {
-
   async install(options?: InstallOptions) {
     const repo = this.db.getRepository<any>('collections');
     if (repo) {
@@ -46,5 +45,12 @@ export class PluginMultiAppManager extends Plugin {
         }
       },
     );
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.applications`,
+      actions: [
+        'applications:*',
+      ],
+    });
   }
 }

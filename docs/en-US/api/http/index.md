@@ -1,19 +1,19 @@
 # Overview
 
-NocoBase HTTP API is designed based on Resource & Action, it is a superset of REST API. The operation is not limited to add, delete, change, and check, Resource Action can be extended arbitrarily in NocoBase.
+HTTP API of NocoBase is designed based on Resource & Action, a superset of REST API. The operation includes but not limited to create, read, update and delete. Resource Action can be extended arbitrarily in NocoBase.
 
 ## Resource
 
-Resource has two expressions in NocoBase.
+In NocoBase, resource has two expressions:
 
 - `<collection>`
 - `<collection>.<association>`
 
 <Alert>
 
-- collection is the set of all abstract data
-- association is the association data for the collection
-- resource includes both collection and collection.association
+- Collection is the set of all abstract data
+- Association is the associated data of collection
+- Resource includes both collection and collection.association
 
 </Alert>
 
@@ -25,12 +25,12 @@ Resource has two expressions in NocoBase.
 
 ## Action
 
-Representing resource operations as `:<action>`
+Action on resource is expressed by `:<action>`
 
 - `<collection>:<action>`
 - `<collection>.<association>:<action>`
 
-Built-in global operations for collection or association
+Built-in global actions for collection or association:
 
 - `create`
 - `get`
@@ -39,7 +39,7 @@ Built-in global operations for collection or association
 - `destroy`
 - `move`
 
-Built-in association operation for association only
+Built-in association actions for association only:
 
 - `set`
 - `add`
@@ -48,9 +48,9 @@ Built-in association operation for association only
 
 ### Example
 
-- `posts:create` Create posts
-- `posts.user:get` View posts user
-- `posts.tags:add` Attach post tags (associate existing tags with post)
+- `posts:create` Create post
+- `posts.user:get` Get post user
+- `posts.tags:add` Add tags to post (associate existing tags with post)
 
 ## Request URL
 
@@ -95,45 +95,45 @@ POST  /api/posts/1/tags:add
 GET   /api/posts/1/tags:remove
 ```
 
-## Resource location
+## Locate Resource
 
-- collection resource, locates the data to be processed by `collectionIndex`, `collectionIndex` must be unique
-- association resource, locates the data to be processed by `collectionIndex` and `associationIndex` jointly, `associationIndex` may not be unique, but `collectionIndex` and `associationIndex`'s association indexes must be unique
+- Collection resource locates the data to be processed by `collectionIndex`, `collectionIndex` must be unique.
+- Association resource locates the data to be processed by `collectionIndex` and `associationIndex` jointly, `associationIndex` may not be unique, but the joint index of `collectionIndex` and `associationIndex` must be unique.
 
-When viewing association resource details, the requested URL needs to provide both `<collectionIndex>` and `<associationIndex>`, `<collectionIndex>` is not redundant because `<associationIndex>` may not be unique.
+When viewing details of association resource, the requested URL needs to provide both `<collectionIndex>` and `<associationIndex>`, `<collectionIndex>` is necessary as `<associationIndex>` may not be unique.
 
-For example, `tables.fields` indicates the fields of a data table
+For example, `tables.fields` represents the fields of a data table:
 
 ```bash
 GET   /api/tables/table1/fields/title
 GET   /api/tables/table2/fields/title
 ```
 
-Both table1 and table2 have a title field. The title is unique in table1, but other tables may also have a title field
+Both table1 and table2 have the title field, title is unique in one table, but other tables may also have fields of that name.
 
-## Request parameters
+## Request Parameters
 
-Request parameters can be placed in the request's headers, parameters (query string), and body (GET requests do not have a body).
+Request parameters can be placed in the headers, parameters (query string), and body (GET requests do not have a body) of the request.
 
-A few special request parameters
+Some special request parameters:
 
-- `filter` Data filtering, used in query-related operations.
-- `filterByTk` filter by tk field, used in operations that specify details of the data.
-- `sort` Sorting, used in query-related operations.
-- `fields` which data to output, for use in query-related operations.
-- `appends` additional relationship fields for use in query-related operations.
-- `except` which fields to exclude (no output), used in query-related operations.
-- `whitelist` fields whitelist, used in data creation and update related operations.
-- `blacklist` fields blacklist, used in data creation and update related operations.
+- `filter` Data filtering, used in actions related to query.
+- `filterByTk` Filter by tk field, used in actions to specify details of data.
+- `sort` Sorting, used in actions related to query.
+- `fields` Date to output, used in actions related to query
+- `appends` Fields of additional relationship, used in actions related to query.
+- `except` Exclude some fields (not to output), used in actions related to query.
+- `whitelist` Fields whitelist, used in actions related to data creation and update.
+- `blacklist` Fields blacklist, used in actions related to data creation and update.
 
 ### filter
 
-Data filter
+Data filtering.
 
 ```bash
 # simple
 GET /api/posts?filter[status]=publish
-# Recommend using the json string format, which requires encodeURIComponent encoding
+# json string format is recommended, which requires encodeURIComponent encoding
 GET /api/posts?filter={"status":"published"}
 
 # filter operators
@@ -154,10 +154,10 @@ GET /api/posts?filter={"user.email.$includes":"gmail"}
 
 ### filterByTk
 
-Filter by tk field. By default
+Filter by tk field. In the default settings:
 
-- collection resource, tk is the primary key of the data table.
-- association resource, tk is the targetKey field of the association.
+- collection resource: tk is the primary key of the data table.
+- association resource: tk is the targetKey field of the association.
 
 ```bash
 GET   /api/posts:get?filterByTk=1&fields=name,title&appends=tags
@@ -165,20 +165,20 @@ GET   /api/posts:get?filterByTk=1&fields=name,title&appends=tags
 
 ### sort
 
-Sorting. When sorting in descending order, the fields are preceded by the minus sign `-`.
+Sorting. To sort in the descending order, put `-` in front of the field.
 
 ```bash
-# createAt field in ascending order
+# Sort createAt field in the ascending order
 GET /api/posts:get?sort=createdAt
-# createAt field descending
+# Sort createAt field in the descending order
 GET /api/posts:get?sort=-createdAt
-# Multiple fields sorted jointly, createAt field descending, title A-Z ascending
+# Sort multiple fields jointly, createAt field descending, title A-Z ascending
 GET /api/posts:get?sort=-createdAt,title
 ```
 
 ### fields
 
-Which fields to output
+Data to output.
 
 ```bash
 GET   /api/posts:list?fields=name,title
@@ -197,45 +197,45 @@ Response 200 (application/json)
 
 ### appends
 
-Appends a relationship field
+Fields of additional relationship.
 
 ### except
 
-Which fields to exclude (not output) for use in query-related operations.
+Exclude some fields (not to output), used in actions related to query.
 
 ### whitelist
 
-Whitelist
+Whitelist.
 
 ```bash
 POST  /api/posts:create?whitelist=title
 
 {
   "title": "My first post",
-  "date": "2022-05-19"      # The date field will be filtered out and will not be written to the database
+  "date": "2022-05-19"      # The date field will be filtered out and not be written to the database
 }
 ```
 
 ### blacklist
 
-Blacklist
+Blacklist.
 
 ```bash
 POST  /api/posts:create?blacklist=date
 
+# The date field will be filtered out and not be written to the database
 {
-  "title": "My first post",
-  "date": "2022-05-19"      # The date field will be filtered out and will not be written to the database
+  "title": "My first post"
 }
 ```
 
 ## Request Response
 
-Format of the response
+Format of the response:
 
 ```ts
 type ResponseResult = {
-  data?: any;               // Master data
+  data?: any;               // Main data
   meta?: any;               // Additional Data
   errors?: ResponseError[]; // Errors
 };
@@ -248,7 +248,7 @@ type ResponseError = {
 
 ### Example
 
-View list
+View list:
 
 ```bash
 GET /api/posts:list
@@ -270,7 +270,7 @@ Response 200 (application/json)
 }
 ```
 
-View details
+View details:
 
 ```bash
 GET /api/posts:get/1
@@ -284,7 +284,7 @@ Response 200 (application/json)
 }
 ```
 
-Error
+Error:
 
 ```bash
 POST /api/posts:create

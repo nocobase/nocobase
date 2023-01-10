@@ -7,7 +7,7 @@ import { CollectionProvider, useCollection, useCollectionManager } from '../../.
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
-import { ActionContext } from '../action';
+import { ActionContext, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
@@ -16,12 +16,20 @@ interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
 }
 
+const toValue = (value, placeholder) => {
+  if (value === null || value === undefined) {
+    return placeholder;
+  }
+  return value;
+};
+
 export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const { ellipsis } = props;
   const fieldSchema = useFieldSchema();
   const recordCtx = useRecord();
   const { getCollectionJoinField } = useCollectionManager();
-  const field = useField<Field>();
+  // value 做了转换，但 props.value 和原来 useField().value 的值不一致
+  // const field = useField<Field>();
   const fieldNames = useFieldNames(props);
   const [visible, setVisible] = useState(false);
   const [popoverVisible, setPopoverVisible] = useState<boolean>();
@@ -30,26 +38,30 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const [record, setRecord] = useState({});
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
+  const { snapshot } = useActionContext();
 
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
   const renderRecords = () =>
-    toArr(field.value).map((record, index, arr) => {
-      const val =
-        compile(record?.[fieldNames?.label || 'label']) || record?.[fieldNames?.value || 'value'] || record?.id;
+    toArr(props.value).map((record, index, arr) => {
+      const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
       return (
         <Fragment key={`${record.id}_${index}`}>
           <span>
-            <a
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                setVisible(true);
-                setRecord(record);
-                ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
-              }}
-            >
-              {getLabelFormatValue(labelUiSchema, val)}
-            </a>
+            {snapshot ? (
+              getLabelFormatValue(labelUiSchema, val)
+            ) : (
+              <a
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setVisible(true);
+                  setRecord(record);
+                  ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
+                }}
+              >
+                {getLabelFormatValue(labelUiSchema, val)}
+              </a>
+            )}
           </span>
           {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
         </Fragment>
@@ -89,7 +101,9 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
           <EllipsisWithTooltip ellipsis={ellipsis} ref={ellipsisWithTooltipRef}>
             {renderRecords()}
           </EllipsisWithTooltip>
-          <ActionContext.Provider value={{ visible, setVisible, openMode: 'drawer' }}>
+          <ActionContext.Provider
+            value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField.interface === 'snapshot' }}
+          >
             {renderRecordProvider()}
           </ActionContext.Provider>
         </CollectionProvider>

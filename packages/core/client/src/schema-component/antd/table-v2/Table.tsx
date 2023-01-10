@@ -2,56 +2,51 @@ import { MenuOutlined } from '@ant-design/icons';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
-import { ISchema, observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
-import { useMemoizedFn } from 'ahooks';
+import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext } from '../..';
+import { DndContext, useDesignable } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
-
-const isColumnComponent = (schema: Schema) => {
-  return schema['x-component']?.endsWith('.Column') > -1;
-};
-
-const isCollectionFieldComponent = (schema: ISchema) => {
-  return schema['x-component'] === 'CollectionField';
-};
+import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useTableColumns = () => {
-  const start = Date.now();
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
+  const { schemaInWhitelist } = useACLFieldWhitelist();
+  const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns = schema
     .reduceProperties((buf, s) => {
-      if (isColumnComponent(s)) {
+      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
         return buf.concat([s]);
       }
+      return buf;
     }, [])
-    .map((s: Schema) => {
+    ?.map((s: Schema) => {
       const collectionFields = s.reduceProperties((buf, s) => {
         if (isCollectionFieldComponent(s)) {
           return buf.concat([s]);
         }
       }, []);
       const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
-
       return {
         title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
         dataIndex,
         key: s.name,
         sorter: s['x-component-props']?.['sorter'],
-        // width: 300,
+        width: 200,
+        ...s['x-component-props'],
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          // console.log((Date.now() - start) / 1000);
           return (
-            <RecordIndexProvider index={index}>
+            <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
-                <RecursionField schema={s} name={index} onlyRenderProperties />
+                <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
               </RecordProvider>
             </RecordIndexProvider>
           );
@@ -65,6 +60,7 @@ const useTableColumns = () => {
     title: render(),
     dataIndex: 'TABLE_COLUMN_INITIALIZER',
     key: 'TABLE_COLUMN_INITIALIZER',
+    render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
   });
 };
 
@@ -169,6 +165,7 @@ export const Table: any = observer((props: any) => {
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
   const requiredValidator = field.required || required;
+
   useEffect(() => {
     field.setValidator((value) => {
       if (requiredValidator) {
@@ -360,10 +357,44 @@ export const Table: any = observer((props: any) => {
     },
     [field, dragSort],
   );
+  const fieldSchema = useFieldSchema();
+  const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
+  const [tableHeight, setTableHeight] = useState(0);
+
+  const [headerAndPaginationHeight, setHeaderAndPaginationHeight] = useState(0);
+  const scroll = useMemo(() => {
+    return fixedBlock
+      ? {
+          x: 'max-content',
+          y: tableHeight - headerAndPaginationHeight,
+        }
+      : {
+          x: 'max-content',
+        };
+  }, [fixedBlock, tableHeight, headerAndPaginationHeight]);
+
+  const elementRef = useRef<HTMLDivElement>();
+  const calcTableSize = () => {
+    if (!elementRef.current) return;
+    const clientRect = elementRef.current?.getBoundingClientRect();
+    setTableHeight(Math.ceil(clientRect?.height || 0));
+  };
+  useEventListener('resize', calcTableSize);
+
+  const mountedRef: RefCallback<HTMLDivElement> = (ref) => {
+    elementRef.current = ref;
+    calcTableSize();
+  };
 
   return (
     <div
+      ref={mountedRef}
       className={css`
+        height: 100%;
+        overflow: hidden;
+        .ant-table-wrapper {
+          height: 100%;
+        }
         .ant-table {
           overflow-x: auto;
           overflow-y: hidden;
@@ -372,6 +403,11 @@ export const Table: any = observer((props: any) => {
     >
       <SortableWrapper>
         <AntdTable
+          ref={(ref) => {
+            const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
+            const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
+            setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
+          }}
           rowKey={rowKey ?? defaultRowKey}
           {...others}
           {...restProps}
@@ -380,8 +416,8 @@ export const Table: any = observer((props: any) => {
           onChange={(pagination, filters, sorter, extra) => {
             onTableChange?.(pagination, filters, sorter, extra);
           }}
-          // tableLayout={'auto'}
-          // scroll={{ x: 12 * 300 + 80 }}
+          tableLayout={'auto'}
+          scroll={scroll}
           columns={columns}
           dataSource={field?.value?.slice?.()}
         />

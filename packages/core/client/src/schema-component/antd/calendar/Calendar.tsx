@@ -1,13 +1,13 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { observer, RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { parseExpression } from 'cron-parser';
 import get from 'lodash/get';
 import moment from 'moment';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
-import { parseExpression } from 'cron-parser';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
 import { useProps } from '../../hooks/useProps';
@@ -16,10 +16,14 @@ import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import './style.less';
 import type { ToolbarProps } from './types';
+import { formatDate } from './utils';
 
 const Weeks = ['month', 'week', 'day'] as const;
 
 const localizer = momentLocalizer(moment);
+export const DeleteEventContext = React.createContext({
+  close: () => {},
+});
 
 function Toolbar(props: ToolbarProps) {
   const fieldSchema = useFieldSchema();
@@ -168,13 +172,20 @@ const CalendarRecordViewer = (props) => {
       }, null),
     [],
   );
+
+  const close = useCallback(() => {
+    setVisible(false);
+  }, []);
+
   return (
     eventSchema && (
-      <ActionContext.Provider value={{ visible, setVisible }}>
-        <RecordProvider record={record}>
-          <RecursionField schema={eventSchema} name={eventSchema.name} />
-        </RecordProvider>
-      </ActionContext.Provider>
+      <DeleteEventContext.Provider value={{ close }}>
+        <ActionContext.Provider value={{ visible, setVisible }}>
+          <RecordProvider record={record}>
+            <RecursionField schema={eventSchema} name={eventSchema.name} />
+          </RecordProvider>
+        </ActionContext.Provider>
+      </DeleteEventContext.Provider>
     )
   );
 };
@@ -186,6 +197,18 @@ export const Calendar: any = observer((props: any) => {
   const events = useEvents(dataSource, fieldNames, date, view);
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
+
+  const components = useMemo(() => {
+    return {
+      toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
+      week: {
+        header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
+      },
+      month: {
+        dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
+      },
+    };
+  }, [showLunar]);
 
   return (
     <div style={{ height: 700 }}>
@@ -213,7 +236,8 @@ export const Calendar: any = observer((props: any) => {
           if (!record) {
             return;
           }
-          record.__event = event;
+          record.__event = { ...event, start: formatDate(moment(event.start)), end: formatDate(moment(event.end)) };
+
           setRecord(record);
           setVisible(true);
         }}
@@ -228,15 +252,7 @@ export const Calendar: any = observer((props: any) => {
             return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
           },
         }}
-        components={{
-          toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
-          week: {
-            header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
-          },
-          month: {
-            dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
-          },
-        }}
+        components={components}
         localizer={localizer}
       />
     </div>

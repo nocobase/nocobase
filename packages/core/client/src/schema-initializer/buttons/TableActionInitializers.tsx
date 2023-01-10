@@ -1,3 +1,5 @@
+import { Schema } from '@formily/react';
+
 // 表格操作配置
 export const TableActionInitializers = {
   title: "{{t('Configure actions')}}",
@@ -48,6 +50,23 @@ export const TableActionInitializers = {
           },
         },
       ],
+    },
+    {
+      type: 'divider',
+    },
+    {
+      type: 'item',
+      title: "{{t('Association fields filter')}}",
+      component: 'ActionBarAssociationFilterAction',
+      schema: {
+        'x-align': 'left',
+      },
+      find: (schema: Schema) => {
+        const resultSchema = Object.entries(schema.parent.properties).find(
+          ([, value]) => value['x-component'] === 'AssociationFilter',
+        )?.[1];
+        return resultSchema;
+      },
     },
     {
       type: 'divider',

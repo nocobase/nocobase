@@ -25,7 +25,6 @@ export * from './phone';
 export * from './radioGroup';
 export * from './richText';
 export * from './select';
-export * from './sequence';
 export * from './subTable';
 export * from './textarea';
 export * from './time';

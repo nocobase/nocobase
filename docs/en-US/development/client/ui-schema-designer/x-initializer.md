@@ -1,6 +1,6 @@
-# x-initializer 组件
+# x-initializer
 
-## 内置 x-initializer 组件
+## Built-in x-initializer component
 
 - BlockInitializers
 - CalendarActionInitializers
@@ -21,7 +21,7 @@
 - TableSelectorInitializers
 - TabPaneInitializers
 
-## 替换
+## Replacement
 
 ```tsx |pure
 import React, { useContext } from 'react';

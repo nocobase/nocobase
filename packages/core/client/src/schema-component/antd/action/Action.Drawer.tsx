@@ -7,11 +7,17 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from './hooks';
 import { ComposedActionDrawer } from './types';
+import { OpenSize } from './';
 
+const openSizeWidthMap = new Map<OpenSize, string>([
+  ['small', '30%'],
+  ['middle', '50%'],
+  ['large', '70%'],
+]);
 export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
   const { t } = useTranslation();
-  const { visible, setVisible } = useActionContext();
+  const { visible, setVisible, openSize = 'middle' } = useActionContext();
   const schema = useFieldSchema();
   const field = useField();
   const footerSchema = schema.reduceProperties((buf, s) => {
@@ -29,7 +35,7 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
           }}
         >
           <Drawer
-            width={'50%'}
+            width={openSizeWidthMap.get(openSize)}
             title={field.title}
             {...others}
             destroyOnClose
@@ -42,16 +48,20 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
                   .ant-drawer-header {
                     display: none;
                   }
+
                   .ant-drawer-body {
                     padding-top: 14px;
                   }
+
                   .ant-drawer-content {
                     background: #f0f2f5;
                   }
                 }
+
                 &.nb-record-picker-selector {
                   .nb-block-item {
                     margin-bottom: 24px;
+
                     .general-schema-designer {
                       top: -8px;
                       bottom: -8px;
@@ -69,6 +79,7 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
                     display: flex;
                     justify-content: flex-end;
                     width: 100%;
+
                     .ant-btn {
                       margin-right: 8px;
                     }

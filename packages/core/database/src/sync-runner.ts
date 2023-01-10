@@ -59,7 +59,7 @@ export class SyncRunner {
           throw new Error(`Can't find sequence name of ${parent}`);
         }
 
-        const regex = new RegExp(/nextval\('(\w+)\'.*\)/);
+        const regex = new RegExp(/nextval\('("?\w+"?)\'.*\)/);
         const match = regex.exec(columnDefault);
 
         const sequenceName = match[1];
@@ -90,11 +90,13 @@ export class SyncRunner {
       const sequenceTables = [...parentsDeep, tableName];
 
       for (const sequenceTable of sequenceTables) {
+        const queryName = Boolean(sequenceTable.match(/[A-Z]/)) ? `"${sequenceTable}"` : sequenceTable;
+
         const idColumnQuery = await queryInterface.sequelize.query(
           `
-        SELECT true
+SELECT true
 FROM   pg_attribute 
-WHERE  attrelid = '${sequenceTable}'::regclass  -- cast to a registered class (table)
+WHERE  attrelid = '${queryName}'::regclass  -- cast to a registered class (table)
 AND    attname = 'id'
 AND    NOT attisdropped 
 `,

@@ -1,7 +1,10 @@
 version: "3"
+networks:
+  nocobase:
+    driver: bridge
 services:
   app:
-    image: nocobase/nocobase:0.8.0-alpha.13
+    image: nocobase/nocobase:main
     networks:
       - nocobase
     environment:
@@ -25,3 +28,5 @@ services:
       POSTGRES_USER: nocobase
       POSTGRES_DB: nocobase
       POSTGRES_PASSWORD: nocobase
+    networks:
+      - nocobase

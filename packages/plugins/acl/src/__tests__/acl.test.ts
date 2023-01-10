@@ -42,6 +42,154 @@ describe('acl', () => {
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
+  it('should not have permission to list comments', async () => {
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'comments',
+        fields: [
+          {
+            name: 'content',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'comments',
+            type: 'hasMany',
+            target: 'comments',
+            interface: 'linkTo',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test-role',
+      },
+    });
+
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['comments'],
+          },
+        ],
+      },
+    });
+
+    const acl = app.acl;
+
+    expect(
+      acl.can({
+        role: 'test-role',
+        resource: 'posts.comments',
+        action: 'list',
+      }),
+    ).not.toBeNull();
+
+    expect(
+      acl.can({
+        role: 'test-role',
+        resource: 'comments',
+        action: 'list',
+      }),
+    ).toBeNull();
+  });
+
+  it('should not destroy default roles when user is root user', async () => {
+    const rootUser = await db.getRepository('users').findOne({
+      filter: {
+        email: process.env.INIT_ROOT_EMAIL,
+      },
+    });
+    const userPlugin = app.getPlugin('users') as UsersPlugin;
+
+    const adminAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: rootUser.get('id'),
+      }),
+      { type: 'bearer' },
+    );
+
+    expect(await db.getCollection('roles').repository.count()).toBe(3);
+
+    //@ts-ignore
+    await adminAgent.resource('roles').destroy({
+      filterByTk: 'root',
+    });
+
+    expect(await db.getCollection('roles').repository.count()).toBe(3);
+  });
+
+  it('should not destroy default roles', async () => {
+    expect(await db.getCollection('roles').repository.count()).toBe(3);
+
+    await adminAgent.resource('roles').destroy({
+      filterByTk: 'root',
+    });
+
+    expect(await db.getCollection('roles').repository.count()).toBe(3);
+  });
+
+  it('should not destroy all scope', async () => {
+    let allScope = await adminAgent.resource('rolesResourcesScopes').get({
+      filter: {
+        key: 'all',
+      },
+    });
+
+    expect(allScope.body.data).toBeDefined();
+
+    await adminAgent.resource('rolesResourcesScopes').destroy({
+      filter: {
+        key: 'all',
+      },
+    });
+
+    allScope = await adminAgent.resource('rolesResourcesScopes').get({
+      filter: {
+        key: 'all',
+      },
+    });
+
+    expect(allScope.body.data).toBeDefined();
+  });
+
+  it('should not destroy roles collections', async () => {
+    let rolesCollection = await adminAgent.resource('collections').get({
+      filterByTk: 'roles',
+    });
+
+    expect(rolesCollection.body.data).toBeDefined();
+
+    await adminAgent.resource('collections').destroy({
+      filterByTk: 'roles',
+    });
+
+    rolesCollection = await adminAgent.resource('collections').get({
+      filterByTk: 'roles',
+    });
+
+    expect(rolesCollection.body.data).toBeDefined();
+  });
+
   it('should works with universal actions', async () => {
     await db.getRepository('roles').create({
       values: {
@@ -474,6 +622,7 @@ describe('acl', () => {
         strategy: {
           actions: ['*'],
         },
+        snippets: ['pm.*'],
       },
     });
     const UserRepo = db.getCollection('users').repository;
@@ -544,5 +693,45 @@ describe('acl', () => {
       resource: 'posts',
       action: 'view',
     });
+  });
+
+  it('should destroy new role when user are root user', async () => {
+    const roles = await db.getRepository('roles').find();
+
+    const users = await db.getRepository('users').find();
+    const rootUser = await db.getRepository('users').findOne({
+      filterByTk: 1,
+    });
+
+    const userPlugin = app.getPlugin('users') as UsersPlugin;
+
+    const rootAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: rootUser.get('id'),
+      }),
+      { type: 'bearer' },
+    );
+
+    const response = await rootAgent
+      // @ts-ignore
+      .resource('roles')
+      .create({
+        values: {
+          name: 'testRole',
+        },
+      });
+
+    expect(response.statusCode).toEqual(200);
+
+    expect(await db.getRepository('roles').findOne({ filterByTk: 'testRole' })).toBeDefined();
+    const destroyResponse = await rootAgent
+      // @ts-ignore
+      .resource('roles')
+      .destroy({
+        filterByTk: 'testRole',
+      });
+
+    expect(destroyResponse.statusCode).toEqual(200);
+    expect(await db.getRepository('roles').findOne({ filterByTk: 'testRole' })).toBeNull();
   });
 });

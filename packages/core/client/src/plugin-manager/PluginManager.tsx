@@ -6,6 +6,7 @@ import { get } from 'lodash';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
+import { useACLRoleContext } from '../acl/ACLProvider';
 import { PluginManagerContext } from './context';
 
 export const usePrefixCls = (
@@ -89,7 +90,7 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
               }}
               icon={<SettingOutlined />}
             >
-              {t('Settings center')}
+              {t('All plugin settings')}
             </Menu.Item>
           </Menu.SubMenu>
         )}
@@ -142,19 +143,15 @@ PluginManager.Toolbar.Item = (props) => {
 };
 
 export const RemotePluginManagerToolbar = () => {
-  // const api = useAPIClient();
-  // const { data, loading } = useRequest({
-  //   resource: 'plugins',
-  //   action: 'getPinned',
-  // });
-  // if (loading) {
-  //   return <Spin />;
-  // }
+  const { allowAll, snippets } = useACLRoleContext();
+  const getSnippetsAllow = (aclKey) => {
+    return allowAll || snippets?.includes(aclKey);
+  };
   const items = [
-    { component: 'DesignableSwitch', pin: true },
-    { component: 'PluginManagerLink', pin: true },
-    { component: 'SettingsCenterDropdown', pin: true },
+    { component: 'DesignableSwitch', pin: true, isAllow: getSnippetsAllow('ui.*') },
+    { component: 'PluginManagerLink', pin: true, isAllow: getSnippetsAllow('pm') },
+    { component: 'SettingsCenterDropdown', pin: true, isAllow: getSnippetsAllow('pm.*') },
     // ...data?.data,
   ];
-  return <PluginManager.Toolbar items={items} />;
+  return <PluginManager.Toolbar items={items.filter((v) => v.isAllow)} />;
 };

@@ -29,6 +29,7 @@ export const type: ISchema = {
     { label: 'One to many', value: 'hasMany' },
     { label: 'Many to one', value: 'belongsTo' },
     { label: 'Many to many', value: 'belongsToMany' },
+    { label: 'Snapshot', value: 'snapshot' },
   ],
 };
 

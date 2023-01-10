@@ -57,10 +57,13 @@ async function listWithNonPaged(ctx: Context) {
 
 export async function list(ctx: Context, next) {
   const { paginate } = ctx.action.params;
+
   if (paginate === false || paginate === 'false') {
     await listWithNonPaged(ctx);
+    ctx.paginate = false;
   } else {
     await listWithPagination(ctx);
+    ctx.paginate = true;
   }
 
   await next();

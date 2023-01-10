@@ -3,7 +3,7 @@ import React from 'react';
 import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { useFlowContext } from '../FlowContext';
-import { VariableComponent } from '../calculators';
+import { useOperandContext, VariableComponent } from '../calculators';
 import { collection, filter } from '../schemas/collection';
 import CollectionFieldSelect from '../components/CollectionFieldSelect';
 import { NAMESPACE } from '../locale';
@@ -46,8 +46,9 @@ export default {
     VariableComponent
   },
   getter(props) {
-    const { type, options, onChange } = props;
+    const { onChange } = props;
     const { nodes } = useFlowContext();
+    const { options } = useOperandContext();
     const { config } = nodes.find(n => n.id == options.nodeId);
     const value = options?.path;
 
@@ -56,7 +57,7 @@ export default {
         collection={config.collection}
         value={value}
         onChange={(path) => {
-          onChange({ type, options: { ...options, path } });
+          onChange(`{{$jobsMapByNodeId.${options.nodeId}.${path}}}`);
         }}
       />
     );

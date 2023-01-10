@@ -18,7 +18,7 @@ import { ImportStatus } from './ImportModal';
 
 const useImportSchema = (s: Schema) => {
   let schema = s;
-  while (schema && schema['x-action'] !== 'import') {
+  while (schema && schema['x-action'] !== 'importXlsx') {
     schema = schema.parent;
   }
   return { schema };
@@ -124,7 +124,11 @@ export const useImportStartAction = () => {
       setVisible(false);
       setImportModalVisible(true);
       setImportStatus(ImportStatus.IMPORTING);
-      const { data }: any = await apiClient.axios.post(`${name}:importXlsx`, formData, {}).catch((err) => {});
+      const { data }: any = await apiClient.axios
+        .post(`${name}:importXlsx`, formData, {
+          timeout: 10 * 60 * 1000,
+        })
+        .catch((err) => {});
       setImportResult(data);
       form.reset();
       await service?.refresh?.();

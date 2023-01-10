@@ -1,5 +1,5 @@
-import { Repository, Transactionable } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
+import { Repository, Transactionable } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import lodash from 'lodash';
 import { Transaction } from 'sequelize';
@@ -336,11 +336,16 @@ export class UiSchemaRepository extends Repository {
   @transaction()
   async patch(newSchema: any, options?) {
     const { transaction } = options;
-
     const rootUid = newSchema['x-uid'];
     await this.clearXUidPathCache(rootUid, transaction);
-    const oldTree = await this.getJsonSchema(rootUid);
-
+    if (!newSchema['properties']) {
+      const s = await this.model.findByPk(rootUid, { transaction });
+      s.set('schema', { ...s.toJSON(), ...newSchema });
+      // console.log(s.toJSON());
+      await s.save({ transaction, hooks: false });
+      return;
+    }
+    const oldTree = await this.getJsonSchema(rootUid, { transaction });
     const traverSchemaTree = async (schema, path = []) => {
       const node = schema;
       const oldNode = path.length == 0 ? oldTree : lodash.get(oldTree, path);

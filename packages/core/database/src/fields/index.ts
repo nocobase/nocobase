@@ -17,7 +17,7 @@ import {
 } from './number-field';
 import { PasswordFieldOptions } from './password-field';
 import { RadioFieldOptions } from './radio-field';
-import { SequenceFieldOptions } from './sequence-field';
+import { SetFieldOptions } from './set-field';
 import { SortFieldOptions } from './sort-field';
 import { StringFieldOptions } from './string-field';
 import { TextFieldOptions } from './text-field';
@@ -40,7 +40,7 @@ export * from './number-field';
 export * from './password-field';
 export * from './radio-field';
 export * from './relation-field';
-export { SequenceField } from './sequence-field';
+export * from './set-field';
 export * from './sort-field';
 export * from './string-field';
 export * from './text-field';
@@ -65,6 +65,7 @@ export type FieldOptions =
   | TextFieldOptions
   | VirtualFieldOptions
   | ArrayFieldOptions
+  | SetFieldOptions
   | TimeFieldOptions
   | DateFieldOptions
   | UidFieldOptions
@@ -74,5 +75,4 @@ export type FieldOptions =
   | BelongsToFieldOptions
   | HasOneFieldOptions
   | HasManyFieldOptions
-  | BelongsToManyFieldOptions
-  | SequenceFieldOptions;
+  | BelongsToManyFieldOptions;

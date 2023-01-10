@@ -1,5 +1,5 @@
 import lodash from 'lodash';
-import { DataTypes, Model as SequelizeModel, ModelCtor } from 'sequelize';
+import { DataTypes, Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
@@ -13,7 +13,7 @@ interface IModel {
 }
 
 interface JSONTransformerOptions {
-  model: ModelCtor<any>;
+  model: ModelStatic<any>;
   collection: Collection;
   db: Database;
   key?: string;
@@ -82,7 +82,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     };
 
     const opts = {
-      model: this.constructor as ModelCtor<any>,
+      model: this.constructor as ModelStatic<any>,
       collection: (this.constructor as any).collection,
       db: (this.constructor as any).database as Database,
     };
@@ -156,7 +156,8 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     // fix sequelize sync with model that not have any column
     if (Object.keys(model.tableAttributes).length === 0) {
       if (this.database.inDialect('sqlite', 'mysql')) {
-        throw new Error(`Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`);
+        console.error(`Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`);
+        return;
       }
 
       // @ts-ignore

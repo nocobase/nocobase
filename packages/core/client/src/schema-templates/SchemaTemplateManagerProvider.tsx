@@ -39,7 +39,7 @@ export const SchemaTemplateManagerProvider: React.FC<any> = (props) => {
 };
 
 const regenerateUid = (s: ISchema) => {
-  s['x-uid'] = uid();
+  s['name'] = s['x-uid'] = uid();
   Object.keys(s.properties || {}).forEach((key) => {
     regenerateUid(s.properties[key]);
   });
@@ -120,10 +120,9 @@ export const useSchemaTemplateManager = () => {
       return templates?.find((template) => template.key === key);
     },
     getTemplatesByCollection(collectionName: string, resourceName: string = null) {
-      const items = templates?.filter?.((template) => (template.collectionName === collectionName));
+      const items = templates?.filter?.((template) => template.collectionName === collectionName);
       return items || [];
     },
-
   };
 };
 

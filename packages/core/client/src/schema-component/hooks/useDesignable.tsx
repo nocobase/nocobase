@@ -113,7 +113,7 @@ export class Designable {
     }
     const updateColumnSize = (parent: Schema) => {
       if (!parent) {
-        return;
+        return [];
       }
       const len = Object.values(parent.properties).length;
       const schemas = [];
@@ -239,12 +239,12 @@ export class Designable {
     this.events[name].push(listener);
   }
 
-  emit(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch', ...args) {
+  async emit(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch', ...args) {
     if (!this.events[name]) {
       return;
     }
     const [opts, ...others] = args;
-    this.events[name].forEach((fn) => fn.bind(this)({ current: this.current, ...opts }, ...others));
+    return Promise.all(this.events[name].map((fn) => fn.bind(this)({ current: this.current, ...opts }, ...others)));
   }
 
   parentsIn(schema: Schema) {
