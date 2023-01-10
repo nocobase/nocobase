@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,7 +58,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener
+  ValidateListener,
 } from './types';
 
 export interface MergeOptions extends merge.Options {}

@@ -13,7 +13,7 @@ import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
-import { checkIdentifier, md5 } from './utils';
+import { checkIdentifier, getTableName, md5 } from './utils';
 
 export type RepositoryType = typeof Repository;
 
@@ -93,11 +93,12 @@ export class Collection<
 
   private sequelizeModelOptions() {
     const { name, tableName } = this.options;
+
     return {
       ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
       modelName: name,
       sequelize: this.context.database.sequelize,
-      tableName: tableName || name,
+      tableName: tableName || getTableName(name, this.options),
     };
   }
 
@@ -108,8 +109,10 @@ export class Collection<
     if (this.model) {
       return;
     }
+
     const { name, model, autoGenId = true } = this.options;
     let M: ModelStatic<Model> = Model;
+
     if (this.context.database.sequelize.isDefined(name)) {
       const m = this.context.database.sequelize.model(name);
       if ((m as any).isThrough) {
@@ -122,11 +125,13 @@ export class Collection<
         return;
       }
     }
+
     if (typeof model === 'string') {
       M = this.context.database.models.get(model) || Model;
     } else if (model) {
       M = model;
     }
+
     // @ts-ignore
     this.model = class extends M {};
     this.model.init(null, this.sequelizeModelOptions());

@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { IdentifierError } from './errors/identifier-error';
 import { Model } from './model';
+import lodash from 'lodash';
 
 type HandleAppendsQueryOptions = {
   templateModel: any;
@@ -72,4 +73,8 @@ export function checkIdentifier(value: string) {
   if (value.length > MAX_IDENTIFIER_LENGTH) {
     throw new IdentifierError(`Identifier ${value} is too long`);
   }
+}
+
+export function getTableName(collectionName: string, options) {
+  return options.underscored ? lodash.snakeCase(collectionName) : collectionName;
 }
