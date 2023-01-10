@@ -114,6 +114,7 @@ const DndProvider = observer((props) => {
 export const ConfigurationTabs = () => {
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
+  const [key, setKey] = useState('all');
   const tabsItems = data
     .sort((a, b) => b.sort - a.sort)
     .concat()
@@ -136,6 +137,7 @@ export const ConfigurationTabs = () => {
   const api = useAPIClient();
   const onChange = (key: string) => {
     setActiveKey(key);
+    setKey(uid());
     if (key !== 'all') {
       const prevFilter = defaultRequest?.params?.filter;
       const filter = { $and: [prevFilter, { 'category.id': key }] };
@@ -192,7 +194,6 @@ export const ConfigurationTabs = () => {
       </Menu.Item>
     </Menu>
   );
-
   return (
     <DndProvider>
       <Tabs
@@ -214,7 +215,7 @@ export const ConfigurationTabs = () => {
           />
         }
         onChange={onChange}
-        activeKey={activeKey}
+        defaultActiveKey="all"
         type="editable-card"
         destroyInactiveTabPane={true}
         tabBarStyle={{ marginBottom: '0px' }}
@@ -241,7 +242,7 @@ export const ConfigurationTabs = () => {
             >
               <Card bordered={false}>
                 <SchemaComponentOptions inherit scope={{ loadCategories, categoryVisible: item.id === 'all' }}>
-                  <RecursionField name={item.id} schema={item.schema} onlyRenderProperties />
+                  <RecursionField name={key} schema={item.schema} onlyRenderProperties />
                 </SchemaComponentOptions>
               </Card>
             </Tabs.TabPane>
