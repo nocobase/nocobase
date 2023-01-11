@@ -63,6 +63,10 @@ NocoBase adopts plugin architecture, all new features can be implemented by deve
 
 [Click to view the full image](https://www.nocobase.com/images/NocoBaseMindMap.png)
 
+## Business Services
+
+If you need commercial version and commercial services, please feel free to contact us by email: hello@nocobase.com
+
 ## Installation
 
 NocoBase supports three installation methods:
