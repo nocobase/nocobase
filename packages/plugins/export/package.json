@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-export",
   "version": "0.8.1-alpha.4",
-  "main": "lib/server/index.js",
+  "description": "",
+  "license": "AGPL-3.0",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "dependencies": {
     "@nocobase/client": "0.8.1-alpha.4",
     "@nocobase/server": "0.8.1-alpha.4",
