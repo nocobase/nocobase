@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/plugin-saml",
-  "version": "0.8.1-alpha.4",
+  "version": "0.9.0-alpha.1",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "devDependencies": {
-    "@nocobase/server": "0.8.1-alpha.4",
-    "@nocobase/test": "0.8.1-alpha.4"
+    "@nocobase/server": "0.9.0-alpha.1",
+    "@nocobase/test": "0.9.0-alpha.1"
   },
   "dependencies": {
     "@node-saml/node-saml": "^4.0.2"

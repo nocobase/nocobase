@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-graph-collection-manager",
-  "version": "0.8.1-alpha.4",
+  "version": "0.9.0-alpha.1",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
@@ -11,7 +11,7 @@
     "dagre": "^0.8.5"
   },
   "devDependencies": {
-    "@nocobase/client": "0.8.1-alpha.4",
-    "@nocobase/test": "0.8.1-alpha.4"
+    "@nocobase/client": "0.9.0-alpha.1",
+    "@nocobase/test": "0.9.0-alpha.1"
   }
 }
