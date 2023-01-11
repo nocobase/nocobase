@@ -3,7 +3,7 @@ import { Row, Col } from 'antd';
 import { CopyOutlined, ToolOutlined } from '@ant-design/icons';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 
-import {Operand, VariableTypes, VariableTypesContext} from '../calculators';
+import {Operand, VariableTypes, VariableTypesContext} from '../variable';
 import { Button, Input, message, Tooltip } from 'antd';
 import { useFlowContext } from '../FlowContext';
 import { useCollectionManager, useCompile } from '@nocobase/client';

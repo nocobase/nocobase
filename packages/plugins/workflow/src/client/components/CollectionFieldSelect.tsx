@@ -3,6 +3,7 @@ import { Select, Cascader } from 'antd';
 import { useTranslation } from 'react-i18next';
 
 import { useCollectionManager, useCollectionFilterOptions, useCompile } from "@nocobase/client";
+import { filterTypedFields, useOperandContext } from "../variable";
 
 
 
@@ -11,7 +12,8 @@ export default function (props) {
   const { t } = useTranslation();
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
-  const availableFields = (fields ?? getCollectionFields(collection))
+  const { types } = useOperandContext();
+  const availableFields = filterTypedFields((fields ?? getCollectionFields(collection)), types)
     .filter(field => field.interface && (!field.target || field.type === 'belongsTo'))
     .map(field => field.type === 'belongsTo'
       ? {

@@ -5,7 +5,7 @@ import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
-import { NodeCollectionFieldValueGetter } from '../components/NodeCollectionFieldValueGetter';
+import { useNodeCollectionFieldValueGetter } from '../components/NodeCollectionFieldValueGetter';
 
 
 
@@ -39,9 +39,7 @@ export default {
   components: {
     CollectionFieldset
   },
-  useValueGetter(node) {
-    return NodeCollectionFieldValueGetter;
-  },
+  useValueGetter: useNodeCollectionFieldValueGetter,
   useInitializers(node): SchemaInitializerItemOptions {
     if (!node.config.collection) {
       return null;

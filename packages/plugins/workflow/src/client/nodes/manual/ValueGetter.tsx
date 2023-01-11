@@ -1,12 +1,12 @@
 import React from 'react';
-import { useOperandContext } from '../../calculators';
+import { useOperandContext } from '../../variable';
 import { useFlowContext } from '../../FlowContext';
 import CollectionFieldSelect from '../../components/CollectionFieldSelect';
 
 
 
 export function ValueGetter({ onChange }) {
-  const { options } = useOperandContext();
+  const { operand: { options } } = useOperandContext();
   const { nodes } = useFlowContext();
   const { config } = nodes.find(n => n.id == options.nodeId);
 

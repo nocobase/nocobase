@@ -55,7 +55,8 @@ function FormBlockInitializer({ insert, ...props }) {
 }
 
 function AddBlockButton(props: any) {
-  const nodes = useAvailableUpstreams();
+  const current = useNodeContext();
+  const nodes = useAvailableUpstreams(current);
   const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
   const nodeBlockInitializers = nodes.map((node) => {
     const instruction = instructions.get(node.type);

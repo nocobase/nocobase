@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { css } from "@emotion/css";
 
 import { CollectionField, CollectionProvider, SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
-import { Operand, parseValue, VariableTypes, VariableTypesContext } from "../calculators";
+import { Operand, parseValue, VariableTypes, VariableTypesContext } from "../variable";
 import { lang, NAMESPACE } from "../locale";
 
 function AssociationInput(props) {

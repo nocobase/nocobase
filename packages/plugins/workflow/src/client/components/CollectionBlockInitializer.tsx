@@ -17,7 +17,7 @@ export function CollectionBlockInitializer({ insert, collection, dataSource, ...
           title: resovledCollection.title,
           'x-decorator': 'CollectionProvider',
           'x-decorator-props': {
-            name: resovledCollection.name
+            collection
           },
           'x-component': 'CardItem',
           'x-component-props': {

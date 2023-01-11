@@ -43,14 +43,14 @@ export interface Trigger {
   title: string;
   type: string;
   // group: string;
-  getOptions?(config: any): { label: string; value: any; key: string }[];
+  getOptions?(config: any, types: any[]): { label: string; value: any; key: string }[];
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   useInitializers?(config): SchemaInitializerItemOptions | null;
-  useValueGetter?(config): ((props) => React.ReactNode) | null;
+  useValueGetter?(config, types?: any[]): ((props) => React.ReactNode) | null;
   initializers?: any;
 };
 

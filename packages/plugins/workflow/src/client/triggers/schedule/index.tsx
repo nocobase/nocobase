@@ -5,38 +5,30 @@ import { useCompile, useCollectionDataSource, useCollectionManager, SchemaInitia
 
 import { ScheduleConfig } from './ScheduleConfig';
 import { useFlowContext } from '../../FlowContext';
-import { BaseTypeSet, useOperandContext } from '../../calculators';
+import { BaseTypeSet, useAvailableCollectionFields, useOperandContext } from '../../variable';
 import { SCHEDULE_MODE } from './constants';
 import { NAMESPACE, useWorkflowTranslation } from '../../locale';
 import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
+import CollectionFieldSelect from '../../components/CollectionFieldSelect';
+
 
 
 function ValueGetter({ onChange }) {
-  const { t } = useWorkflowTranslation();
-  const compile = useCompile();
-  const { collections = [] } = useCollectionManager();
   const { workflow } = useFlowContext();
-  const { options } = useOperandContext();
-  const path = options?.path ? options.path.split('.') : [];
+  const { operand: { options } } = useOperandContext();
+
   if (!options.type || options.type === 'date') {
     return null;
   }
-  const collection = collections.find(item => item.name === workflow.config.collection) ?? { fields: [] };
+
   return (
-    <Cascader
-      placeholder={t('Trigger data')}
-      value={path}
-      options={collection.fields
-        .filter(field => BaseTypeSet.has(field?.uiSchema?.type))
-        .map(field => ({
-          value: field.name,
-          label: compile(field.uiSchema?.title),
-        }))}
-      onChange={(next) => {
-        onChange(`{{$context.${next.join('.')}}}`);
+    <CollectionFieldSelect
+      collection={workflow.config.collection}
+      value={options?.path}
+      onChange={(path) => {
+        onChange(`{{$context.data.${path}}}`);
       }}
-      allowClear={false}
     />
   );
 }
@@ -59,23 +51,33 @@ export default {
   components: {
     ScheduleConfig
   },
-  getOptions(config) {
+  getOptions(config, types) {
     const { t } = useWorkflowTranslation();
-    const options: any[] = [
-      { value: 'date', label: t('Trigger time') },
-    ];
+    const options: any[] = [];
+    if (!types || types.includes('date')) {
+      options.push({ value: 'date', label: t('Trigger time') });
+    }
     if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
-      options.push({
-        value: 'data',
-        label: t('Trigger data')
-      });
+      const fields = useAvailableCollectionFields(config.collection);
+
+      if (fields.length) {
+        options.push({
+          value: 'data',
+          label: t('Trigger data')
+        });
+      }
     }
     return options;
   },
-  useFields(config) {
-    return [];
-  },
   useValueGetter(config) {
+    if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
+      const fields = useAvailableCollectionFields(config.collection);
+
+      if (!fields.length) {
+        return null;
+      }
+    }
+
     return ValueGetter;
   },
   useInitializers(config): SchemaInitializerItemOptions | null {

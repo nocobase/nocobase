@@ -1,11 +1,11 @@
 import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
 
-import { VariableComponent } from '../calculators';
 import { collection, filter } from '../schemas/collection';
 import { NAMESPACE } from '../locale';
-import { NodeCollectionFieldValueGetter } from '../components/NodeCollectionFieldValueGetter';
+import { useNodeCollectionFieldValueGetter } from '../components/NodeCollectionFieldValueGetter';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
+import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 
 
 
@@ -42,14 +42,9 @@ export default {
     useCollectionDataSource
   },
   components: {
-    VariableComponent
+    FilterDynamicComponent
   },
-  useFields() {
-    return [];
-  },
-  useValueGetter(node) {
-    return NodeCollectionFieldValueGetter;
-  },
+  useValueGetter: useNodeCollectionFieldValueGetter,
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
       return null;

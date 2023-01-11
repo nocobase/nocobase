@@ -42,7 +42,7 @@ export interface Instruction {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   endding?: boolean;
-  useValueGetter?(node: any): (props) => React.ReactNode;
+  useValueGetter?(node: any, types?: any[]): (props) => React.ReactNode;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
 };
@@ -96,14 +96,10 @@ export function useNodeContext() {
   return useContext(NodeContext);
 }
 
-export function useAvailableUpstreams(node = useNodeContext()) {
+export function useAvailableUpstreams(node) {
   const stack: any[] = [];
   for (let current = node.upstream; current; current = current.upstream) {
-    const { useValueGetter } = instructions.get(current.type);
-    // Note: consider `useValueGetter()` as the key of a value available node
-    if (useValueGetter?.(current)) {
-      stack.push(current);
-    }
+    stack.push(current);
   }
 
   return stack;

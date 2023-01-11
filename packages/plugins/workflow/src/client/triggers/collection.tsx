@@ -16,7 +16,7 @@ import CollectionFieldSelect from '../components/CollectionFieldSelect';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
-import { useOperandContext } from '../calculators';
+import { useAvailableCollectionFields, useOperandContext } from '../variable';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
@@ -61,7 +61,7 @@ const collectionModeOptions = [
 
 function ValueGetter({ onChange }) {
   const { workflow } = useFlowContext();
-  const { options } = useOperandContext();
+  const { operand: { options } } = useOperandContext();
 
   return (
     <CollectionFieldSelect
@@ -162,6 +162,12 @@ export default {
     return options;
   },
   useValueGetter(config) {
+    const fields = useAvailableCollectionFields(config.collection);
+
+    if (!fields.length) {
+      return null;
+    }
+
     return ValueGetter;
   },
   useInitializers(config): SchemaInitializerItemOptions | null {

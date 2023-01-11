@@ -22,7 +22,7 @@ export interface ManualConfig {
   mode?: number;
 }
 
-const PROMPT_ASSIGNED_MODE = {
+const MULTIPLE_ASSIGNED_MODE = {
   SINGLE: Symbol('single'),
   ALL: Symbol('all'),
   ANY: Symbol('any'),
@@ -31,13 +31,13 @@ const PROMPT_ASSIGNED_MODE = {
 };
 
 const Modes = {
-  [PROMPT_ASSIGNED_MODE.SINGLE]: {
+  [MULTIPLE_ASSIGNED_MODE.SINGLE]: {
     getStatus(distribution, assignees) {
       const done = distribution.find(item => item.status !== JOB_STATUS.PENDING && item.count > 0);
       return done ? done.status : null
     }
   },
-  [PROMPT_ASSIGNED_MODE.ALL]: {
+  [MULTIPLE_ASSIGNED_MODE.ALL]: {
     getStatus(distribution, assignees) {
       const resolved = distribution.find(item => item.status === JOB_STATUS.RESOLVED);
       if (resolved && resolved.count === assignees.length) {
@@ -52,7 +52,7 @@ const Modes = {
       return null;
     }
   },
-  [PROMPT_ASSIGNED_MODE.ANY]: {
+  [MULTIPLE_ASSIGNED_MODE.ANY]: {
     getStatus(distribution, assignees) {
       const resolved = distribution.find(item => item.status === JOB_STATUS.RESOLVED);
       if (resolved && resolved.count) {
@@ -72,15 +72,15 @@ const Modes = {
 function getMode(mode) {
   switch (true) {
     case mode === 1:
-      return Modes[PROMPT_ASSIGNED_MODE.ALL];
+      return Modes[MULTIPLE_ASSIGNED_MODE.ALL];
     case mode === -1:
-      return Modes[PROMPT_ASSIGNED_MODE.ANY];
+      return Modes[MULTIPLE_ASSIGNED_MODE.ANY];
     case mode > 0:
-      return Modes[PROMPT_ASSIGNED_MODE.ALL_PERCENTAGE];
+      return Modes[MULTIPLE_ASSIGNED_MODE.ALL_PERCENTAGE];
     case mode < 0:
-      return Modes[PROMPT_ASSIGNED_MODE.ANY_PERCENTAGE];
+      return Modes[MULTIPLE_ASSIGNED_MODE.ANY_PERCENTAGE];
     default:
-      return Modes[PROMPT_ASSIGNED_MODE.SINGLE];
+      return Modes[MULTIPLE_ASSIGNED_MODE.SINGLE];
   }
 }
 
@@ -98,7 +98,8 @@ export default class implements Instruction {
   }
 
   async run(node, prevJob, processor) {
-    const { assignees = [], mode } = node.config as ManualConfig;
+    const { mode, ...config } = node.config as ManualConfig;
+    const assignees = [...(new Set(processor.getParsedValue(config.assignees) || []))];
 
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,

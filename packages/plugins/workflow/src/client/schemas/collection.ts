@@ -55,6 +55,6 @@ export const filter = {
         `
       };
     },
-    dynamicComponent: 'VariableComponent'
+    dynamicComponent: 'FilterDynamicComponent'
   }
 };
