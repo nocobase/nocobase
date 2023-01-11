@@ -78,3 +78,8 @@ NocoBase üç kurulum modelini destekler:
 - <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/git-clone">Git kaynak kodlarından derleme</a>
 
   Yayınlanmamış en son sürümü deneyimlemek veya katkıda bulunmak istiyorsanız, kaynak kodunda değişiklik yapmanız ve hata ayıklamanız gerekiyorsa, yüksek düzeyde geliştirme becerisi gerektiren bu kurulum yöntemini seçmeniz önerilir. Eğer kodlar güncellendiyse git pull ile son sürümü çekebilirsiniz.
+
+## License
+
+- [Core packages](https://github.com/nocobase/nocobase/tree/main/packages/core) are [Apache 2.0 licensed](./LICENSE-APACHE-2.0).
+- [Plugins packages](https://github.com/nocobase/nocobase/tree/main/packages/plugins) are [AGPL licensed](./LICENSE-AGPL).

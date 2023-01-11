@@ -10,7 +10,7 @@ RUN cd /tmp && \
   NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
   && tmp=$(mktemp) \
   && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
-RUN  yarn install && yarn nocobase install && yarn pm add graph-collection-manager && yarn build
+RUN  yarn install && yarn nocobase install && yarn build
 
 RUN git checkout -b release \
   && yarn version:alpha -y
@@ -33,11 +33,8 @@ RUN cd /app \
   && yarn config set network-timeout 600000 -g \
   && yarn create nocobase-app my-nocobase-app -a \
   -e APP_ENV=production \
-  -e PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro- \
-  -e PRESET_NOCOBASE_PLUGINS=graph-collection-manager \
   && cd /app/my-nocobase-app \
-  && yarn install --production \
-  && yarn add @nocobase/plugin-pro-graph-collection-manager -W
+  && yarn install --production
 
 RUN cd /app \
   && rm -rf my-nocobase-app/packages/app/client/src/.umi \
@@ -45,7 +42,6 @@ RUN cd /app \
   && find ./my-nocobase-app/node_modules/china-division/dist -name '*.csv' -delete \
   && find ./my-nocobase-app/node_modules/china-division/dist -name '*.sqlite' -delete \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
-
 
 FROM node:16-stretch-slim
 RUN apt-get update && apt-get install -y nginx
