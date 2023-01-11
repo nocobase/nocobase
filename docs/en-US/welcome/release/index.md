@@ -1,10 +1,10 @@
 # Release Notes
 
-## 2022/01/11 ~v0.9.0-alpha.1
+## 2023/01/11 ~v0.9.0-alpha.1
 
 ### License changes
 
-- [Core](https://github.com/nocobase/nocobase/tree/main/packages/core) Continue with [Apache 2.0](https://github.com/nocobase/nocobase/blob/main/LICENSE-APACHE-2.0)
+- [Core](https://github.com/nocobase/nocobase/tree/main/packages/core) continue with [Apache 2.0](https://github.com/nocobase/nocobase/blob/main/LICENSE-APACHE-2.0)
 - [Plugins](https://github.com/nocobase/nocobase/tree/main/packages/plugins) changed to [AGPL 3.0](https://github.com/nocobase/nocobase/blob/main/LICENSE-AGPL)
 
 ### Core improvements
@@ -23,7 +23,7 @@
 - Table block horizontal scroll bar optimization, support adjust column width
 - Configurable size of pop-up windows
 
-### New Plugins
+### New plugins
 
 - Data import
 - Graphical interface for collections
@@ -38,7 +38,7 @@
 
 - Collection configuration
   - Support for filtering
-  - Support for define title fields
+  - Support for define the title field
   - Support for classification
 - Workflow
   - Fix trigger fetching function
