@@ -1,5 +1,65 @@
 # 更新日志
 
+## 2022/01/11 ~v0.9.0-alpha.1
+
+### 协议变更
+
+- [内核](https://github.com/nocobase/nocobase/tree/main/packages/core) 继续采用 [Apache 2.0 协议](https://github.com/nocobase/nocobase/blob/main/LICENSE-APACHE-2.0)
+- [插件](https://github.com/nocobase/nocobase/tree/main/packages/plugins) 变更为 [AGPL 3.0 协议](https://github.com/nocobase/nocobase/blob/main/LICENSE-AGPL)
+
+### 内核改进
+
+- [NocoBase 的 Logging 系统](/welcome/release/logger)
+- [数据表继承](/welcome/release/inherits)
+- [数据表模板](/welcome/release/collection-templates)
+- 数据表主键默认为 BigInt 类型
+- 提供更健全的 ACL 模块
+- 关系字段组件支持切换为简单的 Select 组件
+- 支持页面标签页
+- 表格、看板支持固定区块
+- 提供更为友好的关系筛选
+- 日历区块支持显示农历
+- 日历区块支持配置、删除重复日程
+- 表格区块横向滚动条优化，支持调整列宽
+- 弹窗可配置尺寸大小
+
+### 新增插件
+
+- Excel 数据导入插件
+- 图形化数据表配置插件
+- SSO 插件：OIDC、SAML
+- 地图插件
+- iframe 区块插件
+- 数据快照插件
+- 应用复制、备份、迁移插件
+- [字段的计算公式插件：Math Formula 和 Excel Formula](/welcome/release/formulas)
+
+### 其他插件优化
+
+- 数据表配置：
+  - 数据表支持筛选
+  - 数据表支持设置标题字段
+  - 数据表支持分类
+- 工作流：
+  - 修复触发器取值功能
+  - 前端代码重构，插件独立化
+  - 修复执行历史加载问题
+  - 数据表触发后执行不再使用相同事务，优化执行流程
+  - 新增调度器和触发缓存，以队列执行方式解决并发问题
+  - 修复定时任务结束时间组件问题
+  - 修复定时任务跳秒问题
+  - 支持工作流级别复制
+  - 重构上下文及节点变量数据结构
+- 验证码：
+  - 新增验证码配置面板
+- 文件管理器：
+  - 修复本地存储静态文件服务中间件
+  - 本地存储空 baseUrl 配置容错处理
+- 自动编号：
+  - 重构为由数据表记录序列
+  - 增加可输入和匹配规则的配置
+  - 修复生成数字不小于配置的起始值
+
 ## 2022/10/31 ~ v0.8.0-alpha.1
 
 - 从 v0.8 开始，NocoBase 开始提供可用的插件管理器和开发文档。[查看 v0.8 的主要变化](/welcome/release/v08-changelog)
