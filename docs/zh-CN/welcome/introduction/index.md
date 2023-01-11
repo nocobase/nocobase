@@ -46,9 +46,9 @@ NocoBase 是一个极易扩展的开源无代码开发平台。
 
 [点此查看完整图片](https://www.nocobase.com/images/NocoBaseMindMap.png)
 
-## 联系
+## 商业服务
 
-如果你希望加入我们一起开发 NocoBase，或者需要提供商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
+如果你需要商业版本和商业服务，欢迎通过邮件联系我们：hello@nocobase.com
 
 或者添加我们的微信：  
 
