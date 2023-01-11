@@ -2,63 +2,63 @@
 
 ## 2022/01/11 ~v0.9.0-alpha.1
 
-### 协议变更
+### License changes
 
-- [内核](https://github.com/nocobase/nocobase/tree/main/packages/core) 继续采用 [Apache 2.0 协议](https://github.com/nocobase/nocobase/blob/main/LICENSE-APACHE-2.0)
-- [插件](https://github.com/nocobase/nocobase/tree/main/packages/plugins) 变更为 [AGPL 3.0 协议](https://github.com/nocobase/nocobase/blob/main/LICENSE-AGPL)
+- [Core](https://github.com/nocobase/nocobase/tree/main/packages/core) Continue with [Apache 2.0](https://github.com/nocobase/nocobase/blob/main/LICENSE-APACHE-2.0)
+- [Plugins](https://github.com/nocobase/nocobase/tree/main/packages/plugins) changed to [AGPL 3.0](https://github.com/nocobase/nocobase/blob/main/LICENSE-AGPL)
 
-### 内核改进
+### Core improvements
 
-- [NocoBase 的 Logging 系统](/welcome/release/logger)
-- [数据表继承](/welcome/release/inherits)
-- [数据表模板](/welcome/release/collection-templates)
-- 数据表主键默认为 BigInt 类型
-- 提供更健全的 ACL 模块
-- 关系字段组件支持切换为简单的 Select 组件
-- 支持页面标签页
-- 表格、看板支持固定区块
-- 提供更为友好的关系筛选
-- 日历区块支持显示农历
-- 日历区块支持配置、删除重复日程
-- 表格区块横向滚动条优化，支持调整列宽
-- 弹窗可配置尺寸大小
+- [Logging system for NocoBase](/welcome/release/logger)
+- [Collection inheritance](/welcome/release/inherits)
+- [Collection templates](/welcome/release/collection-templates)
+- Primary key of collection is BigInt type by default 
+- Provide more robust ACL modules
+- Association field component supports switching to a simple Select component
+- Support page tabs
+- Table & Kanban blocks support fixed model
+- Provide more friendly association filtering
+- Calendar block supports displaying lunar
+- Calendar block supports configuration and deletion of duplicate schedules
+- Table block horizontal scroll bar optimization, support adjust column width
+- Configurable size of pop-up windows
 
-### 新增插件
+### New Plugins
 
-- Excel 数据导入插件
-- 图形化数据表配置插件
-- SSO 插件：OIDC、SAML
-- 地图插件
-- iframe 区块插件
-- 数据快照插件
-- 应用复制、备份、迁移插件
-- [字段的计算公式插件：Math Formula 和 Excel Formula](/welcome/release/formulas)
+- Data import
+- Graphical interface for collections
+- SSO: OIDC, SAML
+- Map
+- Iframe block
+- Data snapshot
+- Duplicator: application duplication, backup, migration
+- [Formula for fields: Math Formula and Excel Formula](/welcome/release/formulas)
 
-### 其他插件优化
+### Other plugin optimizations
 
-- 数据表配置：
-  - 数据表支持筛选
-  - 数据表支持设置标题字段
-  - 数据表支持分类
-- 工作流：
-  - 修复触发器取值功能
-  - 前端代码重构，插件独立化
-  - 修复执行历史加载问题
-  - 数据表触发后执行不再使用相同事务，优化执行流程
-  - 新增调度器和触发缓存，以队列执行方式解决并发问题
-  - 修复定时任务结束时间组件问题
-  - 修复定时任务跳秒问题
-  - 支持工作流级别复制
-  - 重构上下文及节点变量数据结构
-- 验证码：
-  - 新增验证码配置面板
-- 文件管理器：
-  - 修复本地存储静态文件服务中间件
-  - 本地存储空 baseUrl 配置容错处理
-- 自动编号：
-  - 重构为由数据表记录序列
-  - 增加可输入和匹配规则的配置
-  - 修复生成数字不小于配置的起始值
+- Collection configuration
+  - Support for filtering
+  - Support for define title fields
+  - Support for classification
+- Workflow
+  - Fix trigger fetching function
+  - Front-end refactoring and plugin independence
+  - Fix the execution history loading problem
+  - Optimize the execution process by no longer using the same transaction after the execution of the data table trigger
+  - New scheduler and trigger cache are added to solve the concurrency problem by queue execution
+  - Fix the problem of timed task end time component
+  - Fix the problem of timed task skipping seconds
+  - Support workflow-level duplication
+  - Refactor the data structure of context and node variables
+- Captcha
+  - New captcha configuration panel
+- Files Manager
+  - Fix local storage static file service middleware
+  - Local storage empty baseUrl configuration fault tolerance handling
+- Auto Numbering
+  - Refactor to record sequence by data table
+  - Add configurations that can be entered and matched with rules
+  - Fix generating numbers not less than the configured starting value
 
 ## 2022/10/31 ~ v0.8.0-alpha.1
 
