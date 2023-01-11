@@ -1,5 +1,4 @@
 import { Plugin } from '@nocobase/server';
-import { areas, cities, provinces } from 'china-division';
 import { resolve } from 'path';
 
 export class PluginChinaRegion extends Plugin {
@@ -26,6 +25,8 @@ export class PluginChinaRegion extends Plugin {
   }
 
   async importData() {
+    const { areas, cities, provinces } = require('china-division');
+
     const timer = Date.now();
     const ChinaRegion = this.db.getModel('chinaRegions');
 

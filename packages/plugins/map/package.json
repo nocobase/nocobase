@@ -11,11 +11,6 @@
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
-    "@amap/amap-jsapi-types": "^0.0.10",
-    "@emotion/css": "^11.7.1",
-    "@formily/react": "2.0.20",
-    "ahooks": "^3.7.2",
-    "antd": "~4.19.5",
-    "sequelize": "^6.26.0"
+    "@amap/amap-jsapi-types": "^0.0.10"
   }
 }
