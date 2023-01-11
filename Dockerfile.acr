@@ -7,28 +7,23 @@ WORKDIR /tmp
 COPY . /tmp
 RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
 RUN cd /tmp && \
-  NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
-  && tmp=$(mktemp) \
-  && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
-RUN  yarn install && yarn nocobase install && yarn build
+    NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
+        && tmp=$(mktemp) \
+        && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
+RUN  yarn install && yarn build
 
 RUN git checkout -b release \
-  && yarn version:alpha -y
-
-RUN git config user.email "test@mail.com" \
-  && git config user.name "test" \
-  && echo "# test" >> Release.md \
-  && git add . \
-  && git commit -m "chore(versions): test publish packages xxx"
-
-RUN yarn release:force --no-verify-access --no-git-reset --registry $VERDACCIO_URL
+    && yarn version:alpha -y  \
+    && git config user.email "test@mail.com"  \
+    && git config user.name "test" && git add .  \
+    && git commit -m "chore(versions): test publish packages xxx" \
+    && yarn release:force --registry $VERDACCIO_URL
 
 RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
 RUN cd /app \
   && yarn config set network-timeout 600000 -g \
-  && yarn create nocobase-app my-nocobase-app -a \
-  -e APP_ENV=production \
+  && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
   && yarn install --production
 
@@ -38,6 +33,7 @@ RUN cd /app \
   && find ./my-nocobase-app/node_modules/china-division/dist -name '*.csv' -delete \
   && find ./my-nocobase-app/node_modules/china-division/dist -name '*.sqlite' -delete \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
+
 
 FROM node:16-stretch-slim
 RUN apt-get update && apt-get install -y nginx
