@@ -2,13 +2,7 @@
   "name": "@nocobase/plugin-collection-manager",
   "version": "0.8.1-alpha.4",
   "main": "lib/index.js",
-  "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
+  "license": "AGPL-3.0",
   "dependencies": {
     "@hapi/topo": "^6.0.0",
     "@nocobase/database": "0.8.1-alpha.4",

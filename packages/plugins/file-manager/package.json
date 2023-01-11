@@ -1,14 +1,10 @@
 {
   "name": "@nocobase/plugin-file-manager",
   "version": "0.8.1-alpha.4",
-  "main": "lib/index.js",
-  "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
+  "description": "",
+  "license": "AGPL-3.0",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "dependencies": {
     "@koa/multer": "^3.0.0",
     "@nocobase/client": "0.8.1-alpha.4",

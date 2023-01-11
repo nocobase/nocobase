@@ -4,12 +4,6 @@
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
   "dependencies": {
     "@hapi/topo": "^6.0.0",
     "@koa/cors": "^3.1.0",

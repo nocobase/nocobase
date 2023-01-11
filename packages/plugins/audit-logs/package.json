@@ -3,13 +3,7 @@
   "version": "0.8.1-alpha.4",
   "main": "./lib/server/index.js",
   "types": "./lib/server/index.d.ts",
-  "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
+  "license": "AGPL-3.0",
   "dependencies": {
     "@nocobase/client": "0.8.1-alpha.4",
     "@nocobase/server": "0.8.1-alpha.4"
