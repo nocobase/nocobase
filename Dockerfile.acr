@@ -15,19 +15,13 @@ RUN  yarn install && yarn nocobase install && yarn build
 RUN git checkout -b release \
   && yarn version:alpha -y
 
-RUN cd packages/pro-plugins && git checkout -b release \
-  && git config user.email "test@mail.com"  \
-  && git config user.name "test" && git add .  \
-  && git commit -m "chore(versions): test publish packages xxx"
-
 RUN git config user.email "test@mail.com" \
   && git config user.name "test" \
   && echo "# test" >> Release.md \
   && git add . \
-  && git commit -m "chore(versions): test publish packages xxx" \
-  && git submodule update --init --recursive -- packages/pro-plugins
+  && git commit -m "chore(versions): test publish packages xxx"
 
-RUN  yarn release:force --no-verify-access --no-git-reset --registry $VERDACCIO_URL
+RUN yarn release:force --no-verify-access --no-git-reset --registry $VERDACCIO_URL
 
 RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
