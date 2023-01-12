@@ -1,13 +1,7 @@
 {
   "name": "@nocobase/sdk",
-  "version": "0.8.1-alpha.4",
+  "version": "0.9.0-alpha.1",
   "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
   "main": "lib",
   "module": "es/index.js",
   "typings": "es/index.d.ts",
