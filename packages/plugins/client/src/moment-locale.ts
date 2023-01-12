@@ -114,7 +114,7 @@ const locales = {
   te: 'te',
   tet: 'tet',
   tg: 'tg',
-  th: 'th',
+  'th-TH': 'th',
   tk: 'tk',
   'tl-ph': 'tl-ph',
   tlh: 'tlh',
