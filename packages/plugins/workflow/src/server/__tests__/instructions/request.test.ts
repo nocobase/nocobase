@@ -208,5 +208,29 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
       expect(job.result.data).toEqual({ title: 't1' });
     });
+
+    // TODO(bug): should not use ejs
+    it.skip('request json data with multiple lines', async () => {
+      const n1 = await workflow.createNode({
+        type: 'request',
+        config: {
+          url: URL_DATA,
+          method: 'POST',
+          data: '{"title": "<%=ctx.data.title%>"}',
+        } as RequestConfig,
+      });
+
+      const title = 't1\n\nline 2';
+      await PostRepo.create({
+        values: { title }
+      });
+
+      await sleep(500);
+
+      let [execution] = await workflow.getExecutions();
+      let [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(job.result.data).toEqual({ title });
+    });
   });
 });

@@ -37,13 +37,16 @@ export default class implements Instruction {
     let url, data;
     try {
       url = await render(requestConfig.url!.trim(), templateVars, { async: true });
-      data = requestConfig.data ? await render(requestConfig.data.trim(), templateVars, { async: true }) : undefined;
-
-    } catch (error2) {
-      // console.error(error2);
+      if (requestConfig.data?.trim()) {
+        data = await render(requestConfig.data.trim(), templateVars, { async: true });
+        if (headers['Content-Type'] === 'application/json' || headers['content-type'] === 'application/json') {
+          data = JSON.parse(data);
+        }
+      }
+    } catch (error) {
       job.set({
         status: JOB_STATUS.REJECTED,
-        result: error2.message
+        result: error.message
       });
     }
 
@@ -59,11 +62,10 @@ export default class implements Instruction {
         status: JOB_STATUS.RESOLVED,
         result: response.data
       });
-    } catch (error1) {
-      // console.error('axios error?', error1);
+    } catch (error) {
       job.set({
         status: JOB_STATUS.REJECTED,
-        result: error1.isAxiosError ? error1.toJSON() : error1.message
+        result: error.isAxiosError ? error.toJSON() : error.message
       });
     }
 
