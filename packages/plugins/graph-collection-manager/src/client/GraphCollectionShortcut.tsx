@@ -1,12 +1,12 @@
 import { DeleteOutlined, PartitionOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
 import { PluginManager, SchemaComponent, useActionContext, useRequest } from '@nocobase/client';
 import React, { useEffect } from 'react';
-import { css } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useCreateActionAndRefreshCM } from './action-hooks';
 import { GraphDrawPage } from './GraphDrawPage';
+import { useGCMTranslation } from './utils';
 
 const useCollectionValues = (options) => {
   const { visible } = useActionContext();
@@ -144,7 +144,7 @@ export const GraphCollectionPane = () => {
 };
 
 export const GraphCollectionShortcut = () => {
-  const { t } = useTranslation('graphPositions');
+  const { t } = useGCMTranslation();
   const history = useHistory();
   return (
     <PluginManager.Toolbar.Item

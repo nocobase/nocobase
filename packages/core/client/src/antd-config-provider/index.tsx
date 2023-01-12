@@ -1,7 +1,15 @@
 import { ConfigProvider, Spin } from 'antd';
-import React from 'react';
+import moment from 'moment';
+import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
+import { loadConstrueLocale } from './loadConstrueLocale';
+
+export const AppLangContext = createContext<any>({});
+
+export const useAppLangContext = () => {
+  return useContext(AppLangContext);
+};
 
 export function AntdConfigProvider(props) {
   const { remoteLocale, ...others } = props;
@@ -21,6 +29,8 @@ export function AntdConfigProvider(props) {
         Object.keys(data?.data?.resources || {}).forEach((key) => {
           i18n.addResources(data?.data?.lang, key, data?.data?.resources[key] || {});
         });
+        loadConstrueLocale(data?.data);
+        moment.locale(data?.data?.moment);
       },
       manual: !remoteLocale,
     },
@@ -29,8 +39,10 @@ export function AntdConfigProvider(props) {
     return <Spin />;
   }
   return (
-    <ConfigProvider dropdownMatchSelectWidth={false} {...others} locale={data?.data?.antd || {}}>
-      {props.children}
-    </ConfigProvider>
+    <AppLangContext.Provider value={data?.data}>
+      <ConfigProvider dropdownMatchSelectWidth={false} {...others} locale={data?.data?.antd || {}}>
+        {props.children}
+      </ConfigProvider>
+    </AppLangContext.Provider>
   );
 }

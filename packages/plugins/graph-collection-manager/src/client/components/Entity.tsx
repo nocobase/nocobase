@@ -1,14 +1,16 @@
-import { DeleteOutlined, EditOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined, EditOutlined, UpOutlined } from '@ant-design/icons';
 import '@antv/x6-react-shape';
 import { css, cx } from '@emotion/css';
 import { uid } from '@formily/shared';
 import {
   Action,
   Checkbox,
+  collection,
   CollectionField,
   CollectionProvider,
   Form,
   FormItem,
+  Formula,
   Grid,
   Input,
   InputNumber,
@@ -19,31 +21,29 @@ import {
   Select,
   useCollectionManager,
   useCompile,
-  Formula,
-  useRecord,
-  collection,
   useCurrentAppInfo,
+  useRecord
 } from '@nocobase/client';
-import { useTranslation } from 'react-i18next';
-import { Dropdown, Popover, Tag, Badge } from 'antd';
-import React, { useRef, useState } from 'react';
+import { Badge, Dropdown, Popover, Tag } from 'antd';
 import { groupBy } from 'lodash';
+import React, { useRef, useState } from 'react';
 import {
   useAsyncDataSource,
   useCancelAction,
   useDestroyActionAndRefreshCM,
   useDestroyFieldActionAndRefreshCM,
   useUpdateCollectionActionAndRefreshCM,
-  useValuesFromRecord,
+  useValuesFromRecord
 } from '../action-hooks';
 import { collectiionPopoverClass, entityContainer, headClass, tableBtnClass, tableNameClass } from '../style';
-import { FieldSummary } from './FieldSummary';
+import { useGCMTranslation } from '../utils';
 import { AddFieldAction } from './AddFieldAction';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
+import { EditCollectionAction } from './EditCollectionAction';
 import { EditFieldAction } from './EditFieldAction';
+import { FieldSummary } from './FieldSummary';
 import { OverrideFieldAction } from './OverrideFieldAction';
 import { ViewFieldAction } from './ViewFieldAction';
-import { EditCollectionAction } from './EditCollectionAction';
 
 const Entity: React.FC<{
   node?: Node | any;
@@ -166,7 +166,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
     },
   } = node;
   const [collapse, setCollapse] = useState(false);
-  const { t } = useTranslation('graphPositions');
+  const { t } = useGCMTranslation();
   const compile = useCompile();
   const portsData = groupBy(ports.items, (v) => {
     if (

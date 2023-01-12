@@ -1,5 +1,4 @@
 import i18next from 'i18next';
-import moment from 'moment';
 import { initReactI18next } from 'react-i18next';
 import locale from '../locale';
 const log = require('debug')('i18next');
@@ -31,15 +30,6 @@ i18n
     resources: {},
   });
 
-function setMomentLng(language) {
-  const lng = locale[language || 'en-US'].moment || 'en';
-  log(lng);
-  moment.locale(lng);
-}
-
-setMomentLng(localStorage.getItem('NOCOBASE_LOCALE'));
-
 i18n.on('languageChanged', (lng) => {
   localStorage.setItem('NOCOBASE_LOCALE', lng);
-  setMomentLng(lng);
 });

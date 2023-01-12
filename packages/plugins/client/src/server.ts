@@ -3,6 +3,13 @@ import send from 'koa-send';
 import serve from 'koa-static';
 import isEmpty from 'lodash/isEmpty';
 import { isAbsolute, resolve } from 'path';
+import { getCronstrueLocale } from './construe';
+import { getCronLocale } from './cron';
+import { getResourceLocale } from './resource';
+
+import { getMomentLocale } from './moment-locale';
+
+
 
 const getAntdLocale = (lang) => {
   try {
@@ -35,8 +42,7 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
     const dialect = this.app.db.sequelize.getDialect();
-    let antd = {};
-    let allResources = {};
+    const locales = {};
     this.app.resource({
       name: 'app',
       actions: {
@@ -59,35 +65,6 @@ export class ClientPlugin extends Plugin {
           await next();
         },
         async getLang(ctx, next) {
-          const arr2obj = (items: any[]) => {
-            const obj = {};
-            for (const item of items) {
-              Object.assign(obj, item);
-            }
-            return obj;
-          };
-          const getResource = (packageName: string, lang: string) => {
-            let resources = [];
-            const prefixes = ['src', 'lib'];
-            const localeKeys = ['locale', 'client/locale', 'server/locale'];
-            for (const prefix of prefixes) {
-              for (const localeKey of localeKeys) {
-                try {
-                  const file = `${packageName}/${prefix}/${localeKey}/${lang}`;
-                  require.resolve(file);
-                  const resource = require(file).default;
-                  resources.push(resource);
-                } catch (error) {}
-              }
-              if (resources.length) {
-                break;
-              }
-            }
-            if (resources.length === 0 && lang.replace('-', '_') !== lang) {
-              return getResource(packageName, lang.replace('-', '_'));
-            }
-            return arr2obj(resources);
-          };
           const SystemSetting = ctx.db.getRepository('systemSettings');
           const systemSetting = await SystemSetting.findOne();
           const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
@@ -99,28 +76,25 @@ export class ClientPlugin extends Plugin {
           if (ctx.request.query.locale) {
             lang = ctx.request.query.locale;
           }
-          if (isEmpty(allResources[lang])) {
-            allResources[lang] = {};
-            const plugins = await ctx.db.getRepository('applicationPlugins').find({
-              filter: {
-                enabled: true,
-              },
-            });
-            for (const plugin of plugins) {
-              allResources[lang][plugin.get('name')] = getResource(
-                PluginManager.getPackageName(plugin.get('name')),
-                lang,
-              );
-            }
-            allResources[lang]['client'] = getResource('@nocobase/client', lang);
+          if (isEmpty(locales[lang])) {
+            locales[lang] = {};
           }
-          if (isEmpty(antd[lang])) {
-            antd[lang] = getAntdLocale(lang);
+          if (isEmpty(locales[lang].resources)) {
+            locales[lang].resources = await getResourceLocale(lang, ctx.db);
+          }
+          if (isEmpty(locales[lang].antd)) {
+            locales[lang].antd = getAntdLocale(lang);
+          }
+          if (isEmpty(locales[lang].cronstrue)) {
+            locales[lang].cronstrue = getCronstrueLocale(lang);
+          }
+          if (isEmpty(locales[lang].cron)) {
+            locales[lang].cron = getCronLocale(lang);
           }
           ctx.body = {
             lang,
-            antd: antd[lang],
-            resources: allResources[lang],
+            moment: getMomentLocale(lang),
+            ...locales[lang],
           };
           await next();
         },

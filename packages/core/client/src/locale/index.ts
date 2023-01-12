@@ -1,70 +1,75 @@
 export type LocaleOptions = {
   label: string;
-  moment: string;
-  // antd: any;
-  resources?: any;
 };
 
+export { default as cron } from '../schema-component/antd/cron/locale';
+
 export default {
-  'en-US': {
-    label: 'English',
-    // https://github.com/moment/moment/blob/develop/locale/en.js
-    moment: 'en',
-    // https://github.com/ant-design/ant-design/tree/master/components/locale/en_US
-    // antd: antdEnUS,
-    // resources: {
-    //   client: {
-    //     ...enUS,
-    //   },
-    // },
-  },
-  'ja-JP': {
-    label: '日本語',
-    // https://github.com/moment/moment/blob/develop/locale/ja.js
-    moment: 'ja',
-    // https://github.com/ant-design/ant-design/tree/master/components/locale/ja_JP
-    // antd: antdJaJP,
-    // resources: {
-    //   client: {
-    //     ...jaJP,
-    //   },
-    // },
-  },
-  'zh-CN': {
-    label: '简体中文',
-    // https://github.com/moment/moment/blob/develop/locale/zh-cn.js
-    moment: 'zh-cn',
-    // https://github.com/ant-design/ant-design/tree/master/components/locale/zh_CN
-    // antd: antdZhCN,
-    // i18next
-    // resources: {
-    //   client: {
-    //     ...zhCN,
-    //   },
-    // },
-  },
-  'ru-RU': {
-    label: 'Русский',
-    // https://github.com/moment/moment/blob/develop/locale/ru.js
-    moment: 'ru',
-    // https://github.com/ant-design/ant-design/tree/master/components/locale/ru_RU
-    // antd: antdRuRU,
-    // resources: {
-    //   client: {
-    //     ...ruRU,
-    //   },
-    // },
-  },
-  'tr-TR': {
-    label: 'Türkçe',
-    // https://github.com/moment/moment/blob/develop/locale/tr.js
-    moment: 'tr',
-    // https://github.com/ant-design/ant-design/tree/master/components/locale/tr_TR
-    // antd: antdTrTR,
-    // resources: {
-    //   client: {
-    //     ...trTR,
-    //   },
-    // },
-  },
-} as Record<string, LocaleOptions>;
+  'ar-EG': { label: 'العربية' },
+  'az-AZ': { label: 'Azərbaycan dili' },
+  'bg-BG': { label: 'Български' },
+  'bn-BD': { label: 'Bengali' },
+  'by-BY': { label: 'Беларускі' },
+  'ca-ES': { label: 'Сatalà/Espanya' },
+  'cs-CZ': { label: 'Česky' },
+  'da-DK': { label: 'Dansk' },
+  'de-DE': { label: 'Deutsch' },
+  'el-GR': { label: 'Ελληνικά' },
+  'en-GB': { label: 'English(GB)' },
+  'en-US': { label: 'English' },
+  'es-ES': { label: 'Español' },
+  'et-EE': { label: 'Estonian (Eesti)' },
+  'fa-IR': { label: 'فارسی' },
+  'fi-FI': { label: 'Suomi' },
+  'fr-BE': { label: 'Français(BE)' },
+  'fr-CA': { label: 'Français(CA)' },
+  'fr-FR': { label: 'Français' },
+  'ga-IE': { label: 'Gaeilge' },
+  'gl-ES': { label: 'Galego' },
+  'he-IL': { label: 'עברית' },
+  'hi-IN': { label: 'हिन्दी' },
+  'hr-HR': { label: 'Hrvatski jezik' },
+  'hu-HU': { label: 'Magyar' },
+  'hy-AM': { label: 'Հայերեն' },
+  'id-ID': { label: 'Bahasa Indonesia' },
+  'is-IS': { label: 'Íslenska' },
+  'it-IT': { label: 'Italiano' },
+  'ja-JP': { label: '日本語' },
+  'ka-GE': { label: 'ქართული' },
+  'kk-KZ': { label: 'Қазақ тілі' },
+  'km-KH': { label: 'ភាសាខ្មែរ' },
+  // 'kmr-IQ': { label: 'kmr_IQ' },
+  'kn-IN': { label: 'ಕನ್ನಡ' },
+  'ko-KR': { label: '한국어' },
+  'ku-IQ': { label: 'کوردی' },
+  'lt-LT': { label: 'lietuvių' },
+  'lv-LV': { label: 'Latviešu valoda' },
+  'mk-MK': { label: 'македонски јазик' },
+  'ml-IN': { label: 'മലയാളം' },
+  'mn-MN': { label: 'Монгол хэл' },
+  'ms-MY': { label: 'بهاس ملايو' },
+  'nb-NO': { label: 'Norsk bokmål' },
+  'ne-NP': { label: 'नेपाली' },
+  'nl-BE': { label: 'Vlaams' },
+  'nl-NL': { label: 'Nederlands' },
+  'pl-PL': { label: 'Polski' },
+  'pt-BR': { label: 'Português brasileiro' },
+  'pt-PT': { label: 'Português' },
+  'ro-RO': { label: 'România' },
+  'ru-RU': { label: 'Русский' },
+  'si-LK': { label: 'සිංහල' },
+  'sk-SK': { label: 'Slovenčina' },
+  'sl-SI': { label: 'Slovenščina' },
+  'sr-RS': { label: 'српски језик' },
+  'sv-SE': { label: 'Svenska' },
+  'ta-IN': { label: 'Tamil' },
+  'th-TH': { label: 'ภาษาไทย' },
+  'tk-TK': { label: 'Turkmen' },
+  'tr-TR': { label: 'Türkçe' },
+  'uk-UA': { label: 'Українська' },
+  'ur-PK': { label: 'Oʻzbekcha' },
+  'vi-VN': { label: 'Tiếng Việt' },
+  'zh-CN': { label: '简体中文' },
+  'zh-HK': { label: '繁體中文（香港）' },
+  'zh-TW': { label: '繁體中文（台湾）' },
+};
