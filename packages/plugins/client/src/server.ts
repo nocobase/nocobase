@@ -1,7 +1,19 @@
 import { Plugin, PluginManager } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
+import isEmpty from 'lodash/isEmpty';
 import { isAbsolute, resolve } from 'path';
+
+const getAntdLocale = (lang) => {
+  try {
+    require.resolve(`antd/lib/locale/${lang}`);
+    return require(`antd/lib/locale/${lang}`).default;
+  } catch (error) {
+    if (lang.replace('-', '_') !== lang) {
+      return getAntdLocale(lang.replace('-', '_'));
+    }
+  }
+};
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {
@@ -23,6 +35,8 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
     const dialect = this.app.db.sequelize.getDialect();
+    let antd = {};
+    let allResources = {};
     this.app.resource({
       name: 'app',
       actions: {
@@ -45,6 +59,35 @@ export class ClientPlugin extends Plugin {
           await next();
         },
         async getLang(ctx, next) {
+          const arr2obj = (items: any[]) => {
+            const obj = {};
+            for (const item of items) {
+              Object.assign(obj, item);
+            }
+            return obj;
+          };
+          const getResource = (packageName: string, lang: string) => {
+            let resources = [];
+            const prefixes = ['src', 'lib'];
+            const localeKeys = ['locale', 'client/locale', 'server/locale'];
+            for (const prefix of prefixes) {
+              for (const localeKey of localeKeys) {
+                try {
+                  const file = `${packageName}/${prefix}/${localeKey}/${lang}`;
+                  require.resolve(file);
+                  const resource = require(file).default;
+                  resources.push(resource);
+                } catch (error) {}
+              }
+              if (resources.length) {
+                break;
+              }
+            }
+            if (resources.length === 0 && lang.replace('-', '_') !== lang) {
+              return getResource(packageName, lang.replace('-', '_'));
+            }
+            return arr2obj(resources);
+          };
           const SystemSetting = ctx.db.getRepository('systemSettings');
           const systemSetting = await SystemSetting.findOne();
           const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
@@ -53,8 +96,31 @@ export class ClientPlugin extends Plugin {
           if (enabledLanguages.includes(currentUser?.appLang)) {
             lang = currentUser?.appLang;
           }
+          if (ctx.request.query.locale) {
+            lang = ctx.request.query.locale;
+          }
+          if (isEmpty(allResources[lang])) {
+            allResources[lang] = {};
+            const plugins = await ctx.db.getRepository('applicationPlugins').find({
+              filter: {
+                enabled: true,
+              },
+            });
+            for (const plugin of plugins) {
+              allResources[lang][plugin.get('name')] = getResource(
+                PluginManager.getPackageName(plugin.get('name')),
+                lang,
+              );
+            }
+            allResources[lang]['client'] = getResource('@nocobase/client', lang);
+          }
+          if (isEmpty(antd[lang])) {
+            antd[lang] = getAntdLocale(lang);
+          }
           ctx.body = {
             lang,
+            antd: antd[lang],
+            resources: allResources[lang],
           };
           await next();
         },

@@ -2,13 +2,12 @@ import { ConfigProvider, Spin } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
-import locale from '../locale';
 
 export function AntdConfigProvider(props) {
   const { remoteLocale, ...others } = props;
   const api = useAPIClient();
   const { i18n } = useTranslation();
-  const { loading } = useRequest(
+  const { data, loading } = useRequest(
     {
       url: 'app:getLang',
     },
@@ -19,6 +18,9 @@ export function AntdConfigProvider(props) {
           api.auth.setLocale(data?.data?.lang);
           i18n.changeLanguage(data?.data?.lang);
         }
+        Object.keys(data?.data?.resources || {}).forEach((key) => {
+          i18n.addResources(data?.data?.lang, key, data?.data?.resources[key] || {});
+        });
       },
       manual: !remoteLocale,
     },
@@ -27,11 +29,7 @@ export function AntdConfigProvider(props) {
     return <Spin />;
   }
   return (
-    <ConfigProvider
-      dropdownMatchSelectWidth={false}
-      {...others}
-      locale={locale[i18n.language].antd}
-    >
+    <ConfigProvider dropdownMatchSelectWidth={false} {...others} locale={data?.data?.antd || {}}>
       {props.children}
     </ConfigProvider>
   );

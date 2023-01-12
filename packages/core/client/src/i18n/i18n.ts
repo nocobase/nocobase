@@ -12,17 +12,24 @@ Object.keys(locale).forEach((lang) => {
   resources[lang] = locale[lang].resources;
 });
 
-i18n.use(initReactI18next).init({
-  lng: localStorage.getItem('NOCOBASE_LOCALE') || 'en-US',
-  // debug: true,
-  defaultNS: 'client',
-  // parseMissingKeyHandler: (key) => {
-  //   console.log('parseMissingKeyHandler', `'${key}': '${key}',`);
-  //   return key;
-  // },
-  // ns: ['client'],
-  resources,
-});
+i18n
+  // .use(Backend)
+  .use(initReactI18next)
+  .init({
+    lng: localStorage.getItem('NOCOBASE_LOCALE') || 'en-US',
+    // debug: true,
+    defaultNS: 'client',
+    // backend: {
+    //   // for all available options read the backend's repository readme file
+    //   loadPath: '/api/locales/{{lng}}/{{ns}}.json',
+    // },
+    // parseMissingKeyHandler: (key) => {
+    //   console.log('parseMissingKeyHandler', `'${key}': '${key}',`);
+    //   return key;
+    // },
+    // ns: ['client'],
+    resources: {},
+  });
 
 function setMomentLng(language) {
   const lng = locale[language || 'en-US'].moment || 'en';

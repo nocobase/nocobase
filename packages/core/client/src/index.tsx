@@ -4,6 +4,7 @@ import './global.less';
 export * from './acl';
 export * from './antd-config-provider';
 export * from './api-client';
+export * from './appInfo';
 export * from './application';
 export * from './async-data-provider';
 export * from './block-provider';
@@ -26,5 +27,4 @@ export * from './schema-templates';
 export * from './settings-form';
 export * from './system-settings';
 export * from './user';
-export * from './appInfo'
 
