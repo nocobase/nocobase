@@ -176,12 +176,12 @@ export default class Processor {
 
   public async run(node, input?) {
     const { instructions } = this.options.plugin;
-    const { run } = instructions.get(node.type);
-    if (typeof run !== 'function') {
+    const instruction = instructions.get(node.type);
+    if (typeof instruction.run !== 'function') {
       return Promise.reject(new Error('`run` should be implemented for customized execution of the node'));
     }
 
-    return this.exec(run, node, input);
+    return this.exec(instruction.run.bind(instruction), node, input);
   }
 
   // parent node should take over the control
@@ -200,12 +200,12 @@ export default class Processor {
 
   async recall(node, job) {
     const { instructions } = this.options.plugin;
-    const { resume } = instructions.get(node.type);
-    if (typeof resume !== 'function') {
+    const instruction = instructions.get(node.type);
+    if (typeof instruction.resume !== 'function') {
       return Promise.reject(new Error('`resume` should be implemented'));
     }
 
-    return this.exec(resume, node, job);
+    return this.exec(instruction.resume.bind(instruction), node, job);
   }
 
   async exit(job: JobModel | null) {

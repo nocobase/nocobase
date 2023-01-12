@@ -1,11 +1,11 @@
 import { ArrayItems } from '@formily/antd';
-import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
-import React, { useEffect } from 'react';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableBlockContext } from '../../../block-provider';
+import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
-import { useRecord } from '../../../record-provider';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
@@ -81,7 +81,11 @@ export const TableBlockDesigner = () => {
           params.filter = filter;
           field.decoratorProps.params = params;
           fieldSchema['x-decorator-props']['params'] = params;
-          service.run({ ...service.params?.[0], filter, page: 1 });
+          const filters = service.params?.[1]?.filters || {};
+          service.run(
+            { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), filter]), page: 1 },
+            { filters },
+          );
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
