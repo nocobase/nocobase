@@ -93,8 +93,14 @@ const langs = {
 
 export const getCronstrueLocale = (lang) => {
   const lng = langs[lang] || 'en';
-  const Locale = require(`cronstrue/locales/${lng}`).default;
-  const locale = Locale.locales[lng];
+  const Locale = require(`cronstrue/locales/${lng}`);
+  let locale;
+  if (Locale?.default) {
+    locale = Locale.default.locales[lng];
+  } else {
+    const L = Locale[lng];
+    locale = new L();
+  }
   const items = {};
   for (const method of methods) {
     try {
