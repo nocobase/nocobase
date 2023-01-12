@@ -1,17 +1,16 @@
-import React from 'react';
-import { useEffect, useRef, useState } from 'react';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
+import { SyncOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { useCollection } from '@nocobase/client';
-import { css } from '@emotion/css';
-import { Alert, Button, Modal } from 'antd';
-import { useMapTranslation } from '../locales';
-import Search from './Search';
 import { useMemoizedFn } from 'ahooks';
-import { useMapConfiguration } from '../hooks';
+import { Alert, Button, Modal } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 import { useHistory } from 'react-router';
-import { SyncOutlined } from '@ant-design/icons';
+import { useMapConfiguration } from '../hooks';
+import { useMapTranslation } from '../locale';
+import Search from './Search';
 
 interface AMapComponentProps {
   accessKey: string;
