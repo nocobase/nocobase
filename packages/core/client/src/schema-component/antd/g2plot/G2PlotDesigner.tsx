@@ -29,6 +29,8 @@ export const G2PlotDesigner = () => {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const field = useField();
+  console.log(fieldSchema);
+  console.log(field);
   const compile = useCompile();
   const api = useAPIClient();
   return (

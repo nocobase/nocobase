@@ -53,7 +53,7 @@ export const ChartBlockInitializer = (props) => {
           return (
             <SchemaComponentOptions
               scope={options.scope}
-              components={{ ...options.components, ChartConfigurationOptions }}
+              components={{ ...options.components }}
             >
               <FormLayout layout={'vertical'}>
                 <SchemaComponent
@@ -101,7 +101,7 @@ export const ChartBlockInitializer = (props) => {
           console.log(values);
           insert({
             type: 'void',
-            'x-designer': 'G2Plot.Designer',
+            'x-designer': 'ChartBlockEngine.Designer',
             'x-decorator': 'CardItem',
             'x-component': 'ChartBlockEngine',
             'x-component-props': {
