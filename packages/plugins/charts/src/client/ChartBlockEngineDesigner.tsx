@@ -1,7 +1,17 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React from 'react';
+import { ISchema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import {GeneralSchemaDesigner, SchemaSettings, useAPIClient, useCompile, useDesignable} from "@nocobase/client";
+import {
+  GeneralSchemaDesigner, SchemaComponent, SchemaComponentOptions,
+  SchemaSettings,
+  useAPIClient,
+  useCollectionManager,
+  useCompile,
+  useDesignable,
+} from '@nocobase/client';
+import { FormLayout } from '@formily/antd';
+import { Options } from './ChartBlockInitializer';
+import { templates } from './templates';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -29,73 +39,57 @@ export const ChartBlockEngineDesigner = () => {
   const field = useField();
   const compile = useCompile();
   const api = useAPIClient();
+  const options = useContext(SchemaOptionsContext);
+  const {chartBlockMetaData ,renderComponent} = fieldSchema?.['x-component-props']
+  console.log(chartBlockMetaData);
+  // TODO
   return (
     <GeneralSchemaDesigner>
       <SchemaSettings.ModalItem
-        title={t('Edit chart')}
+        components={{ ChartBlockEngineDesignerInitializer }}
+        title={t('Edit chart block')}
         schema={
           {
-            type: 'object',
+            type: 'void',
             title: t('Edit chart'),
-            properties: {
-              title: {
-                title: t('Chart title'),
-                type: 'string',
-                default: fieldSchema.title,
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-              },
-              plot: {
-                title: t('Chart type'),
-                type: 'string',
-                default: fieldSchema?.['x-component-props']?.plot,
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                'x-disabled': !!fieldSchema?.['x-component-props']?.plot,
-              },
-              config: {
-                title: t('Chart config'),
-                type: 'string',
-                default: JSON.stringify(fieldSchema?.['x-component-props']?.config, null, 2),
-                'x-decorator': 'FormItem',
-                'x-component': 'Input.TextArea',
-                'x-component-props': {
-                  autoSize: { minRows: 8, maxRows: 16 },
-                },
-                'x-validator': validateJSON,
-              },
+            'x-decorator': 'CardItem',
+            'x-component': 'ChartBlockEngineDesignerInitializer',
+            'x-component-props': {
+              chartBlockMetaData,
+              renderComponent,
             },
           } as ISchema
         }
         // {{ fetchData(api, { url: 'chartData:get' }) }}
-        onSubmit={async ({ plot, title, config }) => {
-          field.title = compile(title);
-          field.componentProps.plot = plot;
-          const conf = compile(JSON.parse(config));
-          const fn = conf?.data;
-          if (typeof fn === 'function') {
-            const result = fn.bind({ api })();
-            if (result?.then) {
-              result.then(data => {
-                if (Array.isArray(data)) {
-                  field.componentProps.config.data = data;
-                }
-              });
-            }
-          } else {
-            field.componentProps.config = conf;
-          }
-          fieldSchema.title = title;
-          fieldSchema['x-component-props']['plot'] = plot;
-          fieldSchema['x-component-props']['config'] = JSON.parse(config);
-          dn.emit('patch', {
-            schema: {
-              title,
-              'x-uid': fieldSchema['x-uid'],
-              'x-component-props': fieldSchema['x-component-props'],
-            },
-          });
-          dn.refresh();
+        onSubmit={async (props) => {
+          console.log(props);
+          // field.title = compile(title);
+          // field.componentProps.plot = plot;
+          // const conf = compile(JSON.parse(config));
+          // const fn = conf?.data;
+          // if (typeof fn === 'function') {
+          //   const result = fn.bind({ api })();
+          //   if (result?.then) {
+          //     result.then(data => {
+          //       if (Array.isArray(data)) {
+          //         field.componentProps.config.data = data;
+          //       }
+          //     });
+          //   }
+          // } else {
+          //   field.componentProps.config = conf;
+          // }
+          // fieldSchema.title = title;
+          // fieldSchema['x-component-props']['plot'] = plot;
+          // fieldSchema['x-component-props']['config'] = JSON.parse(config);
+          // dn.emit('patch', {
+          //   schema: {
+          //     title,
+          //     'x-uid': fieldSchema['x-uid'],
+          //     'x-component-props': fieldSchema['x-component-props'],
+          //   },
+          // });
+          // dn.refresh();
         }}
       />
       <SchemaSettings.Divider />
@@ -106,5 +100,56 @@ export const ChartBlockEngineDesigner = () => {
         }}
       />
     </GeneralSchemaDesigner>
+  );
+};
+
+export const ChartBlockEngineDesignerInitializer = (props) => {
+  //传递哪个collection
+  const {chartBlockMetaData ,renderComponent} = props
+  const { t } = useTranslation();
+  const options = useContext(SchemaOptionsContext);
+  const api = useAPIClient();
+  const { getCollectionFields } = useCollectionManager();
+  const collectionFields = getCollectionFields(chartBlockMetaData.collectionName);
+  const computedFields = collectionFields
+    ?.filter((field) => (field.type === 'double' || field.type === 'bigInt'))
+    ?.map((field) => {
+      return {
+        label: field.name,
+        value: field.name,
+      };
+    });
+  return (
+    <SchemaComponentOptions
+      scope={options.scope}
+      components={{ ...options.components }}
+    >
+      <FormLayout layout={'vertical'}>
+        <SchemaComponent
+          scope={{ computedFields: computedFields || [] }}
+          components={{ Options }}
+          schema={{
+            properties: {
+              chartType: {
+                title: t('Chart type'),
+                required: true,
+                'x-component': 'Select',
+                'x-decorator': 'FormItem',
+                enum: [...templates.values()].map((template) => {
+                  return {
+                    label: template.type,
+                    value: template.type,
+                  };
+                }),
+              },
+              options: {
+                type: 'void',
+                'x-component': 'Options',
+              },
+            },
+          }}
+        />
+      </FormLayout>
+    </SchemaComponentOptions>
   );
 };
