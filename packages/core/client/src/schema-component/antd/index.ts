@@ -36,4 +36,5 @@ export * from './tabs';
 export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
+export * from './gantt'
 import './index.less';

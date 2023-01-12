@@ -1016,6 +1016,96 @@ export const createCalendarBlockSchema = (options) => {
   return schema;
 };
 
+export const createGanttBlockSchema = (options) => {
+  const { collection, resource, fieldNames, ...others } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-acl-action': `${resource || collection}:list`,
+    'x-decorator': 'GanttBlockProvider',
+    'x-decorator-props': {
+      collection: collection,
+      resource: resource || collection,
+      action: 'list',
+      fieldNames: {
+        id: 'id',
+        ...fieldNames,
+      },
+      params: {
+        paginate: false,
+      },
+      ...others,
+    },
+    'x-designer': 'Gantt.Designer',
+    'x-component': 'CardItem',
+    properties: {
+      [uid()]: {
+        type: 'array',
+        'x-initializer': 'GanttColumnInitializers',
+        'x-component': 'Gantt',
+        'x-component-props': {
+          useProps: '{{ useGanttBlockProps }}',
+        },
+        properties: {
+          toolBar: {
+            type: 'void',
+            'x-component': 'Gantt.ActionBar',
+            'x-component-props': {
+              style: {
+                marginBottom: 24,
+              },
+            },
+            'x-initializer': 'GanttActionInitializers',
+            properties: {},
+          },
+          event: {
+            type: 'void',
+            'x-component': 'Gantt.Event',
+            properties: {
+              drawer: {
+                type: 'void',
+                'x-component': 'Action.Drawer',
+                'x-component-props': {
+                  className: 'nb-action-popup',
+                },
+                title: '{{ t("View record") }}',
+                properties: {
+                  tabs: {
+                    type: 'void',
+                    'x-component': 'Tabs',
+                    'x-component-props': {},
+                    'x-initializer': 'TabPaneInitializers',
+                    properties: {
+                      tab1: {
+                        type: 'void',
+                        title: '{{t("Details")}}',
+                        'x-component': 'Tabs.TabPane',
+                        'x-designer': 'Tabs.Designer',
+                        'x-component-props': {},
+                        properties: {
+                          grid: {
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer-props': {
+                              actionInitializers: 'GanttFormActionInitializers',
+                            },
+                            'x-initializer': 'RecordBlockInitializers',
+                            properties: {},
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  console.log(JSON.stringify(schema, null, 2));
+  return schema;
+};
 export const createKanbanBlockSchema = (options) => {
   const { collection, resource, groupField, ...others } = options;
   const schema: ISchema = {

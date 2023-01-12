@@ -1,0 +1,38 @@
+.taskListWrapper {
+  display: table;
+  border-bottom: #e6e4e4 1px solid;
+  border-left: #e6e4e4 1px solid;
+}
+
+.taskListTableRow {
+  display: table-row;
+  text-overflow: ellipsis;
+}
+
+.taskListTableRow:nth-of-type(even) {
+  background-color: #f5f5f5;
+}
+
+.taskListCell {
+  display: table-cell;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.taskListNameWrapper {
+  display: flex;
+}
+
+.taskListExpander {
+  color: rgb(86 86 86);
+  font-size: 0.6rem;
+  padding: 0.15rem 0.2rem 0rem 0.2rem;
+  user-select: none;
+  cursor: pointer;
+}
+.taskListEmptyExpander {
+  font-size: 0.6rem;
+  padding-left: 1rem;
+  user-select: none;
+}

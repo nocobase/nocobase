@@ -42,6 +42,12 @@ export const BlockInitializers = {
           title: '{{t("Kanban")}}',
           component: 'KanbanBlockInitializer',
         },
+        {
+          key: 'Gantt',
+          type: 'item',
+          title: '{{t("Gantt")}}',
+          component: 'GanttBlockInitializer',
+        },
       ],
     },
     {
