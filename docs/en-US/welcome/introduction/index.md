@@ -22,7 +22,7 @@ hello@nocobase.com
 ## Features
 
 - **Open source and free**
-    - Unrestricted commercial use under the Apache-2.0 license
+    - Apache-2.0 & AGPL-3.0 licensed
     - Full code ownership, private deployment, private and secure data
     - Free to expand and develop for actual needs
     - Good ecological support
