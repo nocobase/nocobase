@@ -1,8 +1,15 @@
-import { uniqBy, groupBy, reduce, uniq } from 'lodash';
+import { groupBy, reduce, uniq, uniqBy } from 'lodash';
+import { useTranslation } from 'react-i18next';
+
 const shape = {
   ER: 'er-rect',
   EDGE: 'edge',
 };
+
+export const useGCMTranslation = () => {
+  return useTranslation('graph-collection-manager');
+};
+
 export const getInheritCollections = (collections, name) => {
   const parents = [];
   const getParents = (name) => {

@@ -1,8 +1,8 @@
-import { message, Select } from 'antd';
 import { css } from '@emotion/css';
-import React, { useEffect, useRef, useState } from 'react';
 import { useDebounceFn } from 'ahooks';
-import { useMapTranslation } from '../locales';
+import { message, Select } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import { useMapTranslation } from '../locale';
 
 interface SearchProps {
   aMap: any;

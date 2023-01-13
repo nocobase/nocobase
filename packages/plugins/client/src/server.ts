@@ -1,7 +1,13 @@
 import { Plugin, PluginManager } from '@nocobase/server';
 import send from 'koa-send';
 import serve from 'koa-static';
+import isEmpty from 'lodash/isEmpty';
 import { isAbsolute, resolve } from 'path';
+import { getAntdLocale } from './antd';
+import { getCronLocale } from './cron';
+import { getCronstrueLocale } from './cronstrue';
+import { getMomentLocale } from './moment-locale';
+import { getResourceLocale } from './resource';
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {
@@ -23,6 +29,7 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
     const dialect = this.app.db.sequelize.getDialect();
+    const locales = require('./locale').default;
     this.app.resource({
       name: 'app',
       actions: {
@@ -53,8 +60,28 @@ export class ClientPlugin extends Plugin {
           if (enabledLanguages.includes(currentUser?.appLang)) {
             lang = currentUser?.appLang;
           }
+          if (ctx.request.query.locale) {
+            lang = ctx.request.query.locale;
+          }
+          if (isEmpty(locales[lang])) {
+            locales[lang] = {};
+          }
+          if (isEmpty(locales[lang].resources)) {
+            locales[lang].resources = await getResourceLocale(lang, ctx.db);
+          }
+          if (isEmpty(locales[lang].antd)) {
+            locales[lang].antd = getAntdLocale(lang);
+          }
+          if (isEmpty(locales[lang].cronstrue)) {
+            locales[lang].cronstrue = getCronstrueLocale(lang);
+          }
+          if (isEmpty(locales[lang].cron)) {
+            locales[lang].cron = getCronLocale(lang);
+          }
           ctx.body = {
             lang,
+            moment: getMomentLocale(lang),
+            ...locales[lang],
           };
           await next();
         },
