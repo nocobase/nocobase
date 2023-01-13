@@ -12,20 +12,23 @@ export async function submit(context: Context, next) {
     return context.throw(401);
   }
 
+  const transaction = await context.db.sequelize.transaction();
+
   const instance = await repository.findOne({
     filterByTk,
     // filter: {
     //   userId: currentUser?.id
     // },
-    appends: ['job', 'node', 'execution'],
-    context
+    appends: ['job', 'node', 'execution', 'workflow'],
+    context,
+    transaction
   });
 
   if (!instance) {
     return context.throw(404);
   }
 
-  const { actions = [], assignees } = instance.node.config;
+  const { actions = [] } = instance.node.config;
 
   // NOTE: validate status
   if (instance.status !== JOB_STATUS.PENDING
@@ -36,6 +39,12 @@ export async function submit(context: Context, next) {
     return context.throw(400);
   }
 
+  const plugin = context.app.pm.get('workflow');
+  instance.execution.workflow = instance.workflow;
+  const processor = plugin.createProcessor(instance.execution, { transaction });
+  await processor.prepare();
+
+  const assignees = processor.getParsedValue(instance.node.config.assignees ?? []);
   if (!assignees.includes(currentUser.id)
     || instance.userId !== currentUser.id
   ) {
@@ -46,7 +55,11 @@ export async function submit(context: Context, next) {
   await instance.update({
     status: values.status,
     result: values.result
+  }, {
+    transaction
   });
+
+  await transaction.commit();
 
   context.body = instance;
   context.status = 202;
@@ -55,7 +68,6 @@ export async function submit(context: Context, next) {
 
   instance.job.latestUserJob = instance;
 
-  const plugin = context.app.pm.get('workflow');
   // NOTE: resume the process and no `await` for quick returning
   plugin.resume(instance.job);
 }

@@ -76,7 +76,7 @@ export default class Processor {
       : await options.plugin.db.sequelize.transaction();
   }
 
-  private async prepare() {
+  public async prepare() {
     const transaction = await this.getTransaction();
     this.transaction = transaction;
 
