@@ -1,93 +1,25 @@
-import { NAMESPACE } from '../locale';
-import { ArrayItems } from '@formily/antd';
 import React from 'react';
-import EjsTextArea from '../components/EjsTextArea';
+import { ArrayItems } from '@formily/antd';
+import { css } from '@emotion/css';
+
+import { NAMESPACE } from '../locale';
+import { Operand, VariableTypes, VariableTypesContext } from '../calculators';
 
 
+
+function VariableTypesContextProvider(props) {
+  return (
+    <VariableTypesContext.Provider value={VariableTypes}>
+      {props.children}
+    </VariableTypesContext.Provider>
+  )
+}
 
 export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
   type: 'request',
   group: 'extended',
   fieldset: {
-    'config.url': {
-      type: 'string',
-      name: 'config.url',
-      required: true,
-      title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-decorator-props': {},
-      'x-component': 'EjsTextArea',
-      'x-component-props': {
-        autoSize: {
-          minRows: 1,
-        },
-        placeholder: 'https://xxxxxx',
-        description: `{{t("You can use the above available variables in URL.", { ns: "${NAMESPACE}" })}}`,
-      },
-    },
-    'config.timeout': {
-      type: 'number',
-      name: 'config.timeout',
-      required: true,
-      title: `{{t("Timeout config", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-decorator-props': {},
-      'x-component': 'InputNumber',
-      'x-component-props': {
-        addonAfter: `{{t("ms", { ns: "${NAMESPACE}" })}}`,
-        min: 1,
-        step: 1000,
-        defaultValue: 5000,
-      },
-    },
-    'config.headers': {
-      type: 'array',
-      name: 'config.headers',
-      'x-component': 'ArrayItems',
-      'x-decorator': 'FormItem',
-      title: `{{t("Request headers", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Default headers is Content-Type: application/json", { ns: "${NAMESPACE}" })}}`,
-      items: {
-        type: 'object',
-        properties: {
-          space: {
-            type: 'void',
-            'x-component': 'Space',
-            properties: {
-              name: {
-                type: 'string',
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                'x-component-props': {
-                  placeholder: `{{t("Name(e.g. Content-Type)", { ns: "${NAMESPACE}" })}}`,
-                },
-              },
-              value: {
-                type: 'string',
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                'x-component-props': {
-                  placeholder: `{{t("Value(e.g. Application/json)", { ns: "${NAMESPACE}" })}}`,
-                },
-              },
-              remove: {
-                type: 'void',
-                'x-decorator': 'FormItem',
-                'x-component': 'ArrayItems.Remove',
-              },
-            },
-          },
-        },
-      },
-      properties: {
-        add: {
-          type: 'void',
-          title: `{{t("Add request header", { ns: "${NAMESPACE}" })}}`,
-          'x-component': 'ArrayItems.Addition',
-        },
-      },
-    },
     'config.method': {
       type: 'string',
       name: 'config.method',
@@ -108,22 +40,146 @@ export default {
         { label: 'DELETE', value: 'DELETE' },
       ],
     },
+    'config.url': {
+      type: 'string',
+      name: 'config.url',
+      required: true,
+      title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-decorator-props': {
+        className: css`
+          .ant-input-affix-wrapper{
+            width: 100%;
+          }
+        `
+      },
+      'x-component': 'Input',
+      'x-component-props': {
+        placeholder: 'https://www.nocobase.com',
+      },
+    },
+    'config.headers': {
+      type: 'array',
+      name: 'config.headers',
+      'x-component': 'ArrayItems',
+      'x-decorator': 'FormItem',
+      title: `{{t("Headers", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t('"Content-Type" only support "application/json", and no need to specify', { ns: "${NAMESPACE}" })}}`,
+      items: {
+        type: 'object',
+        'x-decorator': 'VariableTypesContextProvider',
+        properties: {
+          space: {
+            type: 'void',
+            'x-component': 'Space',
+            properties: {
+              name: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                'x-component-props': {
+                  placeholder: `{{t("Name")}}`,
+                },
+              },
+              value: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Operand',
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
+              },
+            },
+          },
+        },
+      },
+      properties: {
+        add: {
+          type: 'void',
+          title: `{{t("Add request header", { ns: "${NAMESPACE}" })}}`,
+          'x-component': 'ArrayItems.Addition',
+        },
+      },
+    },
+    'config.params': {
+      type: 'array',
+      name: 'config.params',
+      'x-component': 'ArrayItems',
+      'x-decorator': 'FormItem',
+      title: `{{t("Parameters", { ns: "${NAMESPACE}" })}}`,
+      items: {
+        type: 'object',
+        'x-decorator': 'VariableTypesContextProvider',
+        properties: {
+          space: {
+            type: 'void',
+            'x-component': 'Space',
+            properties: {
+              name: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                'x-component-props': {
+                  placeholder: `{{t("Name")}}`,
+                },
+              },
+              value: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Operand',
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
+              },
+            },
+          },
+        },
+      },
+      properties: {
+        add: {
+          type: 'void',
+          title: `{{t("Add parameter", { ns: "${NAMESPACE}" })}}`,
+          'x-component': 'ArrayItems.Addition',
+        },
+      },
+    },
     'config.data': {
       type: 'string',
       name: 'config.data',
       'x-hidden': false,
-      title: `{{t("Request data", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'EjsTextArea',
+      'x-component': 'Input.JSON',
       'x-component-props': {
         autoSize: {
-          minRows: 5,
+          minRows: 10,
         },
         placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t("You can use the above available variables in request data.", { ns: "${NAMESPACE}" })}}`,
+        className: css`
+          font-size: 85%;
+          font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+        `
       },
-
+      description: `{{t("Variables could be used under json-templates format", { ns: "${NAMESPACE}" })}}`,
+    },
+    'config.timeout': {
+      type: 'number',
+      name: 'config.timeout',
+      title: `{{t("Timeout config", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-decorator-props': {},
+      'x-component': 'InputNumber',
+      'x-component-props': {
+        addonAfter: `{{t("ms", { ns: "${NAMESPACE}" })}}`,
+        min: 1,
+        step: 1000,
+        defaultValue: 5000,
+      },
     },
     'config.ignoreFail': {
       type: 'boolean',
@@ -137,6 +193,7 @@ export default {
   scope: {},
   components: {
     ArrayItems,
-    EjsTextArea,
+    Operand,
+    VariableTypesContextProvider
   },
 };

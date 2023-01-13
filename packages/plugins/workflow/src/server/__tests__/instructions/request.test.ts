@@ -76,26 +76,6 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
     });
 
-    it('request - url with variable template', async () => {
-      await workflow.createNode({
-        type: 'request',
-        config: {
-          url: `${URL_DATA}?title=<%= ctx.data.title %>`,
-          method: 'GET',
-        } as RequestConfig,
-      });
-
-      await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      let [execution] = await workflow.getExecutions();
-      let [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
-      console.log(job.result);
-      expect(job.result.meta.title).toEqual('t1');
-    });
-
     it('request - timeout', async () => {
       await workflow.createNode({
         type: 'request',
@@ -195,7 +175,7 @@ describe('workflow > instructions > request', () => {
         config: {
           url: URL_DATA,
           method: 'POST',
-          data: '{"title": "<%=ctx.data.title%>"}',
+          data: { title: '{{$context.data.title}}' },
         } as RequestConfig,
       });
 
@@ -210,13 +190,13 @@ describe('workflow > instructions > request', () => {
     });
 
     // TODO(bug): should not use ejs
-    it.skip('request json data with multiple lines', async () => {
+    it('request json data with multiple lines', async () => {
       const n1 = await workflow.createNode({
         type: 'request',
         config: {
           url: URL_DATA,
           method: 'POST',
-          data: '{"title": "<%=ctx.data.title%>"}',
+          data: { title: '{{$context.data.title}}' },
         } as RequestConfig,
       });
 
