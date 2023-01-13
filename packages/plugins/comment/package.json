@@ -1,0 +1,10 @@
+{
+  "name": "@nocobase/plugin-comment",
+  "version": "0.8.1-alpha.4",
+  "main": "lib/server/index.js",
+  "devDependencies": {
+    "@nocobase/server": "0.8.1-alpha.4",
+    "@nocobase/test": "0.8.1-alpha.4"
+  },
+  "dependencies": {}
+}
