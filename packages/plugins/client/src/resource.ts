@@ -34,17 +34,17 @@ const getResource = (packageName: string, lang: string) => {
 
 export const getResourceLocale = async (lang: string, db: any) => {
   const resources = {};
+  const res = getResource('@nocobase/client', lang);
+  resources['client'] = isEmpty(res) ? getResource('@nocobase/client', 'en-US') : res;
   const plugins = await db.getRepository('applicationPlugins').find({
-    // filter: {
-    //   enabled: true,
-    // },
+    filter: {
+      'name.$ne': 'client',
+    },
   });
   for (const plugin of plugins) {
     const packageName = PluginManager.getPackageName(plugin.get('name'));
     const res = getResource(packageName, lang);
     resources[plugin.get('name')] = isEmpty(res) ? getResource(packageName, 'en-US') : res;
   }
-  const res = getResource('@nocobase/client', lang);
-  resources['client'] = isEmpty(res) ? getResource('@nocobase/client', 'en-US') : res;
   return resources;
 };

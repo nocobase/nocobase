@@ -3,14 +3,12 @@ import { connect, mapReadPretty } from '@formily/react';
 import cronstrue from 'cronstrue';
 import React from 'react';
 import { Cron as ReactCron, CronProps } from 'react-js-cron';
-import { useAppLangContext } from '../../../antd-config-provider';
 import { useAPIClient } from '../../../api-client';
 
 type ComposedCron = React.FC<CronProps> & {};
 
 const Input = (props: Exclude<CronProps, 'setValue'> & { onChange: (value: string) => void }) => {
   const { onChange, ...rest } = props;
-  const ctx = useAppLangContext();
   return (
     <fieldset
       className={css`
@@ -33,7 +31,7 @@ const Input = (props: Exclude<CronProps, 'setValue'> & { onChange: (value: strin
         }
       `}
     >
-      <ReactCron setValue={onChange} locale={ctx.cron} {...rest} />
+      <ReactCron setValue={onChange} locale={window['cronLocale']} {...rest} />
     </fieldset>
   );
 };

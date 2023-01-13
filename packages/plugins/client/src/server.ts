@@ -3,24 +3,11 @@ import send from 'koa-send';
 import serve from 'koa-static';
 import isEmpty from 'lodash/isEmpty';
 import { isAbsolute, resolve } from 'path';
-import { getCronstrueLocale } from './construe';
+import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
-import { getResourceLocale } from './resource';
-
+import { getCronstrueLocale } from './cronstrue';
 import { getMomentLocale } from './moment-locale';
-
-
-
-const getAntdLocale = (lang) => {
-  try {
-    require.resolve(`antd/lib/locale/${lang}`);
-    return require(`antd/lib/locale/${lang}`).default;
-  } catch (error) {
-    if (lang.replace('-', '_') !== lang) {
-      return getAntdLocale(lang.replace('-', '_'));
-    }
-  }
-};
+import { getResourceLocale } from './resource';
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {
@@ -42,7 +29,7 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
     const dialect = this.app.db.sequelize.getDialect();
-    const locales = {};
+    const locales = require('./locale').default;
     this.app.resource({
       name: 'app',
       actions: {

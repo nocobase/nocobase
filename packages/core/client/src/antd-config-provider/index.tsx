@@ -31,6 +31,7 @@ export function AntdConfigProvider(props) {
         });
         loadConstrueLocale(data?.data);
         moment.locale(data?.data?.moment);
+        window['cronLocale'] = data?.data?.cron;
       },
       manual: !remoteLocale,
     },
