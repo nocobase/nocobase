@@ -9,9 +9,46 @@ import {
 import React, { useContext } from 'react';
 import { IsAssociationBlock } from './CommentRecord';
 
-export const collection = {
-  name: 'auditLogs',
-  title: '{{t("Audit logs")}}',
+// export const collection = {
+//   name: 'auditLogs',
+//   title: '{{t("Audit logs")}}',
+//   fields: [
+//     {
+//       name: 'createdAt',
+//       type: 'date',
+//       interface: 'createdAt',
+//       uiSchema: {
+//         type: 'datetime',
+//         title: '{{t("Created at")}}',
+//         'x-component': 'DatePicker',
+//         'x-component-props': {
+//           showTime: true,
+//         },
+//         'x-read-pretty': true,
+//       },
+//     },
+//     {
+//       name: 'type',
+//       type: 'string',
+//       interface: 'select',
+//       uiSchema: {
+//         type: 'string',
+//         title: '{{t("Action type")}}',
+//         'x-component': 'Select',
+//         'x-read-pretty': true,
+//         enum: [
+//           { label: '{{t("Create record")}}', value: 'create', color: 'lime' },
+//           { label: '{{t("Update record")}}', value: 'update', color: 'gold' },
+//           { label: '{{t("Delete record")}}', value: 'destroy', color: 'magenta' },
+//         ],
+//       },
+//     },
+//   ],
+// };
+
+export const collection2 = {
+  name: 'comments',
+  title: '{{t("Comment Record")}}',
   fields: [
     {
       name: 'createdAt',
@@ -71,12 +108,12 @@ export const CommentRecordDecorator = observer((props: any) => {
     }
   }
   const defaults = {
-    collection: 'auditLogs',
-    resource: 'auditLogs',
+    collection: 'comments',
+    resource: 'comments',
     action: 'list',
     params: {
       pageSize: 20,
-      appends: ['collection', 'user'],
+      appends: ['commenter', 'commentUsers'],
       ...props.params,
       filter,
       sort: '-createdAt',
@@ -87,7 +124,7 @@ export const CommentRecordDecorator = observer((props: any) => {
   };
   return (
     <IsAssociationBlock.Provider value={!!parent.name}>
-      <CollectionManagerProvider collections={[collection]} interfaces={interfaces}>
+      <CollectionManagerProvider collections={[collection2]} interfaces={interfaces}>
         <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
       </CollectionManagerProvider>
     </IsAssociationBlock.Provider>

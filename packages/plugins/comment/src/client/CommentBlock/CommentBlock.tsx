@@ -86,32 +86,6 @@ export const CommentBlock = (props) => {
 
   const handleEdit = async (item: CommentItem) => {};
 
-  const getContent = (item: CommentItem) => {
-    const reg = createReg('.*?', 'g');
-    const replaces = [];
-    let plainText = item.content.replace(reg, (match, p1) => {
-      const name = item.commentUsers.find((i) => i.id === ~~p1)?.nickname ?? p1;
-      replaces.push(`@${name}`);
-      return `@${name}`;
-    });
-
-    if (replaces.length) {
-      let splits = [];
-      for (let r of replaces) {
-        const index = plainText.search(r);
-        const before = plainText.slice(0, index);
-        const main = <a key={id++}>{plainText.slice(index, index + r.length)}</a>;
-        plainText = plainText.slice(index + r.length);
-        splits.push(before, main);
-      }
-      splits.push(plainText);
-
-      return splits.filter((i) => i);
-    } else {
-      return plainText;
-    }
-  };
-
   return (
     <div>
       {!loading && commentList.length ? (
@@ -147,6 +121,32 @@ export const CommentBlock = (props) => {
       </Form>
     </div>
   );
+};
+
+export const getContent = (item: CommentItem) => {
+  const reg = createReg('.*?', 'g');
+  const replaces = [];
+  let plainText = item.content.replace(reg, (match, p1) => {
+    const name = item.commentUsers.find((i) => i.id === ~~p1)?.nickname ?? p1;
+    replaces.push(`@${name}`);
+    return `@${name}`;
+  });
+
+  if (replaces.length) {
+    let splits = [];
+    for (let r of replaces) {
+      const index = plainText.search(r);
+      const before = plainText.slice(0, index);
+      const main = <a key={id++}>{plainText.slice(index, index + r.length)}</a>;
+      plainText = plainText.slice(index + r.length);
+      splits.push(before, main);
+    }
+    splits.push(plainText);
+
+    return splits.filter((i) => i);
+  } else {
+    return plainText;
+  }
 };
 
 CommentBlock.Designer = CommentBlockDesigner;
