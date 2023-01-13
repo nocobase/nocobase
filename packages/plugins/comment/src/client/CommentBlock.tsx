@@ -1,10 +1,12 @@
 import React from 'react';
-import { Comment, Divider, Form, Button, Empty, Tooltip } from 'antd';
+import { Comment, Divider, Form, Button, Empty, Modal } from 'antd';
 import { CommentBlockDesigner } from './CommentBlock.Designer';
 import { useCommentTranslation } from './locale';
 import { CommentBlockDecorator } from './CommentBlock.Decorator';
 import { useCollection, useCurrentUserContext, useRecord, useRequest, useResource } from '@nocobase/client';
 import { createReg, StructMentions } from './components/StructMentions';
+
+let id = 0;
 
 export interface User {
   nickname: string;
@@ -45,7 +47,7 @@ export const CommentBlock = (props) => {
 
   const commentList = data?.data ?? [];
 
-  const onFinish = async () => {
+  const handleFinish = async () => {
     const formValues = form.getFieldsValue();
 
     const reg = createReg('.*?', 'g');
@@ -68,6 +70,21 @@ export const CommentBlock = (props) => {
     refresh();
   };
 
+  const handleDelete = async (item: CommentItem) => {
+    Modal.confirm({
+      title: '删除评论',
+      content: '你确定要删除吗？',
+      onOk: async () => {
+        await destroy({
+          filterByTk: item.id,
+        });
+        refresh();
+      },
+    });
+  };
+
+  const handleEdit = async (item: CommentItem) => {};
+
   const getContent = (item: CommentItem) => {
     const reg = createReg('.*?', 'g');
     const replaces = [];
@@ -82,7 +99,7 @@ export const CommentBlock = (props) => {
       for (let r of replaces) {
         const index = plainText.search(r);
         const before = plainText.slice(0, index);
-        const main = <a>{plainText.slice(index, index + r.length)}</a>;
+        const main = <a key={id++}>{plainText.slice(index, index + r.length)}</a>;
         plainText = plainText.slice(index + r.length);
         splits.push(before, main);
       }
@@ -100,7 +117,14 @@ export const CommentBlock = (props) => {
         commentList.map((i: CommentItem) => (
           <Comment
             key={i.id}
-            actions={[<span key="comment-basic-reply-to">{t('Delete')}</span>]}
+            actions={[
+              <span key="comment-edit" onClick={() => handleEdit(i)}>
+                {t('Edit')}
+              </span>,
+              <span key="comment-delete" onClick={() => handleDelete(i)}>
+                {t('Delete')}
+              </span>,
+            ]}
             author={<a>{i.commenter.nickname}</a>}
             content={<p>{getContent(i)}</p>}
           />
@@ -109,7 +133,7 @@ export const CommentBlock = (props) => {
         <Empty description="暂无评论" />
       )}
       <Divider />
-      <Form form={form} layout="vertical" onFinish={onFinish}>
+      <Form form={form} layout="vertical" onFinish={handleFinish}>
         <Form.Item name="content">
           <StructMentions />
         </Form.Item>

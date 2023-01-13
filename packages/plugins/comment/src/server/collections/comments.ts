@@ -38,6 +38,7 @@ export default {
       target: 'users',
       foreignKey: 'userId',
       otherKey: 'commentId',
+      onDelete: 'CASCADE',
     },
   ],
 } as CollectionOptions;
