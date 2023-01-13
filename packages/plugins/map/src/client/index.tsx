@@ -9,7 +9,7 @@ import Configuration from './components/Configuration';
 import Map from './components/Map';
 import { interfaces } from './fields';
 import { Initialize } from './initialize';
-import { useMapTranslation } from './locales';
+import { useMapTranslation } from './locale';
 
 export default React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
