@@ -1,5 +1,4 @@
 import { PluginManager } from '@nocobase/server';
-import isEmpty from 'lodash/isEmpty';
 
 const arr2obj = (items: any[]) => {
   const obj = {};
@@ -35,7 +34,17 @@ const getResource = (packageName: string, lang: string) => {
 export const getResourceLocale = async (lang: string, db: any) => {
   const resources = {};
   const res = getResource('@nocobase/client', lang);
-  resources['client'] = isEmpty(res) ? getResource('@nocobase/client', 'en-US') : res;
+  const defaults = getResource('@nocobase/client', 'zh-CN');
+  for (const key in defaults) {
+    if (Object.prototype.hasOwnProperty.call(defaults, key)) {
+      defaults[key] = key;
+    }
+  }
+  if (res) {
+    resources['client'] = { ...defaults, ...res };
+  } else {
+    resources['client'] = defaults;
+  }
   const plugins = await db.getRepository('applicationPlugins').find({
     filter: {
       'name.$ne': 'client',
@@ -44,7 +53,17 @@ export const getResourceLocale = async (lang: string, db: any) => {
   for (const plugin of plugins) {
     const packageName = PluginManager.getPackageName(plugin.get('name'));
     const res = getResource(packageName, lang);
-    resources[plugin.get('name')] = isEmpty(res) ? getResource(packageName, 'en-US') : res;
+    const defaults = getResource(packageName, 'zh-CN');
+    for (const key in defaults) {
+      if (Object.prototype.hasOwnProperty.call(defaults, key)) {
+        defaults[key] = key;
+      }
+    }
+    if (res) {
+      resources[plugin.get('name')] = { ...defaults, ...res };
+    } else {
+      resources['client'] = defaults;
+    }
   }
   return resources;
 };
