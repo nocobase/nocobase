@@ -7,7 +7,6 @@ import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
 import fs from 'fs';
-import db from '../../../../../examples/database/collections/tree/adjacency-list';
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
 
@@ -338,6 +337,7 @@ export class Restorer extends AppMigrator {
 
     for (const sql of queries) {
       try {
+        this.app.log.info(`import sql: ${sql}`);
         await this.app.db.sequelize.query(sql);
       } catch (e) {
         if (e.name === 'SequelizeDatabaseError') {
