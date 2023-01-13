@@ -53,7 +53,6 @@ export const startOfDate = (date: Date, scale: DateHelperScales) => {
 };
 
 export const ganttDateRange = (tasks: Task[], viewMode: ViewMode, preStepsCount: number) => {
-  console.log(tasks);
   let newStartDate: Date = tasks[0]?.start || new Date();
   let newEndDate: Date = tasks[0]?.start || new Date() ;
   for (const task of tasks) {

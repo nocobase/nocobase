@@ -10,11 +10,13 @@ import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
+import { GanttBlockProvider, useGanttBlockProps } from './GanttBlockProvider';
 
 export const BlockSchemaComponentProvider: React.FC = (props) => {
   return (
     <SchemaComponentOptions
       components={{
+        GanttBlockProvider,
         CalendarBlockProvider,
         TableFieldProvider,
         TableBlockProvider,
@@ -38,6 +40,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableBlockProps,
         useTableSelectorProps,
         useKanbanBlockProps,
+        useGanttBlockProps,
       }}
     >
       {props.children}

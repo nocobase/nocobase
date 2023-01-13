@@ -1,29 +1,24 @@
-import React, {
-  useState,
-  SyntheticEvent,
-  useRef,
-  useEffect,
-  useMemo,
-} from "react";
-import { ViewMode, GanttProps, Task } from "../../types/public-types";
-import { GridProps } from "../grid/grid";
-import { ganttDateRange, seedDates } from "../../helpers/date-helper";
-import { CalendarProps } from "../calendar/calendar";
-import { TaskGanttContentProps } from "./task-gantt-content";
-import { TaskListHeaderDefault } from "../task-list/task-list-header";
-import { TaskListTableDefault } from "../task-list/task-list-table";
-import { StandardTooltipContent, Tooltip } from "../other/tooltip";
-import { VerticalScroll } from "../other/vertical-scroll";
-import { TaskListProps, TaskList } from "../task-list/task-list";
-import { TaskGantt } from "./task-gantt";
-import { BarTask } from "../../types/bar-task";
-import { convertToBarTasks } from "../../helpers/bar-helper";
-import { GanttEvent } from "../../types/gantt-task-actions";
-import { DateSetup } from "../../types/date-setup";
-import { HorizontalScroll } from "../other/horizontal-scroll";
-import { removeHiddenTasks, sortTasks } from "../../helpers/other-helper";
-import styles from "./gantt.module.css";
-
+import React, { useState, SyntheticEvent, useRef, useEffect, useMemo } from 'react';
+import { useFieldSchema, Schema, RecursionField } from '@formily/react';
+import { ViewMode, GanttProps, Task } from '../../types/public-types';
+import { GridProps } from '../grid/grid';
+import { ganttDateRange, seedDates } from '../../helpers/date-helper';
+import { CalendarProps } from '../calendar/calendar';
+import { TaskGanttContentProps } from './task-gantt-content';
+import { TaskListHeaderDefault } from '../task-list/task-list-header';
+import { TaskListTableDefault } from '../task-list/task-list-table';
+import { StandardTooltipContent, Tooltip } from '../other/tooltip';
+import { VerticalScroll } from '../other/vertical-scroll';
+import { TaskListProps, TaskList } from '../task-list/task-list';
+import { TaskGantt } from './task-gantt';
+import { BarTask } from '../../types/bar-task';
+import { convertToBarTasks } from '../../helpers/bar-helper';
+import { GanttEvent } from '../../types/gantt-task-actions';
+import { DateSetup } from '../../types/date-setup';
+import { HorizontalScroll } from '../other/horizontal-scroll';
+import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
+import styles from './gantt.module.css';
+import { GanttToolbarContext } from '../../context';
 
 export function initTasks() {
   const currentDate = new Date();
@@ -31,126 +26,139 @@ export function initTasks() {
     {
       start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1),
       end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 15),
-      name: "Some Project",
-      id: "ProjectSample",
+      name: 'Some Project',
+      id: 'ProjectSample',
       progress: 25,
-      type: "project",
+      type: 'project',
       hideChildren: false,
       displayOrder: 1,
     },
     {
       start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1),
-      end: new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        2,
-        12,
-        28
-      ),
-      name: "Idea",
-      id: "Task 0",
+      end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 2, 12, 28),
+      name: 'Idea',
+      id: 'Task 0',
       progress: 45,
-      type: "task",
-      project: "ProjectSample",
+      type: 'task',
+      project: 'ProjectSample',
       displayOrder: 2,
     },
     {
       start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 2),
       end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 4, 0, 0),
-      name: "Research",
-      id: "Task 1",
+      name: 'Research',
+      id: 'Task 1',
       progress: 25,
-      dependencies: ["Task 0"],
-      type: "task",
-      project: "ProjectSample",
+      dependencies: ['Task 0'],
+      type: 'task',
+      project: 'ProjectSample',
       displayOrder: 3,
     },
     {
       start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 4),
       end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 8, 0, 0),
-      name: "Discussion with team",
-      id: "Task 2",
+      name: 'Discussion with team',
+      id: 'Task 2',
       progress: 10,
-      dependencies: ["Task 1"],
-      type: "task",
-      project: "ProjectSample",
+      dependencies: ['Task 1'],
+      type: 'task',
+      project: 'ProjectSample',
       displayOrder: 4,
     },
     {
       start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 8),
       end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 9, 0, 0),
-      name: "Developing",
-      id: "Task 3",
+      name: 'Developing',
+      id: 'Task 3',
       progress: 2,
-      dependencies: ["Task 2"],
-      type: "task",
-      project: "ProjectSample",
+      dependencies: ['Task 2'],
+      type: 'task',
+      project: 'ProjectSample',
       displayOrder: 5,
     },
     {
       start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 8),
       end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 10),
-      name: "Review",
-      id: "Task 4",
-      type: "task",
+      name: 'Review',
+      id: 'Task 4',
+      type: 'task',
       progress: 70,
-      dependencies: ["Task 2"],
-      project: "ProjectSample",
+      dependencies: ['Task 2'],
+      project: 'ProjectSample',
       displayOrder: 6,
     },
     {
       start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 15),
       end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 15),
-      name: "Release",
-      id: "Task 6",
+      name: 'Release',
+      id: 'Task 6',
       progress: currentDate.getMonth(),
-      type: "milestone",
-      dependencies: ["Task 4"],
-      project: "ProjectSample",
+      type: 'milestone',
+      dependencies: ['Task 4'],
+      project: 'ProjectSample',
       displayOrder: 7,
     },
     {
       start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 18),
       end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 19),
-      name: "Party Time",
-      id: "Task 9",
+      name: 'Party Time',
+      id: 'Task 9',
       progress: 0,
       isDisabled: true,
-      type: "task",
+      type: 'task',
     },
   ];
   return tasks;
 }
+
+function Toolbar(props) {
+  const fieldSchema = useFieldSchema();
+  const toolBarSchema: Schema = useMemo(
+    () =>
+      fieldSchema.reduceProperties((buf, current) => {
+        if (current['x-component'].endsWith('.ActionBar')) {
+          return current;
+        }
+        return buf;
+      }, null),
+    [],
+  );
+  return (
+    <GanttToolbarContext.Provider value={props}>
+      <RecursionField name={toolBarSchema.name} schema={toolBarSchema} />
+    </GanttToolbarContext.Provider>
+  );
+}
 export const Gantt: any = ({
-  tasks=initTasks(),
+  tasks = initTasks(),
   headerHeight = 50,
   columnWidth = 60,
-  listCellWidth = "155px",
+  listCellWidth = '155px',
   rowHeight = 50,
   ganttHeight = 0,
   viewMode = ViewMode.Day,
   preStepsCount = 1,
-  locale = "en-GB",
+  locale = 'en-GB',
   barFill = 60,
   barCornerRadius = 3,
-  barProgressColor = "#a3a3ff",
-  barProgressSelectedColor = "#8282f5",
-  barBackgroundColor = "#b8c2cc",
-  barBackgroundSelectedColor = "#aeb8c2",
-  projectProgressColor = "#7db59a",
-  projectProgressSelectedColor = "#59a985",
-  projectBackgroundColor = "#fac465",
-  projectBackgroundSelectedColor = "#f7bb53",
-  milestoneBackgroundColor = "#f1c453",
-  milestoneBackgroundSelectedColor = "#f29e4c",
+  barProgressColor = '#a3a3ff',
+  barProgressSelectedColor = '#8282f5',
+  barBackgroundColor = '#b8c2cc',
+  barBackgroundSelectedColor = '#aeb8c2',
+  projectProgressColor = '#7db59a',
+  projectProgressSelectedColor = '#59a985',
+  projectBackgroundColor = '#fac465',
+  projectBackgroundSelectedColor = '#f7bb53',
+  milestoneBackgroundColor = '#f1c453',
+  milestoneBackgroundSelectedColor = '#f29e4c',
   rtl = false,
   handleWidth = 8,
   timeStep = 300000,
-  arrowColor = "grey",
-  fontFamily = "Arial, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue",
-  fontSize = "14px",
+  arrowColor = 'grey',
+  fontFamily = 'Arial, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue',
+  fontSize = '14px',
   arrowIndent = 20,
-  todayColor = "rgba(252, 248, 227, 0.5)",
+  todayColor = 'rgba(252, 248, 227, 0.5)',
   viewDate,
   TooltipContent = StandardTooltipContent,
   TaskListHeader = TaskListHeaderDefault,
@@ -169,21 +177,16 @@ export const Gantt: any = ({
     const [startDate, endDate] = ganttDateRange(tasks, viewMode, preStepsCount);
     return { viewMode, dates: seedDates(startDate, endDate, viewMode) };
   });
-  const [currentViewDate, setCurrentViewDate] = useState<Date | undefined>(
-    undefined
-  );
+  const [currentViewDate, setCurrentViewDate] = useState<Date | undefined>(undefined);
 
   const [taskListWidth, setTaskListWidth] = useState(0);
   const [svgContainerWidth, setSvgContainerWidth] = useState(0);
   const [svgContainerHeight, setSvgContainerHeight] = useState(ganttHeight);
   const [barTasks, setBarTasks] = useState<BarTask[]>([]);
   const [ganttEvent, setGanttEvent] = useState<GanttEvent>({
-    action: "",
+    action: '',
   });
-  const taskHeight = useMemo(
-    () => (rowHeight * barFill) / 100,
-    [rowHeight, barFill]
-  );
+  const taskHeight = useMemo(() => (rowHeight * barFill) / 100, [rowHeight, barFill]);
 
   const [selectedTask, setSelectedTask] = useState<BarTask>();
   const [failedTask, setFailedTask] = useState<BarTask | null>(null);
@@ -204,12 +207,7 @@ export const Gantt: any = ({
       filteredTasks = tasks;
     }
     filteredTasks = filteredTasks.sort(sortTasks);
-    console.log(4)
-    const [startDate, endDate] = ganttDateRange(
-      filteredTasks,
-      viewMode,
-      preStepsCount
-    );
+    const [startDate, endDate] = ganttDateRange(filteredTasks, viewMode, preStepsCount);
     let newDates = seedDates(startDate, endDate, viewMode);
     if (rtl) {
       newDates = newDates.reverse();
@@ -237,8 +235,8 @@ export const Gantt: any = ({
         projectBackgroundColor,
         projectBackgroundSelectedColor,
         milestoneBackgroundColor,
-        milestoneBackgroundSelectedColor
-      )
+        milestoneBackgroundSelectedColor,
+      ),
     );
   }, [
     // tasks,
@@ -267,15 +265,12 @@ export const Gantt: any = ({
   useEffect(() => {
     if (
       viewMode === dateSetup.viewMode &&
-      ((viewDate && !currentViewDate) ||
-        (viewDate && currentViewDate?.valueOf() !== viewDate.valueOf()))
+      ((viewDate && !currentViewDate) || (viewDate && currentViewDate?.valueOf() !== viewDate.valueOf()))
     ) {
       const dates = dateSetup.dates;
       const index = dates.findIndex(
         (d, i) =>
-          viewDate.valueOf() >= d.valueOf() &&
-          i + 1 !== dates.length &&
-          viewDate.valueOf() < dates[i + 1].valueOf()
+          viewDate.valueOf() >= d.valueOf() && i + 1 !== dates.length && viewDate.valueOf() < dates[i + 1].valueOf(),
       );
       if (index === -1) {
         return;
@@ -283,29 +278,16 @@ export const Gantt: any = ({
       setCurrentViewDate(viewDate);
       setScrollX(columnWidth * index);
     }
-  }, [
-    viewDate,
-    columnWidth,
-    dateSetup.dates,
-    dateSetup.viewMode,
-    viewMode,
-    currentViewDate,
-    setCurrentViewDate,
-  ]);
+  }, [viewDate, columnWidth, dateSetup.dates, dateSetup.viewMode, viewMode, currentViewDate, setCurrentViewDate]);
 
   useEffect(() => {
     const { changedTask, action } = ganttEvent;
     if (changedTask) {
-      if (action === "delete") {
-        setGanttEvent({ action: "" });
-        setBarTasks(barTasks.filter(t => t.id !== changedTask.id));
-      } else if (
-        action === "move" ||
-        action === "end" ||
-        action === "start" ||
-        action === "progress"
-      ) {
-        const prevStateTask = barTasks.find(t => t.id === changedTask.id);
+      if (action === 'delete') {
+        setGanttEvent({ action: '' });
+        setBarTasks(barTasks.filter((t) => t.id !== changedTask.id));
+      } else if (action === 'move' || action === 'end' || action === 'start' || action === 'progress') {
+        const prevStateTask = barTasks.find((t) => t.id === changedTask.id);
         if (
           prevStateTask &&
           (prevStateTask.start.getTime() !== changedTask.start.getTime() ||
@@ -313,9 +295,7 @@ export const Gantt: any = ({
             prevStateTask.progress !== changedTask.progress)
         ) {
           // actions for change
-          const newTaskList = barTasks.map(t =>
-            t.id === changedTask.id ? changedTask : t
-          );
+          const newTaskList = barTasks.map((t) => (t.id === changedTask.id ? changedTask : t));
           setBarTasks(newTaskList);
         }
       }
@@ -324,7 +304,7 @@ export const Gantt: any = ({
 
   useEffect(() => {
     if (failedTask) {
-      setBarTasks(barTasks.map(t => (t.id !== failedTask.id ? t : failedTask)));
+      setBarTasks(barTasks.map((t) => (t.id !== failedTask.id ? t : failedTask)));
       setFailedTask(null);
     }
   }, [failedTask, barTasks]);
@@ -382,21 +362,13 @@ export const Gantt: any = ({
     };
 
     // subscribe if scroll is necessary
-    wrapperRef.current?.addEventListener("wheel", handleWheel, {
+    wrapperRef.current?.addEventListener('wheel', handleWheel, {
       passive: false,
     });
     return () => {
-      wrapperRef.current?.removeEventListener("wheel", handleWheel);
+      wrapperRef.current?.removeEventListener('wheel', handleWheel);
     };
-  }, [
-    wrapperRef,
-    scrollY,
-    scrollX,
-    ganttHeight,
-    svgWidth,
-    rtl,
-    ganttFullHeight,
-  ]);
+  }, [wrapperRef, scrollY, scrollX, ganttHeight, svgWidth, rtl, ganttFullHeight]);
 
   const handleScrollY = (event: SyntheticEvent<HTMLDivElement>) => {
     if (scrollY !== event.currentTarget.scrollTop && !ignoreScrollEvent) {
@@ -425,22 +397,22 @@ export const Gantt: any = ({
     let newScrollX = scrollX;
     let isX = true;
     switch (event.key) {
-      case "Down": // IE/Edge specific value
-      case "ArrowDown":
+      case 'Down': // IE/Edge specific value
+      case 'ArrowDown':
         newScrollY += rowHeight;
         isX = false;
         break;
-      case "Up": // IE/Edge specific value
-      case "ArrowUp":
+      case 'Up': // IE/Edge specific value
+      case 'ArrowUp':
         newScrollY -= rowHeight;
         isX = false;
         break;
-      case "Left":
-      case "ArrowLeft":
+      case 'Left':
+      case 'ArrowLeft':
         newScrollX -= columnWidth;
         break;
-      case "Right": // IE/Edge specific value
-      case "ArrowRight":
+      case 'Right': // IE/Edge specific value
+      case 'ArrowRight':
         newScrollX += columnWidth;
         break;
     }
@@ -466,10 +438,8 @@ export const Gantt: any = ({
    * Task select event
    */
   const handleSelectedTask = (taskId: string) => {
-    const newSelectedTask = barTasks.find(t => t.id === taskId);
-    const oldSelectedTask = barTasks.find(
-      t => !!selectedTask && t.id === selectedTask.id
-    );
+    const newSelectedTask = barTasks.find((t) => t.id === taskId);
+    const oldSelectedTask = barTasks.find((t) => !!selectedTask && t.id === selectedTask.id);
     if (onSelect) {
       if (oldSelectedTask) {
         onSelect(oldSelectedTask, false);
@@ -549,12 +519,8 @@ export const Gantt: any = ({
   };
   return (
     <div>
-      <div
-        className={styles.wrapper}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-        ref={wrapperRef}
-      >
+      <Toolbar  />
+      <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
         {listCellWidth && <TaskList {...tableProps} />}
         <TaskGantt
           gridProps={gridProps}

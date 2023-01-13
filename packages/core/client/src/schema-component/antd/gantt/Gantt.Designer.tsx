@@ -2,7 +2,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
-import { useCalendarBlockContext } from '../../../block-provider';
+import { useGanttBlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -27,7 +27,7 @@ export const GanttDesigner = () => {
   const fieldSchema = useFieldSchema();
   const { name, title, fields } = useCollection();
   const dataSource = useCollectionFilterOptions(name);
-  const { service } = useCalendarBlockContext();
+  const { service } = useGanttBlockContext();
   const { dn } = useDesignable();
   const compile = useCompile();
   const { t } = useTranslation();
@@ -35,6 +35,7 @@ export const GanttDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  console.log(title || name)
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />

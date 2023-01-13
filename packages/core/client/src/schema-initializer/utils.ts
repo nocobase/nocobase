@@ -1039,7 +1039,7 @@ export const createGanttBlockSchema = (options) => {
     'x-component': 'CardItem',
     properties: {
       [uid()]: {
-        type: 'array',
+        type: 'void',
         'x-initializer': 'GanttColumnInitializers',
         'x-component': 'Gantt',
         'x-component-props': {
