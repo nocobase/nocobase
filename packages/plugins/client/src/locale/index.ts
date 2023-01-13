@@ -1,3 +1,4 @@
 export default {
-  // 'en-US': require('./en-US.example.json'),
+  // 'en-US': require('./en-US.json'),
+  // 'zh-CN': require('./zh-CN.json'),
 };
