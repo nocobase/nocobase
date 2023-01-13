@@ -1,10 +1,10 @@
 import React from 'react';
 import { Comment, Divider, Form, Button, Empty, Modal } from 'antd';
 import { CommentBlockDesigner } from './CommentBlock.Designer';
-import { useCommentTranslation } from './locale';
+import { useCommentTranslation } from '../locale';
 import { CommentBlockDecorator } from './CommentBlock.Decorator';
 import { useCollection, useCurrentUserContext, useRecord, useRequest, useResource } from '@nocobase/client';
-import { createReg, StructMentions } from './components/StructMentions';
+import { createReg, StructMentions } from '../components/StructMentions';
 
 let id = 0;
 
