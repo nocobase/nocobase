@@ -1,16 +1,21 @@
 import { SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
-import { CommentBlockInitializer } from './CommetBlock/CommentBlockInitializer';
-import { CommentBlock } from './CommetBlock/CommentBlock';
-import { useCommetRecordInitializerItem } from './CommetRecord/useCommetRecordInitializerItem';
-import { CommetRecordInitializer } from './CommetRecord/CommetRecordInitializer';
-import { CommetRecord } from './CommetRecord/CommetRecord';
+import { CommentBlockInitializer } from './CommentBlock/CommentBlockInitializer';
+import { CommentBlock } from './CommentBlock/CommentBlock';
+import { useCommentRecordInitializerItem } from './CommentRecord/useCommentRecordInitializerItem';
+import { CommentRecordInitializer } from './CommentRecord/CommentRecordInitializer';
+import { CommentRecord } from './CommentRecord/CommentRecord';
 
 export default React.memo((props: any) => {
-  useCommetRecordInitializerItem();
+  useCommentRecordInitializerItem();
   return (
     <SchemaComponentOptions
-      components={{ CommentBlock, CommentBlockInitializer, CommetRecordInitializer, CommetRecord }}
+      components={{
+        CommentBlock,
+        CommentRecord,
+        CommentBlockInitializer,
+        CommentRecordInitializer,
+      }}
     >
       {props.children}
     </SchemaComponentOptions>

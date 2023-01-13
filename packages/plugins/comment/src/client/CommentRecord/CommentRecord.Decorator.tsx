@@ -7,7 +7,7 @@ import {
   useRecord,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { IsAssociationBlock } from './CommetRecord';
+import { IsAssociationBlock } from './CommentRecord';
 
 export const collection = {
   name: 'auditLogs',
@@ -46,7 +46,7 @@ export const collection = {
   ],
 };
 
-export const CommetRecordDecorator = observer((props: any) => {
+export const CommentRecordDecorator = observer((props: any) => {
   const parent = useCollection();
   const record = useRecord();
   const { interfaces } = useContext(CollectionManagerContext);

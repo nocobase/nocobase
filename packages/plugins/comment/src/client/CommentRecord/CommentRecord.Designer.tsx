@@ -11,7 +11,7 @@ import {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const CommetRecordDesigner = () => {
+export const CommentRecordDesigner = () => {
   const { name, title, sortable } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();

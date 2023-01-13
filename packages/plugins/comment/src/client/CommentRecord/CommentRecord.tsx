@@ -2,8 +2,8 @@ import { ArrayTable } from '@formily/antd';
 import { observer, useField } from '@formily/react';
 import { FormProvider, SchemaComponent, useCompile } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
-import { CommetRecordDecorator } from './CommetRecord.Decorator';
-import { CommetRecordDesigner } from './CommetRecord.Designer';
+import { CommentRecordDecorator } from './CommentRecord.Decorator';
+import { CommentRecordDesigner } from './CommentRecord.Designer';
 
 const Username = observer(() => {
   const field = useField<any>();
@@ -48,7 +48,7 @@ const Value = observer(() => {
 
 export const IsAssociationBlock = createContext(null);
 
-export const CommetRecord: any = () => {
+export const CommentRecord: any = () => {
   const isAssoc = useContext(IsAssociationBlock);
   const ext = {};
   if (!isAssoc) {
@@ -401,5 +401,5 @@ export const CommetRecord: any = () => {
   );
 };
 
-CommetRecord.Designer = CommetRecordDesigner;
-CommetRecord.Decorator = CommetRecordDecorator;
+CommentRecord.Designer = CommentRecordDesigner;
+CommentRecord.Decorator = CommentRecordDecorator;

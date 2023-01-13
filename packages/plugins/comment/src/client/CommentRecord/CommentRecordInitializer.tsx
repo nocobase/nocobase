@@ -3,7 +3,7 @@ import { SchemaInitializer } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const CommetRecordInitializer = (props) => {
+export const CommentRecordInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
   return (
@@ -13,8 +13,8 @@ export const CommetRecordInitializer = (props) => {
       onClick={() => {
         insert({
           type: 'void',
-          'x-designer': 'CommetRecord.Designer',
-          'x-decorator': 'CommetRecord.Decorator',
+          'x-designer': 'CommentRecord.Designer',
+          'x-decorator': 'CommentRecord.Decorator',
           'x-decorator-props': {
             params: {},
           },
@@ -22,7 +22,7 @@ export const CommetRecordInitializer = (props) => {
           properties: {
             auditLogs: {
               type: 'void',
-              'x-component': 'CommetRecord',
+              'x-component': 'CommentRecord',
             },
           },
         });

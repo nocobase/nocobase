@@ -1,18 +1,17 @@
 import { SchemaInitializerContext } from '@nocobase/client';
 import { useContext } from 'react';
 
-export const useCommetRecordInitializerItem = () => {
+export const useCommentRecordInitializerItem = () => {
   const initializes = useContext(SchemaInitializerContext);
   const mediaItem = initializes.BlockInitializers.items.find((item) => item.key === 'media');
-  const hasCommetRecordInitializer = mediaItem.children.some(
-    (initialize) => initialize.component === 'CommetRecordInitializer',
+  const hasCommentRecordInitializer = mediaItem.children.some(
+    (initialize) => initialize.component === 'CommentRecordInitializer',
   );
-  console.log(hasCommetRecordInitializer);
-  !hasCommetRecordInitializer &&
+  !hasCommentRecordInitializer &&
     mediaItem.children.push({
       key: 'comment',
       type: 'item',
       title: '{{t("Commet Record")}}',
-      component: 'CommetRecordInitializer',
+      component: 'CommentRecordInitializer',
     });
 };
