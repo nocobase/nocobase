@@ -64,9 +64,6 @@ const useGetChartData = (chartBlockMetaData: ChartBlockEngineMetaData) => {
 };
 
 const ChartBlockEngine = ({ chartBlockMetaData, renderComponent }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) => {
-  console.log(chartBlockMetaData);
-  console.log(renderComponent);
-  const { chartType } = chartBlockMetaData;
   return (
     <>
       <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={chartBlockMetaData}/>

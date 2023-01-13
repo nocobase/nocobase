@@ -2,6 +2,7 @@ import { ISchema, SchemaOptionsContext, useField, useFieldSchema } from '@formil
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  CollectionManagerContext,
   GeneralSchemaDesigner, SchemaComponent, SchemaComponentOptions,
   SchemaSettings,
   useAPIClient,
@@ -9,7 +10,7 @@ import {
   useCompile,
   useDesignable,
 } from '@nocobase/client';
-import { FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd';
 import { Options } from './ChartBlockInitializer';
 import { templates } from './templates';
 
@@ -41,56 +42,11 @@ export const ChartBlockEngineDesigner = () => {
   const api = useAPIClient();
   const options = useContext(SchemaOptionsContext);
   const {chartBlockMetaData ,renderComponent} = fieldSchema?.['x-component-props']
-  console.log(chartBlockMetaData);
-  // TODO
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.ModalItem
-        components={{ ChartBlockEngineDesignerInitializer }}
-        title={t('Edit chart block')}
-        schema={
-          {
-            type: 'void',
-            title: t('Edit chart'),
-            'x-decorator': 'CardItem',
-            'x-component': 'ChartBlockEngineDesignerInitializer',
-            'x-component-props': {
-              chartBlockMetaData,
-              renderComponent,
-            },
-          } as ISchema
-        }
-        // {{ fetchData(api, { url: 'chartData:get' }) }}
-        onSubmit={async (props) => {
-          console.log(props);
-          // field.title = compile(title);
-          // field.componentProps.plot = plot;
-          // const conf = compile(JSON.parse(config));
-          // const fn = conf?.data;
-          // if (typeof fn === 'function') {
-          //   const result = fn.bind({ api })();
-          //   if (result?.then) {
-          //     result.then(data => {
-          //       if (Array.isArray(data)) {
-          //         field.componentProps.config.data = data;
-          //       }
-          //     });
-          //   }
-          // } else {
-          //   field.componentProps.config = conf;
-          // }
-          // fieldSchema.title = title;
-          // fieldSchema['x-component-props']['plot'] = plot;
-          // fieldSchema['x-component-props']['config'] = JSON.parse(config);
-          // dn.emit('patch', {
-          //   schema: {
-          //     title,
-          //     'x-uid': fieldSchema['x-uid'],
-          //     'x-component-props': fieldSchema['x-component-props'],
-          //   },
-          // });
-          // dn.refresh();
-        }}
+      <ChartBlockEngineDesignerInitializer
+        chartBlockMetaData={chartBlockMetaData}
+        renderComponent={renderComponent}
       />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
@@ -104,13 +60,15 @@ export const ChartBlockEngineDesigner = () => {
 };
 
 export const ChartBlockEngineDesignerInitializer = (props) => {
-  //传递哪个collection
-  const {chartBlockMetaData ,renderComponent} = props
+  const {chartBlockMetaData ,renderComponent,effects} = props
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
-  const api = useAPIClient();
+  const { dn } = useDesignable();
   const { getCollectionFields } = useCollectionManager();
   const collectionFields = getCollectionFields(chartBlockMetaData.collectionName);
+  const fieldSchema = useFieldSchema();
+  const cm = useContext(CollectionManagerContext);
+  const field = useField();
   const computedFields = collectionFields
     ?.filter((field) => (field.type === 'double' || field.type === 'bigInt'))
     ?.map((field) => {
@@ -120,36 +78,68 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
       };
     });
   return (
-    <SchemaComponentOptions
-      scope={options.scope}
-      components={{ ...options.components }}
+    <SchemaSettings.Item
+      onClick={async () => {
+        FormDialog("Edit chart block", (form) => {
+          return (
+            <CollectionManagerContext.Provider value={cm}>
+              <SchemaComponentOptions
+                scope={options.scope}
+                components={{ ...options.components }}
+              >
+                <FormLayout layout={'vertical'}>
+                  <SchemaComponent
+                    scope={{ computedFields: computedFields || [] }}
+                    components={{ Options }}
+                    schema={{
+                      properties: {
+                        chartType: {
+                          title: t('Chart type'),
+                          required: true,
+                          'x-component': 'Select',
+                          'x-decorator': 'FormItem',
+                          enum: [...templates.values()].map((template) => {
+                            return {
+                              label: template.type,
+                              value: template.type,
+                            };
+                          }),
+                        },
+                        options: {
+                          type: 'void',
+                          'x-component': 'Options',
+                        },
+                      },
+                    }}
+                  />
+                </FormLayout>
+              </SchemaComponentOptions>
+            </CollectionManagerContext.Provider>
+          );
+        })
+          .open({
+            initialValues: chartBlockMetaData,//reset before chartBlockMetaData
+          })
+          .then((values) => {
+            //patch updates
+            field.componentProps.renderComponent=renderComponent
+            field.componentProps.chartBlockMetaData = values;
+            fieldSchema['x-component-props'].chartBlockMetaData = values;
+            fieldSchema['x-component-props'].renderComponent = renderComponent;
+
+            dn.emit("patch",{
+              schema:{
+               title:"update",
+               'x-uid':fieldSchema['x-uid'],
+                'x-component-props':fieldSchema["x-component-props"]
+              }
+            })
+            dn.refresh()
+          });
+      }}
     >
-      <FormLayout layout={'vertical'}>
-        <SchemaComponent
-          scope={{ computedFields: computedFields || [] }}
-          components={{ Options }}
-          schema={{
-            properties: {
-              chartType: {
-                title: t('Chart type'),
-                required: true,
-                'x-component': 'Select',
-                'x-decorator': 'FormItem',
-                enum: [...templates.values()].map((template) => {
-                  return {
-                    label: template.type,
-                    value: template.type,
-                  };
-                }),
-              },
-              options: {
-                type: 'void',
-                'x-component': 'Options',
-              },
-            },
-          }}
-        />
-      </FormLayout>
-    </SchemaComponentOptions>
+      {props.children || props.title || "Edit block "}
+    </SchemaSettings.Item>
+
   );
 };
