@@ -1,5 +1,6 @@
 import React from 'react';
-import { Comment, Divider, Form, Button, Empty, Modal } from 'antd';
+import { Comment, Divider, Form, Button, Empty, Modal, Avatar } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 import { CommentBlockDesigner } from './CommentBlock.Designer';
 import { useCommentTranslation } from '../locale';
 import { CommentBlockDecorator } from './CommentBlock.Decorator';
@@ -117,6 +118,7 @@ export const CommentBlock = (props) => {
         commentList.map((i: CommentItem) => (
           <Comment
             key={i.id}
+            avatar={<Avatar icon={<UserOutlined />} />}
             actions={[
               <span key="comment-edit" onClick={() => handleEdit(i)}>
                 {t('Edit')}
