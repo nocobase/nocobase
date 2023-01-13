@@ -32,6 +32,7 @@ export class Restorer extends AppMigrator {
 
     await this.decompressBackup(filePath);
     await this.importCollections();
+    await this.importDb();
     await this.clearWorkDir();
   }
 
