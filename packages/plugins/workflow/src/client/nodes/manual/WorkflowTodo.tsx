@@ -512,7 +512,10 @@ WorkflowTodo.Decorator = function ({ children }) {
       pageSize: 20,
       sort: ['-createdAt'],
       appends: ['user', 'node', 'workflow'],
-      except: ['workflow.config']
+      except: ['workflow.config'],
+      filter: {
+        'workflow.id.$exists': true
+      }
     },
     rowKey: 'id',
     showIndex: true,
