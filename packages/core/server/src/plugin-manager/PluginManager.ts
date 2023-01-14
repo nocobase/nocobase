@@ -195,6 +195,7 @@ export class PluginManager {
     if (this.plugins.has(pluginName)) {
       throw new Error(`plugin name [${pluginName}] already exists`);
     }
+
     this.plugins.set(pluginName, instance);
     return instance;
   }

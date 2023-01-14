@@ -6,7 +6,6 @@ export default (app: Application) => {
     .command('install')
     .option('-f, --force')
     .option('-c, --clean')
-    .option('-u', '--underscored')
     .option('-s, --silent')
     .option('-r, --retry [retry]')
     .option('-I, --ignore-installed')

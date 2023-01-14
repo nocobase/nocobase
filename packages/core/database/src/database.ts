@@ -168,7 +168,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   constructor(options: DatabaseOptions) {
     super();
-
     this.version = new DatabaseVersion(this);
 
     const opts = {
@@ -267,6 +266,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.on('beforeDefine', (model, options) => {
       if (options.underscored || this.options.underscored) {
         options.tableName = lodash.snakeCase(options.tableName);
+        options.underscored = true;
       }
     });
 

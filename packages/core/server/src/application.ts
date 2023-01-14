@@ -281,6 +281,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       migrator: {
         context: { app: this },
       },
+      underscored: process.env.DB_UNDERSCORED === 'true',
     });
   }
 
@@ -344,6 +345,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('beforeLoad', this, options);
+    console.log(this.pm.plugins);
     await this.pm.load(options);
     await this.emitAsync('afterLoad', this, options);
   }
