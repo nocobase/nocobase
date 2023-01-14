@@ -7,7 +7,7 @@ import ruRU from './ru-RU';
 import trTR from './tr-TR';
 import zhCN from './zh-CN';
 
-export const NAMESPACE = 'snapshot-field';
+export const NAMESPACE = 'comment';
 
 i18n.addResources('zh-CN', NAMESPACE, zhCN);
 i18n.addResources('en-US', NAMESPACE, enUS);
