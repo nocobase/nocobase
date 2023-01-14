@@ -111,9 +111,9 @@ export const CommentBlock = (props) => {
             key={i.id}
             avatar={<Avatar icon={<UserOutlined />} />}
             actions={[
-              <span key="comment-edit" onClick={() => handleEdit(i)}>
-                {t('Edit')}
-              </span>,
+              // <span key="comment-edit" onClick={() => handleEdit(i)}>
+              //   {t('Edit')}
+              // </span>,
               <span key="comment-delete" onClick={() => handleDelete(i)}>
                 {t('Delete')}
               </span>,
