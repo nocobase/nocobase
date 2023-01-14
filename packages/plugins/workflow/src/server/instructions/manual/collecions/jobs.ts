@@ -10,7 +10,8 @@ export default {
       type: 'hasMany',
       name: 'usersJobs',
       target: 'users_jobs',
-      foreignKey: 'jobId'
+      foreignKey: 'jobId',
+      onDelete: 'CASCADE'
     }
   ]
 };

@@ -16,15 +16,10 @@ export default {
       name: 'useTransaction',
       defaultValue: false
     },
-    // @deprecated
-    {
-      type: 'uuid',
-      name: 'transaction',
-      defaultValue: null
-    },
     {
       type: 'hasMany',
       name: 'jobs',
+      onDelete: 'CASCADE',
     },
     {
       type: 'jsonb',

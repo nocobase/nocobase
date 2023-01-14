@@ -10,22 +10,18 @@ export default {
       autoIncrement: true,
     },
     {
-      type: 'bigInt',
-      name: 'userId',
-      primaryKey: false,
-    },
-    {
-      type: 'bigInt',
-      name: 'jobId',
-      primaryKey: false,
-    },
-    {
       type: 'belongsTo',
       name: 'job',
+      target: 'jobs',
+      foreignKey: 'jobId',
+      primaryKey: false,
     },
     {
       type: 'belongsTo',
       name: 'user',
+      target: 'users',
+      foreignKey: 'userId',
+      primaryKey: false,
     },
     {
       type: 'belongsTo',

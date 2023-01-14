@@ -114,6 +114,74 @@ describe('workflow > actions > workflows', () => {
     });
   });
 
+  describe('destroy', () => {
+    it('cascading destroy all revisions, nodes, executions and jobs', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              id: '{{$context.data.id}}'
+            },
+            values: {
+              title: 't2'
+            }
+          }
+        }
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const { model: JobModel } = db.getCollection('jobs');
+
+      const e1c = await workflow.countExecutions();
+      expect(e1c).toBe(1);
+      const j1c = await JobModel.count();
+      expect(j1c).toBe(1);
+      const p1 = await PostRepo.findOne();
+      expect(p1.title).toBe('t2');
+
+      const { id, ...w1 } = workflow.get();
+      const w2 = await WorkflowModel.create(w1);
+      const { id: n1Id, ...n1Data } = n1.get();
+      const n2 = await w2.createNode(n1Data);
+
+      await agent.resource(`workflows`).destroy({
+        filterByTk: w2.id
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const w2c = await WorkflowModel.count();
+      expect(w2c).toBe(0);
+      const e2c = await workflow.countExecutions();
+      expect(e2c).toBe(0);
+      const n1c = await workflow.countNodes();
+      expect(n1c).toBe(0);
+      const n2c = await w2.countNodes();
+      expect(n2c).toBe(0);
+      const p2c = await PostRepo.count({ filter: { title: 't1' } });
+      expect(p2c).toBe(1);
+
+      const j2c = await JobModel.count();
+      expect(j2c).toBe(0);
+    });
+  });
+
   describe('revision', () => {
     it('create revision', async () => {
       const w1 = await WorkflowModel.create({

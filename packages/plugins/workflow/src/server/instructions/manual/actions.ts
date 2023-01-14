@@ -36,6 +36,7 @@ export async function submit(context: Context, next) {
     if (instance.status !== JOB_STATUS.PENDING
       || instance.job.status !== JOB_STATUS.PENDING
       || instance.execution.status !== EXECUTION_STATUS.STARTED
+      || !instance.workflow.enabled
       || !actions.includes(values.status)
     ) {
       return context.throw(400);
