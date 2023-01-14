@@ -29,6 +29,14 @@ export const CommentBlock = (props) => {
   const record = useRecord();
   const { data: currentUserData } = useCurrentUserContext();
 
+  let collectionName = collection.name;
+  let recordId = record.id;
+
+  if (props.from === 'commentRecord') {
+    collectionName = record.collectioName;
+    recordId = record.recordId;
+  }
+
   const currentUserId = currentUserData.data.id;
 
   const { create, destroy } = useResource('comments');
@@ -39,8 +47,8 @@ export const CommentBlock = (props) => {
     params: {
       paginate: false,
       filter: {
-        collectioName: collection.name,
-        recordId: record.id,
+        collectioName: collectionName,
+        recordId: recordId,
       },
       appends: ['commenter', 'commentUsers'],
     },
@@ -58,10 +66,18 @@ export const CommentBlock = (props) => {
 
     const commentUsers = Array.from(new Set([...atIds]));
 
+    console.log({
+      collectioName: collectionName,
+      recordId: recordId,
+      content: formValues.content,
+      commenter: currentUserId,
+      commentUsers,
+    });
+
     await create({
       values: {
-        collectioName: collection.name,
-        recordId: record.id,
+        collectioName: collectionName,
+        recordId: recordId,
         content: formValues.content,
         commenter: currentUserId,
         commentUsers,
