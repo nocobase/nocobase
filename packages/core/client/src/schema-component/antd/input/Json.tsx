@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { forwardRef, Ref } from 'react';
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { Input } from 'antd';
 import { TextAreaProps } from 'antd/lib/input';
 
-export function Json({ value, onChange, space = 2, ...props }: TextAreaProps & { value: any, space: number }) {
+export const Json = forwardRef<Ref<any>>(({ value, onChange, space = 2, ...props }: TextAreaProps & { value: any, space: number }, ref: Ref<any>) => {
   const field = useField<Field>();
   return (
     <Input.TextArea
       {...props}
+      ref={ref}
       defaultValue={value != null ? JSON.stringify(value, null, space) : ''}
       onChange={(ev) => {
         try {
@@ -25,4 +26,4 @@ export function Json({ value, onChange, space = 2, ...props }: TextAreaProps & {
       }}
     />
   );
-}
+});

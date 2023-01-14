@@ -4,6 +4,7 @@ import { css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
 import { Operand, VariableTypes, VariableTypesContext } from '../calculators';
+import { VariableJSONInput } from '../components/VariableJSONInput';
 
 
 
@@ -48,7 +49,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-decorator-props': {
         className: css`
-          .ant-input-affix-wrapper{
+          .ant-formily-item-control-content-component .ant-input-affix-wrapper{
             width: 100%;
           }
         `
@@ -150,11 +151,10 @@ export default {
     'config.data': {
       type: 'string',
       name: 'config.data',
-      'x-hidden': false,
       title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'Input.JSON',
+      'x-component': 'VariableJSONInput',
       'x-component-props': {
         autoSize: {
           minRows: 10,
@@ -165,7 +165,7 @@ export default {
           font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
         `
       },
-      description: `{{t("Variables could be used under json-templates format", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
     },
     'config.timeout': {
       type: 'number',
@@ -194,6 +194,7 @@ export default {
   components: {
     ArrayItems,
     Operand,
-    VariableTypesContextProvider
+    VariableTypesContextProvider,
+    VariableJSONInput
   },
 };

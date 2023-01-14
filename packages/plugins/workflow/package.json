@@ -17,7 +17,6 @@
     "cron-parser": "4.4.0",
     "json-templates": "^4.2.0",
     "moment": "^2.29.2",
-    "react-copy-to-clipboard": "^5.1.0",
     "react-js-cron": "^1.4.0"
   },
   "devDependencies": {
