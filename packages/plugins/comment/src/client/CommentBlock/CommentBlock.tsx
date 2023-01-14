@@ -50,6 +50,7 @@ export const CommentBlock = (props) => {
         collectioName: collectionName,
         recordId: recordId,
       },
+      sort: 'createdAt',
       appends: ['commenter', 'commentUsers'],
     },
   });
