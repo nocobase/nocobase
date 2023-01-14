@@ -76,6 +76,7 @@ export interface IDatabaseOptions extends Options {
   tablePrefix?: string;
   migrator?: any;
   usingBigIntForId?: boolean;
+  underscored?: boolean;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -264,7 +265,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   initListener() {
     this.on('beforeDefine', (model, options) => {
-      if (options.underscored) {
+      if (options.underscored || this.options.underscored) {
         options.tableName = lodash.snakeCase(options.tableName);
       }
     });
