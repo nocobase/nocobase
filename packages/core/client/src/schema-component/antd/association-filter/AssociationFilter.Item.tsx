@@ -82,7 +82,7 @@ export const AssociationFilterItem = (props) => {
         ...service.params?.[0],
         pageSize: 200,
         page: 1,
-        filter: mergeFilter([Object.values(filters), blockProps?.params?.filter]),
+        filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
       },
       { filters },
     );

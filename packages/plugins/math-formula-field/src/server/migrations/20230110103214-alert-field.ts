@@ -2,7 +2,7 @@ import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   async up() {
-    const result = await this.app.version.satisfies('<=0.8.1-alpha.4');
+    const result = await this.app.version.satisfies('<=0.8.3-alpha.1');
     if (!result) {
       return;
     }
