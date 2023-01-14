@@ -107,9 +107,11 @@ export const useFilterFieldProps = ({ options, service, params }) => {
       const filter = removeNullCondition(values?.filter);
 
       const filters = service.params?.[1]?.filters || {};
-      filters[`default`] = mergeFilter([defaultFilter, filter]);
-
-      service.run({ ...service.params?.[0], page: 1, filter: mergeFilter(Object.values(filters)) }, { filters });
+      filters[`filterAction`] = filter;
+      service.run(
+        { ...service.params?.[0], page: 1, filter: mergeFilter([...Object.values(filters), defaultFilter]) },
+        { filters },
+      );
       const items = filter?.$and || filter?.$or;
       if (items?.length) {
         field.title = t('{{count}} filter items', { count: items?.length || 0 });
@@ -119,7 +121,16 @@ export const useFilterFieldProps = ({ options, service, params }) => {
     },
     onReset() {
       const filter = params.filter;
-      service.run({ ...service.params?.[0], filter, page: 1 });
+      const filters = service.params?.[1]?.filters || {};
+      delete filters[`filterAction`];
+      service.run(
+        {
+          ...service.params?.[0],
+          filter: mergeFilter([...Object.values(filters), filter]),
+          page: 1,
+        },
+        { filters },
+      );
       field.title = t('Filter');
     },
   };

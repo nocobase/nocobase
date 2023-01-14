@@ -18,4 +18,3 @@
 /src/.umi-production
 /src/.umi-test
 /.env.local
-src/plugins/graph-collection-manager.ts

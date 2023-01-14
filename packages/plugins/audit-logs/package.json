@@ -1,21 +1,15 @@
 {
   "name": "@nocobase/plugin-audit-logs",
-  "version": "0.8.1-alpha.4",
+  "version": "0.9.0-alpha.1",
   "main": "./lib/server/index.js",
   "types": "./lib/server/index.d.ts",
-  "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
+  "license": "AGPL-3.0",
   "dependencies": {
-    "@nocobase/client": "0.8.1-alpha.4",
-    "@nocobase/server": "0.8.1-alpha.4"
+    "@nocobase/client": "0.9.0-alpha.1",
+    "@nocobase/server": "0.9.0-alpha.1"
   },
   "devDependencies": {
-    "@nocobase/test": "0.8.1-alpha.4"
+    "@nocobase/test": "0.9.0-alpha.1"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

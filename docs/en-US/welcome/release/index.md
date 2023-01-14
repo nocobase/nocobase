@@ -1,5 +1,65 @@
 # Release Notes
 
+## 2023/01/11 ~v0.9.0-alpha.1
+
+### License changes
+
+- [Core](https://github.com/nocobase/nocobase/tree/main/packages/core) continue with [Apache 2.0](https://github.com/nocobase/nocobase/blob/main/LICENSE-APACHE-2.0)
+- [Plugins](https://github.com/nocobase/nocobase/tree/main/packages/plugins) changed to [AGPL 3.0](https://github.com/nocobase/nocobase/blob/main/LICENSE-AGPL)
+
+### Core improvements
+
+- [Logging system for NocoBase](/welcome/release/logger)
+- [Collection inheritance](/welcome/release/inherits)
+- [Collection templates](/welcome/release/collection-templates)
+- Primary key of collection is BigInt type by default 
+- Provide more robust ACL modules
+- Association field component supports switching to a simple Select component
+- Support page tabs
+- Table & Kanban blocks support fixed model
+- Provide more friendly association filtering
+- Calendar block supports displaying lunar
+- Calendar block supports configuration and deletion of duplicate schedules
+- Table block horizontal scroll bar optimization, support adjust column width
+- Configurable size of pop-up windows
+
+### New plugins
+
+- Data import
+- Graphical interface for collections
+- SSO: OIDC, SAML
+- Map
+- Iframe block
+- Data snapshot
+- Duplicator: application duplication, backup, migration
+- [Formula for fields: Math Formula and Excel Formula](/welcome/release/formulas)
+
+### Other plugin optimizations
+
+- Collection configuration
+  - Support for filtering
+  - Support for define the title field
+  - Support for classification
+- Workflow
+  - Fix trigger fetching function
+  - Front-end refactoring and plugin independence
+  - Fix the execution history loading problem
+  - Optimize the execution process by no longer using the same transaction after the execution of the data table trigger
+  - New scheduler and trigger cache are added to solve the concurrency problem by queue execution
+  - Fix the problem of timed task end time component
+  - Fix the problem of timed task skipping seconds
+  - Support workflow-level duplication
+  - Refactor the data structure of context and node variables
+- Captcha
+  - New captcha configuration panel
+- Files Manager
+  - Fix local storage static file service middleware
+  - Local storage empty baseUrl configuration fault tolerance handling
+- Auto Numbering
+  - Refactor to record sequence by data table
+  - Add configurations that can be entered and matched with rules
+  - Fix generating numbers not less than the configured starting value
+
 ## 2022/10/31 ~ v0.8.0-alpha.1
 
 - Starting with v0.8, NocoBase begins to provide an available plugin manager and development documentation. 
