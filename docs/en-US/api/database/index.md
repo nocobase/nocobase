@@ -209,7 +209,7 @@ Get the table name prefix in the configuration.
 
 ### `collection()`
 
-Define a data table. This is similar to the `define` method of Sequelize, which only creates table structure in memory. Call the `sync` method if it is needed to be persisted to the database.
+Define a data table. This is like the `define` method of Sequelize, which only creates table structure in memory. Call the `sync` method if it is needed to be persisted to the database.
 
 **Signature**
 
@@ -318,7 +318,7 @@ db.removeCollection('books');
 
 ### `import()`
 
-Load all files in the import file directory into memory as the  configuration of collection.
+Load all files in the import file directory into memory as the configuration of collection.
 
 **Signature**
 
@@ -371,7 +371,7 @@ Register custom field type.
 
 **Parameter**
 
-`fieldTypes` is a key-value pair, where key is the field type name and value is the field type class.
+`fieldTypes` is a key-value pair, where key is the field type name, and value is the field type class.
 
 **Example**
 
@@ -397,7 +397,7 @@ Register custom data model class.
 
 **Parameter**
 
-`models` is a key-value pair, where key is the data model name and value is the data model class.
+`models` is a key-value pair, where key is the data model name, and value is the data model class.
 
 **Example**
 
@@ -428,7 +428,7 @@ Register custom data repository class.
 
 **Parameter**
 
-`repositories` is a key-value pair, where key is the data repository name and value is the data repository class.
+`repositories` is a key-value pair, where key is the data repository name, and value is the data repository class.
 
 **Example**
 
@@ -508,7 +508,7 @@ const ModelClass = db.getModel('books');
 console.log(ModelClass.prototype instanceof MyModel) // true
 ```
 
-Note: The model class retrieved from collection is not strictly equivalent to the model class at registration, but is inherited from the model class at registration. Since the properties of Sequelize's model class are modified during initialization, NocoBase automatically handles this inheritance relationship. All thr definitions work fine except that the classes are not equal.
+Note: The model class retrieved from collection is not strictly equivalent to the model class at registration, but is inherited from the model class at registration. Since the properties of Sequelize's model class are modified during initialization, NocoBase automatically handles this inheritance relationship. All the definitions work fine except that the classes are not equal.
 
 ### `getRepository()`
 
@@ -747,7 +747,7 @@ export default extend({
 
 If the above two files are imported when calling `import()`, after being extended again by `extend()`, the table <i>books</i> will have `title` and `price` two fields.
 
-This method is espeically useful when extending the table structure that is already defined by existing plugin.
+This method is especially useful when extending the table structure that is already defined by existing plugin.
 
 ## Built-in Events
 
@@ -794,7 +794,7 @@ await users.sync();
 
 ### `'beforeValidate'` / `'afterValidate'`
 
-Before creating or updating data, there is a validation againist the data based on the rules defined by the collection, and the corresponding events are triggered before and after the validation. This is triggered when `repository.create()` or `repository.update()` is called.
+Before creating or updating data, there is a validation against the data based on the rules defined by the collection, and the corresponding events are triggered before and after the validation. This is triggered when `repository.create()` or `repository.update()` is called.
 
 **Signature**
 
