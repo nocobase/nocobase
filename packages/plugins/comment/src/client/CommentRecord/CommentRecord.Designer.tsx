@@ -33,7 +33,6 @@ export const CommentRecordDesigner = () => {
             properties: {
               filter: {
                 default: defaultFilter,
-                // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
                 'x-decorator-props': {},

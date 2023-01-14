@@ -7,86 +7,56 @@ import {
   useRecord,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
+import { useCommentTranslation } from '../locale';
 import { IsAssociationBlock } from './CommentRecord';
 
-// export const collection = {
-//   name: 'auditLogs',
-//   title: '{{t("Audit logs")}}',
-//   fields: [
-//     {
-//       name: 'createdAt',
-//       type: 'date',
-//       interface: 'createdAt',
-//       uiSchema: {
-//         type: 'datetime',
-//         title: '{{t("Created at")}}',
-//         'x-component': 'DatePicker',
-//         'x-component-props': {
-//           showTime: true,
-//         },
-//         'x-read-pretty': true,
-//       },
-//     },
-//     {
-//       name: 'type',
-//       type: 'string',
-//       interface: 'select',
-//       uiSchema: {
-//         type: 'string',
-//         title: '{{t("Action type")}}',
-//         'x-component': 'Select',
-//         'x-read-pretty': true,
-//         enum: [
-//           { label: '{{t("Create record")}}', value: 'create', color: 'lime' },
-//           { label: '{{t("Update record")}}', value: 'update', color: 'gold' },
-//           { label: '{{t("Delete record")}}', value: 'destroy', color: 'magenta' },
-//         ],
-//       },
-//     },
-//   ],
-// };
+const useCommentsCollection = () => {
+  const { t } = useCommentTranslation();
 
-export const collection2 = {
-  name: 'comments',
-  title: '{{t("Comment Record")}}',
-  fields: [
-    {
-      name: 'createdAt',
-      type: 'date',
-      interface: 'createdAt',
-      uiSchema: {
-        type: 'datetime',
-        title: '{{t("Created at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {
-          showTime: true,
+  return {
+    name: 'comments',
+    title: t('Comment Record'),
+    fields: [
+      {
+        name: 'createdAt',
+        type: 'date',
+        interface: 'createdAt',
+        uiSchema: {
+          type: 'datetime',
+          title: '{{t("Created at")}}',
+          'x-component': 'DatePicker',
+          'x-component-props': {
+            showTime: true,
+          },
+          'x-read-pretty': true,
         },
-        'x-read-pretty': true,
       },
-    },
-    {
-      name: 'type',
-      type: 'string',
-      interface: 'select',
-      uiSchema: {
+      {
+        name: 'type',
         type: 'string',
-        title: '{{t("Action type")}}',
-        'x-component': 'Select',
-        'x-read-pretty': true,
-        enum: [
-          { label: '{{t("Create record")}}', value: 'create', color: 'lime' },
-          { label: '{{t("Update record")}}', value: 'update', color: 'gold' },
-          { label: '{{t("Delete record")}}', value: 'destroy', color: 'magenta' },
-        ],
+        interface: 'select',
+        uiSchema: {
+          type: 'string',
+          title: '{{t("Action type")}}',
+          'x-component': 'Select',
+          'x-read-pretty': true,
+          enum: [
+            { label: '{{t("Create record")}}', value: 'create', color: 'lime' },
+            { label: '{{t("Update record")}}', value: 'update', color: 'gold' },
+            { label: '{{t("Delete record")}}', value: 'destroy', color: 'magenta' },
+          ],
+        },
       },
-    },
-  ],
+    ],
+  };
 };
 
 export const CommentRecordDecorator = observer((props: any) => {
   const parent = useCollection();
   const record = useRecord();
   const { interfaces } = useContext(CollectionManagerContext);
+  const commentsCollection = useCommentsCollection();
+
   let filter = props?.params?.filter;
   if (parent.name) {
     const filterByTk = record?.[parent.filterTargetKey || 'id'];
@@ -124,7 +94,7 @@ export const CommentRecordDecorator = observer((props: any) => {
   };
   return (
     <IsAssociationBlock.Provider value={!!parent.name}>
-      <CollectionManagerProvider collections={[collection2]} interfaces={interfaces}>
+      <CollectionManagerProvider collections={[commentsCollection]} interfaces={interfaces}>
         <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
       </CollectionManagerProvider>
     </IsAssociationBlock.Provider>

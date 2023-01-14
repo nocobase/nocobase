@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Mentions, MentionProps } from 'antd';
 import { OptionProps } from 'antd/es/mentions/index';
 import { useResource } from '@nocobase/client';
+import { useCommentTranslation } from '../locale';
 
 export interface StructMentionsValue {
   content: string;
@@ -17,6 +18,7 @@ export type StructMentionsProps = Omit<MentionProps, 'value' | 'onChange' | 'chi
 export const StructMentions = (props: StructMentionsProps) => {
   const { value, onChange, commentUsers = [] } = props;
 
+  const { t } = useCommentTranslation();
   const [mentions, setMentions] = useState([]);
   const [mentionsLoading, setMentionsLoading] = useState(false);
   const [ats, setAts] = useState(commentUsers);
@@ -57,7 +59,7 @@ export const StructMentions = (props: StructMentionsProps) => {
       value={overrideValue}
       onChange={overrideOnChange}
       rows={3}
-      placeholder="You can use @ to ref user here"
+      placeholder={t('You can use @ to ref user here')}
       onSearch={handleMentionSearch}
       onSelect={handleSelect}
       loading={mentionsLoading}

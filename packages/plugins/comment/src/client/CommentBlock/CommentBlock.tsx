@@ -90,8 +90,8 @@ export const CommentBlock = (props) => {
 
   const handleDelete = async (item: CommentItem) => {
     Modal.confirm({
-      title: '删除评论',
-      content: '你确定要删除吗？',
+      title: t('Delete comment'),
+      content: t('Confirm delete?'),
       onOk: async () => {
         await destroy({
           filterByTk: item.id,
@@ -123,7 +123,7 @@ export const CommentBlock = (props) => {
           />
         ))
       ) : (
-        <Empty description="暂无评论" />
+        <Empty description={t('No comments')} />
       )}
       <Divider />
       <Form form={form} layout="vertical" onFinish={handleFinish}>

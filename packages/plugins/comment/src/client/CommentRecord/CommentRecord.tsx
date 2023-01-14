@@ -3,6 +3,7 @@ import { observer, useField } from '@formily/react';
 import { FormProvider, SchemaComponent, useCompile, useRecord } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
 import { CommentItem, getContent } from '../CommentBlock/CommentBlock';
+import { useCommentTranslation } from '../locale';
 import { CommentRecordDecorator } from './CommentRecord.Decorator';
 import { CommentRecordDesigner } from './CommentRecord.Designer';
 
@@ -63,6 +64,7 @@ export const IsAssociationBlock = createContext(null);
 
 export const CommentRecord: any = () => {
   const isAssoc = useContext(IsAssociationBlock);
+  const { t } = useCommentTranslation();
   const ext = {};
   if (!isAssoc) {
     ext['column31'] = {
@@ -99,7 +101,6 @@ export const CommentRecord: any = () => {
                 type: 'void',
                 title: '{{ t("Filter") }}',
                 'x-action': 'filter',
-                // 'x-designer': 'Filter.Action.Designer',
                 'x-component': 'Filter.Action',
                 'x-component-props': {
                   icon: 'FilterOutlined',
@@ -203,7 +204,7 @@ export const CommentRecord: any = () => {
               columnContent: {
                 type: 'void',
                 'x-component': 'TableV2.Column',
-                title: '{{t("评论内容")}}',
+                title: t('Comment content'),
                 properties: {
                   content: {
                     'x-component': 'CommentContent',
@@ -214,7 +215,7 @@ export const CommentRecord: any = () => {
               columnCollectioName: {
                 type: 'void',
                 'x-component': 'TableV2.Column',
-                title: '{{t("Collection name")}}',
+                title: t('Collection name'),
                 properties: {
                   collectioName: {
                     'x-component': 'PlainText',
@@ -225,7 +226,7 @@ export const CommentRecord: any = () => {
               columnRecordId: {
                 type: 'void',
                 'x-component': 'TableV2.Column',
-                title: '{{t("记录ID")}}',
+                title: '{{t("Record ID")}}',
                 properties: {
                   recordId: {
                     'x-component': 'PlainText',
@@ -236,7 +237,7 @@ export const CommentRecord: any = () => {
               columnCommenter: {
                 type: 'void',
                 'x-component': 'TableV2.Column',
-                title: '{{t("Commenter")}}',
+                title: t('Commenter'),
                 properties: {
                   commenter: {
                     'x-component': 'Commenter',

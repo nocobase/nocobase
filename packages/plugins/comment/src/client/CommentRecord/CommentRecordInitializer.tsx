@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 
 export const CommentRecordInitializer = (props) => {
   const { insert } = props;
-  const { t } = useTranslation();
   return (
     <SchemaInitializer.Item
       {...props}
