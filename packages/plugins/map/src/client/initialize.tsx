@@ -1,9 +1,8 @@
-import React from 'react';
 import { registerField, registerGroup, useCurrentAppInfo } from '@nocobase/client';
-import { generateNTemplate } from './locales';
-import './locales';
+import React, { useEffect } from 'react';
 import { fields } from './fields';
-import { useEffect } from 'react';
+import './locale';
+import { generateNTemplate } from './locale';
 
 export const useRegisterInterface = () => {
   const { data } = useCurrentAppInfo() || {};

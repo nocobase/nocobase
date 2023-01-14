@@ -6,11 +6,11 @@ import {
   useCollection,
   useCollectionManager,
   useDesignable,
-  useFormBlockContext,
+  useFormBlockContext
 } from '@nocobase/client';
-import _ from 'lodash';
+import set from 'lodash/set';
 import React from 'react';
-import { useMapTranslation } from '../locales';
+import { useMapTranslation } from '../locale';
 
 const Designer = () => {
   const { getCollectionJoinField } = useCollectionManager();
@@ -230,7 +230,7 @@ const Designer = () => {
         }
         onSubmit={({ zoom }) => {
           if (zoom) {
-            _.set(fieldSchema, 'x-component-props.zoom', zoom);
+            set(fieldSchema, 'x-component-props.zoom', zoom);
             Object.assign(field.componentProps, fieldSchema['x-component-props']);
 
             dn.emit('patch', {

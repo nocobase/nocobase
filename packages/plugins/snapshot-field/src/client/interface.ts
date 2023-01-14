@@ -1,9 +1,8 @@
 import { ISchema } from '@formily/react';
-import { IField } from '@nocobase/client';
+import { IField, interfacesProperties } from '@nocobase/client';
 import { cloneDeep } from 'lodash';
-import { interfacesProperties } from '@nocobase/client';
-import { useSnapshotTranslation } from './locale';
 import { useMemo } from 'react';
+import { useSnapshotTranslation } from './locale';
 
 const { defaultProps, recordPickerSelector } = interfacesProperties;
 
@@ -82,7 +81,7 @@ export const useSnapshotInterface = () => {
       ...defaultProps,
       target: {
         type: 'string',
-        title: t('Related collection'),
+        title: t('Target collection'),
         required: true,
         'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
         'x-decorator': 'FormItem',

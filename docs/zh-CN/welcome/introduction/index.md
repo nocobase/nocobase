@@ -18,7 +18,7 @@ NocoBase 是一个极易扩展的开源无代码开发平台。
 ## 为什么选择 NocoBase
 
 - **开源，自主可控**
-   - 采用 Apache-2.0 许可协议，不限制商业使用
+   - 采用 Apache-2.0 & AGPL-3.0 许可协议
    - 拥有全部代码，私有化部署，保障数据私有和安全
    - 针对实际需求自由扩展开发
    - 具备良好的生态支持
@@ -46,9 +46,9 @@ NocoBase 是一个极易扩展的开源无代码开发平台。
 
 [点此查看完整图片](https://www.nocobase.com/images/NocoBaseMindMap.png)
 
-## 联系
+## 商业服务
 
-如果你希望加入我们一起开发 NocoBase，或者需要提供商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
+如果你需要商业版本和商业服务，欢迎通过邮件联系我们：hello@nocobase.com
 
 或者添加我们的微信：  
 

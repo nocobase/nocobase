@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { interfacesProperties } from '@nocobase/client';
 import { MapTypes } from '../constants';
-import { generateNTemplate } from '../locales';
+import { generateNTemplate } from '../locale';
 
 const { defaultProps } = interfacesProperties;
 

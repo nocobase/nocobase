@@ -33,8 +33,10 @@ export class MapPlugin extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.configuration`,
-      actions: ['map-configuration:*'],
+      actions: ['map-configuration:set'],
     });
+
+    this.app.acl.allow('map-configuration', 'get', 'loggedIn');
   }
 
   async install(options?: InstallOptions) {}

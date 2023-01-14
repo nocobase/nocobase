@@ -1,14 +1,11 @@
 import { AppstoreAddOutlined, SettingOutlined } from '@ant-design/icons';
-import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
 import { Dropdown, Menu } from 'antd';
-import React, { useState, useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { PluginManager } from '../plugin-manager';
-import { useCompile } from '../schema-component';
-import { ActionContext } from '../schema-component';
 import { useACLRoleContext } from '../acl/ACLProvider';
+import { PluginManager } from '../plugin-manager';
+import { ActionContext, useCompile } from '../schema-component';
 import { getPluginsTabs, SettingsCenterContext } from './index';
 
 export const PluginManagerLink = () => {
@@ -74,14 +71,14 @@ export const SettingsCenterDropdown = () => {
               }}
               key="/admin/settings"
             >
-              {t('Settings center')}
+              {t('All plugin settings')}
             </Menu.Item>
           </Menu>
         }
       >
         <PluginManager.Toolbar.Item
           icon={<SettingOutlined />}
-          // title={t('Settings center')}
+          // title={t('All plugin settings')}
         ></PluginManager.Toolbar.Item>
       </Dropdown>
     </ActionContext.Provider>

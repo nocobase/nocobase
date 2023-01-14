@@ -1,68 +1,54 @@
-import React from 'react';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { Cron as ReactCron, CronProps } from 'react-js-cron';
-import cronstrue from 'cronstrue';
-import 'cronstrue/locales/zh_CN';
 import { css } from '@emotion/css';
+import { connect, mapReadPretty } from '@formily/react';
+import cronstrue from 'cronstrue';
+import React from 'react';
+import { Cron as ReactCron, CronProps } from 'react-js-cron';
+import { useAPIClient } from '../../../api-client';
 
-import localeZhCN from './locale/zh-CN';
+type ComposedCron = React.FC<CronProps> & {};
 
-const ComponentLocales = {
-  'zh-CN': localeZhCN,
-};
-
-const ReadPrettyLocales = {
-  'en-US': 'en',
-  'zh-CN': 'zh_CN'
-};
-
-type ComposedCron = React.FC<CronProps> & {}
-
-export const Cron: ComposedCron = connect(
-  (props: Exclude<CronProps, 'setValue'> & { onChange: (value: string) => void }) => {
-    const { onChange, ...rest } = props;
-    const locale = ComponentLocales[localStorage.getItem('NOCOBASE_LOCALE') || 'en-US'];
-    return (
-      <fieldset className={css`
-        .react-js-cron{
-          padding: .5em .5em 0 .5em;
+const Input = (props: Exclude<CronProps, 'setValue'> & { onChange: (value: string) => void }) => {
+  const { onChange, ...rest } = props;
+  return (
+    <fieldset
+      className={css`
+        .react-js-cron {
+          padding: 0.5em 0.5em 0 0.5em;
           border: 1px dashed #ccc;
-
-          .react-js-cron-field{
+          .react-js-cron-field {
             flex-shrink: 0;
-            margin-bottom: .5em;
+            margin-bottom: 0.5em;
 
-            > span{
+            > span {
               flex-shrink: 0;
-              margin: 0 .5em 0 0;
+              margin: 0 0.5em 0 0;
             }
 
-            > .react-js-cron-select{
-              margin: 0 .5em 0 0;
+            > .react-js-cron-select {
+              margin: 0 0.5em 0 0;
             }
           }
-      `}>
-        <ReactCron
-          setValue={onChange}
-          locale={locale}
-          {...rest}
-        />
-      </fieldset>
-    );
-  },
-  mapReadPretty((props) => {
-    const locale = ReadPrettyLocales[localStorage.getItem('NOCOBASE_LOCALE') || 'en-US'];
-    return props.value
-      ? (
-        <span>
-          {cronstrue.toString(props.value, {
-            locale,
-            use24HourTimeFormat: true
-          })}
-        </span>
-      )
-      : null;
-  })
-);
+        }
+      `}
+    >
+      <ReactCron setValue={onChange} locale={window['cronLocale']} {...rest} />
+    </fieldset>
+  );
+};
+
+const ReadPretty = (props) => {
+  const api = useAPIClient();
+  const locale = api.auth.getLocale();
+  return props.value ? (
+    <span>
+      {cronstrue.toString(props.value, {
+        locale,
+        use24HourTimeFormat: true,
+      })}
+    </span>
+  ) : null;
+};
+
+export const Cron: ComposedCron = connect(Input, mapReadPretty(ReadPretty));
 
 export default Cron;
