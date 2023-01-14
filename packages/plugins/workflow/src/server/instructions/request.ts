@@ -22,13 +22,14 @@ export default class implements Instruction {
     const config = processor.getParsedValue(node.config) as RequestConfig;
 
     // default headers
-    const { url, method = 'POST', params, data, timeout = 5000 } = config;
-    const headers = (node.config.headers ?? []).reduce((result, header) => {
+    const { url, method = 'POST', data, timeout = 5000 } = config;
+    const headers = (config.headers ?? []).reduce((result, header) => {
       if (header.name.toLowerCase() === 'content-type') {
         return result;
       }
       return Object.assign(result, { [header.name]: header.value });
     }, {});
+    const params = (config.params ?? []).reduce((result, param) => Object.assign(result, { [param.name]: param.value }), {});
 
     // TODO(feat): only support JSON type for now, should support others in future
     headers['Content-Type'] = 'application/json';
