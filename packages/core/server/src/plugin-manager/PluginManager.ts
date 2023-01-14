@@ -76,6 +76,7 @@ export class PluginManager {
         await this.repository.load();
       }
     });
+
     this.app.on('beforeUpgrade', async () => {
       await this.collection.sync();
     });
@@ -261,6 +262,7 @@ export class PluginManager {
   }
 
   async load(options: any = {}) {
+    console.log({ loadPlugins: this.plugins });
     for (const [name, plugin] of this.plugins) {
       if (!plugin.enabled) {
         continue;

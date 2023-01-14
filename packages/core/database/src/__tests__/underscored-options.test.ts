@@ -19,6 +19,41 @@ describe('underscored options', () => {
     const collectionA = db.collection({
       name: 'testCollection',
       underscored: true,
+      fields: [
+        {
+          type: 'string',
+          name: 'testField',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const tableName = collectionA.model.tableName;
+
+    expect(tableName.includes('test_collection')).toBeTruthy();
+
+    const repository = db.getRepository('testCollection');
+    await repository.create({
+      values: {
+        testField: 'test',
+      },
+    });
+
+    const record = await repository.findOne({});
+
+    expect(record.get('testField')).toBe('test');
+  });
+
+  it('should use database options', async () => {
+    const collectionA = db.collection({
+      name: 'testCollection',
+      fields: [
+        {
+          type: 'string',
+          name: 'testField',
+        },
+      ],
     });
 
     await db.sync();
@@ -28,15 +63,22 @@ describe('underscored options', () => {
     expect(tableName.includes('test_collection')).toBeTruthy();
   });
 
-  it('should use database options', async () => {
+  test('db collectionExists', async () => {
     const collectionA = db.collection({
       name: 'testCollection',
+      underscored: true,
+      fields: [
+        {
+          type: 'string',
+          name: 'testField',
+        },
+      ],
     });
+
+    expect(await db.collectionExistsInDb('testCollection')).toBeFalsy();
 
     await db.sync();
 
-    const tableName = collectionA.model.tableName;
-
-    expect(tableName.includes('test_collection')).toBeTruthy();
+    expect(await db.collectionExistsInDb('testCollection')).toBeTruthy();
   });
 });

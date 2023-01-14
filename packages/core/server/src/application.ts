@@ -249,6 +249,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.context.resourcer = this._resourcer;
     this.context.cache = this._cache;
 
+    console.log('before.this._pm', this._pm?.plugins);
     if (this._pm) {
       this._pm = this._pm.clone();
     } else {
@@ -257,6 +258,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         plugins: options.plugins,
       });
     }
+    console.log('after.this._pm', this._pm.plugins);
 
     this._appManager = new AppManager(this);
 
@@ -337,6 +339,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async load(options?: any) {
+    console.log({ beforePlugins: this.pm.plugins });
+
     if (options?.reload) {
       console.log(`Reload the application configuration`);
       const oldDb = this._db;
@@ -344,8 +348,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await oldDb.close();
     }
 
+    console.log({ middlePlugins: this.pm.plugins });
+
     await this.emitAsync('beforeLoad', this, options);
-    console.log(this.pm.plugins);
+    console.log({ pmPlugins: this.pm.plugins });
     await this.pm.load(options);
     await this.emitAsync('afterLoad', this, options);
   }
