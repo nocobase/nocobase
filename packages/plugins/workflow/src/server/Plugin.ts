@@ -295,7 +295,7 @@ export default class WorkflowPlugin extends Plugin {
     this.dispatch();
   }
 
-  private createProcessor(execution: ExecutionModel, options = {}): Processor {
+  public createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
   }
 }
