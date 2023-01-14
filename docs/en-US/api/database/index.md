@@ -112,7 +112,7 @@ Create a database instance.
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `options.host` | `string` | `'localhost'` | Database host |
-| `options.port` | `number` | - | Database service port, there is a default port depending on the database used |
+| `options.port` | `number` | - | Database service port, default port depends on the type of database used |
 | `options.username` | `string` | - | Database username |
 | `options.password` | `string` | - | Database password|
 | `options.database` | `string` | - | Database name |
@@ -209,7 +209,7 @@ Get the table name prefix in the configuration.
 
 ### `collection()`
 
-Define a data table. This is like the `define` method of Sequelize, which only creates table structure in memory. Call the `sync` method if it is needed to be persisted to the database.
+Define a data table. This is like the `define` method of Sequelize, which only creates table structure in memory. Call the `sync` method if needs to be persisted to the database.
 
 **Signature**
 
@@ -247,7 +247,7 @@ await db.sync();
 
 ### `getCollection()`
 
-Gets a defined data table.
+Get a defined data table.
 
 **Signature**
 
@@ -267,7 +267,7 @@ const collection = db.getCollection('books');
 
 ### `hasCollection()`
 
-Check whether if a specified data table has been defined.
+Check whether a specified data table is defined.
 
 **Signature**
 
@@ -291,7 +291,7 @@ db.hasCollection('authors'); // false
 
 ### `removeCollection()`
 
-Remove a defined data table; remove from memory only. Call the `sync` method if it is needed to be persisted to the database.
+Remove a defined data table. It is to remove from memory only, call the `sync` method if needs to be persisted to the database.
 
 **Signature**
 
@@ -359,7 +359,7 @@ class Plugin {
 }
 ```
 
-## Extended Registration and Acquisition
+## Extension Registration and Acquisition
 
 ### `registerFieldTypes()`
 
@@ -459,7 +459,7 @@ Register custom data query operator.
 
 **Parameter**
 
-`operators` is a key-value pair, where key is the operator name and value is the generating function of the comparison operator statement.
+`operators` is a key-value pair, where key is the operator name, and value is the generating function of the comparison operator statement.
 
 **Example**
 
@@ -660,7 +660,7 @@ Empty the database, it will delete all data tables.
 
 **Example**
 
-Removes all tables except for the `users` table.
+Remove all tables except for the `users` table.
 
 ```ts
 await db.clean({
