@@ -402,7 +402,7 @@ export default {
   "General permissions": "一般設定",
   "Global action permissions": "グローバル操作権限",
   "General action permissions": "一般操作権限",
-  "Settings center permissions":"中央権限の設定",
+  "Plugin settings permissions":"中央権限の設定",
   'Allow to desgin pages':"インタフェース構成の許可",
   "Allow to manage plugins":"管理プラグインの許可",
   "Allow to configure plugins":"管理構成センターの許可",

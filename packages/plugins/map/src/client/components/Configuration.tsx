@@ -1,10 +1,10 @@
-import { useAPIClient, useCompile, useRequest } from '@nocobase/client';
+import { useAPIClient, useCompile } from '@nocobase/client';
 import { useBoolean } from 'ahooks';
-import { Form, Input, Tabs, Button, Card, message } from 'antd';
-import React, { useMemo, useEffect } from 'react';
+import { Button, Card, Form, Input, message, Tabs } from 'antd';
+import React, { useEffect, useMemo } from 'react';
 import { MapTypes } from '../constants';
 import { MapConfigurationResourceKey, useMapConfiguration } from '../hooks';
-import { useMapTranslation } from '../locales';
+import { useMapTranslation } from '../locale';
 
 const AMapConfiguration = ({ type }) => {
   const { t } = useMapTranslation();

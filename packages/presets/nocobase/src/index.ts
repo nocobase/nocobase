@@ -25,12 +25,14 @@ export class PresetNocoBase extends Plugin {
         'audit-logs',
         'duplicator',
         'iframe-block',
+        'math-formula-field',
+        'excel-formula-field',
       ].concat(plugins),
     );
   }
 
   getLocalPlugins() {
-    const localPlugins = ['sample-hello', 'oidc', 'saml', 'map', 'snapshot-field'];
+    const localPlugins = ['sample-hello', 'oidc', 'saml', 'map', 'snapshot-field', 'graph-collection-manager'];
     return localPlugins;
   }
 

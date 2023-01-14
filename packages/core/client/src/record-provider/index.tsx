@@ -4,10 +4,12 @@ import { useCurrentUserContext } from '../user';
 export const RecordContext = createContext({});
 export const RecordIndexContext = createContext(null);
 
-export const RecordProvider: React.FC<{ record: any }> = (props) => {
-  const { record, children } = props;
+export const RecordProvider: React.FC<{ record: any; parent?: any }> = (props) => {
+  const { record, children, parent = false } = props;
   const __parent = useContext(RecordContext);
-  return <RecordContext.Provider value={{ ...record, __parent }}>{children}</RecordContext.Provider>;
+  const value = { ...record };
+  value['__parent'] = parent ? parent : __parent;
+  return <RecordContext.Provider value={value}>{children}</RecordContext.Provider>;
 };
 
 export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {

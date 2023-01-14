@@ -8,16 +8,14 @@ import React, { createContext, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ACLCollectionProvider,
-  TableFieldContext,
   TableFieldResource,
   useActionContext,
   useAPIClient,
   useDesignable,
   useRecord,
-  useTableFieldContext,
-  WithoutTableFieldResource,
+  WithoutTableFieldResource
 } from '../';
-import { CollectionProvider, useCollection, useCollectionField, useCollectionManager } from '../collection-manager';
+import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
 
