@@ -347,7 +347,7 @@ function ActionInitializer({ action, actionProps, ...props }) {
           useAction: '{{ useSubmit }}',
         },
         'x-designer': 'Action.Designer',
-        'x-action': action,
+        'x-action': `${action}`,
       }}
       type="x-action"
     />
