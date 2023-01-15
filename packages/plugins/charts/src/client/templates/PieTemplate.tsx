@@ -101,10 +101,10 @@ export const pieTemplate = {
             'x-decorator': 'FormItem',
             enum: "{{computedFields}}",
             'x-reactions': {
-              dependencies: ['dataset.type'],
+              dependencies: ['dataset.type','dataset.aggregateFunction'],
               fulfill: {
                 state: {
-                  visible: '{{$deps[0] === "builtIn"}}',
+                  visible: '{{$deps[0] === "builtIn" && $deps[1] !== "COUNT"}}',
                 },
               },
             },
@@ -124,7 +124,7 @@ export const pieTemplate = {
               },
             },
           },
-          filter: {
+          /*filter: {
             title: "{{t('Filter')}}",
             'x-component': 'Filter',
             'x-decorator': 'FormItem',
@@ -137,7 +137,7 @@ export const pieTemplate = {
                 },
               },
             },
-          },
+          },*/
         },
       },
       chartOptions: {
@@ -161,7 +161,7 @@ export const pieTemplate = {
             'x-reactions':(field) => {
               const computedField =  field.query('dataset.computedField')?.value();
               const groupByField =  field.query('dataset.groupByField')?.value();
-              if(groupByField && computedField){
+              if(groupByField || computedField){
                 field.dataSource = [
                   {
                     label:"type",
@@ -185,7 +185,7 @@ export const pieTemplate = {
             'x-reactions':(field) => {
               const computedField =  field.query('dataset.computedField')?.value();
               const groupByField =  field.query('dataset.groupByField')?.value();
-              if(groupByField && computedField){
+              if(groupByField || computedField){
                 field.dataSource = [
                   {
                     label:"type",
