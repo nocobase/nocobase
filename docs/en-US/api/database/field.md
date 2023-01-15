@@ -1,24 +1,24 @@
 # Field
 
-## 概览
+## Overview
 
 数据表字段管理类（抽象类）。同时是所有字段类型的基类，其他任意字段类型均通过继承该类来实现。
 
 如何自定义字段可参考[扩展字段类型](/development/guide/collections-fields#扩展字段类型)
 
-## 构造函数
+## Constructor
 
 通常不会直接由开发者调用，主要通过 `db.collection({ fields: [] })` 方法作为代理入口调用。
 
 在扩展字段时主要通过继承 `Field` 抽象类，再注册到 Database 实例中来实现。
 
-**签名**
+**Signature**
 
 * `constructor(options: FieldOptions, context: FieldContext)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `options` | `FieldOptions` | - | 字段配置对象 |
 | `options.name` | `string` | - | 字段名称 |
@@ -57,13 +57,13 @@
 
 继承时通常无需覆盖此方法。
 
-**签名**
+**Signature**
 
 * `on(eventName: string, listener: (...args: any[]) => void)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `eventName` | `string` | - | 事件名称 |
 | `listener` | `(...args: any[]) => void` | - | 事件监听器 |
@@ -74,13 +74,13 @@
 
 继承时通常无需覆盖此方法。
 
-**签名**
+**Signature**
 
 * `off(eventName: string, listener: (...args: any[]) => void)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `eventName` | `string` | - | 事件名称 |
 | `listener` | `(...args: any[]) => void` | - | 事件监听器 |
@@ -91,7 +91,7 @@
 
 继承时需要先调用对应的 `super.bind()` 方法。
 
-**签名**
+**Signature**
 
 * `bind()`
 
@@ -101,7 +101,7 @@
 
 继承时需要先调用对应的 `super.unbind()` 方法。
 
-**签名**
+**Signature**
 
 * `unbind()`
 
@@ -109,17 +109,17 @@
 
 获取字段的配置项的值。
 
-**签名**
+**Signature**
 
 * `get(key: string): any`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `key` | `string` | - | 配置项名称 |
 
-**示例**
+**Example**
 
 ```ts
 const field = db.collection('users').getField('name');
@@ -132,17 +132,17 @@ console.log(field.get('name'));
 
 合并字段的配置项的值。
 
-**签名**
+**Signature**
 
 * `merge(options: { [key: string]: any }): void`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `options` | `{ [key: string]: any }` | - | 要合并的配置项对象 |
 
-**示例**
+**Example**
 
 ```ts
 const field = db.collection('users').getField('name');
@@ -157,7 +157,7 @@ field.merge({
 
 从数据表中移除字段（仅从内存中移除）。
 
-**示例**
+**Example**
 
 ```ts
 const books = db.getCollections('books');
@@ -174,13 +174,13 @@ await books.sync();
 
 从数据库中移除字段。
 
-**签名**
+**Signature**
 
 * `removeFromDb(options?: Transactionable): Promise<void>`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `options.transaction?` | `Transaction` | - | 事务实例 |
 
@@ -188,13 +188,13 @@ await books.sync();
 
 判断字段是否存在于数据库中。
 
-**签名**
+**Signature**
 
 * `existsInDb(options?: Transactionable): Promise<boolean>`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `options.transaction?` | `Transaction` | - | 事务实例 |
 
@@ -210,7 +210,7 @@ NocoBase 内置了一些常用的字段类型，可以直接在定义数据表�
 
 逻辑值类型。
 
-**示例**
+**Example**
 
 ```js
 db.collection({
@@ -228,7 +228,7 @@ db.collection({
 
 整型（32 位）。
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -246,7 +246,7 @@ db.collection({
 
 长整型（64 位）。
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -264,7 +264,7 @@ db.collection({
 
 双精度浮点型（64 位）。
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -290,7 +290,7 @@ db.collection({
 
 字符串类型。相当于大部分数据库的 `VARCHAR` 类型。
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -308,7 +308,7 @@ db.collection({
 
 文本类型。相当于大部分数据库的 `TEXT` 类型。
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -326,7 +326,7 @@ db.collection({
 
 密码类型（NocoBase 扩展）。基于 Node.js 原生的 crypto 包的 `scrypt` 方法进行密码加密。
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -342,9 +342,9 @@ db.collection({
 });
 ```
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `length` | `number` | 64 | 字符长度 |
 | `randomBytesSize` | `number` | 8 | 随机字节大小 |
@@ -381,7 +381,7 @@ UID 类型（NocoBase 扩展）。短随机字符串标识符类型。
 
 公式类型（NocoBase 扩展）。可配置基于 [mathjs](https://www.npmjs.com/package/mathjs) 的数学公式计算，公式中可以引用同一条记录中其他列的数值参与计算。
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -408,7 +408,7 @@ db.collection({
 
 单选类型（NocoBase 扩展）。全表最多有一行数据的该字段值为 `true`，其他都为 `false` 或 `null`。
 
-**示例**
+**Example**
 
 整个系统只有一个被标记为 root 的用户，任意另一个用户的 root 值被改为 `true` 之后，其他所有 root 为 `true` 的记录均会被修改为 `false`：
 
@@ -430,7 +430,7 @@ db.collection({
 
 数据表如果定义了 `sortable` 选项，也会自动生成对应字段。
 
-**示例**
+**Example**
 
 文章基于所属用户可排序：
 
@@ -459,7 +459,7 @@ db.collection({
 
 多对一关联类型。外键储存在自身表，与 hasOne/hasMany 相对。
 
-**示例**
+**Example**
 
 任意文章属于某个作者：
 
@@ -482,7 +482,7 @@ db.collection({
 
 一对一关联类型。外键储存在关联表，与 belongsTo 相对。
 
-**示例**
+**Example**
 
 任意用户都有一份个人资料：
 
@@ -503,7 +503,7 @@ db.collection({
 
 一对多关联类型。外键储存在关联表，与 belongsTo 相对。
 
-**示例**
+**Example**
 
 任意用户可以拥有多篇文章：
 
@@ -525,7 +525,7 @@ db.collection({
 
 多对多关联类型。使用中间表储存双方外键，如不指定已存在的表为中间表的话，将会自动创建中间表。
 
-**示例**
+**Example**
 
 任意文章可以加任意多个标签，任意标签也可以被任意多篇文章添加：
 
@@ -556,3 +556,4 @@ db.collection({
   ]
 });
 ```
+![image](https://user-images.githubusercontent.com/63629092/212546611-cbd3bcec-d32a-4522-b640-9604a3bd60bd.png)
