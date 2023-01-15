@@ -49,6 +49,13 @@ export const ChartBlockInitializer = (props) => {
               value: field.name,
             };
           });
+        const groupByFields = collectionFields
+          ?.map((field) => {
+            return {
+              label: field.name,
+              value: field.name,
+            };
+          });
         let values = await FormDialog(t('Create chart block'), () => {
           return (
             <SchemaComponentOptions
@@ -57,7 +64,7 @@ export const ChartBlockInitializer = (props) => {
             >
               <FormLayout layout={'vertical'}>
                 <SchemaComponent
-                  scope={{ computedFields: computedFields || [] }}
+                  scope={{ computedFields: computedFields|| [],groupByFields:groupByFields }}
                   components={{ Options }}
                   schema={{
                     properties: {
