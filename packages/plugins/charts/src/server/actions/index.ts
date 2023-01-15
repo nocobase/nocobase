@@ -26,7 +26,7 @@ async function handleGetChartData(ctx: Context) {
   // });
   const {params:{values}} = ctx.action;
   console.log(values)
-  const {chartType,collectionName,filter,computedField,aggregateFunction} =values
+  const {chartType,collectionName,filter,computedField,aggregateFunction,type,groupByField} =values
   const repo = ctx.db.getRepository(collectionName);
   let chartData
   //处理不同collection chartType filter 对应的数据
@@ -42,8 +42,8 @@ async function handleGetChartData(ctx: Context) {
       if(result[0].length){
         chartData = result[0].map((item)=>{
           return {
-            type:computedField,
-            value:item[computedField]
+            "type":computedField,
+            "value":item[computedField]
           }
         })
       }else{

@@ -127,11 +127,6 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                             };
                           }),
                         },
-                        demo:{
-                         'x-component': 'Select',
-                          'x-decorator': 'FormItem',
-                          enum:enumOptions
-                        },
                         options: {
                           type: 'void',
                           'x-component': 'Options',
