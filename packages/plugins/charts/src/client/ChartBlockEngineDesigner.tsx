@@ -3,7 +3,9 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   CollectionManagerContext,
-  GeneralSchemaDesigner, SchemaComponent, SchemaComponentOptions,
+  GeneralSchemaDesigner,
+  SchemaComponent,
+  SchemaComponentOptions,
   SchemaSettings,
   useAPIClient,
   useCollectionManager,
@@ -69,6 +71,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
   const fieldSchema = useFieldSchema();
   const cm = useContext(CollectionManagerContext);
   const field = useField();
+  console.log(field,fieldSchema);
   const computedFields = collectionFields
     ?.filter((field) => (field.type === 'double' || field.type === 'bigInt'))
     ?.map((field) => {
@@ -77,10 +80,29 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
         value: field.name,
       };
     });
+  const groupByFields = collectionFields
+    ?.map((field) => {
+      return {
+        label: field.name,
+        value: field.name,
+      };
+    });
+
   return (
     <SchemaSettings.Item
       onClick={async () => {
         FormDialog("Edit chart block", (form) => {
+          console.log(form.values);
+          const enumOptions = [
+            {
+              label:form.values.dataset.computedFields,
+              value:form.values.dataset.computedFields,
+            },
+            {
+              label:form.values.dataset.aggregateFunction,
+              value:form.values.dataset.aggregateFunction,
+            }
+          ]
           return (
             <CollectionManagerContext.Provider value={cm}>
               <SchemaComponentOptions
@@ -89,7 +111,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
               >
                 <FormLayout layout={'vertical'}>
                   <SchemaComponent
-                    scope={{ computedFields: computedFields || [] }}
+                    scope={{ computedFields: computedFields || [] ,groupByFields:groupByFields}}
                     components={{ Options }}
                     schema={{
                       properties: {
@@ -104,6 +126,11 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                               value: template.type,
                             };
                           }),
+                        },
+                        demo:{
+                         'x-component': 'Select',
+                          'x-decorator': 'FormItem',
+                          enum:enumOptions
                         },
                         options: {
                           type: 'void',
@@ -122,14 +149,18 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
           })
           .then((values) => {
             //patch updates
+            console.log(values);
+            const title = values?.chartOptions?.title ?? ''
+            field.title= title;
             field.componentProps.renderComponent=renderComponent
             field.componentProps.chartBlockMetaData = values;
+            fieldSchema.title = title;
             fieldSchema['x-component-props'].chartBlockMetaData = values;
             fieldSchema['x-component-props'].renderComponent = renderComponent;
 
             dn.emit("patch",{
               schema:{
-               title:"update",
+               title:title,
                'x-uid':fieldSchema['x-uid'],
                 'x-component-props':fieldSchema["x-component-props"]
               }
@@ -138,8 +169,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
           });
       }}
     >
-      {props.children || props.title || "Edit block "}
+      {props.children || props.title || "Edit chart block"}
     </SchemaSettings.Item>
-
   );
 };
