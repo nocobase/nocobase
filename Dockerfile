@@ -31,7 +31,9 @@ RUN cd /app \
   && rm -rf my-nocobase-app/packages/app/client/src/.umi \
   && rm -rf nocobase.tar.gz \
   && rm -rf ./my-nocobase-app/node_modules/@antv \
-  && rm -rf ./my-nocobase-app/node_modules/antd \
+  && rm -rf ./my-nocobase-app/node_modules/antd/dist \
+  && rm -rf ./my-nocobase-app/node_modules/antd/es \
+  && rm -rf ./my-nocobase-app/node_modules/antd/node_modules \
   && rm -rf ./my-nocobase-app/node_modules/@ant-design \
   && rm -rf ./my-nocobase-app/node_modules/china-division/dist/villages.json \
   && find ./my-nocobase-app/node_modules/china-division/dist -name '*.csv' -delete \

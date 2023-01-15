@@ -112,7 +112,7 @@ Create a database instance.
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `options.host` | `string` | `'localhost'` | Database host |
-| `options.port` | `number` | - | Database service port, there is a default port depending on the database used |
+| `options.port` | `number` | - | Database service port, default port depends on the type of database used |
 | `options.username` | `string` | - | Database username |
 | `options.password` | `string` | - | Database password|
 | `options.database` | `string` | - | Database name |
@@ -209,7 +209,7 @@ Get the table name prefix in the configuration.
 
 ### `collection()`
 
-Define a data table. This is similar to the `define` method of Sequelize, which only creates table structure in memory. Call the `sync` method if it is needed to be persisted to the database.
+Define a data table. This is like the `define` method of Sequelize, which only creates table structure in memory. Call the `sync` method if needs to be persisted to the database.
 
 **Signature**
 
@@ -247,7 +247,7 @@ await db.sync();
 
 ### `getCollection()`
 
-Gets a defined data table.
+Get a defined data table.
 
 **Signature**
 
@@ -267,7 +267,7 @@ const collection = db.getCollection('books');
 
 ### `hasCollection()`
 
-Check whether if a specified data table has been defined.
+Check whether a specified data table is defined.
 
 **Signature**
 
@@ -291,7 +291,7 @@ db.hasCollection('authors'); // false
 
 ### `removeCollection()`
 
-Remove a defined data table; remove from memory only. Call the `sync` method if it is needed to be persisted to the database.
+Remove a defined data table. It is to remove from memory only, call the `sync` method if needs to be persisted to the database.
 
 **Signature**
 
@@ -318,7 +318,7 @@ db.removeCollection('books');
 
 ### `import()`
 
-Load all files in the import file directory into memory as the  configuration of collection.
+Load all files in the import file directory into memory as the configuration of collection.
 
 **Signature**
 
@@ -359,7 +359,7 @@ class Plugin {
 }
 ```
 
-## Extended Registration and Acquisition
+## Extension Registration and Acquisition
 
 ### `registerFieldTypes()`
 
@@ -371,7 +371,7 @@ Register custom field type.
 
 **Parameter**
 
-`fieldTypes` is a key-value pair, where key is the field type name and value is the field type class.
+`fieldTypes` is a key-value pair, where key is the field type name, and value is the field type class.
 
 **Example**
 
@@ -397,7 +397,7 @@ Register custom data model class.
 
 **Parameter**
 
-`models` is a key-value pair, where key is the data model name and value is the data model class.
+`models` is a key-value pair, where key is the data model name, and value is the data model class.
 
 **Example**
 
@@ -428,7 +428,7 @@ Register custom data repository class.
 
 **Parameter**
 
-`repositories` is a key-value pair, where key is the data repository name and value is the data repository class.
+`repositories` is a key-value pair, where key is the data repository name, and value is the data repository class.
 
 **Example**
 
@@ -459,7 +459,7 @@ Register custom data query operator.
 
 **Parameter**
 
-`operators` is a key-value pair, where key is the operator name and value is the generating function of the comparison operator statement.
+`operators` is a key-value pair, where key is the operator name, and value is the generating function of the comparison operator statement.
 
 **Example**
 
@@ -508,7 +508,7 @@ const ModelClass = db.getModel('books');
 console.log(ModelClass.prototype instanceof MyModel) // true
 ```
 
-Note: The model class retrieved from collection is not strictly equivalent to the model class at registration, but is inherited from the model class at registration. Since the properties of Sequelize's model class are modified during initialization, NocoBase automatically handles this inheritance relationship. All thr definitions work fine except that the classes are not equal.
+Note: The model class retrieved from collection is not strictly equivalent to the model class at registration, but is inherited from the model class at registration. Since the properties of Sequelize's model class are modified during initialization, NocoBase automatically handles this inheritance relationship. All the definitions work fine except that the classes are not equal.
 
 ### `getRepository()`
 
@@ -660,7 +660,7 @@ Empty the database, it will delete all data tables.
 
 **Example**
 
-Removes all tables except for the `users` table.
+Remove all tables except for the `users` table.
 
 ```ts
 await db.clean({
@@ -705,22 +705,22 @@ export default defineCollection({
 
 ### `extendCollection()`
 
-扩展已在内存中的表结构配置内容，主要用于 `import()` 方法导入的文件内容。该方法是 `@nocobase/database` 包导出的顶级方法，不通过 db 实例调用。也可以使用 `extend` 别名。
+Extent the configuration content of a data table that is already in memory, mainly for the content of files imported by the `import()` method. This is the top-level package export method of `@nocobase/database`, and is not called through db instance. The `extend` alias can also be used.
 
-**签名**
+**Signature**
 
 * `extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ExtendedCollectionOptions`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `collectionOptions` | `CollectionOptions` | - | 与所有 `db.collection()` 的参数相同 |
-| `mergeOptions?` | `MergeOptions` | - | npm 包 [deepmerge](https://npmjs.com/package/deepmerge) 的参数 |
+| `collectionOptions` | `CollectionOptions` | - | All the same with `db.collection()` |
+| `mergeOptions?` | `MergeOptions` | - | [deepmerge](https://npmjs.com/package/deepmerge) options of npm package |
 
-**示例**
+**Example**
 
-原始 books 表定义（books.ts）：
+Original definition of the table <i>books</i> (books.ts):
 
 ```ts
 export default {
@@ -731,12 +731,12 @@ export default {
 }
 ```
 
-扩展 books 表定义（books.extend.ts）：
+Extend the definition of the table <i>books</i> (books.extend.ts):
 
 ```ts
 import { extend } from '@nocobase/database';
 
-// 再次扩展
+// Extend again
 export default extend({
   name: 'books',
   fields: [
@@ -745,25 +745,25 @@ export default extend({
 });
 ```
 
-以上两个文件如在调用 `import()` 时导入，通过 `extend()` 再次扩展以后，books 表将拥有 `title` 和 `price` 两个字段。
+If the above two files are imported when calling `import()`, after being extended again by `extend()`, the table <i>books</i> will have `title` and `price` two fields.
 
-此方法在扩展已有插件已定义的表结构时非常有用。
+This method is especially useful when extending the table structure that is already defined by existing plugin.
 
-## 内置事件
+## Built-in Events
 
-数据库会在相应的生命周期触发以下对应的事件，通过 `on()` 方法订阅后进行特定的处理可满足一些业务需要。
+The following events will be triggered in the corresponding life cycle of database, subscribe by the `on()` method and perform specific processing to meet some business needs. 
 
 ### `'beforeSync'` / `'afterSync'`
 
-当新的表结构配置（字段、索引等）被同步到数据库前后触发，通常在执行 `collection.sync()`（内部调用）时会触发，一般用于一些特殊的字段扩展的逻辑处理。
+Events triggered before or after a new table structure configuration (fields, indexes, etc.) is synchronized to the database. This is usually triggered when executing `collection.sync()` (internal call) for the logical processing of the extension of some special fields.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeSync` | 'beforeSync' | `${string}.afterSync` | 'afterSync', listener: SyncListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { SyncOptions, HookReturn } from 'sequelize/types';
@@ -771,7 +771,7 @@ import type { SyncOptions, HookReturn } from 'sequelize/types';
 type SyncListener = (options?: SyncOptions) => HookReturn;
 ```
 
-**示例**
+**Example**
 
 ```ts
 const users = db.collection({
@@ -794,15 +794,15 @@ await users.sync();
 
 ### `'beforeValidate'` / `'afterValidate'`
 
-创建或更新数据前会有基于 collection 定义的规则对数据的验证过程，在验证前后会触发对应事件。当调用 `repository.create()` 或 `repository.update()` 时会触发。
+Before creating or updating data, there is a validation against the data based on the rules defined by the collection, and the corresponding events are triggered before and after the validation. This is triggered when `repository.create()` or `repository.update()` is called.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeValidate` | 'beforeValidate' | `${string}.afterValidate` | 'afterValidate', listener: ValidateListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { ValidationOptions } from 'sequelize/types/lib/instance-validator';
@@ -812,7 +812,7 @@ import type { Model } from '@nocobase/database';
 type ValidateListener = (model: Model, options?: ValidationOptions) => HookReturn;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -863,15 +863,15 @@ await repository.update({
 
 ### `'beforeCreate'` / `'afterCreate'`
 
-创建一条数据前后会触发对应事件，当调用 `repository.create()` 时会触发。
+Events triggered before or after creating one piece of data. This is triggered when `repository.create()` is called.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeCreate` | 'beforeCreate' | `${string}.afterCreate` | 'afterCreate', listener: CreateListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { CreateOptions, HookReturn } from 'sequelize/types';
@@ -880,7 +880,7 @@ import type { Model } from '@nocobase/database';
 export type CreateListener = (model: Model, options?: CreateOptions) => HookReturn;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.on('beforeCreate', async (model, options) => {
@@ -898,15 +898,15 @@ db.on('books.afterCreate', async (model, options) => {
 
 ### `'beforeUpdate'` / `'afterUpdate'`
 
-更新一条数据前后会触发对应事件，当调用 `repository.update()` 时会触发。
+Events triggered before or after updating one piece of data. This is triggered when `repository.update()` is called.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeUpdate` | 'beforeUpdate' | `${string}.afterUpdate` | 'afterUpdate', listener: UpdateListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { UpdateOptions, HookReturn } from 'sequelize/types';
@@ -915,7 +915,7 @@ import type { Model } from '@nocobase/database';
 export type UpdateListener = (model: Model, options?: UpdateOptions) => HookReturn;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.on('beforeUpdate', async (model, options) => {
@@ -929,15 +929,15 @@ db.on('books.afterUpdate', async (model, options) => {
 
 ### `'beforeSave'` / `'afterSave'`
 
-创建或更新一条数据前后会触发对应事件，当调用 `repository.create()` 或 `repository.update()` 时会触发。
+Events triggered before or after creating or updating one piece of data. This is triggered when `repository.create()` or `repository.update()` is called.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeSave` | 'beforeSave' | `${string}.afterSave` | 'afterSave', listener: SaveListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { SaveOptions, HookReturn } from 'sequelize/types';
@@ -946,7 +946,7 @@ import type { Model } from '@nocobase/database';
 export type SaveListener = (model: Model, options?: SaveOptions) => HookReturn;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.on('beforeSave', async (model, options) => {
@@ -960,15 +960,15 @@ db.on('books.afterSave', async (model, options) => {
 
 ### `'beforeDestroy'` / `'afterDestroy'`
 
-删除一条数据前后会触发对应事件，当调用 `repository.destroy()` 时会触发。
+Events triggered before or after deleting one piece of data. This is triggered when `repository.destroy()` is called.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeDestroy` | 'beforeDestroy' | `${string}.afterDestroy` | 'afterDestroy', listener: DestroyListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { DestroyOptions, HookReturn } from 'sequelize/types';
@@ -977,7 +977,7 @@ import type { Model } from '@nocobase/database';
 export type DestroyListener = (model: Model, options?: DestroyOptions) => HookReturn;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.on('beforeDestroy', async (model, options) => {
@@ -991,15 +991,15 @@ db.on('books.afterDestroy', async (model, options) => {
 
 ### `'afterCreateWithAssociations'`
 
-创建一条携带层级关系数据的数据之后会触发对应事件，当调用 `repository.create()` 时会触发。
+Events triggered after creating one piece of data that carries hierarchical data. This is triggered when `repository.create()` is called.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: `${string}.afterCreateWithAssociations` | 'afterCreateWithAssociations', listener: CreateWithAssociationsListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { CreateOptions, HookReturn } from 'sequelize/types';
@@ -1008,7 +1008,7 @@ import type { Model } from '@nocobase/database';
 export type CreateWithAssociationsListener = (model: Model, options?: CreateOptions) => HookReturn;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.on('afterCreateWithAssociations', async (model, options) => {
@@ -1022,15 +1022,15 @@ db.on('books.afterCreateWithAssociations', async (model, options) => {
 
 ### `'afterUpdateWithAssociations'`
 
-更新一条携带层级关系数据的数据之后会触发对应事件，当调用 `repository.update()` 时会触发。
+Events triggered after updating one piece of data that carries hierarchical data. This is triggered when `repository.update()` is called.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: `${string}.afterUpdateWithAssociations` | 'afterUpdateWithAssociations', listener: CreateWithAssociationsListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { UpdateOptions, HookReturn } from 'sequelize/types';
@@ -1039,7 +1039,7 @@ import type { Model } from '@nocobase/database';
 export type UpdateWithAssociationsListener = (model: Model, options?: UpdateOptions) => HookReturn;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.on('afterUpdateWithAssociations', async (model, options) => {
@@ -1053,15 +1053,15 @@ db.on('books.afterUpdateWithAssociations', async (model, options) => {
 
 ### `'afterSaveWithAssociations'`
 
-创建或更新一条携带层级关系数据的数据之后会触发对应事件，当调用 `repository.create()` 或 `repository.update()` 时会触发。
+Events triggered after creating or updating one piece of data that carries hierarchical data. This is triggered when `repository.create()` or `repository.update()` is called.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: `${string}.afterSaveWithAssociations` | 'afterSaveWithAssociations', listener: SaveWithAssociationsListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { SaveOptions, HookReturn } from 'sequelize/types';
@@ -1070,7 +1070,7 @@ import type { Model } from '@nocobase/database';
 export type SaveWithAssociationsListener = (model: Model, options?: SaveOptions) => HookReturn;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.on('afterSaveWithAssociations', async (model, options) => {
@@ -1084,17 +1084,17 @@ db.on('books.afterSaveWithAssociations', async (model, options) => {
 
 ### `'beforeDefineCollection'`
 
-当定义一个数据表之前触发，如调用 `db.collection()` 时。
+Events triggered before defining a data table, such as when `db.collection()` is called.
 
-注：该事件是同步事件。
+Note: This is a synchronous event.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: 'beforeDefineCollection', listener: BeforeDefineCollectionListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { CollectionOptions } from '@nocobase/database';
@@ -1102,7 +1102,7 @@ import type { CollectionOptions } from '@nocobase/database';
 export type BeforeDefineCollectionListener = (options: CollectionOptions) => void;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.on('beforeDefineCollection', (options) => {
@@ -1112,17 +1112,17 @@ db.on('beforeDefineCollection', (options) => {
 
 ### `'afterDefineCollection'`
 
-当定义一个数据表之后触发，如调用 `db.collection()` 时。
+Events triggered after defining a data table, such as when `db.collection()` is called.
 
-注：该事件是同步事件。
+Note: This is a synchronous event.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: 'afterDefineCollection', listener: AfterDefineCollectionListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { Collection } from '@nocobase/database';
@@ -1130,7 +1130,7 @@ import type { Collection } from '@nocobase/database';
 export type AfterDefineCollectionListener = (options: Collection) => void;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.on('afterDefineCollection', (collection) => {
@@ -1140,17 +1140,17 @@ db.on('afterDefineCollection', (collection) => {
 
 ### `'beforeRemoveCollection'` / `'afterRemoveCollection'`
 
-当从内存中移除一个数据表前后触发，如调用 `db.removeCollection()` 时。
+Events triggered before or after removing a data table from memory, such as when `db.removeCollection()` is called.
 
-注：该事件是同步事件。
+Note: This is a synchronous event.
 
-**签名**
+**Signature**
 
 ```ts
 on(eventName: 'beforeRemoveCollection' | 'afterRemoveCollection', listener: RemoveCollectionListener): this
 ```
 
-**类型**
+**Type**
 
 ```ts
 import type { Collection } from '@nocobase/database';
@@ -1158,7 +1158,7 @@ import type { Collection } from '@nocobase/database';
 export type RemoveCollectionListener = (options: Collection) => void;
 ```
 
-**示例**
+**Example**
 
 ```ts
 db.on('beforeRemoveCollection', (collection) => {

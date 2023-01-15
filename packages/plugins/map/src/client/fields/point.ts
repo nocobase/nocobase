@@ -1,6 +1,5 @@
-import { ISchema } from '@formily/react';
 import { IField } from '@nocobase/client';
-import { generateNTemplate } from '../locales';
+import { generateNTemplate } from '../locale';
 import { commonSchema } from './schema';
 
 export const point: IField = {

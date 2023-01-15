@@ -9,10 +9,8 @@ export default {
   'Version': '版本',
   'Copy to new version': '复制到新版本',
   'Duplicate': '复制',
-
   'Loading': '加载中',
   'Load failed': '加载失败',
-
   'Trigger': '触发器',
   'Trigger variables': '触发器变量',
   'Trigger data': '触发数据',
@@ -27,7 +25,6 @@ export default {
   'Changed fields': '发生变动的字段',
   'Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.': '只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增或删除数据时，任意字段都被认为发生变动。',
   'Only triggers when match conditions': '满足以下条件才触发',
-
   'Schedule event': '定时任务',
   'Trigger mode': '触发模式',
   'Based on certain date': '自定义时间',
@@ -45,70 +42,53 @@ export default {
   'Days': '天',
   'Weeks': '周',
   'Months': '月',
-
   'No repeat': '不重复',
   'Every': '每',
-
   'By minute': '按分钟',
   'By hour': '按小时',
   'By day': '按天',
   'By week': '按周',
   'By month': '按月',
-
   'By field': '数据表字段',
   'By custom date': '自定义时间',
-
   'Advanced': '高级模式',
-
   'End': '结束',
-
   'Node result': '节点数据',
   'Constant': '常量',
-
   'Null': '空值',
   'Boolean': '逻辑值',
   'String': '字符串',
-
   'Calculator': '运算',
   'Arithmetic calculation': '算术运算',
   'String operation': '字符串',
-
   'Executed at': '执行于',
-
   'Queueing': '队列中',
   'On going': '进行中',
   'Succeeded': '成功',
   'Failed': '失败',
   'Pending': '等待处理',
   'Canceled': '已取消',
-
   'Resolve': '通过',
   'Reject': '拒绝',
   'Save': '保存',
   'Operations': '操作',
-
   'This node contains branches, deleting will also be preformed to them, are you sure?': '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
-
   'Control': '流程控制',
   'Collection operations': '数据表操作',
   'Manual': '人工处理',
   'Extended types': '扩展类型',
-
   'Node type': '节点类型',
-
   'Calculation': '运算',
   'Configure calculation': '配置运算',
   'Calculation result': '运算结果',
   'True': '真',
   'False': '假',
   'concat': '连接',
-
   'Condition': '条件判断',
   'Mode': '模式',
   'Continue when "Yes"': '“是”则继续',
   'Branch into "Yes" and "No"': '“是”和“否”分别继续',
   'Conditions': '条件配置',
-
   'Parallel branch': '分支',
   'Add branch': '增加分支',
   'All succeeded': '全部成功',
@@ -117,7 +97,6 @@ export default {
   'Continue after all branches succeeded': '全部分支都成功后才能继续',
   'Continue after any branch succeeded': '任意分支成功后就继续',
   'Continue after any branch succeeded, or exit after any branch failed': '任意分支成功继续，或失败后退出',
-
   'Delay': '延时',
   'Duration': '时长',
   'End Status': '到时状态',
@@ -152,23 +131,23 @@ export default {
   'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.': '该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。',
 
   'HTTP request': 'HTTP 请求',
-  'URL': '地址',
-  'You can use the above available variables in URL.': '您可以在地址中使用使用上面的可用变量。',
-  'Request headers': '请求头',
-  'Name(e.g. Content-Type)': '名称(例如 Content-Type)',
-  'Value(e.g. Application/json)': '值(例如 Application/json)',
-  'Add request header': '添加请求头',
   'HTTP method': 'HTTP 方法',
-  'Request data': '请求数据',
+  'URL': '地址',
+  'Headers': '请求头',
+  'Add request header': '添加请求头',
+  'Parameters': '参数',
+  'Add parameter': '添加参数',
+  'Body': '请求体',
+  'Use variables': '使用变量',
+  'Format': '格式化',
+  'Insert': '插入',
+  'Timeout config': '超时设置',
+  'ms': '毫秒',
   'Input request data': '输入请求数据',
-  'You can use the above available variables in request data.': '您可以在请求数据中使用上面的可用变量。',
-  'Copy success!': '拷贝成功！',
-  'Copy variable output template statement': '拷贝变量输出模版语句',
-  'Default headers is Content-Type: application/json': '默认请求头是 Content-Type: application/json',
-  'Ignore fail request and continue workflow': '忽略失败请求并继续工作流',
-  'Syntax see': '语法参考',
-  'Show available variable tool':'显示可用变量工具',
+  'Only support standard JSON data': '仅支持标准 JSON 数据',
+  '"Content-Type" only support "application/json", and no need to specify': '"Content-Type" 请求头仅支持 "application/json"，无需填写',
+  'Ignore fail request and continue workflow': '忽略失败的请求并继续工作流',
 
   'Workflow todos': '工作流待办',
-  'Task': '任务'
+  'Task': '任务',
 };

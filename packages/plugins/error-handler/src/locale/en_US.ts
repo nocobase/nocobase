@@ -1,4 +1,6 @@
 export default {
-  'unique violation': '{{field}} must be unique',
-  'notNull Violation': '{{field}} cannot be null',
+  "unique violation": "{{field}} must be unique",
+  "notNull violation": "notNull violation",
+  "Validation error": "{{field}} validation error",
+  "notNull Violation": "{{field}} cannot be null"
 };
