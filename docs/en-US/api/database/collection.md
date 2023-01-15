@@ -2,7 +2,7 @@
 
 ## Overview
 
-`Collection` is used to define the data model in the system, such as model name, fields, indexes, associations and other information. It is usually called through the `collection` method of the `Database` instance as a proxy entry.
+`Collection` is used to define the data model in the system, such as model name, fields, indexes, associations, and other information. It is usually called through the `collection` method of the `Database` instance as a proxy entry.
 
 ```javascript
 const { Database } = require('@nocobase/database')
@@ -42,12 +42,12 @@ Refer to [Fields](/api/database/field.md) for more field types.
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.name` | `string` | - | collection identifier |
+| `options.name` | `string` | - | Identifier of the collection |
 | `options.tableName?` | `string` | - | Database table name, the value of `options.name` is used if not set |
 | `options.fields?` | `FieldOptions[]` | - | Definition of fields, refer to [Field](./field) for details |
 | `options.model?` | `string \| ModelStatic<Model>` | - | Model type of Sequelize; in case `string` is used, this model name needs to be registered in the db before being called |
 | `options.repository?` | `string \| RepositoryType` | - | Data repository type; in case `string` is used, this repository type needs to be registered in the db before being called |
-| `options.sortable?` | `string \| boolean \| { name?: string; scopeKey?: string }` | - | Configure which fields are sortable ; not sortable by default |
+| `options.sortable?` | `string \| boolean \| { name?: string; scopeKey?: string }` | - | Configure which fields are sortable; not sortable by default |
 | `options.autoGenId?` | `boolean` | `true` | Whether to automatically generate unique primary key; `true` by default |
 | `context.database` | `Database` | - | The context database in which it resides |
 
@@ -108,7 +108,7 @@ Match the Model type of Sequelize.
 
 Data repository instance.
 
-## 字段配置方法
+## Field Configuration Method
 
 ### `getField()`
 
