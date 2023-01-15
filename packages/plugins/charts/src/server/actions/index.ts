@@ -1,31 +1,7 @@
 import { Context } from '@nocobase/actions';
 
 async function handleGetChartData(ctx: Context) {
-  // {
-  //   filterByTk: undefined,
-  //   resourceName: 'chartData',
-  //   actionName: 'data',
-  //   values: {
-  //     collectionName: 'users',
-  //     chartType: 'Pie',
-  //     type: 'builtIn',
-  //     filter: { '$and': [] },
-  //     aggregateFunction: 'SUM',
-  //     computedField: 'id'
-  // }
-  // } =======================
-
-  // const {
-  //   params: {type},
-  // } = ctx.action;
-  // const repo = ctx.db.getRepository(MapConfigurationCollectionName);
-  // const record = await repo.findOne({
-  //   filter: {
-  //     type,
-  //   },
-  // });
   const { params: { values } } = ctx.action;
-  console.log(values);
   const { chartType, collectionName, filter, computedField, aggregateFunction, type, groupByField } = values;
   const repo = ctx.db.getRepository(collectionName);
   let chartData;
@@ -38,17 +14,6 @@ async function handleGetChartData(ctx: Context) {
       const result = await ctx.db.sequelize.query(sql);
       console.log(result, '_result==========');
       console.log(JSON.stringify(result));
-      //     [
-      //     [
-      //       { id_id: 1 },
-      //       { id_id: 2 },
-      //       { id_id: 3 },
-      //       { id_id: 4 },
-      //       { id_id: 5 }
-      //     ],
-      //       Statement {}
-      // ] _result==========
-
       if (result[0].length) {
         chartData = result[0].map((item) => {
           return {
