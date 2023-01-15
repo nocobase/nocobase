@@ -28,7 +28,8 @@ const ChartRenderComponent = ({chartBlockMetaData,renderComponent}:{ chartBlockM
         ...defaultChartOptions,
         ...chartOption,
         data: data,
-      })
+      },chartOption)
+      console.log(config);
       return (
         loading
           ?
