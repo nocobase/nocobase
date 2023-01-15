@@ -38,12 +38,28 @@ export const Sortable = (props: any) => {
   );
 };
 
-export const SortableItem: React.FC<any> = observer((props) => {
+const useSortableItemProps = (props) => {
+  const id = useSortableItemId(props);
+  if (props.schema) {
+    return { ...props, id };
+  }
+  const schema = useFieldSchema();
+  return { ...props, id, schema };
+};
+
+const useSortableItemId = (props) => {
+  if (props.id) {
+    return props.id;
+  }
   const field = useField();
-  const fieldSchema = useFieldSchema();
+  return field.address.toString();
+};
+
+export const SortableItem: React.FC<any> = observer((props) => {
+  const { schema, id, ...others } = useSortableItemProps(props);
   return (
-    <SortableProvider id={field.address.toString()} data={{ insertAdjacent: 'afterEnd', schema: fieldSchema }}>
-      <Sortable {...props}>{props.children}</Sortable>
+    <SortableProvider id={id} data={{ insertAdjacent: 'afterEnd', schema: schema }}>
+      <Sortable {...others}>{props.children}</Sortable>
     </SortableProvider>
   );
 });
