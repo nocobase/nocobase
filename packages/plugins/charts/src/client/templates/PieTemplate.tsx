@@ -1,11 +1,13 @@
+import { i18n } from '@nocobase/client';
+
 export const pieTemplate = {
   title: 'Pie',
   type: "Pie",
   renderComponent: 'G2Plot',
   defaultChartOptions: {
     appendPadding: 10,
-    angleField: 'value',
-    colorField: 'type',
+    angleField: '{{angleField}}',
+    colorField: '{{colorField}}',
     radius: 0.9,
     label: {
       type: 'inner',
@@ -107,6 +109,21 @@ export const pieTemplate = {
               },
             },
           },
+          groupByField: {
+            title: "{{t('GroupBy field')}}",
+            required: true,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: "{{groupByFields}}",
+            'x-reactions': {
+              dependencies: ['dataset.type'],
+              fulfill: {
+                state: {
+                  visible: '{{$deps[0] === "builtIn"}}',
+                },
+              },
+            },
+          },
           filter: {
             title: "{{t('Filter')}}",
             'x-component': 'Filter',
@@ -135,6 +152,54 @@ export const pieTemplate = {
             title: "{{t('Title')}}",
             'x-component': 'Input',
             'x-decorator': 'FormItem',
+          },
+          angleField: {
+            title: "{{t('angleField')}}",
+            required: true,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-reactions':(field) => {
+              const computedField =  field.query('dataset.computedField')?.value();
+              const groupByField =  field.query('dataset.groupByField')?.value();
+              if(groupByField && computedField){
+                field.dataSource = [
+                  {
+                    label:computedField,
+                    value:computedField
+                  },
+                  {
+                    label:groupByField,
+                    value:groupByField
+                  }
+                ]
+              }else{
+                field.dataSource=[]
+              }
+            }
+          },
+          colorField: {
+            title: "{{t('colorField')}}",
+            required:true,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-reactions':(field) => {
+              const computedField =  field.query('dataset.computedField')?.value();
+              const groupByField =  field.query('dataset.groupByField')?.value();
+              if(groupByField && computedField){
+                field.dataSource = [
+                  {
+                    label:computedField,
+                    value:computedField
+                  },
+                  {
+                    label:groupByField,
+                    value:groupByField
+                  }
+                ]
+              }else{
+                field.dataSource=[]
+              }
+            }
           },
         },
       },
