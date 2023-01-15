@@ -1,22 +1,14 @@
-export const lineTemplate = {
-  title: 'Line',
-  type: "Line",
-  component: 'G2Plot',
+export const barTemplate = {
+  title: 'bar',
+  type: 'bar',
+  renderComponent: 'G2Plot',
   defaultChartOptions: {
-    appendPadding: 10,
-    angleField: 'value',
-    colorField: 'type',
-    radius: 0.9,
-    label: {
-      type: 'inner',
-      offset: '-30%',
-      content: "{{({percent}) => `${(percent * 100).toFixed(0)}%`}}",
-      style: {
-        fontSize: 14,
-        textAlign: 'center',
-      },
+    xField: 'value',
+    yField: 'year',
+    seriesField: 'year',
+    legend: {
+      position: 'top-left',
     },
-    interactions: [{type: 'element-active'}],
   },
   configurableProperties: {
     type: 'void',
@@ -32,23 +24,23 @@ export const lineTemplate = {
         title: 'Dataset options',
         'x-component': 'Tabs.TabPane',
         'x-component-props': {
-          tab: 'Dataset options - test',
+          tab: 'Dataset options',
         },
         properties: {
           type: {
-            title: "{{t('Type')}}",
+            title: '{{t(\'Type\')}}',
             required: true,
             'x-component': 'Select',
             'x-decorator': 'FormItem',
             default: 'builtIn',
             enum: [
-              {label: 'Built-in', value: 'builtIn'},
-              {label: 'SQL', value: 'sql'},
-              {label: 'API', value: 'api'},
+              { label: 'Built-in', value: 'builtIn' },
+              { label: 'SQL', value: 'sql' },
+              { label: 'API', value: 'api' },
             ],
           },
           sql: {
-            title: "{{t('SQL')}}",
+            title: '{{t(\'SQL\')}}',
             'x-component': 'Input.TextArea',
             'x-decorator': 'FormItem',
             'x-reactions': {
@@ -61,7 +53,7 @@ export const lineTemplate = {
             },
           },
           api: {
-            title: "{{t('API')}}",
+            title: '{{t(\'API\')}}',
             'x-component': 'Input',
             'x-decorator': 'FormItem',
             'x-reactions': {
@@ -74,14 +66,14 @@ export const lineTemplate = {
             },
           },
           aggregateFunction: {
-            title: "{{t('Aggregate function')}}",
+            title: '{{t(\'Aggregate function\')}}',
             required: true,
             'x-component': 'Radio.Group',
             'x-decorator': 'FormItem',
             enum: [
-              {label: 'SUM', value: 'SUM'},
-              {label: 'COUNT', value: 'COUNT'},
-              {label: 'AVG', value: 'AVG'},
+              { label: 'SUM', value: 'SUM' },
+              { label: 'COUNT', value: 'COUNT' },
+              { label: 'AVG', value: 'AVG' },
             ],
             'x-reactions': {
               dependencies: ['dataset.type'],
@@ -93,11 +85,11 @@ export const lineTemplate = {
             },
           },
           computedField: {
-            title: "{{t('Computed field')}}",
+            title: '{{t(\'Computed field\')}}',
             required: true,
             'x-component': 'Select',
             'x-decorator': 'FormItem',
-            enum: "{{computedFields}}",
+            enum: '{{computedFields}}',
             'x-reactions': {
               dependencies: ['dataset.type'],
               fulfill: {
@@ -108,7 +100,7 @@ export const lineTemplate = {
             },
           },
           filter: {
-            title: "{{t('Filter')}}",
+            title: '{{t(\'Filter\')}}',
             'x-component': 'Filter',
             'x-decorator': 'FormItem',
             'x-component-props': {},
@@ -123,7 +115,7 @@ export const lineTemplate = {
           },
         },
       },
-      chartOption: {
+      chartOptions: {
         type: 'object',
         title: 'Chart options',
         'x-component': 'Tabs.TabPane',
@@ -132,12 +124,12 @@ export const lineTemplate = {
         },
         properties: {
           title: {
-            title: "{{t('Title')}}",
+            title: '{{t(\'Title\')}}',
             'x-component': 'Input',
             'x-decorator': 'FormItem',
           },
         },
       },
     },
-  }
-}
+  },
+};
