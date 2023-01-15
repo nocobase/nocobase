@@ -164,12 +164,12 @@ export const pieTemplate = {
               if(groupByField && computedField){
                 field.dataSource = [
                   {
-                    label:computedField,
-                    value:computedField
+                    label:"type",
+                    value:"type"
                   },
                   {
-                    label:groupByField,
-                    value:groupByField
+                    label:"value",
+                    value:"value"
                   }
                 ]
               }else{
@@ -188,12 +188,12 @@ export const pieTemplate = {
               if(groupByField && computedField){
                 field.dataSource = [
                   {
-                    label:computedField,
-                    value:computedField
+                    label:"type",
+                    value:"type"
                   },
                   {
-                    label:groupByField,
-                    value:groupByField
+                    label:"value",
+                    value:"value"
                   }
                 ]
               }else{

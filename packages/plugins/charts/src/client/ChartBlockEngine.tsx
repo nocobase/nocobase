@@ -10,7 +10,7 @@ interface ChartBlockEngineMetaData {
   collectionName: string;
   chartType: string;
   dataset: object;
-  chartOption: object;
+  chartOptions: object;
 }
 
 // renderComponent 可扩展 G2Plot | Echarts | D3'
@@ -19,16 +19,17 @@ type RenderComponent = 'G2Plot';
 const ChartRenderComponent = ({chartBlockMetaData,renderComponent}:{ chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) :JSX.Element=>{
   const compile = useCompile()
   const RenderComponent = chartRenderComponentsMap.get(renderComponent);//G2Plot | Echarts | D3
-  const { dataset, collectionName, chartType, chartOption } = chartBlockMetaData;
+  const { dataset, collectionName, chartType, chartOptions } = chartBlockMetaData;
   const {loading,data} = useGetChartData(chartBlockMetaData);
   const defaultChartOptions = templates.get(chartType)?.defaultChartOptions;
   switch (renderComponent) {
     case 'G2Plot':{
       const config = compile({
         ...defaultChartOptions,
-        ...chartOption,
+        ...chartOptions,
         data: data,
-      },chartOption)
+      },chartOptions)
+      console.log(chartBlockMetaData,'=====================');
       console.log(config);
       return (
         loading
@@ -45,7 +46,7 @@ const useGetChartData = (chartBlockMetaData: ChartBlockEngineMetaData) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
   const apiClient = useAPIClient();
-  const { dataset, collectionName, chartType, chartOption } = chartBlockMetaData;
+  const { dataset, collectionName, chartType, chartOptions } = chartBlockMetaData;
   useEffect(() => {
     try {
       //1.发送请求获取聚合后的数据data
