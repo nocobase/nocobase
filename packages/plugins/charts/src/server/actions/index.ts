@@ -1,4 +1,4 @@
-import {Context} from "@nocobase/actions";
+import { Context } from '@nocobase/actions';
 
 async function handleGetChartData(ctx: Context) {
   // {
@@ -24,37 +24,47 @@ async function handleGetChartData(ctx: Context) {
   //     type,
   //   },
   // });
-  const {params:{values}} = ctx.action;
-  console.log(values)
-  const {chartType,collectionName,filter,computedField,aggregateFunction,type,groupByField} =values
+  const { params: { values } } = ctx.action;
+  console.log(values);
+  const { chartType, collectionName, filter, computedField, aggregateFunction, type, groupByField } = values;
   const repo = ctx.db.getRepository(collectionName);
-  let chartData
+  let chartData;
   //处理不同collection chartType filter 对应的数据
   switch (chartType) {
     case 'Pie': {
-      //根据filter computedField aggregateFunction 分组查询聚合函数（SUM，COUNT，AVG）的值,这里只模拟Count
-      //由于目前nocobase暂时不支持聚合函数,简单模拟一下
-      const result = await repo.findAndCount({
-        fields: [computedField],
-        filter: filter,
-      });
-      console.log(JSON.stringify(result)) /*[[{"id":1},{"id":2}],2] */
-      if(result[0].length){
-        chartData = result[0].map((item)=>{
+      //由于目前nocobase暂时不支持聚合函数,简单sql拼接一下
+      const sql = `SELECT ${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collectionName} GROUP BY ${groupByField}`;
+      console.log(sql, 'sql==========');
+      const result = await ctx.db.sequelize.query(sql);
+      console.log(result, '_result==========');
+      console.log(JSON.stringify(result));
+      //     [
+      //     [
+      //       { id_id: 1 },
+      //       { id_id: 2 },
+      //       { id_id: 3 },
+      //       { id_id: 4 },
+      //       { id_id: 5 }
+      //     ],
+      //       Statement {}
+      // ] _result==========
+
+      if (result[0].length) {
+        chartData = result[0].map((item) => {
           return {
-            "type":computedField,
-            "value":item[computedField]
-          }
-        })
-      }else{
+            'type': `${groupByField}_${computedField ?? "COUNT"}`,
+            'value': item[`${groupByField}_${computedField}`],
+          };
+        });
+      } else {
         chartData = [
-          {type: '分类一', value: 27},
-          {type: '分类二', value: 25},
-          {type: '分类三', value: 18},
-          {type: '分类四', value: 15},
-          {type: '分类五', value: 10},
-          {type: '其他', value: 5},
-        ]
+          { type: '分类一', value: 27 },
+          { type: '分类二', value: 25 },
+          { type: '分类三', value: 18 },
+          { type: '分类四', value: 15 },
+          { type: '分类五', value: 10 },
+          { type: '其他', value: 5 },
+        ];
       }
       break;
     }
@@ -69,13 +79,13 @@ async function handleGetChartData(ctx: Context) {
       break;
     }
   }
-  return chartData
+  return chartData;
 }
 
 export const getChartData = async (ctx: Context, next) => {
-  const chartData = await handleGetChartData(ctx)
+  const chartData = await handleGetChartData(ctx);
   ctx.body = {
-    chartData
+    chartData,
   };
   return next();
 };
