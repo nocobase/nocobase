@@ -1,11 +1,11 @@
 export const barTemplate = {
-  title: 'bar',
-  type: 'bar',
+  title: 'Bar',
+  type: 'Bar',
   renderComponent: 'G2Plot',
   defaultChartOptions: {
-    xField: 'value',
-    yField: 'year',
-    seriesField: 'year',
+    xField: '{{xField}}',
+    yField: '{{yField}}',
+    seriesField: '{{seriesField}}',
     legend: {
       position: 'top-left',
     },
@@ -91,6 +91,21 @@ export const barTemplate = {
             'x-decorator': 'FormItem',
             enum: '{{computedFields}}',
             'x-reactions': {
+              dependencies: ['dataset.type', 'dataset.aggregateFunction'],
+              fulfill: {
+                state: {
+                  visible: '{{$deps[0] === "builtIn" && $deps[1] !== "COUNT"}}',
+                },
+              },
+            },
+          },
+          groupByField: {
+            title: '{{t(\'GroupBy field\')}}',
+            required: true,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: '{{groupByFields}}',
+            'x-reactions': {
               dependencies: ['dataset.type'],
               fulfill: {
                 state: {
@@ -99,8 +114,8 @@ export const barTemplate = {
               },
             },
           },
-          filter: {
-            title: '{{t(\'Filter\')}}',
+          /*filter: {
+            title: "{{t('Filter')}}",
             'x-component': 'Filter',
             'x-decorator': 'FormItem',
             'x-component-props': {},
@@ -112,7 +127,7 @@ export const barTemplate = {
                 },
               },
             },
-          },
+          },*/
         },
       },
       chartOptions: {
@@ -127,6 +142,78 @@ export const barTemplate = {
             title: '{{t(\'Title\')}}',
             'x-component': 'Input',
             'x-decorator': 'FormItem',
+          },
+          xField: {
+            title: '{{t(\'xField\')}}',
+            required: true,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-reactions': (field) => {
+              const computedField = field.query('dataset.computedField')?.value();
+              const groupByField = field.query('dataset.groupByField')?.value();
+              if (groupByField || computedField) {
+                field.dataSource = [
+                  {
+                    label: 'type',
+                    value: 'type',
+                  },
+                  {
+                    label: 'value',
+                    value: 'value',
+                  },
+                ];
+              } else {
+                field.dataSource = [];
+              }
+            },
+          },
+          yField: {
+            title: '{{t(\'yField\')}}',
+            required: true,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-reactions': (field) => {
+              const computedField = field.query('dataset.computedField')?.value();
+              const groupByField = field.query('dataset.groupByField')?.value();
+              if (groupByField || computedField) {
+                field.dataSource = [
+                  {
+                    label: 'type',
+                    value: 'type',
+                  },
+                  {
+                    label: 'value',
+                    value: 'value',
+                  },
+                ];
+              } else {
+                field.dataSource = [];
+              }
+            },
+          },
+          seriesField: {
+            title: '{{t("seriesField")}}',
+            required: true,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-reactions': (field) => {
+              const computedField = field.query('dataset.computedField')?.value();
+              const groupByField = field.query('dataset.groupByField')?.value();
+              if (groupByField || computedField) {
+                field.dataSource = [
+                  {
+                    label: 'type',
+                    value: 'type',
+                  },
+                  {
+                    label: 'value',
+                    value: 'value',
+                  },
+                ];
+              } else {
+                field.dataSource = [];
+              }
+            },
           },
         },
       },
