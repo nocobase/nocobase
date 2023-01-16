@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, createElement, useEffect } from 'react';
 import { Comment, Divider, Form, Button, Empty, Modal, Avatar } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { CommentBlockDesigner } from './CommentBlock.Designer';
@@ -23,7 +23,9 @@ export interface CommentItem {
 
 export const CommentBlock = (props) => {
   const { t } = useCommentTranslation();
+  const [editComment, setEditComment] = useState<CommentItem>();
   const [form] = Form.useForm();
+  const [modal, contextHolder] = Modal.useModal();
 
   const collection = useCollection();
   const record = useRecord();
@@ -39,7 +41,7 @@ export const CommentBlock = (props) => {
 
   const currentUserId = currentUserData.data.id;
 
-  const { create, destroy } = useResource('comments');
+  const { create, update, destroy } = useResource('comments');
 
   const { data, loading, refresh } = useRequest({
     resource: 'comments',
@@ -59,21 +61,7 @@ export const CommentBlock = (props) => {
 
   const handleFinish = async () => {
     const formValues = form.getFieldsValue();
-
-    const reg = createReg('.*?', 'g');
-    const atIds = [];
-
-    formValues.content.replace(reg, (match, p1) => atIds.push(~~p1));
-
-    const commentUsers = Array.from(new Set([...atIds]));
-
-    console.log({
-      collectioName: collectionName,
-      recordId: recordId,
-      content: formValues.content,
-      commenter: currentUserId,
-      commentUsers,
-    });
+    const commentUsers = getCommentUsers(formValues.content);
 
     await create({
       values: {
@@ -101,7 +89,41 @@ export const CommentBlock = (props) => {
     });
   };
 
-  const handleEdit = async (item: CommentItem) => {};
+  const handleEdit = async (item: CommentItem) => {
+    let commentValue = undefined;
+
+    const handleOk = async () => {
+      const commentUsers = getCommentUsers(commentValue);
+
+      await update({
+        filterByTk: item.id,
+        values: {
+          content: commentValue,
+          commentUsers,
+        },
+      });
+      form.resetFields();
+      refresh();
+    };
+
+    modal.confirm({
+      title: t('Edit'),
+      icon: null,
+      closeIcon: true,
+      okCancel: true,
+      maskClosable: true,
+      onOk: handleOk,
+      content: createElement(() => {
+        const [value, setValue] = useState(item.content);
+
+        useEffect(() => {
+          commentValue = value;
+        }, [value]);
+
+        return <StructMentions commentUsers={item.commentUsers} value={value} onChange={(e) => setValue(e)} />;
+      }),
+    });
+  };
 
   return (
     <div>
@@ -111,9 +133,9 @@ export const CommentBlock = (props) => {
             key={i.id}
             avatar={<Avatar icon={<UserOutlined />} />}
             actions={[
-              // <span key="comment-edit" onClick={() => handleEdit(i)}>
-              //   {t('Edit')}
-              // </span>,
+              <span key="comment-edit" onClick={() => handleEdit(i)}>
+                {t('Edit')}
+              </span>,
               <span key="comment-delete" onClick={() => handleDelete(i)}>
                 {t('Delete')}
               </span>,
@@ -136,8 +158,20 @@ export const CommentBlock = (props) => {
           </Button>
         </Form.Item>
       </Form>
+      {contextHolder}
     </div>
   );
+};
+
+export const getCommentUsers = (content: string) => {
+  const reg = createReg('.*?', 'g');
+  const atIds: number[] = [];
+
+  content.replace(reg, (match, p1) => atIds.push(~~p1) as unknown as string);
+
+  const commentUsers = Array.from(new Set([...atIds]));
+
+  return commentUsers;
 };
 
 export const getContent = (item: CommentItem) => {

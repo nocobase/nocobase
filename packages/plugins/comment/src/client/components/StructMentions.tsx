@@ -39,7 +39,7 @@ export const StructMentions = (props: StructMentionsProps) => {
     for (let at of ats) {
       content = content.replace(`@${at.nickname}`, `{{at ${at.id}}}`);
     }
-    onChange(content);
+    onChange?.(content);
   };
 
   const handleMentionSearch = async (search: string) => {
