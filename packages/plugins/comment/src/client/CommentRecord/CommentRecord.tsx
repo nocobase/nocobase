@@ -217,7 +217,7 @@ export const CommentRecord: any = () => {
                 'x-component': 'TableV2.Column',
                 title: t('Collection name'),
                 properties: {
-                  collectioName: {
+                  collectionName: {
                     'x-component': 'PlainText',
                     'x-read-pretty': true,
                   },

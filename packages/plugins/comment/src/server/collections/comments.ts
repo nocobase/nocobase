@@ -17,7 +17,7 @@ export default {
   fields: [
     {
       type: 'string',
-      name: 'collectioName',
+      name: 'collectionName',
     },
     {
       type: 'integer',

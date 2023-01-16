@@ -35,7 +35,7 @@ export const CommentBlock = (props) => {
   let recordId = record.id;
 
   if (props.from === 'commentRecord') {
-    collectionName = record.collectioName;
+    collectionName = record.collectionName;
     recordId = record.recordId;
   }
 
@@ -49,7 +49,7 @@ export const CommentBlock = (props) => {
     params: {
       paginate: false,
       filter: {
-        collectioName: collectionName,
+        collectionName: collectionName,
         recordId: recordId,
       },
       sort: 'createdAt',
@@ -65,7 +65,7 @@ export const CommentBlock = (props) => {
 
     await create({
       values: {
-        collectioName: collectionName,
+        collectionName: collectionName,
         recordId: recordId,
         content: formValues.content,
         commenter: currentUserId,
