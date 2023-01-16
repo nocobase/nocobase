@@ -36,10 +36,48 @@ const useCommentsCollection = () => {
         type: 'string',
         interface: 'input',
         uiSchema: {
-          title: 'Collection name',
+          title: t('Collection name'),
           type: 'string',
           'x-component': 'Input',
           required: true,
+        },
+      },
+      {
+        name: 'commenter',
+        type: 'belongsTo',
+        target: 'users',
+        interface: 'updatedBy',
+        uiSchema: {
+          type: 'object',
+          title: t('Commenter'),
+          'x-component': 'RecordPicker',
+          'x-component-props': {
+            fieldNames: {
+              value: 'id',
+              label: 'nickname',
+            },
+          },
+          'x-read-pretty': true,
+        },
+      },
+      {
+        name: 'commentUsers',
+        type: 'belongsToMany',
+        target: 'users',
+        foreignKey: 'userId',
+        otherKey: 'commentId',
+        interface: 'updatedBy',
+        uiSchema: {
+          type: 'object',
+          title: t('Ref users'),
+          'x-component': 'RecordPicker',
+          'x-component-props': {
+            fieldNames: {
+              value: 'id',
+              label: 'nickname',
+            },
+          },
+          'x-read-pretty': true,
         },
       },
     ],

@@ -10,4 +10,5 @@ export default {
   'Delete comment': 'Delete comment',
   'Confirm delete?': 'Confirm delete?',
   'No comments': 'No comments',
+  'Ref users': 'Ref users',
 };

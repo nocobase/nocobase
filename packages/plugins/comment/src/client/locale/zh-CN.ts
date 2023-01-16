@@ -10,4 +10,5 @@ export default {
   'Delete comment': '删除评论',
   'Confirm delete?': '确认删除吗？',
   'No comments': '没有评论',
+  'Ref users': '@ 用户',
 };
