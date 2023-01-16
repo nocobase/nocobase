@@ -6,7 +6,7 @@ import {
   HasOne,
   Hookable,
   ModelStatic,
-  Transactionable,
+  Transactionable
 } from 'sequelize';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
@@ -413,7 +413,12 @@ export async function updateMultipleAssociation(
       } else if (item.sequelize) {
         list1.push(item);
       } else if (typeof item === 'object') {
-        list2.push(item);
+        const targetKey = (association as any).targetKey || 'id';
+        if (item[targetKey]) {
+          list1.push(item[targetKey]);
+        } else {
+          list2.push(item);
+        }
       }
     }
 
