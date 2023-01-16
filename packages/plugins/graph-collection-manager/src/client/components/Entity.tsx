@@ -80,90 +80,94 @@ const Entity: React.FC<{
       className={cx(entityContainer)}
       style={{ boxShadow: attrs?.boxShadow, border: select ? '2px dashed #f5a20a' : 0 }}
     >
-      <Badge.Ribbon
-        placement="start"
-        style={{ top:'2px', visibility:category?.length?'visible':'hidden' }}
-        text={
-          category[0]?.name
-        }
-        color={category[0]?.color}
+      {category.map((v, index) => {
+        return (
+          <Badge.Ribbon
+            color={v.color}
+            style={{ width: '103%', height: '3px', marginTop: index * 5 - 8, borderRadius: 0 }}
+            placement="start"
+          />
+        );
+      })}
+      <div
+        className={headClass}
+        style={{ background: attrs?.hightLight ? '#1890ff' : null, paddingTop: category.length * 3 }}
       >
-        <div className={headClass} style={{ background: attrs?.hightLight ? '#1890ff' : null }}>
-          <span className={tableNameClass}>{compile(title)}</span>
-          <div className={tableBtnClass}>
-            <SchemaComponentProvider>
-              <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
-                <CollectionProvider collection={collection}>
-                  <SchemaComponent
-                    scope={{
-                      useUpdateCollectionActionAndRefreshCM,
-                      useCancelAction,
-                      loadCollections,
-                      useAsyncDataSource,
-                      Action,
-                      DeleteOutlined,
-                      enableInherits: database?.dialect === 'postgres',
-                    }}
-                    components={{
-                      Action,
-                      EditOutlined,
-                      FormItem,
-                      CollectionField,
-                      Input,
-                      Form,
-                      Select,
-                      EditCollectionAction,
-                      Checkbox,
-                    }}
-                    schema={{
-                      type: 'object',
-                      properties: {
-                        update: {
-                          type: 'void',
-                          title: '{{ t("Edit") }}',
-                          'x-component': 'EditCollectionAction',
-                          'x-component-props': {
-                            type: 'primary',
-                            item: collectionData.current,
-                          },
-                        },
-                        delete: {
-                          type: 'void',
-                          'x-action': 'destroy',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            component: DeleteOutlined,
-                            icon: 'DeleteOutlined',
-                            className: css`
-                              background-color: rgb(255 236 232);
-                              border-color: transparent;
-                              color: #e31c1c;
-                              height: 20px;
-                              padding: 5px;
-                              &:hover {
-                                background-color: rgb(253 205 197);
-                              }
-                            `,
+        <span className={tableNameClass}>{compile(title)}</span>
 
-                            confirm: {
-                              title: "{{t('Delete record')}}",
-                              getContainer: () => {
-                                return document.getElementById('graph_container');
-                              },
-                              collectionConten: "{{t('Are you sure you want to delete it?')}}",
-                            },
-                            useAction: () => useDestroyActionAndRefreshCM({ name, id }),
-                          },
+        <div className={tableBtnClass}>
+          <SchemaComponentProvider>
+            <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
+              <CollectionProvider collection={collection}>
+                <SchemaComponent
+                  scope={{
+                    useUpdateCollectionActionAndRefreshCM,
+                    useCancelAction,
+                    loadCollections,
+                    useAsyncDataSource,
+                    Action,
+                    DeleteOutlined,
+                    enableInherits: database?.dialect === 'postgres',
+                  }}
+                  components={{
+                    Action,
+                    EditOutlined,
+                    FormItem,
+                    CollectionField,
+                    Input,
+                    Form,
+                    Select,
+                    EditCollectionAction,
+                    Checkbox,
+                  }}
+                  schema={{
+                    type: 'object',
+                    properties: {
+                      update: {
+                        type: 'void',
+                        title: '{{ t("Edit") }}',
+                        'x-component': 'EditCollectionAction',
+                        'x-component-props': {
+                          type: 'primary',
+                          item: collectionData.current,
                         },
                       },
-                    }}
-                  />
-                </CollectionProvider>
-              </CollectionNodeProvder>
-            </SchemaComponentProvider>
-          </div>
+                      delete: {
+                        type: 'void',
+                        'x-action': 'destroy',
+                        'x-component': 'Action',
+                        'x-component-props': {
+                          component: DeleteOutlined,
+                          icon: 'DeleteOutlined',
+                          className: css`
+                            background-color: rgb(255 236 232);
+                            border-color: transparent;
+                            color: #e31c1c;
+                            height: 20px;
+                            padding: 5px;
+                            &:hover {
+                              background-color: rgb(253 205 197);
+                            }
+                          `,
+
+                          confirm: {
+                            title: "{{t('Delete record')}}",
+                            getContainer: () => {
+                              return document.getElementById('graph_container');
+                            },
+                            collectionConten: "{{t('Are you sure you want to delete it?')}}",
+                          },
+                          useAction: () => useDestroyActionAndRefreshCM({ name, id }),
+                        },
+                      },
+                    },
+                  }}
+                />
+              </CollectionProvider>
+            </CollectionNodeProvder>
+          </SchemaComponentProvider>
         </div>
-      </Badge.Ribbon>
+      </div>
 
       <PortsCom {...portsProps} />
     </div>

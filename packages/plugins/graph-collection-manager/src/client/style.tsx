@@ -139,7 +139,6 @@ export const headClass = css`
   color: rgb(29 33 41);
   padding: 0 8px;
   border-radius: 3px;
-  padding-top:20px;
 `;
 
 export const tableNameClass = css`
