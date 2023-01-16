@@ -751,7 +751,7 @@ This method is especially useful when extending the table structure that is alre
 
 ## Built-in Events
 
-The following events will be triggered in the corresponding life cycle of database, subscribe by the `on()` method and perform specific processing to meet some business needs. 
+The following events will be triggered in the corresponding lifecycle of database, subscribe by the `on()` method and perform specific processing to meet some business needs. 
 
 ### `'beforeSync'` / `'afterSync'`
 
