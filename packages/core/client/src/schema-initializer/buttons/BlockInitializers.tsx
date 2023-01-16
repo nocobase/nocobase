@@ -50,46 +50,46 @@ export const BlockInitializers = {
         // },
       ],
     },
-    {
-      key: 'g2plot',
-      type: 'itemGroup',
-      title: '{{t("Chart blocks")}}',
-      children: [
-        {
-          key: 'column',
-          type: 'item',
-          title: '{{t("Column chart")}}',
-          component: 'G2PlotInitializer',
-          icon: 'BarChartOutlined',
-          schema: {
-            type: 'void',
-            'x-designer': 'G2Plot.Designer',
-            'x-decorator': 'CardItem',
-            'x-component': 'G2Plot',
-            'x-component-props': {
-              plot: 'Column',
-              config: chartConfig.column,
-            },
-          },
-        }],
-    },
-    {
-      key: 'bar',
-      type: 'item',
-      title: '{{t("Bar chart")}}',
-      component: 'G2PlotInitializer',
-      icon: 'BarChartOutlined',
-      schema: {
-        type: 'void',
-        'x-designer': 'G2Plot.Designer',
-        'x-decorator': 'CardItem',
-        'x-component': 'G2Plot',
-        'x-component-props': {
-          plot: 'Bar',
-          config: chartConfig.bar,
-        },
-      },
-    },
+    // {
+    //   key: 'g2plot',
+    //   type: 'itemGroup',
+    //   title: '{{t("Chart blocks")}}',
+    //   children: [
+    //     {
+    //       key: 'column',
+    //       type: 'item',
+    //       title: '{{t("Column chart")}}',
+    //       component: 'G2PlotInitializer',
+    //       icon: 'BarChartOutlined',
+    //       schema: {
+    //         type: 'void',
+    //         'x-designer': 'G2Plot.Designer',
+    //         'x-decorator': 'CardItem',
+    //         'x-component': 'G2Plot',
+    //         'x-component-props': {
+    //           plot: 'Column',
+    //           config: chartConfig.column,
+    //         },
+    //       },
+    //     }],
+    // },
+    // {
+    //   key: 'bar',
+    //   type: 'item',
+    //   title: '{{t("Bar chart")}}',
+    //   component: 'G2PlotInitializer',
+    //   icon: 'BarChartOutlined',
+    //   schema: {
+    //     type: 'void',
+    //     'x-designer': 'G2Plot.Designer',
+    //     'x-decorator': 'CardItem',
+    //     'x-component': 'G2Plot',
+    //     'x-component-props': {
+    //       plot: 'Bar',
+    //       config: chartConfig.bar,
+    //     },
+    //   },
+    // },
     //     {
     //       key: 'line',
     //       type: 'item',
@@ -107,23 +107,23 @@ export const BlockInitializers = {
     //         },
     //       },
     //     },
-        {
-          key: 'pie',
-          type: 'item',
-          title: '{{t("Pie chart")}}',
-          component: 'G2PlotInitializer',
-          icon: 'PieChartOutlined',
-          schema: {
-            type: 'void',
-            'x-designer': 'G2Plot.Designer',
-            'x-decorator': 'CardItem',
-            'x-component': 'G2Plot',
-            'x-component-props': {
-              plot: 'Pie',
-              config: chartConfig.pie,
-            },
-          },
-        },
+    //     {
+    //       key: 'pie',
+    //       type: 'item',
+    //       title: '{{t("Pie chart")}}',
+    //       component: 'G2PlotInitializer',
+    //       icon: 'PieChartOutlined',
+    //       schema: {
+    //         type: 'void',
+    //         'x-designer': 'G2Plot.Designer',
+    //         'x-decorator': 'CardItem',
+    //         'x-component': 'G2Plot',
+    //         'x-component-props': {
+    //           plot: 'Pie',
+    //           config: chartConfig.pie,
+    //         },
+    //       },
+    //     },
     //     {
     //       key: 'area',
     //       type: 'item',
