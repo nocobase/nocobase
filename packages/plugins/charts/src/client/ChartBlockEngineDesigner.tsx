@@ -93,16 +93,6 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
       onClick={async () => {
         FormDialog("Edit chart block", (form) => {
           console.log(form.values);
-          const enumOptions = [
-            {
-              label:form.values.dataset.computedFields,
-              value:form.values.dataset.computedFields,
-            },
-            {
-              label:form.values.dataset.aggregateFunction,
-              value:form.values.dataset.aggregateFunction,
-            }
-          ]
           return (
             <CollectionManagerContext.Provider value={cm}>
               <SchemaComponentOptions
