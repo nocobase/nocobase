@@ -2,15 +2,15 @@
 
 ## Overview
 
-数据表字段管理类（抽象类）。同时是所有字段类型的基类，其他任意字段类型均通过继承该类来实现。
+Data table field management class (abstract class). It is also the base class for all field types, and any other field types are implemented by inheriting from this class.
 
-如何自定义字段可参考[扩展字段类型](/development/guide/collections-fields#扩展字段类型)
+Refer to [Extended Field Types](/development/guide/collections-fields#extended-field-types) to see how to customize fields.
 
 ## Constructor
 
-通常不会直接由开发者调用，主要通过 `db.collection({ fields: [] })` 方法作为代理入口调用。
+It is usually not called directly by the developer, but mainly through the `db.collection({ fields: [] })` method as a proxy entry.
 
-在扩展字段时主要通过继承 `Field` 抽象类，再注册到 Database 实例中来实现。
+Extended field is implemented mainly by inheriting the `Field` abstract class and registering it to a Database instance.
 
 **Signature**
 
@@ -20,42 +20,42 @@
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options` | `FieldOptions` | - | 字段配置对象 |
-| `options.name` | `string` | - | 字段名称 |
-| `options.type` | `string` | - | 字段类型，对应在 db 中注册的字段类型名称 |
-| `context` | `FieldContext` | - | 字段上下文对象 |
-| `context.database` | `Database` | - | 数据库实例 |
-| `context.collection` | `Collection` | - | 数据表实例 |
+| `options` | `FieldOptions` | - | Field configuration object |
+| `options.name` | `string` | - | Field name |
+| `options.type` | `string` | - | Field type, corresponding to the name of the field type registered in the db |
+| `context` | `FieldContext` | - | Field context object |
+| `context.database` | `Database` | - | Database instance |
+| `context.collection` | `Collection` | - | Data table instance |
 
-## 实例成员
+## Instance Member
 
 ### `name`
 
-字段名称。
+Field name.
 
 ### `type`
 
-字段类型。
+Field type.
 
 ### `dataType`
 
-字段数据库存储类型。
+Data type of the field.
 
 ### `options`
 
-字段初始化配置参数。
+Configuration parameters to initialize the field.
 
 ### `context`
 
-字段上下文对象。
+Field context object.
 
-## 配置方法
+## Configuration Method
 
 ### `on()`
 
-基于数据表事件的快捷定义方式。相当于 `db.on(this.collection.name + '.' + eventName, listener)`。
+Quick definition method based on data table events. It is equivalent to `db.on(this.collection.name + '.' + eventName, listener)`.
 
-继承时通常无需覆盖此方法。
+It is usually not necessary to override this method when inheriting.
 
 **Signature**
 
@@ -65,14 +65,14 @@
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `eventName` | `string` | - | 事件名称 |
-| `listener` | `(...args: any[]) => void` | - | 事件监听器 |
+| `eventName` | `string` | - | Event name |
+| `listener` | `(...args: any[]) => void` | - | Event listener |
 
 ### `off()`
 
-基于数据表事件的快捷移除方式。相当于 `db.off(this.collection.name + '.' + eventName, listener)`。
+Quick removal method based on data table events. It is equivalent to `db.off(this.collection.name + '.' + eventName, listener)`.
 
-继承时通常无需覆盖此方法。
+It is usually not necessary to override this method when inheriting.
 
 **Signature**
 
@@ -82,14 +82,14 @@
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `eventName` | `string` | - | 事件名称 |
-| `listener` | `(...args: any[]) => void` | - | 事件监听器 |
+| `eventName` | `string` | - | Event name |
+| `listener` | `(...args: any[]) => void` | - | Event listener |
 
 ### `bind()`
 
-当字段被添加到数据表时触发的执行内容。通常用于添加数据表事件监听器和其他处理。
+The execution content that is triggered when a field is added to data table. Typically used to add data table event listeners and other processings.
 
-继承时需要先调用对应的 `super.bind()` 方法。
+The corresponding `super.bind()` method needs to be called first when inheriting.
 
 **Signature**
 
@@ -97,9 +97,9 @@
 
 ### `unbind()`
 
-当字段从数据表中移除时触发的执行内容。通常用于移除数据表事件监听器和其他处理。
+The execution content that is triggered when a field is removed from data table. Typically used to remove data table event listeners and other processings.
 
-继承时需要先调用对应的 `super.unbind()` 方法。
+The corresponding `super.unbind()` method needs to be called first when inheriting.
 
 **Signature**
 
@@ -107,7 +107,7 @@
 
 ### `get()`
 
-获取字段的配置项的值。
+Get the values of a configuration item of the field.
 
 **Signature**
 
@@ -117,20 +117,20 @@
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | `string` | - | 配置项名称 |
+| `key` | `string` | - | Name of the configuration item |
 
 **Example**
 
 ```ts
 const field = db.collection('users').getField('name');
 
-// 获取字段名称配置项的值，返回 'name'
+// Get and return the values of the configuration item 'name'
 console.log(field.get('name'));
 ```
 
 ### `merge()`
 
-合并字段的配置项的值。
+Merge the values of a configuration item of the field.
 
 **Signature**
 
@@ -140,7 +140,7 @@ console.log(field.get('name'));
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options` | `{ [key: string]: any }` | - | 要合并的配置项对象 |
+| `options` | `{ [key: string]: any }` | - | The configuration item to merge |
 
 **Example**
 
@@ -148,14 +148,14 @@ console.log(field.get('name'));
 const field = db.collection('users').getField('name');
 
 field.merge({
-  // 添加一个索引配置
+  // Add an index configuration 
   index: true
 });
 ```
 
 ### `remove()`
 
-从数据表中移除字段（仅从内存中移除）。
+Remove a field from data table (from memory only).
 
 **Example**
 
@@ -168,11 +168,11 @@ books.getField('isbn').remove();
 await books.sync();
 ```
 
-## 数据库方法
+## Database Method
 
 ### `removeFromDb()`
 
-从数据库中移除字段。
+Remove a field from the database.
 
 **Signature**
 
@@ -182,11 +182,11 @@ await books.sync();
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.transaction?` | `Transaction` | - | 事务实例 |
+| `options.transaction?` | `Transaction` | - | Transaction instance |
 
 ### `existsInDb()`
 
-判断字段是否存在于数据库中。
+Check if a field exists in the database.
 
 **Signature**
 
@@ -196,15 +196,15 @@ await books.sync();
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.transaction?` | `Transaction` | - | 事务实例 |
+| `options.transaction?` | `Transaction` | - | Transaction instance |
 
-## 内置字段类型列表
+## Built-in Field Types
 
-NocoBase 内置了一些常用的字段类型，可以直接在定义数据表的字段是使用对应的 type 名称来指定类型。不同类型的字段参数配置不同，具体可参考下面的列表。
+NocoBase has some built-in common field types, the corresponding type name can be used directly to specify the type of field upon definition. Fields of different types are configured differently, please refer to the list below.
 
-所有字段类型的配置项除了以下额外介绍的以外，都会透传至 Sequelize，所以所有 Sequelize 支持的字段配置项都可以在这里使用（如 `allowNull`、`defaultValue` 等）。
+The configuration items of all field types are passed through to Sequelize in addition to those described below. Therefore, all field configuration items supported by Sequelize can be used here (e.g. `allowNull`, `defaultValue`, etc.).
 
-另外 server 端的字段类型主要解决数据库存储和部分算法的问题，与前端的字段展示类型和使用组件基本无关。前端字段类型可以参考教程对应说明。
+Moreover, server-side field types are mainly used for solving the problems of database storage and some algorithms, they are barely relevant to the  field display types and the use of components in front-end. The front-end field types can be found in the corresponding tutorials.
 
 ### `'boolean'`
 
