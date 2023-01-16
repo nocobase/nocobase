@@ -3,6 +3,7 @@ import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Options, Result } from 'ahooks/lib/useRequest/src/types';
 import { Spin } from 'antd';
+import DisabledContext, { DisabledContextProvider } from 'antd/es/config-provider/DisabledContext';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
 import { useRequest } from '../../../api-client';
@@ -38,25 +39,28 @@ const FormComponent: React.FC<FormProps> = (props) => {
 const Def = (props: any) => props.children;
 
 const FormDecorator: React.FC<FormProps> = (props) => {
-  const { form, children, ...others } = props;
+  const contextDisabled = useContext(DisabledContext);
+  const { form, children, disabled = contextDisabled, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const Component = useComponent(fieldSchema['x-component'], Def);
   return (
-    <FieldContext.Provider value={undefined}>
-      <FormContext.Provider value={form}>
-        <FormLayout layout={'vertical'} {...others}>
-          <FieldContext.Provider value={f}>
-            <Component {...field.componentProps}>
-              <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
-            </Component>
-          </FieldContext.Provider>
-          {/* <FieldContext.Provider value={f}>{children}</FieldContext.Provider> */}
-        </FormLayout>
-      </FormContext.Provider>
-    </FieldContext.Provider>
+    <DisabledContextProvider disabled={disabled}>
+      <FieldContext.Provider value={undefined}>
+        <FormContext.Provider value={form}>
+          <FormLayout layout={'vertical'} {...others}>
+            <FieldContext.Provider value={f}>
+              <Component {...field.componentProps}>
+                <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+              </Component>
+            </FieldContext.Provider>
+            {/* <FieldContext.Provider value={f}>{children}</FieldContext.Provider> */}
+          </FormLayout>
+        </FormContext.Provider>
+      </FieldContext.Provider>
+    </DisabledContextProvider>
   );
 };
 

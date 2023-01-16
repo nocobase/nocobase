@@ -2,13 +2,15 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import { ObjectField as ObjectFieldModel } from '@formily/core';
 import { ArrayField, connect, useField } from '@formily/react';
 import { Select, Space } from 'antd';
+import DisabledContext, { DisabledContextProvider } from 'antd/es/config-provider/DisabledContext';
 import React, { useContext } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { FilterLogicContext, RemoveConditionContext } from './context';
 import { FilterItems } from './FilterItems';
 
 export const FilterGroup = connect((props) => {
-  const { bordered = true } = props;
+  const contextDisabled = useContext(DisabledContext);
+  const { disabled, bordered = true } = props;
   const field = useField<ObjectFieldModel>();
   const remove = useContext(RemoveConditionContext);
   const { t } = useTranslation();
@@ -20,6 +22,7 @@ export const FilterGroup = connect((props) => {
       [value]: [...(obj[logic] || [])],
     };
   };
+  const mergedDisabled = contextDisabled || disabled;
   return (
     <FilterLogicContext.Provider value={logic}>
       <div
@@ -37,7 +40,7 @@ export const FilterGroup = connect((props) => {
               }
         }
       >
-        {remove && (
+        {remove && !mergedDisabled && (
           <a>
             <CloseCircleOutlined
               style={{
@@ -67,36 +70,38 @@ export const FilterGroup = connect((props) => {
           </Trans>
         </div>
         <div>
-          <ArrayField name={logic} component={[FilterItems]} />
+          <ArrayField name={logic} component={[FilterItems]} disabled={mergedDisabled} />
         </div>
-        <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
-          <a
-            onClick={() => {
-              const value = field.value || {};
-              const items = value[logic] || [];
-              items.push({});
-              field.value = {
-                [logic]: items,
-              };
-            }}
-          >
-            {t('Add condition')}
-          </a>
-          <a
-            onClick={() => {
-              const value = field.value || {};
-              const items = value[logic] || [];
-              items.push({
-                $and: [{}],
-              });
-              field.value = {
-                [logic]: items,
-              };
-            }}
-          >
-            {t('Add condition group')}
-          </a>
-        </Space>
+        {!mergedDisabled && (
+          <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
+            <a
+              onClick={() => {
+                const value = field.value || {};
+                const items = value[logic] || [];
+                items.push({});
+                field.value = {
+                  [logic]: items,
+                };
+              }}
+            >
+              {t('Add condition')}
+            </a>
+            <a
+              onClick={() => {
+                const value = field.value || {};
+                const items = value[logic] || [];
+                items.push({
+                  $and: [{}],
+                });
+                field.value = {
+                  [logic]: items,
+                };
+              }}
+            >
+              {t('Add condition group')}
+            </a>
+          </Space>
+        )}
       </div>
     </FilterLogicContext.Provider>
   );
