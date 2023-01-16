@@ -2,15 +2,13 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import { ObjectField as ObjectFieldModel } from '@formily/core';
 import { ArrayField, connect, useField } from '@formily/react';
 import { Select, Space } from 'antd';
-import DisabledContext, { DisabledContextProvider } from 'antd/es/config-provider/DisabledContext';
 import React, { useContext } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { FilterLogicContext, RemoveConditionContext } from './context';
 import { FilterItems } from './FilterItems';
 
 export const FilterGroup = connect((props) => {
-  const contextDisabled = useContext(DisabledContext);
-  const { disabled, bordered = true } = props;
+  const { bordered = true } = props;
   const field = useField<ObjectFieldModel>();
   const remove = useContext(RemoveConditionContext);
   const { t } = useTranslation();
@@ -22,7 +20,7 @@ export const FilterGroup = connect((props) => {
       [value]: [...(obj[logic] || [])],
     };
   };
-  const mergedDisabled = contextDisabled || disabled;
+  const mergedDisabled = field.disabled;
   return (
     <FilterLogicContext.Provider value={logic}>
       <div
