@@ -1,10 +1,25 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
+import { Model } from 'sequelize';
 
 export class CommentPlugin extends Plugin {
   afterAdd() {}
 
-  beforeLoad() {}
+  async beforeLoad() {
+    const collectionHandler = async (model: Model, { transaction }) => {
+      const collectionDoc = model.toJSON();
+      const comments: Model[] = await this.app.db.getRepository('comments').find({
+        filter: {
+          collectionName: collectionDoc.name,
+        },
+      });
+      for (let comment of comments) {
+        await comment.destroy({ transaction });
+      }
+    };
+
+    this.app.db.on('collections.afterDestroy', collectionHandler);
+  }
 
   async load() {
     // 导入 collection
