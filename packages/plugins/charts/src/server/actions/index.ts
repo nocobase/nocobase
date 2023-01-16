@@ -10,10 +10,7 @@ async function handleGetChartData(ctx: Context) {
     case 'Pie': {
       //由于目前nocobase暂时不支持聚合函数,简单sql拼接一下
       const sql = `SELECT ${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collectionName} GROUP BY ${groupByField}`;
-      console.log(sql, 'sql==========');
       const result = await ctx.db.sequelize.query(sql);
-      console.log(result, '_result==========');
-      console.log(JSON.stringify(result));
       if (result[0].length) {
         chartData = result[0].map((item) => {
           return {
