@@ -14,6 +14,7 @@ services:
       - DB_HOST=mysql
       - DB_DATABASE=nocobase
       - DB_USER=nocobase
+      - DB_PORT=3306
       - DB_PASSWORD=nocobase
       - LOCAL_STORAGE_BASE_URL=/storage/uploads
     volumes:
@@ -27,6 +28,12 @@ services:
       MYSQL_USER: nocobase
       MYSQL_PASSWORD: nocobase
       MYSQL_ROOT_PASSWORD: nocobase
+    volumes:
+      #指定挂载mysql数据文件
+      - /app/nocobase/storage/db:/var/lib/mysqlS 
+    ports:
+      #指定端口映射,为了避免和服务器已有的3306端口冲突
+      - "3333:3306"  
     restart: always
     networks:
       - nocobase
