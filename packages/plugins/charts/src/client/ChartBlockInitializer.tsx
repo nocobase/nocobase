@@ -111,6 +111,7 @@ export const ChartBlockInitializer = (props) => {
             'x-designer': 'ChartBlockEngine.Designer',
             'x-decorator': 'CardItem',
             'x-component': 'ChartBlockEngine',
+            'title':`${values?.chartOptions?.title??''}`,
             'x-component-props': {
               renderComponent: renderComponent,
               chartBlockMetaData: values,
