@@ -3,7 +3,7 @@ import { ArrayItems } from '@formily/antd';
 import { css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
-import { Operand, VariableTypes, VariableTypesContext } from '../calculators';
+import { Operand, VariableTypes, VariableTypesContext } from '../variable';
 import { VariableJSONInput } from '../components/VariableJSONInput';
 
 

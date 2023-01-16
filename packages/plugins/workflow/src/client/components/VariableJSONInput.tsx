@@ -4,7 +4,7 @@ import { css } from "@emotion/css";
 
 import { Input } from "@nocobase/client";
 
-import { Operand, VariableTypes, VariableTypesContext } from '../calculators';
+import { Operand, VariableTypes, VariableTypesContext } from '../variable';
 import { lang } from '../locale';
 
 
@@ -56,18 +56,21 @@ export function VariableJSONInput(props) {
   return (
     <div className={css`
       position: relative;
+      .ant-input{
+        width: 100%;
+      }
     `}>
       <Input.JSON {...props} ref={inputRef} />
-        <Button.Group
-          className={css`
-            position: absolute;
-            right: 2px;
-            top: 2px;
-            .ant-btn-sm{
-              font-size: 85%;
-            }
-          `}
-        >
+      <Button.Group
+        className={css`
+          position: absolute;
+          right: 2px;
+          top: 2px;
+          .ant-btn-sm{
+            font-size: 85%;
+          }
+        `}
+      >
         <Button size="small" onClick={onFormat}>{lang('Format')}</Button>
         <Popover
           trigger="click"
