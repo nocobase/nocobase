@@ -4,4 +4,3 @@ docs
 __tests__
 tsconfig.json
 src
-.fatherrc.ts

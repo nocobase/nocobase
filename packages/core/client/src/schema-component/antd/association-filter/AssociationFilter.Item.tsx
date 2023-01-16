@@ -23,7 +23,8 @@ export const AssociationFilterItem = (props) => {
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const compile = useCompile();
-  const { service } = useBlockRequestContext();
+  const { service, props: blockProps } = useBlockRequestContext();
+
   const [searchVisible, setSearchVisible] = useState(false);
 
   const collectionFieldName = collectionField.name;
@@ -76,7 +77,15 @@ export const AssociationFilterItem = (props) => {
       delete filters[`af.${collectionFieldName}`];
     }
 
-    service.run({ ...service.params?.[0], pageSize: 200, page: 1, filter: mergeFilter(Object.values(filters)) }, { filters });
+    service.run(
+      {
+        ...service.params?.[0],
+        pageSize: 200,
+        page: 1,
+        filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
+      },
+      { filters },
+    );
   };
 
   const handleSearchToggle = (e: MouseEvent) => {

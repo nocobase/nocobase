@@ -4,7 +4,7 @@ import { cloudFilenameGetter } from '../utils';
 export default {
   filenameKey: 'key',
   make(storage) {
-    const S3Client = require('aws-sdk/clients/s3');
+    const { S3Client } = require('@aws-sdk/client-s3');
     const multerS3 = require('multer-s3');
     const { accessKeyId, secretAccessKey, bucket, acl = 'public-read', ...options } = storage.options;
     const s3 = new S3Client({
