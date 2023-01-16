@@ -106,7 +106,7 @@ export default {
 
   'Assignee': '负责人',
   'Assignees': '负责人',
-  'Operation user interface': '操作界面',
+  'User interface': '操作界面',
   'Configure user interface': '配置界面',
   'Separately': '分别处理',
   'Each user has own task': '每个人处理各自的任务',

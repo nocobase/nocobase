@@ -72,7 +72,7 @@ export default {
     },
     'config.schema': {
       type: 'void',
-      title: `{{t("Operation user interface", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Action',
       'x-component-props': {
