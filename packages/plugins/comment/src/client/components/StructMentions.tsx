@@ -50,7 +50,7 @@ export const StructMentions = (props: StructMentionsProps) => {
   };
 
   const handleSelect = (option: OptionProps, prefix: string) => {
-    setAts([...ats, mentions.find((i) => i.nickname === option.value)]);
+    setAts([...ats, mentions.find((i) => i.id === ~~option.key)]);
   };
 
   return (
