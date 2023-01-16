@@ -1,10 +1,8 @@
 import {
   ApartmentOutlined,
   FullscreenExitOutlined,
-  FullscreenOutlined,
-  MenuOutlined,
-  ShareAltOutlined,
-  LineHeightOutlined,
+  FullscreenOutlined, LineHeightOutlined, MenuOutlined,
+  ShareAltOutlined
 } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import '@antv/x6-react-shape';
@@ -12,30 +10,25 @@ import { css, cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
-  collection,
-  CollectionManagerProvider,
+  collection, CollectionManagerContext, CollectionManagerProvider,
   CurrentAppInfoContext,
   SchemaComponent,
-  SchemaComponentOptions,
-  useAPIClient,
+  SchemaComponentOptions, Select, useAPIClient,
   useCollectionManager,
   useCompile,
-  useCurrentAppInfo,
-  Select,
-  CollectionManagerContext,
+  useCurrentAppInfo
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
-import { Button, Input, Layout, Menu, Popover, Tooltip, Switch } from 'antd';
+import { Button, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
-import { drop, groupBy, last, maxBy, minBy, take, debounce } from 'lodash';
+import { drop, groupBy, last, maxBy, minBy, take } from 'lodash';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
 import Entity from './components/Entity';
-import { collectionListClass, graphCollectionContainerClass } from './style';
-import { formatData, getDiffEdge, getDiffNode, getInheritCollections, getChildrenCollections } from './utils';
 import { SimpleNodeView } from './components/ViewNode';
+import { collectionListClass, graphCollectionContainerClass } from './style';
+import { formatData, getChildrenCollections, getDiffEdge, getDiffNode, getInheritCollections, useGCMTranslation } from './utils';
 
 const LINE_HEIGHT = 40;
 const NODE_WIDTH = 250;
@@ -360,7 +353,7 @@ export const GraphDrawPage = React.memo(() => {
   const ctx = useContext(CollectionManagerContext);
   const api = useAPIClient();
   const compile = useCompile();
-  const { t } = useTranslation('graphPositions');
+  const { t } = useGCMTranslation();
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
   const { refreshCM } = useCollectionManager();

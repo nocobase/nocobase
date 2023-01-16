@@ -13,7 +13,7 @@ import { ActionContext, SchemaComponent, useActionContext } from '../schema-comp
 
 const langs = Object.keys(locale).map((lang) => {
   return {
-    label: locale[lang].label,
+    label: `${locale[lang].label} (${lang})`,
     value: lang,
   };
 });

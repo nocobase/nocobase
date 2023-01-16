@@ -1,13 +1,11 @@
 import { css } from '@emotion/css';
+import { useMutationObserver } from 'ahooks';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
-  ACLRolesCheckProvider,
-  CurrentUser,
-  CurrentUserProvider,
-  CurrentAppInfoProvider,
-  findByUid,
+  ACLRolesCheckProvider, CurrentAppInfoProvider, CurrentUser,
+  CurrentUserProvider, findByUid,
   findMenuItem,
   RemoteCollectionManagerProvider,
   RemotePluginManagerToolbar,
@@ -17,11 +15,9 @@ import {
   useDocumentTitle,
   useRequest,
   useRoute,
-  useSystemSettings,
+  useSystemSettings
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
-import { PoweredBy } from '../../../powered-by';
-import { useMutationObserver } from 'ahooks';
 
 const filterByACL = (schema, options) => {
   const { allowAll, allowMenuItemIds = [] } = options;
@@ -209,8 +205,8 @@ export const InternalAdminLayout = (props: any) => {
           max-width: var(--side-menu-width);
           min-width: var(--side-menu-width);
           pointer-events: none;
-          transition: background-color 0.3s ease 0s, min-width 0.3s ease 0s,
-            max-width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s;
+          /* transition: background-color 0.3s ease 0s, min-width 0.3s ease 0s,
+            max-width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s; */
         `}
       ></div>
       <Layout.Sider

@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/plugin-client",
-  "version": "0.9.0-alpha.1",
+  "version": "0.9.0-alpha.2",
   "main": "lib/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@nocobase/server": "0.9.0-alpha.1"
+    "@nocobase/server": "0.9.0-alpha.2"
   },
   "devDependencies": {
-    "@nocobase/test": "0.9.0-alpha.1"
+    "@nocobase/test": "0.9.0-alpha.2"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }
