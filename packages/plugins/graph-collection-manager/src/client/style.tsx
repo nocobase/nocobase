@@ -128,7 +128,7 @@ export const entityContainer = css`
 `;
 
 export const headClass = css`
-  height: 40px;
+  height: 50px;
   font-size: 14px;
   font-weight: 500;
   display: flex;
@@ -139,6 +139,7 @@ export const headClass = css`
   color: rgb(29 33 41);
   padding: 0 8px;
   border-radius: 3px;
+  padding-top:20px;
 `;
 
 export const tableNameClass = css`
