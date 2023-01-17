@@ -343,6 +343,21 @@ export function NodeDefaultView(props) {
                       }
                     },
                     properties: {
+                      ...(workflow.executed ? {
+                        alert: {
+                          'x-component': Alert,
+                          'x-component-props': {
+                            type: 'warning',
+                            showIcon: true,
+                            message: `{{t("Node in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
+                            className: css`
+                              width: 100%;
+                              font-size: 85%;
+                              margin-bottom: 2em;
+                            `
+                          },
+                        }
+                      } : {}),
                       title: {
                         type: 'string',
                         name: 'title',
@@ -368,25 +383,12 @@ export function NodeDefaultView(props) {
                         },
                         properties: instruction.fieldset
                       },
-                      actions: {
+                      actions: workflow.executed
+                      ? null
+                      : {
                         type: 'void',
                         'x-component': 'Action.Drawer.Footer',
-                        properties: workflow.executed
-                        ? {
-                          alert: {
-                            'x-component': Alert,
-                            'x-component-props': {
-                              type: 'warning',
-                              showIcon: true,
-                              message: `{{t("Node in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                              className: css`
-                                width: 100%;
-                                font-size: 85%;
-                              `
-                            },
-                          }
-                        }
-                        : {
+                        properties: {
                           cancel: {
                             title: '{{t("Cancel")}}',
                             'x-component': 'Action',
