@@ -179,27 +179,31 @@ export const TriggerConfig = () => {
                       }
                     `
                   },
-                  properties: fieldset
+                  properties: {
+                    ...(executed ? {
+                      alert: {
+                        'x-component': Alert,
+                        'x-component-props': {
+                          type: 'warning',
+                          showIcon: true,
+                          message: `{{t("Trigger in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
+                          className: css`
+                            width: 100%;
+                            font-size: 85%;
+                            margin-bottom: 2em;
+                          `
+                        },
+                      }
+                    } : {}),
+                    ...fieldset
+                  }
                 },
-                actions: {
+                actions: executed
+                ? null
+                : {
                   type: 'void',
                   'x-component': 'Action.Drawer.Footer',
-                  properties: executed
-                  ? {
-                    alert: {
-                      'x-component': Alert,
-                      'x-component-props': {
-                        type: 'warning',
-                        showIcon: true,
-                        message: `{{t("Trigger in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                        className: css`
-                          width: 100%;
-                          font-size: 85%;
-                        `
-                      },
-                    }
-                  }
-                  : {
+                  properties: {
                     cancel: {
                       title: '{{t("Cancel")}}',
                       'x-component': 'Action',
