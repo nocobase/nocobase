@@ -256,7 +256,7 @@ export const Gantt: any = (props) => {
       ),
     );
   }, [
-    // tasks,
+    dataSource,
     viewMode,
     preStepsCount,
     rowHeight,
