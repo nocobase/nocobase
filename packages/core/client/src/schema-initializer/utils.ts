@@ -1038,30 +1038,6 @@ export const createGanttBlockSchema = (options) => {
     'x-designer': 'Gantt.Designer',
     'x-component': 'CardItem',
     properties: {
-      // [uid()]: {
-      //   type: 'array',
-      //   'x-decorator': 'GantTableBlockProvider',
-      //   'x-decorator-props': {
-      //     style: {
-      //       display: 'inline-block',
-      //       maxWidth: '30%',
-      //       width: '100%',
-      //       verticalAlign: 'top',
-      //       marginTop: '55px'
-      //     },
-      //   },
-
-      //   'x-initializer': 'GanttColumnInitializers',
-      //   'x-component': 'TableV2',
-      //   'x-component-props': {
-      //     rowKey: 'id',
-      //     rowSelection: {
-      //       type: 'checkbox',
-      //     },
-      //     useProps: '{{ useTableBlockProps }}',
-      //     pagination: false,
-      //   },
-      // },
       [uid()]: {
         type: 'void',
         'x-component': 'Gantt',
