@@ -1,7 +1,7 @@
 import { css, cx } from "@emotion/css";
 import { ISchema, useForm } from "@formily/react";
 import { Registry } from "@nocobase/utils/client";
-import { message, Tag } from "antd";
+import { message, Tag, Alert } from "antd";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { InfoOutlined } from '@ant-design/icons';
@@ -161,6 +161,7 @@ export const TriggerConfig = () => {
               'x-component': 'Action.Drawer',
               'x-decorator': 'Form',
               'x-decorator-props': {
+                disabled: workflow.executed,
                 useValues(options) {
                   return useRequest(() => Promise.resolve({
                     data: { config },
@@ -187,11 +188,16 @@ export const TriggerConfig = () => {
                   'x-component': 'Action.Drawer.Footer',
                   properties: executed
                   ? {
-                    close: {
-                      title: '{{t("Close")}}',
-                      'x-component': 'Action',
+                    alert: {
+                      'x-component': Alert,
                       'x-component-props': {
-                        useAction: '{{ cm.useCancelAction }}',
+                        type: 'warning',
+                        showIcon: true,
+                        message: `{{t("Trigger in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
+                        className: css`
+                          width: 100%;
+                          font-size: 85%;
+                        `
                       },
                     }
                   }
