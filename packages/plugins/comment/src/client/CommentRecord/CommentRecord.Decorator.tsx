@@ -87,7 +87,7 @@ const useCommentsCollection = () => {
 export const CommentRecordDecorator = observer((props: any) => {
   const parent = useCollection();
   const record = useRecord();
-  const { interfaces } = useContext(CollectionManagerContext);
+  const { collections, ...restCollectionManagerCtx } = useContext(CollectionManagerContext);
   const commentsCollection = useCommentsCollection();
 
   let filter = props?.params?.filter;
@@ -127,7 +127,7 @@ export const CommentRecordDecorator = observer((props: any) => {
   };
   return (
     <IsAssociationBlock.Provider value={!!parent.name}>
-      <CollectionManagerProvider collections={[commentsCollection]} interfaces={interfaces}>
+      <CollectionManagerProvider {...restCollectionManagerCtx} collections={[...collections, commentsCollection]}>
         <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
       </CollectionManagerProvider>
     </IsAssociationBlock.Provider>
