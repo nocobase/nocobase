@@ -19,7 +19,7 @@ import { HorizontalScroll } from '../other/horizontal-scroll';
 import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
 import styles from './gantt.module.css';
 import { GanttToolbarContext } from '../../context';
-import { SchemaComponent, SchemaComponentProvider } from '../../../../../schema-component';
+import { useDesignable } from '../../../../../schema-component';
 import { TableBlockProvider, useGanttBlockContext } from '../../../../../block-provider';
 import { useProps } from '../../../../hooks/useProps';
 
@@ -146,8 +146,10 @@ function Toolbar(props) {
   );
 }
 export const Gantt: any = (props) => {
+  const { designable } = useDesignable();
+
   const {
-    headerHeight = 65,
+    headerHeight = designable?65:55,
     columnWidth = 60,
     listCellWidth = '155px',
     rowHeight = 55,
@@ -208,14 +210,13 @@ export const Gantt: any = (props) => {
   const taskHeight = useMemo(() => (rowHeight * barFill) / 100, [rowHeight, barFill]);
   const [selectedTask, setSelectedTask] = useState<BarTask>();
   const [failedTask, setFailedTask] = useState<BarTask | null>(null);
-
+  const ctx = useGanttBlockContext();
   const svgWidth = dateSetup.dates.length * columnWidth;
   const ganttFullHeight = barTasks.length * rowHeight;
 
   const [scrollY, setScrollY] = useState(0);
   const [scrollX, setScrollX] = useState(-1);
   const [ignoreScrollEvent, setIgnoreScrollEvent] = useState(false);
-console.log(fieldSchema)
   // task change events
   useEffect(() => {
     let filteredTasks: Task[];
@@ -516,7 +517,6 @@ console.log(fieldSchema)
     onClick,
     onDelete,
   };
-  const ctx = useGanttBlockContext();
 
   // const tableProps: TaskListProps = {
   //   rowHeight,
