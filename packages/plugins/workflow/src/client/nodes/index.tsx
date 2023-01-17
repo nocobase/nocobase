@@ -5,7 +5,7 @@ import {
 } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
-import { Button, message, Modal, Tag } from 'antd';
+import { Button, message, Modal, Tag, Alert } from 'antd';
 import { useTranslation } from 'react-i18next';
 import parse from 'json-templates';
 
@@ -334,6 +334,7 @@ export function NodeDefaultView(props) {
                     'x-component': 'Action.Drawer',
                     'x-decorator': 'Form',
                     'x-decorator-props': {
+                      disabled: workflow.executed,
                       useValues(options) {
                         const d = useNodeContext();
                         return useRequest(() => {
@@ -354,7 +355,6 @@ export function NodeDefaultView(props) {
                         name: 'config',
                         'x-component': 'fieldset',
                         'x-component-props': {
-                          disabled: workflow.executed,
                           className: css`
                             .ant-select,
                             .ant-cascader-picker,
@@ -373,11 +373,16 @@ export function NodeDefaultView(props) {
                         'x-component': 'Action.Drawer.Footer',
                         properties: workflow.executed
                         ? {
-                          close: {
-                            title: '{{t("Close")}}',
-                            'x-component': 'Action',
+                          alert: {
+                            'x-component': Alert,
                             'x-component-props': {
-                              useAction: '{{ cm.useCancelAction }}',
+                              type: 'warning',
+                              showIcon: true,
+                              message: `{{t("Node in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
+                              className: css`
+                                width: 100%;
+                                font-size: 85%;
+                              `
                             },
                           }
                         }
