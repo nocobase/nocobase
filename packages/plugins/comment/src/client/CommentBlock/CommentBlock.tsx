@@ -53,7 +53,7 @@ export const CommentBlock = (props) => {
         recordId: recordId,
       },
       sort: 'createdAt',
-      appends: ['commenter', 'commentUsers'],
+      appends: ['collection', 'commenter', 'commentUsers'],
     },
   });
 

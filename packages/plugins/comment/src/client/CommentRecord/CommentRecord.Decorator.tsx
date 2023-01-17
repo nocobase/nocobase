@@ -116,7 +116,7 @@ export const CommentRecordDecorator = observer((props: any) => {
     action: 'list',
     params: {
       pageSize: 20,
-      appends: ['commenter', 'commentUsers'],
+      appends: ['collection', 'commenter', 'commentUsers'],
       ...props.params,
       filter,
       sort: '-createdAt',

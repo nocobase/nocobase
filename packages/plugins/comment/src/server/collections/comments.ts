@@ -4,20 +4,15 @@ export default {
   name: 'comments',
   autoGenId: true,
   timestamps: true,
-  // sortable: {
-  //   name: 'sort',
-  //   scopeKey: 'collectionName',
-  // },
-  // indexes: [
-  //   {
-  //     type: 'UNIQUE',
-  //     fields: ['collectionName', 'name'],
-  //   },
-  // ],
   fields: [
     {
-      type: 'string',
-      name: 'collectionName',
+      type: 'belongsTo',
+      name: 'collection',
+      target: 'collections',
+      targetKey: 'name',
+      sourceKey: 'id',
+      foreignKey: 'collectionName',
+      constraints: false,
     },
     {
       type: 'integer',

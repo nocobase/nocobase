@@ -14,7 +14,8 @@ const Username = observer(() => {
 
 const PlainText = observer(() => {
   const field = useField<any>();
-  return <div>{field.value}</div>;
+  const compile = useCompile();
+  return <div>{compile(field.value)}</div>;
 });
 
 const Field = observer(() => {
@@ -217,7 +218,18 @@ export const CommentRecord: any = () => {
                 'x-component': 'TableV2.Column',
                 title: t('Collection name'),
                 properties: {
-                  collectionName: {
+                  'collection.name': {
+                    'x-component': 'PlainText',
+                    'x-read-pretty': true,
+                  },
+                },
+              },
+              columnCollectioTitle: {
+                type: 'void',
+                'x-component': 'TableV2.Column',
+                title: t('Collection title'),
+                properties: {
+                  'collection.title': {
                     'x-component': 'PlainText',
                     'x-read-pretty': true,
                   },
