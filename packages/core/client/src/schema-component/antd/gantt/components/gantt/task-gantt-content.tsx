@@ -128,7 +128,7 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
       setIsMoving(false);
 
       // custom operation start
-      let operationSuccess = true;
+      let operationSuccess:any = true;
       if (
         (action === "move" || action === "end" || action === "start") &&
         onDateChange &&

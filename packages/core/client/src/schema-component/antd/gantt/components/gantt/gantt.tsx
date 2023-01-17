@@ -123,7 +123,7 @@ const formatData = (data = [], fieldNames) => {
       name: v[fieldNames.title],
       id: v.id + '',
       type: 'task',
-      progress:10,
+      progress: 10,
     });
   });
   return tasks;
@@ -150,7 +150,7 @@ export const Gantt: any = (props) => {
   const { designable } = useDesignable();
 
   const {
-    headerHeight = designable?65:55,
+    headerHeight = designable ? 65 : 55,
     columnWidth = 60,
     listCellWidth = '155px',
     rowHeight = 55,
@@ -191,9 +191,8 @@ export const Gantt: any = (props) => {
   } = props;
   const fieldSchema = useFieldSchema();
   const { fieldNames, dataSource } = useProps(props);
-  const { range: viewMode } = fieldNames;
+  const { range: viewMode } = fieldNames || { range: 'day' };
   const tasks = formatData(dataSource, fieldNames) || [];
-  // console.log(tasks);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
   const [dateSetup, setDateSetup] = useState<DateSetup>(() => {
@@ -538,11 +537,9 @@ export const Gantt: any = (props) => {
   //   TaskListTable,
   // };
 
- 
   return (
     <div>
       <Toolbar />
-
       <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
         <TableBlockProvider
           service={ctx.service}
