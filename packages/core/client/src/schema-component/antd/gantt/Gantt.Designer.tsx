@@ -35,7 +35,6 @@ export const GanttDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
-  console.log(title || name)
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
@@ -61,7 +60,7 @@ export const GanttDesigner = () => {
         }}
       />
       <SchemaSettings.SwitchItem
-        title={t('Show lunar')}
+        title={t('Time Range')}
         checked={field.decoratorProps.showLunar}
         onChange={(v) => {
           field.decoratorProps.showLunar = v;

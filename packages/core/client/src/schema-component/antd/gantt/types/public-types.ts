@@ -1,13 +1,13 @@
 export enum ViewMode {
-  Hour = "Hour",
-  QuarterDay = "Quarter Day",
-  HalfDay = "Half Day",
-  Day = "Day",
+  Hour = "hour",
+  QuarterDay = "quarterDay",
+  HalfDay = "halfDay",
+  Day = "day",
   /** ISO-8601 week */
-  Week = "Week",
-  Month = "Month",
-  QuarterYear = "QuarterYear",
-  Year = "Year",
+  Week = "week",
+  Month = "month",
+  QuarterYear = "quarterYear",
+  Year = "year",
 }
 export type TaskType = "task" | "milestone" | "project";
 export interface Task {

@@ -64,10 +64,10 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
   // create xStep
   useEffect(() => {
     const dateDelta =
-      dates[1].getTime() -
-      dates[0].getTime() -
-      dates[1].getTimezoneOffset() * 60 * 1000 +
-      dates[0].getTimezoneOffset() * 60 * 1000;
+      dates[1]?.getTime() -
+      dates[0]?.getTime() -
+      dates[1]?.getTimezoneOffset() * 60 * 1000 +
+      dates[0]?.getTimezoneOffset() * 60 * 1000;
     const newXStep = (timeStep * columnWidth) / dateDelta;
     setXStep(newXStep);
   }, [columnWidth, dates, timeStep]);

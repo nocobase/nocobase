@@ -22,6 +22,14 @@ export const GanttActionInitializers = {
           },
           {
             type: 'item',
+            title: "{{t('Time range')}}",
+            component: 'FilterActionInitializer',
+            schema: {
+              'x-align': 'right',
+            },
+          },
+          {
+            type: 'item',
             title: "{{t('Filter')}}",
             component: 'FilterActionInitializer',
             schema: {

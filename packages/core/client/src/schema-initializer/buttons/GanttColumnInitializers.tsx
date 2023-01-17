@@ -60,13 +60,11 @@ export const GanttColumnInitializers = (props: any) => {
       component: 'TableActionColumnInitializer',
     },
   );
-  console.log(5)
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
       icon={'SettingOutlined'}
       wrap={(s) => {
-        console.log(s)
         if (s['x-action-column']) {
           return s;
         }

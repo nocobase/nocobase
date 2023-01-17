@@ -6,16 +6,12 @@ import { useCollectionManager } from '../collection-manager';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFixedSchema } from '../schema-component';
 
-
 export const TableBlockContext = createContext<any>({});
 
 const InternalTableBlockProvider = (props) => {
-  const { params, showIndex, dragSort, rowKey } = props;
+  const { params, showIndex, dragSort, rowKey, ...other } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
-  // if (service.loading) {
-  //   return <Spin />;
-  // }
   useFixedSchema();
   return (
     <TableBlockContext.Provider
@@ -27,6 +23,7 @@ const InternalTableBlockProvider = (props) => {
         showIndex,
         dragSort,
         rowKey,
+        ...other,
       }}
     >
       <RenderChildrenWithAssociationFilter {...props} />
@@ -153,3 +150,4 @@ export const useTableBlockProps = () => {
     },
   };
 };
+

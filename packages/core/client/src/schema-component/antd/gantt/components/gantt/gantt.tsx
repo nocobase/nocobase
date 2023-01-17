@@ -1,5 +1,5 @@
 import React, { useState, SyntheticEvent, useRef, useEffect, useMemo } from 'react';
-import { useFieldSchema, Schema, RecursionField } from '@formily/react';
+import { useFieldSchema, Schema, RecursionField, ISchema } from '@formily/react';
 import { ViewMode, GanttProps, Task } from '../../types/public-types';
 import { GridProps } from '../grid/grid';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
@@ -19,98 +19,114 @@ import { HorizontalScroll } from '../other/horizontal-scroll';
 import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
 import styles from './gantt.module.css';
 import { GanttToolbarContext } from '../../context';
+import { SchemaComponent, SchemaComponentProvider } from '../../../../../schema-component';
+import { TableBlockProvider, useGanttBlockContext } from '../../../../../block-provider';
+import { useProps } from '../../../../hooks/useProps';
 
-export function initTasks() {
-  const currentDate = new Date();
-  const tasks: Task[] = [
-    {
-      start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1),
-      end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 15),
-      name: 'Some Project',
-      id: 'ProjectSample',
-      progress: 25,
-      type: 'project',
-      hideChildren: false,
-      displayOrder: 1,
-    },
-    {
-      start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1),
-      end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 2, 12, 28),
-      name: 'Idea',
-      id: 'Task 0',
-      progress: 45,
+// export function getTestTasks() {
+//   const currentDate = new Date();
+//   const tasks: Task[] = [
+// {
+//   start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1),
+//   end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 15),
+//   name: 'Some Project',
+//   id: '6',
+//   progress: 25,
+//   type: 'project',
+//   hideChildren: false,
+//   displayOrder: 1,
+// },
+// {
+//   start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1),
+//   end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 2, 12, 28),
+//   name: 'Idea',
+//   id: 'Task 0',
+//   progress: 45,
+//   type: 'task',
+//   project: '6',
+//   displayOrder: 2,
+// },
+// {
+//   start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 2),
+//   end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 4, 0, 0),
+//   name: 'Research',
+//   id: 'Task 1',
+//   progress: 25,
+//   dependencies: ['Task 0'],
+//   type: 'task',
+//   project: '6',
+//   displayOrder: 3,
+// },
+// {
+//   start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 4),
+//   end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 8, 0, 0),
+//   name: 'Discussion with team',
+//   id: 'Task 2',
+//   progress: 10,
+//   dependencies: ['Task 1'],
+//   type: 'task',
+//   project: '6',
+//   displayOrder: 4,
+// },
+// {
+//   start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 8),
+//   end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 9, 0, 0),
+//   name: 'Developing',
+//   id: 'Task 3',
+//   progress: 2,
+//   dependencies: ['Task 2'],
+//   type: 'task',
+//   project: '6',
+//   displayOrder: 5,
+// },
+// {
+//   start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 8),
+//   end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 10),
+//   name: 'Review',
+//   id: 'Task 4',
+//   type: 'task',
+//   progress: 70,
+//   dependencies: ['Task 2'],
+//   project: '6',
+//   displayOrder: 6,
+// },
+// {
+//   start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 15),
+//   end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 15),
+//   name: 'Release',
+//   id: 'Task 6',
+//   progress: currentDate.getMonth(),
+//   type: 'milestone',
+//   dependencies: ['Task 4'],
+//   project: '6',
+//   displayOrder: 7,
+// },
+//     {
+//       // start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 18),
+//       // end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 19),
+//       // name: 'Party Time',
+//       id: 'Task 9',
+//       // progress: 0,
+//       // isDisabled: true,
+//       type: 'task',
+//     },
+//   ];
+//   return tasks;
+// }
+
+const formatData = (data = [], fieldNames) => {
+  const tasks: any[] = [];
+  data.forEach((v) => {
+    tasks.push({
+      start: new Date(v[fieldNames.start]),
+      end: new Date(v[fieldNames.end]),
+      name: v[fieldNames.title],
+      id: v.id + '',
       type: 'task',
-      project: 'ProjectSample',
-      displayOrder: 2,
-    },
-    {
-      start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 2),
-      end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 4, 0, 0),
-      name: 'Research',
-      id: 'Task 1',
-      progress: 25,
-      dependencies: ['Task 0'],
-      type: 'task',
-      project: 'ProjectSample',
-      displayOrder: 3,
-    },
-    {
-      start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 4),
-      end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 8, 0, 0),
-      name: 'Discussion with team',
-      id: 'Task 2',
-      progress: 10,
-      dependencies: ['Task 1'],
-      type: 'task',
-      project: 'ProjectSample',
-      displayOrder: 4,
-    },
-    {
-      start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 8),
-      end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 9, 0, 0),
-      name: 'Developing',
-      id: 'Task 3',
-      progress: 2,
-      dependencies: ['Task 2'],
-      type: 'task',
-      project: 'ProjectSample',
-      displayOrder: 5,
-    },
-    {
-      start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 8),
-      end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 10),
-      name: 'Review',
-      id: 'Task 4',
-      type: 'task',
-      progress: 70,
-      dependencies: ['Task 2'],
-      project: 'ProjectSample',
-      displayOrder: 6,
-    },
-    {
-      start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 15),
-      end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 15),
-      name: 'Release',
-      id: 'Task 6',
-      progress: currentDate.getMonth(),
-      type: 'milestone',
-      dependencies: ['Task 4'],
-      project: 'ProjectSample',
-      displayOrder: 7,
-    },
-    {
-      start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 18),
-      end: new Date(currentDate.getFullYear(), currentDate.getMonth(), 19),
-      name: 'Party Time',
-      id: 'Task 9',
-      progress: 0,
-      isDisabled: true,
-      type: 'task',
-    },
-  ];
+    });
+  });
   return tasks;
-}
-
+};
 function Toolbar(props) {
   const fieldSchema = useFieldSchema();
   const toolBarSchema: Schema = useMemo(
@@ -129,48 +145,51 @@ function Toolbar(props) {
     </GanttToolbarContext.Provider>
   );
 }
-export const Gantt: any = ({
-  tasks = initTasks(),
-  headerHeight = 50,
-  columnWidth = 60,
-  listCellWidth = '155px',
-  rowHeight = 50,
-  ganttHeight = 0,
-  viewMode = ViewMode.Day,
-  preStepsCount = 1,
-  locale = 'en-GB',
-  barFill = 60,
-  barCornerRadius = 3,
-  barProgressColor = '#a3a3ff',
-  barProgressSelectedColor = '#8282f5',
-  barBackgroundColor = '#b8c2cc',
-  barBackgroundSelectedColor = '#aeb8c2',
-  projectProgressColor = '#7db59a',
-  projectProgressSelectedColor = '#59a985',
-  projectBackgroundColor = '#fac465',
-  projectBackgroundSelectedColor = '#f7bb53',
-  milestoneBackgroundColor = '#f1c453',
-  milestoneBackgroundSelectedColor = '#f29e4c',
-  rtl = false,
-  handleWidth = 8,
-  timeStep = 300000,
-  arrowColor = 'grey',
-  fontFamily = 'Arial, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue',
-  fontSize = '14px',
-  arrowIndent = 20,
-  todayColor = 'rgba(252, 248, 227, 0.5)',
-  viewDate,
-  TooltipContent = StandardTooltipContent,
-  TaskListHeader = TaskListHeaderDefault,
-  TaskListTable = TaskListTableDefault,
-  onDateChange,
-  onProgressChange,
-  onDoubleClick,
-  onClick,
-  onDelete,
-  onSelect,
-  onExpanderClick,
-}) => {
+export const Gantt: any = (props) => {
+  const {
+    headerHeight = 65,
+    columnWidth = 60,
+    listCellWidth = '155px',
+    rowHeight = 55,
+    ganttHeight = 0,
+    preStepsCount = 1,
+    locale = 'en-GB',
+    barFill = 60,
+    barCornerRadius = 3,
+    barProgressColor = '#a3a3ff',
+    barProgressSelectedColor = '#8282f5',
+    barBackgroundColor = '#b8c2cc',
+    barBackgroundSelectedColor = '#aeb8c2',
+    projectProgressColor = '#7db59a',
+    projectProgressSelectedColor = '#59a985',
+    projectBackgroundColor = '#fac465',
+    projectBackgroundSelectedColor = '#f7bb53',
+    milestoneBackgroundColor = '#f1c453',
+    milestoneBackgroundSelectedColor = '#f29e4c',
+    rtl = false,
+    handleWidth = 8,
+    timeStep = 300000,
+    arrowColor = 'grey',
+    fontFamily = 'Arial, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue',
+    fontSize = '14px',
+    arrowIndent = 20,
+    todayColor = 'rgba(252, 248, 227, 0.5)',
+    viewDate,
+    TooltipContent = StandardTooltipContent,
+    TaskListHeader = TaskListHeaderDefault,
+    TaskListTable = TaskListTableDefault,
+    onDateChange,
+    onProgressChange,
+    onDoubleClick,
+    onClick,
+    onDelete,
+    onSelect,
+    onExpanderClick,
+  } = props;
+  const { fieldNames, dataSource } = useProps(props);
+  const { range: viewMode } = fieldNames;
+  const tasks = formatData(dataSource, fieldNames) || [];
+  // console.log(tasks);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
   const [dateSetup, setDateSetup] = useState<DateSetup>(() => {
@@ -178,7 +197,6 @@ export const Gantt: any = ({
     return { viewMode, dates: seedDates(startDate, endDate, viewMode) };
   });
   const [currentViewDate, setCurrentViewDate] = useState<Date | undefined>(undefined);
-
   const [taskListWidth, setTaskListWidth] = useState(0);
   const [svgContainerWidth, setSvgContainerWidth] = useState(0);
   const [svgContainerHeight, setSvgContainerHeight] = useState(ganttHeight);
@@ -187,7 +205,6 @@ export const Gantt: any = ({
     action: '',
   });
   const taskHeight = useMemo(() => (rowHeight * barFill) / 100, [rowHeight, barFill]);
-
   const [selectedTask, setSelectedTask] = useState<BarTask>();
   const [failedTask, setFailedTask] = useState<BarTask | null>(null);
 
@@ -498,38 +515,74 @@ export const Gantt: any = ({
     onClick,
     onDelete,
   };
+  const ctx = useGanttBlockContext();
 
-  const tableProps: TaskListProps = {
-    rowHeight,
-    rowWidth: listCellWidth,
-    fontFamily,
-    fontSize,
-    tasks: barTasks,
-    locale,
-    headerHeight,
-    scrollY,
-    ganttHeight,
-    horizontalContainerClass: styles.horizontalContainer,
-    selectedTask,
-    taskListRef,
-    setSelectedTask: handleSelectedTask,
-    onExpanderClick: handleExpanderClick,
-    TaskListHeader,
-    TaskListTable,
-  };
+  // const tableProps: TaskListProps = {
+  //   rowHeight,
+  //   rowWidth: listCellWidth,
+  //   fontFamily,
+  //   fontSize,
+  //   tasks: barTasks,
+  //   locale,
+  //   headerHeight,
+  //   scrollY,
+  //   ganttHeight,
+  //   horizontalContainerClass: styles.horizontalContainer,
+  //   selectedTask,
+  //   taskListRef,
+  //   setSelectedTask: handleSelectedTask,
+  //   onExpanderClick: handleExpanderClick,
+  //   TaskListHeader,
+  //   TaskListTable,
+  // };
+
+  const tableSchema = {
+    type: 'array',
+    'x-decorator': 'div',
+    'x-decorator-props': {
+      style: {
+        display: 'inline-block',
+        maxWidth: '30%',
+      },
+    },
+
+    'x-initializer': 'TableColumnInitializers',
+    'x-uid':'gant_table',
+    'x-component': 'TableV2',
+    'x-component-props': {
+      rowKey: 'id',
+      rowSelection: {
+        type: 'checkbox',
+      },
+      useProps: '{{ useTableBlockProps }}',
+      pagination: false,
+    },
+  } as unknown as Schema;
+
   return (
     <div>
-      <Toolbar  />
+      <Toolbar />
+
       <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
-        {listCellWidth && <TaskList {...tableProps} />}
-        <TaskGantt
-          gridProps={gridProps}
-          calendarProps={calendarProps}
-          barProps={barProps}
-          ganttHeight={ganttHeight}
-          scrollY={scrollY}
-          scrollX={scrollX}
-        />
+        <TableBlockProvider
+          service={ctx.service}
+          {...ctx}
+          params={{
+            paginate: false,
+          }}
+        >
+          <RecursionField name={'table'} schema={tableSchema} />
+        </TableBlockProvider>
+        {
+          <TaskGantt
+            gridProps={gridProps}
+            calendarProps={calendarProps}
+            barProps={barProps}
+            ganttHeight={ganttHeight}
+            scrollY={scrollY}
+            scrollX={scrollX}
+          />
+        }
         {ganttEvent.changedTask && (
           <Tooltip
             arrowIndent={arrowIndent}
