@@ -22,7 +22,7 @@ describe('update through', () => {
           type: 'integer',
           primaryKey: true,
           autoIncrement: true,
-        }
+        },
       ],
     });
     db.collection({
@@ -45,6 +45,10 @@ describe('update through', () => {
       fields: [],
     });
     await db.sync();
+    const callback1 = jest.fn();
+    const callback2 = jest.fn();
+    db.on('c.afterCreate', callback1);
+    db.on('c.afterBulkCreate', callback2);
     const b = await db.getRepository('b').create({
       values: {},
     });
@@ -60,7 +64,10 @@ describe('update through', () => {
         b: [b.toJSON()],
       },
     });
+
     const c2 = await db.getRepository('c').findOne();
-    expect(c1.get('id')).toBe(c2.get('id'))
+    expect(c1.get('id')).toBe(c2.get('id'));
+    expect(callback1).toHaveBeenCalledTimes(1);
+    expect(callback2).toHaveBeenCalledTimes(1);
   });
 });
