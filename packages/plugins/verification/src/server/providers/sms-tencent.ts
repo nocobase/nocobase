@@ -22,35 +22,31 @@ export default class extends Provider {
       region,
       profile: {
         httpProfile: {
-          endpoint: endpoint || "sms.tencentcloudapi.com"
+          endpoint
         },
       },
     })
   }
 
 
-  async send(PhoneNumberSet, data: { code: string }) {
+  async send(phoneNumbers, data: { code: string }) {
     const { SignName, TemplateId, SmsSdkAppId } = this.options
-    console.log("🚀 ~ file: sms-tencent.ts:35 ~ extends ~ send ~ this.options", this.options)
-    console.log({
-      PhoneNumberSet,
-      SignName,
-      TemplateId,
-      SmsSdkAppId,
-      TemplateParamSet: [data.code]
-    })
     const result = await this.client.SendSms({
-      PhoneNumberSet,
+      PhoneNumberSet: [phoneNumbers],
       SignName,
       TemplateId,
       SmsSdkAppId,
       TemplateParamSet: [data.code]
     })
-    if (result.SendStatusSet[0].Code !== 'Ok') {
-      const err = new Error(result.SendStatusSet[0].Message);
-      err.name = 'SendSMSFailed';
-      return Promise.reject(err);
+
+    const errCode = result.SendStatusSet[0].Code
+    const error = new Error(`${errCode}1231:${result.SendStatusSet[0].Message}`)
+    switch (errCode) {
+      case 'Ok':
+        return result.RequestId
+      case 'InvalidParameterValue.IncorrectPhoneNumber':
+        error.name = 'InvalidReceiver'
     }
-    return result.RequestId
+    throw error
   }
 }

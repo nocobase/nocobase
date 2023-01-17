@@ -19,12 +19,7 @@ export async function create(context: Context, next: Next) {
     return context.throw(400, 'Invalid action type');
   }
 
-  const ProviderRepo = context.db.getRepository('verifications_providers');
-  const providerItem = await ProviderRepo.findOne({
-    filter: {
-      default: true
-    }
-  });
+  const providerItem = await plugin.getDefault()
   if (!providerItem) {
     console.error(`[verification] no provider for action (${values.type}) provided`);
     return context.throw(500);
@@ -75,7 +70,7 @@ export async function create(context: Context, next: Next) {
         return context.throw(429, context.t('You are trying so frequently, please slow down', { ns: namespace }));
       default:
         console.error(error);
-        return context.throw(500, context.t('Verification send failed, please try later or contact to administrator', { ns: namespace }));
+        return context.throw(500, context.t(error.message || 'Verification send failed, please try later or contact to administrator', { ns: namespace }));
     }
   }
 

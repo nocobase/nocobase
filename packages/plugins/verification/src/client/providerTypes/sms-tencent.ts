@@ -21,7 +21,7 @@ export default {
       title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
-      'x-component': 'Password',
+      'x-component': 'Input',
     },
     endpoint: {
       title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,
