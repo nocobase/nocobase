@@ -21,7 +21,7 @@ import { merge, uid } from '@nocobase/utils/client';
 import { useTrigger } from '../../triggers';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
 import { useFlowContext } from '../../FlowContext';
-import { NAMESPACE } from '../../locale';
+import { lang, NAMESPACE } from '../../locale';
 import { JOB_STATUS } from '../../constants';
 
 
@@ -407,6 +407,7 @@ export function SchemaConfig({ value, onChange }) {
   const node = useNodeContext();
   const nodes = useAvailableUpstreams(node);
   const form = useForm();
+  const { workflow } = useFlowContext();
 
   const { collection = {
     name: uid(),
@@ -496,7 +497,7 @@ export function SchemaConfig({ value, onChange }) {
   });
 
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: !node.job }}>
+    <SchemaComponentContext.Provider value={{ ...ctx, designable: !workflow.executed }}>
       <SchemaInitializerProvider initializers={{ AddBlockButton, AddFormField, AddActionButton, ...trigger.initializers, ...nodeInitializers }}>
         <SchemaComponentRefreshProvider
           onRefresh={() => {
@@ -540,5 +541,20 @@ export function SchemaConfig({ value, onChange }) {
         </SchemaComponentRefreshProvider>
       </SchemaInitializerProvider>
     </SchemaComponentContext.Provider>
+  );
+}
+
+export function SchemaConfigButton(props) {
+  const { workflow } = useFlowContext();
+  const [visible, setVisible] = useState(false);
+  return (
+    <>
+      <div className="ant-btn ant-btn-primary" onClick={() => setVisible(true)}>
+        {workflow.executed ? lang('View user interface') : lang('Configure user interface')}
+      </div>
+      <ActionContext.Provider value={{ visible, setVisible }}>
+        {props.children}
+      </ActionContext.Provider>
+    </>
   );
 }

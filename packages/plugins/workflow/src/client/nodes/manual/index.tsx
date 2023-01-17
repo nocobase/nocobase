@@ -1,13 +1,13 @@
 import { BlockInitializers, SchemaInitializerItemOptions } from '@nocobase/client';
 
-import { NAMESPACE } from '../../locale';
-import { ValueGetter } from './ValueGetter';
-import { SchemaConfig } from './SchemaConfig';
-import { ModeConfig } from './ModeConfig';
-import { AssigneesSelect } from './AssigneesSelect';
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
 import { filterTypedFields, useOperandContext } from '../../variable';
+import { NAMESPACE } from '../../locale';
+import { ValueGetter } from './ValueGetter';
+import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
+import { ModeConfig } from './ModeConfig';
+import { AssigneesSelect } from './AssigneesSelect';
 
 
 const MULTIPLE_ASSIGNED_MODE = {
@@ -74,11 +74,7 @@ export default {
       type: 'void',
       title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Action',
-      'x-component-props': {
-        type: 'primary',
-        title: `{{t("Configure user interface", { ns: "${NAMESPACE}" })}}`,
-      },
+      'x-component': 'SchemaConfigButton',
       properties: {
         schema: {
           type: 'object',
@@ -93,6 +89,7 @@ export default {
   scope: {
   },
   components: {
+    SchemaConfigButton,
     SchemaConfig,
     ModeConfig,
     AssigneesSelect
