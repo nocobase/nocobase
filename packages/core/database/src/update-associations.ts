@@ -392,7 +392,7 @@ export async function updateMultipleAssociation(
     }
 
     if (isStringOrNumber(value)) {
-      await model[setAccessor](value, { transaction, context });
+      await model[setAccessor](value, { transaction, context, individualHooks: true });
       return;
     }
 
@@ -424,7 +424,7 @@ export async function updateMultipleAssociation(
     }
 
     // associate targets in lists1
-    await model[setAccessor](list1, { transaction, context });
+    await model[setAccessor](list1, { transaction, context, individualHooks: true });
 
     const list3 = [];
     for (const item of list2) {
