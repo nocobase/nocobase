@@ -1080,48 +1080,70 @@ export const createGanttBlockSchema = (options) => {
             'x-initializer': 'GanttActionInitializers',
             properties: {},
           },
-          event: {
-            type: 'void',
-            'x-component': 'Gantt.Event',
-            properties: {
-              drawer: {
-                type: 'void',
-                'x-component': 'Action.Drawer',
-                'x-component-props': {
-                  className: 'nb-action-popup',
-                },
-                title: '{{ t("View record") }}',
-                properties: {
-                  tabs: {
-                    type: 'void',
-                    'x-component': 'Tabs',
-                    'x-component-props': {},
-                    'x-initializer': 'TabPaneInitializers',
-                    properties: {
-                      tab1: {
-                        type: 'void',
-                        title: '{{t("Details")}}',
-                        'x-component': 'Tabs.TabPane',
-                        'x-designer': 'Tabs.Designer',
-                        'x-component-props': {},
-                        properties: {
-                          grid: {
-                            type: 'void',
-                            'x-component': 'Grid',
-                            'x-initializer-props': {
-                              actionInitializers: 'GanttFormActionInitializers',
-                            },
-                            'x-initializer': 'RecordBlockInitializers',
-                            properties: {},
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
+          table:{
+            type: 'array',
+            'x-decorator': 'div',
+            'x-decorator-props': {
+              style: {
+                display: 'inline-block',
+                maxWidth: '30%',
               },
             },
+        
+            'x-initializer': 'TableColumnInitializers',
+            'x-component': 'TableV2',
+            'x-component-props': {
+              rowKey: 'id',
+              rowSelection: {
+                type: 'checkbox',
+              },
+              useProps: '{{ useTableBlockProps }}',
+              pagination: false,
+            },
           },
+          // event: {
+          //   type: 'void',
+          //   'x-component': 'Gantt.Event',
+          //   properties: {
+          //     drawer: {
+          //       type: 'void',
+          //       'x-component': 'Action.Drawer',
+          //       'x-component-props': {
+          //         className: 'nb-action-popup',
+          //       },
+          //       title: '{{ t("View record") }}',
+          //       properties: {
+          //         tabs: {
+          //           type: 'void',
+          //           'x-component': 'Tabs',
+          //           'x-component-props': {},
+          //           'x-initializer': 'TabPaneInitializers',
+          //           properties: {
+          //             tab1: {
+          //               type: 'void',
+          //               title: '{{t("Details")}}',
+          //               'x-component': 'Tabs.TabPane',
+          //               'x-designer': 'Tabs.Designer',
+          //               'x-component-props': {},
+          //               properties: {
+          //                 grid: {
+          //                   type: 'void',
+          //                   'x-component': 'Grid',
+          //                   'x-initializer-props': {
+          //                     actionInitializers: 'GanttFormActionInitializers',
+          //                   },
+          //                   'x-initializer': 'RecordBlockInitializers',
+          //                   properties: {},
+          //                 },
+          //               },
+          //             },
+          //           },
+          //         },
+          //       },
+          //     },
+          //   },
+          // },
+
         },
       },
     },

@@ -186,6 +186,7 @@ export const Gantt: any = (props) => {
     onSelect,
     onExpanderClick,
   } = props;
+  const fieldSchema = useFieldSchema();
   const { fieldNames, dataSource } = useProps(props);
   const { range: viewMode } = fieldNames;
   const tasks = formatData(dataSource, fieldNames) || [];
@@ -214,7 +215,7 @@ export const Gantt: any = (props) => {
   const [scrollY, setScrollY] = useState(0);
   const [scrollX, setScrollX] = useState(-1);
   const [ignoreScrollEvent, setIgnoreScrollEvent] = useState(false);
-
+console.log(fieldSchema)
   // task change events
   useEffect(() => {
     let filteredTasks: Task[];
@@ -536,29 +537,7 @@ export const Gantt: any = (props) => {
   //   TaskListTable,
   // };
 
-  const tableSchema = {
-    type: 'array',
-    'x-decorator': 'div',
-    'x-decorator-props': {
-      style: {
-        display: 'inline-block',
-        maxWidth: '30%',
-      },
-    },
-
-    'x-initializer': 'TableColumnInitializers',
-    'x-uid':'gant_table',
-    'x-component': 'TableV2',
-    'x-component-props': {
-      rowKey: 'id',
-      rowSelection: {
-        type: 'checkbox',
-      },
-      useProps: '{{ useTableBlockProps }}',
-      pagination: false,
-    },
-  } as unknown as Schema;
-
+ 
   return (
     <div>
       <Toolbar />
@@ -571,7 +550,7 @@ export const Gantt: any = (props) => {
             paginate: false,
           }}
         >
-          <RecursionField name={'table'} schema={tableSchema} />
+          <RecursionField name={'table'} schema={fieldSchema.properties.table} />
         </TableBlockProvider>
         {
           <TaskGantt
