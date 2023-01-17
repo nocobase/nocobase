@@ -19,6 +19,11 @@ export class CommentPlugin extends Plugin {
     };
 
     this.app.db.on('collections.afterDestroy', collectionHandler);
+
+    this.app.db.on('commentsUsers.afterBulkCreate', (models: Model[]) => {
+      const users = models.map((i) => i.toJSON()).map((i) => i.userId);
+      this.app.db.emit('afterMention', { users });
+    });
   }
 
   async load() {
