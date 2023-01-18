@@ -11,7 +11,7 @@ export const useCommentRecordInitializerItem = () => {
   );
   !hasCommentRecordInitializer &&
     mediaItem.children.push({
-      key: 'comment',
+      key: 'comments',
       type: 'item',
       title: t('Comment Record'),
       component: 'CommentRecordInitializer',

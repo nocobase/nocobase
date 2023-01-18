@@ -1,1 +1,1 @@
-export { default } from '@nocobase/plugin-comment/client';
+export { default } from '@nocobase/plugin-comments/client';

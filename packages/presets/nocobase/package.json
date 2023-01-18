@@ -22,7 +22,7 @@
     "@nocobase/plugin-math-formula-field": "0.9.0-alpha.2",
     "@nocobase/plugin-oidc": "0.9.0-alpha.2",
     "@nocobase/plugin-saml": "0.9.0-alpha.2",
-    "@nocobase/plugin-comment": "0.9.0-alpha.2",
+    "@nocobase/plugin-comments": "0.9.0-alpha.2",
     "@nocobase/plugin-sample-hello": "0.9.0-alpha.2",
     "@nocobase/plugin-sequence-field": "0.9.0-alpha.2",
     "@nocobase/plugin-snapshot-field": "0.9.0-alpha.2",

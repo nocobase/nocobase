@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-comment",
+  "name": "@nocobase/plugin-comments",
   "version": "0.9.0-alpha.2",
   "main": "lib/server/index.js",
   "devDependencies": {

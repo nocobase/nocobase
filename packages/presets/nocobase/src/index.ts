@@ -35,7 +35,7 @@ export class PresetNocoBase extends Plugin {
     const localPlugins = [
       'sample-hello',
       'oidc',
-      'comment',
+      'comments',
       'saml',
       'map',
       'snapshot-field',
