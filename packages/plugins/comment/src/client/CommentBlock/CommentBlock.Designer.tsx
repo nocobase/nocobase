@@ -8,13 +8,6 @@ export const CommentBlockDesigner = () => {
   const { t } = useTranslation();
   return (
     <GeneralSchemaDesigner>
-      {/* <SchemaSettings.Item
-        title={t('Edit markdown')}
-        onClick={() => {
-          field.editable = true;
-        }}
-      />
-      <SchemaSettings.Divider /> */}
       <SchemaSettings.Remove
         removeParentsIfNoChildren
         breakRemoveOn={{

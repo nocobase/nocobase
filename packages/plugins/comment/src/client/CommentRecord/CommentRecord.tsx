@@ -251,7 +251,7 @@ export const CommentRecord: any = () => {
                 'x-component': 'TableV2.Column',
                 title: t('Commenter'),
                 properties: {
-                  commenter: {
+                  createdBy: {
                     'x-component': 'Commenter',
                     'x-read-pretty': true,
                   },

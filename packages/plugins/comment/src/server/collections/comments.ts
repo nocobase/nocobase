@@ -4,6 +4,8 @@ export default {
   name: 'comments',
   autoGenId: true,
   timestamps: true,
+  createdBy: true,
+  updatedBy: true,
   fields: [
     {
       type: 'belongsTo',
@@ -15,17 +17,12 @@ export default {
       constraints: false,
     },
     {
-      type: 'integer',
+      type: 'string',
       name: 'recordId',
     },
     {
-      type: 'string',
+      type: 'text',
       name: 'content',
-    },
-    {
-      type: 'belongsTo',
-      name: 'commenter',
-      target: 'users',
     },
     {
       type: 'belongsToMany',

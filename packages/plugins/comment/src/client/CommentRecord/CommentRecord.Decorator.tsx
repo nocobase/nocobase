@@ -43,10 +43,10 @@ const useCommentsCollection = () => {
         },
       },
       {
-        name: 'commenter',
+        name: 'createdBy',
         type: 'belongsTo',
         target: 'users',
-        interface: 'updatedBy',
+        interface: 'createdBy',
         uiSchema: {
           type: 'object',
           title: t('Commenter'),
@@ -116,7 +116,7 @@ export const CommentRecordDecorator = observer((props: any) => {
     action: 'list',
     params: {
       pageSize: 20,
-      appends: ['collection', 'commenter', 'commentUsers'],
+      appends: ['collection', 'createdBy', 'commentUsers'],
       ...props.params,
       filter,
       sort: '-createdAt',

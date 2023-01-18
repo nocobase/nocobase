@@ -16,7 +16,7 @@ export interface User {
 
 export interface CommentItem {
   id: string;
-  commenter: User;
+  createdBy: User;
   commentUsers: User[];
   content: string;
 }
@@ -50,10 +50,10 @@ export const CommentBlock = (props) => {
       paginate: false,
       filter: {
         collectionName: collectionName,
-        recordId: recordId,
+        recordId: String(recordId),
       },
       sort: 'createdAt',
-      appends: ['collection', 'commenter', 'commentUsers'],
+      appends: ['collection', 'createdBy', 'commentUsers'],
     },
   });
 
@@ -66,9 +66,9 @@ export const CommentBlock = (props) => {
     await create({
       values: {
         collectionName: collectionName,
-        recordId: recordId,
+        recordId: String(recordId),
         content: formValues.content,
-        commenter: currentUserId,
+        createdBy: currentUserId,
         commentUsers,
       },
     });
@@ -140,7 +140,7 @@ export const CommentBlock = (props) => {
                 {t('Delete')}
               </span>,
             ]}
-            author={<a>{i.commenter.nickname}</a>}
+            author={<a>{i.createdBy.nickname}</a>}
             content={<p>{getContent(i)}</p>}
           />
         ))
