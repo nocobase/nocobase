@@ -6,23 +6,17 @@ export class CommentPlugin extends Plugin {
   afterAdd() {}
 
   async beforeLoad() {
-    const collectionHandler = async (model: Model, { transaction }) => {
-      const collectionDoc = model.toJSON();
-      const comments: Model[] = await this.app.db.getRepository('comments').find({
+    this.app.db.on('collections.afterDestroy', async (model: Model, { transaction }) => {
+      await this.app.db.getRepository('comments').destroy({
         filter: {
-          collectionName: collectionDoc.name,
+          collectionName: model.get('name') as string,
         },
+        transaction,
       });
-      for (let comment of comments) {
-        await comment.destroy({ transaction });
-      }
-    };
-
-    this.app.db.on('collections.afterDestroy', collectionHandler);
+    });
 
     this.app.db.on('commentsUsers.afterBulkCreate', (models: Model[]) => {
-      const users = models.map((i) => i.toJSON()).map((i) => i.userId);
-      this.app.db.emit('afterMention', { users });
+      this.app.db.emit('afterMention', { models });
     });
   }
 
