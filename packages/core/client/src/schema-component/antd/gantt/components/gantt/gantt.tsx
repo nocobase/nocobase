@@ -20,7 +20,8 @@ import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
 import styles from './gantt.module.css';
 import { GanttToolbarContext } from '../../context';
 import { useDesignable } from '../../../../../schema-component';
-import { TableBlockProvider, useGanttBlockContext } from '../../../../../block-provider';
+import { TableBlockProvider, useGanttBlockContext, useBlockRequestContext } from '../../../../../block-provider';
+
 import { useProps } from '../../../../hooks/useProps';
 
 // export function getTestTasks() {
@@ -188,6 +189,7 @@ export const Gantt: any = (props) => {
     onSelect,
     onExpanderClick,
   } = props;
+  const { resource } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
   const { fieldNames, dataSource } = useProps(props);
   const { range: viewMode } = fieldNames || { range: 'day' };
@@ -457,7 +459,6 @@ export const Gantt: any = (props) => {
    * Task select event
    */
   const handleSelectedTask = (taskId: string) => {
-    console.log(taskId);
     const newSelectedTask = barTasks.find((t) => t.id === taskId);
     const oldSelectedTask = barTasks.find((t) => !!selectedTask && t.id === selectedTask.id);
     if (onSelect) {
@@ -475,14 +476,25 @@ export const Gantt: any = (props) => {
       onExpanderClick({ ...task, hideChildren: !task.hideChildren });
     }
   };
-  const handleProgressChange = (task) => {
+  const handleProgressChange = async (task) => {
     console.log(task);
+    await resource.update({
+      filterByTk: task.id,
+      values: {
+        ...task,
+        [fieldNames.progress]: task.progress,
+      },
+    });
   };
-  const handleTaskChange = (task) => {
-    console.log('On date change Id:' + task.id);
-    let newTasks = tasks.map((t) => (t.id === task.id ? task : t));
-    console.log(newTasks);
-    // setTasks(newTasks);
+  const handleTaskChange = async (task) => {
+    await resource.update({
+      filterByTk: task.id,
+      values: {
+        ...task,
+        [fieldNames.start]: task.start,
+        [fieldNames.end]: task.end,
+      },
+    });
   };
   const gridProps: GridProps = {
     columnWidth,
