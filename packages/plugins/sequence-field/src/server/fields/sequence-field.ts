@@ -334,6 +334,9 @@ export class SequenceField extends Field {
   };
 
   setValue = async (instance: Model, options) => {
+    if (options.skipIndividualHooks?.has(`${this.collection.name}.beforeCreate.${this.name}`)) {
+      return;
+    }
     const { name, patterns, inputable } = this.options;
     const value = instance.get(name);
     if (value != null && inputable) {
@@ -355,6 +358,10 @@ export class SequenceField extends Field {
     if (!instances.length) {
       return;
     }
+    if (!options.skipIndividualHooks) {
+      options.skipIndividualHooks = new Set();
+    }
+    options.skipIndividualHooks.add(`${this.collection.name}.beforeCreate.${this.name}`);
 
     const { name, patterns, inputable } = this.options;
     const array = Array(patterns.length).fill(null).map(() => Array(instances.length));
@@ -370,6 +377,10 @@ export class SequenceField extends Field {
       }
     });
   };
+
+  cleanHook = (_, options) => {
+    options.skipIndividualHooks.delete(`${this.collection.name}.beforeCreate.${this.name}`);
+  }
 
   match(value) {
     return typeof value === 'string' ? value.match(this.matcher) : null;
@@ -400,6 +411,7 @@ export class SequenceField extends Field {
     this.on('beforeValidate', this.validate);
     this.on('beforeCreate', this.setValue);
     this.on('beforeBulkCreate', this.setGroupValue);
+    this.on('afterBulkCreate', this.cleanHook);
   }
 
   unbind() {
@@ -407,5 +419,6 @@ export class SequenceField extends Field {
     this.off('beforeValidate', this.validate);
     this.off('beforeCreate', this.setValue);
     this.off('beforeBulkCreate', this.setGroupValue);
+    this.off('afterBulkCreate', this.cleanHook);
   }
 }
