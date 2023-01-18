@@ -15,8 +15,8 @@ export class CommentPlugin extends Plugin {
       });
     });
 
-    this.app.db.on('commentsUsers.afterBulkCreate', (models: Model[]) => {
-      this.app.db.emit('afterMention', { models });
+    this.app.db.on('commentsUsers.afterBulkCreate', (models: Model[], options) => {
+      this.app.db.emit('afterMentions', models, options);
     });
   }
 

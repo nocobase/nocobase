@@ -20,7 +20,7 @@ export class CollectionModel extends MagicAttributeModel {
     const data = super.toJSON();
     return {
       ...data,
-      titleField: collection.titleField,
+      titleField: data.titleField || collection?.titleField,
     };
   }
 
