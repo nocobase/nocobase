@@ -26,7 +26,7 @@ export default {
     },
     {
       type: 'belongsToMany',
-      name: 'commentUsers',
+      name: 'mentionUsers',
       target: 'users',
       foreignKey: 'userId',
       otherKey: 'commentId',

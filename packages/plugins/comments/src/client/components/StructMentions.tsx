@@ -12,16 +12,16 @@ export interface StructMentionsValue {
 export type StructMentionsProps = Omit<MentionProps, 'value' | 'onChange' | 'children'> & {
   value?: string;
   onChange?: (value: string) => void;
-  commentUsers?: any[];
+  mentionUsers?: any[];
 };
 
 export const StructMentions = (props: StructMentionsProps) => {
-  const { value, onChange, commentUsers = [] } = props;
+  const { value, onChange, mentionUsers = [] } = props;
 
   const { t } = useCommentTranslation();
   const [mentions, setMentions] = useState([]);
   const [mentionsLoading, setMentionsLoading] = useState(false);
-  const [ats, setAts] = useState(commentUsers);
+  const [ats, setAts] = useState(mentionUsers);
   const { list } = useResource('users');
 
   const textareaRef = useRef<{ textarea: HTMLTextAreaElement }>();

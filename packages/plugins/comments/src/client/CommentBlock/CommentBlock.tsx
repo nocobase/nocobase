@@ -17,7 +17,7 @@ export interface User {
 export interface CommentItem {
   id: string;
   createdBy: User;
-  commentUsers: User[];
+  mentionUsers: User[];
   content: string;
 }
 
@@ -53,7 +53,7 @@ export const CommentBlock = (props) => {
         recordId: String(recordId),
       },
       sort: 'createdAt',
-      appends: ['collection', 'createdBy', 'commentUsers'],
+      appends: ['collection', 'createdBy', 'mentionUsers'],
     },
   });
 
@@ -61,7 +61,7 @@ export const CommentBlock = (props) => {
 
   const handleFinish = async () => {
     const formValues = form.getFieldsValue();
-    const commentUsers = getCommentUsers(formValues.content);
+    const mentionUsers = getMentionUsers(formValues.content);
 
     await create({
       values: {
@@ -69,7 +69,7 @@ export const CommentBlock = (props) => {
         recordId: String(recordId),
         content: formValues.content,
         createdBy: currentUserId,
-        commentUsers,
+        mentionUsers: mentionUsers,
       },
     });
     form.resetFields();
@@ -93,13 +93,13 @@ export const CommentBlock = (props) => {
     let commentValue = undefined;
 
     const handleOk = async () => {
-      const commentUsers = getCommentUsers(commentValue);
+      const mentionUsers = getMentionUsers(commentValue);
 
       await update({
         filterByTk: item.id,
         values: {
           content: commentValue,
-          commentUsers,
+          mentionUsers,
         },
       });
       form.resetFields();
@@ -120,7 +120,7 @@ export const CommentBlock = (props) => {
           commentValue = value;
         }, [value]);
 
-        return <StructMentions commentUsers={item.commentUsers} value={value} onChange={(e) => setValue(e)} />;
+        return <StructMentions mentionUsers={item.mentionUsers} value={value} onChange={(e) => setValue(e)} />;
       }),
     });
   };
@@ -163,22 +163,22 @@ export const CommentBlock = (props) => {
   );
 };
 
-export const getCommentUsers = (content: string) => {
+export const getMentionUsers = (content: string) => {
   const reg = createReg('.*?', 'g');
   const atIds: number[] = [];
 
   content.replace(reg, (match, p1) => atIds.push(~~p1) as unknown as string);
 
-  const commentUsers = Array.from(new Set([...atIds]));
+  const mentionUsers = Array.from(new Set([...atIds]));
 
-  return commentUsers;
+  return mentionUsers;
 };
 
 export const getContent = (item: CommentItem) => {
   const reg = createReg('.*?', 'g');
   const replaces = [];
   let plainText = item.content.replace(reg, (match, p1) => {
-    const name = item.commentUsers.find((i) => i.id === ~~p1)?.nickname ?? p1;
+    const name = item.mentionUsers.find((i) => i.id === ~~p1)?.nickname ?? p1;
     replaces.push(`@${name}`);
     return `@${name}`;
   });

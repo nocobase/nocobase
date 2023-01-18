@@ -61,7 +61,7 @@ const useCommentsCollection = () => {
         },
       },
       {
-        name: 'commentUsers',
+        name: 'mentionUsers',
         type: 'belongsToMany',
         target: 'users',
         foreignKey: 'userId',
@@ -116,7 +116,7 @@ export const CommentRecordDecorator = observer((props: any) => {
     action: 'list',
     params: {
       pageSize: 20,
-      appends: ['collection', 'createdBy', 'commentUsers'],
+      appends: ['collection', 'createdBy', 'mentionUsers'],
       ...props.params,
       filter,
       sort: '-createdAt',
