@@ -14,6 +14,13 @@ export interface Pattern {
     opts: { [key: string]: any },
     options: Transactionable,
   ): Promise<string> | string;
+  batchGenerate(
+    this: SequenceField,
+    instances: Model[],
+    values: string[],
+    opts: { [key: string]: any },
+    options: Transactionable,
+  ): Promise<void> | void;
   getLength(options): number;
   getMatcher(options): string;
   update?(
@@ -37,6 +44,11 @@ sequencePatterns.register('string', {
   generate(instance, options) {
     return options.value;
   },
+  batchGenerate(instances, values, options) {
+    instances.forEach((instance, i) => {
+      values[i] = options.value;
+    });
+  },
   getLength(options) {
     return options.value.length;
   },
@@ -55,20 +67,27 @@ sequencePatterns.register('integer', {
   async generate(this: SequenceField, instance: Model, options, { transaction }) {
     const recordTime = <Date>instance.get('createdAt');
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
-    const max = Math.pow(base, digits) - 1;
-    const SeqRepo = this.database.getRepository('sequences');
-    const lastSeq = await SeqRepo.findOne({
+    const { repository: SeqRepo, model: SeqModel } = this.database.getCollection('sequences');
+    const lastSeq = (await SeqRepo.findOne({
       filter: {
         collection: this.collection.name,
         field: this.name,
         key,
       },
       transaction,
+    })) || SeqModel.build({
+      collection: this.collection.name,
+      field: this.name,
+      key,
     });
 
-    let next;
-    if (lastSeq && lastSeq.get('current') != null) {
+    let next = start;
+    if (lastSeq.get('current') != null) {
       next = Math.max(lastSeq.get('current') + 1, start);
+      const max = Math.pow(base, digits) - 1;
+      if (next > max) {
+        next = start;
+      }
 
       // cycle as cron string
       if (cycle) {
@@ -78,12 +97,6 @@ sequencePatterns.register('integer', {
           next = start;
         }
       }
-    } else {
-      next = start;
-    }
-
-    if (next > max) {
-      next = start;
     }
 
     // update options
@@ -110,9 +123,82 @@ sequencePatterns.register('integer', {
   },
 
   getMatcher(options = {}) {
-    const { digits = 1, start = 0, base = 10 } = options;
+    const { digits = 1, base = 10 } = options;
     const chars = '0123456789abcdefghijklmnopqrstuvwxyz'.slice(0, base);
     return `[${chars}]{${digits}}`;
+  },
+
+  async batchGenerate(instances, values, options, { transaction }) {
+    const { name, patterns } = this.options;
+    const { digits = 1, start = 0, base = 10, cycle, key } = options;
+
+    const { repository: SeqRepo, model: SeqModel } = this.database.getCollection('sequences');
+    const lastSeq = (await SeqRepo.findOne({
+      filter: {
+        collection: this.collection.name,
+        field: this.name,
+        key,
+      },
+      transaction,
+    })) || SeqModel.build({
+      collection: this.collection.name,
+      field: this.name,
+      key,
+    });
+
+    instances.forEach((instance, i) => {
+      const recordTime = <Date>instance.get('createdAt');
+      const value = instance.get(name);
+      if (value != null && this.options.inputable) {
+        const matcher = this.match(value);
+        // 如果匹配到了，需要检查是否要更新 current 值
+        if (matcher) {
+          const patternIndex = patterns.indexOf(options);
+          const number = Number.parseInt(matcher[patternIndex + 1], base);
+          // 如果当前值大于 lastSeq.current，则更新 lastSeq.current
+          if (lastSeq.get('current') == null) {
+            lastSeq.set({
+              current: number,
+              lastGeneratedAt: recordTime,
+            });
+          } else {
+            if (number > lastSeq.get('current')) {
+              lastSeq.set({
+                current: number,
+                lastGeneratedAt: recordTime,
+              });
+            }
+          }
+        }
+        // 否则交给 validate 检查是否要求 match，如果要求，则相应报错
+      } else {
+        // 自动生成
+        let next = start;
+        if (lastSeq.get('current') != null) {
+          next = Math.max(lastSeq.get('current') + 1, start);
+          const max = Math.pow(base, digits) - 1;
+          if (next > max) {
+            next = start;
+          }
+
+          // cycle as cron string
+          if (cycle) {
+            const interval = parser.parseExpression(cycle, { currentDate: <Date>lastSeq.get('lastGeneratedAt') });
+            const nextTime = interval.next();
+            if (recordTime.getTime() >= nextTime.getTime()) {
+              next = start;
+            }
+          }
+        }
+        lastSeq.set({
+          current: next,
+          lastGeneratedAt: recordTime,
+        });
+        values[i] = next.toString(base).padStart(digits, '0');
+      }
+    });
+
+    await lastSeq.save({ transaction });
   },
 
   async update(instance, value, options, { transaction }) {
@@ -183,6 +269,14 @@ sequencePatterns.register('date', {
   generate(this: SequenceField, instance, options) {
     return moment(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
   },
+  batchGenerate(instances, values, options) {
+    const { name, inputable } = options;
+    instances.forEach((instance, i) => {
+      if (!inputable || instance.get(name) == null) {
+        values[i] = sequencePatterns.get('date').generate.call(this, instance, options);
+      }
+    });
+  },
   getLength(options) {
     return options.format?.length ?? 8;
   },
@@ -250,14 +344,14 @@ export class SequenceField extends Field {
   };
 
   setValue = async (instance: Model, options) => {
-    const { name, patterns, inputable, match } = this.options;
+    const { name, patterns, inputable } = this.options;
     const value = instance.get(name);
     if (value != null && inputable) {
       return this.update(instance, options);
     }
 
     const results = await patterns.reduce(
-      (promise, p, i) =>
+      (promise, p) =>
         promise.then(async (result) => {
           const item = await sequencePatterns.get(p.type).generate.call(this, instance, p.options, options);
           return result.concat(item);
@@ -265,6 +359,26 @@ export class SequenceField extends Field {
       Promise.resolve([]),
     );
     instance.set(name, results.join(''));
+  };
+
+  setGroupValue = async (instances: Model[], options) => {
+    if (!instances.length) {
+      return;
+    }
+
+    const { name, patterns, inputable } = this.options;
+    const array = Array(patterns.length).fill(null).map(() => Array(instances.length));
+
+    await patterns.reduce((promise, p, i) => promise.then(() =>
+      sequencePatterns.get(p.type).batchGenerate.call(this, instances, array[i], p.options, options)),
+      Promise.resolve());
+
+    instances.forEach((instance, i) => {
+      const value = instance.get(name);
+      if (!inputable || value == null) {
+        instance.set(this.name, array.map((a) => a[i]).join(''));
+      }
+    });
   };
 
   match(value) {
@@ -295,11 +409,13 @@ export class SequenceField extends Field {
     super.bind();
     this.on('beforeValidate', this.validate);
     this.on('beforeCreate', this.setValue);
+    this.on('beforeBulkCreate', this.setGroupValue);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeValidate', this.validate);
     this.off('beforeCreate', this.setValue);
+    this.off('beforeBulkCreate', this.setGroupValue);
   }
 }
