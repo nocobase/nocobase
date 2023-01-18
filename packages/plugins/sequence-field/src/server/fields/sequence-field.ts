@@ -99,21 +99,11 @@ sequencePatterns.register('integer', {
       }
     }
 
-    // update options
-    if (lastSeq) {
-      await lastSeq.update({ current: next, lastGeneratedAt: recordTime }, { transaction });
-    } else {
-      await SeqRepo.create({
-        values: {
-          collection: this.collection.name,
-          field: this.name,
-          key,
-          current: next,
-          lastGeneratedAt: recordTime,
-        },
-        transaction,
-      });
-    }
+    lastSeq.set({
+      current: next,
+      lastGeneratedAt: recordTime,
+    });
+    await lastSeq.save({ transaction });
 
     return next.toString(base).padStart(digits, '0');
   },
