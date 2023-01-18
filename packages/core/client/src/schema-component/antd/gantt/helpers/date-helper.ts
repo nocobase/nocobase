@@ -2,6 +2,7 @@ import { Task, ViewMode } from '../types/public-types';
 
 const DateTimeFormat = Intl.DateTimeFormat;
 type DateTimeFormat = typeof DateTimeFormat;
+//@ts-ignore
 const DateTimeFormatOptions = Intl.DateTimeFormatOptions;
 type DateTimeFormatOptions = typeof DateTimeFormatOptions;
 type DateHelperScales = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond';
@@ -154,6 +155,7 @@ export const seedDates = (startDate: Date, endDate: Date, viewMode: ViewMode) =>
 export const getLocaleMonth = (date: Date, locale: string) => {
   let bottomValue = getCachedDateTimeFormat(locale, {
     month: 'long',
+    //@ts-ignore
   }).format(date);
   bottomValue = bottomValue.replace(bottomValue[0], bottomValue[0].toLocaleUpperCase());
   return bottomValue;
@@ -162,6 +164,7 @@ export const getLocaleMonth = (date: Date, locale: string) => {
 export const getLocalDayOfWeek = (date: Date, locale: string, format?: 'long' | 'short' | 'narrow' | undefined) => {
   let bottomValue = getCachedDateTimeFormat(locale, {
     weekday: format,
+    //@ts-ignore
   }).format(date);
   bottomValue = bottomValue.replace(bottomValue[0], bottomValue[0].toLocaleUpperCase());
   return bottomValue;

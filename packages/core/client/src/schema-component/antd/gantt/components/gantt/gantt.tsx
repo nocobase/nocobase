@@ -123,7 +123,7 @@ const formatData = (data = [], fieldNames) => {
       name: v[fieldNames.title],
       id: v.id + '',
       type: 'task',
-      progress: 10,
+      progress: v[fieldNames.progress],
     });
   });
   return tasks;

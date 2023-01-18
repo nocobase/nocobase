@@ -37,6 +37,14 @@ export const GanttBlockInitializer = (props) => {
               value: field.name,
             };
           });
+          const numberFields = collectionFields
+          ?.filter((field) => field.type === 'double')
+          ?.map((field) => {
+            return {
+              label: field?.uiSchema?.title,
+              value: field.name,
+            };
+          });
         const values = await FormDialog(t('Create gantt block'), () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
@@ -62,6 +70,12 @@ export const GanttBlockInitializer = (props) => {
                       end: {
                         title: t('End date field'),
                         enum: dateFields,
+                        'x-component': 'Select',
+                        'x-decorator': 'FormItem',
+                      },
+                       progress: {
+                        title: t('Progress field'),
+                        enum: numberFields,
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                       },

@@ -59,12 +59,27 @@ export const GanttDesigner = () => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.SwitchItem
+      <SchemaSettings.SelectItem
         title={t('Time Range')}
-        checked={field.decoratorProps.showLunar}
-        onChange={(v) => {
-          field.decoratorProps.showLunar = v;
-          fieldSchema['x-decorator-props']['showLunar'] = v;
+        value={fieldNames.range}
+        options={[
+          { label: compile('{{t("Hour")}}'), value: 'hour', color: 'orange' },
+          { label: compile('{{t("Quarter of day")}}'), value: 'quarterOfDay', color: 'default' },
+          { label: compile('{{t("Half of day")}}'), value: 'halOfDay', color: 'blue' },
+          { label: compile('{{t("Day")}}'), value: 'day', color: 'yellow' },
+          { label: compile('{{t("Week")}}'), value: 'week', color: 'pule' },
+          { label: compile('{{t("Month")}}'), value: 'month', color: 'green' },
+          { label: compile('{{t("Year")}}'), value: 'year', color: 'green' },
+          { label: compile('{{t("QuarterYear")}}'), value: 'quarterYear', color: 'red' },
+        ]}
+        onChange={(range) => {
+          const fieldNames = field.decoratorProps.fieldNames || {};
+          fieldNames['range'] = range;
+          field.decoratorProps.params = fieldNames;
+          fieldSchema['x-decorator-props']['params'] = fieldNames;
+          // Select切换option后value未按照预期切换，固增加以下代码
+          fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
+          service.refresh();
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -149,7 +164,7 @@ export const GanttDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Calendar'} collectionName={name} resourceName={defaultResource} />
+      <SchemaSettings.Template componentName={'Gantt'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
