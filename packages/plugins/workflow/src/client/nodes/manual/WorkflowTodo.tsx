@@ -9,7 +9,7 @@ import moment from 'moment';
 import { CollectionManagerProvider, CollectionProvider, SchemaComponent, SchemaComponentContext, SchemaComponentOptions, TableBlockProvider, useActionContext, useAPIClient, useCollectionManager, useRecord, useRequest, useTableBlockContext } from "@nocobase/client";
 import { uid } from "@nocobase/utils/client";
 
-import { JobStatusOptions, JobStatusOptionsMap } from "../../constants";
+import { JobStatusOptions, JobStatusOptionsMap, JOB_STATUS } from "../../constants";
 import { NAMESPACE } from "../../locale";
 import { FlowContext, useFlowContext } from "../../FlowContext";
 import { instructions, useAvailableUpstreams } from '..';
@@ -514,7 +514,17 @@ WorkflowTodo.Decorator = function ({ children }) {
       appends: ['user', 'node', 'workflow'],
       except: ['workflow.config'],
       filter: {
-        'workflow.id.$exists': true
+        $or: [
+          {
+            'workflow.current': true
+          },
+          {
+            'workflow.current': false,
+            status: {
+              $ne: JOB_STATUS.PENDING
+            }
+          }
+        ]
       }
     },
     rowKey: 'id',
