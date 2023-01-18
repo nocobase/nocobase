@@ -3,11 +3,11 @@ import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
 import {
   ModelOptions,
+  ModelStatic,
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  ModelStatic,
-  Utils,
+  Utils
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -60,6 +60,10 @@ export class Collection<
 
   get name() {
     return this.options.name;
+  }
+
+  get titleField() {
+    return (this.options.titleField as string) || this.model.primaryKeyAttribute;
   }
 
   get db() {

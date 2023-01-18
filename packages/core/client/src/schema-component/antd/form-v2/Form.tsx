@@ -2,7 +2,7 @@ import { FormLayout } from '@formily/antd';
 import { createForm, Field, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Spin } from 'antd';
+import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
@@ -32,7 +32,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
 const Def = (props: any) => props.children;
 
 const FormDecorator: React.FC<FormProps> = (props) => {
-  const { form, children, ...others } = props;
+  const { form, children, disabled, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   // TODO: component 里 useField 会与当前 field 存在偏差
@@ -65,6 +65,7 @@ const WithForm = (props) => {
         setFormValueChanged?.(true);
       });
     });
+    form.disabled = props.disabled;
     return () => {
       form.removeEffects(id);
     };
@@ -78,6 +79,7 @@ const WithoutForm = (props) => {
   const form = useMemo(
     () =>
       createForm({
+        disabled: props.disabled,
         effects() {
           onFormInputChange((form) => {
             setFormValueChanged?.(true);
@@ -95,12 +97,19 @@ const WithoutForm = (props) => {
 
 export const Form: React.FC<FormProps> & { Designer?: any; ReadPrettyDesigner?: any } = observer((props) => {
   const field = useField<Field>();
-  const { form, ...others } = useProps(props);
+  const { form, disabled, ...others } = useProps(props);
+  const formDisabled = disabled || field.disabled;
   return (
-    <form>
-      <Spin spinning={field.loading || false}>
-        {form ? <WithForm form={form} {...others} /> : <WithoutForm {...others} />}
-      </Spin>
-    </form>
+    <ConfigProvider componentDisabled={formDisabled}>
+      <form>
+        <Spin spinning={field.loading || false}>
+          {form ? (
+            <WithForm form={form} {...others} disabled={formDisabled} />
+          ) : (
+            <WithoutForm {...others} disabled={formDisabled} />
+          )}
+        </Spin>
+      </form>
+    </ConfigProvider>
   );
 });
