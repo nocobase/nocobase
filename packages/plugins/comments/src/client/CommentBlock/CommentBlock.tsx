@@ -23,7 +23,6 @@ export interface CommentItem {
 
 export const CommentBlock = (props) => {
   const { t } = useCommentTranslation();
-  const [editComment, setEditComment] = useState<CommentItem>();
   const [form] = Form.useForm();
   const [modal, contextHolder] = Modal.useModal();
 
@@ -70,6 +69,7 @@ export const CommentBlock = (props) => {
         content: formValues.content,
         createdBy: currentUserId,
         mentionUsers: mentionUsers,
+        recordTitle: record[collection.titleField ?? 'id'],
       },
     });
     form.resetFields();

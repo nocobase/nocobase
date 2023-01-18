@@ -224,12 +224,23 @@ export const CommentRecord: any = () => {
                   },
                 },
               },
-              columnCollectioTitle: {
+              columnCollectionTitle: {
                 type: 'void',
                 'x-component': 'TableV2.Column',
                 title: t('Collection title'),
                 properties: {
                   'collection.title': {
+                    'x-component': 'PlainText',
+                    'x-read-pretty': true,
+                  },
+                },
+              },
+              columnFieldTitle: {
+                type: 'void',
+                'x-component': 'TableV2.Column',
+                title: t('Collection title'),
+                properties: {
+                  recordTitle: {
                     'x-component': 'PlainText',
                     'x-read-pretty': true,
                   },

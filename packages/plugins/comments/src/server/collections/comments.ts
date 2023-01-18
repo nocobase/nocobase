@@ -21,6 +21,10 @@ export default {
       name: 'recordId',
     },
     {
+      type: 'string',
+      name: 'recordTitle',
+    },
+    {
       type: 'text',
       name: 'content',
     },
