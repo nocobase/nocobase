@@ -182,7 +182,6 @@ export const Gantt: any = (props) => {
     TaskListHeader = TaskListHeaderDefault,
     TaskListTable = TaskListTableDefault,
     onDateChange,
-    onProgressChange,
     onDoubleClick,
     onClick,
     onDelete,
@@ -411,6 +410,7 @@ export const Gantt: any = (props) => {
    * Handles arrow keys events and transform it to new scroll
    */
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    console.log(event);
     event.preventDefault();
     let newScrollY = scrollY;
     let newScrollX = scrollX;
@@ -457,6 +457,7 @@ export const Gantt: any = (props) => {
    * Task select event
    */
   const handleSelectedTask = (taskId: string) => {
+    console.log(taskId);
     const newSelectedTask = barTasks.find((t) => t.id === taskId);
     const oldSelectedTask = barTasks.find((t) => !!selectedTask && t.id === selectedTask.id);
     if (onSelect) {
@@ -473,6 +474,15 @@ export const Gantt: any = (props) => {
     if (onExpanderClick && task.hideChildren !== undefined) {
       onExpanderClick({ ...task, hideChildren: !task.hideChildren });
     }
+  };
+  const handleProgressChange = (task) => {
+    console.log(task);
+  };
+  const handleTaskChange = (task) => {
+    console.log('On date change Id:' + task.id);
+    let newTasks = tasks.map((t) => (t.id === task.id ? task : t));
+    console.log(newTasks);
+    // setTasks(newTasks);
   };
   const gridProps: GridProps = {
     columnWidth,
@@ -511,8 +521,8 @@ export const Gantt: any = (props) => {
     setGanttEvent,
     setFailedTask,
     setSelectedTask: handleSelectedTask,
-    onDateChange,
-    onProgressChange,
+    onDateChange: handleTaskChange,
+    onProgressChange: fieldNames.progress && handleProgressChange,
     onDoubleClick,
     onClick,
     onDelete,
@@ -550,16 +560,16 @@ export const Gantt: any = (props) => {
         >
           <RecursionField name={'table'} schema={fieldSchema.properties.table} />
         </TableBlockProvider>
-        {
-          <TaskGantt
-            gridProps={gridProps}
-            calendarProps={calendarProps}
-            barProps={barProps}
-            ganttHeight={ganttHeight}
-            scrollY={scrollY}
-            scrollX={scrollX}
-          />
-        }
+
+        <TaskGantt
+          gridProps={gridProps}
+          calendarProps={calendarProps}
+          barProps={barProps}
+          ganttHeight={ganttHeight}
+          scrollY={scrollY}
+          scrollX={scrollX}
+        />
+
         {ganttEvent.changedTask && (
           <Tooltip
             arrowIndent={arrowIndent}
