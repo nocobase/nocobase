@@ -1,5 +1,4 @@
 import type {APIClient} from "@nocobase/client";
-import {bar, pie} from "./chart-config";
 
 const getChartData = async (api: APIClient, chartType, values, collectionName) => {
   values = {
@@ -16,19 +15,4 @@ const getChartData = async (api: APIClient, chartType, values, collectionName) =
   })
 }
 
-const generateRenderConfig = (chartType, data, chartOption) => {
-  let renderConfig
-  switch (chartType) {
-    case 'Pie': {
-      renderConfig = pie(data, chartOption)
-      break
-    }
-    case 'Bar': {
-      renderConfig = bar(data, chartOption)
-      break
-    }
-  }
-  return renderConfig
-}
-
-export {generateRenderConfig, getChartData}
+export {getChartData}
