@@ -1,12 +1,12 @@
 import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Spin } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { RouteSwitchContext } from '../route-switch';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockTemplate } from './BlockTemplate';
+import { Spin } from '../spin';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
 

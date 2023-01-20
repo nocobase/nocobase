@@ -1,10 +1,10 @@
-import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '../../api-client';
 import { SchemaComponent } from '../../schema-component';
 import { MenuItemsProvider } from '../Configuration/MenuItemsProvider';
 import { PermissionProvider, SettingCenterPermissionProvider } from '../Configuration/PermisionProvider';
 import { roleSchema } from './schemas/roles';
+import { Spin } from '../../spin';
 
 const AvailableActionsContext = createContext([]);
 

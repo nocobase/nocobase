@@ -1,4 +1,3 @@
-import { Spin } from 'antd';
 import { i18n as i18next } from 'i18next';
 import React, { useEffect, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
@@ -32,6 +31,7 @@ import { SystemSettingsProvider, SystemSettingsShortcut } from '../system-settin
 import { SigninPage, SignupPage } from '../user';
 import { SigninPageExtensionProvider } from '../user/SigninPageExtension';
 import { compose } from './compose';
+import { Spin } from '../spin';
 
 export interface ApplicationOptions {
   apiClient?: any;

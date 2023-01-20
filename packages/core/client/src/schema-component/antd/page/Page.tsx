@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FormDialog, FormLayout } from '@formily/antd';
 import { Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
-import { Button, PageHeader as AntdPageHeader, Spin, Tabs } from 'antd';
+import { Button, PageHeader as AntdPageHeader, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ import { SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import FixedBlock from './FixedBlock';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
+import { Spin } from '../../../spin';
 
 const designerCss = css`
   position: relative;

@@ -2,13 +2,14 @@ import { FormLayout } from '@formily/antd';
 import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Options, Result } from 'ahooks/lib/useRequest/src/types';
-import { ConfigProvider, Spin } from 'antd';
+import { ConfigProvider } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
 import { useRequest } from '../../../api-client';
 import { useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { Spin } from '../../../spin'
 
 type Opts = Options<any, any> & { uid?: string };
 

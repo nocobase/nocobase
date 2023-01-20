@@ -1,6 +1,5 @@
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
-import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { Redirect } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
@@ -9,6 +8,7 @@ import { useCollection } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
+import { Spin } from '../spin';
 
 export const ACLContext = createContext<any>({});
 

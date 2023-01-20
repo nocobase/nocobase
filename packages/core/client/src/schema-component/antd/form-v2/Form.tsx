@@ -2,11 +2,12 @@ import { FormLayout } from '@formily/antd';
 import { createForm, Field, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { ConfigProvider, Spin } from 'antd';
+import { ConfigProvider } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
 import { useProps } from '../../hooks/useProps';
+import { Spin } from '../../../spin';
 
 export interface FormProps {
   [key: string]: any;

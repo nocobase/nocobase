@@ -1,7 +1,7 @@
 import { Result } from 'ahooks/lib/useRequest/src/types';
-import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '..';
+import { Spin } from '../spin';
 
 export const SystemSettingsContext = createContext<Result<any, any>>(null);
 

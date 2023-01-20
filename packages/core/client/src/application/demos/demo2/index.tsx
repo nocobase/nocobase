@@ -23,11 +23,11 @@ import {
   SystemSettingsShortcut,
   useRequest
 } from '@nocobase/client';
-import { Spin } from 'antd';
 import React from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { Link, MemoryRouter, NavLink } from 'react-router-dom';
 import apiClient from './apiClient';
+import { Spin } from '../../../spin';
 
 const providers = [
   // [HashRouter],

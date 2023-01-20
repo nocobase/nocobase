@@ -1,7 +1,7 @@
-import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 import { useRequest, useAPIClient } from '../../api-client';
 import { useRoute } from '../../route-switch';
+import { Spin } from '../../spin';
 
 const MenuItemsContext = createContext(null);
 

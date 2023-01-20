@@ -1,11 +1,11 @@
 import { createForm } from '@formily/core';
 import { Schema } from '@formily/react';
-import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useRequest } from '../../api-client';
 import { useSchemaComponentContext } from '../hooks';
 import { FormProvider } from './FormProvider';
 import { SchemaComponent } from './SchemaComponent';
+import { Spin } from '../../spin';
 
 export interface RemoteSchemaComponentProps {
   scope?: any;
@@ -44,12 +44,11 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
       reset && reset();
     },
   });
-  if (loading) {
+
+  if (loading || hidden) {
     return <Spin />;
   }
-  if (hidden) {
-    return <Spin />;
-  }
+
   return noForm ? (
     <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(data?.data || {})} />
   ) : (

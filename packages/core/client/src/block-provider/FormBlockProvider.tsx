@@ -1,12 +1,12 @@
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
-import { Spin } from 'antd';
 import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { Spin } from '../spin';
 
 export const FormBlockContext = createContext<any>({});
 

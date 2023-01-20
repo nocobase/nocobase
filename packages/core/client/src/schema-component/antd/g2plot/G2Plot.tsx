@@ -37,12 +37,12 @@ import {
 } from '@antv/g2plot';
 import { Field } from '@formily/core';
 import { observer, useField } from '@formily/react';
-import { Spin } from 'antd';
 import cls from 'classnames';
 import React, { forwardRef, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { G2PlotDesigner } from './G2PlotDesigner';
+import { Spin } from '../../../spin';
 
 export type ReactG2PlotProps<O> = {
   readonly className?: string;

@@ -1,9 +1,10 @@
-import { ConfigProvider, Spin } from 'antd';
+import { ConfigProvider } from 'antd';
 import moment from 'moment';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
 import { loadConstrueLocale } from './loadConstrueLocale';
+import { Spin } from '../spin';
 
 export const AppLangContext = createContext<any>({});
 

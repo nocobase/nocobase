@@ -1,8 +1,9 @@
-import { Input, PageHeader as AntdPageHeader, Spin } from 'antd';
+import { Input, PageHeader as AntdPageHeader } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import { useAPIClient, useRequest, useSchemaTemplateManager } from '..';
 import { RemoteSchemaComponent, SchemaComponentContext } from '../schema-component';
+import { Spin } from '../spin';
 
 const EditableTitle = (props) => {
   const [title, setTitle] = useState(props.title);

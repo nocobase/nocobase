@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { useMutationObserver } from 'ahooks';
-import { Layout, Spin } from 'antd';
+import { Layout } from 'antd';
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
@@ -18,6 +18,7 @@ import {
   useSystemSettings
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
+import { Spin } from '../../../spin';
 
 const filterByACL = (schema, options) => {
   const { allowAll, allowMenuItemIds = [] } = options;

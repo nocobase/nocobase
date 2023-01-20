@@ -1,9 +1,9 @@
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
-import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { Spin } from '../spin';
 
 export const DetailsBlockContext = createContext<any>({});
 
