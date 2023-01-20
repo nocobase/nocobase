@@ -8,6 +8,7 @@ import {
   SchemaComponentOptions,
   useAPIClient,
   useCollectionManager,
+  useCompile,
 } from '@nocobase/client';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +35,7 @@ export const ChartBlockInitializer = (props) => {
   const { getCollectionFields, getCollection } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
+  const compiler = useCompile()
   return (
     <DataBlockInitializer
       {...props}
@@ -41,21 +43,22 @@ export const ChartBlockInitializer = (props) => {
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
         const collectionFields = getCollectionFields(item.name);
-        const computedFields = collectionFields
+        console.log(collectionFields,"==============");
+        const computedFields = compiler(collectionFields
           ?.filter((field) => (field.type === 'double' || field.type === 'bigInt'))
           ?.map((field) => {
             return {
-              label: field.name,
-              value: field.name,
+              label: field?.uiSchema?.title ?? field?.name,
+              value: field?.uiSchema?.title ?? field?.name,
             };
-          });
-        const groupByFields = collectionFields
+          }));
+        const groupByFields = compiler(collectionFields
           ?.map((field) => {
             return {
-              label: field.name,
-              value: field.name,
+              label: field?.uiSchema?.title ?? field?.name,
+              value: field?.uiSchema?.title ?? field?.name,
             };
-          });
+          }));
         let values = await FormDialog(t('Create chart block'), () => {
           return (
             <SchemaComponentOptions
