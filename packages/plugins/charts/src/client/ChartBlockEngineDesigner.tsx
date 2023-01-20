@@ -78,14 +78,14 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
     ?.map((field) => {
       return {
         label: field?.uiSchema?.title ?? field?.name,
-        value: field?.uiSchema?.title ?? field?.name,
+        value: field?.uiSchema?.name,
       };
     }));
   const groupByFields = compiler(collectionFields
     ?.map((field) => {
       return {
         label: field?.uiSchema?.title ?? field?.name,
-        value: field?.uiSchema?.title ?? field?.name,
+        value: field?.uiSchema?.name,
       };
     }));
 
