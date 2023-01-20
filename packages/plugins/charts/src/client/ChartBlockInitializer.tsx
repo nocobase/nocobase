@@ -49,14 +49,14 @@ export const ChartBlockInitializer = (props) => {
           ?.map((field) => {
             return {
               label: field?.uiSchema?.title ?? field?.name,
-              value: field?.uiSchema?.name,
+              value: field?.name,
             };
           }));
         const groupByFields = compiler(collectionFields
           ?.map((field) => {
             return {
               label: field?.uiSchema?.title ?? field?.name,
-              value: field?.uiSchema?.name,
+              value: field?.name,
             };
           }));
         let values = await FormDialog(t('Create chart block'), () => {

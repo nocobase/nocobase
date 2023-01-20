@@ -3,9 +3,9 @@ export const barTemplate = {
   type: 'Bar',
   renderComponent: 'G2Plot',
   defaultChartOptions: {
-    xField: '{{xField}}',
-    yField: '{{yField}}',
-    seriesField: '{{seriesField}}',
+    xField: 'value',
+    yField: 'type',
+    seriesField: 'type',
     legend: {
       position: 'top-left',
     },
@@ -143,7 +143,7 @@ export const barTemplate = {
             'x-component': 'Input',
             'x-decorator': 'FormItem',
           },
-          xField: {
+          /*xField: {
             title: '{{t(\'xField\')}}',
             required: true,
             'x-component': 'Select',
@@ -166,32 +166,32 @@ export const barTemplate = {
                 field.dataSource = [];
               }
             },
-          },
-          yField: {
-            title: '{{t(\'yField\')}}',
-            required: true,
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            'x-reactions': (field) => {
-              const computedField = field.query('dataset.computedField')?.value();
-              const groupByField = field.query('dataset.groupByField')?.value();
-              if (groupByField || computedField) {
-                field.dataSource = [
-                  {
-                    label: 'type',
-                    value: 'type',
-                  },
-                  {
-                    label: 'value',
-                    value: 'value',
-                  },
-                ];
-              } else {
-                field.dataSource = [];
-              }
-            },
-          },
-          seriesField: {
+          },*/
+          // yField: {
+          //   title: '{{t(\'yField\')}}',
+          //   required: true,
+          //   'x-component': 'Select',
+          //   'x-decorator': 'FormItem',
+          //   'x-reactions': (field) => {
+          //     const computedField = field.query('dataset.computedField')?.value();
+          //     const groupByField = field.query('dataset.groupByField')?.value();
+          //     if (groupByField || computedField) {
+          //       field.dataSource = [
+          //         {
+          //           label: 'type',
+          //           value: 'type',
+          //         },
+          //         {
+          //           label: 'value',
+          //           value: 'value',
+          //         },
+          //       ];
+          //     } else {
+          //       field.dataSource = [];
+          //     }
+          //   },
+          // },
+          /*seriesField: {
             title: '{{t("seriesField")}}',
             required: true,
             'x-component': 'Select',
@@ -214,7 +214,7 @@ export const barTemplate = {
                 field.dataSource = [];
               }
             },
-          },
+          },*/
         },
       },
     },
