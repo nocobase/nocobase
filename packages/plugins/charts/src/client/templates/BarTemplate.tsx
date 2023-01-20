@@ -1,3 +1,31 @@
+const validateJSON = {
+  validator: `{{(value, rule)=> {
+    if (!value) {
+      return '';
+    }
+    try {
+      const val = JSON.parse(value);
+      if(!isNaN(val)) {
+        return false;
+      }
+      return true;
+    } catch(error) {
+      console.error(error);
+      return false;
+    }
+  }}}`,
+  message: '{{t("Invalid JSON format")}}',
+};
+
+const chartConfig = {
+  xField: 'value',
+  yField: 'type',
+  seriesField: 'type',
+  legend: {
+    position: 'top-left',
+  },
+};
+
 export const barTemplate = {
   title: 'Bar',
   type: 'Bar',
@@ -215,6 +243,28 @@ export const barTemplate = {
               }
             },
           },*/
+        },
+      },
+      chartConfig: {
+        type: 'object',
+        title: 'Chart Config',
+        'x-component': 'Tabs.TabPane',
+        'x-component-props': {
+          tab: 'Chart Config',
+        },
+        properties: {
+          config: {
+            required: true,
+            title: '{{t("Config")}}',
+            type: 'string',
+            default: JSON.stringify(chartConfig, null, 2),
+            'x-decorator': 'FormItem',
+            'x-component': 'Input.TextArea',
+            'x-component-props': {
+              autoSize: { minRows: 8, maxRows: 16 },
+            },
+            'x-validator': validateJSON,
+          },
         },
       },
     },
