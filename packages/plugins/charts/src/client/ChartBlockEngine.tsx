@@ -1,7 +1,7 @@
 import { G2Plot, useAPIClient, useCompile } from '@nocobase/client';
 import React, { useEffect, useState } from 'react';
 import { Card, Spin } from 'antd';
-import { generateRenderConfig, getChartData } from './ChartUtils';
+import {getChartData } from './ChartUtils';
 import chartRenderComponentsMap from './chartRenderComponents';
 import { templates } from './templates';
 import { ChartBlockEngineDesigner } from './ChartBlockEngineDesigner';
@@ -11,6 +11,9 @@ interface ChartBlockEngineMetaData {
   chartType: string;
   dataset: object;
   chartOptions: object;
+  chartConfig: {
+    config:string
+  };
 }
 
 // renderComponent 可扩展 G2Plot | Echarts | D3'
@@ -19,13 +22,18 @@ type RenderComponent = 'G2Plot';
 const ChartRenderComponent = ({chartBlockMetaData,renderComponent}:{ chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) :JSX.Element=>{
   const compile = useCompile()
   const RenderComponent = chartRenderComponentsMap.get(renderComponent);//G2Plot | Echarts | D3
-  const { dataset, collectionName, chartType, chartOptions } = chartBlockMetaData;
+  const { dataset, collectionName, chartType, chartOptions,chartConfig } = chartBlockMetaData;
   const {loading,data} = useGetChartData(chartBlockMetaData);
-  const defaultChartOptions = templates.get(chartType)?.defaultChartOptions;
+  let finalChartOptions
+  if(chartConfig?.config){
+    finalChartOptions = JSON.parse(compile(chartConfig?.config))
+  }else{
+   finalChartOptions =  templates.get(chartType)?.defaultChartOptions
+  }
   switch (renderComponent) {
     case 'G2Plot':{
       const config = compile({
-        ...defaultChartOptions,
+        ...finalChartOptions,
         ...chartOptions,
         data: data,
       },chartOptions)
