@@ -98,12 +98,10 @@ export const ChartBlockInitializer = (props) => {
         });
         if (values) {
           //聚合chartOptions
-          const defaultChartOptions = templates.get(values.chartType)?.defaultChartOptions;
           values = {
             collectionName: item.name,
             ...values,
             chartOptions: {
-              ...defaultChartOptions,
               ...(values?.chartOptions || {}),
             },
           };
