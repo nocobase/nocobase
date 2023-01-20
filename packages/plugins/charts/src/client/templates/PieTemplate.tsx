@@ -1,8 +1,44 @@
 import { i18n } from '@nocobase/client';
 
+const validateJSON = {
+  validator: `{{(value, rule)=> {
+    if (!value) {
+      return '';
+    }
+    try {
+      const val = JSON.parse(value);
+      if(!isNaN(val)) {
+        return false;
+      }
+      return true;
+    } catch(error) {
+      console.error(error);
+      return false;
+    }
+  }}}`,
+  message: '{{t("Invalid JSON format")}}',
+};
+
+const chartConfig = {
+  appendPadding: 10,
+  angleField: '{{angleField}}',
+  colorField: '{{colorField}}',
+  radius: 0.9,
+  label: {
+    type: 'inner',
+    offset: '-30%',
+    content: '{{({percent}) => `${(percent * 100).toFixed(0)}%`}}',
+    style: {
+      fontSize: 14,
+      textAlign: 'center',
+    },
+  },
+  interactions: [{ type: 'element-active' }],
+};
+
 export const pieTemplate = {
   title: 'Pie',
-  type: "Pie",
+  type: 'Pie',
   renderComponent: 'G2Plot',
   defaultChartOptions: {
     appendPadding: 10,
@@ -12,13 +48,13 @@ export const pieTemplate = {
     label: {
       type: 'inner',
       offset: '-30%',
-      content: "{{({percent}) => `${(percent * 100).toFixed(0)}%`}}",
+      content: '{{({percent}) => `${(percent * 100).toFixed(0)}%`}}',
       style: {
         fontSize: 14,
         textAlign: 'center',
       },
     },
-    interactions: [{type: 'element-active'}],
+    interactions: [{ type: 'element-active' }],
   },
   configurableProperties: {
     type: 'void',
@@ -38,19 +74,19 @@ export const pieTemplate = {
         },
         properties: {
           type: {
-            title: "{{t('Type')}}",
+            title: '{{t(\'Type\')}}',
             required: true,
             'x-component': 'Select',
             'x-decorator': 'FormItem',
             default: 'builtIn',
             enum: [
-              {label: 'Built-in', value: 'builtIn'},
-              {label: 'SQL', value: 'sql'},
-              {label: 'API', value: 'api'},
+              { label: 'Built-in', value: 'builtIn' },
+              { label: 'SQL', value: 'sql' },
+              { label: 'API', value: 'api' },
             ],
           },
           sql: {
-            title: "{{t('SQL')}}",
+            title: '{{t(\'SQL\')}}',
             'x-component': 'Input.TextArea',
             'x-decorator': 'FormItem',
             'x-reactions': {
@@ -63,7 +99,7 @@ export const pieTemplate = {
             },
           },
           api: {
-            title: "{{t('API')}}",
+            title: '{{t(\'API\')}}',
             'x-component': 'Input',
             'x-decorator': 'FormItem',
             'x-reactions': {
@@ -76,14 +112,14 @@ export const pieTemplate = {
             },
           },
           aggregateFunction: {
-            title: "{{t('Aggregate function')}}",
+            title: '{{t(\'Aggregate function\')}}',
             required: true,
             'x-component': 'Radio.Group',
             'x-decorator': 'FormItem',
             enum: [
-              {label: 'SUM', value: 'SUM'},
-              {label: 'COUNT', value: 'COUNT'},
-              {label: 'AVG', value: 'AVG'},
+              { label: 'SUM', value: 'SUM' },
+              { label: 'COUNT', value: 'COUNT' },
+              { label: 'AVG', value: 'AVG' },
             ],
             'x-reactions': {
               dependencies: ['dataset.type'],
@@ -95,13 +131,13 @@ export const pieTemplate = {
             },
           },
           computedField: {
-            title: "{{t('Computed field')}}",
+            title: '{{t(\'Computed field\')}}',
             required: true,
             'x-component': 'Select',
             'x-decorator': 'FormItem',
-            enum: "{{computedFields}}",
+            enum: '{{computedFields}}',
             'x-reactions': {
-              dependencies: ['dataset.type','dataset.aggregateFunction'],
+              dependencies: ['dataset.type', 'dataset.aggregateFunction'],
               fulfill: {
                 state: {
                   visible: '{{$deps[0] === "builtIn" && $deps[1] !== "COUNT"}}',
@@ -110,11 +146,11 @@ export const pieTemplate = {
             },
           },
           groupByField: {
-            title: "{{t('GroupBy field')}}",
+            title: '{{t(\'GroupBy field\')}}',
             required: true,
             'x-component': 'Select',
             'x-decorator': 'FormItem',
-            enum: "{{groupByFields}}",
+            enum: '{{groupByFields}}',
             'x-reactions': {
               dependencies: ['dataset.type'],
               fulfill: {
@@ -149,60 +185,82 @@ export const pieTemplate = {
         },
         properties: {
           title: {
-            title: "{{t('Title')}}",
+            title: '{{t(\'Title\')}}',
             'x-component': 'Input',
             'x-decorator': 'FormItem',
           },
           angleField: {
-            title: "{{t('angleField')}}",
+            title: '{{t(\'angleField\')}}',
             required: true,
             'x-component': 'Select',
             'x-decorator': 'FormItem',
-            'x-reactions':(field) => {
-              const computedField =  field.query('dataset.computedField')?.value();
-              const groupByField =  field.query('dataset.groupByField')?.value();
-              if(groupByField || computedField){
+            'x-reactions': (field) => {
+              const computedField = field.query('dataset.computedField')?.value();
+              const groupByField = field.query('dataset.groupByField')?.value();
+              if (groupByField || computedField) {
                 field.dataSource = [
                   {
-                    label:"type",
-                    value:"type"
+                    label: 'type',
+                    value: 'type',
                   },
                   {
-                    label:"value",
-                    value:"value"
-                  }
-                ]
-              }else{
-                field.dataSource=[]
+                    label: 'value',
+                    value: 'value',
+                  },
+                ];
+              } else {
+                field.dataSource = [];
               }
-            }
+            },
           },
           colorField: {
-            title: "{{t('colorField')}}",
-            required:true,
+            title: '{{t(\'colorField\')}}',
+            required: true,
             'x-component': 'Select',
             'x-decorator': 'FormItem',
-            'x-reactions':(field) => {
-              const computedField =  field.query('dataset.computedField')?.value();
-              const groupByField =  field.query('dataset.groupByField')?.value();
-              if(groupByField || computedField){
+            'x-reactions': (field) => {
+              const computedField = field.query('dataset.computedField')?.value();
+              const groupByField = field.query('dataset.groupByField')?.value();
+              if (groupByField || computedField) {
                 field.dataSource = [
                   {
-                    label:"type",
-                    value:"type"
+                    label: 'type',
+                    value: 'type',
                   },
                   {
-                    label:"value",
-                    value:"value"
-                  }
-                ]
-              }else{
-                field.dataSource=[]
+                    label: 'value',
+                    value: 'value',
+                  },
+                ];
+              } else {
+                field.dataSource = [];
               }
-            }
+            },
+          },
+        },
+      },
+      chartConfig: {
+        type: 'object',
+        title: 'Chart Config',
+        'x-component': 'Tabs.TabPane',
+        'x-component-props': {
+          tab: 'Chart Config',
+        },
+        properties: {
+          config: {
+            required:true,
+            title: '{{t("Config")}}',
+            type: 'string',
+            default: JSON.stringify(chartConfig, null, 2),
+            'x-decorator': 'FormItem',
+            'x-component': 'Input.TextArea',
+            'x-component-props': {
+              autoSize: { minRows: 8, maxRows: 16 },
+            },
+            'x-validator': validateJSON,
           },
         },
       },
     },
-  }
-}
+  },
+};
