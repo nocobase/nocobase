@@ -556,5 +556,3 @@ db.collection({
   ]
 });
 ```
-![image](https://user-images.githubusercontent.com/63629092/212546611-cbd3bcec-d32a-4522-b640-9604a3bd60bd.png)
-![image](https://user-images.githubusercontent.com/63629092/213732814-f482ebc9-8d30-4b63-8b63-02b58e5a4015.png)
