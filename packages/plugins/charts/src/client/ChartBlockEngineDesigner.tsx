@@ -71,22 +71,23 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
   const fieldSchema = useFieldSchema();
   const cm = useContext(CollectionManagerContext);
   const field = useField();
+  const compiler = useCompile()
   console.log(field,fieldSchema);
-  const computedFields = collectionFields
+  const computedFields =compiler(collectionFields
     ?.filter((field) => (field.type === 'double' || field.type === 'bigInt'))
     ?.map((field) => {
       return {
-        label: field.name,
-        value: field.name,
+        label: field?.uiSchema?.title ?? field?.name,
+        value: field?.uiSchema?.title ?? field?.name,
       };
-    });
-  const groupByFields = collectionFields
+    }));
+  const groupByFields = compiler(collectionFields
     ?.map((field) => {
       return {
-        label: field.name,
-        value: field.name,
+        label: field?.uiSchema?.title ?? field?.name,
+        value: field?.uiSchema?.title ?? field?.name,
       };
-    });
+    }));
 
   return (
     <SchemaSettings.Item
