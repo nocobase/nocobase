@@ -92,7 +92,7 @@ userRepository.find({
 `filter` 参数支持按关联字段进行过滤，例如：
 
 ```javascript
-// 查询 user 对象，其所关联的 posts 存在 title 为 'title1' 的对象
+// 查询 user 对象，其所关联的 posts 存在 title 为 'post title' 的对象
 userRepository.find({
   filter: {
       "posts.title": "post title"
