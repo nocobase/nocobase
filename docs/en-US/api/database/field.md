@@ -200,7 +200,7 @@ Check if a field exists in the database.
 
 ## Built-in Field Types
 
-NodeBase has some built-in common field types, the corresponding type name can be used directly to specify the type of field upon definition. Fields of different types are configured differently, please refer to the list below.
+NocoBase has some built-in common field types, the corresponding type name can be used directly to specify the type of field upon definition. Fields of different types are configured differently, please refer to the list below.
 
 The configuration items of all field types are passed through to Sequelize in addition to those described below. Therefore, all field configuration items supported by Sequelize can be used here (e.g. `allowNull`, `defaultValue`, etc.).
 
@@ -324,7 +324,7 @@ db.collection({
 
 ### `'password'`
 
-Password type (NodeBase extension). Password encryption based on the `scrypt` method of Node.js native crypto packages.
+Password type (NocoBase extension). Password encryption based on the `scrypt` method of Node.js native crypto packages.
 
 **Example**
 
@@ -367,7 +367,7 @@ JSON type.
 
 ### `'jsonb'`
 
-JSONB type. (PG only, others will be compatible with the `'json'` type).
+JSONB type (PG only, others will be compatible with the `'json'` type).
 
 ### `'uuid'`
 
@@ -375,11 +375,11 @@ UUID type.
 
 ### `'uid'`
 
-UID type (NodeBase extension). Short random string identifier type.
+UID type (NocoBase extension). Short random string identifier type.
 
 ### `'formula'`
 
-Formula type (NodeBase extension). Mathematical formula calculation can be configured based on [mathjs](https://www.npmjs.com/package/mathjs), and the formula can refer to the values of other columns in the same record to participate in the calculation.
+Formula type (NocoBase extension). Mathematical formula calculation can be configured based on [mathjs](https://www.npmjs.com/package/mathjs), and the formula can refer to the values of other columns in the same record to participate in the calculation.
 
 **Example**
 
@@ -406,7 +406,7 @@ db.collection({
 
 ### `'radio'`
 
-Radio type (NodeBase extension). The field value is 'true' for at most one row of data for the full table, all others are 'false' or 'null'.
+Radio type (NocoBase extension). The field value is 'true' for at most one row of data for the full table, all others are 'false' or 'null'.
 
 **Example**
 
@@ -426,7 +426,7 @@ db.collection({
 
 ### `'sort'`
 
-Sorting type (NodeBase extension). Sorting based on integer numbers, automatically generating new serial numbers for new records, and rearranging serial numbers when moving data.
+Sorting type (NocoBase extension). Sorting based on integer numbers, automatically generating new serial numbers for new records, and rearranging serial numbers when moving data.
 
 If data table has the `sortable` option defined, the corresponding fields will be generated automatically.
 
