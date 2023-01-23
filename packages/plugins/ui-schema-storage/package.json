@@ -1,17 +1,13 @@
 {
   "name": "@nocobase/plugin-ui-schema-storage",
-  "version": "0.8.1-alpha.4",
-  "main": "lib/index.js",
-  "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
+  "version": "0.9.0-alpha.2",
+  "description": "",
+  "license": "AGPL-3.0",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "devDependencies": {
     "@formily/json-schema": "2.0.20",
-    "@nocobase/test": "0.8.1-alpha.4"
+    "@nocobase/test": "0.9.0-alpha.2"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

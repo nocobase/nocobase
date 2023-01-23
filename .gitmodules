@@ -1,3 +1,0 @@
-[submodule "packages/pro-plugins"]
-	path = packages/pro-plugins
-	url = git@github.com:nocobase/pro-plugins.git

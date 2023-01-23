@@ -1,4 +1,4 @@
-# v0.8.1: Collection 模板
+# v0.9.0: Collection 模板
 
 <img src="./v08-1-collection-templates/v08-1-collection-templates.jpg">
 

@@ -1,4 +1,4 @@
-import { generateNTemplate } from "./locales";
+import { generateNTemplate } from "./locale";
 
 export const MapTypes = [
   { label: generateNTemplate('AMap'), value: 'amap' },

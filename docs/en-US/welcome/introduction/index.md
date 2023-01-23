@@ -22,7 +22,7 @@ hello@nocobase.com
 ## Features
 
 - **Open source and free**
-    - Unrestricted commercial use under the Apache-2.0 license
+    - Apache-2.0 & AGPL-3.0 licensed
     - Full code ownership, private deployment, private and secure data
     - Free to expand and develop for actual needs
     - Good ecological support
@@ -48,3 +48,7 @@ hello@nocobase.com
 ![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
 
 [Click here to view the full image](https://www.nocobase.com/images/NocoBaseMindMap.png)
+
+## Business Services
+
+If you need commercial version and commercial services, please feel free to contact us by email: hello@nocobase.com
