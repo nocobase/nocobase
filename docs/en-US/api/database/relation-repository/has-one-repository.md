@@ -88,7 +88,6 @@ console.log(profile.toJSON());
   createdAt: 2022-09-24T13:59:40.025Z
 }
 */
-
 ```
 
 ### `update()`
@@ -139,7 +138,6 @@ Delete associated objects.
 **Signature**
 
 * `async destroy(options?: Transactionable): Promise<Boolean>`
-
 
 **Detailed Information**
 
