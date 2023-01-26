@@ -650,7 +650,7 @@ const result = await posts.update({
 });
 ```
 
-### `destory()`
+### `destroy()`
 
 删除数据表中的数据。相当于 Sequelize 中的 `Model.destroy()`。
 
