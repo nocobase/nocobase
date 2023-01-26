@@ -34,6 +34,7 @@ userRepository.find({
 });
 
 ```
+
 #### Operator
 
 The `filter` parameter in the `Repository` also provides a variety of operators to perform more diverse queries.
@@ -170,7 +171,6 @@ await userRepository.create([
     age: 20,
   },
 ])
-
 ```
 
 #### Create Association
@@ -388,6 +388,7 @@ Find datasets from the database with the specified filtering conditions and sort
 * `async find(options?: FindOptions): Promise<Model[]>`
 
 **Type**
+
 ```typescript
 type Filter = FilterWithOperator | FilterWithValue | FilterAnd | FilterOr;
 type Appends = string[];
@@ -515,6 +516,7 @@ Query a certain amount of data from the database for specific conditions. Equiva
 * `count(options?: CountOptions): Promise<number>`
 
 **Type**
+
 ```typescript
 interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'>, Transactionable {
   filter?: Filter;
@@ -533,7 +535,6 @@ const count = await books.count({
 });
 ```
 
-
 ### `findAndCount()`
 
 Find datasets from the database with the specified filtering conditions and return the number of results. Equivalent to `Model.findAndCountAll()` in Sequelize.
@@ -543,6 +544,7 @@ Find datasets from the database with the specified filtering conditions and retu
 * `async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]>`
 
 **Type**
+
 ```typescript
 type FindAndCountOptions = Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> & CommonFindOptions;
 ```
@@ -588,6 +590,7 @@ Inserts multiple newly created data into the data table. This is equivalent to c
 * `createMany(options: CreateManyOptions): Promise<Model[]>`
 
 **Type**
+
 ```typescript
 interface CreateManyOptions extends BulkCreateOptions {
   records: Values[];
