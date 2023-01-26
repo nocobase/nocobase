@@ -33,7 +33,7 @@ new HasOneRepository(User, 'profile', user.get('id'));
 
 ### `find()`
 
-Find associated object.
+Find associated objects.
 
 **Signature**
 
@@ -63,7 +63,7 @@ const profile = await UserProfileRepository.find();
 
 ### `create()`
 
-Create associated object.
+Create associated objects.
 
 **Signature**
 
@@ -93,7 +93,7 @@ console.log(profile.toJSON());
 
 ### `update()`
 
-Update associated object.
+Update associated objects.
 
 **Signature**
 
@@ -113,7 +113,7 @@ profile.get('avatar'); // 'avatar2'
 
 ### `remove()`
 
-Remove associated object. Only to unassociate, not to delete the associated object.
+Remove associated objects. Only to unassociate, not to delete the associated object.
 
 **Signature**
 
@@ -134,7 +134,7 @@ await Profile.repository.count() === 1; // true
 
 ### `destroy()`
 
-Delete associated object.
+Delete associated objects.
 
 **Signature**
 
@@ -155,7 +155,7 @@ await Profile.repository.count() === 0; // true
 
 ### `set()`
 
-Set associated object.
+Set associated objects.
 
 **Signature**
 
