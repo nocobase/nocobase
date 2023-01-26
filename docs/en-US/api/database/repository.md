@@ -71,17 +71,17 @@ Control the output fields by the `fields`, `except`, and `appends` parameters wh
 * `appends`: Append output associated fields
 
 ```javascript
-// The result contains only the <i>id</i> and <i>name</i> fields
+// The result contains only the id and name fields
 userRepository.find({
   fields: ["id", "name"],
 });
 
-// The result does not contain only the <i>password</i> field
+// The result does not contain only the password field
 userRepository.find({
   except: ["password"],
 });
 
-// The result contains data associated with the <i>posts</i> object
+// The result contains data associated with the posts object
 userRepository.find({
   appends: ["posts"],
 });
@@ -92,7 +92,7 @@ userRepository.find({
 The `filter` parameter supports filtering by associated fields, for example:
 
 ```javascript
-// Find the <i>user</i> objects whose associated posts have title of "post title"
+// Find the user objects whose associated posts have title of "post title"
 userRepository.find({
   filter: {
       "posts.title": "post title"
@@ -103,7 +103,7 @@ userRepository.find({
 Associated fields can also be nested:
 
 ```javascript
-// Find the <i>user</i> objects whose associated posts have comments containing "keywords"
+// Find the user objects whose associated posts have comments containing "keywords"
 await userRepository.find({
   filter: {
     "posts.comments.content": {
@@ -175,11 +175,11 @@ await userRepository.create([
 
 #### Create Association
 
-Create associated objects at the same time of creating data. Similar to query, nested use of associated objects is also supported. For example:
+Create associated objects at the same time of creating data. Like query, nested use of associated objects is also supported. For example:
 
 ```javascript
 await userRepository.create({
-  name: "张三",
+  name: "Mark",
   age: 18,
   posts: [
     {
@@ -196,7 +196,7 @@ await userRepository.create({
     },
   ],
 });
-// When crearing a user, creat a post to associate with the user, and create tags to associate with the post
+// When creating a user, create a post to associate with the user, and create tags to associate with the post
 ```
 
 If the associated object is already in the database, you can pass its ID to create an association with it.
@@ -273,7 +273,7 @@ await userRepository.update({
     age: 20,
     name: "Alex",
   },
-  whitelist: ["age"], // Only update the <i>age</i> field
+  whitelist: ["age"], // Only update the age field
 });
 ````
 
@@ -330,7 +330,7 @@ await userRepository.destroy({
 
 ## Constructor
 
-It is usually not called directly by the developer, the instantiation is done mainly by specifying a coressponding repository type that is already registered in the parameter of `db.colletion()`. Repository type is registered through `db.registerRepositories()`.
+It is usually not called directly by the developer, the instantiation is done mainly by specifying a corresponding repository type that is already registered in the parameter of `db.colletion()`. Repository type is registered through `db.registerRepositories()`.
 
 **Signature**
 
@@ -553,7 +553,7 @@ The query parameters are the same as `find()`. An array is returned with the fir
 
 ### `create()`
 
-Inserts a newly created data into the data table. Equivalent to `Model.create()` in Sequelize. When the data object to be created carries any assiciated field, the corresponding assiciated data record is created or updated along with it.
+Inserts a newly created data into the data table. Equivalent to `Model.create()` in Sequelize. When the data object to be created carries any associated field, the corresponding associated data record is created or updated along with it.
 
 **Signature**
 
@@ -654,13 +654,13 @@ const result = await posts.update({
 });
 ```
 
-### `destory()`
+### `destroy()`
 
 Delete data from the data table. Equivalent to `Model.destroy()` in Sequelize.
 
 **Signature**
 
-* `async destory(options?: TargetKey | TargetKey[] | DestoryOptions): Promise<number>`
+* `async destroy(options?: TargetKey | TargetKey[] | DestoryOptions): Promise<number>`
 
 **Type**
 
