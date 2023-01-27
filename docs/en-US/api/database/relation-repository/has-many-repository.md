@@ -36,6 +36,7 @@ Return the number of records matching the query criteria.
 * `async count(options?: CountOptions)`
 
 **Type**
+
 ```typescript
 interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'>, Transactionable {
   filter?: Filter;
@@ -51,6 +52,7 @@ Find datasets from the database with the specified filtering conditions and retu
 * `async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]>`
 
 **Type**
+
 ```typescript
 type FindAndCountOptions = CommonFindOptions
 ```
@@ -90,9 +92,11 @@ Delete associated objects.
 Add association relationships between objects.
 
 **Signature**
+
 * `async add(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
 **Type**
+
 ```typescript
 interface AssociatedOptions extends Transactionable {
   tk?: TargetKey | TargetKey[];
@@ -106,7 +110,7 @@ interface AssociatedOptions extends Transactionable {
 
 ### `remove()`
 
-Remove the association with the given object.
+Remove the association with the given objects.
 
 **Signature**
 
