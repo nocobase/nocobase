@@ -1,6 +1,6 @@
 # Filter Operators
 
-Used in the filter paramaters of the `find`, `findOne`, `findAndCount`, `count`, etc. APIs of repository:
+Used in the filter parameters of the `find`, `findOne`, `findAndCount`, `count`, etc. APIs of repository:
 
 ```ts
 const repository = db.getRepository('books');
@@ -527,7 +527,7 @@ repository.find({
 
 ### `$notRegexp`
 
-Check if the field value does not matche the specified regular expression. Equivalent to `NOT REGEXP` in SQL (PG only).
+Check if the field value does not match the specified regular expression. Equivalent to `NOT REGEXP` in SQL (PG only).
 
 **Example**
 
@@ -559,7 +559,7 @@ repository.find({
 
 ### `$notIRegexp`
 
-Check if the field value does not matche the specified regular expression, case ignored. Equivalent to `!~*` in SQL (PG only).
+Check if the field value does not match the specified regular expression, case ignored. Equivalent to `!~*` in SQL (PG only).
 
 **Example**
 
@@ -611,7 +611,7 @@ repository.find({
 
 ### `$dateBefore`
 
-Check if the date field value is before a certain value, i.e. less than the one passed in.
+Check if the date field value is before a certain value, i.e., less than the one passed in.
 
 **Example**
 
@@ -627,7 +627,7 @@ repository.find({
 
 ### `$dateNotBefore`
 
-Check if the date field value is not before a certain value, i.e. equal to or greater than the one passed in.
+Check if the date field value is not before a certain value, i.e., equal to or greater than the one passed in.
 
 **Example**
 
@@ -643,7 +643,7 @@ repository.find({
 
 ### `$dateAfter`
 
-Check if the date field value is after a certain value, i.e. greater than the one passed in.
+Check if the date field value is after a certain value, i.e., greater than the one passed in.
 
 **Example**
 
@@ -659,7 +659,7 @@ repository.find({
 
 ### `$dateNotAfter`
 
-Check if the date field value is not after a certain value, i.e. equal to or greater than the one passed in.
+Check if the date field value is not after a certain value, i.e., equal to or greater than the one passed in.
 
 **Example**
 
