@@ -1,43 +1,43 @@
 # BelongsToManyRepository
-`BelongsToManyRepository` 是用于处理 `BelongsToMany` 关系的 `Relation Repository`。
 
-不同于其他关系类型，`BelongsToMany` 类型的关系需要通过中间表来记录。
-在 `Nocobase` 中定义关联关系，可自动创建中间表，也可以明确指定中间表。
+`BelongsToManyRepository` is the `Relation Repository` for handling `BelongsToMany` relationships.
 
-## 类方法
+Unlike other relationship types, the `BelongsToMany` type of relationship needs to be recorded through an intermediate table. The intermediate table can be created automatically or explicitly specified when defining association relationships in NocoBase.
+
+## Class Method
 
 ### `find()`
 
-查找关联对象
+Find associated objects.
 
-**签名**
+**Signature**
 
 * `async find(options?: FindOptions): Promise<M[]>`
 
-**详细信息**
+**Detailed Information**
 
-查询参数与 [`Repository.find()`](../repository.md#find) 一致。
+Query parameters are the same as [`Repository.find()`](../repository.md#find).
 
 ### `findOne()`
 
-查找关联对象，仅返回一条记录
+Find associated objects, only to return one record.
 
-**签名**
+**Signature**
 
 * `async findOne(options?: FindOneOptions): Promise<M>`
 
 <embed src="../shared/find-one.md"></embed>
 
-
 ### `count()`
 
-返回符合查询条件的记录数
+Return the number of records matching the query criteria.
 
-**签名**
+**Signature**
 
 * `async count(options?: CountOptions)`
 
-**类型**
+**Type**
+
 ```typescript
 interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'>, Transactionable {
   filter?: Filter;
@@ -46,22 +46,23 @@ interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' 
 
 ### `findAndCount()`
 
-从数据库查询特定条件的数据集和结果数。
+Find datasets from the database with the specified filtering conditions and return the number of results.
 
-**签名**
+**Signature**
 
 * `async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]>`
 
-**类型**
+**Type**
+
 ```typescript
 type FindAndCountOptions = CommonFindOptions
 ```
 
 ### `create()`
 
-创建关联对象
+Create associated objects.
 
-**签名**
+**Signature**
 
 * `async create(options?: CreateOptions): Promise<M>`
 
@@ -69,9 +70,9 @@ type FindAndCountOptions = CommonFindOptions
 
 ### `update()`
 
-更新符合条件的关联对象
+Update associated objects that match the conditions.
 
-**签名**
+**Signature**
 
 * `async update(options?: UpdateOptions): Promise<M>`
 
@@ -79,9 +80,9 @@ type FindAndCountOptions = CommonFindOptions
 
 ### `destroy()`
 
-删除符合条件的关联对象
+Delete associated objects.
 
-**签名**
+**Signature**
 
 * `async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<Boolean>`
 
@@ -89,15 +90,15 @@ type FindAndCountOptions = CommonFindOptions
 
 ### `add()`
 
-添加新的关联对象
+Add new associated objects.
 
-**签名**
+**Signature**
 
 * `async add(
   options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions
   ): Promise<void>`
 
-**类型**
+**Type**
 
 ```typescript
 type PrimaryKeyWithThroughValues = [TargetKey, Values];
@@ -107,11 +108,12 @@ interface AssociatedOptions extends Transactionable {
 }
 ```
 
-**详细信息**
+**Detailed Information**
 
-可以直接传入关联对象的 `targetKey`，也可将 `targetKey` 与中间表的字段值一并传入。
+Pass the `targetKey` of the associated object directly, or pass the `targetKey` along with the field values of the intermediate table.
 
-**示例**
+**Example**
+
 ```typescript
 const t1 = await Tag.repository.create({
   values: { name: 't1' },
@@ -127,12 +129,12 @@ const p1 = await Post.repository.create({
 
 const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 
-// 传入 targetKey
+// Pass in the targetKey
 PostTagRepository.add([
   t1.id, t2.id
 ]);
 
-// 传入中间表字段
+// Pass in intermediate table fields
 PostTagRepository.add([
   [t1.id, { tagged_at: '123' }],
   [t2.id, { tagged_at: '456' }],
@@ -141,25 +143,28 @@ PostTagRepository.add([
 
 ### `set()`
 
-设置关联对象
+Set the associated objects.
 
-**签名**
+**Signature**
+
 * async set(
   options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions,
   ): Promise<void>
 
-**详细信息**
-
-参数同 [add()](#add)
+**Detailed Information**
+  
+Parameters are the same as [add()](#add).
 
 ### `remove()`
+  
+Remove the association with the given objects.
 
-移除与给定对象之间的关联关系
+**Signature**
 
-**签名**
 * `async remove(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
-**类型**
+**Type**
+
 ```typescript
 interface AssociatedOptions extends Transactionable {
   tk?: TargetKey | TargetKey[];
@@ -168,14 +173,14 @@ interface AssociatedOptions extends Transactionable {
 
 ### `toggle()`
 
-切换关联对象。
+Toggle the associated object.
+  
+In some business scenarios, it is often needed to toggle the associated object. For example, user adds a product into collection, and the user cancels the collection and collect it again. Using the `toggle` method can quickly implement similar functions.
 
-在一些业务场景中，经常需要切换关联对象，比如用户收藏商品，用户可以取消收藏，也可以再次收藏。使用 `toggle` 方法可以快速实现类似功能。
-
-**签名**
+**Signature**
 
 * `async toggle(options: TargetKey | { tk?: TargetKey; transaction?: Transaction }): Promise<void>`
 
-**详细信息**
+**Detailed Information**
 
-`toggle` 方法会自动判断关联对象是否已经存在，如果存在则移除，如果不存在则添加。
+The `toggle` method automatically checks whether the associated object already exists, and removes it if it does, or adds it if it does not.
