@@ -1,6 +1,6 @@
 # Filter Operators
 
-用于 Repository 的 find、findOne、findAndCount、count 等 API 的 filter 参数中：
+用于 Repository 的 `find`、`findOne`、`findAndCount`、`count` 等 API 的 filter 参数中：
 
 ```ts
 const repository = db.getRepository('books');
