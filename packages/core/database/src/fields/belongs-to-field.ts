@@ -1,5 +1,5 @@
-import { omit } from 'lodash';
-import { BelongsTo, BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
+import lodash, { omit } from 'lodash';
+import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
@@ -53,6 +53,13 @@ export class BelongsToField extends RelationField {
       constraints: false,
       ...omit(this.options, ['name', 'type', 'target', 'onDelete']),
     });
+
+    if (this.collection.options.underscored) {
+      association.foreignKey = lodash.snakeCase(association.foreignKey);
+      if (this.options.foreignKey) {
+        this.options.foreignKey = lodash.snakeCase(this.options.foreignKey);
+      }
+    }
 
     // inverse relation
     // this.TargetModel.hasMany(collection.model);

@@ -1,19 +1,12 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
-import {
-  ModelOptions,
-  QueryInterfaceDropTableOptions,
-  SyncOptions,
-  Transactionable,
-  ModelStatic,
-  Utils,
-} from 'sequelize';
+import { ModelOptions, ModelStatic, QueryInterfaceDropTableOptions, SyncOptions, Transactionable } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
-import { checkIdentifier, getTableName, md5 } from './utils';
+import { checkIdentifier } from './utils';
 
 export type RepositoryType = typeof Repository;
 
@@ -36,6 +29,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * @default 'options'
    */
   magicAttribute?: string;
+
   [key: string]: any;
 }
 
@@ -362,56 +356,59 @@ export class Collection<
     if (!index) {
       return;
     }
-    let indexes: any = this.model.options.indexes || [];
-    let indexName = [];
-    let indexItem;
-    if (typeof index === 'string') {
-      indexItem = {
-        fields: [index],
-      };
-      indexName = [index];
-    } else if (Array.isArray(index)) {
-      indexItem = {
-        fields: index,
-      };
-      indexName = index;
-    } else if (index?.fields) {
-      indexItem = index;
-      indexName = index.fields;
-    }
-    if (lodash.isEqual(this.model.primaryKeyAttributes, indexName)) {
-      return;
-    }
-    const name: string = this.model.primaryKeyAttributes.join(',');
-    if (name.startsWith(`${indexName.join(',')},`)) {
-      return;
-    }
-    for (const item of indexes) {
-      if (lodash.isEqual(item.fields, indexName)) {
-        return;
-      }
-      const name: string = item.fields.join(',');
-      if (name.startsWith(`${indexName.join(',')},`)) {
-        return;
-      }
-    }
-    if (!indexItem) {
-      return;
-    }
-    indexes.push(indexItem);
-    this.model.options.indexes = indexes;
-    const tableName = this.model.getTableName();
-    // @ts-ignore
-    this.model._indexes = this.model.options.indexes
-      // @ts-ignore
-      .map((index) => Utils.nameIndex(this.model._conformIndex(index), tableName))
-      .map((item) => {
-        if (item.name && item.name.length > 63) {
-          item.name = 'i_' + md5(item.name);
-        }
-        return item;
-      });
-    this.refreshIndexes();
+
+    // let indexes: any = this.model.options.indexes || [];
+    // let indexName = [];
+    // let indexItem;
+    //
+    // if (typeof index === 'string') {
+    //   indexItem = {
+    //     fields: [index],
+    //   };
+    //   indexName = [index];
+    // } else if (Array.isArray(index)) {
+    //   indexItem = {
+    //     fields: index,
+    //   };
+    //   indexName = index;
+    // } else if (index?.fields) {
+    //   indexItem = index;
+    //   indexName = index.fields;
+    // }
+    //
+    // if (lodash.isEqual(this.model.primaryKeyAttributes, indexName)) {
+    //   return;
+    // }
+    // const name: string = this.model.primaryKeyAttributes.join(',');
+    // if (name.startsWith(`${indexName.join(',')},`)) {
+    //   return;
+    // }
+    // for (const item of indexes) {
+    //   if (lodash.isEqual(item.fields, indexName)) {
+    //     return;
+    //   }
+    //   const name: string = item.fields.join(',');
+    //   if (name.startsWith(`${indexName.join(',')},`)) {
+    //     return;
+    //   }
+    // }
+    // if (!indexItem) {
+    //   return;
+    // }
+    // indexes.push(indexItem);
+    // this.model.options.indexes = indexes;
+    // const tableName = this.model.getTableName();
+    // // @ts-ignore
+    // this.model._indexes = this.model.options.indexes
+    //   // @ts-ignore
+    //   .map((index) => Utils.nameIndex(this.model._conformIndex(index), tableName))
+    //   .map((item) => {
+    //     if (item.name && item.name.length > 63) {
+    //       item.name = 'i_' + md5(item.name);
+    //     }
+    //     return item;
+    //   });
+    // this.refreshIndexes();
   }
 
   removeIndex(fields: any) {

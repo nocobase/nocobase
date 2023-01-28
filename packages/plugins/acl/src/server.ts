@@ -262,6 +262,7 @@ export class PluginACL extends Plugin {
 
     this.app.db.on('rolesResources.afterDestroy', async (model, options) => {
       const role = this.acl.getRole(model.get('roleName'));
+
       if (role) {
         role.revokeResource(model.get('name'));
       }
@@ -281,6 +282,7 @@ export class PluginACL extends Plugin {
       const { transaction } = options;
 
       const collectionName = model.get('collectionName');
+
       const fieldName = model.get('name');
 
       const resourceActions = (await this.app.db.getRepository('rolesResourcesActions').find({

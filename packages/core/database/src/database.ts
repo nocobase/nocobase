@@ -299,6 +299,45 @@ export class Database extends EventEmitter implements AsyncEmitter {
         }
       }
     });
+
+    this.on('beforeDefineCollection', (options) => {
+      if (options.underscored) {
+        if (lodash.get(options, 'sortable.scopeKey')) {
+          options.sortable.scopeKey = lodash.snakeCase(options.sortable.scopeKey);
+        }
+
+        if (lodash.get(options, 'indexes')) {
+          // change index fields to snake case
+          options.indexes = options.indexes.map((index) => {
+            if (index.fields) {
+              index.fields = index.fields.map((field) => {
+                return lodash.snakeCase(field);
+              });
+            }
+
+            return index;
+          });
+        }
+
+        if (lodash.get(options, 'fields')) {
+          options.fields = options.fields.map((field) => {
+            // if (field.name) {
+            //   field.name = lodash.snakeCase(field.name);
+            // }
+
+            if (field.foreignKey) {
+              field.foreignKey = lodash.snakeCase(field.foreignKey);
+            }
+
+            if (field.targetKey) {
+              field.targetKey = lodash.snakeCase(field.targetKey);
+            }
+
+            return field;
+          });
+        }
+      }
+    });
   }
 
   addMigration(item: MigrationItem) {
@@ -333,6 +372,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collection<Attributes = any, CreateAttributes = Attributes>(
     options: CollectionOptions,
   ): Collection<Attributes, CreateAttributes> {
+    if (this.options.underscored) {
+      options.underscored = true;
+    }
+
     this.emit('beforeDefineCollection', options);
 
     const hasValidInheritsOptions = (() => {

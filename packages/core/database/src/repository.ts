@@ -11,7 +11,7 @@ import {
   Op,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
-  WhereOperators
+  WhereOperators,
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -407,7 +407,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const transaction = await this.getTransaction(options);
 
-    const guard = UpdateGuard.fromOptions(this.model, { ...options, action: 'create' });
+    const guard = UpdateGuard.fromOptions(this.model, {
+      ...options,
+      action: 'create',
+      underscored: this.collection.options.underscored,
+    });
+
     const values = guard.sanitize(options.values || {});
 
     const instance = await this.model.create<any>(values, {
@@ -476,7 +481,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
     const transaction = await this.getTransaction(options);
 
-    const guard = UpdateGuard.fromOptions(this.model, options);
+    const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
     const values = guard.sanitize(options.values);
 

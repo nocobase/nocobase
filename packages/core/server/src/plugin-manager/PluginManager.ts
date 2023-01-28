@@ -262,7 +262,6 @@ export class PluginManager {
   }
 
   async load(options: any = {}) {
-    console.log({ loadPlugins: this.plugins });
     for (const [name, plugin] of this.plugins) {
       if (!plugin.enabled) {
         continue;

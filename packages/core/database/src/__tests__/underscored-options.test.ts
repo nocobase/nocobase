@@ -34,6 +34,7 @@ describe('underscored options', () => {
     expect(tableName.includes('test_collection')).toBeTruthy();
 
     const repository = db.getRepository('testCollection');
+
     await repository.create({
       values: {
         testField: 'test',
