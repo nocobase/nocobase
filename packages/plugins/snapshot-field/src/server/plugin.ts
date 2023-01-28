@@ -44,6 +44,7 @@ export class SnapshotFieldPlugin extends Plugin {
       const existField: Model = await fieldsHistoryRepository.findOne({
         filter: {
           name: fieldDoc.name,
+          collectionName: fieldDoc.collectionName,
         },
       });
       if (existField) {
