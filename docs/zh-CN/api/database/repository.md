@@ -448,7 +448,7 @@ repository.find({
 ```
 
 #### `fields: string[]`
-查询列，用户控制数据字段结果。传入此参数之后，只会返回指定的字段。
+查询列，用于控制数据字段结果。传入此参数之后，只会返回指定的字段。
 
 #### `except: string[]`
 排除列，用于控制数据字段结果。传入此参数之后，传入的字段将不会输出。
@@ -650,7 +650,7 @@ const result = await posts.update({
 });
 ```
 
-### `destory()`
+### `destroy()`
 
 删除数据表中的数据。相当于 Sequelize 中的 `Model.destroy()`。
 
