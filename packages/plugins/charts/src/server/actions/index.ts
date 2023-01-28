@@ -76,6 +76,91 @@ async function handleGetChartData(ctx: Context) {
       }
       break;
     }
+    case 'Line': {
+      //由于目前nocobase暂时不支持聚合函数,简单sql拼接一下
+      const sql = `SELECT ${groupByField},${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collectionName} GROUP BY ${groupByField}`;
+      const result = await ctx.db.sequelize.query(sql);
+      if (result[0].length) {
+        chartData = result[0].map((item) => {
+          return {
+            'type': `${item[groupByField]}`,
+            'value': item[`${groupByField}_${computedField}`],
+          };
+        });
+      } else {
+        chartData = [
+          {
+            'Date': '2011-11',
+            'scales': 1325,
+          },
+          {
+            'Date': '2011-12',
+            'scales': 1250,
+          },
+          {
+            'Date': '2012-01',
+            'scales': 1394,
+          },
+          {
+            'Date': '2012-02',
+            'scales': 1406,
+          },
+          {
+            'Date': '2012-03',
+            'scales': 1578,
+          },
+          {
+            'Date': '2012-04',
+            'scales': 1465,
+          },
+          {
+            'Date': '2012-05',
+            'scales': 1689,
+          },
+          {
+            'Date': '2012-06',
+            'scales': 1755,
+          },
+          {
+            'Date': '2012-07',
+            'scales': 1495,
+          },
+          {
+            'Date': '2012-08',
+            'scales': 1508,
+          },
+          {
+            'Date': '2012-09',
+            'scales': 1433,
+          },
+          {
+            'Date': '2012-10',
+            'scales': 1344,
+          },
+          {
+            'Date': '2012-11',
+            'scales': 1201,
+          },
+          {
+            'Date': '2012-12',
+            'scales': 1065,
+          },
+          {
+            'Date': '2013-01',
+            'scales': 1255,
+          },
+          {
+            'Date': '2013-02',
+            'scales': 1429,
+          },
+          {
+            'Date': '2013-03',
+            'scales': 1398,
+          },
+        ];
+      }
+      break;
+    }
   }
   return chartData;
 }
