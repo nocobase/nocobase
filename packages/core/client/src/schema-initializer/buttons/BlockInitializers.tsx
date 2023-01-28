@@ -50,7 +50,7 @@ export const BlockInitializers = {
         // },
       ],
     },
-    {
+    /*{
       key: 'g2plot',
       type: 'itemGroup',
       title: '{{t("Chart blocks")}}',
@@ -72,7 +72,7 @@ export const BlockInitializers = {
             },
           },
         }],
-    },
+    },*/
     // {
     //   key: 'bar',
     //   type: 'item',
