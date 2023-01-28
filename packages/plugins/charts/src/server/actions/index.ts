@@ -90,72 +90,117 @@ async function handleGetChartData(ctx: Context) {
       } else {
         chartData = [
           {
-            'Date': '2011-11',
-            'scales': 1325,
+            'type': '2011-11',
+            'value': 1325,
           },
           {
-            'Date': '2011-12',
-            'scales': 1250,
+            'type': '2011-12',
+            'value': 1250,
           },
           {
-            'Date': '2012-01',
-            'scales': 1394,
+            'type': '2012-01',
+            'value': 1394,
           },
           {
-            'Date': '2012-02',
-            'scales': 1406,
+            'type': '2012-02',
+            'value': 1406,
           },
           {
-            'Date': '2012-03',
-            'scales': 1578,
+            'type': '2012-03',
+            'value': 1578,
           },
           {
-            'Date': '2012-04',
-            'scales': 1465,
+            'type': '2012-04',
+            'value': 1465,
           },
           {
-            'Date': '2012-05',
-            'scales': 1689,
+            'type': '2012-05',
+            'value': 1689,
           },
           {
-            'Date': '2012-06',
-            'scales': 1755,
+            'type': '2012-06',
+            'value': 1755,
           },
           {
-            'Date': '2012-07',
-            'scales': 1495,
+            'type': '2012-07',
+            'value': 1495,
           },
           {
-            'Date': '2012-08',
-            'scales': 1508,
+            'type': '2012-08',
+            'value': 1508,
           },
           {
-            'Date': '2012-09',
-            'scales': 1433,
+            'type': '2012-09',
+            'value': 1433,
           },
           {
-            'Date': '2012-10',
-            'scales': 1344,
+            'type': '2012-10',
+            'value': 1344,
           },
           {
-            'Date': '2012-11',
-            'scales': 1201,
+            'type': '2012-11',
+            'value': 1201,
           },
           {
-            'Date': '2012-12',
-            'scales': 1065,
+            'type': '2012-12',
+            'value': 1065,
           },
           {
-            'Date': '2013-01',
-            'scales': 1255,
+            'type': '2013-01',
+            'value': 1255,
           },
           {
-            'Date': '2013-02',
-            'scales': 1429,
+            'type': '2013-02',
+            'value': 1429,
           },
           {
-            'Date': '2013-03',
-            'scales': 1398,
+            'type': '2013-03',
+            'value': 1398,
+          },
+        ];
+      }
+      break;
+    }
+    case 'Area': {
+      //由于目前nocobase暂时不支持聚合函数,简单sql拼接一下
+      const sql = `SELECT ${groupByField},${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collectionName} GROUP BY ${groupByField}`;
+      const result = await ctx.db.sequelize.query(sql);
+      if (result[0].length) {
+        chartData = result[0].map((item) => {
+          return {
+            'type': `${item[groupByField]}`,
+            'value': item[`${groupByField}_${computedField}`],
+          };
+        });
+      } else {
+        chartData = [
+          {
+            'type': '2019 Q1',
+            'value': 2.31,
+          },
+          {
+            'type': '2019 Q2',
+            'value': 2.04,
+          },
+          {
+            'type': '2019 Q3',
+            'value': 1.83,
+          },
+          {
+            'type': '2019 Q4',
+            'value': 1.71,
+          },
+          {
+            'type': '2020 Q1',
+            'value': 1.65,
+          },
+          {
+            'type': '2020 Q2',
+            'value': 1.59,
+          },
+          {
+            'type': '2020 Q3',
+            'value': 1.58,
           },
         ];
       }
