@@ -192,6 +192,7 @@ export const OverridingFieldAction = (props) => {
             useCancelAction,
             showReverseFieldConfig: !data?.reverseField,
             createOnly: true,
+            override: true,
             isOverride: true,
             targetScope: { target: getFilterCollections(target), through: getFilterCollections(through) },
             ...scope,
