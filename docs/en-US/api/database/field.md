@@ -1,163 +1,163 @@
 # Field
 
-## 概览
+## Overview
 
-数据表字段管理类（抽象类）。同时是所有字段类型的基类，其他任意字段类型均通过继承该类来实现。
+Data table field management class (abstract class). It is also the base class for all field types, and any other field types are implemented by inheriting from this class.
 
-如何自定义字段可参考[扩展字段类型](/development/guide/collections-fields#扩展字段类型)
+Refer to [Extended Field Types](/development/guide/collections-fields#extended-field-types) to see how to customize fields.
 
-## 构造函数
+## Constructor
 
-通常不会直接由开发者调用，主要通过 `db.collection({ fields: [] })` 方法作为代理入口调用。
+It is usually not called directly by the developer, but mainly through the `db.collection({ fields: [] })` method as a proxy entry.
 
-在扩展字段时主要通过继承 `Field` 抽象类，再注册到 Database 实例中来实现。
+Extended field is implemented mainly by inheriting the `Field` abstract class and registering it to a Database instance.
 
-**签名**
+**Signature**
 
 * `constructor(options: FieldOptions, context: FieldContext)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options` | `FieldOptions` | - | 字段配置对象 |
-| `options.name` | `string` | - | 字段名称 |
-| `options.type` | `string` | - | 字段类型，对应在 db 中注册的字段类型名称 |
-| `context` | `FieldContext` | - | 字段上下文对象 |
-| `context.database` | `Database` | - | 数据库实例 |
-| `context.collection` | `Collection` | - | 数据表实例 |
+| `options` | `FieldOptions` | - | Field configuration object |
+| `options.name` | `string` | - | Field name |
+| `options.type` | `string` | - | Field type, corresponding to the name of the field type registered in the db |
+| `context` | `FieldContext` | - | Field context object |
+| `context.database` | `Database` | - | Database instance |
+| `context.collection` | `Collection` | - | Data table instance |
 
-## 实例成员
+## Instance Member
 
 ### `name`
 
-字段名称。
+Field name.
 
 ### `type`
 
-字段类型。
+Field type.
 
 ### `dataType`
 
-字段数据库存储类型。
+Data type of the field.
 
 ### `options`
 
-字段初始化配置参数。
+Configuration parameters to initialize the field.
 
 ### `context`
 
-字段上下文对象。
+Field context object.
 
-## 配置方法
+## Configuration Method
 
 ### `on()`
 
-基于数据表事件的快捷定义方式。相当于 `db.on(this.collection.name + '.' + eventName, listener)`。
+Quick definition method based on data table events. It is equivalent to `db.on(this.collection.name + '.' + eventName, listener)`.
 
-继承时通常无需覆盖此方法。
+It is usually not necessary to override this method when inheriting.
 
-**签名**
+**Signature**
 
 * `on(eventName: string, listener: (...args: any[]) => void)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `eventName` | `string` | - | 事件名称 |
-| `listener` | `(...args: any[]) => void` | - | 事件监听器 |
+| `eventName` | `string` | - | Event name |
+| `listener` | `(...args: any[]) => void` | - | Event listener |
 
 ### `off()`
 
-基于数据表事件的快捷移除方式。相当于 `db.off(this.collection.name + '.' + eventName, listener)`。
+Quick removal method based on data table events. It is equivalent to `db.off(this.collection.name + '.' + eventName, listener)`.
 
-继承时通常无需覆盖此方法。
+It is usually not necessary to override this method when inheriting.
 
-**签名**
+**Signature**
 
 * `off(eventName: string, listener: (...args: any[]) => void)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `eventName` | `string` | - | 事件名称 |
-| `listener` | `(...args: any[]) => void` | - | 事件监听器 |
+| `eventName` | `string` | - | Event name |
+| `listener` | `(...args: any[]) => void` | - | Event listener |
 
 ### `bind()`
 
-当字段被添加到数据表时触发的执行内容。通常用于添加数据表事件监听器和其他处理。
+The execution content that is triggered when a field is added to data table. Typically used to add data table event listeners and other processing.
 
-继承时需要先调用对应的 `super.bind()` 方法。
+The corresponding `super.bind()` method needs to be called first when inheriting.
 
-**签名**
+**Signature**
 
 * `bind()`
 
 ### `unbind()`
 
-当字段从数据表中移除时触发的执行内容。通常用于移除数据表事件监听器和其他处理。
+The execution content that is triggered when a field is removed from data table. Typically used to remove data table event listeners and other processing.
 
-继承时需要先调用对应的 `super.unbind()` 方法。
+The corresponding `super.unbind()` method needs to be called first when inheriting.
 
-**签名**
+**Signature**
 
 * `unbind()`
 
 ### `get()`
 
-获取字段的配置项的值。
+Get the values of a configuration item of the field.
 
-**签名**
+**Signature**
 
 * `get(key: string): any`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | `string` | - | 配置项名称 |
+| `key` | `string` | - | Name of the configuration item |
 
-**示例**
+**Example**
 
 ```ts
 const field = db.collection('users').getField('name');
 
-// 获取字段名称配置项的值，返回 'name'
+// Get and return the values of the configuration item 'name'
 console.log(field.get('name'));
 ```
 
 ### `merge()`
 
-合并字段的配置项的值。
+Merge the values of a configuration item of the field.
 
-**签名**
+**Signature**
 
 * `merge(options: { [key: string]: any }): void`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options` | `{ [key: string]: any }` | - | 要合并的配置项对象 |
+| `options` | `{ [key: string]: any }` | - | The configuration item to merge |
 
-**示例**
+**Example**
 
 ```ts
 const field = db.collection('users').getField('name');
 
 field.merge({
-  // 添加一个索引配置
+  // Add an index configuration 
   index: true
 });
 ```
 
 ### `remove()`
 
-从数据表中移除字段（仅从内存中移除）。
+Remove a field from data table (from memory only).
 
-**示例**
+**Example**
 
 ```ts
 const books = db.getCollections('books');
@@ -168,49 +168,49 @@ books.getField('isbn').remove();
 await books.sync();
 ```
 
-## 数据库方法
+## Database Method
 
 ### `removeFromDb()`
 
-从数据库中移除字段。
+Remove a field from the database.
 
-**签名**
+**Signature**
 
 * `removeFromDb(options?: Transactionable): Promise<void>`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.transaction?` | `Transaction` | - | 事务实例 |
+| `options.transaction?` | `Transaction` | - | Transaction instance |
 
 ### `existsInDb()`
 
-判断字段是否存在于数据库中。
+Check if a field exists in the database.
 
-**签名**
+**Signature**
 
 * `existsInDb(options?: Transactionable): Promise<boolean>`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.transaction?` | `Transaction` | - | 事务实例 |
+| `options.transaction?` | `Transaction` | - | Transaction instance |
 
-## 内置字段类型列表
+## Built-in Field Types
 
-NocoBase 内置了一些常用的字段类型，可以直接在定义数据表的字段是使用对应的 type 名称来指定类型。不同类型的字段参数配置不同，具体可参考下面的列表。
+NocoBase has some built-in common field types, the corresponding type name can be used directly to specify the type of field upon definition. Fields of different types are configured differently, please refer to the list below.
 
-所有字段类型的配置项除了以下额外介绍的以外，都会透传至 Sequelize，所以所有 Sequelize 支持的字段配置项都可以在这里使用（如 `allowNull`、`defaultValue` 等）。
+The configuration items of all field types are passed through to Sequelize in addition to those described below. Therefore, all field configuration items supported by Sequelize can be used here (e.g. `allowNull`, `defaultValue`, etc.).
 
-另外 server 端的字段类型主要解决数据库存储和部分算法的问题，与前端的字段展示类型和使用组件基本无关。前端字段类型可以参考教程对应说明。
+Moreover, server-side field types are mainly used for solving the problems of database storage and some algorithms, they are barely relevant to the field display types and the use of components in front-end. The front-end field types can be found in the corresponding tutorials.
 
 ### `'boolean'`
 
-逻辑值类型。
+Boolean type.
 
-**示例**
+**Example**
 
 ```js
 db.collection({
@@ -226,9 +226,9 @@ db.collection({
 
 ### `'integer'`
 
-整型（32 位）。
+Integer type (32 bits).
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -244,9 +244,9 @@ db.collection({
 
 ### `'bigInt'`
 
-长整型（64 位）。
+Long integer type (64 bits).
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -262,9 +262,9 @@ db.collection({
 
 ### `'double'`
 
-双精度浮点型（64 位）。
+Double-precision floating-point format (64 bits).
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -280,17 +280,17 @@ db.collection({
 
 ### `'real'`
 
-实数类型（仅 PG 适用）。
+Real type (PG only).
 
 ### `'decimal'`
 
-十进制小数类型。
+Decimal type.
 
 ### `'string'`
 
-字符串类型。相当于大部分数据库的 `VARCHAR` 类型。
+String type. Equivalent to the `VARCHAR` type for most databases.
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -306,9 +306,9 @@ db.collection({
 
 ### `'text'`
 
-文本类型。相当于大部分数据库的 `TEXT` 类型。
+Text type. Equivalent to the `TEXT` type for most databases.
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -324,9 +324,9 @@ db.collection({
 
 ### `'password'`
 
-密码类型（NocoBase 扩展）。基于 Node.js 原生的 crypto 包的 `scrypt` 方法进行密码加密。
+Password type (NocoBase extension). Password encryption based on the `scrypt` method of Node.js native crypto packages.
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -335,53 +335,53 @@ db.collection({
     {
       type: 'password',
       name: 'password',
-      length: 64, // 长度，默认 64
-      randomBytesSize: 8 // 随机字节长度，默认 8
+      length: 64, // Length, default is 64
+      randomBytesSize: 8 // Length of random bytes, default is 8
     }
   ]
 });
 ```
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `length` | `number` | 64 | 字符长度 |
-| `randomBytesSize` | `number` | 8 | 随机字节大小 |
+| `length` | `number` | 64 | Length of characters |
+| `randomBytesSize` | `number` | 8 | Length of random bytes |
 
 ### `'date'`
 
-日期类型。
+Date type.
 
 ### `'time'`
 
-时间类型。
+Time type.
 
 ### `'array'`
 
-数组类型（仅 PG 适用）。
+Array type (PG only).
 
 ### `'json'`
 
-JSON 类型。
+JSON type.
 
 ### `'jsonb'`
 
-JSONB 类型（仅 PG 适用，其他会被兼容为 `'json'` 类型）。
+JSONB type (PG only, others will be compatible with the `'json'` type).
 
 ### `'uuid'`
 
-UUID 类型。
+UUID type.
 
 ### `'uid'`
 
-UID 类型（NocoBase 扩展）。短随机字符串标识符类型。
+UID type (NocoBase extension). Short random string identifier type.
 
 ### `'formula'`
 
-公式类型（NocoBase 扩展）。可配置基于 [mathjs](https://www.npmjs.com/package/mathjs) 的数学公式计算，公式中可以引用同一条记录中其他列的数值参与计算。
+Formula type (NocoBase extension). Mathematical formula calculation can be configured based on [mathjs](https://www.npmjs.com/package/mathjs), and the formula can refer to the values of other columns in the same record to participate in the calculation.
 
-**示例**
+**Example**
 
 ```ts
 db.collection({
@@ -406,11 +406,11 @@ db.collection({
 
 ### `'radio'`
 
-单选类型（NocoBase 扩展）。全表最多有一行数据的该字段值为 `true`，其他都为 `false` 或 `null`。
+Radio type (NocoBase extension). The field value is 'true' for at most one row of data for the full table, all others are 'false' or 'null'.
 
-**示例**
+**Example**
 
-整个系统只有一个被标记为 root 的用户，任意另一个用户的 root 值被改为 `true` 之后，其他所有 root 为 `true` 的记录均会被修改为 `false`：
+There is only one user marked as <i>root</i> in the entire system, once the <i>root</i> value of any other user is changed to `true`, all other records with <i>root</i> of `true` will be changed to `false`:
 
 ```ts
 db.collection({
@@ -426,13 +426,13 @@ db.collection({
 
 ### `'sort'`
 
-排序类型（NocoBase 扩展）。基于整型数字进行排序，为新记录自动生成新序号，当移动数据时进行序号重排。
+Sorting type (NocoBase extension). Sorting based on integer numbers, automatically generating new serial numbers for new records, and rearranging serial numbers when moving data.
 
-数据表如果定义了 `sortable` 选项，也会自动生成对应字段。
+If data table has the `sortable` option defined, the corresponding fields will be generated automatically.
 
-**示例**
+**Example**
 
-文章基于所属用户可排序：
+Posts are sortable based on the users they belong to.
 
 ```ts
 db.collection({
@@ -445,7 +445,7 @@ db.collection({
     {
       type: 'sort',
       name: 'priority',
-      scopeKey: 'userId' // 以 userId 相同值分组的数据进行排序
+      scopeKey: 'userId' // Sort data grouped by the values of userId
     }
   ]
 });
@@ -453,15 +453,15 @@ db.collection({
 
 ### `'virtual'`
 
-虚拟类型。不实际储存数据，仅用于特殊 getter/setter 定义时使用。
+Virtual type. No Data is actually stored, it is used only when special getter/setter is defined.
 
 ### `'belongsTo'`
 
-多对一关联类型。外键储存在自身表，与 hasOne/hasMany 相对。
+Many-to-one association type. Foreign key is stored in its own table, as opposed to `'hasOne'`/`'hasMany'`.
 
-**示例**
+**Example**
 
-任意文章属于某个作者：
+Any post belongs to an author:
 
 ```ts
 db.collection({
@@ -470,9 +470,9 @@ db.collection({
     {
       type: 'belongsTo',
       name: 'author',
-      target: 'users', // 不配置默认为 name 复数名称的表名
-      foreignKey: 'authorId', // 不配置默认为 <name> + Id 的格式
-      sourceKey: 'id' // 不配置默认为 target 表的 id
+      target: 'users', // Default table name is the plural form of <name>
+      foreignKey: 'authorId', // Default is '<name> + Id'
+      sourceKey: 'id' // Default is id of the <target> table
     }
   ]
 });
@@ -480,11 +480,11 @@ db.collection({
 
 ### `'hasOne'`
 
-一对一关联类型。外键储存在关联表，与 belongsTo 相对。
+One-to-one association type. Foreign key is stored in the association table, as opposed to `'belongsTo'`.
 
-**示例**
+**Example**
 
-任意用户都有一份个人资料：
+Any user has a profile:
 
 ```ts
 db.collection({
@@ -493,7 +493,7 @@ db.collection({
     {
       type: 'hasOne',
       name: 'profile',
-      target: 'profiles', // 可省略
+      target: 'profiles', // Can be omitted
     }
   ]
 })
@@ -501,11 +501,11 @@ db.collection({
 
 ### `'hasMany'`
 
-一对多关联类型。外键储存在关联表，与 belongsTo 相对。
+One-to-many association type. The foreign key is stored in the association table, as opposed to `'belongsTo'`.
 
-**示例**
+**Example**
 
-任意用户可以拥有多篇文章：
+Any user can have multiple posts:
 
 ```ts
 db.collection({
@@ -523,11 +523,11 @@ db.collection({
 
 ### `'belongsToMany'`
 
-多对多关联类型。使用中间表储存双方外键，如不指定已存在的表为中间表的话，将会自动创建中间表。
+Many-to-many association type. Intermediate table is used to store both foreign keys. If no existing table is specified as intermediate table, it will be created automatically.
 
-**示例**
+**Example**
 
-任意文章可以加任意多个标签，任意标签也可以被任意多篇文章添加：
+Any post can have multiple tags added to it, and any tag can be added to multiple posts:
 
 ```ts
 db.collection({
@@ -536,11 +536,11 @@ db.collection({
     {
       type: 'belongsToMany',
       name: 'tags',
-      target: 'tags', // 同名可省略
-      through: 'postsTags', // 中间表不配置将自动生成
-      foreignKey: 'postId', // 自身表在中间表的外键
-      sourceKey: 'id', // 自身表的主键
-      otherKey: 'tagId' // 关联表在中间表的外键
+      target: 'tags', // Can be omitted if name is the same
+      through: 'postsTags', // Intermediate table will be generated automatically if not specified
+      foreignKey: 'postId', // Foreign key in the intermediate table referring to the table itself
+      sourceKey: 'id', // Primary key of the table itself
+      otherKey: 'tagId' // Foreign key in the intermediate table referring to the association table
     }
   ]
 });
@@ -551,7 +551,7 @@ db.collection({
     {
       type: 'belongsToMany',
       name: 'posts',
-      through: 'postsTags', // 同一组关系指向同一张中间表
+      through: 'postsTags', // Refer to the same intermediate table in the same set of relation
     }
   ]
 });

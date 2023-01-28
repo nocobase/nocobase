@@ -56,6 +56,10 @@ export class Collection<
     return this.options.name;
   }
 
+  get titleField() {
+    return (this.options.titleField as string) || this.model.primaryKeyAttribute;
+  }
+
   get db() {
     return this.context.database;
   }

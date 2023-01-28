@@ -1,16 +1,16 @@
-import { render } from 'ejs';
 import axios, { AxiosRequestConfig } from 'axios';
-import _ from 'lodash';
 
 import { Instruction } from './index';
 import { JOB_STATUS } from '../constants';
+import Processor from '../Processor';
+import FlowNodeModel from '../models/FlowNode';
 
 export interface Header {
   name: string;
   value: string;
 }
 
-export type RequestConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'data' | 'timeout'> & {
+export type RequestConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'params' | 'data' | 'timeout'> & {
   headers: Array<Header>;
   ignoreFail: boolean;
 };
@@ -18,40 +18,28 @@ export type RequestConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'data' |
 export default class implements Instruction {
   constructor(public plugin) {}
 
-  request = async (node, job, processor) => {
-    const templateVars = {
-      node: processor.jobsMapByNodeId,
-      ctx: processor.execution.context,
-      $jobsMapByNodeId: processor.jobsMapByNodeId,
-      $context: processor.execution.context,
-    };
-    const requestConfig = node.config as RequestConfig;
+  request = async (node: FlowNodeModel, job, processor: Processor) => {
+    const config = processor.getParsedValue(node.config) as RequestConfig;
 
     // default headers
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-    const { headers: headerArr = [], method = 'POST', timeout = 5000 } = requestConfig;
-    headerArr.forEach((header) => (headers[header.name] = header.value));
+    const { url, method = 'POST', data, timeout = 5000 } = config;
+    const headers = (config.headers ?? []).reduce((result, header) => {
+      if (header.name.toLowerCase() === 'content-type') {
+        return result;
+      }
+      return Object.assign(result, { [header.name]: header.value });
+    }, {});
+    const params = (config.params ?? []).reduce((result, param) => Object.assign(result, { [param.name]: param.value }), {});
 
-    let url, data;
-    try {
-      url = await render(requestConfig.url!.trim(), templateVars, { async: true });
-      data = requestConfig.data ? await render(requestConfig.data.trim(), templateVars, { async: true }) : undefined;
-
-    } catch (error2) {
-      // console.error(error2);
-      job.set({
-        status: JOB_STATUS.REJECTED,
-        result: error2.message
-      });
-    }
+    // TODO(feat): only support JSON type for now, should support others in future
+    headers['Content-Type'] = 'application/json';
 
     try {
       const response = await axios.request({
         url,
         method,
         headers,
+        params,
         data,
         timeout,
       });
@@ -59,11 +47,10 @@ export default class implements Instruction {
         status: JOB_STATUS.RESOLVED,
         result: response.data
       });
-    } catch (error1) {
-      // console.error('axios error?', error1);
+    } catch (error) {
       job.set({
         status: JOB_STATUS.REJECTED,
-        result: error1.isAxiosError ? error1.toJSON() : error1.message
+        result: error.isAxiosError ? error.toJSON() : error.message
       });
     }
 

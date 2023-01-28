@@ -1,9 +1,9 @@
-import { MenuOutlined } from '@ant-design/icons';
+import { DragOutlined, MenuOutlined } from '@ant-design/icons';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { Modal, Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../..';
+import { DragHandler, useDesignable } from '../..';
 import { SchemaSettings } from '../../../schema-settings';
 
 export const PageDesigner = ({ title }) => {
@@ -120,6 +120,9 @@ export const PageTabDesigner = ({ schema }) => {
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
+          <DragHandler>
+            <DragOutlined />
+          </DragHandler>
           <SchemaSettings title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}>
             <SchemaSettings.ModalItem
               title={t('Edit')}
