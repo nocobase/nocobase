@@ -85,12 +85,9 @@ export class MockServer extends Application {
               {
                 get(target, method: string, receiver) {
                   return (params: ActionParams = {}) => {
-                    let { filterByTk, values = {}, file, ...restParams } = params;
+                    let { values = {}, file, ...restParams } = params;
                     if (params.associatedIndex) {
                       resourceOf = params.associatedIndex;
-                    }
-                    if (params.resourceIndex) {
-                      filterByTk = params.resourceIndex;
                     }
                     let url = prefix || '';
                     if (keys.length > 1) {
@@ -99,8 +96,8 @@ export class MockServer extends Application {
                       url += `/${name}`;
                     }
                     url += `:${method as string}`;
-                    if (filterByTk) {
-                      url += `/${filterByTk}`;
+                    if (params.resourceIndex) {
+                      url += `/${params.resourceIndex}`;
                     }
 
                     const queryString = qs.stringify(restParams, { arrayFormat: 'brackets' });

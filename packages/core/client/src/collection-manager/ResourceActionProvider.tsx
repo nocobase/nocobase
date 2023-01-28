@@ -68,6 +68,7 @@ const AssociationResourceActionProvider = (props) => {
     },
     { uid },
   );
+  console.log(request.resource, resourceOf);
   const resource = api.resource(request.resource, resourceOf);
   return (
     <ResourceContext.Provider value={{ type: 'association', resource, association }}>
