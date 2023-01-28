@@ -42,8 +42,8 @@ export const pieTemplate = {
   renderComponent: 'G2Plot',
   defaultChartOptions: {
     appendPadding: 10,
-    angleField: '{{angleField}}',
-    colorField: '{{colorField}}',
+    angleField: 'value',
+    colorField: 'type',
     radius: 0.9,
     label: {
       type: 'inner',
@@ -178,6 +178,7 @@ export const pieTemplate = {
       },
       chartOptions: {
         type: 'object',
+        // required: true,
         title: 'Chart options',
         'x-component': 'Tabs.TabPane',
         'x-component-props': {
@@ -189,7 +190,7 @@ export const pieTemplate = {
             'x-component': 'Input',
             'x-decorator': 'FormItem',
           },
-          angleField: {
+          /*angleField: {
             title: '{{t(\'angleField\')}}',
             required: true,
             'x-component': 'Select',
@@ -212,31 +213,31 @@ export const pieTemplate = {
                 field.dataSource = [];
               }
             },
-          },
-          colorField: {
-            title: '{{t(\'colorField\')}}',
-            required: true,
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            'x-reactions': (field) => {
-              const computedField = field.query('dataset.computedField')?.value();
-              const groupByField = field.query('dataset.groupByField')?.value();
-              if (groupByField || computedField) {
-                field.dataSource = [
-                  {
-                    label: 'type',
-                    value: 'type',
-                  },
-                  {
-                    label: 'value',
-                    value: 'value',
-                  },
-                ];
-              } else {
-                field.dataSource = [];
-              }
-            },
-          },
+          },*/
+          // colorField: {
+          //   title: '{{t(\'colorField\')}}',
+          //   required: true,
+          //   'x-component': 'Select',
+          //   'x-decorator': 'FormItem',
+          //   'x-reactions': (field) => {
+          //     const computedField = field.query('dataset.computedField')?.value();
+          //     const groupByField = field.query('dataset.groupByField')?.value();
+          //     if (groupByField || computedField) {
+          //       field.dataSource = [
+          //         {
+          //           label: 'type',
+          //           value: 'type',
+          //         },
+          //         {
+          //           label: 'value',
+          //           value: 'value',
+          //         },
+          //       ];
+          //     } else {
+          //       field.dataSource = [];
+          //     }
+          //   },
+          // },
         },
       },
       chartConfig: {
@@ -248,7 +249,7 @@ export const pieTemplate = {
         },
         properties: {
           config: {
-            required:true,
+            required: true,
             title: '{{t("Config")}}',
             type: 'string',
             default: JSON.stringify(chartConfig, null, 2),
