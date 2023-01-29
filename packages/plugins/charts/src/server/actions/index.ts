@@ -4,12 +4,13 @@ async function handleGetChartData(ctx: Context) {
   const { params: { values } } = ctx.action;
   const { chartType, collectionName, filter, computedField, aggregateFunction, type, groupByField } = values;
   const repo = ctx.db.getRepository(collectionName);
+  const collection = ctx.db.getCollection(collectionName);
   let chartData;
   //处理不同collection chartType filter 对应的数据
   switch (chartType) {
     case 'Pie': {
       //由于目前nocobase暂时不支持聚合函数,简单sql拼接一下
-      const sql = `SELECT ${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collectionName} GROUP BY ${groupByField}`;
+      const sql = `SELECT ${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collection.model.tableName} GROUP BY ${groupByField}`;
       const result = await ctx.db.sequelize.query(sql);
       if (result[0].length) {
         chartData = result[0].map((item) => {
@@ -32,7 +33,7 @@ async function handleGetChartData(ctx: Context) {
     }
     case 'Bar': {
       //由于目前nocobase暂时不支持聚合函数,简单sql拼接一下
-      const sql = `SELECT ${groupByField},${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collectionName} GROUP BY ${groupByField}`;
+      const sql = `SELECT ${groupByField},${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collection.model.tableName} GROUP BY ${groupByField}`;
       const result = await ctx.db.sequelize.query(sql);
       if (result[0].length) {
         chartData = result[0].map((item) => {
@@ -55,7 +56,7 @@ async function handleGetChartData(ctx: Context) {
     }
     case 'Column': {
       //由于目前nocobase暂时不支持聚合函数,简单sql拼接一下
-      const sql = `SELECT ${groupByField},${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collectionName} GROUP BY ${groupByField}`;
+      const sql = `SELECT ${groupByField},${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collection.model.tableName} GROUP BY ${groupByField}`;
       const result = await ctx.db.sequelize.query(sql);
       if (result[0].length) {
         chartData = result[0].map((item) => {
@@ -78,7 +79,7 @@ async function handleGetChartData(ctx: Context) {
     }
     case 'Line': {
       //由于目前nocobase暂时不支持聚合函数,简单sql拼接一下
-      const sql = `SELECT ${groupByField},${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collectionName} GROUP BY ${groupByField}`;
+      const sql = `SELECT ${groupByField},${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collection.model.tableName} GROUP BY ${groupByField}`;
       const result = await ctx.db.sequelize.query(sql);
       if (result[0].length) {
         chartData = result[0].map((item) => {
@@ -163,7 +164,7 @@ async function handleGetChartData(ctx: Context) {
     }
     case 'Area': {
       //由于目前nocobase暂时不支持聚合函数,简单sql拼接一下
-      const sql = `SELECT ${groupByField},${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collectionName} GROUP BY ${groupByField}`;
+      const sql = `SELECT ${groupByField},${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as ${`${groupByField}_${computedField}`} FROM ${collection.model.tableName} GROUP BY ${groupByField}`;
       const result = await ctx.db.sequelize.query(sql);
       if (result[0].length) {
         chartData = result[0].map((item) => {
