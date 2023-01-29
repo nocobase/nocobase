@@ -8,6 +8,9 @@ import {
   Transactionable,
   ModelStatic,
   Utils,
+  CreateOptions,
+  UpdateOptions,
+  FindOptions,
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -75,6 +78,216 @@ export class Collection<
 
     this.bindFieldEventListener();
     this.modelInit();
+
+    if(options['tree']) {
+        
+      options.fields.push({type: 'integer', name: 'hierarchyLevel'})
+      options.fields.push({type: 'string', name: 'path'})
+      options.fields.push({'type': 'hasMany', 'name': 'children', 'foreignKey':'parentId','target': options.name})
+      options.fields.push({'type': 'belongsTo', 'name': 'parent', 'foreignKey':'parentId','target': options.name});
+
+      const buildOptions = (options, opt) => {
+        if(opt.transaction) options.transaction = opt.transaction;
+        if(opt.logging) options.logging = opt.logging;
+        return options;
+      };
+
+      this.db.on(`${this.name}.beforeCreate`, async (item: Model, opt: CreateOptions) => {
+        console.info(`${this.name}.beforeCreate`, '>>>');
+        const levelFieldName = 'hierarchyLevel';
+        const parentId = item['parentId'];
+        if (!parentId) {
+          item[levelFieldName] = 1;
+          return;
+        }
+
+        const itemId = item.id;
+        if(parentId===itemId) {
+          throw new Error('ParentId should not equal self id');
+        }
+
+        const parent = await this.repository.findOne(buildOptions({
+          where: {'id': parentId}, 
+          attributes: [levelFieldName], 
+          hooks: false
+        }, opt));
+        if(!parent) {
+          // throw new Error('Parent does not exist');
+          console.warn(`${itemId} ${item.parentId} not created`);
+        }
+
+        item[levelFieldName] = parent[levelFieldName]+1;
+        opt.fields = Array.from(new Set(opt.fields.concat([levelFieldName])));
+        console.info(`${this.name}.beforeCreate`, '<<<');
+      });
+
+      this.db.on(`${this.name}.afterCreate`, async (item, opt: CreateOptions) => {
+        try {
+          console.info(`${this.name}.afterCreate`, '>>>')
+          const parentId = item.parentId;
+          const itemId = item.id;
+          if(!parentId) {
+            await this.repository.update(buildOptions({
+              hooks: false, 
+              values:{'path': `${itemId}`},
+              filterByTk: itemId
+            }, opt));
+            return;
+          }  
+          const parent = await this.repository.findOne(buildOptions({filterByTk: parentId, hooks: false}, opt));
+          if(!parent) {
+            throw new Error('Parent does not exist');
+          }
+
+          const parentPath = parent.path;
+
+          await this.repository.update(buildOptions({
+            hooks: false, 
+            values:{'path': `${parentPath}.${itemId}`},
+            filterByTk: itemId
+          }, opt));
+
+          // return item;
+        } catch(err) {
+          console.warn(err);
+        } finally {
+          console.info(`${this.name}.afterCreate`, '<<<');
+        }
+      })
+
+      // update hook
+      this.db.on(`${this.name}.beforeUpdate`, async (item: Model, options: UpdateOptions) => {
+        console.info(`${this.name}.beforeUpdate`, '>>>', item.id);
+        const levelFieldName = 'hierarchyLevel';
+
+        const itemId = item.id;
+        const parentId = item.parentId;
+        const path = item.path;
+        let oldParentId = item._previousDataValues['parentId'];
+        let oldLevel = item._previousDataValues[levelFieldName];
+        let oldPath = item._previousDataValues['path'];
+        // console.info('id=%d, parentId=%d, path=%s, oldParentId=%s, oldLevel=%d, oldPath=%s', itemId, parentId, path, oldParentId, oldLevel, oldPath);
+
+        if(oldParentId !== undefined && parentId === oldParentId) {
+          console.info('parentId did not update');
+          return;
+        }
+
+        if (oldParentId === undefined || oldLevel === undefined) {
+          const itemRecord = await this.repository.findOne(buildOptions({filterByTk: itemId, hooks: false}, options));
+          oldParentId = itemRecord['parentId'];
+          oldLevel = itemRecord[levelFieldName];
+        }
+
+        // If parent not changing, exit - no change to make
+        if (parentId === oldParentId) return;
+
+        // update level since parent changed
+        let level = 1;
+        if(parentId !== undefined) {
+          if(parentId===itemId) {
+            throw new Error('parentId should not equal to self id');
+          }
+          const parent = await this.repository.findOne(buildOptions({
+            filterByTk: parentId,
+            // where: {id: parentId}, 
+            attributes: [levelFieldName, 'parentId', 'path'],
+            hooks: false
+          }, options));
+          if(!parent) {
+            throw new Error('Parent does not exist');
+          }
+          level = parent[levelFieldName] + 1;
+          if(level !== oldLevel) {
+            item[levelFieldName] = level;
+          }
+
+          // update path
+          const path = `${parent.path}.${itemId}`
+          item['path'] = path;
+
+          // try to find all descendents
+          const children = await this.repository.find(buildOptions({filter: {path: {$startsWith: `${oldPath}.`}}, hooks: false}, options))     // regex would be a perfect way
+
+          // update descendents' path
+          // TODO: try bulk-save method for efficiency
+          await Promise.all(children.map(i => {
+            i.path = i.path.replace(`${oldPath}.`, `${path}.`);
+            i[levelFieldName] = i.path.split('.').length;
+            return i.save(buildOptions({},options));
+          }))
+
+        } else {    // here parent removed
+          
+          item[levelFieldName] = level;
+          const path = `${itemId}`
+          item['path'] = path;
+
+          // try to find all descendents
+          const children = await this.repository.find(buildOptions({filter: {path: {$startsWith: `${oldPath}.`}}, hooks: false}, options))     // regex would be a perfect way
+
+          // update descendents' path
+          // TODO: try bulk-save method for efficiency
+          await Promise.all(children.map(i => {
+            i.path = i.path.replace(`${oldPath}.`, `${path}.`);
+            i[levelFieldName] = i.path.split('.').length;
+            return i.save(buildOptions({},options));
+          }))        
+        }
+
+        console.info(`${this.name}.beforeUpdate`, '<<<');
+      })
+
+      // after define
+      // this.db.on(`afterDefineCollection`, async (model: Collection) => {
+      //   console.info(`${model.name}.afterDefineCollection`, '>>>');
+
+      //   // let {hierarchy} = model.options;
+      //   // console.info(model.options);
+      //   console.info(`${model.name}.afterDefineCollection`, '<<<');
+      // })
+
+      // this.model.beforeFindAfterExpandIncludeAll(async (options) => {
+      //   console.info(`${this.name}.beforeFindAfterExpandIncludeAll`, '>>>')
+      //   console.info(`${this.name}.beforeFindAfterExpandIncludeAll`, '<<<')
+      // })
+
+      // // b4 find
+      // this.model.beforeFind((options: FindOptions) => {
+      //   console.info('b4 Find', '>>>');
+      //   console.info('b4 Find', '<<<');
+      // })
+
+      // this.model.beforeFindAfterOptions((options)=> {
+      //   console.info('beforeFindAfterOptions', '>>>', options)
+      //   console.info('beforeFindAfterOptions', '<<<')
+      // })
+
+      // after find
+      this.model.afterFind(async (result, options: FindOptions) => {
+        if (!options['tree']) return;
+        
+        result = Array.isArray(result)? result: [result];
+        console.info(`${this.name}.afterFind >>>`)
+        try {
+          // If no hierarchies to expand anywhere in tree of includes, return
+          const buildChildren = (item: Model, allItems) => {
+            if(item.dataValues['children']) return;
+            item.dataValues['children'] = allItems.filter(i => i.parentId===item.id);
+            if(item.dataValues['children']?.length) {
+              item.dataValues['children'].forEach(i => buildChildren(i, allItems))
+            }
+          }
+          result.forEach((i, index, arr) => {
+            buildChildren(i, arr);
+          });
+        } catch (err) {
+          console.error(err);
+        } finally {
+          console.info(`${this.name}.afterFind <<<`)
+        }
+      })
+    }
 
     this.db.modelCollection.set(this.model, this);
     this.db.tableNameCollectionMap.set(this.model.tableName, this);
