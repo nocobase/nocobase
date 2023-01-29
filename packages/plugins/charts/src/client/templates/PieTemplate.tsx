@@ -21,8 +21,8 @@ const validateJSON = {
 
 const chartConfig = {
   appendPadding: 10,
-  angleField: '{{angleField}}',
-  colorField: '{{colorField}}',
+  angleField: 'value',
+  colorField: 'type',
   radius: 0.9,
   label: {
     type: 'inner',
