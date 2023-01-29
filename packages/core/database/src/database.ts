@@ -318,24 +318,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
             return index;
           });
         }
-
-        if (lodash.get(options, 'fields')) {
-          options.fields = options.fields.map((field) => {
-            // if (field.name) {
-            //   field.name = lodash.snakeCase(field.name);
-            // }
-
-            if (field.foreignKey) {
-              field.foreignKey = lodash.snakeCase(field.foreignKey);
-            }
-
-            if (field.targetKey) {
-              field.targetKey = lodash.snakeCase(field.targetKey);
-            }
-
-            return field;
-          });
-        }
       }
     });
   }
