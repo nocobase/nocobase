@@ -65,6 +65,65 @@ describe('collection', () => {
     expect(db.getCollection('empty')).toBeInstanceOf(Collection);
   });
 
+  test.only('tree: should create properly', async () => {
+    const category = db.collection({
+      name: 'categories',
+      tree: 'adjacency-list',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        }
+      ],
+    });
+
+    await db.sync();
+    const proxy = category.repository;
+    const lv1 = await proxy.create({values: {name: "lv1", children: [{name: 'lv11'}, {name: 'lv12'}]}});
+    const lv0 = await proxy.create({values: {name: "lv0", children:[lv1.id]}})
+    const categories = await proxy.find({ offset: 0, limit: 10, appends: ['children']});
+
+    expect(lv0).toBeDefined();
+    expect(lv0.id).toBe(4);
+    expect(categories[0].path).toBe('4.1');
+    expect(categories[0].hierarchyLevel).toBe(2);
+    expect(categories[1].path).toBe('4.1.2');
+    expect(categories[1].hierarchyLevel).toBe(3);
+  })
+
+  test.only('tree: should find with appends properly', async () => {
+    const Tag = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'belongsToMany', name: 'categories', through: 'categories_tags' },
+        { type: 'string', name: 'name' },
+      ],
+    });
+
+    const category = db.collection({
+      name: 'categories',
+      tree: 'adjacency-list',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        { type: 'belongsToMany', name: 'tags', through: 'categories_tags' },
+      ],
+    });
+
+    await db.sync();
+    const proxy = category.repository;
+    const lv1 = await proxy.create({values: {
+      name: "lv1", 
+      children: [{name: 'lv11', tags:[{name: 't1'}, {name:'t2'}]}, {name: 'lv12', tags:[]}]
+    }});
+    const categories = await proxy.find({ tree: true, offset: 0, limit: 10, appends: ['tags']} as any);
+    // console.info(JSON.stringify(categories.map(i=>i.toJSON()),null,2));
+    expect(categories[0].toJSON().children).toBeDefined();
+    // expect(categories[0].children).toBeDefined();
+  })
+
   test('removeFromDb', async () => {
     await db.clean({ drop: true });
     const collection = db.collection({
