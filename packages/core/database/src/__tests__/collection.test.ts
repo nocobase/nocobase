@@ -65,7 +65,7 @@ describe('collection', () => {
     expect(db.getCollection('empty')).toBeInstanceOf(Collection);
   });
 
-  test.only('tree: should create properly', async () => {
+  test('tree: should create properly', async () => {
     const category = db.collection({
       name: 'categories',
       tree: 'adjacency-list',
@@ -91,7 +91,7 @@ describe('collection', () => {
     expect(categories[1].hierarchyLevel).toBe(3);
   })
 
-  test.only('tree: should find with appends properly', async () => {
+  test('tree: should find with appends properly', async () => {
     const Tag = db.collection({
       name: 'tags',
       fields: [
