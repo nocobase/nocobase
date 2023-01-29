@@ -85,7 +85,7 @@ export const ConfigurationTable = () => {
       ?.filter((item) => !(item.autoCreate && item.isThrough))
       .filter((item) =>
         targetScope
-          ? targetScope['template']?.includes(item.template) || targetScope['name']?.includes(item.name)
+          ? targetScope['template']?.includes(item.template) || targetScope[field.props.name]?.includes(item.name)
           : true,
       )
       .map((item: any) => ({
