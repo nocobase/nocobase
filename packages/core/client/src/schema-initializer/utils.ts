@@ -1062,7 +1062,6 @@ export const createGanttBlockSchema = (options) => {
             'x-decorator-props': {
               style: {
                 display: 'inline-block',
-                maxWidth: '30%',
               },
             },
         

@@ -61,7 +61,7 @@ export const GanttDesigner = () => {
       />
       <SchemaSettings.SelectItem
         title={t('Time Range')}
-        value={fieldNames.range}
+        value={fieldNames.range||'day'}
         options={[
           { label: compile('{{t("Hour")}}'), value: 'hour', color: 'orange' },
           { label: compile('{{t("Quarter of day")}}'), value: 'quarterOfDay', color: 'default' },
