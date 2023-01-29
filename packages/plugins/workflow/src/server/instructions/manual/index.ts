@@ -85,8 +85,6 @@ function getMode(mode) {
 }
 
 export default class implements Instruction {
-  middlewares = [];
-
   constructor(protected plugin: Plugin) {
     plugin.db.collection(usersJobsCollection);
     plugin.db.extendCollection(usersCollection);

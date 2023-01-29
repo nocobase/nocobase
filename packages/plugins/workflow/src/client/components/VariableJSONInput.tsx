@@ -4,7 +4,7 @@ import { css } from "@emotion/css";
 
 import { Input } from "@nocobase/client";
 
-import { Operand, VariableTypes, VariableTypesContext } from '../variable';
+import { Operand, VariableTypes } from '../variable';
 import { lang } from '../locale';
 
 
@@ -80,17 +80,19 @@ export function VariableJSONInput(props) {
               display: flex;
               gap: .5em;
             `}>
-              <VariableTypesContext.Provider value={{
-                $jobsMapByNodeId: VariableTypes.$jobsMapByNodeId,
-                $context: VariableTypes.$context,
-              }}>
-                <Operand value={variable} onChange={setVariable} />
-                <Button onClick={onInsert} disabled={!variable}>{lang('Insert')}</Button>
-              </VariableTypesContext.Provider>
+              <Operand
+                scope={{
+                  $jobsMapByNodeId: VariableTypes.$jobsMapByNodeId,
+                  $context: VariableTypes.$context,
+                }}
+                value={variable}
+                onChange={setVariable}
+              />
+              <Button onClick={onInsert} disabled={!variable}>{lang('Insert')}</Button>
             </div>
           }
         >
-          <Button size="small">{lang('Use variables')}</Button>
+          <Button size="small">{lang('Use variable')}</Button>
         </Popover>
       </Button.Group>
     </div>

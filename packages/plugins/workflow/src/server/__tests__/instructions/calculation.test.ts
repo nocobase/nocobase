@@ -1,6 +1,7 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
+import { JOB_STATUS } from '../../constants';
 
 
 
@@ -31,15 +32,32 @@ describe('workflow > instructions > calculation', () => {
 
   afterEach(() => db.close());
 
-  describe('operand types', () => {
+  describe('math.js', () => {
+    it('syntax error', async () => {
+      const n1 = await workflow.createNode({
+        type: 'calculation',
+        config: {
+          engine: 'math.js',
+          expression: '1 1'
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.REJECTED);
+      expect(job.result.startsWith('SyntaxError: ')).toBe(true);
+    });
+
     it('constant', async () => {
       const n1 = await workflow.createNode({
         type: 'calculation',
         config: {
-          calculation: {
-            calculator: 'add',
-            operands: [1, 1]
-          }
+          engine: 'math.js',
+          expression: ' 1 + 1 '
         }
       });
 
@@ -52,40 +70,12 @@ describe('workflow > instructions > calculation', () => {
       expect(job.result).toBe(2);
     });
 
-    it('constant (legacy)', async () => {
+    it('$context', async () => {
       const n1 = await workflow.createNode({
         type: 'calculation',
         config: {
-          calculation: {
-            calculator: 'add',
-            operands: [
-              { value: 1 },
-              { value: 1 }
-            ]
-          }
-        }
-      });
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      const [execution] = await workflow.getExecutions();
-      const [job] = await execution.getJobs();
-      expect(job.result).toBe(2);
-    });
-
-    it('context (legacy)', async () => {
-      const n1 = await workflow.createNode({
-        type: 'calculation',
-        config: {
-          calculation: {
-            calculator: 'add',
-            operands: [
-              { type: '$context', options: { type: 'data', path: 'read' } },
-              { type: '$context', options: { path: 'data.read' } }
-            ]
-          }
+          engine: 'math.js',
+          expression: '{{$context.data.read}} + 1',
         }
       });
 
@@ -98,27 +88,7 @@ describe('workflow > instructions > calculation', () => {
       expect(job.result).toBe(2);
     });
 
-    it('context by json-template', async () => {
-      const n1 = await workflow.createNode({
-        type: 'calculation',
-        config: {
-          calculation: {
-            calculator: 'add',
-            operands: [1, '{{$context.data.read}}']
-          }
-        }
-      });
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      const [execution] = await workflow.getExecutions();
-      const [job] = await execution.getJobs();
-      expect(job.result).toBe(1);
-    });
-
-    it('job result (legacy)', async () => {
+    it('$jobsMapByNodeId', async () => {
       const n1 = await workflow.createNode({
         type: 'echo'
       });
@@ -126,13 +96,8 @@ describe('workflow > instructions > calculation', () => {
       const n2 = await workflow.createNode({
         type: 'calculation',
         config: {
-          calculation: {
-            calculator: 'add',
-            operands: [
-              { value: 1 },
-              { type: '$jobsMapByNodeId', options: { nodeId: n1.id, path: 'data.read' } }
-            ]
-          }
+          engine: 'math.js',
+          expression: `{{$jobsMapByNodeId.${n1.id}.data.read}} + 1`,
         },
         upstreamId: n1.id
       });
@@ -148,44 +113,12 @@ describe('workflow > instructions > calculation', () => {
       expect(n2Job.result).toBe(1);
     });
 
-    it('job result by json-template', async () => {
-      const n1 = await workflow.createNode({
-        type: 'echo'
-      });
-
-      const n2 = await workflow.createNode({
-        type: 'calculation',
-        config: {
-          calculation: {
-            calculator: 'add',
-            operands: [1, `{{$jobsMapByNodeId.${n1.id}.data.read}}`]
-          }
-        },
-        upstreamId: n1.id
-      });
-
-      await n1.setDownstream(n2);
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      const [execution] = await workflow.getExecutions();
-      const [n1Job, n2Job] = await execution.getJobs({ order: [['id', 'ASC']]});
-      expect(n2Job.result).toBe(1);
-    });
-
-    it('function', async () => {
+    it('$system', async () => {
       const n1 = await workflow.createNode({
         type: 'calculation',
         config: {
-          calculation: {
-            calculator: 'add',
-            operands: [
-              { value: 1 },
-              { value: '{{$fn.no1}}' }
-            ]
-          }
+          engine: 'math.js',
+          expression: '1 + {{$system.no1}}',
         }
       });
 
@@ -199,24 +132,13 @@ describe('workflow > instructions > calculation', () => {
     });
   });
 
-  describe('nested operands', () => {
-    it('1 + ( 0 - 2 )', async () => {
+  describe('formula.js', () => {
+    it('string variable without quote should throw error', async () => {
       const n1 = await workflow.createNode({
         type: 'calculation',
         config: {
-          calculation: {
-            calculator: 'add',
-            operands: [
-              { value: 1 },
-              {
-                type: '$calculation',
-                options: {
-                  calculator: 'minus',
-                  operands: ['{{$context.data.read}}', 2]
-                }
-              }
-            ]
-          }
+          engine: 'formula.js',
+          expression: `CONCATENATE('a', {{$context.data.title}})`,
         }
       });
 
@@ -226,7 +148,25 @@ describe('workflow > instructions > calculation', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.result).toBe(-1);
+      expect(job.status).toBe(JOB_STATUS.REJECTED);
+    });
+
+    it('text', async () => {
+      const n1 = await workflow.createNode({
+        type: 'calculation',
+        config: {
+          engine: 'formula.js',
+          expression: `CONCATENATE('a', '{{$context.data.title}}')`,
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe('at1');
     });
   });
 });

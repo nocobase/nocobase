@@ -1,37 +1,13 @@
-import React from 'react';
-import { Cascader } from 'antd';
-
-import { useCompile, useCollectionDataSource, useCollectionManager, SchemaInitializerItemOptions } from '@nocobase/client';
+import { useCollectionDataSource, SchemaInitializerItemOptions } from '@nocobase/client';
 
 import { ScheduleConfig } from './ScheduleConfig';
-import { useFlowContext } from '../../FlowContext';
-import { BaseTypeSet, useAvailableCollectionFields, useOperandContext } from '../../variable';
 import { SCHEDULE_MODE } from './constants';
 import { NAMESPACE, useWorkflowTranslation } from '../../locale';
 import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import CollectionFieldSelect from '../../components/CollectionFieldSelect';
+import { useCollectionFieldOptions } from '../../components/CollectionFieldSelect';
 
 
-
-function ValueGetter({ onChange }) {
-  const { workflow } = useFlowContext();
-  const { operand: { options } } = useOperandContext();
-
-  if (!options.type || options.type === 'date') {
-    return null;
-  }
-
-  return (
-    <CollectionFieldSelect
-      collection={workflow.config.collection}
-      value={options?.path}
-      onChange={(path) => {
-        onChange(`{{$context.data.${path}}}`);
-      }}
-    />
-  );
-}
 
 export default {
   title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
@@ -55,30 +31,21 @@ export default {
     const { t } = useWorkflowTranslation();
     const options: any[] = [];
     if (!types || types.includes('date')) {
-      options.push({ value: 'date', label: t('Trigger time') });
+      options.push({ key: 'date', value: 'date', label: t('Trigger time') });
     }
     if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
-      const fields = useAvailableCollectionFields(config.collection);
+      const fieldOptions = useCollectionFieldOptions({ collection: config.collection });
 
-      if (fields.length) {
+      if (fieldOptions.length) {
         options.push({
+          key: 'data',
           value: 'data',
-          label: t('Trigger data')
+          label: t('Trigger data'),
+          children: fieldOptions
         });
       }
     }
     return options;
-  },
-  useValueGetter(config) {
-    if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
-      const fields = useAvailableCollectionFields(config.collection);
-
-      if (!fields.length) {
-        return null;
-      }
-    }
-
-    return ValueGetter;
   },
   useInitializers(config): SchemaInitializerItemOptions | null {
     if (!config.collection) {

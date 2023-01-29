@@ -3,18 +3,10 @@ import { ArrayItems } from '@formily/antd';
 import { css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
-import { Operand, VariableTypes, VariableTypesContext } from '../variable';
+import { Operand, VariableTypes } from '../variable';
 import { VariableJSONInput } from '../components/VariableJSONInput';
 
 
-
-function VariableTypesContextProvider(props) {
-  return (
-    <VariableTypesContext.Provider value={VariableTypes}>
-      {props.children}
-    </VariableTypesContext.Provider>
-  )
-}
 
 export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
@@ -29,7 +21,6 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
-        defaultValue: 'POST',
         showSearch: false,
         allowClear: false,
       },
@@ -40,6 +31,7 @@ export default {
         { label: 'PATCH', value: 'PATCH' },
         { label: 'DELETE', value: 'DELETE' },
       ],
+      default: 'POST'
     },
     'config.url': {
       type: 'string',
@@ -68,7 +60,6 @@ export default {
       description: `{{t('"Content-Type" only support "application/json", and no need to specify', { ns: "${NAMESPACE}" })}}`,
       items: {
         type: 'object',
-        'x-decorator': 'VariableTypesContextProvider',
         properties: {
           space: {
             type: 'void',
@@ -112,7 +103,6 @@ export default {
       title: `{{t("Parameters", { ns: "${NAMESPACE}" })}}`,
       items: {
         type: 'object',
-        'x-decorator': 'VariableTypesContextProvider',
         properties: {
           space: {
             type: 'void',
@@ -194,7 +184,6 @@ export default {
   components: {
     ArrayItems,
     Operand,
-    VariableTypesContextProvider,
     VariableJSONInput
   },
 };

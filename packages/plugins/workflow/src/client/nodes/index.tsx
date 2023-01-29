@@ -42,7 +42,7 @@ export interface Instruction {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   endding?: boolean;
-  useValueGetter?(node: any, types?: any[]): (props) => React.ReactNode;
+  getOptions?(config, types?): { label: string; key: string }[];
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
 };
@@ -76,7 +76,11 @@ function useUpdateAction() {
         return;
       }
       // TODO: how to do validation separately for each field? especially disabled for dynamic fields?
-      // await form.submit();
+      try {
+        await form.submit();
+      } catch (err) {
+        return;
+      }
       await api.resource('flow_nodes', data.id).update?.({
         filterByTk: data.id,
         values: {

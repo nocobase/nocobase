@@ -12,7 +12,8 @@ export default {
       title: `{{t("Duration", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Duration',
-      default: 60000
+      default: 60000,
+      required: true
     },
     'config.endStatus': {
       type: 'number',
@@ -26,7 +27,8 @@ export default {
       enum: [
         { label: `{{t("Succeed and continue", { ns: "${NAMESPACE}" })}}`, value: 1 },
         { label: `{{t("Fail and exit", { ns: "${NAMESPACE}" })}}`, value: -1 },
-      ]
+      ],
+      required: true
     }
   },
   view: {

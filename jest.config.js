@@ -1,5 +1,6 @@
 const { pathsToModuleNameMapper } = require('ts-jest/utils');
 const { compilerOptions } = require('./tsconfig.json');
+const { defaults } = require('jest-config');
 
 module.exports = {
   rootDir: process.cwd(),
@@ -21,6 +22,8 @@ module.exports = {
     },
   },
   modulePathIgnorePatterns: ['/esm/', '/es/', '/dist/', '/lib/'],
+  // add .mjs .cjs for formula.js
+  moduleFileExtensions: [...defaults.moduleFileExtensions, 'mjs', 'cjs'],
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',

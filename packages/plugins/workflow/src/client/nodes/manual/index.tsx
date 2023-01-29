@@ -2,9 +2,8 @@ import { BlockInitializers, SchemaInitializerItemOptions } from '@nocobase/clien
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
-import { filterTypedFields, useOperandContext } from '../../variable';
+import { filterTypedFields } from '../../variable';
 import { NAMESPACE } from '../../locale';
-import { ValueGetter } from './ValueGetter';
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 import { ModeConfig } from './ModeConfig';
 import { AssigneesSelect } from './AssigneesSelect';
@@ -94,13 +93,9 @@ export default {
     ModeConfig,
     AssigneesSelect
   },
-  useValueGetter({ config }) {
-    const { types } = useOperandContext();
+  getOptions(config, types) {
     const fields = filterTypedFields(config.schema?.collection?.fields ?? [], types);
-    if (!fields.length) {
-      return null;
-    }
-    return ValueGetter;
+    return fields.length ? fields : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.schema?.collection?.fields?.length

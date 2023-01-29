@@ -18,16 +18,13 @@ function getType(value) {
     return 'null';
   }
   const type = typeof value;
-  switch (type) {
-    case 'object':
-      break;
-    default:
-      // 'boolean'
-      // 'number'
-      // 'bigint'
-      // 'string'
-      // 'symbol'
-      return type;
+  if (type !== 'object') {
+    // 'boolean'
+    // 'number'
+    // 'bigint'
+    // 'string'
+    // 'symbol'
+    return type;
   }
   if (value instanceof Date) {
     return 'date';
@@ -36,31 +33,30 @@ function getType(value) {
 }
 
 type ParsedOperand = {
-  type: string;
+  type: string[];
   value?: any;
-  options?: any;
 };
 
-export function parseValue(value: any, Types): ParsedOperand {
+export function parseValue(value: any, Types: any = VariableTypes): ParsedOperand {
   const valueType = getType(value);
+  const { appendTypeValue } = Types.constant ?? {};
+  const constant = Types.constant ? {
+    type: ['constant', ...(appendTypeValue ? appendTypeValue({ options: { type: valueType } }) : [])],
+    value
+  } : { type: [], value };
   if (valueType !== 'string') {
-    return { type: 'constant', value, options: { type: valueType } }
+    return constant;
   }
 
   const matcher = value.match(JT_VALUE_RE);
   if (!matcher) {
-    return { type: 'constant', value, options: { type: 'string' } };
+    return constant;
   }
 
-  const [type, ...paths] = matcher[1].split('.');
-
   return {
-    type,
-    options: paths.length ? (Types || VariableTypes)[type]?.parse(paths) : {}
+    type: matcher[1].split('.'),
   };
 }
-
-export const BaseTypeSet = new Set(['boolean', 'number', 'string', 'date']);
 
 const ConstantTypes = {
   null: {
@@ -132,8 +128,9 @@ export const VariableTypes = {
       label: item.title
     })),
     component(props) {
-      const { operand: { options = { type: 'string' } } } = useOperandContext();
-      return ConstantTypes[options.type]?.component(props);
+      const { operand: { value = '' } } = useOperandContext();
+      const type = getType(value);
+      return ConstantTypes[type]?.component(props);
     },
     appendTypeValue({ options = { type: 'string' } }) {
       return options?.type ? [options.type] : [];
@@ -142,9 +139,9 @@ export const VariableTypes = {
       const { default: value } = ConstantTypes[optionsType];
       onChange(value);
     },
-    parse(path) {
-      return { path };
-    }
+    // parse(path) {
+    //   return { path };
+    // }
   },
   $jobsMapByNodeId: {
     title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
@@ -153,43 +150,21 @@ export const VariableTypes = {
       const current = useNodeContext();
       const upstreams = useAvailableUpstreams(current);
       return upstreams
-      .filter(node => {
-        const { useValueGetter } = instructions.get(node.type);
-        // Note: consider `useValueGetter()` as the key of a value available node
-        return Boolean(useValueGetter?.(node, types));
-      })
-      .map(node => ({
-        value: node.id,
-        label: node.title ?? `#${node.id}`
-      }));
+        .filter(node => {
+          const instruction = instructions.get(node.type);
+          // Note: consider `getOptions()` as the key of a value available node
+          return Boolean(instruction.getOptions);
+        })
+        .map(node => {
+          const instruction = instructions.get(node.type);
+          return {
+            key: node.id.toString(),
+            value: node.id.toString(),
+            label: node.title ?? `#${node.id}`,
+            children: instruction.getOptions(node.config, types)
+          };
+        });
     },
-    component(props) {
-      const { nodes } = useFlowContext();
-      const { operand: { options }, types } = useOperandContext();
-      if (!options?.nodeId) {
-        return null;
-      }
-      const node = nodes.find(n => n.id == options.nodeId);
-      if (!node) {
-        return null;
-      }
-      const instruction = instructions.get(node.type);
-
-      const getter = instruction?.useValueGetter?.(node, types);
-      return getter ? getter(props) : null;
-    },
-    appendTypeValue({ options = {} }: { type: string, options: any }) {
-      return options.nodeId ? [Number.parseInt(options.nodeId, 10)] : [];
-    },
-    onTypeChange([type, nodeId], onChange) {
-      onChange(`{{${type}.${nodeId}}}`);
-    },
-    parse([nodeId, ...path]) {
-      return { nodeId, path: path.join('.') };
-    },
-    stringify(next) {
-      return `{{${next.join('.')}}}`;
-    }
   },
   $context: {
     title: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
@@ -199,42 +174,18 @@ export const VariableTypes = {
       const trigger = triggers.get(workflow.type);
       return trigger?.getOptions?.(workflow.config, types) ?? null;
     },
-    component(props) {
-      const { workflow } = useFlowContext();
-      const trigger = triggers.get(workflow.type);
-      const getter = trigger?.useValueGetter?.(workflow.config);
-      return getter ? getter(props) : null;
-    },
-    appendTypeValue({ options }) {
-      return options.type ? [options.type] : [];
-    },
-    onTypeChange([type, optionType], onChange) {
-      onChange(`{{${type}.${optionType}}}`);
-    },
-    parse([type, ...path]) {
-      return { type, ...( path?.length ? { path: path.join('.') } : {}) };
-    },
-    stringify(next) {
-      return `{{${next.join('.')}}}`;
-    }
   },
-  // calculation: Calculation
 };
-
-export const VariableTypesContext = React.createContext({});
-
-export function useVariableTypes() {
-  return React.useContext(VariableTypesContext);
-}
 
 interface OperandProps {
   value: any;
   onChange(v: any): void;
+  scope: any;
   types?: any[];
   children?: React.ReactNode;
 }
 
-const OperandContext = React.createContext<{ operand: ParsedOperand; types?: any[] }>({ operand: { type: 'constant', value: null } });
+const OperandContext = React.createContext<{ operand: ParsedOperand; types?: any[] }>({ operand: { type: ['constant'], value: null } });
 
 export function useOperandContext() {
   return React.useContext(OperandContext);
@@ -243,17 +194,28 @@ export function useOperandContext() {
 export function Operand({
   value = null,
   onChange,
+  scope = VariableTypes,
   types,
   children
 }: OperandProps) {
   const compile = useCompile();
-  const Types = useVariableTypes();
 
-  const operand = parseValue(value, Types);
+  const operand = parseValue(value, scope);
 
   const { type } = operand;
 
-  const { component: Variable = NullRender, appendTypeValue } = Types[type] || {};
+  const { component: Variable = NullRender } = scope[type[0]] || {};
+
+  const options = Object.values(scope).map((item: any) => {
+    const subOptions = typeof item.options === 'function' ? item.options(types).filter(Boolean) : item.options;
+    return {
+      label: compile(item.title),
+      value: item.value,
+      children: compile(subOptions),
+      disabled: subOptions && !subOptions.length,
+      isLeaf: !subOptions
+    };
+  });
 
   return (
     <fieldset className={css`
@@ -263,35 +225,20 @@ export function Operand({
     `}>
       <Cascader
         allowClear={false}
-        value={[Types[type] ? type : '', ...(appendTypeValue ? appendTypeValue(operand) : [])]}
-        options={Object.values(Types).map((item: any) => {
-          const options = typeof item.options === 'function' ? item.options(types).filter(Boolean) : item.options;
-          return {
-            label: compile(item.title),
-            value: item.value,
-            children: compile(options),
-            disabled: options && !options.length,
-            isLeaf: !options
-          };
-        })}
+        value={type}
+        options={options}
         onChange={(next: any) => {
           // 类型变化，包括主类型和子类型
-          const { onTypeChange, stringify } = Types[next[0]];
+          const { onTypeChange } = scope[next[0]];
           // 自定义处理
           if (typeof onTypeChange === 'function') {
-            return onTypeChange(next, onChange);
-          }
-          // 主类型变化
-          if (next[0] !== type) {
-            if (next[0] === 'constant') {
-              onChange(null);
-              return;
-            } else if (stringify) {
-              onChange(stringify(next));
-              return;
-            }
-            onChange({ type: next[0], value: null });
+            onTypeChange(next, onChange);
             return;
+          }
+          if (next[0] === 'constant') {
+            onChange(null);
+          } else {
+            onChange(`{{${next.join('.')}}}`);
           }
         }}
       />
@@ -334,4 +281,21 @@ export function useAvailableCollectionFields(collection) {
   const fields = getCollectionFields(collection);
 
   return filterTypedFields(fields, types);
+}
+
+export function useWorkflowVariableOptions() {
+  const compile = useCompile();
+  const options = [
+    VariableTypes.$context,
+    VariableTypes.$jobsMapByNodeId,
+  ].map((item: any) => {
+    const options = typeof item.options === 'function' ? item.options().filter(Boolean) : item.options;
+    return {
+      label: compile(item.title),
+      key: item.value,
+      children: compile(options),
+      disabled: options && !options.length
+    };
+  });
+  return options;
 }

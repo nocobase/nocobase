@@ -2,10 +2,10 @@ import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase
 
 import { collection, filter } from '../schemas/collection';
 import { NAMESPACE } from '../locale';
-import { useNodeCollectionFieldValueGetter } from '../components/NodeCollectionFieldValueGetter';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
+import { useCollectionFieldOptions } from '../components/CollectionFieldSelect';
 
 
 
@@ -44,7 +44,9 @@ export default {
   components: {
     FilterDynamicComponent
   },
-  useValueGetter: useNodeCollectionFieldValueGetter,
+  getOptions(config, types) {
+    return useCollectionFieldOptions({ collection: config.collection, types });
+  },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
       return null;

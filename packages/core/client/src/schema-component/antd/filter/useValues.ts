@@ -29,6 +29,7 @@ export const useValues = () => {
     });
   };
   const value2data = () => {
+    field.data = field.data || {};
     const values = flat(field.value);
     const path = Object.keys(values).shift() || '';
     if (!path) {
@@ -40,16 +41,13 @@ export const useValues = () => {
     const option = findOption(dataIndex, options);
     const operators = option?.operators;
     const operator = operators?.find?.((item) => item.value === `$${operatorValue}`);
-    field.data = field.data || {};
     field.data.dataIndex = dataIndex;
     field.data.operators = operators;
     field.data.operator = operator;
     field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(field.value, `${fieldPath}.$${operatorValue}`);
   };
-  useEffect(() => {
-    value2data();
-  }, [logic]);
+  useEffect(value2data, [logic]);
   return {
     fields: options,
     ...field.data,
@@ -63,7 +61,6 @@ export const useValues = () => {
       field.data.dataIndex = dataIndex;
       field.data.value = null;
       data2value();
-      console.log('setDataIndex', field.data);
     },
     setOperator(operatorValue) {
       const operator = field.data?.operators?.find?.((item) => item.value === operatorValue);
@@ -71,12 +68,10 @@ export const useValues = () => {
       field.data.schema = merge(field.data.schema, operator.schema);
       field.data.value = operator.noValue ? operator.default || true : null;
       data2value();
-      console.log('setOperator', field.data);
     },
     setValue(value) {
       field.data.value = value;
       data2value();
-      console.log('setValue', field.data);
     },
   };
 };

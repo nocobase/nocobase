@@ -50,7 +50,6 @@ export interface Trigger {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   useInitializers?(config): SchemaInitializerItemOptions | null;
-  useValueGetter?(config, types?: any[]): ((props) => React.ReactNode) | null;
   initializers?: any;
 };
 

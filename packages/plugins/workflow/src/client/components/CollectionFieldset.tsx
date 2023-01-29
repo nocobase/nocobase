@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { css } from "@emotion/css";
 
 import { CollectionField, CollectionProvider, SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
-import { Operand, parseValue, VariableTypes, VariableTypesContext } from "../variable";
+import { Operand, parseValue, VariableTypes } from "../variable";
 import { lang, NAMESPACE } from "../locale";
 
 function AssociationInput(props) {
@@ -80,45 +80,44 @@ export default observer(({ value, onChange }: any) => {
                       display: flex;
                     }
                   `}>
-                    <VariableTypesContext.Provider value={VTypes}>
-                      <Operand
-                        value={value[field.name]}
-                        onChange={(next) => {
-                          onChange({ ...value, [field.name]: next });
-                        }}
-                      >
-                        {operand.type === 'constant'
-                          ? (
-                            <SchemaComponent
-                              schema={{
-                                type: 'void',
-                                properties: {
-                                  [field.name]: {
-                                    'x-component': ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
-                                      ? 'AssociationInput'
-                                      : 'CollectionField'
-                                  }
+                    <Operand
+                      scope={VTypes}
+                      value={value[field.name]}
+                      onChange={(next) => {
+                        onChange({ ...value, [field.name]: next });
+                      }}
+                    >
+                      {operand.type[0] === 'constant'
+                        ? (
+                          <SchemaComponent
+                            schema={{
+                              type: 'void',
+                              properties: {
+                                [field.name]: {
+                                  'x-component': ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+                                    ? 'AssociationInput'
+                                    : 'CollectionField'
                                 }
-                              }}
-                              components={{
-                                CollectionField,
-                                AssociationInput
-                              }}
-                            />
-                          )
-                          // ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
-                          : null
-                        }
-                      </Operand>
-                      <Button
-                        type="link"
-                        icon={<CloseCircleOutlined />}
-                        onClick={() => {
-                          const { [field.name]: _, ...rest } = value;
-                          onChange(rest);
-                        }}
-                      />
-                    </VariableTypesContext.Provider>
+                              }
+                            }}
+                            components={{
+                              CollectionField,
+                              AssociationInput
+                            }}
+                          />
+                        )
+                        // ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
+                        : null
+                      }
+                    </Operand>
+                    <Button
+                      type="link"
+                      icon={<CloseCircleOutlined />}
+                      onClick={() => {
+                        const { [field.name]: _, ...rest } = value;
+                        onChange(rest);
+                      }}
+                    />
                   </Form.Item>
                 );
               })

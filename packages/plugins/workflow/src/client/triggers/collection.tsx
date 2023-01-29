@@ -10,13 +10,11 @@ import {
   useCompile,
 } from '@nocobase/client';
 
-import { useFlowContext } from '../FlowContext';
 import { collection, filter } from '../schemas/collection';
-import CollectionFieldSelect from '../components/CollectionFieldSelect';
+import { useCollectionFieldOptions } from '../components/CollectionFieldSelect';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
-import { useAvailableCollectionFields, useOperandContext } from '../variable';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
@@ -58,21 +56,6 @@ const collectionModeOptions = [
   { label: `{{t("After record added or updated", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.SAVED },
   { label: `{{t("After record deleted", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.DELETED },
 ];
-
-function ValueGetter({ onChange }) {
-  const { workflow } = useFlowContext();
-  const { operand: { options } } = useOperandContext();
-
-  return (
-    <CollectionFieldSelect
-      collection={workflow.config.collection}
-      value={options?.path}
-      onChange={(path) => {
-        onChange(`{{$context.data.${path}}}`);
-      }}
-    />
-  );
-}
 
 export default {
   title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
@@ -154,21 +137,13 @@ export default {
   components: {
     FieldsSelect
   },
-  getOptions(config) {
+  getOptions(config, types) {
     const { t } = useWorkflowTranslation();
+    const fieldOptions = useCollectionFieldOptions({ collection: config.collection, types });
     const options: any[] = [
-      { value: 'data', label: t('Trigger data') },
+      ...(fieldOptions?.length ? [{ label: t('Trigger data'), key: 'data', value: 'data', children: fieldOptions }] : []),
     ];
     return options;
-  },
-  useValueGetter(config) {
-    const fields = useAvailableCollectionFields(config.collection);
-
-    if (!fields.length) {
-      return null;
-    }
-
-    return ValueGetter;
   },
   useInitializers(config): SchemaInitializerItemOptions | null {
     if (!config.collection) {

@@ -5,7 +5,7 @@ import { css } from '@emotion/css';
 import { useCompile } from '@nocobase/client';
 import { Registry } from "@nocobase/utils/client";
 
-import { Operand, VariableTypes, VariableTypesContext } from './variable';
+import { Operand, VariableTypes } from './variable';
 import { NAMESPACE, useWorkflowTranslation } from "./locale";
 
 
@@ -138,35 +138,33 @@ export function Calculation({ calculator, operands = [null], onChange }) {
   const { t } = useWorkflowTranslation();
   const compile = useCompile();
   return (
-    <VariableTypesContext.Provider value={VariableTypes}>
-      <fieldset className={css`
-        display: flex;
-        gap: .5em;
-        align-items: center;
-      `}>
-        <Operand value={operands[0]} onChange={(v => onChange({ calculator, operands: [v, operands[1]] }))} />
-        {typeof operands[0] !== 'undefined'
-          ? (
-            <>
-              <Select
-                value={calculator}
-                onChange={v => onChange({ operands, calculator: v })}
-                placeholder={t('Calculator')}
-              >
-                {calculatorGroups.filter(group => Boolean(getGroupCalculators(group.value).length)).map(group => (
-                  <Select.OptGroup key={group.value} label={compile(group.title)}>
-                    {getGroupCalculators(group.value).map(([value, { name }]) => (
-                      <Select.Option key={value} value={value}>{compile(name)}</Select.Option>
-                    ))}
-                  </Select.OptGroup>
-                ))}
-              </Select>
-              <Operand value={operands[1]} onChange={(v => onChange({ calculator, operands: [operands[0], v] }))} />
-            </>
-          )
-          : null
-        }
-      </fieldset>
-    </VariableTypesContext.Provider>
+    <fieldset className={css`
+      display: flex;
+      gap: .5em;
+      align-items: center;
+    `}>
+      <Operand scope={VariableTypes} value={operands[0]} onChange={(v => onChange({ calculator, operands: [v, operands[1]] }))} />
+      {typeof operands[0] !== 'undefined'
+        ? (
+          <>
+            <Select
+              value={calculator}
+              onChange={v => onChange({ operands, calculator: v })}
+              placeholder={t('Calculator')}
+            >
+              {calculatorGroups.filter(group => Boolean(getGroupCalculators(group.value).length)).map(group => (
+                <Select.OptGroup key={group.value} label={compile(group.title)}>
+                  {getGroupCalculators(group.value).map(([value, { name }]) => (
+                    <Select.Option key={value} value={value}>{compile(name)}</Select.Option>
+                  ))}
+                </Select.OptGroup>
+              ))}
+            </Select>
+            <Operand scope={VariableTypes} value={operands[1]} onChange={(v => onChange({ calculator, operands: [operands[0], v] }))} />
+          </>
+        )
+        : null
+      }
+    </fieldset>
   );
 }

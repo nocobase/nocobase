@@ -282,20 +282,24 @@ export default class Processor {
     return null;
   }
 
-  public getParsedValue(value, node?) {
-    const injectedFns = {};
+  public getScope(node?) {
+    const systemFns = {};
     const scope = {
       execution: this.execution,
       node
     };
     for (let [name, fn] of calculators.getEntities()) {
-      injectedFns[name] = fn.bind(scope);
+      systemFns[name] = fn.bind(scope);
     }
 
-    return parse(value)({
+    return {
       $context: this.execution.context,
       $jobsMapByNodeId: this.jobsMapByNodeId,
-      $fn: injectedFns
-    });
+      $system: systemFns
+    };
+  }
+
+  public getParsedValue(value, node?) {
+    return parse(value)(this.getScope(node));
   }
 }
