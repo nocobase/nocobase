@@ -28,7 +28,7 @@ class CalculationInstruction implements Instruction {
     const { engine, expression = '' } = <CalculationConfig>node.config || {};
     const evaluator = <Evaluator | undefined>this.engines.get(engine);
     const scope = processor.getScope();
-    const exp = expression.trim().replace(/\{\{([^{}]+)\}\}/g, (_, v) => {
+    const exp = expression.trim().replace(/\{\{\s*([^{}]+)\.?\s*\}\}/g, (_, v) => {
       const item = get(scope, v);
       return typeof item === 'function' ? item() : item;
     });

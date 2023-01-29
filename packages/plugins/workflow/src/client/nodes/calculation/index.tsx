@@ -9,7 +9,7 @@ import { SchemaInitializer, SchemaInitializerItemOptions, useCompile } from '@no
 import { useFlowContext } from '../../FlowContext';
 import { lang, NAMESPACE, useWorkflowTranslation } from '../../locale';
 import { VariableTextArea } from '../../components/VariableTextArea';
-import { useWorkflowVariableOptions } from '../../variable';
+import { TypeSets, useWorkflowVariableOptions } from '../../variable';
 import { CalculationEngine, calculationEngines } from './engines';
 
 
@@ -82,10 +82,9 @@ export default {
   },
   components: {
     CalculationResult({ dataSource }) {
-      const { t } = useWorkflowTranslation();
       const { execution } = useFlowContext();
       if (!execution) {
-        return t('Calculation result');
+        return lang('Calculation result');
       }
       const result = parse(dataSource)({
         $jobsMapByNodeId: (execution.jobs ?? []).reduce((map, job) => Object.assign(map, { [job.nodeId]: job.result }), {})
@@ -102,7 +101,12 @@ export default {
     VariableTextArea
   },
   getOptions(config, types) {
-    return null;
+    if (types && !types.some(type => type in TypeSets || Object.values(TypeSets).some(set => set.has(type)))) {
+      return null;
+    }
+    return [
+      // { key: '', value: '', label: lang('Calculation result') }
+    ];
   },
   useInitializers(node): SchemaInitializerItemOptions {
     return {

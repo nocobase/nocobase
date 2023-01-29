@@ -144,38 +144,6 @@ calculators.register('<=', lte);
 
 
 
-function add(...args) {
-  return args.reduce((sum, a) => sum + toNumber(a), 0);
-}
-
-function minus(a, b) {
-  return toNumber(a) - toNumber(b);
-}
-
-function multiple(...args) {
-  return args.reduce((result, a) => result * toNumber(a), 1);
-}
-
-function divide(a, b) {
-  return toNumber(a) / toNumber(b);
-}
-
-function mod(a, b) {
-  return toNumber(a) % toNumber(b);
-}
-
-calculators.register('add', add);
-calculators.register('minus', minus);
-calculators.register('multiple', multiple);
-calculators.register('divide', divide);
-calculators.register('mod', mod);
-
-calculators.register('+', add);
-calculators.register('-', minus);
-calculators.register('*', multiple);
-calculators.register('/', divide);
-calculators.register('%', mod);
-
 function includes(a, b) {
   return a.includes(b);
 }
@@ -206,13 +174,5 @@ calculators.register('startsWith', startsWith);
 calculators.register('notStartsWith', notStartsWith);
 calculators.register('endsWith', endsWith);
 calculators.register('notEndsWith', notEndsWith);
-
-function concat(a: string, b: string) {
-  return a.concat(b);
-}
-
-calculators.register('concat', concat);
-
-calculators.register('now', () => new Date());
 
 // TODO: add more common calculators

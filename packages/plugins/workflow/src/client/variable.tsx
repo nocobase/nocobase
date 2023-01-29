@@ -149,21 +149,20 @@ export const VariableTypes = {
     options(types) {
       const current = useNodeContext();
       const upstreams = useAvailableUpstreams(current);
-      return upstreams
-        .filter(node => {
-          const instruction = instructions.get(node.type);
-          // Note: consider `getOptions()` as the key of a value available node
-          return Boolean(instruction.getOptions);
-        })
-        .map(node => {
-          const instruction = instructions.get(node.type);
-          return {
+      const options = [];
+      upstreams.forEach((node) => {
+        const instruction = instructions.get(node.type);
+        const subOptions = instruction.getOptions?.(node.config, types);
+        if (subOptions) {
+          options.push({
             key: node.id.toString(),
             value: node.id.toString(),
             label: node.title ?? `#${node.id}`,
-            children: instruction.getOptions(node.config, types)
-          };
-        });
+            children: subOptions,
+          });
+        }
+      });
+      return options;
     },
   },
   $context: {
@@ -181,7 +180,7 @@ interface OperandProps {
   value: any;
   onChange(v: any): void;
   scope: any;
-  types?: any[];
+  types?: (string | { type: string, options: { [key: string]: any } })[];
   children?: React.ReactNode;
 }
 
@@ -249,16 +248,16 @@ export function Operand({
   );
 }
 
-const TypeSets = {
-  boolean: ['boolean'],
-  number: ['integer', 'bigInt', 'float', 'double', 'real', 'decimal'],
-  string: ['string', 'text', 'password'],
-  date: ['date', 'time']
+export const TypeSets = {
+  boolean: new Set(['boolean']),
+  number: new Set(['integer', 'bigInt', 'float', 'double', 'real', 'decimal']),
+  string: new Set(['string', 'text', 'password']),
+  date: new Set(['date', 'time'])
 }
 
 function matchFieldType(field, type): Boolean {
   if (typeof type === 'string') {
-    return Boolean(TypeSets[type]?.includes(field.type));
+    return Boolean(TypeSets[type]?.has(field.type));
   }
 
   if (typeof type === 'object' && type.type === 'reference') {

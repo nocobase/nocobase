@@ -101,7 +101,7 @@ function getValue(el) {
       values.push(node.textContent?.trim?.());
     }
   }
-  return values.join(' ')?.trim();
+  return values.join('').replace(/\s+/g, ' ').trim();
 }
 
 function renderHTML(exp: string, keyLabelMap) {
