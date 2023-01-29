@@ -19,21 +19,8 @@ import { GanttToolbarContext } from '../../context';
 import { useDesignable } from '../../../../../schema-component';
 import { TableBlockProvider, useGanttBlockContext, useBlockRequestContext } from '../../../../../block-provider';
 import { useProps } from '../../../../hooks/useProps';
+import { formatData, mockTasks } from './utils';
 
-const formatData = (data = [], fieldNames) => {
-  const tasks: any[] = [];
-  data.forEach((v) => {
-    tasks.push({
-      start: new Date(v[fieldNames.start]),
-      end: new Date(v[fieldNames.end]),
-      name: v[fieldNames.title],
-      id: v.id + '',
-      type: 'task',
-      progress: v[fieldNames.progress],
-    });
-  });
-  return tasks;
-};
 function Toolbar(props) {
   const fieldSchema = useFieldSchema();
   const toolBarSchema: Schema = useMemo(
@@ -57,6 +44,7 @@ const getColumnWidth = (dataSetLength, clientWidth) => {
   const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;
   return columnWidth;
 };
+
 export const Gantt: any = (props) => {
   const { designable } = useDesignable();
 
@@ -99,7 +87,7 @@ export const Gantt: any = (props) => {
   const { resource } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
   const { fieldNames, dataSource } = useProps(props);
-  const { range: viewMode } = fieldNames || { range: 'day' };
+  const viewMode = fieldNames.range || 'day';
   const tasks = formatData(dataSource, fieldNames) || [];
   const wrapperRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
