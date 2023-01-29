@@ -3,8 +3,8 @@
   "version": "0.8.0-alpha.13",
   "main": "lib/server/index.js",
   "devDependencies": {
-    "@nocobase/server": "0.8.0-alpha.13",
-    "@nocobase/test": "0.8.0-alpha.13"
+    "@nocobase/server": "0.9.0-alpha.2",
+    "@nocobase/test": "0.9.0-alpha.2"
   },
   "dependencies": {
     "@nocobase/client": "^0.9.0-alpha.2"
