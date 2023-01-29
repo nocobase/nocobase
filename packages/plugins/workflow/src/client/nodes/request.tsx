@@ -49,8 +49,11 @@ export default {
       'x-decorator': 'FormItem',
       'x-decorator-props': {
         className: css`
-          .ant-formily-item-control-content-component .ant-input-affix-wrapper{
-            width: 100%;
+          .ant-formily-item-control-content-component{
+            .ant-input-affix-wrapper,
+            .ant-input{
+              width: 100%;
+            }
           }
         `
       },

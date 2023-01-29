@@ -3,10 +3,10 @@ import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
 import {
   ModelOptions,
+  ModelStatic,
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  ModelStatic,
   Utils,
   CreateOptions,
   UpdateOptions,
@@ -63,6 +63,10 @@ export class Collection<
 
   get name() {
     return this.options.name;
+  }
+
+  get titleField() {
+    return (this.options.titleField as string) || this.model.primaryKeyAttribute;
   }
 
   get db() {

@@ -87,7 +87,7 @@ It is usually not necessary to override this method when inheriting.
 
 ### `bind()`
 
-The execution content that is triggered when a field is added to data table. Typically used to add data table event listeners and other processings.
+The execution content that is triggered when a field is added to data table. Typically used to add data table event listeners and other processing.
 
 The corresponding `super.bind()` method needs to be called first when inheriting.
 
@@ -97,7 +97,7 @@ The corresponding `super.bind()` method needs to be called first when inheriting
 
 ### `unbind()`
 
-The execution content that is triggered when a field is removed from data table. Typically used to remove data table event listeners and other processings.
+The execution content that is triggered when a field is removed from data table. Typically used to remove data table event listeners and other processing.
 
 The corresponding `super.unbind()` method needs to be called first when inheriting.
 
@@ -204,11 +204,11 @@ NocoBase has some built-in common field types, the corresponding type name can b
 
 The configuration items of all field types are passed through to Sequelize in addition to those described below. Therefore, all field configuration items supported by Sequelize can be used here (e.g. `allowNull`, `defaultValue`, etc.).
 
-Moreover, server-side field types are mainly used for solving the problems of database storage and some algorithms, they are barely relevant to the  field display types and the use of components in front-end. The front-end field types can be found in the corresponding tutorials.
+Moreover, server-side field types are mainly used for solving the problems of database storage and some algorithms, they are barely relevant to the field display types and the use of components in front-end. The front-end field types can be found in the corresponding tutorials.
 
 ### `'boolean'`
 
-逻辑值类型。
+Boolean type.
 
 **Example**
 
@@ -226,7 +226,7 @@ db.collection({
 
 ### `'integer'`
 
-整型（32 位）。
+Integer type (32 bits).
 
 **Example**
 
@@ -244,7 +244,7 @@ db.collection({
 
 ### `'bigInt'`
 
-长整型（64 位）。
+Long integer type (64 bits).
 
 **Example**
 
@@ -262,7 +262,7 @@ db.collection({
 
 ### `'double'`
 
-双精度浮点型（64 位）。
+Double-precision floating-point format (64 bits).
 
 **Example**
 
@@ -280,15 +280,15 @@ db.collection({
 
 ### `'real'`
 
-实数类型（仅 PG 适用）。
+Real type (PG only).
 
 ### `'decimal'`
 
-十进制小数类型。
+Decimal type.
 
 ### `'string'`
 
-字符串类型。相当于大部分数据库的 `VARCHAR` 类型。
+String type. Equivalent to the `VARCHAR` type for most databases.
 
 **Example**
 
@@ -306,7 +306,7 @@ db.collection({
 
 ### `'text'`
 
-文本类型。相当于大部分数据库的 `TEXT` 类型。
+Text type. Equivalent to the `TEXT` type for most databases.
 
 **Example**
 
@@ -324,7 +324,7 @@ db.collection({
 
 ### `'password'`
 
-密码类型（NocoBase 扩展）。基于 Node.js 原生的 crypto 包的 `scrypt` 方法进行密码加密。
+Password type (NocoBase extension). Password encryption based on the `scrypt` method of Node.js native crypto packages.
 
 **Example**
 
@@ -335,8 +335,8 @@ db.collection({
     {
       type: 'password',
       name: 'password',
-      length: 64, // 长度，默认 64
-      randomBytesSize: 8 // 随机字节长度，默认 8
+      length: 64, // Length, default is 64
+      randomBytesSize: 8 // Length of random bytes, default is 8
     }
   ]
 });
@@ -346,40 +346,40 @@ db.collection({
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `length` | `number` | 64 | 字符长度 |
-| `randomBytesSize` | `number` | 8 | 随机字节大小 |
+| `length` | `number` | 64 | Length of characters |
+| `randomBytesSize` | `number` | 8 | Length of random bytes |
 
 ### `'date'`
 
-日期类型。
+Date type.
 
 ### `'time'`
 
-时间类型。
+Time type.
 
 ### `'array'`
 
-数组类型（仅 PG 适用）。
+Array type (PG only).
 
 ### `'json'`
 
-JSON 类型。
+JSON type.
 
 ### `'jsonb'`
 
-JSONB 类型（仅 PG 适用，其他会被兼容为 `'json'` 类型）。
+JSONB type (PG only, others will be compatible with the `'json'` type).
 
 ### `'uuid'`
 
-UUID 类型。
+UUID type.
 
 ### `'uid'`
 
-UID 类型（NocoBase 扩展）。短随机字符串标识符类型。
+UID type (NocoBase extension). Short random string identifier type.
 
 ### `'formula'`
 
-公式类型（NocoBase 扩展）。可配置基于 [mathjs](https://www.npmjs.com/package/mathjs) 的数学公式计算，公式中可以引用同一条记录中其他列的数值参与计算。
+Formula type (NocoBase extension). Mathematical formula calculation can be configured based on [mathjs](https://www.npmjs.com/package/mathjs), and the formula can refer to the values of other columns in the same record to participate in the calculation.
 
 **Example**
 
@@ -406,11 +406,11 @@ db.collection({
 
 ### `'radio'`
 
-单选类型（NocoBase 扩展）。全表最多有一行数据的该字段值为 `true`，其他都为 `false` 或 `null`。
+Radio type (NocoBase extension). The field value is 'true' for at most one row of data for the full table, all others are 'false' or 'null'.
 
 **Example**
 
-整个系统只有一个被标记为 root 的用户，任意另一个用户的 root 值被改为 `true` 之后，其他所有 root 为 `true` 的记录均会被修改为 `false`：
+There is only one user marked as <i>root</i> in the entire system, once the <i>root</i> value of any other user is changed to `true`, all other records with <i>root</i> of `true` will be changed to `false`:
 
 ```ts
 db.collection({
@@ -426,13 +426,13 @@ db.collection({
 
 ### `'sort'`
 
-排序类型（NocoBase 扩展）。基于整型数字进行排序，为新记录自动生成新序号，当移动数据时进行序号重排。
+Sorting type (NocoBase extension). Sorting based on integer numbers, automatically generating new serial numbers for new records, and rearranging serial numbers when moving data.
 
-数据表如果定义了 `sortable` 选项，也会自动生成对应字段。
+If data table has the `sortable` option defined, the corresponding fields will be generated automatically.
 
 **Example**
 
-文章基于所属用户可排序：
+Posts are sortable based on the users they belong to.
 
 ```ts
 db.collection({
@@ -445,7 +445,7 @@ db.collection({
     {
       type: 'sort',
       name: 'priority',
-      scopeKey: 'userId' // 以 userId 相同值分组的数据进行排序
+      scopeKey: 'userId' // Sort data grouped by the values of userId
     }
   ]
 });
@@ -453,15 +453,15 @@ db.collection({
 
 ### `'virtual'`
 
-虚拟类型。不实际储存数据，仅用于特殊 getter/setter 定义时使用。
+Virtual type. No Data is actually stored, it is used only when special getter/setter is defined.
 
 ### `'belongsTo'`
 
-多对一关联类型。外键储存在自身表，与 hasOne/hasMany 相对。
+Many-to-one association type. Foreign key is stored in its own table, as opposed to `'hasOne'`/`'hasMany'`.
 
 **Example**
 
-任意文章属于某个作者：
+Any post belongs to an author:
 
 ```ts
 db.collection({
@@ -470,9 +470,9 @@ db.collection({
     {
       type: 'belongsTo',
       name: 'author',
-      target: 'users', // 不配置默认为 name 复数名称的表名
-      foreignKey: 'authorId', // 不配置默认为 <name> + Id 的格式
-      sourceKey: 'id' // 不配置默认为 target 表的 id
+      target: 'users', // Default table name is the plural form of <name>
+      foreignKey: 'authorId', // Default is '<name> + Id'
+      sourceKey: 'id' // Default is id of the <target> table
     }
   ]
 });
@@ -480,11 +480,11 @@ db.collection({
 
 ### `'hasOne'`
 
-一对一关联类型。外键储存在关联表，与 belongsTo 相对。
+One-to-one association type. Foreign key is stored in the association table, as opposed to `'belongsTo'`.
 
 **Example**
 
-任意用户都有一份个人资料：
+Any user has a profile:
 
 ```ts
 db.collection({
@@ -493,7 +493,7 @@ db.collection({
     {
       type: 'hasOne',
       name: 'profile',
-      target: 'profiles', // 可省略
+      target: 'profiles', // Can be omitted
     }
   ]
 })
@@ -501,11 +501,11 @@ db.collection({
 
 ### `'hasMany'`
 
-一对多关联类型。外键储存在关联表，与 belongsTo 相对。
+One-to-many association type. The foreign key is stored in the association table, as opposed to `'belongsTo'`.
 
 **Example**
 
-任意用户可以拥有多篇文章：
+Any user can have multiple posts:
 
 ```ts
 db.collection({
@@ -523,11 +523,11 @@ db.collection({
 
 ### `'belongsToMany'`
 
-多对多关联类型。使用中间表储存双方外键，如不指定已存在的表为中间表的话，将会自动创建中间表。
+Many-to-many association type. Intermediate table is used to store both foreign keys. If no existing table is specified as intermediate table, it will be created automatically.
 
 **Example**
 
-任意文章可以加任意多个标签，任意标签也可以被任意多篇文章添加：
+Any post can have multiple tags added to it, and any tag can be added to multiple posts:
 
 ```ts
 db.collection({
@@ -536,11 +536,11 @@ db.collection({
     {
       type: 'belongsToMany',
       name: 'tags',
-      target: 'tags', // 同名可省略
-      through: 'postsTags', // 中间表不配置将自动生成
-      foreignKey: 'postId', // 自身表在中间表的外键
-      sourceKey: 'id', // 自身表的主键
-      otherKey: 'tagId' // 关联表在中间表的外键
+      target: 'tags', // Can be omitted if name is the same
+      through: 'postsTags', // Intermediate table will be generated automatically if not specified
+      foreignKey: 'postId', // Foreign key in the intermediate table referring to the table itself
+      sourceKey: 'id', // Primary key of the table itself
+      otherKey: 'tagId' // Foreign key in the intermediate table referring to the association table
     }
   ]
 });
@@ -551,9 +551,8 @@ db.collection({
     {
       type: 'belongsToMany',
       name: 'posts',
-      through: 'postsTags', // 同一组关系指向同一张中间表
+      through: 'postsTags', // Refer to the same intermediate table in the same set of relation
     }
   ]
 });
 ```
-![image](https://user-images.githubusercontent.com/63629092/212546611-cbd3bcec-d32a-4522-b640-9604a3bd60bd.png)
