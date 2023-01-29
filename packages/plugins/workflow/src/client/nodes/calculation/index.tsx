@@ -8,7 +8,6 @@ import { SchemaInitializer, SchemaInitializerItemOptions, useCompile } from '@no
 
 import { useFlowContext } from '../../FlowContext';
 import { lang, NAMESPACE, useWorkflowTranslation } from '../../locale';
-import { Calculation } from '../../calculators';
 import { VariableTextArea } from '../../components/VariableTextArea';
 import { useWorkflowVariableOptions } from '../../variable';
 import { CalculationEngine, calculationEngines } from './engines';
@@ -55,7 +54,7 @@ export default {
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = calculationEngines.get(values.config.engine);
-        const exp = value.trim().replace(/{{([^{}]+)}}/g, '1');
+        const exp = value.trim().replace(/\{\{([^{}]+)\}\}/g, '1');
         try {
           evaluate(exp);
           return '';

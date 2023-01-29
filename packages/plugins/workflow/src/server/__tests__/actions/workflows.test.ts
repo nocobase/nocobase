@@ -261,21 +261,8 @@ describe('workflow > actions > workflows', () => {
       const n2 = await w1.createNode({
         type: 'calculation',
         config: {
-          calculation: {
-            calculator: 'add',
-            operands: [
-              {
-                type: '$jobsMapByNodeId',
-                options: {
-                  nodeId: n1.id,
-                  path: 'data.read'
-                }
-              },
-              {
-                value: `{{$jobsMapByNodeId.${n1.id}.data.read}}`
-              }
-            ]
-          }
+          engine: 'math.js',
+          expression: `{{$jobsMapByNodeId.${n1.id}.data.read}} + {{$jobsMapByNodeId.${n1.id}.data.read}}`
         },
         upstreamId: n1.id
       });
@@ -299,21 +286,8 @@ describe('workflow > actions > workflows', () => {
       expect(n1_2.type).toBe('echo');
       expect(n2_2.type).toBe('calculation');
       expect(n2_2.config).toMatchObject({
-        calculation: {
-          calculator: 'add',
-          operands: [
-            {
-              type: '$jobsMapByNodeId',
-              options: {
-                nodeId: n1_2.id,
-                path: 'data.read'
-              }
-            },
-            {
-              value: `{{$jobsMapByNodeId.${n1_2.id}.data.read}}`
-            }
-          ]
-        }
+        engine: 'math.js',
+        expression: `{{$jobsMapByNodeId.${n1_2.id}.data.read}} + {{$jobsMapByNodeId.${n1_2.id}.data.read}}`
       });
 
       await w2.update({ enabled: true });

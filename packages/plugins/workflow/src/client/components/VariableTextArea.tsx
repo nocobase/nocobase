@@ -34,7 +34,7 @@ export function VariableSelect(props) {
   );
 }
 
-const VARIABLE_RE = /{{([^{}]+)}}/g;
+const VARIABLE_RE = /\{\{([^{}]+)\}\}/g;
 
 function pasteHtml(container, html, { selectPastedContent = false, range: indexes }) {
   // IE9 and non-IE

@@ -77,16 +77,13 @@ function migrateConfig(config, oldToNew) {
       case 'array':
         return value.map(item => migrate(item));
       case 'string':
-        const matcher = value.match(/(\{\{\$jobsMapByNodeId\.)([\w-]+)/);
-        if (!matcher) {
-          return value;
-        }
-        const oldNodeId = Number.parseInt(matcher[2], 10);
-        const newNode = oldToNew.get(oldNodeId);
-        if (!newNode) {
-          throw new Error('node configurated for result is not existed');
-        }
-        return value.replace(matcher[0], `{{$jobsMapByNodeId.${newNode.id}`);
+        return value.replace(/(\{\{\$jobsMapByNodeId\.)([\w-]+)/g, (_, jobVar, oldNodeId) => {
+          const newNode = oldToNew.get(Number.parseInt(oldNodeId, 10));
+          if (!newNode) {
+            throw new Error('node configurated for result is not existed');
+          }
+          return `{{$jobsMapByNodeId.${newNode.id}`;
+        });
       default:
         return value;
     }

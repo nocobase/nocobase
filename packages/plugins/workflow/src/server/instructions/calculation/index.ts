@@ -25,10 +25,10 @@ class CalculationInstruction implements Instruction {
   }
 
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
-    const { engine, expression } = <CalculationConfig>node.config || {};
+    const { engine, expression = '' } = <CalculationConfig>node.config || {};
     const evaluator = <Evaluator | undefined>this.engines.get(engine);
     const scope = processor.getScope();
-    const exp = expression.trim().replace(/{{([^{}]+)}}/g, (_, v) => {
+    const exp = expression.trim().replace(/\{\{([^{}]+)\}\}/g, (_, v) => {
       const item = get(scope, v);
       return typeof item === 'function' ? item() : item;
     });
