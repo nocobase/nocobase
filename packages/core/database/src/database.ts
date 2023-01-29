@@ -533,11 +533,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   async collectionExistsInDb(name: string, options?: Transactionable) {
+    const collection = this.getCollection(name);
+    if (!collection) {
+      return false;
+    }
+
     const tables = await this.sequelize.getQueryInterface().showAllTables({
       transaction: options?.transaction,
     });
 
-    return !!tables.find((table) => table === this.getCollection(name).model.tableName);
+    return tables.includes(this.getCollection(name).model.tableName);
   }
 
   public isSqliteMemory() {

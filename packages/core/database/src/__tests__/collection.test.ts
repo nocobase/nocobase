@@ -8,9 +8,7 @@ describe('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
-      logging: console.log,
-    });
+    db = mockDatabase();
 
     await db.clean({ drop: true });
   });
