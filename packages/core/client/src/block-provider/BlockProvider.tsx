@@ -13,7 +13,7 @@ import {
   useAPIClient,
   useDesignable,
   useRecord,
-  WithoutTableFieldResource
+  WithoutTableFieldResource,
 } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
@@ -179,7 +179,13 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   if (associationFilterSchema) {
     return (
       <Component {...field.componentProps}>
-        <Row gutter={16} wrap={false}>
+        <Row
+          className={css`
+            height: 100%;
+          `}
+          gutter={16}
+          wrap={false}
+        >
           <Col
             className={css`
               width: 200px;
@@ -198,11 +204,19 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
               min-width: 0;
             `}
           >
-            <RecursionField
-              schema={fieldSchema}
-              onlyRenderProperties
-              filterProperties={(s) => s['x-component'] !== 'AssociationFilter'}
-            />
+            <div
+              className={css`
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+              `}
+            >
+              <RecursionField
+                schema={fieldSchema}
+                onlyRenderProperties
+                filterProperties={(s) => s['x-component'] !== 'AssociationFilter'}
+              />
+            </div>
           </Col>
         </Row>
       </Component>
