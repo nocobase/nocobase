@@ -485,7 +485,7 @@ export function SchemaConfig({ value, onChange }) {
                       useAction: '{{ useSubmit }}',
                     },
                     'x-designer': 'Action.Designer',
-                    'x-action': JOB_STATUS.RESOLVED,
+                    'x-action': `${JOB_STATUS.RESOLVED}`,
                   }
                 }
               }
