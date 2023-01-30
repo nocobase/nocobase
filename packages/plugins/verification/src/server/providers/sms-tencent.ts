@@ -46,6 +46,11 @@ export default class extends Provider {
         return result.RequestId
       case 'InvalidParameterValue.IncorrectPhoneNumber':
         error.name = 'InvalidReceiver'
+      case 'LimitExceeded.DeliveryFrequencyLimit':
+      case 'LimitExceeded.PhoneNumberDailyLimit':
+      case 'LimitExceeded.PhoneNumberThirtySecondLimit':
+      case 'LimitExceeded.PhoneNumberOneHourLimit':
+        error.name = 'RateLimit'
     }
     throw error
   }
