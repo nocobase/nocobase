@@ -1032,6 +1032,7 @@ export const createGanttBlockSchema = (options) => {
       },
       params: {
         paginate: false,
+        sort: ['sort'],
       },
       ...others,
     },
@@ -1062,7 +1063,7 @@ export const createGanttBlockSchema = (options) => {
             'x-decorator-props': {
               style: {
                 float: 'left',
-                width: '35%',
+                maxWidth: '35%',
               },
             },
 
