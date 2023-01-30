@@ -1056,15 +1056,16 @@ export const createGanttBlockSchema = (options) => {
             'x-initializer': 'GanttActionInitializers',
             properties: {},
           },
-          table:{
+          table: {
             type: 'array',
             'x-decorator': 'div',
             'x-decorator-props': {
               style: {
-                display: 'inline-block',
+                float: 'left',
+                width: '35%',
               },
             },
-        
+
             'x-initializer': 'TableColumnInitializers',
             'x-component': 'TableV2',
             'x-component-props': {
@@ -1076,49 +1077,6 @@ export const createGanttBlockSchema = (options) => {
               pagination: false,
             },
           },
-          // event: {
-          //   type: 'void',
-          //   'x-component': 'Gantt.Event',
-          //   properties: {
-          //     drawer: {
-          //       type: 'void',
-          //       'x-component': 'Action.Drawer',
-          //       'x-component-props': {
-          //         className: 'nb-action-popup',
-          //       },
-          //       title: '{{ t("View record") }}',
-          //       properties: {
-          //         tabs: {
-          //           type: 'void',
-          //           'x-component': 'Tabs',
-          //           'x-component-props': {},
-          //           'x-initializer': 'TabPaneInitializers',
-          //           properties: {
-          //             tab1: {
-          //               type: 'void',
-          //               title: '{{t("Details")}}',
-          //               'x-component': 'Tabs.TabPane',
-          //               'x-designer': 'Tabs.Designer',
-          //               'x-component-props': {},
-          //               properties: {
-          //                 grid: {
-          //                   type: 'void',
-          //                   'x-component': 'Grid',
-          //                   'x-initializer-props': {
-          //                     actionInitializers: 'GanttFormActionInitializers',
-          //                   },
-          //                   'x-initializer': 'RecordBlockInitializers',
-          //                   properties: {},
-          //                 },
-          //               },
-          //             },
-          //           },
-          //         },
-          //       },
-          //     },
-          //   },
-          // },
-
         },
       },
     },

@@ -456,7 +456,7 @@ export const Gantt: any = (props) => {
   return (
     <div>
       <Toolbar />
-      <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
+      <div>
         <TableBlockProvider
           service={ctx.service}
           {...ctx}
@@ -466,42 +466,44 @@ export const Gantt: any = (props) => {
         >
           <RecursionField name={'table'} schema={fieldSchema.properties.table} />
         </TableBlockProvider>
-        <TaskGantt
-          gridProps={gridProps}
-          calendarProps={calendarProps}
-          barProps={barProps}
-          ganttHeight={ganttHeight}
-          scrollY={scrollY}
-          scrollX={scrollX}
-          ref={verticalGanttContainerRef}
-        />
-
-        {ganttEvent.changedTask && (
-          <Tooltip
-            arrowIndent={arrowIndent}
-            rowHeight={rowHeight}
-            svgContainerHeight={svgContainerHeight}
-            svgContainerWidth={svgContainerWidth}
-            fontFamily={fontFamily}
-            fontSize={fontSize}
-            scrollX={scrollX}
+        <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
+          <TaskGantt
+            gridProps={gridProps}
+            calendarProps={calendarProps}
+            barProps={barProps}
+            ganttHeight={ganttHeight}
             scrollY={scrollY}
-            task={ganttEvent.changedTask}
-            headerHeight={headerHeight}
-            taskListWidth={taskListWidth}
-            TooltipContent={TooltipContent}
-            rtl={rtl}
-            svgWidth={svgWidth}
+            scrollX={scrollX}
+            ref={verticalGanttContainerRef}
           />
-        )}
-        <VerticalScroll
-          ganttFullHeight={ganttFullHeight}
-          ganttHeight={ganttHeight}
-          headerHeight={headerHeight}
-          scroll={scrollY}
-          onScroll={handleScrollY}
-          rtl={rtl}
-        />
+
+          {ganttEvent.changedTask && (
+            <Tooltip
+              arrowIndent={arrowIndent}
+              rowHeight={rowHeight}
+              svgContainerHeight={svgContainerHeight}
+              svgContainerWidth={svgContainerWidth}
+              fontFamily={fontFamily}
+              fontSize={fontSize}
+              scrollX={scrollX}
+              scrollY={scrollY}
+              task={ganttEvent.changedTask}
+              headerHeight={headerHeight}
+              taskListWidth={taskListWidth}
+              TooltipContent={TooltipContent}
+              rtl={rtl}
+              svgWidth={svgWidth}
+            />
+          )}
+          <VerticalScroll
+            ganttFullHeight={ganttFullHeight}
+            ganttHeight={ganttHeight}
+            headerHeight={headerHeight}
+            scroll={scrollY}
+            onScroll={handleScrollY}
+            rtl={rtl}
+          />
+        </div>
       </div>
       <HorizontalScroll
         svgWidth={svgWidth}
