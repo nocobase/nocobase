@@ -40,7 +40,7 @@ export default class extends Provider {
     })
 
     const errCode = result.SendStatusSet[0].Code
-    const error = new Error(`${errCode}1231:${result.SendStatusSet[0].Message}`)
+    const error = new Error(`${errCode}:${result.SendStatusSet[0].Message}`)
     switch (errCode) {
       case 'Ok':
         return result.RequestId
