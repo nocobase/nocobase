@@ -54,13 +54,6 @@ export class BelongsToField extends RelationField {
       ...omit(this.options, ['name', 'type', 'target', 'onDelete']),
     });
 
-    if (this.collection.options.underscored) {
-      association.foreignKey = lodash.snakeCase(association.foreignKey);
-      if (this.options.foreignKey) {
-        this.options.foreignKey = lodash.snakeCase(this.options.foreignKey);
-      }
-    }
-
     // inverse relation
     // this.TargetModel.hasMany(collection.model);
 

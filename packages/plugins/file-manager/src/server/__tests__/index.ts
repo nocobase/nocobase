@@ -13,6 +13,8 @@ export async function getApp(options = {}): Promise<MockServer> {
     acl: false,
   });
 
+  await app.cleanDb();
+
   app.plugin(plugin);
 
   app.db.import({
