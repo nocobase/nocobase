@@ -82,7 +82,14 @@ export const useCollectionManager = () => {
   };
 
 
-  const getCollectionFieldsOptions = (collectionName: string, type: string | string[] = 'string', isAssociation = false) => {
+  const getCollectionFieldsOptions = (collectionName: string, type: string | string[] = 'string', opts?: {
+    /**
+     * 为 true 时允许查询所有关联字段
+     * 为 Array<string> 时仅允许查询指定的关联字段
+     */
+    association?: boolean | string[];
+  }) => {
+    const { association = false } = opts || {};
     if (typeof type === 'string') {
       type = [type];
     }
@@ -91,23 +98,25 @@ export const useCollectionManager = () => {
       ?.filter(
         (field) =>
           field.interface &&
-          (type.includes(field.type) || (isAssociation && field.target && field.target !== collectionName)),
+          (type.includes(field.type) || (association && field.target && field.target !== collectionName &&
+            Array.isArray(association) ? association.includes(field.interface) : false
+          )),
       )
       ?.map((field) => {
         const result: CascaderProps<any>['options'][0] = {
           value: field.name,
           label: compile(field?.uiSchema?.title) || field.name,
         };
-        if (isAssociation && field.target) {
-          result.children = getCollectionFieldsOptions(field.target, type, true);
+        if (association && field.target) {
+          result.children = getCollectionFieldsOptions(field.target, type, opts);
           if (!result.children?.length) {
-            return null;
+            return null
           }
         }
         return result;
       })
       // 过滤 map 产生为 null 的数据
-      .filter(Boolean);
+      .filter(Boolean)
 
     return options;
   };

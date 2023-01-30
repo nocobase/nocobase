@@ -63,7 +63,9 @@ export const CalendarDesigner = () => {
       <SchemaSettings.CascaderItem
         title={t('Start date field')}
         value={fieldNames.start}
-        options={getCollectionFieldsOptions(name, 'date', true)}
+        options={getCollectionFieldsOptions(name, 'date', {
+          association: ['o2o', 'obo', 'oho', 'm2o'],
+        })}
         onChange={(start) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['start'] = start;
@@ -82,7 +84,9 @@ export const CalendarDesigner = () => {
       <SchemaSettings.CascaderItem
         title={t('End date field')}
         value={fieldNames.end}
-        options={getCollectionFieldsOptions(name, 'date', true)}
+        options={getCollectionFieldsOptions(name, 'date', {
+          association: ['o2o', 'obo', 'oho', 'm2o'],
+        })}
         onChange={(end) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['end'] = end;

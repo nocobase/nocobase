@@ -23,7 +23,9 @@ export const CalendarBlockInitializer = (props) => {
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
         const stringFieldsOptions = getCollectionFieldsOptions(item.name, 'string');
-        const dateFieldsOptions = getCollectionFieldsOptions(item.name, 'date', true);
+        const dateFieldsOptions = getCollectionFieldsOptions(item.name, 'date', {
+          association: ['o2o', 'obo', 'oho', 'm2o'],
+        });
 
         const values = await FormDialog(t('Create calendar block'), () => {
           return (
