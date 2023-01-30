@@ -5,7 +5,7 @@ import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
-import { useCollectionFieldOptions } from '../components/CollectionFieldSelect';
+import { useCollectionFieldOptions } from '../variable';
 
 
 

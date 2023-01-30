@@ -6,35 +6,7 @@ import { lang } from '../locale';
 
 
 
-export function VariableSelect(props) {
-  const { options = [], children, onSelect, ...others } = props;
-  function onClick({ keyPath }) {
-    onSelect?.(keyPath.filter(key => Boolean(key.trim())).reverse());
-  }
-
-  return (
-    <Dropdown
-      trigger={['click']}
-      {...others}
-      overlay={<Menu items={options} onClick={onClick} />}
-    >
-      {children ?? (
-        <Tooltip title={lang('Use variable')}>
-          <Button
-            className={css`
-              font-style: italic;
-              font-family: "New York", "Times New Roman", Times, serif;
-            `}
-          >
-            x
-          </Button>
-        </Tooltip>
-      )}
-    </Dropdown>
-  );
-}
-
-const VARIABLE_RE = /\{\{([^{}]+)\}\}/g;
+const VARIABLE_RE = /\{\{\s*([^{}]+)\s*\}\}/g;
 
 function pasteHtml(container, html, { selectPastedContent = false, range: indexes }) {
   // IE9 and non-IE
@@ -130,7 +102,7 @@ function createVariableTagHTML(variable, keyLabelMap) {
 }
 
 export function VariableTextArea(props) {
-  const { value = '', useDataSource, onChange, multiline = true } = props;
+  const { value = '', useDataSource, onChange, multiline = true, dropdownProps = {} } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const options = useDataSource?.() ?? props.options ?? [];
   const form = useForm();
@@ -164,7 +136,8 @@ export function VariableTextArea(props) {
     }
   }, [html]);
 
-  function onInsert(variable: string[]) {
+  function onInsert({ keyPath }) {
+    const variable: string[] = keyPath.filter(key => Boolean(key.trim())).reverse();
     const { current } = inputRef;
     if (!current || !variable) {
       return;
@@ -235,10 +208,24 @@ export function VariableTextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <VariableSelect
-        options={options}
-        onSelect={onInsert}
-      />
+      <Dropdown
+        trigger={['click']}
+        {...dropdownProps}
+        overlay={<Menu items={options} onClick={onInsert} />}
+      >
+        {dropdownProps.children ?? (
+          <Tooltip title={lang('Use variable')}>
+            <Button
+              className={css`
+                font-style: italic;
+                font-family: "New York", "Times New Roman", Times, serif;
+              `}
+            >
+              x
+            </Button>
+          </Tooltip>
+        )}
+      </Dropdown>
     </Input.Group>
   );
 }

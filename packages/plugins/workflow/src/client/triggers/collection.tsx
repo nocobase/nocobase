@@ -11,7 +11,7 @@ import {
 } from '@nocobase/client';
 
 import { collection, filter } from '../schemas/collection';
-import { useCollectionFieldOptions } from '../components/CollectionFieldSelect';
+import { useCollectionFieldOptions } from '../variable';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';

@@ -5,7 +5,7 @@ import { SCHEDULE_MODE } from './constants';
 import { NAMESPACE, useWorkflowTranslation } from '../../locale';
 import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { useCollectionFieldOptions } from '../../components/CollectionFieldSelect';
+import { useCollectionFieldOptions } from '../../variable';
 
 
 

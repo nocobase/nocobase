@@ -5,7 +5,7 @@ import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
-import { useCollectionFieldOptions } from '../components/CollectionFieldSelect';
+import { useCollectionFieldOptions } from '../variable';
 
 
 

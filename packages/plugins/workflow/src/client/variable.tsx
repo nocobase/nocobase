@@ -298,3 +298,22 @@ export function useWorkflowVariableOptions() {
   });
   return options;
 }
+
+export function useCollectionFieldOptions(props) {
+  const { fields, collection, types } = props;
+  const compile = useCompile();
+  const { getCollectionFields } = useCollectionManager();
+  return filterTypedFields((fields ?? getCollectionFields(collection)), types)
+    .filter(field => field.interface && (!field.target || field.type === 'belongsTo'))
+    .map(field => field.type === 'belongsTo'
+      ? {
+        label: `${compile(field.uiSchema?.title || field.name)} ID`,
+        key: field.foreignKey,
+        value: field.foreignKey,
+      }
+      : {
+        label: compile(field.uiSchema?.title || field.name),
+        key: field.name,
+        value: field.name,
+      });
+}
