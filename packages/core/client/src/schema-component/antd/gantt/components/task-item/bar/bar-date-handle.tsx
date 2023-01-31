@@ -1,5 +1,5 @@
 import React from "react";
-import styles from "./bar.less";
+import styles from "./bar.css";
 
 type BarDateHandleProps = {
   x: number;

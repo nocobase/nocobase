@@ -1,5 +1,5 @@
 import React from "react";
-import styles from "./calendar.less";
+import styles from "./calendar.css";
 
 type TopPartOfCalendarProps = {
   value: string;

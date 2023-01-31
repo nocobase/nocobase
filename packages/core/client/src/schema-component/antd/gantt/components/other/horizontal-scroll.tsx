@@ -1,5 +1,5 @@
 import React, { SyntheticEvent, useRef, useEffect } from "react";
-import styles from "./horizontal-scroll.module.css";
+import styles from "./horizontal-scroll.css";
 
 export const HorizontalScroll: React.FC<{
   scroll: number;

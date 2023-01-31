@@ -1,6 +1,6 @@
 import React from "react";
 import { TaskItemProps } from "../task-item";
-import styles from "./project.less";
+import styles from "./project.css";
 
 export const Project: React.FC<TaskItemProps> = ({ task, isSelected }) => {
   const barColor = isSelected

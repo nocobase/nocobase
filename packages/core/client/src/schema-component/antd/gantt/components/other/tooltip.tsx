@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Task } from "../../types/public-types";
 import { BarTask } from "../../types/bar-task";
-import styles from "./tooltip.module.css";
+import styles from "./tooltip.css";
 
 export type TooltipProps = {
   task: BarTask;
