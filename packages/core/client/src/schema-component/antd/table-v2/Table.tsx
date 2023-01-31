@@ -43,12 +43,14 @@ const useTableColumns = () => {
         ...s['x-component-props'],
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          return (
+          return index >= 0 ? (
             <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
                 <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
               </RecordProvider>
             </RecordIndexProvider>
+          ) : (
+            v
           );
         },
       } as TableColumnProps<any>;

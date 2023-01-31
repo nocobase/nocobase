@@ -18,8 +18,6 @@ import styles from './gantt.module.css';
 import { GanttToolbarContext } from '../../context';
 import { useDesignable } from '../../../../../schema-component';
 import { TableBlockProvider, useGanttBlockContext, useBlockRequestContext } from '../../../../../block-provider';
-import { useProps } from '../../../../hooks/useProps';
-import { formatData, mockTasks } from './utils';
 
 function Toolbar(props) {
   const fieldSchema = useFieldSchema();
@@ -47,7 +45,6 @@ const getColumnWidth = (dataSetLength, clientWidth) => {
 
 export const Gantt: any = (props) => {
   const { designable } = useDesignable();
-
   const {
     headerHeight = designable ? 65 : 55,
     listCellWidth = '155px',
@@ -81,14 +78,14 @@ export const Gantt: any = (props) => {
     onClick,
     onDelete,
     onSelect,
-    onExpanderClick,
+    useProps,
   } = props;
+  const { onExpanderClick, tasks } = useProps();
   const ctx = useGanttBlockContext();
   const { resource } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
-  const { fieldNames, dataSource } = useProps(props);
+  const { fieldNames } = useProps(props);
   const viewMode = fieldNames.range || 'day';
-  const tasks = formatData(dataSource, fieldNames) || [];
   const wrapperRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
   const verticalGanttContainerRef = useRef<HTMLDivElement>(null);
@@ -155,7 +152,7 @@ export const Gantt: any = (props) => {
       ),
     );
   }, [
-    dataSource,
+    tasks,
     viewMode,
     preStepsCount,
     rowHeight,
@@ -175,7 +172,6 @@ export const Gantt: any = (props) => {
     milestoneBackgroundSelectedColor,
     rtl,
     scrollX,
-    onExpanderClick,
   ]);
 
   useEffect(() => {
@@ -366,11 +362,12 @@ export const Gantt: any = (props) => {
     }
     setSelectedTask(newSelectedTask);
   };
-  // const handleExpanderClick = (task: Task) => {
-  //   if (onExpanderClick && task.hideChildren !== undefined) {
-  //     onExpanderClick({ ...task, hideChildren: !task.hideChildren });
-  //   }
-  // };
+  const handleTableExpanderClick = (expanded: boolean, record: any) => {
+    const task = tasks.find((v) => v.id === record.id + '');
+    if (onExpanderClick && record.children.length) {
+      onExpanderClick({ ...task, hideChildren: !expanded });
+    }
+  };
   const handleProgressChange = async (task) => {
     await resource.update({
       filterByTk: task.id,
@@ -434,38 +431,23 @@ export const Gantt: any = (props) => {
     onDelete,
   };
 
-  // const tableProps: TaskListProps = {
-  //   rowHeight,
-  //   rowWidth: listCellWidth,
-  //   fontFamily,
-  //   fontSize,
-  //   tasks: barTasks,
-  //   locale,
-  //   headerHeight,
-  //   scrollY,
-  //   ganttHeight,
-  //   horizontalContainerClass: styles.horizontalContainer,
-  //   selectedTask,
-  //   taskListRef,
-  //   setSelectedTask: handleSelectedTask,
-  //   onExpanderClick: handleExpanderClick,
-  //   TaskListHeader,
-  //   TaskListTable,
-  // };
-
   return (
     <div>
       <Toolbar />
       <div>
         <TableBlockProvider
-          service={ctx.service}
           {...ctx}
           params={{
             paginate: false,
           }}
+          service={{
+            ...ctx.service,
+          }}
+          onExpandClick={handleTableExpanderClick}
         >
           <RecursionField name={'table'} schema={fieldSchema.properties.table} />
         </TableBlockProvider>
+
         <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
           <TaskGantt
             gridProps={gridProps}

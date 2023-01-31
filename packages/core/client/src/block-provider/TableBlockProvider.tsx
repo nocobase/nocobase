@@ -148,6 +148,8 @@ export const useTableBlockProps = () => {
         : globalSort || ctx.service.params?.[0]?.sort;
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
+    onExpand(expanded, record) {
+      ctx?.onExpandClick(expanded, record);
+    },
   };
 };
-
