@@ -1,6 +1,7 @@
 import { Repository } from '@nocobase/database';
 import { CollectionModel } from '../models/collection';
 import toposort from 'toposort';
+import lodash from 'lodash';
 
 interface LoadOptions {
   filter?: any;
@@ -26,7 +27,8 @@ export class CollectionRepository extends Repository {
         if (field['type'] === 'belongsToMany') {
           const throughName = field.options.through;
           if (throughName) {
-            throughModels.push(throughName);
+            inheritedGraph.push([throughName, field.options.target]);
+            inheritedGraph.push([throughName, instance.get('name')]);
           }
         }
       }
@@ -40,17 +42,10 @@ export class CollectionRepository extends Repository {
       }
     }
 
-    generalModels.sort((a, b) => {
-      if (throughModels.includes(a)) {
-        return -1;
-      }
+    const sortedNames = [...toposort(inheritedGraph), ...lodash.difference(generalModels, throughModels)];
 
-      return 1;
-    });
-
-    const sortedNames = [...toposort(inheritedGraph), ...generalModels];
-
-    for (const instanceName of sortedNames) {
+    for (const instanceName of lodash.uniq(sortedNames)) {
+      if (!nameMap[instanceName]) continue;
       await nameMap[instanceName].load({ skipExist });
     }
   }
