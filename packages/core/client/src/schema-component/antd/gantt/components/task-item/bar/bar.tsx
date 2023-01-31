@@ -1,10 +1,12 @@
 import React from "react";
+import { cx } from '@emotion/css';
 import { getProgressPoint } from "../../../helpers/bar-helper";
 import { BarDisplay } from "./bar-display";
 import { BarDateHandle } from "./bar-date-handle";
 import { BarProgressHandle } from "./bar-progress-handle";
 import { TaskItemProps } from "../task-item";
-import styles from "./bar.css";
+import { barWrapper } from './style';
+
 
 export const Bar: React.FC<TaskItemProps> = ({
   task,
@@ -21,7 +23,7 @@ export const Bar: React.FC<TaskItemProps> = ({
   );
   const handleHeight = task.height - 2;
   return (
-    <g className={styles.barWrapper} tabIndex={0}>
+    <g className={cx(barWrapper)} tabIndex={0}>
       <BarDisplay
         x={task.x1}
         y={task.y}

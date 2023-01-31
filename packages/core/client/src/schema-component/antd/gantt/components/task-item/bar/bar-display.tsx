@@ -1,5 +1,6 @@
 import React from "react";
-import style from "./bar.css";
+import { cx } from '@emotion/css';
+import { barBackground } from './style';
 
 type BarDisplayProps = {
   x: number;
@@ -49,7 +50,7 @@ export const BarDisplay: React.FC<BarDisplayProps> = ({
         ry={barCornerRadius}
         rx={barCornerRadius}
         fill={getBarColor()}
-        className={style.barBackground}
+        className={cx(barBackground)}
       />
       <rect
         x={progressX}

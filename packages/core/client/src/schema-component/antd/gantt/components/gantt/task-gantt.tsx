@@ -1,8 +1,10 @@
 import React, { useRef, useEffect, forwardRef } from 'react';
+import { cx } from '@emotion/css';
 import { GridProps, Grid } from '../grid/grid';
 import { CalendarProps, Calendar } from '../calendar/calendar';
 import { TaskGanttContentProps, TaskGanttContent } from './task-gantt-content';
-import styles from './gantt.css';
+import { ganttVerticalContainer,horizontalContainer } from './style';
+
 
 export type TaskGanttProps = {
   gridProps: GridProps;
@@ -32,7 +34,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
     }, [scrollX]);
 
     return (
-      <div className={styles.ganttVerticalContainer} ref={ref} dir="ltr">
+      <div className={cx(ganttVerticalContainer)} ref={ref} dir="ltr">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width={gridProps.svgWidth}
@@ -43,7 +45,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
         </svg>
         <div
           ref={horizontalContainerRef}
-          className={styles.horizontalContainer}
+          className={cx(horizontalContainer)}
           style={ganttHeight ? { height: ganttHeight, width: gridProps.svgWidth } : { width: gridProps.svgWidth }}
         >
           <svg

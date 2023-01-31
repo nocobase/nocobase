@@ -1,6 +1,7 @@
 import React from "react";
+import { cx } from '@emotion/css';
 import { TaskItemProps } from "../task-item";
-import styles from "./milestone.css";
+import { milestoneWrapper,milestoneBackground } from './style';
 
 export const Milestone: React.FC<TaskItemProps> = ({
   task,
@@ -17,7 +18,7 @@ export const Milestone: React.FC<TaskItemProps> = ({
   };
 
   return (
-    <g tabIndex={0} className={styles.milestoneWrapper}>
+    <g tabIndex={0} className={cx(milestoneWrapper)}>
       <rect
         fill={getBarColor()}
         x={task.x1}
@@ -27,7 +28,7 @@ export const Milestone: React.FC<TaskItemProps> = ({
         rx={task.barCornerRadius}
         ry={task.barCornerRadius}
         transform={transform}
-        className={styles.milestoneBackground}
+        className={cx(milestoneBackground)}
         onMouseDown={e => {
           isDateChangeable && onEventStart("move", task, e);
         }}

@@ -1,5 +1,6 @@
-import React from "react";
-import styles from "./bar.css";
+import React from 'react';
+import { cx } from '@emotion/css';
+import { barHandle } from './style';
 
 type BarDateHandleProps = {
   x: number;
@@ -9,21 +10,14 @@ type BarDateHandleProps = {
   barCornerRadius: number;
   onMouseDown: (event: React.MouseEvent<SVGRectElement, MouseEvent>) => void;
 };
-export const BarDateHandle: React.FC<BarDateHandleProps> = ({
-  x,
-  y,
-  width,
-  height,
-  barCornerRadius,
-  onMouseDown,
-}) => {
+export const BarDateHandle: React.FC<BarDateHandleProps> = ({ x, y, width, height, barCornerRadius, onMouseDown }) => {
   return (
     <rect
       x={x}
       y={y}
       width={width}
       height={height}
-      className={styles.barHandle}
+      className={cx(barHandle)}
       ry={barCornerRadius}
       rx={barCornerRadius}
       onMouseDown={onMouseDown}

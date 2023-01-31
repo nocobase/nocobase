@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
+import { cx } from '@emotion/css';
 import { BarTask } from "../../types/bar-task";
 import { GanttContentMoveAction } from "../../types/gantt-task-actions";
 import { Bar } from "./bar/bar";
 import { BarSmall } from "./bar/bar-small";
 import { Milestone } from "./milestone/milestone";
 import { Project } from "./project/project";
-import style from "./task-list.css";
+import { barLabel,barLabelOutside } from './style';
 
 export type TaskItemProps = {
   task: BarTask;
@@ -113,8 +114,8 @@ export const TaskItem: React.FC<TaskItemProps> = props => {
         y={task.y + taskHeight * 0.5}
         className={
           isTextInside
-            ? style.barLabel
-            : style.barLabel && style.barLabelOutside
+            ? cx(barLabel)
+            : cx(barLabel) && cx(barLabelOutside)
         }
         ref={textRef}
       >

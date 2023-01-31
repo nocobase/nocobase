@@ -1,7 +1,13 @@
-import React, { useRef, useEffect, useState } from "react";
-import { Task } from "../../types/public-types";
-import { BarTask } from "../../types/bar-task";
-import styles from "./tooltip.css";
+import React, { useRef, useEffect, useState } from 'react';
+import { cx } from '@emotion/css';
+import { Task } from '../../types/public-types';
+import { BarTask } from '../../types/bar-task';
+import {
+  tooltipDefaultContainer,
+  tooltipDetailsContainer,
+  tooltipDetailsContainerHidden,
+  tooltipDefaultContainerParagraph,
+} from './style';
 
 export type TooltipProps = {
   task: BarTask;
@@ -63,12 +69,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         const tooltipLeftmostPoint = tooltipWidth + newRelatedX;
         const fullChartWidth = taskListWidth + svgContainerWidth;
         if (tooltipLeftmostPoint > fullChartWidth) {
-          newRelatedX =
-            task.x1 +
-            taskListWidth -
-            arrowIndent * 1.5 -
-            scrollX -
-            tooltipWidth;
+          newRelatedX = task.x1 + taskListWidth - arrowIndent * 1.5 - scrollX - tooltipWidth;
         }
         if (newRelatedX < taskListWidth) {
           newRelatedX = svgContainerWidth + taskListWidth - tooltipWidth;
@@ -100,11 +101,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   return (
     <div
       ref={tooltipRef}
-      className={
-        relatedX
-          ? styles.tooltipDetailsContainer
-          : styles.tooltipDetailsContainerHidden
-      }
+      className={relatedX ? cx(tooltipDetailsContainer) : cx(tooltipDetailsContainerHidden)}
       style={{ left: relatedX, top: relatedY }}
     >
       <TooltipContent task={task} fontSize={fontSize} fontFamily={fontFamily} />
@@ -122,24 +119,18 @@ export const StandardTooltipContent: React.FC<{
     fontFamily,
   };
   return (
-    <div className={styles.tooltipDefaultContainer} style={style}>
-      <b style={{ fontSize: fontSize + 6 }}>{`${
-        task.name
-      }: ${task.start.getDate()}-${
+    <div className={cx(tooltipDefaultContainer)} style={style}>
+      <b style={{ fontSize: fontSize + 6 }}>{`${task.name}: ${task.start.getDate()}-${
         task.start.getMonth() + 1
-      }-${task.start.getFullYear()} - ${task.end.getDate()}-${
-        task.end.getMonth() + 1
-      }-${task.end.getFullYear()}`}</b>
+      }-${task.start.getFullYear()} - ${task.end.getDate()}-${task.end.getMonth() + 1}-${task.end.getFullYear()}`}</b>
       {task.end.getTime() - task.start.getTime() !== 0 && (
-        <p className={styles.tooltipDefaultContainerParagraph}>{`Duration: ${~~(
+        <p className={cx(tooltipDefaultContainerParagraph)}>{`Duration: ${~~(
           (task.end.getTime() - task.start.getTime()) /
           (1000 * 60 * 60 * 24)
         )} day(s)`}</p>
       )}
 
-      <p className={styles.tooltipDefaultContainerParagraph}>
-        {!!task.progress && `Progress: ${task.progress} %`}
-      </p>
+      <p className={cx(tooltipDefaultContainerParagraph)}>{!!task.progress && `Progress: ${task.progress} %`}</p>
     </div>
   );
 };

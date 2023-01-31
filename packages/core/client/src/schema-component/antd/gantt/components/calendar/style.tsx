@@ -1,4 +1,6 @@
-.calendarBottomText {
+import { css } from '@emotion/css';
+
+export const calendarBottomText = css`
   text-anchor: middle;
   fill: #333;
   -webkit-touch-callout: none;
@@ -7,13 +9,13 @@
   -ms-user-select: none;
   user-select: none;
   pointer-events: none;
-}
+`;
 
-.calendarTopTick {
+export const calendarTopTick = css`
   stroke: #e6e4e4;
-}
+`;
 
-.calendarTopText {
+export const calendarTopText = css`
   text-anchor: middle;
   fill: #555;
   -webkit-touch-callout: none;
@@ -22,10 +24,10 @@
   -ms-user-select: none;
   user-select: none;
   pointer-events: none;
-}
+`;
 
-.calendarHeader {
+export const calendarHeader = css`
   fill: #ffffff;
   stroke: #e0e0e0;
   stroke-width: 1.4;
-}
+`;

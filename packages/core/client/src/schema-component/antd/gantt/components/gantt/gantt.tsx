@@ -1,5 +1,6 @@
 import React, { useState, SyntheticEvent, useRef, useEffect, useMemo } from 'react';
 import { useFieldSchema, Schema, RecursionField } from '@formily/react';
+import { cx } from '@emotion/css';
 import { Task } from '../../types/public-types';
 import { GridProps } from '../grid/grid';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
@@ -14,16 +15,16 @@ import { GanttEvent } from '../../types/gantt-task-actions';
 import { DateSetup } from '../../types/date-setup';
 import { HorizontalScroll } from '../other/horizontal-scroll';
 import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
-import styles from './gantt.css';
+import { wrapper } from './style';
 import { GanttToolbarContext } from '../../context';
 import { useDesignable } from '../../../../../schema-component';
 import { TableBlockProvider, useGanttBlockContext, useBlockRequestContext } from '../../../../../block-provider';
 
-function Toolbar(props) {
+function Toolbar(props:any) {
   const fieldSchema = useFieldSchema();
   const toolBarSchema: Schema = useMemo(
     () =>
-      fieldSchema.reduceProperties((buf, current) => {
+      fieldSchema.reduceProperties((buf:any, current:any) => {
         if (current['x-component'].endsWith('.ActionBar')) {
           return current;
         }
@@ -38,12 +39,12 @@ function Toolbar(props) {
   );
 }
 
-const getColumnWidth = (dataSetLength, clientWidth) => {
+const getColumnWidth = (dataSetLength:any, clientWidth:any) => {
   const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;
   return columnWidth;
 };
 
-export const Gantt: any = (props) => {
+export const Gantt: any = (props:any) => {
   const { designable } = useDesignable();
   const {
     headerHeight = designable ? 65 : 55,
@@ -363,12 +364,12 @@ export const Gantt: any = (props) => {
     setSelectedTask(newSelectedTask);
   };
   const handleTableExpanderClick = (expanded: boolean, record: any) => {
-    const task = tasks.find((v) => v.id === record.id + '');
+    const task = tasks.find((v:any) => v.id === record.id + '');
     if (onExpanderClick && record.children.length) {
       onExpanderClick({ ...task, hideChildren: !expanded });
     }
   };
-  const handleProgressChange = async (task) => {
+  const handleProgressChange = async (task:Task) => {
     await resource.update({
       filterByTk: task.id,
       values: {
@@ -377,7 +378,7 @@ export const Gantt: any = (props) => {
       },
     });
   };
-  const handleTaskChange = async (task) => {
+  const handleTaskChange = async (task:Task) => {
     await resource.update({
       filterByTk: task.id,
       values: {
@@ -448,7 +449,7 @@ export const Gantt: any = (props) => {
           <RecursionField name={'table'} schema={fieldSchema.properties.table} />
         </TableBlockProvider>
 
-        <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
+        <div className={cx(wrapper)} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
           <TaskGantt
             gridProps={gridProps}
             calendarProps={calendarProps}

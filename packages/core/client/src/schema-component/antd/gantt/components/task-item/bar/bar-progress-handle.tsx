@@ -1,5 +1,6 @@
 import React from "react";
-import styles from "./bar.css";
+import { cx } from '@emotion/css';
+import { barHandle } from './style';
 
 type BarProgressHandleProps = {
   progressPoint: string;
@@ -11,7 +12,7 @@ export const BarProgressHandle: React.FC<BarProgressHandleProps> = ({
 }) => {
   return (
     <polygon
-      className={styles.barHandle}
+      className={cx(barHandle)}
       points={progressPoint}
       onMouseDown={onMouseDown}
     />

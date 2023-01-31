@@ -1,7 +1,8 @@
 import React, { ReactChild } from "react";
+import { cx } from '@emotion/css';
 import { Task } from "../../types/public-types";
 import { addToDate } from "../../helpers/date-helper";
-import styles from "./grid.css";
+import { gridRowLine, gridRow,gridTick } from './style';
 
 export type GridBodyProps = {
   tasks: Task[];
@@ -30,7 +31,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
       y1={0}
       x2={svgWidth}
       y2={0}
-      className={styles.gridRowLine}
+      className={cx(gridRowLine)}
     />,
   ];
   for (const task of tasks) {
@@ -41,7 +42,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
         y={y}
         width={svgWidth}
         height={rowHeight}
-        className={styles.gridRow}
+        className={cx(gridRow)}
       />
     );
     rowLines.push(
@@ -51,7 +52,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
         y1={y + rowHeight}
         x2={svgWidth}
         y2={y + rowHeight}
-        className={styles.gridRowLine}
+        className={cx(gridRowLine)}
       />
     );
     y += rowHeight;
@@ -70,7 +71,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
         y1={0}
         x2={tickX}
         y2={y}
-        className={styles.gridTick}
+        className={cx(gridTick)}
       />
     );
     if (

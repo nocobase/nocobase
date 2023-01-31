@@ -1,5 +1,6 @@
-import React, { SyntheticEvent, useRef, useEffect } from "react";
-import styles from "./vertical-scroll.css";
+import React, { SyntheticEvent, useRef, useEffect } from 'react';
+import { cx } from '@emotion/css';
+import { verticalScroll } from './style';
 
 export const VerticalScroll: React.FC<{
   scroll: number;
@@ -8,14 +9,7 @@ export const VerticalScroll: React.FC<{
   headerHeight: number;
   rtl: boolean;
   onScroll: (event: SyntheticEvent<HTMLDivElement>) => void;
-}> = ({
-  scroll,
-  ganttHeight,
-  ganttFullHeight,
-  headerHeight,
-  rtl,
-  onScroll,
-}) => {
+}> = ({ scroll, ganttHeight, ganttFullHeight, headerHeight, rtl, onScroll }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,9 +23,9 @@ export const VerticalScroll: React.FC<{
       style={{
         height: ganttHeight,
         marginTop: headerHeight,
-        marginLeft: rtl ? "" : "-1rem",
+        marginLeft: rtl ? '' : '-1rem',
       }}
-      className={styles.scroll}
+      className={cx(verticalScroll)}
       onScroll={onScroll}
       ref={scrollRef}
     >

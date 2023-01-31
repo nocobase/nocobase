@@ -1,6 +1,8 @@
 import React from "react";
+import { cx } from '@emotion/css';
 import { TaskItemProps } from "../task-item";
-import styles from "./project.css";
+import { projectWrapper,projectBackground,projectTop } from './style';
+
 
 export const Project: React.FC<TaskItemProps> = ({ task, isSelected }) => {
   const barColor = isSelected
@@ -29,7 +31,7 @@ export const Project: React.FC<TaskItemProps> = ({ task, isSelected }) => {
   ].join(",");
 
   return (
-    <g tabIndex={0} className={styles.projectWrapper}>
+    <g tabIndex={0} className={cx(projectWrapper)}>
       <rect
         fill={barColor}
         x={task.x1}
@@ -38,7 +40,7 @@ export const Project: React.FC<TaskItemProps> = ({ task, isSelected }) => {
         height={task.height}
         rx={task.barCornerRadius}
         ry={task.barCornerRadius}
-        className={styles.projectBackground}
+        className={cx(projectBackground)}
       />
       <rect
         x={task.progressX}
@@ -57,15 +59,15 @@ export const Project: React.FC<TaskItemProps> = ({ task, isSelected }) => {
         height={task.height / 2}
         rx={task.barCornerRadius}
         ry={task.barCornerRadius}
-        className={styles.projectTop}
+        className={cx(projectTop)}
       />
       <polygon
-        className={styles.projectTop}
+        className={cx(projectTop)}
         points={projectLeftTriangle}
         fill={barColor}
       />
       <polygon
-        className={styles.projectTop}
+        className={cx(projectTop)}
         points={projectRightTriangle}
         fill={barColor}
       />
