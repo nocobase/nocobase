@@ -1,6 +1,6 @@
 import React from "react";
 import { TaskItemProps } from "../task-item";
-import styles from "./milestone.module.css";
+import styles from "./milestone.less";
 
 export const Milestone: React.FC<TaskItemProps> = ({
   task,

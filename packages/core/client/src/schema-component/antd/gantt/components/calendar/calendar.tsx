@@ -9,7 +9,7 @@ import {
   getWeekNumberISO8601,
 } from '../../helpers/date-helper';
 import { DateSetup } from '../../types/date-setup';
-import styles from './calendar.module.css';
+import styles from './calendar.less';
 
 export type CalendarProps = {
   dateSetup: DateSetup;

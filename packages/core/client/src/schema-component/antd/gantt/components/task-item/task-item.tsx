@@ -5,7 +5,7 @@ import { Bar } from "./bar/bar";
 import { BarSmall } from "./bar/bar-small";
 import { Milestone } from "./milestone/milestone";
 import { Project } from "./project/project";
-import style from "./task-list.module.css";
+import style from "./task-list.less";
 
 export type TaskItemProps = {
   task: BarTask;
