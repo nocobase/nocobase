@@ -4,6 +4,7 @@ import { Field } from '.';
 
 export class InheritedCollection extends Collection {
   parents?: Collection[];
+
   constructor(options: CollectionOptions, context: CollectionContext) {
     if (!options.inherits) {
       throw new Error('InheritedCollection must have inherits option');
