@@ -251,6 +251,7 @@ export const AddFieldAction = (props) => {
             useCancelAction,
             createOnly: true,
             isOverride: false,
+            override: false,
             useCreateCollectionField,
             record,
             showReverseFieldConfig: true,
