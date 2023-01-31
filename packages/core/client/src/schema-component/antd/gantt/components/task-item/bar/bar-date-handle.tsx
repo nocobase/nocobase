@@ -1,6 +1,4 @@
 import React from 'react';
-import { cx } from '@emotion/css';
-import { barHandle } from './style';
 
 type BarDateHandleProps = {
   x: number;
@@ -17,7 +15,7 @@ export const BarDateHandle: React.FC<BarDateHandleProps> = ({ x, y, width, heigh
       y={y}
       width={width}
       height={height}
-      className={cx(barHandle)}
+      className={'barHandle'}
       ry={barCornerRadius}
       rx={barCornerRadius}
       onMouseDown={onMouseDown}

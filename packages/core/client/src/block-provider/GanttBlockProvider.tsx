@@ -140,7 +140,6 @@ export const useGanttBlockProps = () => {
   const ctx = useGanttBlockContext();
   const [tasks, setTasks] = useState([]);
   const onExpanderClick = (task: any) => {
-    console.log(tasks, task);
     setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
   };
   useEffect(() => {
