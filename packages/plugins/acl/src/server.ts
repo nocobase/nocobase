@@ -702,7 +702,6 @@ export class PluginACL extends Plugin {
           Model,
         );
 
-        console.log(actionSql);
         const whereCase = actionSql.match(/WHERE (.*?);/)[1];
         conditions.push({
           whereCase,
