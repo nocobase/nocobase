@@ -64,8 +64,8 @@ export const GanttDesigner = () => {
         value={fieldNames.range||'day'}
         options={[
           { label: compile('{{t("Hour")}}'), value: 'hour', color: 'orange' },
-          { label: compile('{{t("Quarter of day")}}'), value: 'quarterOfDay', color: 'default' },
-          { label: compile('{{t("Half of day")}}'), value: 'halOfDay', color: 'blue' },
+          { label: compile('{{t("Quarter of day")}}'), value: 'quarterDay', color: 'default' },
+          { label: compile('{{t("Half of day")}}'), value: 'halfDay', color: 'blue' },
           { label: compile('{{t("Day")}}'), value: 'day', color: 'yellow' },
           { label: compile('{{t("Week")}}'), value: 'week', color: 'pule' },
           { label: compile('{{t("Month")}}'), value: 'month', color: 'green' },
@@ -115,6 +115,25 @@ export const GanttDesigner = () => {
         onChange={(end) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['end'] = end;
+          field.decoratorProps.fieldNames = fieldNames;
+          fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
+          service.refresh();
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': field.decoratorProps,
+            },
+          });
+          dn.refresh();
+        }}
+      />
+       <SchemaSettings.SelectItem
+        title={t('Progress field')}
+        value={fieldNames.progress}
+        options={useOptions('double')}
+        onChange={(progress) => {
+          const fieldNames = field.decoratorProps.fieldNames || {};
+          fieldNames['progress'] = progress;
           field.decoratorProps.fieldNames = fieldNames;
           fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
           service.refresh();

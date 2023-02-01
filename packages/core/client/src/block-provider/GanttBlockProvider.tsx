@@ -91,10 +91,10 @@ const formatData = (data = [], fieldNames, tasks: any[] = [], projectId: any = u
     } else {
       tasks.push({
         start: new Date(item[fieldNames.start]),
-        end: new Date(item[fieldNames.end]),
+        end: new Date(item[fieldNames.end]||item[fieldNames.start]+1),
         name: item[fieldNames.title],
         id: item.id + '',
-        type: 'task',
+        type: fieldNames.end?'task':'milestone',
         progress: item[fieldNames.progress],
         project: projectId,
       });
@@ -125,7 +125,6 @@ const InternalGanttBlockProvider = (props) => {
 };
 
 export const GanttBlockProvider = (props) => {
-  console.log(props);
   return (
     <BlockProvider {...props} params={{ ...props.params, paginate: false }}>
       <InternalGanttBlockProvider {...props} />
