@@ -697,11 +697,14 @@ export class PluginACL extends Plugin {
         const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
           Model.getTableName(),
           {
-            // ...queryParams,
-            where: queryParams.where,
+            where: lodash.mapKeys(queryParams.where, (value, key) => {
+              const field = Model.rawAttributes[key];
+              if (!field) return key;
+              return field.field;
+            }),
+
             attributes: [primaryKeyField],
             includeIgnoreAttributes: false,
-            // include: queryParams.include,
           },
           Model,
         );
