@@ -115,7 +115,7 @@ export class OptionsParser {
     const appends = this.options?.appends || [];
     const except = [];
 
-    if (this.options.attributes) {
+    if (this.options?.attributes) {
       return {
         attributes: this.options.attributes,
       };
