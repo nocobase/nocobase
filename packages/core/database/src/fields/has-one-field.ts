@@ -92,7 +92,7 @@ export class HasOneField extends RelationField {
       return Utils.camelize([model.options.name.singular, model.primaryKeyAttribute].join('_'));
     })();
 
-    return this.collection.options.underscored ? lodash.snakeCase(foreignKey) : foreignKey;
+    return foreignKey;
   }
 
   reference(association): Reference {
