@@ -37,6 +37,7 @@ describe('migrator', () => {
 
     const result = await r.find({
       attributes: ['status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      sort: 'status',
       group: 'status',
     });
 
