@@ -20,11 +20,11 @@ import { GanttToolbarContext } from '../../context';
 import { useDesignable } from '../../../../../schema-component';
 import { TableBlockProvider, useGanttBlockContext, useBlockRequestContext } from '../../../../../block-provider';
 
-function Toolbar(props:any) {
+function Toolbar(props: any) {
   const fieldSchema = useFieldSchema();
   const toolBarSchema: Schema = useMemo(
     () =>
-      fieldSchema.reduceProperties((buf:any, current:any) => {
+      fieldSchema.reduceProperties((buf: any, current: any) => {
         if (current['x-component'].endsWith('.ActionBar')) {
           return current;
         }
@@ -39,12 +39,12 @@ function Toolbar(props:any) {
   );
 }
 
-const getColumnWidth = (dataSetLength:any, clientWidth:any) => {
+const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
   const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;
   return columnWidth;
 };
 
-export const Gantt: any = (props:any) => {
+export const Gantt: any = (props: any) => {
   const { designable } = useDesignable();
   const {
     headerHeight = designable ? 65 : 55,
@@ -364,22 +364,21 @@ export const Gantt: any = (props:any) => {
     setSelectedTask(newSelectedTask);
   };
   const handleTableExpanderClick = (expanded: boolean, record: any) => {
-    const task = tasks.find((v:any) => v.id === record.id + '');
+    const task = tasks.find((v: any) => v.id === record.id + '');
     if (onExpanderClick && record.children.length) {
       onExpanderClick({ ...task, hideChildren: !expanded });
     }
   };
-  const handleProgressChange = async (task:Task) => {
+  const handleProgressChange = async (task: Task) => {
     await resource.update({
       filterByTk: task.id,
       values: {
         ...task,
-        [fieldNames.progress]: task.progress/100,
+        [fieldNames.progress]: task.progress / 100,
       },
     });
-   await ctx.service.refresh();
   };
-  const handleTaskChange = async (task:Task) => {
+  const handleTaskChange = async (task: Task) => {
     await resource.update({
       filterByTk: task.id,
       values: {
