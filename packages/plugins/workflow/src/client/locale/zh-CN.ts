@@ -58,6 +58,7 @@ export default {
   'Null': '空值',
   'Boolean': '逻辑值',
   'String': '字符串',
+  'Date': '日期',
   'Calculator': '运算',
   'Arithmetic calculation': '算术运算',
   'String operation': '字符串',

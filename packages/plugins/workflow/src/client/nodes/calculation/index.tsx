@@ -1,13 +1,11 @@
 import React from 'react';
-import { useForm } from '@formily/react';
-import { Tag } from 'antd';
 import { css } from '@emotion/css';
 import parse from 'json-templates';
 
-import { SchemaInitializer, SchemaInitializerItemOptions, useCompile } from '@nocobase/client';
+import { SchemaInitializer, SchemaInitializerItemOptions } from '@nocobase/client';
 
 import { useFlowContext } from '../../FlowContext';
-import { lang, NAMESPACE, useWorkflowTranslation } from '../../locale';
+import { lang, NAMESPACE } from '../../locale';
 import { VariableTextArea } from '../../components/VariableTextArea';
 import { TypeSets, useWorkflowVariableOptions } from '../../variable';
 import { CalculationEngine, calculationEngines } from './engines';

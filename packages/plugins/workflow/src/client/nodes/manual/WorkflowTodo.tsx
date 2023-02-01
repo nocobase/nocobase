@@ -367,11 +367,10 @@ function useSubmit() {
 function useFlowRecordFromBlock(opts) {
   const { ['x-context-datasource']: dataSource } = useFieldSchema();
   const { execution } = useFlowContext();
-  const context = {
+  let result = parse(dataSource)({
     $context: execution?.context,
     $jobsMapByNodeId: (execution?.jobs ?? []).reduce((map, job) => Object.assign(map, { [job.nodeId]: job.result }),{})
-  };
-  let result = parse(dataSource)(context);
+  });
 
   return useRequest(() => {
     return Promise.resolve({ data: result })

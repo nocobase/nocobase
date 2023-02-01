@@ -291,6 +291,7 @@ export function useWorkflowVariableOptions() {
     const options = typeof item.options === 'function' ? item.options().filter(Boolean) : item.options;
     return {
       label: compile(item.title),
+      value: item.value,
       key: item.value,
       children: compile(options),
       disabled: options && !options.length

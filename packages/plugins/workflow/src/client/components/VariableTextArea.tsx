@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Input, Dropdown, Menu, Tooltip, Button } from 'antd';
+import { Input, Cascader, Tooltip, Button } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from "@emotion/css";
 import { lang } from '../locale';
@@ -98,11 +98,11 @@ function createOptionsKeyLabelMap(options: any[]) {
 
 function createVariableTagHTML(variable, keyLabelMap) {
   const labels = keyLabelMap.get(variable);
-  return `<span class="ant-tag" contentEditable="false" data-key="${variable}">${labels?.join(' / ')}</span>`;
+  return `<span class="ant-tag ant-tag-has-color" contentEditable="false" data-key="${variable}">${labels?.join(' / ')}</span>`;
 }
 
 export function VariableTextArea(props) {
-  const { value = '', useDataSource, onChange, multiline = true, dropdownProps = {} } = props;
+  const { value = '', useDataSource, onChange, multiline = true, button } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const options = useDataSource?.() ?? props.options ?? [];
   const form = useForm();
@@ -136,8 +136,8 @@ export function VariableTextArea(props) {
     }
   }, [html]);
 
-  function onInsert({ keyPath }) {
-    const variable: string[] = keyPath.filter(key => Boolean(key.trim())).reverse();
+  function onInsert(keyPath) {
+    const variable: string[] = keyPath.filter(key => Boolean(key.trim()));
     const { current } = inputRef;
     if (!current || !variable) {
       return;
@@ -202,19 +202,21 @@ export function VariableTextArea(props) {
           .ant-tag{
             line-height: 19px;
             margin: 0 .5em;
+            border-radius: 10px;
+            background-color: #3847c0;
           }
         `)}
         ref={inputRef}
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <Dropdown
-        trigger={['click']}
-        {...dropdownProps}
-        overlay={<Menu items={options} onClick={onInsert} />}
-      >
-        {dropdownProps.children ?? (
-          <Tooltip title={lang('Use variable')}>
+      <Tooltip title={lang('Use variable')}>
+        <Cascader
+          value={[]}
+          options={options}
+          onChange={onInsert}
+        >
+          {button ?? (
             <Button
               className={css`
                 font-style: italic;
@@ -223,9 +225,9 @@ export function VariableTextArea(props) {
             >
               x
             </Button>
-          </Tooltip>
-        )}
-      </Dropdown>
+          )}
+        </Cascader>
+      </Tooltip>
     </Input.Group>
   );
 }
