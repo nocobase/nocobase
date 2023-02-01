@@ -1,5 +1,5 @@
-import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
+import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
@@ -75,8 +75,8 @@ export function mockTasks() {
   return tasks;
 }
 
-const formatData = (data = [], fieldNames, tasks = [], projectId = undefined) => {
-  data.forEach((item) => {
+const formatData = (data = [], fieldNames, tasks: any[] = [], projectId: any = undefined) => {
+  data.forEach((item: any) => {
     if (item.children && item.children.length) {
       tasks.push({
         start: new Date(item[fieldNames.start]),
@@ -103,12 +103,12 @@ const formatData = (data = [], fieldNames, tasks = [], projectId = undefined) =>
   return tasks;
 };
 const InternalGanttBlockProvider = (props) => {
-  const { fieldNames, timeRange } = props;
+  const { fieldNames, timeRange, resource } = props;
   const field = useField();
-  const { resource, service } = useBlockRequestContext();
-  // if (service.loading) {
-  //   return <Spin />;
-  // }
+  const { service } = useBlockRequestContext();
+  if (service.loading) {
+    return <Spin />;
+  }
   return (
     <GanttBlockContext.Provider
       value={{
@@ -125,6 +125,7 @@ const InternalGanttBlockProvider = (props) => {
 };
 
 export const GanttBlockProvider = (props) => {
+  console.log(props);
   return (
     <BlockProvider {...props} params={{ ...props.params, paginate: false }}>
       <InternalGanttBlockProvider {...props} />
@@ -138,9 +139,9 @@ export const useGanttBlockContext = () => {
 
 export const useGanttBlockProps = () => {
   const ctx = useGanttBlockContext();
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<any>([]);
   const onExpanderClick = (task: any) => {
-    setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
+    setTasks(tasks.map((t: any) => (t.id === task.id ? task : t)));
   };
   useEffect(() => {
     if (!ctx?.service?.loading) {

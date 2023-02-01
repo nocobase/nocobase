@@ -70,7 +70,6 @@ export const GridBody: React.FC<GridBodyProps> = ({
     }
     tickX += columnWidth;
   }
-  console.log(gridRows, rowLines, ticks, today);
   return (
     <g className="gridBody">
       <g className="rows">{gridRows}</g>
