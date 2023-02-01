@@ -91,7 +91,7 @@ const formatData = (data = [], fieldNames, tasks: any[] = [], projectId: any = u
     } else {
       tasks.push({
         start: new Date(item[fieldNames.start]),
-        end: new Date(item[fieldNames.end]||item[fieldNames.start]+1),
+        end: new Date(item[fieldNames.end]||item[fieldNames.start]),
         name: item[fieldNames.title],
         id: item.id + '',
         type: fieldNames.end?'task':'milestone',

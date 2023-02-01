@@ -377,6 +377,7 @@ export const Gantt: any = (props:any) => {
         [fieldNames.progress]: task.progress/100,
       },
     });
+   await ctx.service.refresh();
   };
   const handleTaskChange = async (task:Task) => {
     await resource.update({
