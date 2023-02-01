@@ -115,6 +115,12 @@ export class OptionsParser {
     const appends = this.options?.appends || [];
     const except = [];
 
+    if (this.options.attributes) {
+      return {
+        attributes: this.options.attributes,
+      };
+    }
+
     let attributes: FindAttributeOptions = {
       include: [],
       exclude: [],
