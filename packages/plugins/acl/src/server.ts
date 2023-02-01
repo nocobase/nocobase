@@ -593,17 +593,17 @@ export class PluginACL extends Plugin {
         return;
       }
 
-      const collection = ctx.db.getCollection(resourceName);
-
-      if (!collection) {
-        return;
-      }
-
       if (ctx.status !== 200) {
         return;
       }
 
       if (!['list', 'get'].includes(actionName)) {
+        return;
+      }
+
+      const collection = ctx.db.getCollection(resourceName);
+
+      if (!collection) {
         return;
       }
 
@@ -667,6 +667,7 @@ export class PluginACL extends Plugin {
           actionCtx.permission?.can === null && !actionCtx.permission.skip
             ? null
             : actionCtx.permission?.parsedParams || {},
+          actionCtx,
         ]);
       }
 
@@ -676,7 +677,7 @@ export class PluginACL extends Plugin {
 
       const allAllowed = [];
 
-      for (const [action, params] of actionsParams) {
+      for (const [action, params, actionCtx] of actionsParams) {
         if (!params) {
           continue;
         }
@@ -686,7 +687,10 @@ export class PluginACL extends Plugin {
           continue;
         }
 
-        const queryParams = collection.repository.buildQueryOptions(params);
+        const queryParams = collection.repository.buildQueryOptions({
+          ...params,
+          context: actionCtx,
+        });
 
         const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
           Model.getTableName(),
