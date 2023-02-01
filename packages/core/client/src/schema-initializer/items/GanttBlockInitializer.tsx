@@ -38,7 +38,7 @@ export const GanttBlockInitializer = (props) => {
             };
           });
           const numberFields = collectionFields
-          ?.filter((field) => field.type === 'double')
+          ?.filter((field) => field.type === 'float')
           ?.map((field) => {
             return {
               label: field?.uiSchema?.title,
@@ -83,8 +83,8 @@ export const GanttBlockInitializer = (props) => {
                         title: t('Time range'),
                         enum: [
                           { label: '{{t("Hour")}}', value: 'hour', color: 'orange' },
-                          { label: '{{t("Quarter of day")}}', value: 'quarterOfDay', color: 'default' },
-                          { label: '{{t("Half of day")}}', value: 'halOfDay', color: 'blue' },
+                          { label: '{{t("Quarter of day")}}', value: 'quarterDay', color: 'default' },
+                          { label: '{{t("Half of day")}}', value: 'halfDay', color: 'blue' },
                           { label: '{{t("Day")}}', value: 'day', color: 'yellow' },
                           { label: '{{t("Week")}}', value: 'week', color: 'pule' },
                           { label: '{{t("Month")}}', value: 'month', color: 'green' },

@@ -130,7 +130,7 @@ export const GanttDesigner = () => {
        <SchemaSettings.SelectItem
         title={t('Progress field')}
         value={fieldNames.progress}
-        options={useOptions('double')}
+        options={useOptions('float')}
         onChange={(progress) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['progress'] = progress;

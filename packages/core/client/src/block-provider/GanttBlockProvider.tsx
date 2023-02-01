@@ -95,7 +95,7 @@ const formatData = (data = [], fieldNames, tasks: any[] = [], projectId: any = u
         name: item[fieldNames.title],
         id: item.id + '',
         type: fieldNames.end?'task':'milestone',
-        progress: item[fieldNames.progress],
+        progress: item[fieldNames.progress]*100,
         project: projectId,
       });
     }

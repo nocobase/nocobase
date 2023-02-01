@@ -374,7 +374,7 @@ export const Gantt: any = (props:any) => {
       filterByTk: task.id,
       values: {
         ...task,
-        [fieldNames.progress]: task.progress,
+        [fieldNames.progress]: task.progress/100,
       },
     });
   };
