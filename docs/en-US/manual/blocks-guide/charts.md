@@ -1,6 +1,6 @@
 # Charts
 
-Currently, chart blocks in NocoBase need to be implemented via a configuration file or by writing code. The chart library uses [g2plot](https://g2plot.antv.vision/en/examples/gallery), which theoretically supports all charts on [https://g2plot.antv.vision/en/examples/gallery](https://g2plot.antv.vision/en/examples/gallery). The currently configurable charts include
+Currently, chart blocks in NocoBase need to be implemented via a configuration file or by writing code. The chart library uses [g2plot](https://g2plot.antv.vision/en/examples), which theoretically supports all charts on [https://g2plot.antv.vision/en/examples](https://g2plot.antv.vision/en/examples). The currently configurable charts include
 
 - Column charts
 - Bar charts
@@ -183,7 +183,7 @@ https://user-images.githubusercontent.com/1267426/198877336-6bd85f0b-17c5-40a5-9
 
 ### More charts
 
-Theoretically supports all charts on [https://g2plot.antv.vision/en/examples/gallery](https://g2plot.antv.vision/en/examples/gallery)
+Theoretically supports all charts on [https://g2plot.antv.vision/en/examples](https://g2plot.antv.vision/en/examples)
 
 https://user-images.githubusercontent.com/1267426/198877347-7fc2544c-b938-4e34-8a83-721b3f62525e.mp4
 
