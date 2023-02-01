@@ -8,7 +8,7 @@ import {
   Utils,
 } from 'sequelize';
 import { Collection } from '../collection';
-import { checkIdentifier } from '../utils';
+import { checkIdentifier, snakeCase } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
 import { Reference } from '../features/ReferencesMap';
 

@@ -76,5 +76,9 @@ export function checkIdentifier(value: string) {
 }
 
 export function getTableName(collectionName: string, options) {
-  return options.underscored ? lodash.snakeCase(collectionName) : collectionName;
+  return options.underscored ? snakeCase(collectionName) : collectionName;
+}
+
+export function snakeCase(name: string) {
+  return require('sequelize').Utils.underscoredIf(name, true);
 }

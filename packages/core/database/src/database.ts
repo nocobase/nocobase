@@ -60,6 +60,7 @@ import {
   UpdateWithAssociationsListener,
   ValidateListener,
 } from './types';
+import { snakeCase } from './utils';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -265,7 +266,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   initListener() {
     this.on('beforeDefine', (model, options) => {
       if (options.underscored || this.options.underscored) {
-        options.tableName = lodash.snakeCase(options.tableName);
+        options.tableName = snakeCase(options.tableName);
         options.underscored = true;
       }
     });
@@ -303,7 +304,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.on('beforeDefineCollection', (options) => {
       if (options.underscored) {
         if (lodash.get(options, 'sortable.scopeKey')) {
-          options.sortable.scopeKey = lodash.snakeCase(options.sortable.scopeKey);
+          options.sortable.scopeKey = snakeCase(options.sortable.scopeKey);
         }
 
         if (lodash.get(options, 'indexes')) {
@@ -311,7 +312,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
           options.indexes = options.indexes.map((index) => {
             if (index.fields) {
               index.fields = index.fields.map((field) => {
-                return lodash.snakeCase(field);
+                return snakeCase(field);
               });
             }
 

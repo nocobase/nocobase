@@ -13,7 +13,7 @@ import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
-import { checkIdentifier, md5 } from './utils';
+import { checkIdentifier, md5, snakeCase } from './utils';
 
 export type RepositoryType = typeof Repository;
 
@@ -417,7 +417,7 @@ export class Collection<
 
     this.model.options.indexes = indexes.map((index) => {
       if (this.options.underscored) {
-        index.fields = index.fields.map((field) => lodash.snakeCase(field));
+        index.fields = index.fields.map((field) => snakeCase(field));
       }
       return index;
     });
