@@ -122,7 +122,18 @@ export class Restorer extends AppMigrator {
     const results = await inquirer.prompt(questions);
 
     const importCollection = async (collectionName: string) => {
+      const collectionMetaPath = path.resolve(this.workDir, 'collections', collectionName, 'meta');
+
+      const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
+      const meta = JSON.parse(metaContent);
+      const tableName = meta.tableName;
+
       try {
+        // disable trigger
+        if (this.app.db.inDialect('postgres')) {
+          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS "${tableName}" DISABLE TRIGGER ALL`);
+        }
+
         await this.importCollection({
           name: collectionName,
         });
@@ -130,6 +141,10 @@ export class Restorer extends AppMigrator {
         this.app.log.warn(`import collection ${collectionName} failed`, {
           err,
         });
+      } finally {
+        if (this.app.db.inDialect('postgres')) {
+          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS "${tableName}" ENABLE TRIGGER ALL`);
+        }
       }
     };
 
@@ -199,6 +214,7 @@ export class Restorer extends AppMigrator {
     const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
     const meta = JSON.parse(metaContent);
     app.log.info(`collection meta ${metaContent}`);
+
     const tableName = meta.tableName;
 
     if (options.clear !== false) {
