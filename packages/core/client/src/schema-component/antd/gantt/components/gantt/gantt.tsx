@@ -63,8 +63,9 @@ export const Gantt: any = (props: any) => {
     useProps,
   } = props;
   const { onExpanderClick, tasks } = useProps();
-  const ctx = useGanttBlockContext();
-  const { resource } = useBlockRequestContext();
+  // const ctx = useGanttBlockContext();
+  const { resource ,service} = useBlockRequestContext();
+  // console.log(ctx,useBlockRequestContext())
   const fieldSchema = useFieldSchema();
   const { fieldNames } = useProps(props);
   const viewMode = fieldNames.range || 'day';
@@ -358,6 +359,7 @@ export const Gantt: any = (props: any) => {
         [fieldNames.progress]: task.progress / 100,
       },
     });
+    await service?.refresh()
   };
   const handleTaskChange = async (task: Task) => {
     await resource.update({
@@ -368,6 +370,7 @@ export const Gantt: any = (props: any) => {
         [fieldNames.end]: task.end,
       },
     });
+    await service?.refresh()
   };
   const gridProps: GridProps = {
     columnWidth,
