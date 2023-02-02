@@ -235,6 +235,7 @@ export const Table: any = observer((props: any) => {
               css`
                 max-width: 300px;
                 white-space: nowrap;
+                overflow: hidden;
                 .nb-read-pretty-input-number {
                   text-align: right;
                 }
