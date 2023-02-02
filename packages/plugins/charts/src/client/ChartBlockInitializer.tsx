@@ -59,7 +59,6 @@ export const ChartBlockInitializer = (props) => {
               value: field?.foreignKey ?? field?.name,
             };
           }));
-        console.log(groupByFields,"groupByFieldsgroupByFieldsgroupByFields");
         let values = await FormDialog(t('Create chart block'), () => {
           return (
             <SchemaComponentOptions
