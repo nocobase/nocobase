@@ -21,7 +21,7 @@ export const VerticalScroll: React.FC<{
   return (
     <div
       style={{
-        height: ganttHeight,
+        maxHeight: ganttHeight,
         marginTop: headerHeight,
         marginLeft: rtl ? '' : '-1rem',
       }}

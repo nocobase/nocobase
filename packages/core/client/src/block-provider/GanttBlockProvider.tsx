@@ -106,9 +106,9 @@ const InternalGanttBlockProvider = (props) => {
   const { fieldNames, timeRange, resource } = props;
   const field = useField();
   const { service } = useBlockRequestContext();
-  if (service.loading) {
-    return <Spin />;
-  }
+  // if (service.loading) {
+  //   return <Spin />;
+  // }
   return (
     <GanttBlockContext.Provider
       value={{
