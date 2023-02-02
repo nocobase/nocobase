@@ -1,7 +1,7 @@
-import { G2Plot, useAPIClient, useCompile } from '@nocobase/client';
+import { CollectionFieldOptions, G2Plot, useAPIClient, useCompile } from '@nocobase/client';
 import React, { useEffect, useState } from 'react';
 import { Card, Spin } from 'antd';
-import {getChartData } from './ChartUtils';
+import { getChartData } from './ChartUtils';
 import chartRenderComponentsMap from './chartRenderComponents';
 import { templates } from './templates';
 import { ChartBlockEngineDesigner } from './ChartBlockEngineDesigner';
@@ -12,53 +12,54 @@ interface ChartBlockEngineMetaData {
   dataset: object;
   chartOptions: object;
   chartConfig: {
-    config:string
+    config: string
   };
+  collectionFields: CollectionFieldOptions[];
 }
 
 // renderComponent 可扩展 G2Plot | Echarts | D3'
 type RenderComponent = 'G2Plot';
 
-const ChartRenderComponent = ({chartBlockMetaData,renderComponent}:{ chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) :JSX.Element=>{
-  const compile = useCompile()
+const ChartRenderComponent = ({ chartBlockMetaData, renderComponent, }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }): JSX.Element => {
+  const compile = useCompile();
   const RenderComponent = chartRenderComponentsMap.get(renderComponent);//G2Plot | Echarts | D3
-  const { dataset, collectionName, chartType, chartOptions,chartConfig } = chartBlockMetaData;
-  const {loading,data} = useGetChartData(chartBlockMetaData);
-  let finalChartOptions
-  if(chartConfig?.config){
-    finalChartOptions = JSON.parse(compile(chartConfig?.config))
-  }else{
-   finalChartOptions =  templates.get(chartType)?.defaultChartOptions
+  const { dataset, collectionName, chartType, chartOptions, chartConfig, collectionFields } = chartBlockMetaData;
+  const { loading, data } = useGetChartData(chartBlockMetaData);
+  let finalChartOptions;
+  if (chartConfig?.config) {
+    finalChartOptions = JSON.parse(compile(chartConfig?.config));
+  } else {
+    finalChartOptions = templates.get(chartType)?.defaultChartOptions;
   }
   switch (renderComponent) {
-    case 'G2Plot':{
+    case 'G2Plot': {
       const config = compile({
         ...finalChartOptions,
         ...chartOptions,
         data: data,
-      },chartOptions)
-      console.log(chartBlockMetaData,'=====================');
+      }, chartOptions);
+      console.log(chartBlockMetaData, '=====================');
       console.log(config);
       return (
         loading
           ?
           <Spin />
           :
-          <RenderComponent plot={chartType} config={config}/>
-      )
+          <RenderComponent plot={chartType} config={config} />
+      );
     }
   }
-}
+};
 
 const useGetChartData = (chartBlockMetaData: ChartBlockEngineMetaData) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
   const apiClient = useAPIClient();
-  const { dataset, collectionName, chartType, chartOptions } = chartBlockMetaData;
+  const { dataset, collectionName, chartType, chartOptions,collectionFields } = chartBlockMetaData;
   useEffect(() => {
     try {
       //1.发送请求获取聚合后的数据data
-      getChartData(apiClient, chartType, dataset, collectionName).then((data) => {
+      getChartData(apiClient, chartType, dataset, collectionName,collectionFields).then((data) => {
         setData(data.chartData);
         setLoading(false);
       });
@@ -73,15 +74,18 @@ const useGetChartData = (chartBlockMetaData: ChartBlockEngineMetaData) => {
   };
 };
 
-const ChartBlockEngine = ({ chartBlockMetaData, renderComponent }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) => {
+const ChartBlockEngine = ({
+                            chartBlockMetaData,
+                            renderComponent,
+                          }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) => {
   return (
     <>
-      <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={chartBlockMetaData}/>
+      <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={chartBlockMetaData} />
     </>
-  )
-}
+  );
+};
 
-ChartBlockEngine.Designer = ChartBlockEngineDesigner
+ChartBlockEngine.Designer = ChartBlockEngineDesigner;
 
 export {
   ChartBlockEngine,

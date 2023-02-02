@@ -35,7 +35,7 @@ export const ChartBlockInitializer = (props) => {
   const { getCollectionFields, getCollection } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
-  const compiler = useCompile()
+  const compiler = useCompile();
   return (
     <DataBlockInitializer
       {...props}
@@ -43,7 +43,7 @@ export const ChartBlockInitializer = (props) => {
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
         const collectionFields = getCollectionFields(item.name);
-        console.log(collectionFields,"==============");
+        console.log(collectionFields, '==============');
         const computedFields = compiler(collectionFields
           ?.filter((field) => (field.type === 'double' || field.type === 'bigInt'))
           ?.map((field) => {
@@ -56,9 +56,10 @@ export const ChartBlockInitializer = (props) => {
           ?.map((field) => {
             return {
               label: field?.uiSchema?.title ?? field?.name,
-              value: field?.name,
+              value: field?.foreignKey ?? field?.name,
             };
           }));
+        console.log(groupByFields,"groupByFieldsgroupByFieldsgroupByFields");
         let values = await FormDialog(t('Create chart block'), () => {
           return (
             <SchemaComponentOptions
@@ -67,7 +68,7 @@ export const ChartBlockInitializer = (props) => {
             >
               <FormLayout layout={'vertical'}>
                 <SchemaComponent
-                  scope={{ computedFields: computedFields|| [],groupByFields:groupByFields }}
+                  scope={{ computedFields: computedFields || [], groupByFields: groupByFields }}
                   components={{ Options }}
                   schema={{
                     properties: {
@@ -100,6 +101,7 @@ export const ChartBlockInitializer = (props) => {
           //聚合chartOptions
           values = {
             collectionName: item.name,
+            collectionFields,
             ...values,
             chartOptions: {
               ...(values?.chartOptions || {}),
@@ -112,7 +114,7 @@ export const ChartBlockInitializer = (props) => {
             'x-designer': 'ChartBlockEngine.Designer',
             'x-decorator': 'CardItem',
             'x-component': 'ChartBlockEngine',
-            'title':`${values?.chartOptions?.title??''}`,
+            'title': `${values?.chartOptions?.title ?? ''}`,
             'x-component-props': {
               renderComponent: renderComponent,
               chartBlockMetaData: values,
