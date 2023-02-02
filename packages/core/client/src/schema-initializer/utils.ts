@@ -1054,7 +1054,7 @@ export const createGanttBlockSchema = (options) => {
                 marginBottom: 24,
               },
             },
-            'x-initializer': 'TableActionInitializers',
+            'x-initializer': 'GanttActionInitializers',
             properties: {},
           },
           table: {

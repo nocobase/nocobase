@@ -149,7 +149,6 @@ export const useGanttBlockProps = () => {
       setTasks(formatData(ctx.service.data?.data, ctx.fieldNames));
     }
   }, [ctx?.service?.loading]);
-  console.log(tasks)
   return {
     fieldNames: ctx.fieldNames,
     timeRange: ctx.timeRange,
