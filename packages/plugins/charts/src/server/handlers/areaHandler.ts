@@ -44,36 +44,7 @@ async function areaHandler(ctx: Context) {
       };
     });
   } else {
-    chartData = [
-      {
-        'type': '2019 Q1',
-        'value': 2.31,
-      },
-      {
-        'type': '2019 Q2',
-        'value': 2.04,
-      },
-      {
-        'type': '2019 Q3',
-        'value': 1.83,
-      },
-      {
-        'type': '2019 Q4',
-        'value': 1.71,
-      },
-      {
-        'type': '2020 Q1',
-        'value': 1.65,
-      },
-      {
-        'type': '2020 Q2',
-        'value': 1.59,
-      },
-      {
-        'type': '2020 Q3',
-        'value': 1.58,
-      },
-    ];
+    chartData = [];
   }
   return chartData
 }

@@ -44,14 +44,7 @@ async function columnHandler(ctx: Context) {
       };
     });
   } else {
-    chartData = [
-      { type: '1951 年', value: 27 },
-      { type: '1952 年', value: 25 },
-      { type: '1953 年', value: 18 },
-      { type: '1954 年', value: 15 },
-      { type: '1955 年', value: 10 },
-      { type: '1956 年', value: 5 },
-    ];
+    chartData = [];
   }
   return chartData
 }
