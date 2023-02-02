@@ -21,7 +21,6 @@ import { useDesignable } from '../../../../../schema-component';
 import { TableBlockProvider, useGanttBlockContext, useBlockRequestContext } from '../../../../../block-provider';
 
 function ActionBars(props: any) {
-  const ctx = useGanttBlockContext();
   const fieldSchema = useFieldSchema();
   const toolBarSchema: Schema = useMemo(
     () =>
@@ -34,18 +33,8 @@ function ActionBars(props: any) {
     [],
   );
   return (
-    <GanttToolbarContext.Provider value={props}>
-      <TableBlockProvider
-        {...ctx}
-        params={{
-          paginate: false,
-        }}
-        service={{
-          ...ctx.service,
-        }}
-      >
-        <RecursionField name={toolBarSchema.name} schema={toolBarSchema} />
-      </TableBlockProvider>
+    <GanttToolbarContext.Provider value={{ ...props }}>
+      <RecursionField name={toolBarSchema.name} schema={toolBarSchema} />
     </GanttToolbarContext.Provider>
   );
 }

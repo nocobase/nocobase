@@ -240,7 +240,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const currentRecord = useRecord();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
-  const { selectedRowKeys } = tableBlockContext.field?.data ??{};
+  const { selectedRowKeys } = tableBlockContext.field?.data ??field.data??{};
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const history = useHistory();
@@ -327,7 +327,7 @@ export const useCustomizeBulkEditActionProps = () => {
   const actionField = useField();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
-  const { selectedRowKeys } = tableBlockContext.field?.data ?? {};
+  const { selectedRowKeys } = tableBlockContext.field?.data ??field.data??{};
   const { setVisible, fieldSchema: actionSchema } = actionContext;
   return {
     async onClick() {
