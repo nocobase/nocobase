@@ -85,7 +85,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
     ?.map((field) => {
       return {
         label: field?.uiSchema?.title ?? field?.name,
-        value: field?.name,
+        value: field?.foreignKey ?? field?.name,
       };
     }));
 
