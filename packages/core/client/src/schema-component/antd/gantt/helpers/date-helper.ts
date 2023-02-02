@@ -42,7 +42,7 @@ export const startOfDate = (date: Date, scale: DateHelperScales) => {
     return scores.indexOf(_scale) <= maxScore;
   };
   const newDate = new Date(
-    date.getFullYear(),
+    date?.getFullYear(),
     shouldReset('year') ? 0 : date.getMonth(),
     shouldReset('month') ? 1 : date.getDate(),
     shouldReset('day') ? 0 : date.getHours(),

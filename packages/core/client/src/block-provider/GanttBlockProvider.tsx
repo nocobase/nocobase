@@ -1,5 +1,4 @@
 import { useField } from '@formily/react';
-import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TableBlockProvider } from './TableBlockProvider';
@@ -91,7 +90,7 @@ const formatData = (data = [], fieldNames, tasks: any[] = [], projectId: any = u
       formatData(item.children, fieldNames, tasks, item.id + '');
     } else {
       tasks.push({
-        start: new Date(item[fieldNames.start]),
+        start: item[fieldNames.start]?new Date(item[fieldNames.start]):undefined,
         end: new Date(item[fieldNames.end] || item[fieldNames.start]),
         name: item[fieldNames.title],
         id: item.id + '',
@@ -150,7 +149,7 @@ export const useGanttBlockProps = () => {
       setTasks(formatData(ctx.service.data?.data, ctx.fieldNames));
     }
   }, [ctx?.service?.loading]);
-
+  console.log(tasks)
   return {
     fieldNames: ctx.fieldNames,
     timeRange: ctx.timeRange,
