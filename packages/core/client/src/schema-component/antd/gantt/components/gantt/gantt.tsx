@@ -16,28 +16,9 @@ import { DateSetup } from '../../types/date-setup';
 import { HorizontalScroll } from '../other/horizontal-scroll';
 import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
 import { wrapper } from './style';
-import { GanttToolbarContext } from '../../context';
 import { useDesignable } from '../../../../../schema-component';
-import { TableBlockProvider, useGanttBlockContext, useBlockRequestContext } from '../../../../../block-provider';
+import { useGanttBlockContext, useBlockRequestContext } from '../../../../../block-provider';
 
-function ActionBars(props: any) {
-  const fieldSchema = useFieldSchema();
-  const toolBarSchema: Schema = useMemo(
-    () =>
-      fieldSchema.reduceProperties((buf: any, current: any) => {
-        if (current['x-component'].endsWith('.ActionBar')) {
-          return current;
-        }
-        return buf;
-      }, null),
-    [],
-  );
-  return (
-    <GanttToolbarContext.Provider value={{ ...props }}>
-      <RecursionField name={toolBarSchema.name} schema={toolBarSchema} />
-    </GanttToolbarContext.Provider>
-  );
-}
 
 const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
   const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;
@@ -434,21 +415,9 @@ export const Gantt: any = (props: any) => {
 
   return (
     <div>
-      <ActionBars />
       <div>
-        <TableBlockProvider
-          {...ctx}
-          params={{
-            paginate: false,
-          }}
-          service={{
-            ...ctx.service,
-          }}
-          onExpandClick={handleTableExpanderClick}
-        >
-          <RecursionField name={'table'} schema={fieldSchema.properties.table} />
-        </TableBlockProvider>
-
+        <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
+        <RecursionField name={'table'} schema={fieldSchema.properties.table} />
         <div className={cx(wrapper)} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
           <TaskGantt
             gridProps={gridProps}

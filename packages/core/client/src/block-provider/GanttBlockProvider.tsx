@@ -2,6 +2,7 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { TableBlockProvider } from './TableBlockProvider';
 
 export const GanttBlockContext = createContext<any>({});
 
@@ -91,10 +92,10 @@ const formatData = (data = [], fieldNames, tasks: any[] = [], projectId: any = u
     } else {
       tasks.push({
         start: new Date(item[fieldNames.start]),
-        end: new Date(item[fieldNames.end]||item[fieldNames.start]),
+        end: new Date(item[fieldNames.end] || item[fieldNames.start]),
         name: item[fieldNames.title],
         id: item.id + '',
-        type: fieldNames.end?'task':'milestone',
+        type: fieldNames.end ? 'task' : 'milestone',
         progress: item[fieldNames.progress] * 100 || 0,
         project: projectId,
       });
@@ -127,7 +128,9 @@ const InternalGanttBlockProvider = (props) => {
 export const GanttBlockProvider = (props) => {
   return (
     <BlockProvider {...props} params={{ ...props.params, paginate: false }}>
-      <InternalGanttBlockProvider {...props} />
+      <TableBlockProvider {...props} params={{ ...props.params, paginate: false }}>
+        <InternalGanttBlockProvider {...props} />
+      </TableBlockProvider>
     </BlockProvider>
   );
 };

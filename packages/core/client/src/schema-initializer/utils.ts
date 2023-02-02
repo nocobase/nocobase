@@ -1048,7 +1048,7 @@ export const createGanttBlockSchema = (options) => {
         properties: {
           toolBar: {
             type: 'void',
-            'x-component': 'Gantt.ActionBar',
+            'x-component': 'ActionBar',
             'x-component-props': {
               style: {
                 marginBottom: 24,
