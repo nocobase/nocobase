@@ -240,7 +240,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const currentRecord = useRecord();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
-  const { selectedRowKeys } = tableBlockContext.field?.data ??field?.data??{};
+  const { selectedRowKeys } = tableBlockContext.field?.data ??{};
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const history = useHistory();
