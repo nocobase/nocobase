@@ -508,6 +508,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       throw Error(`unsupported field type ${type}`);
     }
 
+    if (options.field && this.options.underscored) {
+      options.field = snakeCase(options.field);
+    }
+
     return new Field(options, context);
   }
 

@@ -19,6 +19,32 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  test('create underscored field', async () => {
+    if (process.env.DB_UNDERSCORED !== 'true') {
+      return;
+    }
+
+    const collection = await Collection.repository.create({
+      values: {
+        name: 'testCollection',
+        createdAt: true,
+        fields: [
+          {
+            type: 'date',
+            field: 'createdAt',
+            name: 'createdAt',
+          },
+        ],
+      },
+    });
+
+    await collection.migrate();
+
+    const testCollection = db.getCollection('testCollection');
+
+    expect(testCollection.model.rawAttributes.createdAt.field).toEqual('created_at');
+  });
+
   it('case 1', async () => {
     // 什么都没提供，随机 name 和 key
     const data = await Collection.repository.create({
