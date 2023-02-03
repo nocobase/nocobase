@@ -7,7 +7,6 @@ import Plugin from '.';
 import ExecutionModel from './models/Execution';
 import JobModel from './models/Job';
 import FlowNodeModel from './models/FlowNode';
-import calculators from './calculators';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 
 
@@ -288,7 +287,7 @@ export default class Processor {
       execution: this.execution,
       node
     };
-    for (let [name, fn] of calculators.getEntities()) {
+    for (let [name, fn] of this.options.plugin.functions.getEntities()) {
       systemFns[name] = fn.bind(scope);
     }
 

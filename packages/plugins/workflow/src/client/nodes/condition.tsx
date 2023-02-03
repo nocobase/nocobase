@@ -8,17 +8,15 @@ import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
 import { useFlowContext } from '../FlowContext';
 import { branchBlockClass, nodeSubtreeClass } from "../style";
-import { Calculation } from "../calculators";
 import { lang, NAMESPACE } from "../locale";
+import { useWorkflowVariableOptions } from "../variable";
+import { VariableTextArea } from "../components/VariableTextArea";
+import { calculationEngines } from "./calculation/engines";
 
 
 
 function CalculationItem({ value, onChange, onRemove }) {
-  if (!value) {
-    return null;
-  }
-
-  const { calculator, operands = [null] } = value;
+  const scope = useWorkflowVariableOptions();
 
   return (
     <div className={css`
@@ -33,7 +31,9 @@ function CalculationItem({ value, onChange, onRemove }) {
             onChange={group => onChange({ ...value, group })}
           />
         )
-        : <Calculation operands={operands} calculator={calculator} onChange={onChange} />
+        : (
+          <VariableTextArea value={value} onChange={onChange} scope={scope} />
+        )
       }
       <Button onClick={onRemove} type="link" icon={<CloseCircleOutlined />} />
     </div>
@@ -47,14 +47,14 @@ function CalculationGroup({ value, onChange }) {
   function onAddSingle() {
     onChange({
       ...value,
-      calculations: [...calculations, { not: false, calculator: 'equal' }]
+      calculations: [...calculations, '']
     });
   }
 
   function onAddGroup() {
     onChange({
       ...value,
-      calculations: [...calculations, { not: false, group: { type: 'and', calculations: [] } }]
+      calculations: [...calculations, { group: { type: 'and', calculations: [] } }]
     });
   }
 
@@ -157,6 +157,16 @@ export default {
           label: lang('Branch into "Yes" and "No"')
         }
       ],
+    },
+    'config.engine': {
+      type: 'string',
+      title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
+      name: 'config.engine',
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      required: true,
+      enum: Array.from(calculationEngines.getEntities()).reduce((result, [value, options]) => result.concat({ value, ...options }), []),
+      default: 'math.js',
     },
     'config.calculation': {
       type: 'string',

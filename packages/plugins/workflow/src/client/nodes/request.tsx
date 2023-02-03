@@ -3,7 +3,7 @@ import { ArrayItems } from '@formily/antd';
 import { css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
-import { Operand, useWorkflowVariableOptions, VariableTypes } from '../variable';
+import { Operand, useWorkflowVariableOptions } from '../variable';
 import { VariableJSONInput } from '../components/VariableJSONInput';
 import { VariableInput } from '../components/VariableInput';
 
@@ -82,7 +82,7 @@ export default {
                 'x-decorator': 'FormItem',
                 'x-component': 'VariableInput',
                 'x-component-props': {
-                  useDataSource: useWorkflowVariableOptions
+                  scope: useWorkflowVariableOptions
                 }
               },
               remove: {
@@ -126,7 +126,10 @@ export default {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Operand',
+                'x-component': 'VariableInput',
+                'x-component-props': {
+                  scope: useWorkflowVariableOptions
+                }
               },
               remove: {
                 type: 'void',
@@ -153,6 +156,7 @@ export default {
       'x-decorator-props': {},
       'x-component': 'VariableJSONInput',
       'x-component-props': {
+        scope: useWorkflowVariableOptions,
         autoSize: {
           minRows: 10,
         },

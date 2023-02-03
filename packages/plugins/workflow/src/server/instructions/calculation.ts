@@ -1,32 +1,21 @@
 import { get } from "lodash";
 
-import { Registry } from "@nocobase/utils";
-
-import Plugin, { Processor } from '../..';
-import { JOB_STATUS } from "../../constants";
-import FlowNodeModel from "../../models/FlowNode";
-import { Instruction } from "..";
-import initEngines from "./engines";
+import { Evaluator, Processor } from '..';
+import { JOB_STATUS } from "../constants";
+import FlowNodeModel from "../models/FlowNode";
+import { Instruction } from ".";
 
 
-
-type Evaluator = (expression: string) => any;
 
 interface CalculationConfig {
   engine: string;
   expression: string;
 }
 
-class CalculationInstruction implements Instruction {
-  engines = new Registry<Evaluator>();
-
-  constructor(protected plugin: Plugin) {
-    initEngines(this);
-  }
-
+export default {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { engine, expression = '' } = <CalculationConfig>node.config || {};
-    const evaluator = <Evaluator | undefined>this.engines.get(engine);
+    const evaluator = <Evaluator | undefined>processor.options.plugin.calculators.get(engine);
     const scope = processor.getScope();
     const exp = expression.trim().replace(/\{\{\s*([^{}]+)\.?\s*\}\}/g, (_, v) => {
       const item = get(scope, v);
@@ -48,6 +37,4 @@ class CalculationInstruction implements Instruction {
       }
     }
   }
-}
-
-export default CalculationInstruction;
+} as Instruction;

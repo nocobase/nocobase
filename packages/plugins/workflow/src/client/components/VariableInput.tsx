@@ -15,7 +15,7 @@ import { NullRender } from "./NullRender";
 
 const JT_VALUE_RE = /^\s*\{\{([\s\S]*)\}\}\s*$/;
 
-function parseValue(value: any): { type?: string; variable?: string[] } {
+export function parseValue(value: any): { type?: string; variable?: string[] } {
   if (value == null) {
     return { type: 'null' };
   }
@@ -126,25 +126,27 @@ function useDefaultConstantOptions() {
 }
 
 export function VariableInput(props) {
-  const { value = '', useDataSource, useContantOptions, onChange, children, button } = props;
+  const { value = '', scope, onChange, children, button } = props;
   const { type, variable } = parseValue(value);
-  const { component: ConstantComponent, children: constantOptions } = useContantOptions
-    ? useContantOptions()
-    : {
-      component: ConstantTypes[type]?.component,
-      children: Object.values(ConstantTypes)
-    };
+  const ConstantComponent = ConstantTypes[type]?.component;
+  const constantOptions = Object.values(ConstantTypes);
   const compile = useCompile();
   const options = compile([
-    { value: '', label: lang('Constant'), children: constantOptions },
-    ...(useDataSource?.() ?? props.options ?? [])
+    { value: '', label: lang('Constant'), children: children ? null : constantOptions },
+    ...(typeof scope === 'function' ? scope() : (scope ?? []))
   ]);
   const form = useForm();
 
   function onSwitch(next) {
     if (next[0] === '') {
-      if (next[1] !== type) {
-        onChange(ConstantTypes[next[1]]?.default ?? null);
+      if (next[1]) {
+        if (next[1] !== type) {
+          onChange(ConstantTypes[next[1]]?.default ?? null);
+        }
+      } else {
+        if (variable) {
+          onChange(null);
+        }
       }
       return;
     }
@@ -158,6 +160,7 @@ export function VariableInput(props) {
 
   return (
     <Input.Group compact className={css`
+      width: auto;
       .ant-input-disabled{
         .ant-tag{
           color: #bfbfbf;
@@ -166,7 +169,7 @@ export function VariableInput(props) {
       }
     `}
     >
-      {children ?? (variable
+      {variable
         ? (
           <div className={css`
             position: relative;
@@ -219,26 +222,31 @@ export function VariableInput(props) {
           </div>
         )
         : (
-          <ConstantComponent value={value} onChange={onChange} />
+          children ?? <ConstantComponent value={value} onChange={onChange} />
         )
-      )}
-      <Cascader
-        value={variable ?? ['', type]}
-        options={options}
-        onChange={onSwitch}
-      >
-        {button ?? (
-          <Button
-            type={variable ? 'primary' : 'default'}
-            className={css`
-              font-style: italic;
-              font-family: "New York", "Times New Roman", Times, serif;
-            `}
+      }
+      {options.length > 1
+        ? (
+          <Cascader
+            value={variable ?? ['', ...(children ? [] : [type])]}
+            options={options}
+            onChange={onSwitch}
           >
-            x
-          </Button>
-        )}
-      </Cascader>
+            {button ?? (
+              <Button
+                type={variable ? 'primary' : 'default'}
+                className={css`
+                  font-style: italic;
+                  font-family: "New York", "Times New Roman", Times, serif;
+                `}
+              >
+                x
+              </Button>
+            )}
+          </Cascader>
+        )
+        : null
+      }
     </Input.Group>
   );
 }

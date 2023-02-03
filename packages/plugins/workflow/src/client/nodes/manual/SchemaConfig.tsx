@@ -512,7 +512,7 @@ export function SchemaConfig({ value, onChange }) {
             }
 
             const actionKeys = (Object.values(footer.properties.actions.properties ?? {}) as any[])
-              .reduce((actions: number[], { ['x-action']: status }) => actions.concat(status), []);
+              .reduce((actions: number[], { ['x-action']: status }) => actions.concat(Number.parseInt(status, 10)), []);
             form.setValuesIn('config.actions', actionKeys);
 
             onChange({

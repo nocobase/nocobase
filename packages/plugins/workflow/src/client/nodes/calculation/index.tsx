@@ -47,7 +47,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'VariableTextArea',
       'x-component-props': {
-        useDataSource: '{{useWorkflowVariableOptions}}'
+        scope: '{{useWorkflowVariableOptions}}'
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;

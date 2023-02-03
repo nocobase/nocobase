@@ -5,7 +5,7 @@ import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
 import initActions from './actions';
-import calculators from './calculators';
+import initCalculationEngines, { Evaluator } from './calculators';
 import { EXECUTION_STATUS } from './constants';
 import initInstructions, { Instruction } from './instructions';
 import ExecutionModel from './models/Execution';
@@ -13,13 +13,15 @@ import JobModel from './models/Job';
 import WorkflowModel from './models/Workflow';
 import Processor from './Processor';
 import initTriggers, { Trigger } from './triggers';
+import initFunctions from './functions';
 
 
 type Pending = [ExecutionModel, JobModel?];
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
-  calculators = calculators;
+  calculators: Registry<Evaluator> = new Registry();
+  functions: Registry<Function> = new Registry();
   executing: ExecutionModel | null = null;
   pending: Pending[] = [];
   events: [WorkflowModel, any, { context?: any }][] = [];
@@ -70,6 +72,13 @@ export default class WorkflowPlugin extends Plugin {
   async load() {
     const { db, options } = this;
 
+    initActions(this);
+    initTriggers(this, options.triggers);
+    initInstructions(this, options.instructions);
+    initCalculationEngines(this);
+    initFunctions(this, options.functions);
+
+
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.workflows`,
       actions: [
@@ -95,10 +104,6 @@ export default class WorkflowPlugin extends Plugin {
         plugin: this,
       },
     });
-
-    initActions(this);
-    initTriggers(this, options.triggers);
-    initInstructions(this, options.instructions);
 
     db.on('workflows.beforeSave', this.onBeforeSave);
     db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));

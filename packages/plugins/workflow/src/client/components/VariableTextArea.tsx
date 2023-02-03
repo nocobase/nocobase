@@ -102,11 +102,11 @@ function createVariableTagHTML(variable, keyLabelMap) {
 }
 
 export function VariableTextArea(props) {
-  const { value = '', useDataSource, onChange, multiline = true, button } = props;
+  const { value = '', scope, onChange, multiline = true, button } = props;
   const inputRef = useRef<HTMLDivElement>(null);
-  const options = useDataSource?.() ?? props.options ?? [];
+  const options = (typeof scope === 'function' ? scope() : scope) ?? [];
   const form = useForm();
-  const keyLabelMap = useMemo(() => createOptionsKeyLabelMap(options), [useDataSource, props.options]);
+  const keyLabelMap = useMemo(() => createOptionsKeyLabelMap(options), [scope]);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // [startElementIndex, startOffset, endElementIndex, endOffset]

@@ -47,12 +47,11 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
           throw new Error('input failed');
         }
       }
+    },
+    functions: {
+      no1: () => 1
     }
   });
-
-  if (!calculators.get('no1')) {
-    calculators.register('no1', () => 1);
-  }
 
   await app.load();
 

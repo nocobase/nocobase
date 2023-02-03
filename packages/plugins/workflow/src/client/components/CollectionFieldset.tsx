@@ -6,8 +6,9 @@ import { useTranslation } from "react-i18next";
 import { css } from "@emotion/css";
 
 import { CollectionField, CollectionProvider, SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
-import { Operand, parseValue, VariableTypes } from "../variable";
-import { lang, NAMESPACE } from "../locale";
+import { VariableInput } from "./VariableInput";
+import { lang } from "../locale";
+import { useWorkflowVariableOptions } from "../variable";
 
 function AssociationInput(props) {
   const { getCollectionFields } = useCollectionManager();
@@ -42,6 +43,7 @@ export default observer(({ value, onChange }: any) => {
     ));
 
   const unassignedFields = fields.filter(field => !(field.name in value));
+  const scope = useWorkflowVariableOptions();
 
   return (
     <fieldset className={css`
@@ -61,18 +63,11 @@ export default observer(({ value, onChange }: any) => {
             {fields
               .filter(field => field.name in value)
               .map(field => {
-                const VTypes = {
-                  ...(['linkTo', 'hasMany', 'belongsToMany'].includes(field.type) ? {} : VariableTypes),
-                  constant: {
-                    title: `{{t("Constant", { ns: "${NAMESPACE}" })}}`,
-                    value: 'constant',
-                  }
-                };
-
-                const operand = parseValue(value[field.name], VTypes);
                 // constant for associations to use Input, others to use CollectionField
                 // dynamic values only support belongsTo/hasOne association, other association type should disable
-
+                const ConstantCompoent = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+                  ? AssociationInput
+                  : CollectionField;
                 // TODO: try to use <ObjectField> to replace this map
                 return (
                   <Form.Item key={field.name} label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left" className={css`
@@ -80,36 +75,24 @@ export default observer(({ value, onChange }: any) => {
                       display: flex;
                     }
                   `}>
-                    <Operand
-                      scope={VTypes}
+                    <VariableInput
+                      scope={['hasMany', 'belongsToMany'].includes(field.type) ? [] : scope}
                       value={value[field.name]}
                       onChange={(next) => {
                         onChange({ ...value, [field.name]: next });
                       }}
                     >
-                      {operand.type[0] === 'constant'
-                        ? (
-                          <SchemaComponent
-                            schema={{
-                              type: 'void',
-                              properties: {
-                                [field.name]: {
-                                  'x-component': ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
-                                    ? 'AssociationInput'
-                                    : 'CollectionField'
-                                }
-                              }
-                            }}
-                            components={{
-                              CollectionField,
-                              AssociationInput
-                            }}
-                          />
-                        )
-                        // ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
-                        : null
-                      }
-                    </Operand>
+                      <SchemaComponent
+                        schema={{
+                          type: 'void',
+                          properties: {
+                            [field.name]: {
+                              'x-component': ConstantCompoent
+                            }
+                          }
+                        }}
+                      />
+                    </VariableInput>
                     <Button
                       type="link"
                       icon={<CloseCircleOutlined />}

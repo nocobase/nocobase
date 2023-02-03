@@ -43,11 +43,8 @@ describe('workflow > instructions > condition', () => {
         title: 'condition',
         type: 'condition',
         config: {
-          // (1 === 1): true
-          calculation: {
-            calculator: 'equal',
-            operands: [{ value: 1 }, { value: 1 }]
-          }
+          engine: 'math.js',
+          calculation: '1 == 1'
         }
       });
 
@@ -82,11 +79,9 @@ describe('workflow > instructions > condition', () => {
         title: 'condition',
         type: 'condition',
         config: {
-          // (0 === 1): false
-          calculation: {
-            calculator: 'equal',
-            operands: [{ value: 0 }, { value: 1 }]
-          }
+          engine: 'math.js',
+          // false
+          calculation: '0 == 1'
         }
       });
 
@@ -115,10 +110,6 @@ describe('workflow > instructions > condition', () => {
       expect(jobs.length).toEqual(2);
       expect(jobs[1].result).toEqual(false);
     });
-
-    it('not', async () => {
-
-    });
   });
 
   describe('group calculation', () => {
@@ -126,18 +117,13 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         config: {
+          engine: 'math.js',
           calculation: {
             group: {
               type: 'and',
               calculations: [
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 1 }, { value: 1 }]
-                },
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 1 }, { value: 1 }]
-                }
+                '1 == 1',
+                '1 == 1',
               ]
             }
           }
@@ -157,18 +143,13 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         config: {
+          engine: 'math.js',
           calculation: {
             group: {
               type: 'and',
               calculations: [
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 1 }, { value: 1 }]
-                },
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 0 }, { value: 1 }]
-                }
+                '1 == 1',
+                '0 == 1',
               ]
             }
           }
@@ -188,18 +169,13 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         config: {
+          engine: 'math.js',
           calculation: {
             group: {
               type: 'or',
               calculations: [
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 1 }, { value: 1 }]
-                },
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 0 }, { value: 1 }]
-                }
+                '1 == 1',
+                '0 == 1',
               ]
             }
           }
@@ -219,18 +195,13 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         config: {
+          engine: 'math.js',
           calculation: {
             group: {
               type: 'and',
               calculations: [
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 0 }, { value: 1 }]
-                },
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 0 }, { value: 1 }]
-                }
+                '0 == 1',
+                '0 == 1',
               ]
             }
           }
@@ -250,20 +221,18 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         config: {
+          engine: 'math.js',
           calculation: {
             group: {
               type: 'and',
               calculations: [
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 1 }, { value: 1 }]
-                },
+                '1 == 1',
                 {
                   group: {
                     type: 'or',
                     calculations: [
-                      { calculator: 'equal', operands: [{ value: 0 }, { value: 1 }] },
-                      { calculator: 'equal', operands: [{ value: 0 }, { value: 1 }] }
+                      '0 == 1',
+                      '0 == 1',
                     ]
                   }
                 }
