@@ -12,6 +12,15 @@ describe('collection template', () => {
     await db.close();
   });
 
+  it('should throw error when template not found', async () => {
+    expect(() => {
+      db.collection({
+        name: 'testCollection',
+        template: 'notFound',
+      });
+    }).toThrowError('Collection template "notFound" not found');
+  });
+
   it('should create collection template', async () => {
     const fn = jest.fn();
 

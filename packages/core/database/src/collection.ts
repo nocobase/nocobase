@@ -9,6 +9,7 @@ import {
   Transactionable,
   Utils,
 } from 'sequelize';
+import CollectionTemplate from './collection-template';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
@@ -49,6 +50,7 @@ export class Collection<
   TCreationAttributes extends {} = TModelAttributes,
 > extends EventEmitter {
   options: CollectionOptions;
+  template?: CollectionTemplate;
   context: CollectionContext;
   isThrough?: boolean;
   fields: Map<string, any> = new Map<string, any>();
@@ -90,6 +92,16 @@ export class Collection<
 
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
+    this.initTemplate(options.template);
+  }
+
+  private initTemplate(templateName?: string) {
+    if (!templateName) return;
+
+    const template = this.db.collectionTemplates.get(templateName);
+    if (!template) throw new Error(`Collection template "${templateName}" not found`);
+
+    this.template = template;
   }
 
   private checkOptions(options: CollectionOptions) {
