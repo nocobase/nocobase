@@ -1,5 +1,5 @@
-import { CollectionFieldOptions, G2Plot, useAPIClient, useCompile } from '@nocobase/client';
-import React, { useEffect, useState } from 'react';
+import { CollectionFieldOptions, useAPIClient, useCollectionManager, useCompile } from '@nocobase/client';
+import React, { useEffect , useState } from 'react';
 import { Card, Spin } from 'antd';
 import { getChartData } from './ChartUtils';
 import chartRenderComponentsMap from './chartRenderComponents';
@@ -22,8 +22,9 @@ type RenderComponent = 'G2Plot';
 
 const ChartRenderComponent = ({ chartBlockMetaData, renderComponent, }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }): JSX.Element => {
   const compile = useCompile();
+  const { getCollectionFields } = useCollectionManager();
   const RenderComponent = chartRenderComponentsMap.get(renderComponent);//G2Plot | Echarts | D3
-  const { dataset, collectionName, chartType, chartOptions, chartConfig, collectionFields } = chartBlockMetaData;
+  const { dataset, collectionName, chartType, chartOptions, chartConfig } = chartBlockMetaData;
   const { loading, data } = useGetChartData(chartBlockMetaData);
   let finalChartOptions;
   if (chartConfig?.config) {
@@ -78,9 +79,15 @@ const ChartBlockEngine = ({
                             chartBlockMetaData,
                             renderComponent,
                           }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) => {
+  const { getCollectionFields } = useCollectionManager();
+  const collectionFields = getCollectionFields(chartBlockMetaData.collectionName);
+  const _chartBlockMetaData = {
+    ...chartBlockMetaData,
+    collectionFields
+  }
   return (
     <>
-      <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={chartBlockMetaData} />
+      <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={_chartBlockMetaData} />
     </>
   );
 };
