@@ -18,6 +18,7 @@ export const calendarTopTick = css`
 export const calendarTopText = css`
   text-anchor: middle;
   fill: #555;
+  font-size: 12px;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -moz-user-select: none;
