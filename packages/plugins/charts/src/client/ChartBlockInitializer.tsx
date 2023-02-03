@@ -43,7 +43,6 @@ export const ChartBlockInitializer = (props) => {
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
         const collectionFields = getCollectionFields(item.name);
-        console.log(collectionFields, '==============');
         const computedFields = compiler(collectionFields
           ?.filter((field) => (field.type === 'double' || field.type === 'bigInt'))
           ?.map((field) => {
