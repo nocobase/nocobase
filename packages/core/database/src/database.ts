@@ -15,11 +15,12 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
+import CollectionTemplate, { CollectionTemplateOptions } from './collection-template';
 import ReferencesMap from './features/ReferencesMap';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
@@ -58,7 +59,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener
+  ValidateListener,
 } from './types';
 
 export interface MergeOptions extends merge.Options {}
@@ -151,6 +152,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   repositories = new Map<string, RepositoryType>();
   operators = new Map();
   collections = new Map<string, Collection>();
+  collectionTemplates = new Map<string, CollectionTemplate>();
+
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelStatic<any>, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
@@ -464,6 +467,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     for (const [key, operator] of Object.entries(operators)) {
       this.operators.set(key, operator);
     }
+  }
+
+  collectionTemplate(options: CollectionTemplateOptions) {
+    this.collectionTemplates.set(options.name, new CollectionTemplate(options));
   }
 
   buildField(options, context: FieldContext) {

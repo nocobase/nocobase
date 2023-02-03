@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -22,6 +22,7 @@ export type CollectionSortable = string | boolean | { name?: string; scopeKey?: 
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   tableName?: string;
+  template?: string;
   inherits?: string[] | string;
   filterTargetKey?: string;
   fields?: FieldOptions[];
