@@ -27,7 +27,7 @@ describe('collection template', () => {
     db.collectionTemplate({
       name: 'transactionable',
       hooks: {
-        afterFieldCreate(field) {
+        afterAddField(field) {
           fn();
         },
       },
@@ -40,7 +40,7 @@ describe('collection template', () => {
     db.collection({
       name: 'testCollection',
       template: 'transactionable',
-      field: [
+      fields: [
         {
           name: 'testField',
           type: 'string',

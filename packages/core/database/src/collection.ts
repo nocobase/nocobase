@@ -86,16 +86,17 @@ export class Collection<
     this.db.modelCollection.set(this.model, this);
     this.db.tableNameCollectionMap.set(this.model.tableName, this);
 
+    this.setTemplate(options.template);
+
     if (!options.inherits) {
       this.setFields(options.fields);
     }
 
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
-    this.initTemplate(options.template);
   }
 
-  private initTemplate(templateName?: string) {
+  private setTemplate(templateName?: string) {
     if (!templateName) return;
 
     const template = this.db.collectionTemplates.get(templateName);
@@ -169,6 +170,22 @@ export class Collection<
   private bindFieldEventListener() {
     this.on('field.afterAdd', (field: Field) => {
       field.bind();
+    });
+
+    this.on('field.afterAdd', async (field: Field) => {
+      if (!this.template) {
+        return;
+      }
+
+      const afterAddHook = this.template.hooks['afterAddField'];
+      if (!afterAddHook) {
+        return;
+      }
+
+      await afterAddHook({
+        field,
+        collection: this,
+      });
     });
 
     this.on('field.afterRemove', (field: Field) => {
@@ -335,12 +352,14 @@ export class Collection<
     if (!sortable) {
       return;
     }
+
     if (sortable === true) {
       this.setField('sort', {
         type: 'sort',
         hidden: true,
       });
     }
+
     if (typeof sortable === 'string') {
       this.setField(sortable, {
         type: 'sort',
