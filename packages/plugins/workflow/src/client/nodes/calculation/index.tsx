@@ -28,7 +28,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       required: true,
-      enum: Array.from(calculationEngines.getEntities()).reduce((result, [value, options]) => result.concat({ value, ...options }), []),
+      enum: Array.from(calculationEngines.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []),
       default: 'math.js',
       // 'x-reactions': {
       //   target: 'config.expression',

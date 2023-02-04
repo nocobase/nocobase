@@ -42,7 +42,7 @@ export interface Instruction {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   endding?: boolean;
-  getOptions?(config, types?): { label: string; key: string }[];
+  getOptions?(config, types?): { label: string; key: string }[] | null;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
 };

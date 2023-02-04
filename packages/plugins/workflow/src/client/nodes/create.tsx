@@ -42,7 +42,7 @@ export default {
   getOptions(config, types) {
     return useCollectionFieldOptions({ collection: config.collection, types });
   },
-  useInitializers(node): SchemaInitializerItemOptions {
+  useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
       return null;
     }

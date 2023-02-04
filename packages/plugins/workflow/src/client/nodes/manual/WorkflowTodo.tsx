@@ -422,7 +422,7 @@ function FlowContextProvider(props) {
 
 WorkflowTodo.Drawer = function () {
   const ctx = useContext(SchemaComponentContext);
-  const { node, workflow, status, result, updatedAt } = useRecord();
+  const { id, node, workflow, status, result, updatedAt } = useRecord();
 
   const form = useMemo(() => createForm({
     readPretty: Boolean(status),
@@ -467,7 +467,7 @@ WorkflowTodo.Drawer = function () {
           }}
           schema={{
             type: 'void',
-            name: `drawer-${status}`,
+            name: `drawer-${id}-${status}`,
             'x-decorator': 'Form',
             'x-decorator-props': {
               form,
