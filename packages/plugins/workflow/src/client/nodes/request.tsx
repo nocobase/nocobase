@@ -1,9 +1,8 @@
-import React from 'react';
 import { ArrayItems } from '@formily/antd';
 import { css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
-import { Operand, useWorkflowVariableOptions } from '../variable';
+import { useWorkflowVariableOptions } from '../variable';
 import { VariableJSONInput } from '../components/VariableJSONInput';
 import { VariableInput } from '../components/VariableInput';
 
@@ -194,7 +193,6 @@ export default {
   scope: {},
   components: {
     ArrayItems,
-    Operand,
     VariableInput,
     VariableJSONInput
   },
