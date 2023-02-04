@@ -1,5 +1,5 @@
 import { useForm } from '@formily/react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SchemaComponent, useActionContext, useDesignable, useRecordIndex } from '../..';
 
 export const TabPaneInitializers = (props?: any) => {
@@ -46,69 +46,67 @@ export const TabPaneInitializers = (props?: any) => {
       },
     };
   };
-  return (
-    <SchemaComponent
-      schema={{
-        type: 'void',
-        properties: {
-          action1: {
-            type: 'void',
-            'x-component': 'Action',
-            'x-component-props': {
-              icon: 'PlusOutlined',
-              style: {
-                borderColor: 'rgb(241, 139, 98)',
-                color: 'rgb(241, 139, 98)',
-              },
-              type: 'dashed',
+  const schema = useMemo(() => {
+    return {
+      type: 'void',
+      properties: {
+        action1: {
+          type: 'void',
+          'x-component': 'Action',
+          'x-component-props': {
+            icon: 'PlusOutlined',
+            style: {
+              borderColor: 'rgb(241, 139, 98)',
+              color: 'rgb(241, 139, 98)',
             },
-            title: '{{t("Add tab")}}',
-            properties: {
-              drawer1: {
-                'x-decorator': 'Form',
-                'x-component': 'Action.Modal',
-                'x-component-props': {
-                  width: 520,
+            type: 'dashed',
+          },
+          title: '{{t("Add tab")}}',
+          properties: {
+            drawer1: {
+              'x-decorator': 'Form',
+              'x-component': 'Action.Modal',
+              'x-component-props': {
+                width: 520,
+              },
+              type: 'void',
+              title: '{{t("Add tab")}}',
+              properties: {
+                title: {
+                  title: '{{t("Tab name")}}',
+                  required: true,
+                  'x-component': 'Input',
+                  'x-decorator': 'FormItem',
                 },
-                type: 'void',
-                title: '{{t("Add tab")}}',
-                properties: {
-                  title: {
-                    title: '{{t("Tab name")}}',
-                    required: true,
-                    'x-component': 'Input',
-                    'x-decorator': 'FormItem',
-                  },
-                  icon: {
-                    title: '{{t("Icon")}}',
-                    'x-component': 'IconPicker',
-                    'x-decorator': 'FormItem',
-                  },
-                  footer: {
-                    'x-component': 'Action.Modal.Footer',
-                    type: 'void',
-                    properties: {
-                      cancel: {
-                        title: '{{t("Cancel")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          useAction: () => {
-                            const ctx = useActionContext();
-                            return {
-                              async run() {
-                                ctx.setVisible(false);
-                              },
-                            };
-                          },
+                icon: {
+                  title: '{{t("Icon")}}',
+                  'x-component': 'IconPicker',
+                  'x-decorator': 'FormItem',
+                },
+                footer: {
+                  'x-component': 'Action.Modal.Footer',
+                  type: 'void',
+                  properties: {
+                    cancel: {
+                      title: '{{t("Cancel")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        useAction: () => {
+                          const ctx = useActionContext();
+                          return {
+                            async run() {
+                              ctx.setVisible(false);
+                            },
+                          };
                         },
                       },
-                      submit: {
-                        title: '{{t("Submit")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          type: 'primary',
-                          useAction: useSubmitAction,
-                        },
+                    },
+                    submit: {
+                      title: '{{t("Submit")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'primary',
+                        useAction: useSubmitAction,
                       },
                     },
                   },
@@ -117,9 +115,10 @@ export const TabPaneInitializers = (props?: any) => {
             },
           },
         },
-      }}
-    />
-  );
+      },
+    };
+  }, []);
+  return <SchemaComponent schema={schema} />;
 };
 
 export const TabPaneInitializersForCreateFormBlock = (props) => {
