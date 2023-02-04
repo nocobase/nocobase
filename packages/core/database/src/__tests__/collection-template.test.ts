@@ -27,7 +27,7 @@ describe('collection template', () => {
     db.collectionTemplate({
       name: 'transactionable',
       hooks: {
-        afterAddField(field) {
+        async afterSync() {
           fn();
         },
       },
@@ -48,6 +48,7 @@ describe('collection template', () => {
       ],
     });
 
+    await db.sync();
     expect(fn).toHaveBeenCalled();
   });
 });

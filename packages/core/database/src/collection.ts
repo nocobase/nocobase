@@ -103,6 +103,14 @@ export class Collection<
     if (!template) throw new Error(`Collection template "${templateName}" not found`);
 
     this.template = template;
+
+    if (template.hooks.afterSync) {
+      this.context.database.on('afterSync', async ({ tableName }) => {
+        if (this.model.tableName === tableName) {
+          await template.hooks.afterSync(this);
+        }
+      });
+    }
   }
 
   private checkOptions(options: CollectionOptions) {
@@ -126,6 +134,7 @@ export class Collection<
     if (this.model) {
       return;
     }
+
     const { name, model, autoGenId = true } = this.options;
     let M: ModelStatic<Model> = Model;
     if (this.context.database.sequelize.isDefined(name)) {
@@ -140,11 +149,13 @@ export class Collection<
         return;
       }
     }
+
     if (typeof model === 'string') {
       M = this.context.database.models.get(model) || Model;
     } else if (model) {
       M = model;
     }
+
     // @ts-ignore
     this.model = class extends M {};
     this.model.init(null, this.sequelizeModelOptions());

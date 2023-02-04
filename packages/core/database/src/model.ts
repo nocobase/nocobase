@@ -1,9 +1,8 @@
 import lodash from 'lodash';
-import { DataTypes, Model as SequelizeModel, ModelStatic } from 'sequelize';
+import { Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
-import type { InheritedCollection } from './inherited-collection';
 import { SyncRunner } from './sync-runner';
 
 const _ = lodash;
@@ -28,6 +27,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   public static collection: Collection;
 
   [key: string]: any;
+
   protected _changedWithAssociations = new Set();
   protected _previousDataValuesWithAssociations = {};
 
@@ -180,10 +180,10 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       }
     }
 
-    if (this.collection.isInherited()) {
-      return SyncRunner.syncInheritModel(model, options);
-    }
+    this.collection.isInherited()
+      ? await SyncRunner.syncInheritModel(model, options)
+      : await SequelizeModel.sync.call(this, options);
 
-    return SequelizeModel.sync.call(this, options);
+    return this as any;
   }
 }
