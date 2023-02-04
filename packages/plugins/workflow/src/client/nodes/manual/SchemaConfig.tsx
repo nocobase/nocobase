@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { Field } from '@formily/core';
 import { useForm, Schema } from '@formily/react';
 import { ArrayTable } from '@formily/antd';
 import { cloneDeep, get, set } from 'lodash';
@@ -238,7 +239,7 @@ function AddFormField(props) {
                         'x-component-props': {
                           type: 'primary',
                           useAction() {
-                            const { values } = useForm();
+                            const { values, query } = useForm();
                             return {
                               async run() {
                                 const { default: options } = interfaceOptions;
@@ -246,6 +247,16 @@ function AddFormField(props) {
                                 options.name = values.name ?? defaultName;
                                 options.uiSchema.title = values.uiSchema?.title ?? defaultName;
                                 options.interface = interfaceOptions.name;
+                                const existed = collection.fields?.find(item => item.name === options.name);
+                                if (existed) {
+                                  const field = query('name').take() as Field;
+                                  field.setFeedback({
+                                    type: 'error',
+                                    // code: 'FormulaError',
+                                    messages: [lang('Field name existed in form')],
+                                  });
+                                  return;
+                                }
                                 collection.fields?.push(merge(options, values) as any);
                                 insert({
                                   name: options.name,

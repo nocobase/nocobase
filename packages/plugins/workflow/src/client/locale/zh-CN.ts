@@ -122,6 +122,7 @@ export default {
   'Everyone should pass': '每个人通过才通过',
   'Any pass': '任意通过',
   'Anyone pass': '任何一人通过即通过',
+  'Field name existed in form': '表单中已有对应标识的字段',
 
   'Create record': '新增数据',
   'Update record': '更新数据',
