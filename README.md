@@ -63,6 +63,10 @@ NocoBase adopts plugin architecture, all new features can be implemented by deve
 
 [Click to view the full image](https://www.nocobase.com/images/NocoBaseMindMap.png)
 
+## Business Services
+
+If you need commercial version and commercial services, please feel free to contact us by email: hello@nocobase.com
+
 ## Installation
 
 NocoBase supports three installation methods:
@@ -78,3 +82,8 @@ NocoBase supports three installation methods:
 - <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/git-clone">Installing from Git source code</a>
 
   If you want to experience the latest unreleased version, or want to participate in the contribution, you need to make changes and debug on the source code, it is recommended to choose this installation method, which requires a high level of development skills, and if the code has been updated, you can git pull the latest code.
+
+## License
+
+- [Core packages](https://github.com/nocobase/nocobase/tree/main/packages/core) are [Apache 2.0 licensed](./LICENSE-APACHE-2.0).
+- [Plugins packages](https://github.com/nocobase/nocobase/tree/main/packages/plugins) are [AGPL 3.0 licensed](./LICENSE-AGPL).

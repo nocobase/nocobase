@@ -23,6 +23,7 @@ export default {
       type: 'belongsTo',
       name: 'scope',
       target: 'rolesResourcesScopes',
+      onDelete: 'RESTRICT',
     },
   ],
 } as CollectionOptions;

@@ -50,7 +50,7 @@ export class RoleResourceActionModel extends Model {
         continue;
       }
 
-      const fieldType = collectionField.get('interface') as string;
+      const fieldType = collectionField.get('type') as string;
 
       const fieldActions: AssociationFieldAction = associationFieldsActions?.[fieldType]?.[availableAction];
 
@@ -59,8 +59,9 @@ export class RoleResourceActionModel extends Model {
       if (fieldActions) {
         // grant association actions to role
         const associationActions = fieldActions.associationActions || [];
+
         associationActions.forEach((associationAction) => {
-          const actionName = `${resourceName}.${fieldTarget}:${associationAction}`;
+          const actionName = `${resourceName}.${collectionField.get('name')}:${associationAction}`;
           role.grantAction(actionName);
         });
 
@@ -68,6 +69,12 @@ export class RoleResourceActionModel extends Model {
 
         targetActions.forEach((targetAction) => {
           const targetActionPath = `${fieldTarget}:${targetAction}`;
+
+          const existsAction = role.getActionParams(targetActionPath);
+
+          if (existsAction) {
+            return;
+          }
 
           // set resource target action with current resourceName
           grantHelper.resourceTargetActionMap.set(`${role.name}.${resourceName}`, [

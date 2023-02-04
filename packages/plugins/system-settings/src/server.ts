@@ -1,4 +1,3 @@
-import { skip } from '@nocobase/acl';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
@@ -29,18 +28,25 @@ export class SystemSettingsPlugin extends Plugin {
     if (cmd) {
       cmd.option('-l, --lang [lang]');
     }
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.system-settings`,
+      actions: ['systemSettings:update'],
+    });
   }
 
   async load() {
     await this.app.db.import({
       directory: resolve(__dirname, 'collections'),
     });
-    this.app.acl.use(
-      skip({
-        resourceName: 'systemSettings',
-        actionName: 'get',
-      }),
-    );
+
+    this.app.acl.addFixedParams('systemSettings', 'destroy', () => {
+      return {
+        'id.$ne': 1,
+      };
+    });
+
+    this.app.acl.allow('systemSettings', 'get', 'public');
   }
 }
 

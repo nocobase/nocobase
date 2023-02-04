@@ -754,4 +754,83 @@ describe('sequence field', () => {
       expect(item4.name).toBe('0');
     });
   });
+
+  describe('associations', () => {
+    it('sequence field in m2m through table', async () => {
+      const postsTagsCollection = db.collection({
+        name: 'posts_tags',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'seq',
+            patterns: [
+              { type: 'integer', options: { key: 1 } }
+            ]
+          }
+        ]
+      });
+      const postsCollection = db.collection({
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title'
+          },
+          {
+            type: 'belongsToMany',
+            name: 'tags',
+            through: 'posts_tags'
+          }
+        ]
+      });
+      const tagsCollection = db.collection({
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'title'
+          },
+          {
+            type: 'belongsToMany',
+            name: 'posts',
+            through: 'posts_tags'
+          }
+        ]
+      });
+
+      await db.sync();
+
+      const tagsRepo = db.getRepository('tags');
+      const tags = await tagsRepo.create({
+        values: [
+          { title: 't1' },
+          { title: 't2' },
+          { title: 't3' },
+        ]
+      });
+      const postsTagsRepo = db.getRepository('posts_tags');
+      const postTag = await postsTagsRepo.create({
+        values: {
+          postId: 1,
+          tagId: 1
+        }
+      });
+
+      const postsRepo = db.getRepository('posts');
+      await postsRepo.create({
+        values: {
+          title: 'p1',
+          tags
+        }
+      });
+
+      const postsTags = await postsTagsRepo.find({
+        order: [['seq', 'ASC']]
+      });
+
+      expect(postsTags[0].seq).toBe('0');
+      expect(postsTags[1].seq).toBe('1');
+      expect(postsTags[2].seq).toBe('2');
+    });
+  });
 });

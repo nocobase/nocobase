@@ -10,6 +10,7 @@ export default extend({
       target: 'roles',
       foreignKey: 'userId',
       otherKey: 'roleName',
+      onDelete: 'CASCADE',
       sourceKey: 'id',
       targetKey: 'name',
       through: 'rolesUsers',
@@ -25,6 +26,6 @@ export default extend({
           },
         },
       },
-    }
+    },
   ],
 });

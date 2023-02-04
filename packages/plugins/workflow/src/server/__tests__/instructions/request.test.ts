@@ -1,37 +1,14 @@
-/**
- * @jest-environment node
- */
-
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 import { RequestConfig } from '../../instructions/request';
-import axios, { AxiosRequestConfig } from 'axios';
 import { JOB_STATUS } from '../../constants';
 
-const testUrl = 'https://nocobase.com/test';
-const url_400 = 'https://nocobase.com/400';
-const timeoutUrl = 'https://nocobase.com/timeout';
-jest.mock('axios', () => {
-  return {
-    request: async (config: AxiosRequestConfig) => {
-      await sleep(1000);
-      if (config.url === url_400) {
-        return {
-          data: config,
-          status: 400,
-        };
-      }
-      if (config.url === timeoutUrl) {
-        throw new Error('timeout');
-      }
-      return {
-        data: config,
-        status: 200,
-      };
-    },
-  };
-});
+const PORT = 12345;
+
+const URL_DATA = `http://localhost:${PORT}/data`;
+const URL_400 = `http://localhost:${PORT}/api/400`;
+const URL_TIMEOUT = `http://localhost:${PORT}/timeout`;
 
 describe('workflow > instructions > request', () => {
   let app: Application;
@@ -41,7 +18,27 @@ describe('workflow > instructions > request', () => {
   let workflow;
 
   beforeEach(async () => {
-    app = await getApp();
+    app = await getApp({ manual: true });
+
+    app.use(async (ctx, next) => {
+      if (ctx.path === '/api/400') {
+        return ctx.throw(400);
+      }
+      if (ctx.path === '/timeout') {
+        await sleep(2000);
+        return ctx.throw(new Error('timeout'));
+      }
+      if (ctx.path === '/data') {
+        ctx.withoutDataWrapping = true;
+        ctx.body = {
+          meta: { title: ctx.query.title },
+          data: { title: ctx.request.body.title }
+        };
+      }
+      next();
+    });
+
+    await app.start({ listen: { port: PORT } });
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -65,7 +62,7 @@ describe('workflow > instructions > request', () => {
       await workflow.createNode({
         type: 'request',
         config: {
-          url: 'https://www.baidu.com?name=lily&age=20',
+          url: URL_DATA,
           method: 'GET',
         } as RequestConfig,
       });
@@ -76,101 +73,67 @@ describe('workflow > instructions > request', () => {
 
       let [execution] = await workflow.getExecutions();
       let [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.PENDING);
-
-      await sleep(2000);
-
-      [execution] = await workflow.getExecutions();
-      [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
-    });
-
-    it('request - url with variable template', async () => {
-      await workflow.createNode({
-        type: 'request',
-        config: {
-          url: 'https://www.xxx.com?title=<%= ctx.data.title // 测试 %>',
-          method: 'GET',
-        } as RequestConfig,
-      });
-
-      await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      let [execution] = await workflow.getExecutions();
-      let [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.PENDING);
-
-      await sleep(1000);
-
-      [execution] = await workflow.getExecutions();
-      [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
-      expect(job.result.url).toEqual('https://www.xxx.com?title=t1');
     });
 
     it('request - timeout', async () => {
       await workflow.createNode({
         type: 'request',
         config: {
-          url: timeoutUrl,
+          url: URL_TIMEOUT,
           method: 'GET',
-          timeout: 1000,
+          timeout: 250,
         } as RequestConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(1000);
 
       let [execution] = await workflow.getExecutions();
       let [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.PENDING);
-
-      await sleep(1000);
-
-      [execution] = await workflow.getExecutions();
-      [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.REJECTED);
-      expect(job.result).toMatch('timeout');
 
+      expect(job.result).toMatchObject({
+        code: 'ECONNABORTED',
+        name: 'AxiosError',
+        status: null,
+        message: 'timeout of 250ms exceeded'
+      });
     });
 
     it('request - ignoreFail', async () => {
       await workflow.createNode({
         type: 'request',
         config: {
-          url: timeoutUrl,
+          url: URL_TIMEOUT,
           method: 'GET',
-          timeout: 1000,
+          timeout: 250,
           ignoreFail: true,
         } as RequestConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(1000);
 
       let [execution] = await workflow.getExecutions();
       let [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.PENDING);
-
-      await sleep(1000);
-
-      [execution] = await workflow.getExecutions();
-      [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
-      expect(job.result).toMatch('timeout');
+      expect(job.result).toMatchObject({
+        code: 'ECONNABORTED',
+        name: 'AxiosError',
+        status: null,
+        message: 'timeout of 250ms exceeded'
+      });
     });
 
     it('response 400', async () => {
       await workflow.createNode({
         type: 'request',
         config: {
-          url: url_400,
+          url: URL_400,
           method: 'GET',
-          timeout: 1000,
           ignoreFail: false,
         } as RequestConfig,
       });
@@ -181,12 +144,6 @@ describe('workflow > instructions > request', () => {
 
       let [execution] = await workflow.getExecutions();
       let [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.PENDING);
-
-      await sleep(1000);
-
-      [execution] = await workflow.getExecutions();
-      [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.REJECTED);
       expect(job.result.status).toBe(400);
     });
@@ -195,7 +152,7 @@ describe('workflow > instructions > request', () => {
       await workflow.createNode({
         type: 'request',
         config: {
-          url: url_400,
+          url: URL_400,
           method: 'GET',
           timeout: 1000,
           ignoreFail: true,
@@ -208,12 +165,6 @@ describe('workflow > instructions > request', () => {
 
       let [execution] = await workflow.getExecutions();
       let [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.PENDING);
-
-      await sleep(1000);
-
-      [execution] = await workflow.getExecutions();
-      [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
       expect(job.result.status).toBe(400);
     });
@@ -222,9 +173,9 @@ describe('workflow > instructions > request', () => {
       const n1 = await workflow.createNode({
         type: 'request',
         config: {
-          url: testUrl,
+          url: URL_DATA,
           method: 'POST',
-          data: '{"title": "<%=ctx.data.title%>"}',
+          data: { title: '{{$context.data.title}}' },
         } as RequestConfig,
       });
 
@@ -234,14 +185,32 @@ describe('workflow > instructions > request', () => {
 
       let [execution] = await workflow.getExecutions();
       let [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.PENDING);
-
-      await sleep(1000);
-
-      [execution] = await workflow.getExecutions();
-      [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
-      expect(JSON.parse(job.result.data)).toEqual({ title: 't1' });
+      expect(job.result.data).toEqual({ title: 't1' });
+    });
+
+    // TODO(bug): should not use ejs
+    it('request json data with multiple lines', async () => {
+      const n1 = await workflow.createNode({
+        type: 'request',
+        config: {
+          url: URL_DATA,
+          method: 'POST',
+          data: { title: '{{$context.data.title}}' },
+        } as RequestConfig,
+      });
+
+      const title = 't1\n\nline 2';
+      await PostRepo.create({
+        values: { title }
+      });
+
+      await sleep(500);
+
+      let [execution] = await workflow.getExecutions();
+      let [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(job.result.data).toEqual({ title });
     });
   });
 });

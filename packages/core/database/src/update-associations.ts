@@ -6,7 +6,7 @@ import {
   HasOne,
   Hookable,
   ModelStatic,
-  Transactionable,
+  Transactionable
 } from 'sequelize';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
@@ -392,7 +392,7 @@ export async function updateMultipleAssociation(
     }
 
     if (isStringOrNumber(value)) {
-      await model[setAccessor](value, { transaction, context });
+      await model[setAccessor](value, { transaction, context, individualHooks: true });
       return;
     }
 
@@ -402,6 +402,7 @@ export async function updateMultipleAssociation(
 
     const list1 = []; // to be setted
     const list2 = []; // to be added
+    const created = [];
     for (const item of value) {
       if (isUndefinedOrNull(item)) {
         continue;
@@ -413,12 +414,17 @@ export async function updateMultipleAssociation(
       } else if (item.sequelize) {
         list1.push(item);
       } else if (typeof item === 'object') {
+        const targetKey = (association as any).targetKey || 'id';
+        if (item[targetKey]) {
+          created.push(item[targetKey]);
+          list1.push(item[targetKey]);
+        }
         list2.push(item);
       }
     }
 
     // associate targets in lists1
-    await model[setAccessor](list1, { transaction, context });
+    await model[setAccessor](list1, { transaction, context, individualHooks: true });
 
     const list3 = [];
     for (const item of list2) {
@@ -456,8 +462,9 @@ export async function updateMultipleAssociation(
           continue;
         }
         const addAccessor = association.accessors.add;
-
-        await model[addAccessor](item[pk], accessorOptions);
+        if (!created.includes(item[pk])) {
+          await model[addAccessor](item[pk], accessorOptions);
+        }
         if (!recursive) {
           continue;
         }

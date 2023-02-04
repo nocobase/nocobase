@@ -37,8 +37,8 @@ export const RolesResourcesActions = connect((props) => {
   const roleCollection = useRecord();
   const availableActions = useAvailableActions();
   const { getCollection, getCollectionFields } = useCollectionManager();
-  const collection = getCollection(roleCollection.name);
-  const collectionFields = getCollectionFields(roleCollection.name);
+  const collection = getCollection(roleCollection.collectionName);
+  const collectionFields = getCollectionFields(roleCollection.collectionName);
   const compile = useCompile();
   const { t } = useTranslation();
   const field = useField<ArrayField>();
