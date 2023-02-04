@@ -22,7 +22,7 @@ export default {
       name: 'status'
     },
     {
-      type: 'jsonb',
+      type: 'json',
       name: 'result'
     }
   ]

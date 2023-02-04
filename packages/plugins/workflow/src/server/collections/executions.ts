@@ -22,7 +22,7 @@ export default {
       onDelete: 'CASCADE',
     },
     {
-      type: 'jsonb',
+      type: 'json',
       name: 'context',
     },
     {

@@ -44,7 +44,7 @@ export default {
       name: 'type',
     },
     {
-      type: 'jsonb',
+      type: 'json',
       name: 'config',
       defaultValue: {}
     }

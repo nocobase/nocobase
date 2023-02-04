@@ -5,7 +5,8 @@ import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
 import initActions from './actions';
-import initCalculationEngines, { Evaluator } from './calculators';
+import initCalculationEngines from './calculators';
+import type { Evaluator } from './calculators';
 import { EXECUTION_STATUS } from './constants';
 import initInstructions, { Instruction } from './instructions';
 import ExecutionModel from './models/Execution';

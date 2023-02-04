@@ -28,7 +28,7 @@ export default function () {
         required: true
       },
       {
-        type: 'jsonb',
+        type: 'json',
         name: 'config',
         required: true,
         defaultValue: {}
