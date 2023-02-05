@@ -29,7 +29,7 @@ const userProfileRepository = User.repository.relation('profile').of(user.get('i
 new HasOneRepository(User, 'profile', user.get('id'));
 ```
 
-## Class Method
+## Class Methods
 
 ### `find()`
 
