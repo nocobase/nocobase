@@ -223,7 +223,7 @@ export const Page = (props) => {
                             });
                           }}
                         >
-                          Add tab
+                          {t('Add tab')}
                         </Button>
                       )
                     }
