@@ -363,7 +363,7 @@ const books = db.getRepository('books') as MyRepository;
 await books.myQuery('SELECT * FROM books;');
 ```
 
-## Instance Member
+## Instance Members
 
 ### `database`
 
@@ -377,7 +377,7 @@ The corresponding data table management instance.
 
 The corresponding data model class.
 
-## Instance Method
+## Instance Methods
 
 ### `find()`
 
