@@ -123,7 +123,7 @@ Create a database instance.
 | `options.tablePrefix?` | `string` | `''` | NocoBase extension, table prefix |
 | `options.migrator?` | `UmzugOptions` | `{}` | NocoBase extension, parameters for migrator, refer to [Umzug](https://github.com/sequelize/umzug/blob/main/src/types.ts#L15) for the implementation |
 
-## Migration Method
+## Migration Methods
 
 ### `addMigration()`
 
@@ -181,7 +181,7 @@ db.addMigrations({
 });
 ```
 
-## Tool Method
+## Tool Methods
 
 ### `inDialect()`
 
@@ -205,7 +205,7 @@ Get the table name prefix in the configuration.
 
 * `getTablePrefix(): string`
 
-## Data Table Configuration
+## Data Table Configurations
 
 ### `collection()`
 
@@ -359,7 +359,7 @@ class Plugin {
 }
 ```
 
-## Extension Registration and Acquisition
+## Extension Registrations and Acquisitions
 
 ### `registerFieldTypes()`
 
@@ -543,7 +543,7 @@ const post1 = AuthorsRepo.create({ title: 'post1' });
 asset(post1.authorId === author1.id); // true
 ```
 
-## Database Event 
+## Database Events
 
 ### `on()`
 
@@ -591,7 +591,7 @@ db.on('afterCreate', listener);
 db.off('afterCreate', listener);
 ```
 
-## Database Operation
+## Database Operations
 
 ### `auth()`
 
@@ -749,7 +749,7 @@ If the above two files are imported when calling `import()`, after being extende
 
 This method is especially useful when extending the table structure that is already defined by existing plugin.
 
-## Built-in Event
+## Built-in Events
 
 The following events will be triggered in the corresponding lifecycle of database, subscribe by the `on()` method and perform specific processing to meet some business needs. 
 
