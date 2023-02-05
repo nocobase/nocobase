@@ -7,7 +7,7 @@ import calculators from '../calculators';
 import { JOB_STATUS } from '../constants';
 
 export function sleep(ms: number) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 }
@@ -26,38 +26,40 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
         run(node, { result }, execution) {
           return {
             status: JOB_STATUS.RESOLVED,
-            result
+            result,
           };
-        }
+        },
       },
 
       error: {
         run(node, input, execution) {
           throw new Error('definite error');
-        }
+        },
       },
 
       'prompt->error': {
         run(node, input, execution) {
           return {
-            status: JOB_STATUS.PENDING
+            status: JOB_STATUS.PENDING,
           };
         },
         resume(node, input, execution) {
           throw new Error('input failed');
-        }
-      }
-    }
+        },
+      },
+    },
   });
 
   if (!calculators.get('no1')) {
     calculators.register('no1', () => 1);
   }
 
+  await app.db.clean({ drop: true });
+
   await app.load();
 
   await app.db.import({
-    directory: path.resolve(__dirname, './collections')
+    directory: path.resolve(__dirname, './collections'),
   });
 
   try {
