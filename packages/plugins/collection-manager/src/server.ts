@@ -13,7 +13,7 @@ import {
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
@@ -89,6 +89,11 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
+    this.app.db.on('fields.afterCreate', async (model: FieldModel, options) => {
+      const collectionName = model.get('collectionName');
+      const collection = this.app.db.getCollection(collectionName);
+      console.log({ collection, collectionName });
+    });
 
     this.app.db.on(
       'collections.afterCreateWithAssociations',
