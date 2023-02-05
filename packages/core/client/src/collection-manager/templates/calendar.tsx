@@ -19,12 +19,24 @@ export const calendar: ICollectionTemplate = {
         uiSchema: {
           type: 'string',
           title: '{{t("Cron")}}',
-          'x-component': 'Select',
+          'x-component': 'CronSet',
           enum: [
-            { value: '0 0 * * *', label: '每天' },
-            { value: '0 0 ? * 1', label: '每个星期一' },
-            { value: '0 0 12 * * ?', label: '每天中午12点' },
-            { value: '0 0 10,14,16 * * ?', label: '每天上午10点,下午2点,4点 ' },
+            {
+              label: '{{t("Daily")}}',
+              value: '0 0 0 * * ?',
+            },
+            {
+              label: '{{t("Weekly")}}',
+              value: 'every_week',
+            },
+            {
+              label: '{{t("Monthly")}}',
+              value: 'every_month',
+            },
+            {
+              label: '{{t("Yearly")}}',
+              value: 'every_year',
+            },
           ],
         },
         interface: 'select',

@@ -36,7 +36,7 @@ const Input = (props: Exclude<CronProps, 'setValue'> & { onChange: (value: strin
   );
 };
 
-const ReadPretty = (props) => {
+export const ReadPretty = (props) => {
   const api = useAPIClient();
   const locale = api.auth.getLocale();
   return props.value ? (
