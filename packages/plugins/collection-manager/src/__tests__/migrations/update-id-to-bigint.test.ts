@@ -1,5 +1,6 @@
 import { Database, MigrationContext } from '@nocobase/database';
 import Migrator from '../../migrations/20221121111113-update-id-to-bigint';
+import lodash from 'lodash';
 
 const excludeSqlite = () => (process.env.DB_DIALECT != 'sqlite' ? describe : describe.skip);
 
@@ -72,6 +73,10 @@ excludeSqlite()('update id to bigint  test', () => {
         .describeTable(
           db.getCollection(collectionName) ? db.getCollection(collectionName).model.tableName : collectionName,
         );
+
+      if (process.env.DB_UNDERSCORED) {
+        fieldName = lodash.snakeCase(fieldName);
+      }
       console.log(`${collectionName}, ${fieldName}`, tableInfo[fieldName].type);
       expect(tableInfo[fieldName].type).toBe('BIGINT');
     };
