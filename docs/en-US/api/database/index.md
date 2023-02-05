@@ -123,7 +123,7 @@ Create a database instance.
 | `options.tablePrefix?` | `string` | `''` | NocoBase extension, table prefix |
 | `options.migrator?` | `UmzugOptions` | `{}` | NocoBase extension, parameters for migrator, refer to [Umzug](https://github.com/sequelize/umzug/blob/main/src/types.ts#L15) for the implementation |
 
-## Migration Methods
+## Migration Method
 
 ### `addMigration()`
 
@@ -181,7 +181,7 @@ db.addMigrations({
 });
 ```
 
-## Tool Methods
+## Tool Method
 
 ### `inDialect()`
 
@@ -749,7 +749,7 @@ If the above two files are imported when calling `import()`, after being extende
 
 This method is especially useful when extending the table structure that is already defined by existing plugin.
 
-## Built-in Events
+## Built-in Event
 
 The following events will be triggered in the corresponding lifecycle of database, subscribe by the `on()` method and perform specific processing to meet some business needs. 
 
