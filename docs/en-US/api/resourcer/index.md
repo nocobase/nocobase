@@ -63,30 +63,30 @@ To create resourcer manager instances.
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `prefix` | `string` | - | Route prefix |
-| `accessors` | `Object` | _以下成员值_ | 默认操作方法名称标识 |
-| `accessors.list` | `string` | `'list'` | 列举操作方法名称标识 |
-| `accessors.get` | `string` | `'get'` | 获取操作方法名称标识 |
-| `accessors.create` | `string` | `'create'` | 创建操作方法名称标识 |
-| `accessors.update` | `string` | `'update'` | 更新操作方法名称标识 |
-| `accessors.delete` | `string` | `'destroy'` | 删除操作方法名称标识 |
-| `accessors.add` | `string` | `'add'` | 增加关联操作方法名称标识 |
-| `accessors.remove` | `string` | `'remove'` | 移除关联操作方法名称标识 |
-| `accessors.set` | `string` | `'set'` | 全量设置关联操作方法名称标识 |
+| `accessors` | `Object` | _The following values of members_ | Name identifier of the default operation method |
+| `accessors.list` | `string` | `'list'` | Name identifier of the list operation method |
+| `accessors.get` | `string` | `'get'` | Name identifier of the get operation method |
+| `accessors.create` | `string` | `'create'` | Name identifier of the create operation method |
+| `accessors.update` | `string` | `'update'` | Name identifier of the update operation method |
+| `accessors.delete` | `string` | `'destroy'` | Name identifier of the delete operation method |
+| `accessors.add` | `string` | `'add'` | Name identifier of the add association operation method |
+| `accessors.remove` | `string` | `'remove'` | Name identifier of the remove association operation method |
+| `accessors.set` | `string` | `'set'` | Name identifier of the global set association operation method |
 
 **Example**
 
-在创建 app 时件时，可以通过 `resourcer` 选项传入：
+Pass in through the `resourcer` option when creating app:
 
 ```ts
 const app = new Application({
-  // 对应默认 resourcer 实例的配置项
+  // Correspond to the configuration item of the default resourcer instance
   resourcer: {
     prefix: process.env.API_BASE_PATH
   }
 });
 ```
 
-## 实例方法
+## Instance Methods
 
 ### `define()`
 
