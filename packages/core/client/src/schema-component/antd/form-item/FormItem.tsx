@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, FormItem as Item, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React from 'react';
@@ -24,7 +24,7 @@ const divWrap = (schema: ISchema) => {
   };
 };
 
-export const FormItem: any = (props) => {
+export const FormItem: any = observer((props) => {
   const field = useField();
   return (
     <ACLCollectionFieldProvider>
@@ -51,7 +51,7 @@ export const FormItem: any = (props) => {
       </BlockItem>
     </ACLCollectionFieldProvider>
   );
-};
+});
 
 FormItem.Designer = (props) => {
   const { getCollectionFields, getCollection, getInterface, getCollectionJoinField } = useCollectionManager();
