@@ -1,9 +1,9 @@
 import { css } from '@emotion/css';
 export const gridRow = css`
   fill: #fff;
-  &:nth-child(even) {
-    fill: #f5f5f5;
-  }
+  // &:nth-child(even) {
+  //   fill: #f5f5f5;
+  // }
 `;
 
 export const gridRowLine = css`
