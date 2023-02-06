@@ -124,7 +124,9 @@ AND    NOT attisdropped
     if (options.alter) {
       const columns = await queryInterface.describeTable(tableName, options);
 
-      for (const columnName in childAttributes) {
+      for (const attribute in childAttributes) {
+        const columnName = childAttributes[attribute].field;
+
         if (!columns[columnName]) {
           await queryInterface.addColumn(tableName, columnName, childAttributes[columnName], options);
         }
