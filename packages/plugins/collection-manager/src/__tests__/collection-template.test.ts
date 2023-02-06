@@ -27,7 +27,6 @@ describe('collection template', () => {
       name: 'transactionable',
       hooks: {
         async ['fields.afterCreate'](...args) {
-          console.log({ args });
           fn();
         },
       },
@@ -63,5 +62,90 @@ describe('collection template', () => {
     });
 
     expect(fn).toHaveBeenCalled();
+  });
+
+  it('should create relation records after create association field', async () => {
+    db.collectionTemplate({
+      name: 'transactionable',
+      hooks: {
+        async ['fields.afterCreate'](model, options) {
+          const fieldOptions = model.get();
+          const collectionName = fieldOptions['collectionName'];
+          const fieldName = fieldOptions['name'];
+
+          const collection = db.getCollection(collectionName);
+          const field = collection.getField(fieldName);
+
+          if (field.type === 'belongsTo' && field.options.target == 'mainCollection') {
+            const mainRecords = await db.getCollection('mainCollection').repository.find({
+              transaction: options.transaction,
+            });
+            for (const mainRecord of mainRecords) {
+              await db.getCollection('subCollection').repository.create({
+                values: {
+                  [fieldName]: mainRecord.id,
+                },
+                transaction: options.transaction,
+              });
+            }
+          }
+        },
+      },
+    });
+
+    await Collection.repository.create({
+      values: {
+        name: 'mainCollection',
+        fields: [
+          {
+            type: 'string',
+            name: 'mainField',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getCollection('mainCollection').repository.create({
+      values: [
+        {
+          mainField: 'mainField1',
+        },
+        {
+          mainField: 'mainField2',
+        },
+      ],
+    });
+
+    expect(await db.getCollection('mainCollection').repository.count()).toBe(2);
+
+    await Collection.repository.create({
+      values: {
+        name: 'subCollection',
+        template: 'transactionable',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'subField',
+        collectionName: 'subCollection',
+        type: 'string',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'mainField',
+        target: 'mainCollection',
+        collectionName: 'subCollection',
+        type: 'belongsTo',
+      },
+      context: {},
+    });
+
+    expect(await db.getCollection('subCollection').repository.count()).toBe(2);
   });
 });

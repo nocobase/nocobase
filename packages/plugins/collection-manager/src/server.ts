@@ -90,13 +90,35 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
+    this.app.db.on(
+      'collections.afterCreateWithAssociations',
+      async (model: CollectionModel, { context, transaction }) => {
+        if (context) {
+          await model.migrate({
+            transaction,
+          });
+        }
+      },
+    );
+
     this.app.db.on('fields.afterCreate', async (model: FieldModel, options) => {
+      const { context, transaction } = options;
+
+      if (!context) return;
+
+      await model.migrate({
+        isNew: true,
+        transaction,
+      });
+
       const collectionName = model.get('collectionName');
       const collection = this.app.db.getCollection(collectionName);
+
       if (!collection) {
         this.app.log.warn(`collection ${collectionName} not found`);
         return;
       }
+
       const template = collection.template;
       if (!template) {
         return;
@@ -109,26 +131,6 @@ export class CollectionManagerPlugin extends Plugin {
       }
 
       await afterCreateHook(model, options);
-    });
-
-    this.app.db.on(
-      'collections.afterCreateWithAssociations',
-      async (model: CollectionModel, { context, transaction }) => {
-        if (context) {
-          await model.migrate({
-            transaction,
-          });
-        }
-      },
-    );
-
-    this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
-      if (context) {
-        await model.migrate({
-          isNew: true,
-          transaction,
-        });
-      }
     });
 
     // after migrate
