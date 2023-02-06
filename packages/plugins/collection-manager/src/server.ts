@@ -89,10 +89,26 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
+
     this.app.db.on('fields.afterCreate', async (model: FieldModel, options) => {
       const collectionName = model.get('collectionName');
       const collection = this.app.db.getCollection(collectionName);
-      console.log({ collection, collectionName });
+      if (!collection) {
+        this.app.log.warn(`collection ${collectionName} not found`);
+        return;
+      }
+      const template = collection.template;
+      if (!template) {
+        return;
+      }
+
+      const afterCreateHook = template.hooks?.['fields.afterCreate'];
+
+      if (!afterCreateHook) {
+        return;
+      }
+
+      await afterCreateHook(model, options);
     });
 
     this.app.db.on(

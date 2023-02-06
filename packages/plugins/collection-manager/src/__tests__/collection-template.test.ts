@@ -6,11 +6,14 @@ describe('collection template', () => {
   let db: Database;
   let app: Application;
   let Collection: DBCollection;
+  let Field: DBCollection;
+
   beforeEach(async () => {
     app = await createApp();
 
     db = app.db;
     Collection = db.getCollection('collections');
+    Field = db.getCollection('fields');
   });
 
   afterEach(async () => {
@@ -23,13 +26,14 @@ describe('collection template', () => {
     db.collectionTemplate({
       name: 'transactionable',
       hooks: {
-        async ['fields.afterCreate']() {
+        async ['fields.afterCreate'](...args) {
+          console.log({ args });
           fn();
         },
       },
     });
 
-    Collection.repository.create({
+    await Collection.repository.create({
       values: {
         name: 'mainCollection',
         fields: [
@@ -42,7 +46,7 @@ describe('collection template', () => {
       context: {},
     });
 
-    Collection.repository.create({
+    await Collection.repository.create({
       values: {
         name: 'subCollection',
         template: 'transactionable',
@@ -50,21 +54,13 @@ describe('collection template', () => {
       context: {},
     });
 
-    console.log(await app.db.getCollection('subCollection').repository.find());
-
-    // const collection = app.db.getCollection('subCollection');
-
-    // console.log({ collection });
-    // db.getCollection('fields').repository.create({
-    //   values: {
-    //     type: 'belongsTo',
-    //     name: 'belongsToMainCollection',
-    //     target: 'mainCollection',
-    //     foreignKey: 'mainCollectionId',
-    //     collectionName: 'subCollection',
-    //   },
-    //   context: {},
-    // });
+    await Field.repository.create({
+      values: {
+        name: 'subField',
+        collectionName: 'subCollection',
+        type: 'string',
+      },
+    });
 
     expect(fn).toHaveBeenCalled();
   });
