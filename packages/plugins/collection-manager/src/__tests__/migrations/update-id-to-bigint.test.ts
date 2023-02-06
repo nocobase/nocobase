@@ -77,6 +77,7 @@ excludeSqlite()('update id to bigint  test', () => {
       if (process.env.DB_UNDERSCORED) {
         fieldName = lodash.snakeCase(fieldName);
       }
+
       console.log(`${collectionName}, ${fieldName}`, tableInfo[fieldName].type);
       expect(tableInfo[fieldName].type).toBe('BIGINT');
     };
