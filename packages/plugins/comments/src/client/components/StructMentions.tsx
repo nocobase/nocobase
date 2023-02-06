@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mentions, MentionProps } from 'antd';
 import { OptionProps } from 'antd/es/mentions/index';
 import { useResource } from '@nocobase/client';
@@ -52,6 +52,10 @@ export const StructMentions = (props: StructMentionsProps) => {
   const handleSelect = (option: OptionProps, prefix: string) => {
     setAts([...ats, mentions.find((i) => i.id === ~~option.key)]);
   };
+
+  useEffect(() => {
+    overrideOnChange(overrideValue);
+  }, [ats]);
 
   return (
     <Mentions
