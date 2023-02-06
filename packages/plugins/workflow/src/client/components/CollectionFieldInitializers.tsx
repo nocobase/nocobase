@@ -5,6 +5,7 @@ import { SchemaInitializer, useCollection, InitializerWithSwitch, gridRowColWrap
 
 
 function CollectionFieldInitializer({ field, ...props }) {
+  console.log('---------', field?.uiSchema);
   const uiSchema = cloneDeep(field.uiSchema);
   delete uiSchema['x-uid'];
 
