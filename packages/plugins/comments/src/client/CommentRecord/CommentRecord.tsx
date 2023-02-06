@@ -2,6 +2,8 @@ import { ArrayTable } from '@formily/antd';
 import { observer, useField } from '@formily/react';
 import { FormProvider, SchemaComponent, useCompile, useRecord } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
+import { Tooltip, Popover } from 'antd';
+import { css } from '@emotion/css';
 import { CommentItem, getContent } from '../CommentBlock/CommentBlock';
 import { useCommentTranslation } from '../locale';
 import { CommentRecordDecorator } from './CommentRecord.Decorator';
@@ -57,8 +59,31 @@ const Commenter = observer(() => {
 
 const CommentContent = observer(() => {
   const record = useRecord();
-
-  return <div>{getContent(record as CommentItem)}</div>;
+  const content = getContent(record as CommentItem);
+  return (
+    <Popover
+      content={
+        <div
+          className={css`
+            width: 300px;
+            word-break: break-word;
+          `}
+        >
+          {content}
+        </div>
+      }
+    >
+      <div
+        className={css`
+          width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        `}
+      >
+        {content}
+      </div>
+    </Popover>
+  );
 });
 
 export const IsAssociationBlock = createContext(null);
@@ -205,6 +230,9 @@ export const CommentRecord: any = () => {
               columnContent: {
                 type: 'void',
                 'x-component': 'TableV2.Column',
+                'x-component-props': {
+                  ellipsis: true,
+                },
                 title: t('Comment content'),
                 properties: {
                   content: {
