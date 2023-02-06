@@ -59,6 +59,7 @@ describe('collection template', () => {
         collectionName: 'subCollection',
         type: 'string',
       },
+      context: {},
     });
 
     expect(fn).toHaveBeenCalled();
