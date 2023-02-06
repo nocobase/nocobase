@@ -5,7 +5,7 @@ import { SchemaInitializer, useCollection, InitializerWithSwitch, gridRowColWrap
 
 
 function CollectionFieldInitializer({ field, ...props }) {
-  const uiSchema = cloneDeep(field?.uiSchema ?? {});
+  const uiSchema = cloneDeep(field.uiSchema);
   delete uiSchema['x-uid'];
 
   return (
@@ -27,10 +27,13 @@ function CollectionFieldInitializer({ field, ...props }) {
 
 export function CollectionFieldInitializers(props) {
   const { fields } = useCollection();
-  const items = fields.filter(field => !['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)).map(field => ({
+  console.log('------', fields);
+  const items = fields
+  .filter(field => !['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type) && field.uiSchema)
+  .map(field => ({
     key: field.name,
     type: 'item',
-    title: field.uiSchema?.title,
+    title: field.uiSchema.title,
     component: CollectionFieldInitializer,
     field
   }));
