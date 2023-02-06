@@ -29,6 +29,6 @@ export const calendarTopText = css`
 
 export const calendarHeader = css`
   fill: #fafafa;
-  stroke: #e0e0e0;
+  // stroke: #e0e0e0;
   stroke-width: 1.4;
 `;

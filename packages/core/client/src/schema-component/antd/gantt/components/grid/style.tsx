@@ -7,7 +7,7 @@ export const gridRow = css`
 `;
 
 export const gridRowLine = css`
-  stroke: #ebeff2;
+  stroke: #f0f0f0;
 `;
 
 export const gridTick = css`
