@@ -1,6 +1,7 @@
-import React, { useState, SyntheticEvent, useRef, useEffect, useMemo } from 'react';
+import React, { useState, SyntheticEvent, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useFieldSchema, Schema, RecursionField } from '@formily/react';
 import { cx } from '@emotion/css';
+import { createForm } from '@formily/core';
 import { Task } from '../../types/public-types';
 import { GridProps } from '../grid/grid';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
@@ -16,15 +17,39 @@ import { DateSetup } from '../../types/date-setup';
 import { HorizontalScroll } from '../other/horizontal-scroll';
 import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
 import { wrapper } from './style';
+import { ActionContext } from '../../../action';
 import { useDesignable } from '../../../../../schema-component';
-import { useGanttBlockContext, useBlockRequestContext } from '../../../../../block-provider';
-
+import { useBlockRequestContext } from '../../../../../block-provider';
+import { RecordProvider } from '../../../../../record-provider';
 
 const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
   const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;
   return columnWidth;
 };
+export const DeleteEventContext = React.createContext({
+  close: () => {},
+});
+const GanttRecordViewer = (props) => {
+  const { visible, setVisible, record } = props;
+  const form = useMemo(() => createForm(), [record]);
+  const fieldSchema = useFieldSchema();
+  const eventSchema: Schema = fieldSchema.properties.detail;
+  const close = useCallback(() => {
+    setVisible(false);
+  }, []);
 
+  return (
+    eventSchema && (
+      <DeleteEventContext.Provider value={{ close }}>
+        <ActionContext.Provider value={{ visible, setVisible }}>
+          <RecordProvider record={record}>
+            <RecursionField schema={eventSchema} name={eventSchema.name} />
+          </RecordProvider>
+        </ActionContext.Provider>
+      </DeleteEventContext.Provider>
+    )
+  );
+};
 export const Gantt: any = (props: any) => {
   const { designable } = useDesignable();
   const {
@@ -63,9 +88,7 @@ export const Gantt: any = (props: any) => {
     useProps,
   } = props;
   const { onExpanderClick, tasks } = useProps();
-  // const ctx = useGanttBlockContext();
-  const { resource ,service} = useBlockRequestContext();
-  // console.log(ctx,useBlockRequestContext())
+  const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
   const { fieldNames } = useProps(props);
   const viewMode = fieldNames.range || 'day';
@@ -76,6 +99,8 @@ export const Gantt: any = (props: any) => {
     const [startDate, endDate] = ganttDateRange(tasks, viewMode, preStepsCount);
     return { viewMode, dates: seedDates(startDate, endDate, viewMode) };
   });
+  const [visible, setVisible] = useState(false);
+  const [record, setRecord] = useState<any>({});
   const [currentViewDate, setCurrentViewDate] = useState<Date | undefined>(undefined);
   const [taskListWidth, setTaskListWidth] = useState(0);
   const [svgContainerWidth, setSvgContainerWidth] = useState(0);
@@ -359,7 +384,7 @@ export const Gantt: any = (props: any) => {
         [fieldNames.progress]: task.progress / 100,
       },
     });
-    await service?.refresh()
+    await service?.refresh();
   };
   const handleTaskChange = async (task: Task) => {
     await resource.update({
@@ -370,7 +395,15 @@ export const Gantt: any = (props: any) => {
         [fieldNames.end]: task.end,
       },
     });
-    await service?.refresh()
+    await service?.refresh();
+  };
+  const handleBarClick = (data) => {
+    const recordData = service.data?.data?.find((item) => item.id === +data.id);
+    if (!recordData) {
+      return;
+    }
+    setRecord(recordData);
+    setVisible(true);
   };
   const gridProps: GridProps = {
     columnWidth,
@@ -412,13 +445,13 @@ export const Gantt: any = (props: any) => {
     onDateChange: handleTaskChange,
     onProgressChange: fieldNames.progress && handleProgressChange,
     onDoubleClick,
-    onClick,
+    onClick: handleBarClick,
     onDelete,
   };
-
   return (
     <div>
       <div>
+        <GanttRecordViewer visible={visible} setVisible={setVisible} record={record} />
         <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
         <RecursionField name={'table'} schema={fieldSchema.properties.table} />
         <div className={cx(wrapper)} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
