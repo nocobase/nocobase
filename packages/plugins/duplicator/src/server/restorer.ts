@@ -6,7 +6,7 @@ import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
-
+import fs from 'fs';
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
 
@@ -31,6 +31,7 @@ export class Restorer extends AppMigrator {
 
     await this.decompressBackup(filePath);
     await this.importCollections();
+    await this.importDb();
     await this.clearWorkDir();
   }
 
@@ -336,5 +337,31 @@ export class Restorer extends AppMigrator {
     app.logger.info(`${collectionName} imported with ${rowsWithMeta.length} rows`);
 
     this.importedCollections.push(collection.name);
+  }
+
+  async importDb() {
+    const sqlFilePath = path.resolve(this.workDir, 'db.sql');
+    // if db.sql file not exists, skip import
+    if (!fs.existsSync(sqlFilePath)) {
+      return;
+    }
+
+    // read file content from db.sql
+    const queriesContent = await fsPromises.readFile(sqlFilePath, 'utf8');
+
+    const queries = JSON.parse(queriesContent);
+
+    for (const sql of queries) {
+      try {
+        this.app.log.info(`import sql: ${sql}`);
+        await this.app.db.sequelize.query(sql);
+      } catch (e) {
+        if (e.name === 'SequelizeDatabaseError') {
+          this.app.logger.error(e.message);
+        } else {
+          throw e;
+        }
+      }
+    }
   }
 }
