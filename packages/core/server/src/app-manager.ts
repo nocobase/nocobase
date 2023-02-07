@@ -67,6 +67,7 @@ export class AppManager extends EventEmitter {
 
       if (typeof handleApp === 'string') {
         handleApp = await this.getApplication(handleApp);
+
         if (!handleApp) {
           res.statusCode = 404;
           return res.end(
@@ -74,7 +75,7 @@ export class AppManager extends EventEmitter {
               redirectTo: process.env.APP_NOT_FOUND_REDIRECT_TO,
               errors: [
                 {
-                  message: 'Not Found',
+                  message: 'Application Not Found',
                 },
               ],
             }),

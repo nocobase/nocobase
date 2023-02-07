@@ -46,7 +46,9 @@ export class PluginMultiAppManager extends Plugin {
           })) as ApplicationModel | null;
 
           if (existsApplication) {
-            await existsApplication.registerToMainApp(this.app, { skipInstall: true });
+            await existsApplication.registerToMainApp(this.app, {
+              skipInstall: true,
+            });
           }
         }
       },

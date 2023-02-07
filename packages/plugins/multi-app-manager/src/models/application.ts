@@ -19,9 +19,12 @@ export class ApplicationModel extends Model {
 
   static async handleAppStart(app: Application, options: registerAppOptions) {
     await app.load();
+
     if (!options?.skipInstall) {
+      await app.db.sync();
       await app.install();
     }
+
     await app.start();
   }
 
@@ -105,6 +108,10 @@ export class ApplicationModel extends Model {
       database: {
         ...rawDatabaseOptions,
         tablePrefix: '',
+      },
+      plugins: ['nocobase'],
+      resourcer: {
+        prefix: '/api',
       },
     };
   }
