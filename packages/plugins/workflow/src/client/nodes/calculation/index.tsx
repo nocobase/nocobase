@@ -26,19 +26,17 @@ export default {
       title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
       name: 'config.engine',
       'x-decorator': 'FormItem',
-      'x-component': 'Select',
+      'x-component': 'Radio.Group',
+      'x-component-props': {
+        className: css`
+          .anticon{
+            margin-left: .5em;
+          }
+        `
+      },
       required: true,
       enum: Array.from(calculationEngines.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []),
       default: 'math.js',
-      // 'x-reactions': {
-      //   target: 'config.expression',
-      //   effects: ['onFieldInputValueChange'],
-      //   fulfill: {
-      //     schema: {
-      //       description: '{{getCalculationEngine($self.value).description}}',
-      //     }
-      //   }
-      // },
     },
     'config.expression': {
       type: 'string',

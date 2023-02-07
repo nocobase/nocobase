@@ -4,7 +4,7 @@ import mathjs from './mathjs';
 import formulajs from './formulajs';
 
 export interface CalculationEngine {
-  label: string;
+  label: React.ReactNode;
   description?: React.ReactNode;
   evaluate(exp: string): any;
 }
