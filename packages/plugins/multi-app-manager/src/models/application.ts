@@ -21,7 +21,13 @@ export class ApplicationModel extends Model {
     await app.load();
 
     if (!options?.skipInstall) {
-      await app.db.sync();
+      await app.db.sync({
+        force: false,
+        alter: {
+          drop: false,
+        },
+      });
+
       await app.install();
     }
 
