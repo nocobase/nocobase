@@ -10,4 +10,11 @@ export default {
   'Endpoint': '接入点',
   'Sign': '签名',
   'Template code': '模板代码',
+
+  'Secret Id': 'Secret Id',
+  'Secret Key': 'Secret Key',
+  'Region': '地域',
+  'Sign name': '短信签名内容',
+  'Sms sdk app id': '短信应用 ID',
+  'Template Id': '短信模板 ID'
 };

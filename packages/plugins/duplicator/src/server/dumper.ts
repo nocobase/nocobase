@@ -72,8 +72,68 @@ export class Dumper extends AppMigrator {
     }
 
     await this.dumpMeta();
+    await this.dumpDb();
     await this.packDumpedDir();
     await this.clearWorkDir();
+  }
+
+  async dumpDb() {
+    const db = this.app.db;
+    const dialect = db.sequelize.getDialect();
+    let sqlContent = [];
+    if (dialect === 'postgres') {
+      // get user defined functions in postgres
+      const functions = await db.sequelize.query(
+        `SELECT
+n.nspname AS function_schema,
+p.proname AS function_name,
+pg_get_functiondef(p.oid) AS def
+FROM
+pg_proc p
+LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
+WHERE
+n.nspname NOT IN ('pg_catalog', 'information_schema')
+ORDER BY
+function_schema,
+function_name;`,
+        {
+          type: 'SELECT',
+        },
+      );
+
+      for (const f of functions) {
+        sqlContent.push(f['def']);
+      }
+
+      // get user defined triggers in postgres
+      const triggers = await db.sequelize.query(`select pg_get_triggerdef(oid) from pg_trigger`, {
+        type: 'SELECT',
+      });
+
+      for (const t of triggers) {
+        sqlContent.push(t['pg_get_triggerdef']);
+      }
+
+      // get user defined views in postgres
+      const views = await db.sequelize.query(
+        `SELECT table_schema, table_name,  pg_get_viewdef("table_name", true) as def
+FROM information_schema.views
+WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+ORDER BY table_schema, table_name`,
+        {
+          type: 'SELECT',
+        },
+      );
+
+      for (const v of views) {
+        sqlContent.push(`CREATE OR REPLACE VIEW ${v['table_name']} AS ${v['def']}`);
+      }
+    }
+
+    if (sqlContent.length > 0) {
+      const dbDumpPath = path.resolve(this.workDir, 'db.sql');
+      await fsPromises.writeFile(dbDumpPath, JSON.stringify(sqlContent), 'utf8');
+    }
   }
 
   async dumpMeta() {

@@ -74,7 +74,7 @@ const posts = new Collection({
 });
 ```
 
-## Instance Member
+## Instance Members
 
 ### `options`
 
@@ -108,7 +108,7 @@ Match the Model type of Sequelize.
 
 Data repository instance.
 
-## Field Configuration Method
+## Field Configuration Methods
 
 ### `getField()`
 
@@ -333,7 +333,7 @@ const posts = db.collection({
 posts.forEachField(field => console.log(field.name));
 ```
 
-## Index Configuration Method
+## Index Configuration Methods
 
 ### `addIndex()`
 
@@ -405,7 +405,7 @@ const posts = db.collection({
 posts.removeIndex(['title']);
 ```
 
-## Table Configuration Method
+## Table Configuration Methods
 
 ### `remove()`
 
@@ -431,7 +431,7 @@ const posts = db.collection({
 posts.remove();
 ```
 
-## Database Operation Method
+## Database Operation Methods
 
 ### `sync()`
 

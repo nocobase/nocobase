@@ -15,7 +15,7 @@ describe('dump', () => {
   let testDir: string;
   beforeEach(async () => {
     testDir = path.resolve(os.tmpdir(), `nocobase-dump-${Date.now()}`);
-
+    await fsPromises.mkdir(testDir, { recursive: true });
     app = mockServer();
 
     db = app.db;
@@ -52,6 +52,7 @@ describe('dump', () => {
       fields: [],
     });
 
+    await app.cleanDb();
     await db.sync();
   });
 
@@ -115,5 +116,53 @@ describe('dump', () => {
     });
 
     await db.sequelize.query(sql, { type: 'INSERT' });
+  });
+
+  it('should dump user defined functions', async () => {
+    if (db.sequelize.getDialect() !== 'postgres') {
+      return;
+    }
+
+    await db.sequelize.query(`
+    CREATE OR REPLACE FUNCTION add(integer, integer) RETURNS integer
+    AS 'select $1 + $2;'
+    LANGUAGE SQL
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;
+    `);
+
+    await db.sequelize.query(`
+CREATE OR REPLACE FUNCTION trigger_function()
+   RETURNS TRIGGER
+   LANGUAGE PLPGSQL
+AS $$
+BEGIN
+   -- trigger logic
+END;
+$$`);
+
+    await db.sequelize.query(`
+CREATE  TRIGGER last_name_changes
+  BEFORE UPDATE
+  ON ${app.db.getCollection('users').model.tableName}
+  FOR EACH ROW
+  EXECUTE PROCEDURE  trigger_function();
+    `);
+
+    await db.sequelize.query(`
+    CREATE OR REPLACE VIEW vistaView AS SELECT 'Hello World' as hello;
+    `);
+
+    const dumper = new Dumper(app, {
+      workDir: testDir,
+    });
+
+    await dumper.dumpDb();
+
+    const restorer = new Restorer(app, {
+      workDir: testDir,
+    });
+
+    await restorer.importDb();
   });
 });

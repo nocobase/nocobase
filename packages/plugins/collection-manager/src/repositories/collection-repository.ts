@@ -1,6 +1,7 @@
-import Topo from '@hapi/topo';
-import { Model, Repository } from '@nocobase/database';
+import { Repository } from '@nocobase/database';
 import { CollectionModel } from '../models/collection';
+import toposort from 'toposort';
+import lodash from 'lodash';
 
 interface LoadOptions {
   filter?: any;
@@ -12,45 +13,40 @@ export class CollectionRepository extends Repository {
     const { filter, skipExist } = options;
     const instances = (await this.find({ filter })) as CollectionModel[];
 
-    const sorter = new Topo.Sorter<Model>();
-
+    const inheritedGraph = [];
     const throughModels = [];
+    const generalModels = [];
+
+    const nameMap = {};
 
     for (const instance of instances) {
+      nameMap[instance.get('name')] = instance;
       // @ts-ignore
       const fields = await instance.getFields();
       for (const field of fields) {
         if (field['type'] === 'belongsToMany') {
           const throughName = field.options.through;
           if (throughName) {
-            throughModels.push(throughName);
+            inheritedGraph.push([throughName, field.options.target]);
+            inheritedGraph.push([throughName, instance.get('name')]);
           }
         }
       }
 
-      const topoOptions = {
-        group: instance.get('name'),
-      };
-
       if (instance.get('inherits')) {
-        topoOptions['after'] = instance.get('inherits');
+        for (const parent of instance.get('inherits')) {
+          inheritedGraph.push([parent, instance.get('name')]);
+        }
+      } else {
+        generalModels.push(instance.get('name'));
       }
-
-      sorter.add(instance, topoOptions);
     }
 
-    const sorted = sorter.nodes;
+    const sortedNames = [...toposort(inheritedGraph), ...lodash.difference(generalModels, throughModels)];
 
-    sorted.sort((a, b) => {
-      if (throughModels.includes(a.get('name'))) {
-        return -1;
-      }
-
-      return 1;
-    });
-
-    for (const instance of sorted) {
-      await instance.load({ skipExist });
+    for (const instanceName of lodash.uniq(sortedNames)) {
+      if (!nameMap[instanceName]) continue;
+      await nameMap[instanceName].load({ skipExist });
     }
   }
 
