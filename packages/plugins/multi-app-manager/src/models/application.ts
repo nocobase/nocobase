@@ -40,9 +40,8 @@ export class ApplicationModel extends Model {
 
     const AppModel = this.constructor as typeof ApplicationModel;
 
-    const createDatabase = async () => {
-      const database = appName;
-      const { host, port, username, password, dialect } = mainApp.db.options;
+    const createDatabase = async (databaseOptions) => {
+      const { host, port, username, password, dialect, database } = databaseOptions;
 
       if (dialect === 'mysql') {
         const mysql = require('mysql2/promise');
@@ -72,14 +71,14 @@ export class ApplicationModel extends Model {
       }
     };
 
-    if (!options?.skipInstall) {
-      await createDatabase();
-    }
-
     const app = mainApp.appManager.createApplication(appName, {
       ...AppModel.initOptions(appName, mainApp),
       ...appOptions,
     });
+
+    if (!options?.skipInstall) {
+      await createDatabase(app.options.database);
+    }
 
     await AppModel.handleAppStart(app, options);
 
