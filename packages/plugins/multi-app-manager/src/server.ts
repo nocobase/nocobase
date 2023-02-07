@@ -10,6 +10,12 @@ export class PluginMultiAppManager extends Plugin {
     }
   }
 
+  beforeLoad(): void {
+    this.app.appManager.setAppSelector((req) => {
+      return (req.headers['x-app'] || null) as any;
+    });
+  }
+
   async load() {
     this.db.registerModels({
       ApplicationModel,
@@ -48,9 +54,7 @@ export class PluginMultiAppManager extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.applications`,
-      actions: [
-        'applications:*',
-      ],
+      actions: ['applications:*'],
     });
   }
 }
