@@ -26,6 +26,9 @@ describe('multiple apps create', () => {
     const miniApp = await db.getRepository('applications').create({
       values: {
         name,
+        options: {
+          plugins: [],
+        },
       },
     });
 
@@ -37,6 +40,9 @@ describe('multiple apps create', () => {
     await db.getRepository('applications').create({
       values: {
         name,
+        options: {
+          plugins: [],
+        },
       },
     });
 
