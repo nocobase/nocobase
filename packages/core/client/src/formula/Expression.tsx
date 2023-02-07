@@ -63,8 +63,15 @@ const renderExp = (exp: string, scope = {}) => {
   });
 };
 
-export const Expression = (props) => {
-  const { evaluate, value, supports, useCurrentFields } = props;
+export const Expression = (props: {
+  value: string;
+  onChange: (value: string) => void;
+  supports: string[];
+  useCurrentFields: () => any[];
+  dataType: string;
+  evaluate: (value: string, scope: any) => any;
+}) => {
+  const { evaluate, value, supports, useCurrentFields, dataType } = props;
   const field = useField<Field>();
   const { t } = useTranslation();
   const fields = useCurrentFields();
@@ -79,7 +86,7 @@ export const Expression = (props) => {
   const numColumns = new Map<string, string>();
   const scope = {};
   fields
-    .filter((field) => supports.includes(field.interface))
+    .filter((field) => supports.includes(field.interface) && field.interface === dataType)
     .forEach((field) => {
       numColumns.set(field.name, field.uiSchema.title);
       scope[field.name] = 1;

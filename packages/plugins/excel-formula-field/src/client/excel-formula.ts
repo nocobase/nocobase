@@ -32,7 +32,7 @@ export const excelFormula: IField = {
       'x-decorator': 'FormItem',
       default: 'number',
       'x-disabled': '{{ !createOnly }}',
-      "x-reactions": [
+      'x-reactions': [
         {
           target: 'uiSchema.x-component-props.step',
           fulfill: {
@@ -40,7 +40,7 @@ export const excelFormula: IField = {
               display: '{{$self.value !== "string" ? "visible" : "none"}}',
             },
           },
-        }
+        },
       ],
       enum: [
         { value: 'string', label: '{{t("String")}}' },
@@ -74,6 +74,18 @@ export const excelFormula: IField = {
         supports: ['number', 'percent', 'integer', 'string'],
         useCurrentFields: '{{ useCurrentFields }}',
       },
+      'x-reactions': [
+        {
+          dependencies: ['dataType'],
+          fulfill: {
+            state: {
+              componentProps: {
+                dataType: '{{$deps[0]}}',
+              },
+            },
+          },
+        },
+      ],
     },
   },
   filterable: {
