@@ -2,7 +2,7 @@
 
 ## Overview
 
-The interfaces in NocoBase follow a resource-oriented design pattern. Resourcer is mainly used to manage API resources and routes.
+The interfaces in NocoBase follow a resource-oriented design pattern. Resourcer is mainly used to manage the resources and routes of API.
 
 ```javascript
 const Koa = require('koa');
@@ -10,7 +10,7 @@ const { Resourcer } = require('@nocobase/resourcer');
 
 const resourcer = new Resourcer();
 
-// Define a resourcer
+// Define a resource interface
 resourcer.define({
   name: 'users',
   actions: {
@@ -31,28 +31,28 @@ resourcer.define({
 
 const app = new Koa();
 
-// Use the resourcer in instance koa
+// Use the resourcer in koa instance
 app.use(
   resourcer.middleware({
-    prefix: '/api', // Route prefix of resourcer
+    prefix: '/api', // Route prefix of the resourcer
   }),
 );
 
 app.listen(3000);
 ```
 
-After starting the service, make request using `curl`:
+Once the service is started, make request using `curl`:
 
 ```bash
 >$ curl localhost:3000/api/users
 [{"name":"u1","age":18},{"name":"u2","age":20}]
 ```
 
-More instructions of Resourcer can be found in [Resources and Actions](/development/guide/resources-actions). Resourcer is built into [NocoBase Application](/api/server/application#resourcer), you can access it through `app.resourcer`.
+More instructions of resourcer can be found in [Resources and Actions](/development/guide/resources-actions). Resourcer is built into [NocoBase Application](/api/server/application#resourcer), you can access it through `app.resourcer`.
 
 ## Constructor
 
-To create resourcer manager instances.
+To create resourcer instances.
 
 **Signature**
 
@@ -90,7 +90,7 @@ const app = new Application({
 
 ### `define()`
 
-Define and register a resource object with the resource manager. Usually used instead of the constructor of the `Resource` class.
+Define and register a resource object with the resourcer. Usually used instead of the constructor of the `Resource` class.
 
 **Signature**
 
@@ -136,7 +136,7 @@ app.resourcer.isDefined('books'); // true
 
 ### `registerAction()`
 
-Register an action with the resource manager. The action is accessible to a specified resource, or all resources if no resource name is specified.
+Register an action with the resourcer. The action is accessible to a specified resource, or all resources if no resource name is specified.
 
 **Signature**
 
@@ -167,7 +167,7 @@ app.resourcer.registerAction('attachments:upload', async (ctx, next) => {
 
 ### `registerActions()`
 
-Register a set of actions with the resource manager. 
+Register a set of actions with the resourcer. 
 
 **Signature**
 
@@ -280,6 +280,6 @@ const koa = new Koa();
 
 const resourcer = new Resourcer();
 
-//Generate Koa-compatible middleware
+// Generate Koa-compatible middleware
 koa.use(resourcer.middleware());
 ```
