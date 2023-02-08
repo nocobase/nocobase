@@ -6,15 +6,14 @@ describe('postgres schema', () => {
 
   beforeEach(async () => {
     db = mockDatabase({
-      schema: 'testSchema',
+      schema: 'test_schema',
     });
 
     if (!db.inDialect('postgres')) return;
-
-    await db.sequelize.query('CREATE SCHEMA IF NOT EXISTS "testSchema"');
   });
 
   afterEach(async () => {
+    await db.sequelize.query(`DROP SCHEMA IF EXISTS ${db.options.schema} CASCADE;`);
     await db.close();
   });
 
@@ -30,7 +29,7 @@ describe('postgres schema', () => {
     await db.clean({ drop: true });
 
     const tableInfo = await db.sequelize.query(
-      `SELECT * FROM information_schema.tables where table_schema = 'testSchema'`,
+      `SELECT * FROM information_schema.tables where table_schema = '${db.options.schema}'`,
     );
 
     expect(tableInfo[0].length).toEqual(0);
@@ -42,7 +41,7 @@ describe('postgres schema', () => {
     await db.clean({ drop: true });
 
     const tableInfo = await db.sequelize.query(
-      `SELECT * FROM information_schema.tables where table_schema = 'testSchema'`,
+      `SELECT * FROM information_schema.tables where table_schema = '${db.options.schema}'`,
     );
 
     expect(tableInfo[0].length).toEqual(0);
@@ -54,7 +53,7 @@ describe('postgres schema', () => {
     await db.sync();
 
     const newTableInfo = await db.sequelize.query(
-      `SELECT * FROM information_schema.tables where table_schema = 'testSchema'`,
+      `SELECT * FROM information_schema.tables where table_schema = '${db.options.schema}'`,
     );
 
     expect(newTableInfo[0].find((item) => item['table_name'] == collection.model.tableName)).toBeTruthy();

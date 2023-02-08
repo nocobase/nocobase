@@ -484,6 +484,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', null);
     }
 
+    if (this.options.schema && this.inDialect('postgres')) {
+      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${this.options.schema}"`, null);
+    }
+
     const result = await this.sequelize.sync(options);
 
     if (isMySQL) {
