@@ -96,7 +96,7 @@ export const workflowSchema: ISchema = {
             filter: {
               current: true
             },
-            sort: ['-enabled', '-createdAt'],
+            sort: ['-createdAt'],
             except: ['config'],
           },
         },

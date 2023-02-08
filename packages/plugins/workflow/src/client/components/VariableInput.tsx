@@ -186,10 +186,12 @@ export function VariableInput(props) {
               padding-right: 28px;
 
               .ant-tag{
+                display: inline;
                 line-height: 19px;
                 margin: 0;
+                padding: 2px 7px;
                 border-radius: 10px;
-                background-color: #3847c0;
+                background-color: #6475c0;
               }
             }
           `}>

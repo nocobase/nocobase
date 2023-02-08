@@ -8,10 +8,11 @@ import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
 import { useFlowContext } from '../FlowContext';
 import { branchBlockClass, nodeSubtreeClass } from "../style";
-import { lang, NAMESPACE } from "../locale";
+import { NAMESPACE } from "../locale";
 import { useWorkflowVariableOptions } from "../variable";
 import { VariableTextArea } from "../components/VariableTextArea";
-import { calculationEngines } from "./calculation/engines";
+import { calculationEngines, renderReference } from "./calculation/engines";
+import { RadioWithTooltip } from "../components/RadioWithTooltip";
 
 
 
@@ -150,11 +151,11 @@ export default {
       enum: [
         {
           value: true,
-          label: lang('Continue when "Yes"')
+          label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`
         },
         {
           value: false,
-          label: lang('Branch into "Yes" and "No"')
+          label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`
         }
       ],
     },
@@ -163,25 +164,36 @@ export default {
       title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
       name: 'config.engine',
       'x-decorator': 'FormItem',
-      'x-component': 'Select',
+      'x-component': 'RadioWithTooltip',
+      'x-component-props': {
+        options: Array.from(calculationEngines.getEntities()).reduce((result, [value, options]) => result.concat({ value, ...options }), []),
+      },
       required: true,
-      enum: Array.from(calculationEngines.getEntities()).reduce((result, [value, options]) => result.concat({ value, ...options }), []),
       default: 'math.js',
     },
     'config.calculation': {
       type: 'string',
       name: 'config.calculation',
-      title: `{{t("Conditions", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Condition expressions", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',
+      'x-reactions': {
+        dependencies: ['config.engine'],
+        fulfill: {
+          schema: {
+            description: '{{renderReference($deps[0])}}',
+          }
+        }
+      },
+      required: true
     }
   },
   view: {
 
   },
   options: [
-    { label: lang('Continue when "Yes"'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
-    { label: lang('Branch into "Yes" and "No"'), key: 'branch', value: { rejectOnFalse: false } }
+    { label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`, key: 'rejectOnFalse', value: { rejectOnFalse: true } },
+    { label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`, key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
     const { t } = useTranslation();
@@ -229,7 +241,11 @@ export default {
       </NodeDefaultView>
     )
   },
+  scope: {
+    renderReference
+  },
   components: {
-    CalculationConfig
+    CalculationConfig,
+    RadioWithTooltip
   }
 };
