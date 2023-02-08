@@ -1,8 +1,12 @@
 import Application, { AppManager, InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
+import * as path from 'path';
 import { ApplicationModel } from './models/application';
+import Database, { IDatabaseOptions, Model, Transactionable } from '@nocobase/database';
+import lodash from 'lodash';
 
 export type AppDbCreator = (app: Application) => Promise<void>;
+export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
 
 const defaultDbCreator = async (app: Application) => {
   const databaseOptions = app.options.database as any;
@@ -36,11 +40,50 @@ const defaultDbCreator = async (app: Application) => {
   }
 };
 
+const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
+  const rawDatabaseOptions = PluginMultiAppManager.getDatabaseConfig(mainApp);
+
+  if (rawDatabaseOptions.dialect === 'sqlite') {
+    const mainAppStorage = rawDatabaseOptions.storage;
+    if (mainAppStorage !== ':memory:') {
+      const mainStorageDir = path.dirname(mainAppStorage);
+      rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
+    }
+  } else {
+    rawDatabaseOptions.database = appName;
+  }
+
+  return {
+    database: {
+      ...rawDatabaseOptions,
+      tablePrefix: '',
+    },
+    plugins: ['nocobase'],
+    resourcer: {
+      prefix: '/api',
+    },
+  };
+};
+
 export class PluginMultiAppManager extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
+  appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
+
+  registerAppOptionsFactory(factory: AppOptionsFactory) {
+    this.appOptionsFactory = factory;
+  }
 
   registerAppDbCreator(appDbCreator: AppDbCreator) {
     this.appDbCreator = appDbCreator;
+  }
+
+  static getDatabaseConfig(app: Application): IDatabaseOptions {
+    const oldConfig =
+      app.options.database instanceof Database
+        ? (app.options.database as Database).options
+        : (app.options.database as IDatabaseOptions);
+
+    return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
   async install(options?: InstallOptions) {
@@ -68,7 +111,11 @@ export class PluginMultiAppManager extends Plugin {
     this.db.on('applications.afterCreateWithAssociations', async (model: ApplicationModel, options) => {
       const { transaction } = options;
 
-      await model.registerToMainApp(this.app, { transaction, dbCreator: this.appDbCreator });
+      await model.registerToMainApp(this.app, {
+        transaction,
+        dbCreator: this.appDbCreator,
+        appOptionsFactory: this.appOptionsFactory,
+      });
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
@@ -88,6 +135,7 @@ export class PluginMultiAppManager extends Plugin {
           if (existsApplication) {
             await existsApplication.registerToMainApp(this.app, {
               dbCreator: this.appDbCreator,
+              appOptionsFactory: this.appOptionsFactory,
             });
           }
         }

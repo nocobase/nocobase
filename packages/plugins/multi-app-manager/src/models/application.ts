@@ -1,24 +1,14 @@
-import Database, { IDatabaseOptions, Model, Transactionable } from '@nocobase/database';
+import { Model, Transactionable } from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import lodash from 'lodash';
-import * as path from 'path';
-import { AppDbCreator } from '../server';
+import { AppDbCreator, AppOptionsFactory } from '../server';
 
 export interface registerAppOptions extends Transactionable {
   skipInstall?: boolean;
   dbCreator: AppDbCreator;
+  appOptionsFactory: AppOptionsFactory;
 }
 
 export class ApplicationModel extends Model {
-  static getDatabaseConfig(app: Application): IDatabaseOptions {
-    const oldConfig =
-      app.options.database instanceof Database
-        ? (app.options.database as Database).options
-        : (app.options.database as IDatabaseOptions);
-
-    return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
-  }
-
   static async handleAppStart(app: Application, options: registerAppOptions) {
     await app.load();
 
@@ -43,7 +33,7 @@ export class ApplicationModel extends Model {
     const AppModel = this.constructor as typeof ApplicationModel;
 
     const app = mainApp.appManager.createApplication(appName, {
-      ...AppModel.initOptions(appName, mainApp),
+      ...options.appOptionsFactory(appName, mainApp),
       ...appOptions,
     });
 
@@ -76,30 +66,5 @@ export class ApplicationModel extends Model {
         hooks: false,
       },
     );
-  }
-
-  static initOptions(appName: string, mainApp: Application) {
-    const rawDatabaseOptions = this.getDatabaseConfig(mainApp);
-
-    if (rawDatabaseOptions.dialect === 'sqlite') {
-      const mainAppStorage = rawDatabaseOptions.storage;
-      if (mainAppStorage !== ':memory:') {
-        const mainStorageDir = path.dirname(mainAppStorage);
-        rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
-      }
-    } else {
-      rawDatabaseOptions.database = appName;
-    }
-
-    return {
-      database: {
-        ...rawDatabaseOptions,
-        tablePrefix: '',
-      },
-      plugins: ['nocobase'],
-      resourcer: {
-        prefix: '/api',
-      },
-    };
   }
 }
