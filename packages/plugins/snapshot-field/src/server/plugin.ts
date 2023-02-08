@@ -90,7 +90,10 @@ export class SnapshotFieldPlugin extends Plugin {
         const { target: targetFieldCollectionName, targetKey, sourceKey } = targetField.options;
         const targetFieldTargetKey = targetKey ?? sourceKey;
         const targetFieldRepository = this.app.db.getRepository(targetFieldCollectionName);
-        const paramValue = params.values[targetFieldName];
+        const paramValue = params.values?.[targetFieldName];
+
+        if (!paramValue) continue;
+
         let filterValues;
 
         if (Array.isArray(paramValue)) {
@@ -111,7 +114,6 @@ export class SnapshotFieldPlugin extends Plugin {
           collectionName: targetFieldCollectionName,
           data: res.map((r) => r.toJSON()),
         };
-        console.log(params);
       }
       return next();
     });
