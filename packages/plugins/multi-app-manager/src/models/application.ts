@@ -12,7 +12,7 @@ export class ApplicationModel extends Model {
   static async handleAppStart(app: Application, options: registerAppOptions) {
     await app.load();
 
-    if (!app.isInstalled()) {
+    if (!(await app.isInstalled())) {
       await app.db.sync({
         force: false,
         alter: {
