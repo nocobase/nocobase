@@ -6,7 +6,7 @@ import { AppDbCreator } from '../server';
 
 export interface registerAppOptions extends Transactionable {
   skipInstall?: boolean;
-  dbCreator?: AppDbCreator;
+  dbCreator: AppDbCreator;
 }
 
 export class ApplicationModel extends Model {
@@ -22,7 +22,7 @@ export class ApplicationModel extends Model {
   static async handleAppStart(app: Application, options: registerAppOptions) {
     await app.load();
 
-    if (!options?.skipInstall) {
+    if (!app.isInstalled()) {
       await app.db.sync({
         force: false,
         alter: {
@@ -42,45 +42,24 @@ export class ApplicationModel extends Model {
 
     const AppModel = this.constructor as typeof ApplicationModel;
 
-    const createDatabase = async (app: Application) => {
-      const databaseOptions = app.options.database as IDatabaseOptions;
-      const { host, port, username, password, dialect, database } = databaseOptions;
-
-      if (dialect === 'mysql') {
-        const mysql = require('mysql2/promise');
-        const connection = await mysql.createConnection({ host, port, user: username, password });
-        await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
-        await connection.close();
-      }
-
-      if (dialect === 'postgres') {
-        const { Client } = require('pg');
-
-        const client = new Client({
-          host,
-          port,
-          user: username,
-          password,
-          database: 'postgres',
-        });
-
-        await client.connect();
-
-        try {
-          await client.query(`CREATE DATABASE "${database}"`);
-        } catch (e) {}
-
-        await client.end();
-      }
-    };
-
     const app = mainApp.appManager.createApplication(appName, {
       ...AppModel.initOptions(appName, mainApp),
       ...appOptions,
     });
 
-    if (!options?.skipInstall) {
-      options.dbCreator ? await options.dbCreator(app) : await createDatabase(app);
+    const isInstalled = await (async () => {
+      try {
+        return await app.isInstalled();
+      } catch (e) {
+        if (e.message.includes('does not exist')) {
+          return false;
+        }
+        throw e;
+      }
+    })();
+
+    if (!isInstalled) {
+      await options.dbCreator(app);
     }
 
     await AppModel.handleAppStart(app, options);

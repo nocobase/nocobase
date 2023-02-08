@@ -25,14 +25,17 @@ describe('multiple apps create', () => {
     const fn = jest.fn();
 
     const appPlugin = app.getPlugin<PluginMultiAppManager>('PluginMultiAppManager');
+    const defaultDbCreator = appPlugin.appDbCreator;
 
-    appPlugin.registerAppDbCreator(async () => {
+    appPlugin.registerAppDbCreator(async (app) => {
       fn();
+      await defaultDbCreator(app);
     });
 
+    const name = `td_${uid()}`;
     await db.getRepository('applications').create({
       values: {
-        name: 'testApp',
+        name,
         options: {
           plugins: [],
         },
