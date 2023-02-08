@@ -79,6 +79,7 @@ export const useCollectionHistory = () => {
 };
 
 export const useSnapshotFieldTargetCollectionName = (snapshotField) => {
+  if (!snapshotField) return;
   const { historyCollections } = useCollectionHistory();
   const collection = historyCollections.find((i) => i.name === snapshotField.collectionName);
   const targetFieldName = collection.fields.find((i) => i.name === snapshotField.name).targetField;

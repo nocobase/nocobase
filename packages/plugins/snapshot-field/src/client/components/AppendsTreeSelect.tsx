@@ -3,6 +3,8 @@ import { TreeSelect } from 'antd';
 import type { DefaultOptionType } from 'rc-tree-select/lib/TreeSelect';
 import { useForm } from '@formily/react';
 import { CollectionFieldOptions, useCollectionManager, useCompile, useRecord } from '@nocobase/client';
+import { useSnapshotTranslation } from '../locale';
+import { useTopRecord } from '../interface';
 
 export type TreeCacheMapNode = {
   parent?: TreeCacheMapNode;
@@ -19,24 +21,25 @@ type TreeOptionType = Omit<DefaultOptionType, 'value'> & { value: string };
 
 export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   const { value = [], onChange, ...restProps } = props;
-  const record = useRecord();
+  const record = useTopRecord();
   const { getCollectionFields, getCollectionField } = useCollectionManager();
   const compile = useCompile();
   const formValues = useForm().values;
+  const { t } = useSnapshotTranslation();
 
   const fieldsToOptions = (
     fields: CollectionFieldOptions[],
     fieldPath: CollectionFieldOptions[] = [],
   ): TreeOptionType[] => {
     const filter = (i: CollectionFieldOptions) =>
-      !!i.target && !!i.interface && !fieldPath.find((p) => p.targetField === i.targetField);
+      !!i.target && !!i.interface && !fieldPath.find((p) => p.target === i.target);
     return fields.filter(filter).map((i) => ({
       title: compile(i.uiSchema?.title) ?? i.name,
       value: fieldPath
         .map((p) => p.name)
         .concat(i.name)
         .join('.'),
-      children: fieldsToOptions(getCollectionFields(i.targetField), [...fieldPath, i]),
+      children: fieldsToOptions(getCollectionFields(i.target), [...fieldPath, i]),
     }));
   };
 
@@ -86,7 +89,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     <TreeSelect
       value={value}
       dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-      placeholder="Please select"
+      placeholder={t('Please select')}
       showCheckedStrategy="SHOW_ALL"
       allowClear
       multiple

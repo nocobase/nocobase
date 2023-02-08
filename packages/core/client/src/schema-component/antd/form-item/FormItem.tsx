@@ -67,8 +67,9 @@ FormItem.Designer = (props) => {
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields =
-    getCollectionFields(collectionField.target ?? useSnapshotFieldTargetCollectionName(collectionField)) ?? [];
+  const targetFields = collectionField?.target
+    ? getCollectionFields(collectionField.target)
+    : getCollectionFields(useSnapshotFieldTargetCollectionName(collectionField)) ?? [];
   const fieldComponentOptions = useFieldComponentOptions();
   const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const initialValue = {
@@ -77,6 +78,7 @@ FormItem.Designer = (props) => {
   if (!field.readPretty) {
     initialValue['required'] = field.required;
   }
+  console.log(targetFields);
   const options = targetFields
     .filter((field) => !field?.target && field.type !== 'boolean')
     .map((field) => ({
@@ -467,7 +469,7 @@ FormItem.Designer = (props) => {
             }}
           />
         )}
-      {options.length && fieldSchema['x-component'] === 'CollectionField' && (
+      {options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Title field')}

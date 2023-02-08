@@ -8,19 +8,22 @@ const { defaultProps } = interfacesProperties;
 
 const APPENDS = 'appends';
 
-export const useSnapshotOwnerCollectionFields = () => {
+export const useTopRecord = () => {
   let record = useRecord();
 
   while (record && Object.keys(record.__parent).length > 0) {
     record = record.__parent;
   }
+  return record;
+};
 
+export const useSnapshotOwnerCollectionFields = () => {
+  const record = useTopRecord();
   const { getCollection } = useCollectionManager();
   const collection = getCollection(record.name);
   const compile = useCompile();
   return (field: any, options?: any) => {
     field.loading = true;
-    console.log(collection, field, options);
     field.dataSource = collection.fields
       .filter((i) => !!i.target && !!i.interface)
       .map((i) => ({ ...i, label: compile(i.uiSchema?.title), value: i.name }));
@@ -97,7 +100,7 @@ export const useSnapshotInterface = () => {
       ...defaultProps,
       targetField: {
         type: 'string',
-        title: t('Target association fields'),
+        title: t('Target association field'),
         required: true,
         'x-reactions': [
           '{{useSnapshotOwnerCollectionFields()}}',
@@ -122,7 +125,7 @@ export const useSnapshotInterface = () => {
       },
       [APPENDS]: {
         type: 'string',
-        title: t('Field appends'),
+        title: t('Association field appends'),
         required: true,
         'x-decorator': 'FormItem',
         'x-component': 'AppendsTreeSelect',
