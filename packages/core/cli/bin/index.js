@@ -35,10 +35,6 @@ for (const key in env) {
   }
 }
 
-if (process.env.NODE_OPTIONS_OPENSSL_LEGACY_PROVIDER) {
-  process.env.NODE_OPTIONS = process.env.NODE_OPTIONS_OPENSSL_LEGACY_PROVIDER;
-}
-
 const cli = require('../src/cli');
 
 cli.parse(process.argv);
