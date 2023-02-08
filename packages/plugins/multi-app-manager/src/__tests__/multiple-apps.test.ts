@@ -41,6 +41,7 @@ describe('multiple apps create', () => {
         },
       },
     });
+    await app.appManager.removeApplication(name);
 
     expect(fn).toBeCalled();
   });
