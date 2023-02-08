@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
