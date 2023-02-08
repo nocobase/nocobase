@@ -1,10 +1,10 @@
 # Resource
 
-Resource 用于定义资源实例。被 Resourcer 管理的资源实例都可以通过 HTTP 请求访问。
+Resource is used to define resource instance. Resource instances managed by Resourcer can be accessed through HTTP requests.
 
-## 构造函数
+## Constructor
 
-用于创建 Resource 实例。通常由 Resourcer 管理器的 `define()` 接口调用替代，不需要直接使用。
+To create Resource instance. Normally it is not used directly, but replaced by the call of the `define()` interface of Resourcer manager.
 
 **签名**
 

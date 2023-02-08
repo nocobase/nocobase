@@ -90,7 +90,7 @@ const app = new Application({
 
 ### `define()`
 
-定义并向资源管理器注册一个资源对象。通常代替 `Resource` 类的构造函数使用。
+Define and register a resource object with the resource manager. Usually used instead of the constructor of the `Resource` class.
 
 **Signature**
 
@@ -98,7 +98,7 @@ const app = new Application({
 
 **Parameter**
 
-详见 [Resource 构造函数](/api/server/resourcer/resource#构造函数)。
+Refer to [Resource Constructor](/api/server/resourcer/resource#constructor) for details.
 
 **Example**
 
@@ -106,7 +106,7 @@ const app = new Application({
 app.resourcer.define({
   name: 'books',
   actions: {
-    // 扩展的 action
+    // Extended action
     publish(ctx, next) {
       ctx.body = 'ok';
     }
@@ -116,7 +116,7 @@ app.resourcer.define({
 
 ### `isDefined()`
 
-检查对应名称的资源是否已被注册。
+Check whether the resource with the corresponding name has been registered.
 
 **Signature**
 
@@ -126,7 +126,7 @@ app.resourcer.define({
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 资源名称 |
+| `name` | `string` | - | Name of the resource |
 
 **Example**
 
@@ -136,7 +136,7 @@ app.resourcer.isDefined('books'); // true
 
 ### `registerAction()`
 
-向资源管理器注册一个操作，可以指定针对特定的资源，如不指定资源名称，则认为是针对全局所有资源都可访问的操作。
+Register an action with the resource manager. The action is accessible to a specified resource, or all resources if no resource name is specified.
 
 **Signature**
 
@@ -146,20 +146,20 @@ app.resourcer.isDefined('books'); // true
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 操作名称 |
-| `handler` | `HandlerType` | - | 操作处理函数 |
+| `name` | `string` | - | Name of the action |
+| `handler` | `HandlerType` | - | Handler of the action |
 
-`name` 的值如果以 `<resourceName>:` 开头则代表仅针对 `<resourceName>` 资源可访问，否则认为是全局操作。
+A value of `name` starting with `<resourceName>:` means that the action is only accessible to `<resourceName>` rescource, otherwise it is considered as a global action.
 
 **Example**
 
 ```ts
-// 注册后任意资源都可以进行 upload 操作
+// All resources can take the upload action after registration
 app.resourcer.registerAction('upload', async (ctx, next) => {
   ctx.body = 'ok';
 });
 
-// 仅针对 attachments 资源注册 upload 操作
+// Register the upload action only for attachments resource
 app.resourcer.registerAction('attachments:upload', async (ctx, next) => {
   ctx.body = 'ok';
 });
@@ -167,7 +167,7 @@ app.resourcer.registerAction('attachments:upload', async (ctx, next) => {
 
 ### `registerActions()`
 
-向资源管理器注册多个操作的集合方法。
+Register a set of actions with the resource manager. 
 
 **Signature**
 
@@ -177,7 +177,7 @@ app.resourcer.registerAction('attachments:upload', async (ctx, next) => {
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `actions` | `{ [name: string]: HandlerType }` | - | 操作集合 |
+| `actions` | `{ [name: string]: HandlerType }` | - | Set of actions |
 
 **Example**
 
@@ -194,7 +194,7 @@ app.resourcer.registerActions({
 
 ### `getResource()`
 
-获取对应名称的资源对象。
+Get the resource object with the corresponding name.
 
 **Signature**
 
@@ -204,7 +204,7 @@ app.resourcer.registerActions({
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 资源名称 |
+| `name` | `string` | - | Name of the resource |
 
 **Example**
 
@@ -214,7 +214,7 @@ app.resourcer.getResource('books');
 
 ### `getAction()`
 
-获取对应名称的操作处理函数。
+Get the action handler function with the corresponding name.
 
 **Signature**
 
@@ -224,9 +224,9 @@ app.resourcer.getResource('books');
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 操作名称 |
+| `name` | `string` | - | Name of the action |
 
-`name` 的值如果以 `<resourceName>:` 开头则代表仅针对 `<resourceName>` 资源的操作，否则认为是全局操作。
+A value of `name` starting with `<resourceName>:` means that the action is only accessible to `<resourceName>` rescource, otherwise it is considered as a global action.
 
 **Example**
 
@@ -237,7 +237,7 @@ app.resourcer.getAction('attachments:upload');
 
 ### `use()`
 
-以 Koa 的形式注册一个中间件，中间件形成一个队列，并排在所有资源的操作处理函数之前执行。
+Register a middleware in the form of Koa; the middleware forms a queue which is executed before the action handlers of all resources.
 
 **Signature**
 
@@ -247,7 +247,7 @@ app.resourcer.getAction('attachments:upload');
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `middleware` | `Middleware \| Middleware[]` | - | 中间件 |
+| `middleware` | `Middleware \| Middleware[]` | - | Middleware |
 
 **Example**
 
@@ -260,7 +260,7 @@ app.resourcer.use(async (ctx, next) => {
 
 ### `middleware()`
 
-生成一个兼容 Koa 的中间件，用于将资源的路由处理注入到应用中。
+Generate a Koa-compatible middleware for injecting routing processing of resources into the application.
 
 **Signature**
 
@@ -270,8 +270,8 @@ app.resourcer.use(async (ctx, next) => {
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.prefix?` | `string` | `''` | 路径前缀。 |
-| `options.accessors?` | `Object` | `{}` | 常用方法的名称映射，与构造函数的 `accessors` 参数结构相同。 |
+| `options.prefix?` | `string` | `''` | Route prefix |
+| `options.accessors?` | `Object` | `{}` | Name mapping for common methods, with the same parameter structure as `accessors` of the constructor |
 
 **Example**
 
@@ -280,6 +280,6 @@ const koa = new Koa();
 
 const resourcer = new Resourcer();
 
-// 生成兼容 Koa 的中间件
+//Generate Koa-compatible middleware
 koa.use(resourcer.middleware());
 ```
