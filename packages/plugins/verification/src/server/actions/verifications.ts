@@ -19,12 +19,7 @@ export async function create(context: Context, next: Next) {
     return context.throw(400, 'Invalid action type');
   }
 
-  const ProviderRepo = context.db.getRepository('verifications_providers');
-  const providerItem = await ProviderRepo.findOne({
-    filter: {
-      default: true
-    }
-  });
+  const providerItem = await plugin.getDefault()
   if (!providerItem) {
     console.error(`[verification] no provider for action (${values.type}) provided`);
     return context.throw(500);
@@ -32,7 +27,7 @@ export async function create(context: Context, next: Next) {
 
   const receiver = interceptor.getReceiver(context);
   if (!receiver) {
-    return context.throw(400, { code: 'InvalidReceiver', message: context.t('Not a valid cellphone number, please re-enter', {ns: namespace }) });
+    return context.throw(400, { code: 'InvalidReceiver', message: context.t('Not a valid cellphone number, please re-enter', { ns: namespace }) });
   }
   const VerificationModel = context.db.getModel('verifications');
   const record = await VerificationModel.findOne({
@@ -70,7 +65,7 @@ export async function create(context: Context, next: Next) {
     switch (error.name) {
       case 'InvalidReceiver':
         // TODO: message should consider email and other providers, maybe use "receiver"
-        return context.throw(400, { code: 'InvalidReceiver', message: context.t('Not a valid cellphone number, please re-enter', {ns: namespace })});
+        return context.throw(400, { code: 'InvalidReceiver', message: context.t('Not a valid cellphone number, please re-enter', { ns: namespace }) });
       case 'RateLimit':
         return context.throw(429, context.t('You are trying so frequently, please slow down', { ns: namespace }));
       default:
