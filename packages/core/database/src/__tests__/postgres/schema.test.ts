@@ -9,6 +9,8 @@ describe('postgres schema', () => {
       schema: 'testSchema',
     });
 
+    if (!db.inDialect('postgres')) return;
+
     await db.sequelize.query('CREATE SCHEMA IF NOT EXISTS "testSchema"');
   });
 
