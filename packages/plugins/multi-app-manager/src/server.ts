@@ -69,11 +69,11 @@ export class PluginMultiAppManager extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
 
-  registerAppOptionsFactory(factory: AppOptionsFactory) {
+  setAppOptionsFactory(factory: AppOptionsFactory) {
     this.appOptionsFactory = factory;
   }
 
-  registerAppDbCreator(appDbCreator: AppDbCreator) {
+  setAppDbCreator(appDbCreator: AppDbCreator) {
     this.appDbCreator = appDbCreator;
   }
 

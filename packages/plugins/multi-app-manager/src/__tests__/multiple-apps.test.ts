@@ -27,7 +27,7 @@ describe('multiple apps create', () => {
     const appPlugin = app.getPlugin<PluginMultiAppManager>('PluginMultiAppManager');
     const defaultDbCreator = appPlugin.appDbCreator;
 
-    appPlugin.registerAppDbCreator(async (app) => {
+    appPlugin.setAppDbCreator(async (app) => {
       fn();
       await defaultDbCreator(app);
     });
