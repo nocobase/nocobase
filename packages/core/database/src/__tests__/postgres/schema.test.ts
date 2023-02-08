@@ -8,6 +8,8 @@ describe('postgres schema', () => {
     db = mockDatabase({
       schema: 'testSchema',
     });
+
+    await db.sequelize.query('CREATE SCHEMA IF NOT EXISTS "testSchema"');
   });
 
   afterEach(async () => {
@@ -41,14 +43,18 @@ describe('postgres schema', () => {
       `SELECT * FROM information_schema.tables where table_schema = 'testSchema'`,
     );
 
-    console.log({ tableInfo });
-
-    await db.sequelize.query('CREATE SCHEMA IF NOT EXISTS "testSchema"');
+    expect(tableInfo[0].length).toEqual(0);
 
     const collection = db.collection({
       name: 'test',
     });
 
     await db.sync();
+
+    const newTableInfo = await db.sequelize.query(
+      `SELECT * FROM information_schema.tables where table_schema = 'testSchema'`,
+    );
+
+    expect(newTableInfo[0].find((item) => item['table_name'] == collection.model.tableName)).toBeTruthy();
   });
 });
