@@ -78,7 +78,6 @@ FormItem.Designer = (props) => {
   if (!field.readPretty) {
     initialValue['required'] = field.required;
   }
-  console.log(targetFields);
   const options = targetFields
     .filter((field) => !field?.target && field.type !== 'boolean')
     .map((field) => ({

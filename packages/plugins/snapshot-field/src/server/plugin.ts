@@ -3,6 +3,7 @@ import { Model, Field } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { SnapshotField } from './fields/snapshot-field';
+import isObject from 'lodash/isObject';
 
 export class SnapshotFieldPlugin extends Plugin {
   afterAdd() {}
@@ -86,11 +87,23 @@ export class SnapshotFieldPlugin extends Plugin {
       for (let field of snapshotFields) {
         const { targetField: targetFieldName, appends, name: snapshotFieldName } = field.options;
         const targetField = resourceCollection.getField(targetFieldName);
-        const { target: targetFieldCollectionName, targetKey: targetFieldTargetKey } = targetField.options;
+        const { target: targetFieldCollectionName, targetKey, sourceKey } = targetField.options;
+        const targetFieldTargetKey = targetKey ?? sourceKey;
         const targetFieldRepository = this.app.db.getRepository(targetFieldCollectionName);
+        const paramValue = params.values[targetFieldName];
+        let filterValues;
+
+        if (Array.isArray(paramValue)) {
+          filterValues = paramValue.map((i) => i[targetFieldTargetKey]);
+        } else if (isObject(paramValue)) {
+          filterValues = paramValue[targetFieldTargetKey];
+        } else {
+          filterValues = paramValue;
+        }
+
         const res: Model[] = await targetFieldRepository.find({
           filter: {
-            [targetFieldTargetKey]: params.values[targetFieldName].map((i) => i[targetFieldTargetKey]),
+            [targetFieldTargetKey]: filterValues,
           },
           appends,
         });
