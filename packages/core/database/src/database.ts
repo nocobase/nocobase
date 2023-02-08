@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,7 +58,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener
+  ValidateListener,
 } from './types';
 
 export interface MergeOptions extends merge.Options {}
@@ -484,6 +484,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', null);
     }
 
+    if (this.options.schema && this.inDialect('postgres')) {
+      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${this.options.schema}"`, null);
+    }
+
     const result = await this.sequelize.sync(options);
 
     if (isMySQL) {
@@ -494,10 +498,29 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   async clean(options: CleanOptions) {
-    const { drop, ...others } = options;
-    if (drop) {
-      await this.sequelize.getQueryInterface().dropAllTables(others);
+    const { drop, ...others } = options || {};
+    if (drop !== true) {
+      return;
     }
+
+    if (this.options.schema) {
+      const tableNames = (await this.sequelize.getQueryInterface().showAllTables()).map((table) => {
+        return `"${this.options.schema}"."${table}"`;
+      });
+
+      const skip = options.skip || [];
+
+      // @ts-ignore
+      for (const tableName of tableNames) {
+        if (skip.includes(tableName)) {
+          continue;
+        }
+        await this.sequelize.query(`DROP TABLE IF EXISTS ${tableName} CASCADE`);
+      }
+      return;
+    }
+
+    await this.sequelize.getQueryInterface().dropAllTables(others);
   }
 
   async collectionExistsInDb(name, options?: Transactionable) {
