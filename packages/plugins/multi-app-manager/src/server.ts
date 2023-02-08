@@ -122,14 +122,9 @@ export class PluginMultiAppManager extends Plugin {
       await this.app.appManager.removeApplication(model.get('name') as string);
     });
 
-    const options = {
-      dbCreator: this.appDbCreator,
-      appOptionsFactory: this.appOptionsFactory,
-    };
-
     this.app.appManager.on(
       'beforeGetApplication',
-      async function lazyLoadApplication({ appManager, name }: { appManager: AppManager; name: string }) {
+      async ({ appManager, name }: { appManager: AppManager; name: string }) => {
         if (!appManager.applications.has(name)) {
           const existsApplication = (await this.app.db.getRepository('applications').findOne({
             filter: {
@@ -138,7 +133,10 @@ export class PluginMultiAppManager extends Plugin {
           })) as ApplicationModel | null;
 
           if (existsApplication) {
-            await existsApplication.registerToMainApp(this.app, options);
+            await existsApplication.registerToMainApp(this.app, {
+              dbCreator: this.appDbCreator,
+              appOptionsFactory: this.appOptionsFactory,
+            });
           }
         }
       },
