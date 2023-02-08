@@ -1,40 +1,40 @@
 # Resource
 
-Resource is used to define resource instance. Resource instances managed by Resourcer can be accessed through HTTP requests.
+Resource is used to define resource instance. Resource instances managed by resourcer can be accessed through HTTP requests.
 
 ## Constructor
 
-To create Resource instance. Normally it is not used directly, but replaced by the call of the `define()` interface of Resourcer manager.
+To create resource instance. Normally it is not used directly, but replaced by the call of the `define()` interface of resourcer.
 
-**签名**
+**Signature**
 
 * `constructor(options: ResourceOptions, resourcer: Resourcer)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options.name` | `string` | - | 资源名称，对应 URL 路由中的资源地址部分。 |
-| `options.type` | `string` | `'single'` | 资源类型，可选项为 `'single'`、`'hasOne'`、`'hasMany'`、`'belongsTo'`、`'belongsToMany'`。 |
-| `options.actions` | `Object` | - | 对资源可进行的操作列表，详见示例部分。 |
-| `options.middlewares` | `MiddlewareType \| MiddlewareType[]` | - | 对当前定义资源进行任意操作访问时的中间件列表，详见示例部分。 |
-| `options.only` | `ActionName[]` | `[]` | 针对全局操作的白名单列表，当数组中有值时（`length > 0`），只有数组中的操作可被访问。 |
-| `options.except` | `ActionName[]` | `[]` | 针对全局操作的黑名单列表，当数组中有值时（`length > 0`），除数组中的操作外，其他操作可被访问。 |
-| `resourcer` | `Resourcer` | - | 所属资源管理器实例。 |
+| `options.name` | `string` | - | Name of the resource, corresponding to the resource address in the route of the URL |
+| `options.type` | `string` | `'single'` | Type of the resource, options are `'single'`, `'hasOne'`, `'hasMany'`, `'belongsTo'`, `'belongsToMany'` |
+| `options.actions` | `Object` | - | List of actions that can be taken on the resource, see the example for details |
+| `options.middlewares` | `MiddlewareType \| MiddlewareType[]` | - | List of middlewares for any operational access to the resource that is defining，see the example for details |
+| `options.only` | `ActionName[]` | `[]` | Whitelist for global actions, only actions contained in the array (if `length > 0`) can be accessed |
+| `options.except` | `ActionName[]` | `[]` | Blacklist for global actions, all actions except those contained in the array (if `length > 0`) can be accessed  |
+| `resourcer` | `Resourcer` | - | The resourcer instance |
 
-**示例**
+**Example**
 
 ```ts
 app.resourcer.define({
   name: 'books',
   actions: {
-    // 扩展的 action
+    // Extended action
     publish(ctx, next) {
       ctx.body = 'ok';
     }
   },
   middleware: [
-    // 扩展的中间件
+    // Extended middleware
     async (ctx, next) => {
       await next();
     }
@@ -42,39 +42,39 @@ app.resourcer.define({
 });
 ```
 
-## 实例成员
+## Instance Members
 
 ### `options`
 
-当前资源的配置项。
+Configuration items for the current resource.
 
 ### `resourcer`
 
-所属的资源管理器实例。
+The resourcer instance to which the resource belongs.
 
 ### `middlewares`
 
-已注册的中间件列表。
+The registered middlewares.
 
 ### `actions`
 
-已注册的操作映射表。
+The registered mapping table of actions.
 
 ### `except`
 
-操作排除的名单列表。
+Actions that are excluded.
 
-## 实例方法
+## Instance Methods
 
 ### `getName()`
 
-获取当前资源的名称。
+Get the name of the current resource.
 
-**签名**
+**Signature**
 
 * `getName(): string`
 
-**示例**
+**Example**
 
 ```ts
 const resource = app.resourcer.define({
@@ -86,19 +86,19 @@ resource.getName(); // 'books'
 
 ### `getAction()`
 
-根据名称获取当前资源的操作。
+Get action with the corresponding name.
 
-**签名**
+**Signature**
 
 * `getAction(name: string): Action`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 操作名称。 |
+| `name` | `string` | - | Name of the action |
 
-**示例**
+**Example**
 
 ```ts
 const resource = app.resourcer.define({
