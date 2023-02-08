@@ -13,7 +13,9 @@ describe('postgres schema', () => {
   });
 
   afterEach(async () => {
-    await db.sequelize.query(`DROP SCHEMA IF EXISTS ${db.options.schema} CASCADE;`);
+    if (db.inDialect('postgres')) {
+      await db.sequelize.query(`DROP SCHEMA IF EXISTS ${db.options.schema} CASCADE;`);
+    }
     await db.close();
   });
 
