@@ -126,7 +126,6 @@ export const useSnapshotInterface = () => {
       [APPENDS]: {
         type: 'string',
         title: t('Association field appends'),
-        required: true,
         'x-decorator': 'FormItem',
         'x-component': 'AppendsTreeSelect',
         'x-disabled': '{{ !createOnly }}',
