@@ -1,10 +1,32 @@
 import { ISchema } from '@formily/react';
-import { IField, interfacesProperties } from '@nocobase/client';
+import { IField, interfacesProperties, useCollectionManager, useCompile, useRecord } from '@nocobase/client';
 import { cloneDeep } from 'lodash';
 import { useMemo } from 'react';
 import { useSnapshotTranslation } from './locale';
 
-const { defaultProps, recordPickerSelector } = interfacesProperties;
+const { defaultProps } = interfacesProperties;
+
+const APPENDS = 'appends';
+
+export const useSnapshotOwnerCollectionFields = () => {
+  let record = useRecord();
+
+  while (record && Object.keys(record.__parent).length > 0) {
+    record = record.__parent;
+  }
+
+  const { getCollection } = useCollectionManager();
+  const collection = getCollection(record.name);
+  const compile = useCompile();
+  return (field: any, options?: any) => {
+    field.loading = true;
+    console.log(collection, field, options);
+    field.dataSource = collection.fields
+      .filter((i) => !!i.target && !!i.interface)
+      .map((i) => ({ ...i, label: compile(i.uiSchema?.title), value: i.name }));
+    field.loading = false;
+  };
+};
 
 export const useSnapshotInterface = () => {
   const { t } = useSnapshotTranslation();
@@ -66,26 +88,44 @@ export const useSnapshotInterface = () => {
       },
     },
     schemaInitialize(schema: ISchema, { field, readPretty, action, block }) {
-      if (readPretty || action === 'update') {
-        schema['properties'] = {
-          viewer: cloneDeep(recordPickerViewer),
-        };
-      } else {
-        schema['properties'] = {
-          selector: cloneDeep(recordPickerSelector),
-        };
-      }
+      schema['properties'] = {
+        viewer: cloneDeep(recordPickerViewer),
+      };
     },
     initialize: (values: any) => {},
     properties: {
       ...defaultProps,
-      target: {
+      targetField: {
         type: 'string',
-        title: t('Target collection'),
+        title: t('Target association fields'),
         required: true,
-        'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+        'x-reactions': [
+          '{{useSnapshotOwnerCollectionFields()}}',
+          {
+            target: APPENDS,
+            when: '{{$self.value == undefined}}',
+            fulfill: {
+              state: {
+                visible: false,
+              },
+            },
+            otherwise: {
+              state: {
+                visible: true,
+              },
+            },
+          },
+        ],
         'x-decorator': 'FormItem',
         'x-component': 'Select',
+        'x-disabled': '{{ !createOnly }}',
+      },
+      [APPENDS]: {
+        type: 'string',
+        title: t('Field appends'),
+        required: true,
+        'x-decorator': 'FormItem',
+        'x-component': 'AppendsTreeSelect',
         'x-disabled': '{{ !createOnly }}',
       },
       'uiSchema.x-component-props.multiple': {

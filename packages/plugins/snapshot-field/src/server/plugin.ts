@@ -1,4 +1,5 @@
-import { Model } from '@nocobase/database';
+import { Context, Next } from '@nocobase/actions';
+import { Model, Field } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { SnapshotField } from './fields/snapshot-field';
@@ -72,6 +73,35 @@ export class SnapshotFieldPlugin extends Plugin {
     });
 
     this.app.acl.allow('collectionsHistory', 'list', 'loggedIn');
+
+    this.app.resourcer.use(async (ctx: Context, next: Next) => {
+      const { resourceName, params, actionName } = ctx.action;
+      if (actionName !== 'create') return next();
+      const resourceCollection = this.app.db.getCollection(resourceName);
+      const fields = resourceCollection.fields as Map<string, Field>;
+      const snapshotFields: Field[] = [];
+      for (let [, field] of fields) {
+        if (field.options.type === 'snapshot') snapshotFields.push(field);
+      }
+      for (let field of snapshotFields) {
+        const { targetField: targetFieldName, appends, name: snapshotFieldName } = field.options;
+        const targetField = resourceCollection.getField(targetFieldName);
+        const { target: targetFieldCollectionName, targetKey: targetFieldTargetKey } = targetField.options;
+        const targetFieldRepository = this.app.db.getRepository(targetFieldCollectionName);
+        const res: Model[] = await targetFieldRepository.find({
+          filter: {
+            [targetFieldTargetKey]: params.values[targetFieldName].map((i) => i[targetFieldTargetKey]),
+          },
+          appends,
+        });
+        params.values[snapshotFieldName] = {
+          collectionName: targetFieldCollectionName,
+          data: res.map((r) => r.toJSON()),
+        };
+        console.log(params);
+      }
+      return next();
+    });
   }
 
   // 初始化安装的时候

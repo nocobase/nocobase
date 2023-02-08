@@ -8,7 +8,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection, useCollectionManager, useSnapshotFieldTargetCollectionName } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
@@ -67,7 +67,8 @@ FormItem.Designer = (props) => {
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
+  const targetFields =
+    getCollectionFields(collectionField.target ?? useSnapshotFieldTargetCollectionName(collectionField)) ?? [];
   const fieldComponentOptions = useFieldComponentOptions();
   const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const initialValue = {
@@ -466,7 +467,7 @@ FormItem.Designer = (props) => {
             }}
           />
         )}
-      {collectionField?.target && fieldSchema['x-component'] === 'CollectionField' && (
+      {options.length && fieldSchema['x-component'] === 'CollectionField' && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Title field')}
