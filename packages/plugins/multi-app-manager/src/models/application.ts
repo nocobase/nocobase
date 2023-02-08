@@ -2,9 +2,11 @@ import Database, { IDatabaseOptions, Model, Transactionable } from '@nocobase/da
 import { Application } from '@nocobase/server';
 import lodash from 'lodash';
 import * as path from 'path';
+import { AppDbCreator } from '../server';
 
 export interface registerAppOptions extends Transactionable {
   skipInstall?: boolean;
+  dbCreator?: AppDbCreator;
 }
 
 export class ApplicationModel extends Model {
@@ -40,7 +42,8 @@ export class ApplicationModel extends Model {
 
     const AppModel = this.constructor as typeof ApplicationModel;
 
-    const createDatabase = async (databaseOptions) => {
+    const createDatabase = async (app: Application) => {
+      const databaseOptions = app.options.database as IDatabaseOptions;
       const { host, port, username, password, dialect, database } = databaseOptions;
 
       if (dialect === 'mysql') {
@@ -77,7 +80,7 @@ export class ApplicationModel extends Model {
     });
 
     if (!options?.skipInstall) {
-      await createDatabase(app.options.database);
+      options.dbCreator ? await options.dbCreator(app) : await createDatabase(app);
     }
 
     await AppModel.handleAppStart(app, options);

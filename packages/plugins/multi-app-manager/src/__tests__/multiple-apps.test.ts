@@ -21,6 +21,27 @@ describe('multiple apps create', () => {
     await app.destroy();
   });
 
+  it('should register db creator', async () => {
+    const fn = jest.fn();
+
+    const appPlugin = app.getPlugin<PluginMultiAppManager>('PluginMultiAppManager');
+
+    appPlugin.registerAppDbCreator(async () => {
+      fn();
+    });
+
+    await db.getRepository('applications').create({
+      values: {
+        name: 'testApp',
+        options: {
+          plugins: [],
+        },
+      },
+    });
+
+    expect(fn).toBeCalled();
+  });
+
   it('should create application', async () => {
     const name = `td_${uid()}`;
     const miniApp = await db.getRepository('applications').create({
