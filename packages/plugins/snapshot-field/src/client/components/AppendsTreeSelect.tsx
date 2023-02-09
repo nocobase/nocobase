@@ -28,7 +28,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   const { t } = useSnapshotTranslation();
 
   const fieldsToOptions = (
-    fields: CollectionFieldOptions[],
+    fields: CollectionFieldOptions[] = [],
     fieldPath: CollectionFieldOptions[] = [],
   ): TreeOptionType[] => {
     const filter = (i: CollectionFieldOptions) =>
@@ -44,7 +44,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   };
 
   const treeData = fieldsToOptions(
-    getCollectionFields(getCollectionField(`${record.name}.${formValues.targetField}`).target),
+    getCollectionFields(getCollectionField(`${record.name}.${formValues.targetField}`)?.target),
   );
 
   const valueMap: Record<string, TreeCacheMapNode> = {};
