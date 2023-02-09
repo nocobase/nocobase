@@ -41,7 +41,7 @@ export class ApplicationModel extends Model {
       try {
         return await app.isInstalled();
       } catch (e) {
-        if (e.message.includes('does not exist')) {
+        if (e.message.includes('does not exist') || e.message.includes('Unknown database')) {
           return false;
         }
         throw e;
