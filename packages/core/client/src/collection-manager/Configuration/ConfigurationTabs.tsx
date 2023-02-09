@@ -1,25 +1,23 @@
-import { Tabs, Modal, Badge, Card, Dropdown, Menu } from 'antd';
-import React, { useState, useContext } from 'react';
-import { RecursionField } from '@formily/react';
-import { SchemaComponentOptions } from '../../schema-component';
-import { uid } from '@formily/shared';
 import { MenuOutlined } from '@ant-design/icons';
-import { observer } from '@formily/react';
 import {
   DndContext,
   DragEndEvent,
+  DragOverlay,
+  MouseSensor,
   useDraggable,
   useDroppable,
-  DragOverlay,
-  useSensors,
   useSensor,
-  MouseSensor,
+  useSensors
 } from '@dnd-kit/core';
-import { CollectionCategroriesContext } from '../context';
+import { observer, RecursionField } from '@formily/react';
+import { uid } from '@formily/shared';
+import { Badge, Card, Dropdown, Menu, Modal, Tabs } from 'antd';
+import React, { useContext, useState } from 'react';
 import { useAPIClient } from '../../api-client';
-import { SchemaComponent, useCompile } from '../../schema-component';
-import { collectionTableSchema } from './schemas/collections';
+import { SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
+import { CollectionCategroriesContext } from '../context';
 import { useResourceActionContext } from '../ResourceActionProvider';
+import { collectionTableSchema } from './schemas/collections';
 
 function Draggable(props) {
   const { attributes, listeners, setNodeRef } = useDraggable({
@@ -83,7 +81,7 @@ const DndProvider = observer((props) => {
       setActiveId(null);
     });
     if (over && over.id !== active.id) {
-      await api.resource('collection_categories').move({
+      await api.resource('collectionCategories').move({
         sourceId: active.id,
         targetId: over.id,
       });
@@ -154,7 +152,7 @@ export const ConfigurationTabs = () => {
       title: compile("{{t('Delete category')}}"),
       content: compile("{{t('Are you sure you want to delete it?')}}"),
       onOk: async () => {
-        await api.resource('collection_categories').destroy({
+        await api.resource('collectionCategories').destroy({
           filter: {
             id: key,
           },

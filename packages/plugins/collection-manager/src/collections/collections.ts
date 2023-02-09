@@ -52,8 +52,8 @@ export default {
     },
     {
       type: 'belongsToMany',
-      name: 'category',
-      target: 'collection_categories',
+      name: 'categories',
+      target: 'collectionCategories',
       sourceKey: 'name',
       foreignKey: 'collectionName',
       targetKey: 'id',

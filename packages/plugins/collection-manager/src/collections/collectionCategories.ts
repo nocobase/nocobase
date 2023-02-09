@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  name: 'collection_categories',
+  name: 'collectionCategories',
   autoGenId: true,
   sortable: true,
   fields: [

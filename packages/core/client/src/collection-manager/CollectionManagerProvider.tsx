@@ -1,13 +1,13 @@
 import { Spin } from 'antd';
-import React, { useContext, useState } from 'react';
 import { keyBy } from 'lodash';
+import React, { useContext, useState } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
-import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
-import { CollectionManagerContext, CollectionCategroriesContext } from './context';
-import * as defaultInterfaces from './interfaces';
-import { CollectionManagerOptions } from './types';
 import { templateOptions } from '../collection-manager/Configuration/templates';
 import { useCollectionHistory } from './CollectionHistoryProvider';
+import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
+import { CollectionCategroriesContext, CollectionManagerContext } from './context';
+import * as defaultInterfaces from './interfaces';
+import { CollectionManagerOptions } from './types';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { service, interfaces, collections = [], refreshCM, templates } = props;
@@ -76,7 +76,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
 export const CollectionCategroriesProvider = (props) => {
   const api = useAPIClient();
   const options={
-    url: 'collection_categories:list',
+    url: 'collectionCategories:list',
     params: {
       paginate: false,
       sort:['sort']

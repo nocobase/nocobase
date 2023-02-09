@@ -1,16 +1,14 @@
 import { useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { EditOutlined } from '@ant-design/icons';
-import React, { useState, useContext, useEffect } from 'react';
-import { useAPIClient } from '../../api-client';
-import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext } from '../ResourceActionProvider';
-import { useCancelAction } from '../action-hooks';
+import React, { useContext, useEffect, useState } from 'react';
+import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
-import * as components from './components';
-import { useRequest } from '../../api-client';
-import { collectionCategoryEditSchema } from './schemas/collections';
+import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useCancelAction } from '../action-hooks';
 import { CollectionCategroriesContext } from '../context';
+import { useResourceActionContext } from '../ResourceActionProvider';
+import * as components from './components';
+import { collectionCategoryEditSchema } from './schemas/collections';
 
 const useEditCategry = () => {
   const form = useForm();
@@ -24,7 +22,7 @@ const useEditCategry = () => {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
-      await api.resource('collection_categories').update({
+      await api.resource('collectionCategories').update({
         filter: { id: id },
         values: {
           ...values,

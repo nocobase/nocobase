@@ -1,14 +1,14 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import React, { useState, useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { ActionContext, SchemaComponent, useActionContext } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
+import { CollectionCategroriesContext } from '../context';
 import * as components from './components';
 import { collectionCategorySchema } from './schemas/collections';
-import { CollectionCategroriesContext } from '../context';
 
 const useCreateCategry = () => {
   const form = useForm();
@@ -19,7 +19,7 @@ const useCreateCategry = () => {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
-      await api.resource('collection_categories').create({
+      await api.resource('collectionCategories').create({
         values: {
           ...values,
         },
