@@ -58,9 +58,8 @@ export default {
       type: 'group',
       children: [
         '/welcome/community/contributing',
-        // '/welcome/community/faq',
+        '/welcome/community/faq',
         '/welcome/community/translations',
-
         '/welcome/community/thanks',
       ],
     },
@@ -244,7 +243,7 @@ export default {
           title: 'SchemaDesigner',
           'title.zh-CN': 'SchemaDesigner',
           'title.TR-TR': 'Şema Tasarımcısı',
-          
+
           type: 'subMenu',
           children: [
             '/api/client/schema-designer/schema-component',
