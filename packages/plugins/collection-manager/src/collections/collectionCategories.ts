@@ -21,9 +21,10 @@ export default {
     },
     {
       type: 'belongsToMany',
-      name: 'collection',
+      name: 'collections',
       target: 'collections',
-      foreignKey: 'collectionCategoryId',
+      foreignKey: 'categoryId',
+      otherKey: 'collectionName',
       targetKey: 'name',
       through: 'collectionCategory',
     },

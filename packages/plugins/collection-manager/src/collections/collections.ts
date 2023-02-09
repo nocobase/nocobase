@@ -56,7 +56,9 @@ export default {
       target: 'collectionCategories',
       sourceKey: 'name',
       foreignKey: 'collectionName',
+      otherKey: 'categoryId',
       targetKey: 'id',
+      through: 'collectionCategory',
     },
   ],
 } as CollectionOptions;
