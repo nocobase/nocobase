@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import type { Field } from '@formily/core';
 import { IField, interfacesProperties, useCollectionManager, useCompile, useRecord } from '@nocobase/client';
 import { cloneDeep } from 'lodash';
 import { useMemo } from 'react';
@@ -17,18 +18,12 @@ export const useTopRecord = () => {
   return record;
 };
 
-export const useSnapshotOwnerCollectionFields = () => {
-  const record = useTopRecord();
-  const { getCollection } = useCollectionManager();
-  const collection = getCollection(record.name);
-  const compile = useCompile();
-  return (field: any, options?: any) => {
-    field.loading = true;
-    field.dataSource = collection.fields
-      .filter((i) => !!i.target && !!i.interface)
-      .map((i) => ({ ...i, label: compile(i.uiSchema?.title), value: i.name }));
-    field.loading = false;
-  };
+const onTargetFieldChange = (field: Field) => {
+  field.value; // for watch
+  const targetField = field.query(`.${APPENDS}`).take() as Field | undefined;
+  console.log(field.path);
+  if (!targetField) return;
+  !targetField.getState().disabled && targetField.setValue([]);
 };
 
 export const useSnapshotInterface = () => {
@@ -101,26 +96,25 @@ export const useSnapshotInterface = () => {
         type: 'string',
         title: t('Association field'),
         required: true,
+        'x-decorator': 'FormItem',
+        'x-component': 'SnapshotOwnerCollectionFieldsSelect',
+        'x-disabled': '{{ !createOnly }}',
         'x-reactions': [
-          '{{useSnapshotOwnerCollectionFields()}}',
           {
             target: APPENDS,
-            when: '{{$self.value == undefined}}',
+            when: '{{$self.value != undefined}}',
             fulfill: {
-              state: {
-                visible: false,
-              },
-            },
-            otherwise: {
               state: {
                 visible: true,
               },
             },
+            otherwise: {
+              state: {
+                visible: false,
+              },
+            },
           },
         ],
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-disabled': '{{ !createOnly }}',
       },
       [APPENDS]: {
         type: 'string',
@@ -129,6 +123,15 @@ export const useSnapshotInterface = () => {
         'x-decorator': 'FormItem',
         'x-component': 'AppendsTreeSelect',
         'x-disabled': '{{ !createOnly }}',
+        'x-reactions': [
+          {
+            dependencies: ['targetField'],
+            when: '{{$deps[0]}}',
+            fulfill: {
+              run: '{{$self.setValue($self.disabled ? $self.value : [])}}',
+            },
+          },
+        ],
       },
     },
   };
