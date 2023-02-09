@@ -81,7 +81,6 @@ export const useSnapshotInterface = () => {
         // title,
         'x-component': 'SnapshotRecordPicker',
         'x-component-props': {
-          // mode: 'tags',
           multiple: true,
           fieldNames: {
             label: 'id',
@@ -100,7 +99,7 @@ export const useSnapshotInterface = () => {
       ...defaultProps,
       targetField: {
         type: 'string',
-        title: t('Target association field'),
+        title: t('Association field'),
         required: true,
         'x-reactions': [
           '{{useSnapshotOwnerCollectionFields()}}',
@@ -125,16 +124,11 @@ export const useSnapshotInterface = () => {
       },
       [APPENDS]: {
         type: 'string',
-        title: t('Association field appends'),
+        title: t('Deep copy fields'),
+        description: t('When a record is created, relational data is backed up in a snapshot'),
         'x-decorator': 'FormItem',
         'x-component': 'AppendsTreeSelect',
         'x-disabled': '{{ !createOnly }}',
-      },
-      'uiSchema.x-component-props.multiple': {
-        type: 'boolean',
-        'x-content': t('Allow linking to multiple records'),
-        'x-decorator': 'FormItem',
-        'x-component': 'Checkbox',
       },
     },
   };
