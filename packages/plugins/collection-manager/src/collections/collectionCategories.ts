@@ -25,6 +25,7 @@ export default {
       target: 'collections',
       foreignKey: 'collectionCategoryId',
       targetKey: 'name',
+      through: 'collectionCategory',
     },
   ],
 } as CollectionOptions;
