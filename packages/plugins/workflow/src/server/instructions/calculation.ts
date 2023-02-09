@@ -33,7 +33,7 @@ export default {
     } catch (e) {
       return {
         result: e.toString(),
-        status: JOB_STATUS.REJECTED
+        status: JOB_STATUS.ERROR
       }
     }
   }

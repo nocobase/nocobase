@@ -38,7 +38,7 @@ export default {
     const evaluator = <Evaluator | undefined>processor.options.plugin.calculators.get(engine);
     if (!evaluator) {
       return {
-        status: JOB_STATUS.REJECTED,
+        status: JOB_STATUS.ERROR,
         result: new Error('no calculator engine configured')
       }
     }
@@ -50,13 +50,13 @@ export default {
     } catch (e) {
       return {
         result: e.toString(),
-        status: JOB_STATUS.REJECTED
+        status: JOB_STATUS.ERROR
       }
     }
 
     if (!result && rejectOnFalse) {
       return {
-        status: JOB_STATUS.REJECTED,
+        status: JOB_STATUS.FAILED,
         result
       };
     }

@@ -63,7 +63,7 @@ describe('workflow > instructions > delay', () => {
         type: 'delay',
         config: {
           duration: 2000,
-          endStatus: JOB_STATUS.REJECTED
+          endStatus: JOB_STATUS.FAILED
         }
       });
 
@@ -79,9 +79,9 @@ describe('workflow > instructions > delay', () => {
       await sleep(2000);
 
       const [e2] = await workflow.getExecutions();
-      expect(e2.status).toEqual(EXECUTION_STATUS.REJECTED);
+      expect(e2.status).toEqual(EXECUTION_STATUS.FAILED);
       const [j2] = await e2.getJobs();
-      expect(j2.status).toBe(JOB_STATUS.REJECTED);
+      expect(j2.status).toBe(JOB_STATUS.FAILED);
     });
 
     it('delay to resolve and rollback in downstream node', async () => {
@@ -118,10 +118,10 @@ describe('workflow > instructions > delay', () => {
       await sleep(2000);
 
       const [e2] = await workflow.getExecutions();
-      expect(e2.status).toEqual(EXECUTION_STATUS.REJECTED);
+      expect(e2.status).toEqual(EXECUTION_STATUS.ERROR);
       const [j2, j3] = await e2.getJobs({ order: [['id', 'ASC']] });
       expect(j2.status).toBe(JOB_STATUS.RESOLVED);
-      expect(j3.status).toBe(JOB_STATUS.REJECTED);
+      expect(j3.status).toBe(JOB_STATUS.ERROR);
     });
   });
 

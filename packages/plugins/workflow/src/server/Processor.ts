@@ -21,8 +21,11 @@ export default class Processor {
   static StatusMap = {
     [JOB_STATUS.PENDING]: EXECUTION_STATUS.STARTED,
     [JOB_STATUS.RESOLVED]: EXECUTION_STATUS.RESOLVED,
-    [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
+    [JOB_STATUS.FAILED]: EXECUTION_STATUS.FAILED,
+    [JOB_STATUS.ERROR]: EXECUTION_STATUS.ERROR,
+    [JOB_STATUS.ABORTED]: EXECUTION_STATUS.ABORTED,
     [JOB_STATUS.CANCELED]: EXECUTION_STATUS.CANCELED,
+    [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
   };
 
   transaction?: Transaction;
@@ -138,12 +141,12 @@ export default class Processor {
         return null;
       }
     } catch (err) {
-      // for uncaught error, set to rejected
+      // for uncaught error, set to error
       job = {
         result: err instanceof Error
           ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
           : err,
-        status: JOB_STATUS.REJECTED,
+        status: JOB_STATUS.ERROR,
       };
       // if previous job is from resuming
       if (prevJob && prevJob.nodeId === node.id) {

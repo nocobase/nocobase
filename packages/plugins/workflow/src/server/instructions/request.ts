@@ -59,7 +59,7 @@ export default class implements Instruction {
       })
       .catch(error => {
         job.set({
-          status: JOB_STATUS.REJECTED,
+          status: JOB_STATUS.FAILED,
           result: error.isAxiosError ? error.toJSON() : error.message
         });
       })

@@ -43,10 +43,9 @@ const Modes = {
       if (resolved && resolved.count === assignees.length) {
         return JOB_STATUS.RESOLVED;
       }
-      // NOTE: `rejected` or `canceled`
-      const failed = distribution.find(item => item.status < JOB_STATUS.PENDING);
-      if (failed && failed.count) {
-        return failed.status;
+      const rejected = distribution.find(item => item.status < JOB_STATUS.PENDING);
+      if (rejected && rejected.count) {
+        return rejected.status;
       }
 
       return null;
@@ -58,9 +57,9 @@ const Modes = {
       if (resolved && resolved.count) {
         return JOB_STATUS.RESOLVED;
       }
-      const failedCount = distribution.reduce((count, item) => item.status < JOB_STATUS.PENDING ? count + item.count : count, 0);
+      const rejectedCount = distribution.reduce((count, item) => item.status < JOB_STATUS.PENDING ? count + item.count : count, 0);
       // NOTE: all failures are considered as rejected for now
-      if (failedCount === assignees.length) {
+      if (rejectedCount === assignees.length) {
         return JOB_STATUS.REJECTED;
       }
 

@@ -12,11 +12,12 @@ export const PARALLEL_MODE = {
 const Modes = {
   [PARALLEL_MODE.ALL]: {
     next(previous) {
-      return previous.status !== JOB_STATUS.REJECTED;
+      return previous.status > JOB_STATUS.PENDING;
     },
     getStatus(result) {
-      if (result.some(status => status != null && status === JOB_STATUS.REJECTED)) {
-        return JOB_STATUS.REJECTED;
+      const failedStatus = result.find(status => status != null && status < JOB_STATUS.PENDING)
+      if (typeof failedStatus !== 'undefined') {
+        return failedStatus;
       }
       if (result.every(status => status != null && status === JOB_STATUS.RESOLVED)) {
         return JOB_STATUS.RESOLVED;
@@ -35,7 +36,7 @@ const Modes = {
       if (result.some(status => status != null ? status === JOB_STATUS.PENDING : true)) {
         return JOB_STATUS.PENDING;
       }
-      return JOB_STATUS.REJECTED;
+      return JOB_STATUS.FAILED;
     }
   },
   [PARALLEL_MODE.RACE]: {
@@ -46,8 +47,9 @@ const Modes = {
       if (result.some(status => status != null && status === JOB_STATUS.RESOLVED)) {
         return JOB_STATUS.RESOLVED;
       }
-      if (result.some(status => status != null && status === JOB_STATUS.REJECTED)) {
-        return JOB_STATUS.REJECTED;
+      const failedStatus = result.find(status => status != null && status < JOB_STATUS.PENDING);
+      if (typeof failedStatus !== 'undefined') {
+        return failedStatus;
       }
       return JOB_STATUS.PENDING;
     }

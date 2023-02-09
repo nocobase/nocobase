@@ -79,7 +79,7 @@ describe('workflow > instructions > parallel', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
+      expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(3);
     });
@@ -106,7 +106,7 @@ describe('workflow > instructions > parallel', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
+      expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(2);
     });
@@ -192,7 +192,7 @@ describe('workflow > instructions > parallel', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
+      expect(execution.status).toBe(EXECUTION_STATUS.FAILED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(3);
     });
@@ -250,7 +250,7 @@ describe('workflow > instructions > parallel', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
+      expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(2);
     });

@@ -67,10 +67,15 @@ export default {
   'On going': '进行中',
   'Succeeded': '成功',
   'Failed': '失败',
-  'Pending': '等待处理',
+  'Error': '出错',
+  'Aborted': '已终止',
   'Canceled': '已取消',
+  'Rejected': '已拒绝',
+
+  'Pending': '待处理',
   'Resolve': '通过',
   'Reject': '拒绝',
+
   'Save': '保存',
   'Operations': '操作',
   'This node contains branches, deleting will also be preformed to them, are you sure?': '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
