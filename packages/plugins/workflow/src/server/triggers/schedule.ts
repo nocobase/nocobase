@@ -124,6 +124,9 @@ function getOnTimestampWithOffset(on, now: Date) {
 }
 
 function getDataOptionTime(data, on, dir = 1) {
+  if (!on) {
+    return null;
+  }
   switch (typeof on) {
     case 'string':
       const time = parseDateWithoutMs(on);
