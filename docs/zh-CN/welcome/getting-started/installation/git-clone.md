@@ -4,8 +4,10 @@
 
 请确保你已经：
 
-- 安装了 Git、Node.js 14+、Yarn 1.22.x
-- 配置并启动了所需数据库 SQLite 3.x、MySQL 8.x、PostgreSQL 10.x 任选其一
+* 安装了 Git、Node.js 14+、Yarn 1.22.x
+* 配置并启动了所需数据库 SQLite 3.x、MySQL 8.x、PostgreSQL 10.x 任选其一
+
+> NOTE: 如果本地环境安装的Node.js为17.x.x或18.x.x，那么需要在.env里增加一个配置 `NODE_OPTIONS=--openssl-legacy-provider` ，具体的配置也可以查看 `.env.example`
 
 ## 1. 将 NocoBase 下载到本地
 
@@ -63,4 +65,4 @@ yarn start # 暂不支持在 win 平台下运行
 
 ## 7. 登录 NocoBase
 
-使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+使用浏览器打开 http://localhost:13000/ 初始化账号和密码是 `admin@nocobase.com` 和 `admin123` 。
