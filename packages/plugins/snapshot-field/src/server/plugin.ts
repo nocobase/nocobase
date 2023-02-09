@@ -74,49 +74,6 @@ export class SnapshotFieldPlugin extends Plugin {
     });
 
     this.app.acl.allow('collectionsHistory', 'list', 'loggedIn');
-
-    this.app.resourcer.use(async (ctx: Context, next: Next) => {
-      const { resourceName, params, actionName } = ctx.action;
-      if (actionName !== 'create') return next();
-      const resourceCollection = this.app.db.getCollection(resourceName);
-      const fields = resourceCollection.fields as Map<string, Field>;
-      const snapshotFields: Field[] = [];
-      for (let [, field] of fields) {
-        if (field.options.type === 'snapshot') snapshotFields.push(field);
-      }
-      for (let field of snapshotFields) {
-        const { targetField: targetFieldName, appends, name: snapshotFieldName } = field.options;
-        const targetField = resourceCollection.getField(targetFieldName);
-        const { target: targetFieldCollectionName, targetKey, sourceKey } = targetField.options;
-        const targetFieldTargetKey = targetKey ?? sourceKey;
-        const targetFieldRepository = this.app.db.getRepository(targetFieldCollectionName);
-        const paramValue = params.values?.[targetFieldName];
-
-        if (!paramValue) continue;
-
-        let filterValues;
-
-        if (Array.isArray(paramValue)) {
-          filterValues = paramValue.map((i) => i[targetFieldTargetKey]);
-        } else if (isObject(paramValue)) {
-          filterValues = paramValue[targetFieldTargetKey];
-        } else {
-          filterValues = paramValue;
-        }
-
-        const res: Model[] = await targetFieldRepository.find({
-          filter: {
-            [targetFieldTargetKey]: filterValues,
-          },
-          appends,
-        });
-        params.values[snapshotFieldName] = {
-          collectionName: targetFieldCollectionName,
-          data: res.map((r) => r.toJSON()),
-        };
-      }
-      return next();
-    });
   }
 
   // 初始化安装的时候
