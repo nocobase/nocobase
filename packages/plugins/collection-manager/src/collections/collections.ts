@@ -52,7 +52,7 @@ export default {
     },
     {
       type: 'belongsToMany',
-      name: 'categories',
+      name: 'category',
       target: 'collectionCategories',
       sourceKey: 'name',
       foreignKey: 'collectionName',
