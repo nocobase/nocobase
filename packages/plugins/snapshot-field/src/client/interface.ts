@@ -8,6 +8,7 @@ import { useSnapshotTranslation } from './locale';
 const { defaultProps } = interfacesProperties;
 
 const APPENDS = 'appends';
+const TARGET_FIELD = 'targetField';
 
 export const useTopRecord = () => {
   let record = useRecord();
@@ -92,7 +93,7 @@ export const useSnapshotInterface = () => {
     initialize: (values: any) => {},
     properties: {
       ...defaultProps,
-      targetField: {
+      [TARGET_FIELD]: {
         type: 'string',
         title: t('Association field'),
         required: true,
@@ -125,7 +126,7 @@ export const useSnapshotInterface = () => {
         'x-disabled': '{{ !createOnly }}',
         'x-reactions': [
           {
-            dependencies: ['targetField'],
+            dependencies: [TARGET_FIELD],
             when: '{{$deps[0]}}',
             fulfill: {
               run: '{{$self.setValue($self.disabled ? $self.value : [])}}',
