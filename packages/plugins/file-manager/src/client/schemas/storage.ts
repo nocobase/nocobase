@@ -55,6 +55,16 @@ const collection = {
       } as ISchema,
     },
     {
+      type: 'string',
+      name: 'path',
+      interface: 'input',
+      uiSchema: {
+        title: '{{t("Path")}}',
+        type: 'string',
+        'x-component': 'Input',
+      } as ISchema
+    },
+    {
       type: 'boolean',
       name: 'default',
       interface: 'boolean',
@@ -162,6 +172,10 @@ export const storageSchema: ISchema = {
                       type: 'object',
                       'x-component': 'StorageOptions',
                     },
+                    path: {
+                      'x-component': 'CollectionField',
+                      'x-decorator': 'FormItem',
+                    },
                     default: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
@@ -207,7 +221,7 @@ export const storageSchema: ISchema = {
             useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
           properties: {
-            column1: {
+            title: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
@@ -219,7 +233,7 @@ export const storageSchema: ISchema = {
                 },
               },
             },
-            column2: {
+            name: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
@@ -231,7 +245,7 @@ export const storageSchema: ISchema = {
                 },
               },
             },
-            column3: {
+            default: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
@@ -243,7 +257,7 @@ export const storageSchema: ISchema = {
                 },
               },
             },
-            column4: {
+            actions: {
               type: 'void',
               title: '{{t("Actions")}}',
               'x-component': 'Table.Column',
@@ -293,6 +307,10 @@ export const storageSchema: ISchema = {
                             options: {
                               type: 'object',
                               'x-component': 'StorageOptions',
+                            },
+                            path: {
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
                             },
                             default: {
                               title: '',
