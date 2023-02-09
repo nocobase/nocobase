@@ -127,12 +127,12 @@ export class Restorer extends AppMigrator {
 
       const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
       const meta = JSON.parse(metaContent);
-      const tableName = meta.tableName;
+      const tableName = this.quoteTable(meta.tableName);
 
       try {
         // disable trigger
         if (this.app.db.inDialect('postgres')) {
-          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS "${tableName}" DISABLE TRIGGER ALL`);
+          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS ${tableName} DISABLE TRIGGER ALL`);
         }
 
         await this.importCollection({
@@ -144,7 +144,7 @@ export class Restorer extends AppMigrator {
         });
       } finally {
         if (this.app.db.inDialect('postgres')) {
-          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS "${tableName}" ENABLE TRIGGER ALL`);
+          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS ${tableName} ENABLE TRIGGER ALL`);
         }
       }
     };
@@ -199,6 +199,25 @@ export class Restorer extends AppMigrator {
     await decompress(backupFilePath, this.workDir);
   }
 
+  quoteTable(tableName) {
+    // @ts-ignore
+    tableName = this.app.db.sequelize.getQueryInterface().queryGenerator.quoteTable(this.addSchema(tableName));
+
+    return tableName;
+  }
+
+  addSchema(tableName) {
+    if (this.app.db.options.schema) {
+      // @ts-ignore
+      tableName = this.app.db.sequelize.getQueryInterface().queryGenerator.addSchema({
+        tableName,
+        _schema: this.app.db.options.schema,
+      });
+    }
+
+    return tableName;
+  }
+
   async importCollection(options: {
     name: string;
     insert?: boolean;
@@ -216,15 +235,16 @@ export class Restorer extends AppMigrator {
     const meta = JSON.parse(metaContent);
     app.log.info(`collection meta ${metaContent}`);
 
-    const tableName = meta.tableName;
+    const addSchemaTableName = this.addSchema(meta.tableName);
+    const tableName = this.quoteTable(meta.tableName);
 
     if (options.clear !== false) {
       // truncate old data
-      let sql = `TRUNCATE TABLE "${tableName}"`;
+      let sql = `TRUNCATE TABLE ${tableName}`;
 
       if (app.db.inDialect('sqlite')) {
         sql = `DELETE
-               FROM "${tableName}"`;
+               FROM ${tableName}`;
       }
 
       await app.db.sequelize.query(sqlAdapter(app.db, sql));
@@ -282,7 +302,7 @@ export class Restorer extends AppMigrator {
 
     //@ts-ignore
     const sql = collection.model.queryInterface.queryGenerator.bulkInsertQuery(
-      tableName,
+      addSchemaTableName,
       rowsWithMeta,
       {},
       fieldMappedAttributes,
@@ -303,18 +323,20 @@ export class Restorer extends AppMigrator {
         if (this.app.db.inDialect('postgres')) {
           const sequenceNameResult = await app.db.sequelize.query(
             `SELECT column_default FROM information_schema.columns WHERE
-          table_name='${collection.model.tableName}' and "column_name" = 'id';`,
+          table_name='${collection.model.tableName}' and "column_name" = 'id' and table_schema = '${
+              app.db.options.schema || 'public'
+            }';`,
           );
 
           if (sequenceNameResult[0].length) {
             const columnDefault = sequenceNameResult[0][0]['column_default'];
             if (columnDefault.includes(`${collection.model.tableName}_id_seq`)) {
-              const regex = new RegExp(/nextval\('("?\w+"?)\'.*\)/);
+              const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
               const match = regex.exec(columnDefault);
               const sequenceName = match[1];
 
               const maxVal = await app.db.sequelize.query(
-                `SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}"`,
+                `SELECT MAX("${primaryKeyAttribute.field}") FROM ${tableName}`,
                 {
                   type: 'SELECT',
                 },

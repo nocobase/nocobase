@@ -103,7 +103,7 @@ export class UiSchemaRepository extends Repository {
 
   tableNameAdapter(tableName) {
     if (this.database.sequelize.getDialect() === 'postgres') {
-      return `"${tableName}"`;
+      return `"${this.database.options.schema || 'public'}"."${tableName}"`;
     }
     return tableName;
   }
