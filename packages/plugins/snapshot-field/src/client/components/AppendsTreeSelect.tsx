@@ -1,5 +1,5 @@
 import React from 'react';
-import { TreeSelect } from 'antd';
+import { TreeSelect, Tag } from 'antd';
 import type { DefaultOptionType } from 'rc-tree-select/lib/TreeSelect';
 import { useForm } from '@formily/react';
 import { CollectionFieldOptions, useCollectionManager, useCompile, useRecord } from '@nocobase/client';
@@ -8,6 +8,7 @@ import { useTopRecord } from '../interface';
 
 export type TreeCacheMapNode = {
   parent?: TreeCacheMapNode;
+  title: string;
   path: string;
   children?: TreeCacheMapNode[];
 };
@@ -50,10 +51,11 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   const valueMap: Record<string, TreeCacheMapNode> = {};
 
   function loops(list: TreeOptionType[], parent?: TreeCacheMapNode) {
-    return (list || []).map(({ children, value }) => {
+    return (list || []).map(({ children, value, title }) => {
       const node: TreeCacheMapNode = (valueMap[value] = {
         parent,
         path: value,
+        title,
       });
       node.children = loops(children, node);
       return node;
@@ -85,9 +87,25 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     onChange(Array.from(valueSet));
   };
 
+  const TreeTag = (props) => {
+    const { value, onClose, disabled, closable } = props;
+    let node = valueMap[value];
+    let text = node?.title;
+    while ((node = node?.parent)) {
+      text = `${node.title} / ${text}`;
+    }
+    return (
+      <Tag closable={closable && !disabled} onClose={onClose}>
+        {text}
+      </Tag>
+    );
+  };
+
+  const filterdValue = Array.isArray(value) ? value.filter((i) => i in valueMap) : value;
+
   return (
     <TreeSelect
-      value={value}
+      value={filterdValue}
       dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
       placeholder={t('Please select')}
       showCheckedStrategy="SHOW_ALL"
@@ -95,6 +113,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
       multiple
       treeCheckStrictly
       treeCheckable
+      tagRender={TreeTag}
       onChange={handleChange as unknown as () => void}
       treeData={treeData}
       {...restProps}
