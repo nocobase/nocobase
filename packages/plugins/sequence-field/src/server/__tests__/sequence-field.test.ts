@@ -764,6 +764,7 @@ describe('sequence field', () => {
             type: 'sequence',
             name: 'seq',
             patterns: [
+              { type: 'date' },
               { type: 'integer', options: { key: 1 } }
             ]
           }
@@ -800,6 +801,9 @@ describe('sequence field', () => {
 
       await db.sync();
 
+      const now = new Date();
+      const dateStr = moment(now).format('YYYYMMDD');
+
       const tagsRepo = db.getRepository('tags');
       const tags = await tagsRepo.create({
         values: [
@@ -828,9 +832,9 @@ describe('sequence field', () => {
         order: [['seq', 'ASC']]
       });
 
-      expect(postsTags[0].seq).toBe('0');
-      expect(postsTags[1].seq).toBe('1');
-      expect(postsTags[2].seq).toBe('2');
+      expect(postsTags[0].seq).toBe(`${dateStr}0`);
+      expect(postsTags[1].seq).toBe(`${dateStr}1`);
+      expect(postsTags[2].seq).toBe(`${dateStr}2`);
     });
   });
 });
