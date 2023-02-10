@@ -22,7 +22,7 @@ Instead of being instantiated directly, the Action is usually instantiated autom
 | `sort` | `string[]` | - | Default sorting options |
 | `page` | `number` | - | Default page number |
 | `pageSize` | `number` | - | Default page size |
-| `maxPageSize` | `number` | - | Default max page size |
+| `maxPageSize` | `number` | - | Default maximum page size |
 
 ## Instance Members
 
