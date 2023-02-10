@@ -12,7 +12,7 @@ Instead of being instantiated directly, the Action is usually instantiated autom
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `handler` | `Function` | - | Handler |
+| `handler` | `Function` | - | Handler function |
 | `middlewares?` | `Middleware \| Middleware[]` | - | Middlewares for the action |
 | `values?` | `Object` | - | Default action data |
 | `fields?` | `string[]` | - | Default list of targeted fields |
