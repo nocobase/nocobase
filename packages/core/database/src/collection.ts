@@ -446,13 +446,6 @@ export class Collection<
 
     indexes.push(indexItem);
 
-    this.model.options.indexes = indexes.map((index) => {
-      if (this.options.underscored) {
-        index.fields = index.fields.map((field) => snakeCase(field));
-      }
-      return index;
-    });
-
     const tableName = this.model.getTableName();
     // @ts-ignore
     this.model._indexes = this.model.options.indexes
@@ -484,8 +477,17 @@ export class Collection<
   refreshIndexes() {
     // @ts-ignore
     const indexes: any[] = this.model._indexes;
+
     // @ts-ignore
-    this.model._indexes = indexes.filter((item) => item.fields.every((field) => this.model.rawAttributes[field]));
+    this.model._indexes = lodash.uniqBy(
+      indexes.map((item) => {
+        if (this.options.underscored) {
+          item.fields = item.fields.map((field) => snakeCase(field));
+        }
+        return item;
+      }),
+      'name',
+    );
   }
 
   async sync(syncOptions?: SyncOptions) {

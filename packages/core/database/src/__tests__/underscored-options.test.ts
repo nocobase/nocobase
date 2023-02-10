@@ -15,6 +15,30 @@ describe('underscored options', () => {
     await db.close();
   });
 
+  it('should create index', async () => {
+    const collectionA = db.collection({
+      name: 'testCollection',
+      fields: [
+        {
+          type: 'string',
+          name: 'aField',
+        },
+        {
+          type: 'string',
+          name: 'bField',
+        },
+      ],
+      indexes: [
+        {
+          type: 'UNIQUE',
+          fields: ['aField', 'bField'],
+        },
+      ],
+    });
+
+    await db.sync();
+  });
+
   it('should use underscored option', async () => {
     const collectionA = db.collection({
       name: 'testCollection',

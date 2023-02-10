@@ -265,8 +265,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   initListener() {
     this.on('beforeDefine', (model, options) => {
-      if (options.underscored || this.options.underscored) {
-        options.tableName = snakeCase(options.tableName);
+      if (this.options.underscored) {
         options.underscored = true;
       }
     });
