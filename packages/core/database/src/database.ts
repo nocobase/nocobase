@@ -61,6 +61,8 @@ import {
   ValidateListener,
 } from './types';
 
+import DatabaseUtils from './database-utils';
+
 export interface MergeOptions extends merge.Options {}
 
 export interface PendingOptions {
@@ -155,6 +157,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   modelCollection = new Map<ModelStatic<any>, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
 
+  utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
 

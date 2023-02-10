@@ -31,6 +31,9 @@ export class SyncRunner {
 
     const tableName = model.tableName;
 
+    const schemaTableName = db.utils.addSchema(tableName);
+    const quoteTableName = db.utils.quoteTable(tableName);
+
     const attributes = model.tableAttributes;
 
     const childAttributes = lodash.pickBy(attributes, (value) => {
@@ -85,7 +88,7 @@ export class SyncRunner {
       }
     }
 
-    await this.createTable(tableName, childAttributes, options, model, parentTables, schemaName);
+    await this.createTable(schemaTableName, childAttributes, options, model, parentTables, db);
 
     if (maxSequenceName) {
       const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map(
@@ -134,9 +137,7 @@ WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schem
     }
   }
 
-  static async createTable(tableName, attributes, options, model, parentTables, schema) {
-    tableName = model.queryGenerator.addSchema({ tableName, _schema: schema, _schemaDelimiter: '' });
-
+  static async createTable(tableName, attributes, options, model, parentTables, db) {
     let sql = '';
 
     options = { ...options };
@@ -161,7 +162,11 @@ WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schem
 
     sql = `${queryGenerator.createTableQuery(tableName, attributes, options)}`.replace(
       ';',
-      ` INHERITS (${parentTables.map((t) => `"${schema}"."${t}"`).join(', ')});`,
+      ` INHERITS (${parentTables
+        .map((t) => {
+          return db.utils.quoteTable(db.utils.addSchema(t, db.options.schema));
+        })
+        .join(', ')});`,
     );
 
     return await model.sequelize.query(sql, options);
