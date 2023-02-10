@@ -19,21 +19,6 @@ const env = {
   PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
 };
 
-if (require('semver').satisfies(process.version, '>16')) {
-  if (process.env.NODE_OPTIONS) {
-    let opts = process.env.NODE_OPTIONS;
-    if (!opts.includes('--openssl-legacy-provider')) {
-      opts = opts + ' --openssl-legacy-provider';
-    }
-    if (!opts.includes('--no-experimental-fetch')) {
-      opts = opts + ' --no-experimental-fetch';
-    }
-    process.env.NODE_OPTIONS = opts;
-  } else {
-    process.env.NODE_OPTIONS = '--openssl-legacy-provider --no-experimental-fetch';
-  }
-}
-
 if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') {
   if (existsSync(resolve(process.cwd(), '.env.test'))) {
     process.env.APP_ENV_PATH = '.env.test';
@@ -47,6 +32,21 @@ dotenv.config({
 for (const key in env) {
   if (!process.env[key]) {
     process.env[key] = env[key];
+  }
+}
+
+if (require('semver').satisfies(process.version, '>16') && !process.env.UNSET_NODE_OPTIONS) {
+  if (process.env.NODE_OPTIONS) {
+    let opts = process.env.NODE_OPTIONS;
+    if (!opts.includes('--openssl-legacy-provider')) {
+      opts = opts + ' --openssl-legacy-provider';
+    }
+    if (!opts.includes('--no-experimental-fetch')) {
+      opts = opts + ' --no-experimental-fetch';
+    }
+    process.env.NODE_OPTIONS = opts;
+  } else {
+    process.env.NODE_OPTIONS = '--openssl-legacy-provider --no-experimental-fetch';
   }
 }
 
