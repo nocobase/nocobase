@@ -33,7 +33,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     fieldPath: CollectionFieldOptions[] = [],
   ): TreeOptionType[] => {
     const filter = (i: CollectionFieldOptions) =>
-      !!i.target && !!i.interface && !fieldPath.find((p) => p.target === i.target);
+      !!i.target && !!i.interface && fieldPath.length < 3 && !fieldPath.find((p) => p.target === i.target);
     return fields.filter(filter).map((i) => ({
       title: compile(i.uiSchema?.title) ?? i.name,
       value: fieldPath
