@@ -7,6 +7,7 @@ import { useCurrentAppInfo } from '../../appInfo';
 import { useRecord } from '../../record-provider';
 import { SchemaComponent, SchemaComponentContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
+import { CollectionCategroriesContext } from '../context';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
@@ -76,6 +77,7 @@ export const ConfigurationTable = () => {
   const {
     data: { database },
   } = useCurrentAppInfo();
+  const data = useContext(CollectionCategroriesContext);
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
@@ -93,9 +95,14 @@ export const ConfigurationTable = () => {
         value: item.name,
       }));
   };
+  const loadCategories = async () => {
+    return data.data.map((item: any) => ({
+      label: compile(item.name),
+      value: item.id,
+    }));
+  };
   const ctx = useContext(SchemaComponentContext);
   return (
-    <div>
       <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
         <SchemaComponent
           schema={collectionSchema}
@@ -111,6 +118,7 @@ export const ConfigurationTable = () => {
             useSelectedRowKeys,
             useAsyncDataSource,
             loadCollections,
+            loadCategories,
             useCurrentFields,
             useNewId,
             useCancelAction,
@@ -119,6 +127,5 @@ export const ConfigurationTable = () => {
           }}
         />
       </SchemaComponentContext.Provider>
-    </div>
   );
 };

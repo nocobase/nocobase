@@ -38,5 +38,5 @@ export const calendar: ICollectionTemplate = {
   availableFieldInterfaces: {
     include: [],
   },
-  configurableProperties: getConfigurableProperties('title', 'name', 'inherits'),
+  configurableProperties: getConfigurableProperties('title', 'name', 'inherits','category'),
 };

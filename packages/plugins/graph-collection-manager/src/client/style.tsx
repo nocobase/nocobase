@@ -128,7 +128,7 @@ export const entityContainer = css`
 `;
 
 export const headClass = css`
-  height: 40px;
+  height: 50px;
   font-size: 14px;
   font-weight: 500;
   display: flex;

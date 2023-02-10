@@ -50,5 +50,15 @@ export default {
       foreignKey: 'collectionName',
       sortBy: 'sort',
     },
+    {
+      type: 'belongsToMany',
+      name: 'category',
+      target: 'collectionCategories',
+      sourceKey: 'name',
+      foreignKey: 'collectionName',
+      otherKey: 'categoryId',
+      targetKey: 'id',
+      through: 'collectionCategory',
+    },
   ],
 } as CollectionOptions;
