@@ -35,7 +35,6 @@ describe('actions', () => {
     await agent.resource('collections').create({
       values: {
         name: 'table_a',
-        template: 'general',
         fields: [field],
         title: 'table_a',
       },
@@ -44,7 +43,6 @@ describe('actions', () => {
     await agent.resource('collections').create({
       values: {
         name: 'table_b',
-        template: 'general',
         fields: [field],
         title: 'table_b',
       },
