@@ -64,6 +64,54 @@ describe('underscored options', () => {
     expect(tableName.includes('test_collection')).toBeTruthy();
   });
 
+  test('through table', async () => {
+    db.collection({
+      name: 'posts',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'tags',
+          through: 'collectionCategory',
+          target: 'posts',
+          sourceKey: 'name',
+          foreignKey: 'postsName',
+          targetKey: 'name',
+          otherKey: 'tagsName',
+        },
+      ],
+    });
+
+    db.collection({
+      name: 'tags',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'posts',
+          target: 'posts',
+          through: 'collectionCategory',
+          sourceKey: 'name',
+          foreignKey: 'tagsName',
+          targetKey: 'name',
+          otherKey: 'postsName',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const through = db.getCollection('collectionCategory');
+
+    expect(through.model.tableName.includes('collection_category')).toBeTruthy();
+  });
+
   test('db collectionExists', async () => {
     const collectionA = db.collection({
       name: 'testCollection',

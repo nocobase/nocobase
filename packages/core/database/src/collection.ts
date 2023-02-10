@@ -98,12 +98,14 @@ export class Collection<
 
   private sequelizeModelOptions() {
     const { name, tableName } = this.options;
-
     return {
       ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
       modelName: name,
       sequelize: this.context.database.sequelize,
-      tableName: tableName || name,
+      tableName: (() => {
+        const tName = tableName || name;
+        return this.db.options.underscored ? snakeCase(tName) : tName;
+      })(),
     };
   }
 
