@@ -1,4 +1,4 @@
-import { Field, BaseColumnFieldOptions, Model, CreateOptions } from '@nocobase/database';
+import { Field, BaseColumnFieldOptions, Model, CreateOptions, Repository } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
 import isObject from 'lodash/isObject';
 
@@ -7,59 +7,42 @@ export class SnapshotField extends Field {
     return DataTypes.JSON;
   }
 
-  afterCreateWithAssociations = async (model: Model, options: CreateOptions) => {
-    const { transaction, values } = options;
+  afterCreateWithAssociations = async (model: Model, { transaction, values }: CreateOptions) => {
+    const snapshotOwnerCollectionName = this.collection.name;
+    const { targetField: targetFieldName, name: snapshotFieldName, appends } = this.options;
+    const primaryKey = this.collection.model.primaryKeyAttribute;
+    const targetField = this.collection.getField(targetFieldName);
+    const { target: targetFieldCollectionName } = targetField.options;
 
-    const { collection: resourceCollection, database } = this.context;
+    const repository: Repository = this.database.getRepository<any>(
+      `${snapshotOwnerCollectionName}.${targetFieldName}`,
+      model.get(primaryKey),
+    );
 
-    const fields = resourceCollection.fields;
-    const snapshotFields: Field[] = [];
-    for (let [, field] of fields) {
-      if (field.options.type === 'snapshot') snapshotFields.push(field);
-    }
-    const snapshotFieldsData = {};
-    for (let field of snapshotFields) {
-      const { targetField: targetFieldName, appends, name: snapshotFieldName } = field.options;
-      const targetField = resourceCollection.getField(targetFieldName);
-      const { target: targetFieldCollectionName, targetKey, sourceKey } = targetField.options;
-      const targetFieldTargetKey = targetKey ?? sourceKey;
-      const targetFieldRepository = database.getRepository(targetFieldCollectionName);
-      const paramValue = values?.[targetFieldName];
+    let res: Model[] | Model;
 
-      if (!paramValue) continue;
-
-      let filterValues;
-
-      if (Array.isArray(paramValue)) {
-        filterValues = paramValue.map((i) => i[targetFieldTargetKey]);
-      } else if (isObject(paramValue)) {
-        filterValues = paramValue[targetFieldTargetKey];
-      } else {
-        filterValues = paramValue;
-      }
-
-      const res: Model[] = await targetFieldRepository.find({
-        filter: {
-          [targetFieldTargetKey]: filterValues,
-        },
-        appends,
+    try {
+      res = await repository.find({
         transaction,
+        appends,
       });
-
-      snapshotFieldsData[snapshotFieldName] = {
-        collectionName: targetFieldCollectionName,
-        data: res.map((r) => r.toJSON()),
-      };
+    } catch (err) {
+      // when appends failed
+      res = [];
     }
 
-    console.log(values, model.toJSON());
+    const snapshotData = {
+      collectionName: targetFieldCollectionName,
+      data: Array.isArray(res) ? res.map((r) => r.toJSON()) : res,
+    };
 
     await model.update(
       {
-        ...snapshotFieldsData,
+        [snapshotFieldName]: snapshotData,
       },
       {
         transaction,
+        hooks: false,
       },
     );
   };
@@ -67,6 +50,11 @@ export class SnapshotField extends Field {
   bind() {
     super.bind();
     this.on('afterCreateWithAssociations', this.afterCreateWithAssociations);
+  }
+
+  unbind() {
+    super.unbind();
+    this.off('afterCreateWithAssociations', this.afterCreateWithAssociations);
   }
 }
 
