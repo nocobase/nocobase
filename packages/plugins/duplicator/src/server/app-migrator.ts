@@ -1,12 +1,12 @@
 import { Application } from '@nocobase/server';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import crypto from 'crypto';
+import EventEmitter from 'events';
+import fsPromises from 'fs/promises';
+import inquirer from 'inquirer';
+import lodash from 'lodash';
 import * as os from 'os';
 import path from 'path';
-import lodash from 'lodash';
-import fsPromises from 'fs/promises';
-import crypto from 'crypto';
-import inquirer from 'inquirer';
-import EventEmitter from 'events';
-import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 
 abstract class AppMigrator extends EventEmitter {
   protected workDir: string;
@@ -64,11 +64,11 @@ abstract class AppMigrator extends EventEmitter {
     return {
       type: 'checkbox',
       name: 'collectionGroups',
-      message: `选择需要${this.direction}的插件数据`,
+      message: `Select the plugin collections to be ${this.direction === 'dump' ? 'dumped' : 'restored'}`,
       loop: false,
       pageSize: 20,
       choices: [
-        new inquirer.Separator('== 必选数据 =='),
+        new inquirer.Separator('== Required =='),
         ...requiredGroups.map((collectionGroup) => ({
           name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
           value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
@@ -76,7 +76,7 @@ abstract class AppMigrator extends EventEmitter {
           disabled: true,
         })),
 
-        new inquirer.Separator('== 可选数据 =='),
+        new inquirer.Separator('== Optional =='),
         ...optionalGroups.map((collectionGroup) => ({
           name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
           value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
@@ -95,7 +95,7 @@ abstract class AppMigrator extends EventEmitter {
     return {
       type: 'checkbox',
       name: 'userCollections',
-      message: `选择需要${this.direction}的Collection数据`,
+      message: `Select the collection records to be ${this.direction === 'dump' ? 'dumped' : 'restored'}`,
       loop: false,
       pageSize: 30,
       choices: collections.map((collection) => {
