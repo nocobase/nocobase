@@ -127,7 +127,7 @@ export class Restorer extends AppMigrator {
 
       const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
       const meta = JSON.parse(metaContent);
-      const tableName = this.quoteTable(meta.tableName);
+      const tableName = this.app.db.utils.quoteTable(meta.tableName);
 
       try {
         // disable trigger
@@ -199,25 +199,6 @@ export class Restorer extends AppMigrator {
     await decompress(backupFilePath, this.workDir);
   }
 
-  quoteTable(tableName) {
-    // @ts-ignore
-    tableName = this.app.db.sequelize.getQueryInterface().queryGenerator.quoteTable(this.addSchema(tableName));
-
-    return tableName;
-  }
-
-  addSchema(tableName) {
-    if (this.app.db.options.schema) {
-      // @ts-ignore
-      tableName = this.app.db.sequelize.getQueryInterface().queryGenerator.addSchema({
-        tableName,
-        _schema: this.app.db.options.schema,
-      });
-    }
-
-    return tableName;
-  }
-
   async importCollection(options: {
     name: string;
     insert?: boolean;
@@ -225,6 +206,8 @@ export class Restorer extends AppMigrator {
     rowCondition?: (row: any) => boolean;
   }) {
     const app = this.app;
+    const db = app.db;
+
     const collectionName = options.name;
     const dir = this.workDir;
     const collection = app.db.getCollection(collectionName);
@@ -235,8 +218,8 @@ export class Restorer extends AppMigrator {
     const meta = JSON.parse(metaContent);
     app.log.info(`collection meta ${metaContent}`);
 
-    const addSchemaTableName = this.addSchema(meta.tableName);
-    const tableName = this.quoteTable(meta.tableName);
+    const addSchemaTableName = db.utils.addSchema(meta.tableName);
+    const tableName = db.utils.quoteTable(meta.tableName);
 
     if (options.clear !== false) {
       // truncate old data
