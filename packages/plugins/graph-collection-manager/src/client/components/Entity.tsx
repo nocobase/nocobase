@@ -22,7 +22,7 @@ import {
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
-  useRecord
+  useRecord,
 } from '@nocobase/client';
 import { Badge, Dropdown, Popover, Tag } from 'antd';
 import { groupBy } from 'lodash';
@@ -33,7 +33,7 @@ import {
   useDestroyActionAndRefreshCM,
   useDestroyFieldActionAndRefreshCM,
   useUpdateCollectionActionAndRefreshCM,
-  useValuesFromRecord
+  useValuesFromRecord,
 } from '../action-hooks';
 import { collectiionPopoverClass, entityContainer, headClass, tableBtnClass, tableNameClass } from '../style';
 import { useGCMTranslation } from '../utils';
@@ -60,6 +60,7 @@ const Entity: React.FC<{
   const database = useCurrentAppInfo();
   const collectionData = useRef();
   collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
+  const { category } = item;
   const compile = useCompile();
   const loadCollections = async (field: any) => {
     return targetGraph.collections?.map((collection: any) => ({
@@ -79,8 +80,21 @@ const Entity: React.FC<{
       className={cx(entityContainer)}
       style={{ boxShadow: attrs?.boxShadow, border: select ? '2px dashed #f5a20a' : 0 }}
     >
-      <div className={headClass} style={{ background: attrs?.hightLight ? '#1890ff' : null }}>
+      {category.map((v, index) => {
+        return (
+          <Badge.Ribbon
+            color={v.color}
+            style={{ width: '103%', height: '3px', marginTop: index * 5 - 8, borderRadius: 0 }}
+            placement="start"
+          />
+        );
+      })}
+      <div
+        className={headClass}
+        style={{ background: attrs?.hightLight ? '#1890ff' : null, paddingTop: category.length * 3 }}
+      >
         <span className={tableNameClass}>{compile(title)}</span>
+
         <div className={tableBtnClass}>
           <SchemaComponentProvider>
             <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
@@ -154,6 +168,7 @@ const Entity: React.FC<{
           </SchemaComponentProvider>
         </div>
       </div>
+
       <PortsCom {...portsProps} />
     </div>
   );

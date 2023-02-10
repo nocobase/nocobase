@@ -577,7 +577,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.getDialect() === 'sqlite' && lodash.get(this.options, 'storage') == ':memory:';
   }
 
-  async auth(options: QueryOptions & { retry?: number } = {}) {
+  async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
     const { retry = 10, ...others } = options;
     const delay = (ms) => new Promise((yea) => setTimeout(yea, ms));
     let count = 1;
