@@ -73,10 +73,10 @@ export class Collection<
 
   constructor(options: CollectionOptions, context: CollectionContext) {
     super();
-    this.checkOptions(options);
-
     this.context = context;
     this.options = options;
+
+    this.checkOptions(options);
 
     this.bindFieldEventListener();
     this.modelInit();
@@ -94,18 +94,31 @@ export class Collection<
 
   private checkOptions(options: CollectionOptions) {
     checkIdentifier(options.name);
+    this.checkTableName();
+  }
+
+  private checkTableName() {
+    const tableName = this.tableName();
+    for (const [k, collection] of this.db.collections) {
+      if (tableName === collection.tableName()) {
+        throw new Error(`collection ${collection.name} and ${this.name} have same tableName "${tableName}"`);
+      }
+    }
+  }
+
+  tableName() {
+    const { name, tableName } = this.options;
+    const tName = tableName || name;
+    return this.db.options.underscored ? snakeCase(tName) : tName;
   }
 
   private sequelizeModelOptions() {
-    const { name, tableName } = this.options;
+    const { name } = this.options;
     return {
       ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
       modelName: name,
       sequelize: this.context.database.sequelize,
-      tableName: (() => {
-        const tName = tableName || name;
-        return this.db.options.underscored ? snakeCase(tName) : tName;
-      })(),
+      tableName: this.tableName(),
     };
   }
 
@@ -191,8 +204,24 @@ export class Collection<
     return this.setField(name, options);
   }
 
+  checkFieldName(name: string) {
+    const getColumnName = (fieldName) => {
+      return this.options.underscored ? snakeCase(fieldName) : fieldName;
+    };
+    const columnName = getColumnName(name);
+
+    for (const [k, field] of this.fields) {
+      const fieldColumnName = getColumnName(field.name);
+
+      if (field.name != name && fieldColumnName === columnName) {
+        throw new Error(`field ${field.name} conflict with ${name}`);
+      }
+    }
+  }
+
   setField(name: string, options: FieldOptions): Field {
     checkIdentifier(name);
+    this.checkFieldName(name);
 
     const { database } = this.context;
 

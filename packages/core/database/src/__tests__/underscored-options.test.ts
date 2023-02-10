@@ -130,4 +130,31 @@ describe('underscored options', () => {
 
     expect(await db.collectionExistsInDb('testCollection')).toBeTruthy();
   });
+
+  it('should throw error when table names conflict', async () => {
+    db.collection({
+      name: 'b1_z',
+    });
+
+    expect(() => {
+      db.collection({
+        name: 'b1Z',
+      });
+    }).toThrowError();
+  });
+
+  it('should throw error when field names conflict', async () => {
+    expect(() => {
+      db.collection({
+        name: 'test',
+        fields: [
+          { name: 'b1_z', type: 'string' },
+          {
+            name: 'b1Z',
+            type: 'string',
+          },
+        ],
+      });
+    }).toThrowError();
+  });
 });
