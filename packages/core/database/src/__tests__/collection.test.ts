@@ -238,9 +238,15 @@ describe('collection sync', () => {
     await collection.sync();
     const tableFields = await (<any>collection.model).queryInterface.describeTable(`${db.getTablePrefix()}users`);
 
-    expect(tableFields).toHaveProperty('firstName');
-    expect(tableFields).toHaveProperty('lastName');
-    expect(tableFields).toHaveProperty('age');
+    if (db.options.underscored) {
+      expect(tableFields).toHaveProperty('first_name');
+      expect(tableFields).toHaveProperty('last_name');
+      expect(tableFields).toHaveProperty('age');
+    } else {
+      expect(tableFields).toHaveProperty('firstName');
+      expect(tableFields).toHaveProperty('lastName');
+      expect(tableFields).toHaveProperty('age');
+    }
   });
 
   test('sync with association not exists', async () => {
@@ -288,9 +294,15 @@ describe('collection sync', () => {
 
     const model = collection.model;
     await collection.sync();
-    const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}postsTags`);
-    expect(tableFields['postId']).toBeDefined();
-    expect(tableFields['tagId']).toBeDefined();
+    if (db.options.underscored) {
+      const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}posts_tags`);
+      expect(tableFields['post_id']).toBeDefined();
+      expect(tableFields['tag_id']).toBeDefined();
+    } else {
+      const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}postsTags`);
+      expect(tableFields['postId']).toBeDefined();
+      expect(tableFields['tagId']).toBeDefined();
+    }
   });
 
   test('limit table name length', async () => {
