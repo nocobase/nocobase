@@ -31,10 +31,11 @@ export function getConfigByEnv() {
       collate: 'utf8mb4_unicode_ci',
     },
     timezone: process.env.DB_TIMEZONE,
+    underscored: process.env.DB_UNDERSCORED,
   };
 }
 
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
-  const dbOptions = merge(getConfigByEnv(), options);
+  const dbOptions = merge(getConfigByEnv(), options) as any;
   return new MockDatabase(dbOptions);
 }

@@ -281,7 +281,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       migrator: {
         context: { app: this },
       },
-      underscored: process.env.DB_UNDERSCORED === 'true',
     });
   }
 
