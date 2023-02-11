@@ -396,4 +396,64 @@ describe('collections repository', () => {
     });
     expect(response1.body.data.length).toBe(2);
   });
+
+  it('should update field with unique index', async () => {
+    const createCollectionResponse = await app
+      .agent()
+      .resource('collections')
+      .create({
+        values: {
+          name: 'test',
+          fields: [
+            {
+              name: 'testField',
+              type: 'string',
+            },
+          ],
+        },
+      });
+
+    expect(createCollectionResponse.statusCode).toEqual(200);
+
+    const testField = await app.db.getRepository('fields').findOne({
+      filter: {
+        name: 'testField',
+      },
+    });
+
+    // update field with unique index
+    const addIndexResponse = await app
+      .agent()
+      .resource('fields')
+      .update({
+        values: {
+          unique: true,
+        },
+        filterByTk: testField.get('key'),
+      });
+
+    expect(addIndexResponse.statusCode).toEqual(200);
+
+    const indexes = await app.db.sequelize.getQueryInterface().showIndex(app.db.getCollection('test').model.tableName);
+
+    expect(indexes).toHaveLength(2);
+
+    const removeIndexResponse = await app
+      .agent()
+      .resource('fields')
+      .update({
+        values: {
+          unique: false,
+        },
+        filterByTk: testField.get('key'),
+      });
+
+    expect(removeIndexResponse.statusCode).toEqual(200);
+
+    const afterIndexes = await app.db.sequelize
+      .getQueryInterface()
+      .showIndex(app.db.getCollection('test').model.tableName);
+
+    expect(afterIndexes).toHaveLength(1);
+  });
 });

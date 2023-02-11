@@ -13,7 +13,7 @@ import {
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
@@ -122,7 +122,7 @@ export class CollectionManagerPlugin extends Plugin {
         const next = currentOptions['unique'];
 
         if (Boolean(prev) !== Boolean(next)) {
-          await model.migrate({ transaction });
+          await model.syncUniqueIndex({ transaction });
         }
       }
 

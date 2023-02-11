@@ -10,57 +10,7 @@ interface MigrateOptions extends SyncOptions, Transactionable {
   isNew?: boolean;
 }
 
-async function migrate(field: Field, options: MigrateOptions): Promise<void> {
-  const { unique } = field.options;
-  const { model } = field.collection;
-
-  const ukName = `${model.tableName}_${field.name}_uk`;
-  const queryInterface = model.sequelize.getQueryInterface();
-  const fieldAttribute = model.rawAttributes[field.name];
-
-  // @ts-ignore
-  const existedConstraints = (await queryInterface.showConstraint(model.tableName, ukName, {
-    transaction: options.transaction,
-  })) as any[];
-
-  const constraintBefore = existedConstraints.find((item) => item.constraintName === ukName);
-
-  if (typeof fieldAttribute?.unique !== 'undefined') {
-    if (constraintBefore && !unique) {
-      await queryInterface.removeConstraint(model.tableName, ukName, { transaction: options.transaction });
-    }
-
-    fieldAttribute.unique = Boolean(constraintBefore);
-  }
-
-  await field.sync(options);
-
-  if (!constraintBefore && unique) {
-    await queryInterface.addConstraint(model.tableName, {
-      type: 'unique',
-      fields: [field.name],
-      name: ukName,
-      transaction: options.transaction,
-    });
-  }
-
-  if (typeof fieldAttribute?.unique !== 'undefined') {
-    fieldAttribute.unique = unique;
-  }
-
-  // @ts-ignore
-  const updatedConstraints = (await queryInterface.showConstraint(model.tableName, ukName, {
-    transaction: options.transaction,
-  })) as any[];
-
-  const indexAfter = updatedConstraints.find((item) => item.constraintName === ukName);
-
-  if (unique && !indexAfter) {
-    throw new UniqueConstraintError({
-      fields: { [field.name]: undefined },
-    });
-  }
-}
+async function migrate(field: Field, options: MigrateOptions): Promise<void> {}
 
 export class FieldModel extends MagicAttributeModel {
   get db(): Database {
@@ -134,6 +84,33 @@ export class FieldModel extends MagicAttributeModel {
     return field.removeFromDb({
       transaction: options.transaction,
     });
+  }
+
+  async syncUniqueIndex(options: Transactionable) {
+    const unique = this.get('unique');
+    const collection = this.getFieldCollection();
+    const columnName = collection.model.rawAttributes[this.get('name')].field;
+
+    // @ts-ignore
+    const existsIndexes: any = await this.db.sequelize.getQueryInterface().showIndex(collection.model.tableName);
+
+    const existUniqueIndex = existsIndexes.find((item) => {
+      return item.unique && item.fields[0].attribute === columnName && item.fields.length === 1;
+    });
+
+    if (unique && !existUniqueIndex) {
+      collection.addIndex({
+        fields: [this.get('name')],
+        unique: true,
+      });
+
+      // @ts-ignore
+      await collection.sync(options);
+    }
+
+    if (!unique && existUniqueIndex) {
+      await this.db.sequelize.getQueryInterface().removeIndex(collection.model.tableName, existUniqueIndex.name);
+    }
   }
 
   async syncDefaultValue(
