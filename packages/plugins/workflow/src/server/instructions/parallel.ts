@@ -12,7 +12,7 @@ export const PARALLEL_MODE = {
 const Modes = {
   [PARALLEL_MODE.ALL]: {
     next(previous) {
-      return previous.status > JOB_STATUS.PENDING;
+      return previous.status >= JOB_STATUS.PENDING;
     },
     getStatus(result) {
       const failedStatus = result.find(status => status != null && status < JOB_STATUS.PENDING)
@@ -27,7 +27,7 @@ const Modes = {
   },
   [PARALLEL_MODE.ANY]: {
     next(previous) {
-      return previous.status !== JOB_STATUS.RESOLVED;
+      return previous.status <= JOB_STATUS.PENDING;
     },
     getStatus(result) {
       if (result.some(status => status != null && status === JOB_STATUS.RESOLVED)) {
@@ -85,7 +85,7 @@ export default {
   },
 
   async resume(node: FlowNodeModel, branchJob, processor: Processor) {
-    const job = processor.findBranchParentJob(branchJob, node);
+    const job = processor.findBranchParentJob(branchJob, node) as JobModel;
 
     const { result, status } = job;
     // if parallel has been done (resolved / rejected), do not care newly executed branch jobs.
@@ -94,8 +94,8 @@ export default {
     }
 
     // find the index of the node which start the branch
-    const jobNode = processor.nodesMap.get(branchJob.nodeId);
-    const branchStartNode = processor.findBranchStartNode(jobNode, node);
+    const jobNode = processor.nodesMap.get(branchJob.nodeId) as FlowNodeModel;
+    const branchStartNode = processor.findBranchStartNode(jobNode, node) as FlowNodeModel;
     const branches = processor.getBranches(node);
     const branchIndex = branches.indexOf(branchStartNode);
     const { mode = PARALLEL_MODE.ALL } = node.config || {};

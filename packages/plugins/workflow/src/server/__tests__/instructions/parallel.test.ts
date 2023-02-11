@@ -384,21 +384,22 @@ describe('workflow > instructions > parallel', () => {
 
       await sleep(500);
 
-      const [execution] = await workflow.getExecutions();
-      expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
 
-      const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
+      const [pending] = await e1.getJobs({ where: { nodeId: n2.id } });
       pending.set({
         status: JOB_STATUS.RESOLVED,
         result: 123
       });
-      pending.execution = execution;
-      await plugin.resume(pending);
+      pending.execution = e1;
+      plugin.resume(pending);
 
       await sleep(500);
 
-      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const jobs = await e2.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(4);
     });
   });
