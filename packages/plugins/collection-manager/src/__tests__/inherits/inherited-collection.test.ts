@@ -359,7 +359,6 @@ pgOnly()('Inherited Collection', () => {
 
     const studentCollection = await db.getCollection('students');
 
-    console.log(studentCollection.fields);
     await studentCollection.repository.create({
       values: {
         name: 'foo',

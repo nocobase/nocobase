@@ -9,6 +9,7 @@ export async function createApp(options = {}) {
     ...options,
   });
 
+  await app.db.sync({});
   app.plugin(PluginErrorHandler, { name: 'error-handler' });
   app.plugin(Plugin, { name: 'collection-manager' });
   app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
