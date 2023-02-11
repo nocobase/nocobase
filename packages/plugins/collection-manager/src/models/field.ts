@@ -130,7 +130,7 @@ export class FieldModel extends MagicAttributeModel {
 
     await queryInterface.changeColumn(
       collection.model.tableName,
-      this.get('name'),
+      collection.model.rawAttributes[this.get('name')].field,
       {
         type: field.dataType,
         defaultValue: options.defaultValue,

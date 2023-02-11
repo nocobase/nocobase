@@ -397,6 +397,42 @@ describe('collections repository', () => {
     expect(response1.body.data.length).toBe(2);
   });
 
+  it('should update field with default value', async () => {
+    const createCollectionResponse = await app
+      .agent()
+      .resource('collections')
+      .create({
+        values: {
+          name: 'test',
+          fields: [
+            {
+              name: 'testField',
+              type: 'string',
+            },
+          ],
+        },
+      });
+
+    const testField = await app.db.getRepository('fields').findOne({
+      filter: {
+        name: 'testField',
+      },
+    });
+
+    // update field with unique index
+    const addDefaultValueResponse = await app
+      .agent()
+      .resource('fields')
+      .update({
+        values: {
+          defaultValue: '1231',
+        },
+        filterByTk: testField.get('key'),
+      });
+
+    expect(addDefaultValueResponse.statusCode).toEqual(200);
+  });
+
   it('should update field with unique index', async () => {
     const createCollectionResponse = await app
       .agent()
