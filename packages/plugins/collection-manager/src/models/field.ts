@@ -1,5 +1,5 @@
-import Database, { Collection, Field, MagicAttributeModel } from '@nocobase/database';
-import { SyncOptions, Transactionable, UniqueConstraintError } from 'sequelize';
+import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
+import { SyncOptions, Transactionable } from 'sequelize';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -9,8 +9,6 @@ interface LoadOptions extends Transactionable {
 interface MigrateOptions extends SyncOptions, Transactionable {
   isNew?: boolean;
 }
-
-async function migrate(field: Field, options: MigrateOptions): Promise<void> {}
 
 export class FieldModel extends MagicAttributeModel {
   get db(): Database {
@@ -56,10 +54,13 @@ export class FieldModel extends MagicAttributeModel {
       field = await this.load({
         transaction: options.transaction,
       });
+
       if (!field) {
         return;
       }
-      await migrate(field, options);
+
+      const collection = this.getFieldCollection();
+      await collection.sync({ force: false, alter: { drop: false } });
     } catch (error) {
       // field sync failed, delete from memory
       if (isNew && field) {
@@ -105,7 +106,7 @@ export class FieldModel extends MagicAttributeModel {
       });
 
       // @ts-ignore
-      await collection.sync(options);
+      await collection.sync({ ...options, force: false, alter: { drop: false } });
     }
 
     if (!unique && existUniqueIndex) {

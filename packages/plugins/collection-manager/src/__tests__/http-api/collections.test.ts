@@ -433,6 +433,38 @@ describe('collections repository', () => {
     expect(addDefaultValueResponse.statusCode).toEqual(200);
   });
 
+  it('should create collection field', async () => {
+    await app
+      .agent()
+      .resource('collections')
+      .create({
+        values: {
+          name: 'test',
+        },
+      });
+
+    const addFieldResponse = await app
+      .agent()
+      .resource('fields')
+      .create({
+        values: {
+          name: 'testField',
+          collectionName: 'test',
+          type: 'string',
+        },
+      });
+
+    expect(addFieldResponse.statusCode).toEqual(200);
+
+    const collection = app.db.getCollection('test');
+
+    const columnName = collection.model.rawAttributes.testField.field;
+
+    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(collection.model.tableName);
+
+    expect(tableInfo[columnName]).toBeDefined();
+  });
+
   it('should update field with unique index', async () => {
     const createCollectionResponse = await app
       .agent()
