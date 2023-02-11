@@ -59,8 +59,7 @@ export class FieldModel extends MagicAttributeModel {
         return;
       }
 
-      const collection = this.getFieldCollection();
-      await collection.sync({ force: false, alter: { drop: false } });
+      await field.sync(options);
     } catch (error) {
       // field sync failed, delete from memory
       if (isNew && field) {
