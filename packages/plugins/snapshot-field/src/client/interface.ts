@@ -123,13 +123,12 @@ export const useSnapshotInterface = () => {
         description: t('When a record is created, relational data is backed up in a snapshot'),
         'x-decorator': 'FormItem',
         'x-component': 'AppendsTreeSelect',
-        'x-disabled': '{{ !createOnly }}',
         'x-reactions': [
           {
             dependencies: [TARGET_FIELD],
             when: '{{$deps[0]}}',
             fulfill: {
-              run: '{{$self.setValue($self.disabled ? $self.value : [])}}',
+              run: '{{$self.setValue($self.value)}}',
             },
           },
         ],
