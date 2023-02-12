@@ -1,4 +1,4 @@
-import { ISchema, Schema } from '@formily/react';
+import { Schema } from '@formily/react';
 
 // 表格操作配置
 export const TableActionInitializers = {

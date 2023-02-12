@@ -17,5 +17,7 @@ export class RoleModel extends Model {
       ...((this.get('strategy') as object) || {}),
       allowConfigure: this.get('allowConfigure') as boolean,
     });
+
+    role.snippets = new Set(this.get('snippets'));
   }
 }

@@ -1,6 +1,6 @@
 # 图表
 
-目前，NocoBase 图表区块需要通过配置文件或编写代码来实现。图表库使用的是 [g2plot](https://g2plot.antv.vision/en/examples/gallery)，理论上支持 https://g2plot.antv.vision/en/examples/gallery 上的所有图表。目前可以配置的图表包括：
+目前，NocoBase 图表区块需要通过配置文件或编写代码来实现。图表库使用的是 [g2plot](https://g2plot.antv.vision/en/examples)，理论上支持 https://g2plot.antv.vision/en/examples 上的所有图表。目前可以配置的图表包括：
 
 - 柱状图
 - 条形图
@@ -186,7 +186,7 @@ https://user-images.githubusercontent.com/1267426/198877336-6bd85f0b-17c5-40a5-9
 
 
 ### 更多图表
-理论上支持 https://g2plot.antv.vision/en/examples/gallery 上的所有图表
+理论上支持 https://g2plot.antv.vision/en/examples 上的所有图表
 
 https://user-images.githubusercontent.com/1267426/198877347-7fc2544c-b938-4e34-8a83-721b3f62525e.mp4
 

@@ -2,7 +2,7 @@ import { MenuOutlined } from '@ant-design/icons';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
-import { ISchema, observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
@@ -11,28 +11,23 @@ import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState }
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
-
-const isColumnComponent = (schema: Schema) => {
-  return schema['x-component']?.endsWith('.Column') > -1;
-};
-
-const isCollectionFieldComponent = (schema: ISchema) => {
-  return schema['x-component'] === 'CollectionField';
-};
+import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useTableColumns = () => {
-  const start = Date.now();
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
+  const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns = schema
     .reduceProperties((buf, s) => {
-      if (isColumnComponent(s)) {
+      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
         return buf.concat([s]);
       }
+      return buf;
     }, [])
-    .map((s: Schema) => {
+    ?.map((s: Schema) => {
       const collectionFields = s.reduceProperties((buf, s) => {
         if (isCollectionFieldComponent(s)) {
           return buf.concat([s]);
@@ -48,11 +43,10 @@ const useTableColumns = () => {
         ...s['x-component-props'],
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          // console.log((Date.now() - start) / 1000);
           return (
-            <RecordIndexProvider index={index}>
+            <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
-                <RecursionField schema={s} name={index} onlyRenderProperties />
+                <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
               </RecordProvider>
             </RecordIndexProvider>
           );
@@ -241,6 +235,7 @@ export const Table: any = observer((props: any) => {
               css`
                 max-width: 300px;
                 white-space: nowrap;
+                overflow-x: scroll;
                 .nb-read-pretty-input-number {
                   text-align: right;
                 }

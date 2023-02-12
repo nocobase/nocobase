@@ -1,12 +1,13 @@
 import { Spin } from 'antd';
-import React, { useContext, useState } from 'react';
 import { keyBy } from 'lodash';
+import React, { useContext, useState } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
+import { templateOptions } from '../collection-manager/Configuration/templates';
+import { useCollectionHistory } from './CollectionHistoryProvider';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
-import { CollectionManagerContext } from './context';
+import { CollectionCategroriesContext, CollectionManagerContext } from './context';
 import * as defaultInterfaces from './interfaces';
 import { CollectionManagerOptions } from './types';
-import { templateOptions } from '../collection-manager/Configuration/templates';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { service, interfaces, collections = [], refreshCM, templates } = props;
@@ -31,12 +32,13 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
 export const RemoteCollectionManagerProvider = (props: any) => {
   const api = useAPIClient();
   const [contentLoading, setContentLoading] = useState(false);
+  const { refreshCH } = useCollectionHistory();
   const options = {
     resource: 'collections',
     action: 'list',
     params: {
       paginate: false,
-      appends: ['fields', 'fields.uiSchema'],
+      appends: ['fields', 'fields.uiSchema','category'],
       filter: {
         // inherit: false,
       },
@@ -47,22 +49,56 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   if (service.loading) {
     return <Spin />;
   }
+
+  const refreshCM = async (opts) => {
+    if (opts?.reload) {
+      setContentLoading(true);
+    }
+    const { data } = await api.request(options);
+    service.mutate(data);
+    await refreshCH();
+    if (opts?.reload) {
+      setContentLoading(false);
+    }
+    return data?.data || [];
+  };
+
   return (
     <CollectionManagerProvider
       service={{ ...service, contentLoading, setContentLoading }}
       collections={service?.data?.data}
-      refreshCM={async (opts) => {
-        if (opts?.reload) {
-          setContentLoading(true);
-        }
-        const { data } = await api.request(options);
-        service.mutate(data);
-        if (opts?.reload) {
-          setContentLoading(false);
-        }
-        return data?.data || [];
-      }}
+      refreshCM={refreshCM}
       {...props}
     />
+  );
+};
+
+export const CollectionCategroriesProvider = (props) => {
+  const api = useAPIClient();
+  const options={
+    url: 'collectionCategories:list',
+    params: {
+      paginate: false,
+      sort:['sort']
+    },
+  }
+  const result = useRequest(options);
+  if (result.loading) {
+    return <Spin />;
+  }
+  return (
+    <CollectionCategroriesContext.Provider
+      value={{
+        ...result,
+        data: result?.data?.data,
+        refresh:async ()=>{
+          const { data } = await api.request(options);
+          result.mutate(data);
+          return data?.data || [];
+        }
+      }}
+    >
+      {props.children}
+    </CollectionCategroriesContext.Provider>
   );
 };

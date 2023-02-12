@@ -1,6 +1,5 @@
 import { InheritedCollection } from './inherited-collection';
 import lodash from 'lodash';
-import { Sequelize } from 'sequelize';
 
 export class SyncRunner {
   static async syncInheritModel(model: any, options: any) {
@@ -42,8 +41,10 @@ export class SyncRunner {
     if (childAttributes.id && childAttributes.id.autoIncrement) {
       for (const parent of parentTables) {
         const sequenceNameResult = await queryInterface.sequelize.query(
-          `SELECT column_default FROM information_schema.columns WHERE 
-          table_name='${parent}' and "column_name" = 'id';`,
+          `SELECT column_default
+           FROM information_schema.columns
+           WHERE table_name = '${parent}'
+             and "column_name" = 'id';`,
           {
             transaction,
           },
@@ -59,13 +60,14 @@ export class SyncRunner {
           throw new Error(`Can't find sequence name of ${parent}`);
         }
 
-        const regex = new RegExp(/nextval\('(\w+)\'.*\)/);
+        const regex = new RegExp(/nextval\('("?\w+"?)\'.*\)/);
         const match = regex.exec(columnDefault);
 
         const sequenceName = match[1];
 
         const sequenceCurrentValResult = await queryInterface.sequelize.query(
-          `select last_value from ${sequenceName}`,
+          `select last_value
+           from ${sequenceName}`,
           {
             transaction,
           },
@@ -90,14 +92,16 @@ export class SyncRunner {
       const sequenceTables = [...parentsDeep, tableName];
 
       for (const sequenceTable of sequenceTables) {
+        const queryName = Boolean(sequenceTable.match(/[A-Z]/)) ? `"${sequenceTable}"` : sequenceTable;
+
         const idColumnQuery = await queryInterface.sequelize.query(
           `
-        SELECT true
-FROM   pg_attribute 
-WHERE  attrelid = '${sequenceTable}'::regclass  -- cast to a registered class (table)
+            SELECT true
+            FROM pg_attribute
+            WHERE attrelid = '${queryName}'::regclass  -- cast to a registered class (table)
 AND    attname = 'id'
-AND    NOT attisdropped 
-`,
+AND    NOT attisdropped
+          `,
           {
             transaction,
           },
@@ -108,7 +112,8 @@ AND    NOT attisdropped
         }
 
         await queryInterface.sequelize.query(
-          `alter table "${sequenceTable}" alter column id set default nextval('${maxSequenceName}')`,
+          `alter table "${sequenceTable}"
+            alter column id set default nextval('${maxSequenceName}')`,
           {
             transaction,
           },

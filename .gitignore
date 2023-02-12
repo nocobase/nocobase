@@ -20,3 +20,4 @@ dist/
 docker/**/storage
 cache/diskstore-*
 .eslintcache
+*.nbdump

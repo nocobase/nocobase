@@ -86,6 +86,14 @@ export const id = [
       return field.collectionName === 'users';
     },
   },
+  {
+    label: '{{t("is not current logged-in user")}}',
+    value: '$isNotCurrentUser',
+    noValue: true,
+    visible(field) {
+      return field.collectionName === 'users';
+    },
+  },
   { label: '{{t("exists")}}', value: '$exists', noValue: true },
   { label: '{{t("not exists")}}', value: '$notExists', noValue: true },
 ];

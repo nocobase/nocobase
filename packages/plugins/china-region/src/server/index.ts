@@ -1,5 +1,4 @@
 import { Plugin } from '@nocobase/server';
-import { areas, cities, provinces } from 'china-division';
 import { resolve } from 'path';
 
 export class PluginChinaRegion extends Plugin {
@@ -11,10 +10,25 @@ export class PluginChinaRegion extends Plugin {
     await this.db.import({
       directory: resolve(__dirname, 'collections'),
     });
+
     this.app.acl.allow('chinaRegions', 'list', 'loggedIn');
+
+    this.app.resourcer.use(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action.params;
+
+      if (resourceName == 'chinaRegions' && actionName !== 'list') {
+        ctx.throw(404, 'Not Found');
+      } else {
+        await next();
+      }
+    });
   }
 
   async importData() {
+    const areas = require('china-division/dist/areas.json');
+    const cities = require('china-division/dist/cities.json');
+    const provinces = require('china-division/dist/provinces.json');
+
     const timer = Date.now();
     const ChinaRegion = this.db.getModel('chinaRegions');
 
@@ -63,7 +77,6 @@ export class PluginChinaRegion extends Plugin {
     const count = await ChinaRegion.count();
     // console.log(`${count} rows of region data imported in ${(Date.now() - timer) / 1000}s`);
   }
-
 }
 
 export default PluginChinaRegion;

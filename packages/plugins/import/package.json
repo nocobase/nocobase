@@ -1,17 +1,13 @@
 {
   "name": "@nocobase/plugin-import",
-  "version": "0.8.0-alpha.13",
-  "main": "lib/server/index.js",
-  "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
+  "version": "0.9.0-alpha.2",
+  "description": "",
+  "license": "AGPL-3.0",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "devDependencies": {
-    "@nocobase/client": "0.8.0-alpha.13",
-    "@nocobase/test": "0.8.0-alpha.13"
+    "@nocobase/client": "0.9.0-alpha.2",
+    "@nocobase/test": "0.9.0-alpha.2"
   },
   "publishConfig": {
     "access": "public"

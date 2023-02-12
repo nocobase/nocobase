@@ -1,6 +1,5 @@
+import { PluginManagerContext, SettingsCenterProvider, SigninPageExtensionProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
-import { SigninPageExtensionProvider } from '@nocobase/client';
 import { useSamlTranslation } from './locale';
 import { SAMLList } from './SAMLList';
 import { SAMLPanel } from './SAMLPanel';
@@ -17,7 +16,7 @@ export default function (props) {
             title: t('SAML manager'),
             icon: 'FileOutlined',
             tabs: {
-              storages: {
+              providers: {
                 title: t('SAML Providers'),
                 component: SAMLPanel,
               },

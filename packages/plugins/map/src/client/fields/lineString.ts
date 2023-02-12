@@ -1,5 +1,5 @@
 import { IField } from '@nocobase/client';
-import { generateNTemplate } from '../locales';
+import { generateNTemplate } from '../locale';
 import { commonSchema } from './schema';
 
 export const lineString: IField = {

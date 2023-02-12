@@ -42,7 +42,12 @@ export class PluginManager {
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
-    this.app.acl.allow('pm', ['enable', 'disable', 'remove'], 'allowConfigure');
+
+    this.app.acl.registerSnippet({
+      name: 'pm',
+      actions: ['pm:*', 'applicationPlugins:list'],
+    });
+
     this.server = net.createServer((socket) => {
       socket.on('data', async (data) => {
         const { method, plugins } = JSON.parse(data.toString());
@@ -55,19 +60,26 @@ export class PluginManager {
       });
       socket.pipe(socket);
     });
+
     this.app.on('beforeLoad', async (app, options) => {
       if (options?.method && ['install', 'upgrade'].includes(options.method)) {
         await this.collection.sync();
       }
+
       const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
+
       if (!exists) {
         return;
       }
+
       if (options?.method !== 'install' || options.reload) {
         await this.repository.load();
       }
-      this.app.acl.allow('applicationPlugins', 'list');
     });
+    this.app.on('beforeUpgrade', async () => {
+      await this.collection.sync();
+    });
+
     this.addStaticMultiple(options.plugins);
   }
 
@@ -187,45 +199,7 @@ export class PluginManager {
     return instance;
   }
 
-  async add(plugin: any, options: any = {}, transaction?: any) {
-    if (Array.isArray(plugin)) {
-      const t = transaction || (await this.app.db.sequelize.transaction());
-      try {
-        const items = await Promise.all(plugin.map((p) => this.add(p, options, t)));
-        await t.commit();
-        return items;
-      } catch (error) {
-        await t.rollback();
-        throw error;
-      }
-    }
-    const packageName = await PluginManager.findPackage(plugin);
-    const packageJson = require(`${packageName}/package.json`);
-    const instance = this.addStatic(plugin, {
-      ...options,
-      async: true,
-    });
-    let model = await this.repository.findOne({
-      transaction,
-      filter: { name: plugin },
-    });
-    if (model) {
-      throw new Error(`${plugin} plugin already exists`);
-    }
-    const { enabled, builtIn, installed, ...others } = options;
-    await this.repository.create({
-      transaction,
-      values: {
-        name: plugin,
-        version: packageJson.version,
-        enabled: !!enabled,
-        builtIn: !!builtIn,
-        installed: !!installed,
-        options: {
-          ...others,
-        },
-      },
-    });
+  async generateClientFile(plugin: string, packageName: string) {
     const file = resolve(
       process.cwd(),
       'packages',
@@ -240,6 +214,47 @@ export class PluginManager {
         const { run } = require('@nocobase/cli/src/util');
         await run('yarn', ['nocobase', 'postinstall']);
       } catch (error) {}
+    }
+  }
+
+  async add(plugin: any, options: any = {}, transaction?: any) {
+    if (Array.isArray(plugin)) {
+      const t = transaction || (await this.app.db.sequelize.transaction());
+      try {
+        const items = await Promise.all(plugin.map((p) => this.add(p, options, t)));
+        await t.commit();
+        return items;
+      } catch (error) {
+        await t.rollback();
+        throw error;
+      }
+    }
+    const packageName = await PluginManager.findPackage(plugin);
+    const packageJson = require(`${packageName}/package.json`);
+    await this.generateClientFile(plugin, packageName);
+    const instance = this.addStatic(plugin, {
+      ...options,
+      async: true,
+    });
+    let model = await this.repository.findOne({
+      transaction,
+      filter: { name: plugin },
+    });
+    if (!model) {
+      const { enabled, builtIn, installed, ...others } = options;
+      model = await this.repository.create({
+        transaction,
+        values: {
+          name: plugin,
+          version: packageJson.version,
+          enabled: !!enabled,
+          builtIn: !!builtIn,
+          installed: !!installed,
+          options: {
+            ...others,
+          },
+        },
+      });
     }
     return instance;
   }

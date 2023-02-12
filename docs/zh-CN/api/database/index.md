@@ -141,7 +141,7 @@ await UserRepository.destroy(user.id);
 | 参数名 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |
 | `options.name` | `string` | - | 迁移文件名称 |
-| `options.context?` | `string` | - | 迁移文件的 `up` 方法 |
+| `options.context?` | `string` | - | 迁移文件的上下文 |
 | `options.migration?` | `typeof Migration` | - | 迁移文件的自定义类 |
 | `options.up` | `Function` | - | 迁移文件的 `up` 方法 |
 | `options.down` | `Function` | - | 迁移文件的 `down` 方法 |
@@ -574,6 +574,8 @@ asset(post1.authorId === author1.id); // true
 **签名**
 
 * `off(name: string, listener: Function)`
+
+**参数**
 
 | 参数名 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |

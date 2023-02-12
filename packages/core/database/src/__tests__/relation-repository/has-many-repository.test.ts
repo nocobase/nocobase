@@ -249,7 +249,7 @@ describe('has many repository', () => {
     expect(p1.title).toEqual('u1t1');
   });
 
-  test('find', async () => {
+  test('find with has many', async () => {
     const u1 = await User.repository.create({ values: { name: 'u1' } });
 
     const t1 = await Tag.repository.create({ values: { name: 't1' } });

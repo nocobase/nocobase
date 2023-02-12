@@ -15,8 +15,11 @@ import initProviders, { Provider } from './providers';
 export interface Interceptor {
   manual?: boolean;
   expiresIn?: number;
+
   getReceiver(ctx): string;
+
   getCode?(ctx): string;
+
   validate?(ctx: Context, receiver: string): boolean | Promise<boolean>;
 }
 
@@ -55,7 +58,10 @@ export default class VerificationPlugin extends Plugin {
     });
 
     if (!item) {
-      return context.throw(400, { code: 'InvalidVerificationCode', message: context.t('Verification code is invalid', { ns: namespace }) });
+      return context.throw(400, {
+        code: 'InvalidVerificationCode',
+        message: context.t('Verification code is invalid', { ns: namespace }),
+      });
     }
 
     // TODO: code should be removed if exists in values
@@ -103,7 +109,7 @@ export default class VerificationPlugin extends Plugin {
             sign: INIT_ALI_SMS_VERIFY_CODE_SIGN,
             template: INIT_ALI_SMS_VERIFY_CODE_TEMPLATE,
           },
-          default: true
+          default: true,
         },
       });
     }
@@ -114,9 +120,7 @@ export default class VerificationPlugin extends Plugin {
 
     app.i18n.addResources('zh-CN', namespace, zhCN);
 
-    await db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     initProviders(this);
     initActions(this);
@@ -133,8 +137,11 @@ export default class VerificationPlugin extends Plugin {
       return this.intercept(context, next);
     });
 
-    app.acl.allow('verifications', 'create');
-    app.acl.allow('verifications_providers', '*', 'allowConfigure');
+    app.acl.allow('verifications', 'create', 'public');
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.providers`,
+      actions: ['verifications_providers:*'],
+    });
   }
 
   async getDefault() {
@@ -142,7 +149,7 @@ export default class VerificationPlugin extends Plugin {
     return providerRepo.findOne({
       filter: {
         default: true,
-      }
+      },
     });
   }
 }

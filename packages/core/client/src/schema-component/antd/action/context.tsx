@@ -9,6 +9,7 @@ export interface ActionContextProps {
   visible?: boolean;
   setVisible?: (v: boolean) => void;
   openMode?: 'drawer' | 'modal' | 'page';
+  snapshot?: boolean;
   openSize?: OpenSize;
   containerRefKey?: string;
   formValueChanged?: boolean;

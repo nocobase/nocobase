@@ -1,10 +1,9 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import flat from 'flat';
-import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBlockRequestContext } from '../../../block-provider';
-import { concatFilter, SharedFilterContext } from '../../../block-provider/SharedFilterProvider';
+import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 
 export const useFilterOptions = (collectionName: string) => {
@@ -99,25 +98,20 @@ export const useFilterActionProps = () => {
 export const useFilterFieldProps = ({ options, service, params }) => {
   const { t } = useTranslation();
   const field = useField<Field>();
-  const { sharedFilterStore, setSharedFilterStore, getFilterParams } = useContext(SharedFilterContext);
   return {
     options,
     onSubmit(values) {
       // filter parameter for the block
-      const defaultFilter = removeNullCondition(params.filter);
+      const defaultFilter = params.filter;
       // filter parameter for the filter action
       const filter = removeNullCondition(values?.filter);
 
-      const newSharedFilterStore = {
-        ...sharedFilterStore,
-        ActionBar: concatFilter(defaultFilter, filter),
-      };
-
-      setSharedFilterStore(newSharedFilterStore);
-
-      const paramFilter = getFilterParams(newSharedFilterStore);
-
-      service.run({ ...service.params?.[0], page: 1, filter: paramFilter });
+      const filters = service.params?.[1]?.filters || {};
+      filters[`filterAction`] = filter;
+      service.run(
+        { ...service.params?.[0], page: 1, filter: mergeFilter([...Object.values(filters), defaultFilter]) },
+        { filters },
+      );
       const items = filter?.$and || filter?.$or;
       if (items?.length) {
         field.title = t('{{count}} filter items', { count: items?.length || 0 });
@@ -126,8 +120,17 @@ export const useFilterFieldProps = ({ options, service, params }) => {
       }
     },
     onReset() {
-      const filter = removeNullCondition(params.filter);
-      service.run({ ...service.params?.[0], filter, page: 1 });
+      const filter = params.filter;
+      const filters = service.params?.[1]?.filters || {};
+      delete filters[`filterAction`];
+      service.run(
+        {
+          ...service.params?.[0],
+          filter: mergeFilter([...Object.values(filters), filter]),
+          page: 1,
+        },
+        { filters },
+      );
       field.title = t('Filter');
     },
   };

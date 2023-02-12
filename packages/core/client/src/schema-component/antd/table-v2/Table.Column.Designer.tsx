@@ -31,7 +31,7 @@ export const TableColumnDesigner = (props) => {
   const { dn } = useDesignable();
   const fieldNames =
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
-  const options = useLabelFields(collectionField?.target);
+  const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
   const intefaceCfg = getInterface(collectionField?.interface);
 
   return (
@@ -120,7 +120,7 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
-      {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho'].includes(collectionField?.interface) && (
+      {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Title field')}
           options={options}

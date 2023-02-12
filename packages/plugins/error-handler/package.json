@@ -1,19 +1,13 @@
 {
   "name": "@nocobase/plugin-error-handler",
-  "version": "0.8.0-alpha.13",
+  "version": "0.9.0-alpha.2",
   "description": "",
-  "license": "Apache-2.0",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
+  "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@formily/json-schema": "^2.0.15",
-    "@nocobase/server": "0.8.0-alpha.13"
+    "@nocobase/server": "0.9.0-alpha.2"
   },
   "repository": {
     "type": "git",

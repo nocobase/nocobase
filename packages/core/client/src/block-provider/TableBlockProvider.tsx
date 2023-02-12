@@ -6,7 +6,6 @@ import { useCollectionManager } from '../collection-manager';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFixedSchema } from '../schema-component';
 
-
 export const TableBlockContext = createContext<any>({});
 
 const InternalTableBlockProvider = (props) => {

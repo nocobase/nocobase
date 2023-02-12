@@ -45,6 +45,7 @@ export interface ApplicationOptions {
 
 export interface DefaultState extends KoaDefaultState {
   currentUser?: any;
+
   [key: string]: any;
 }
 
@@ -53,6 +54,7 @@ export interface DefaultContext extends KoaDefaultContext {
   cache: Cache;
   resourcer: Resourcer;
   i18n: any;
+
   [key: string]: any;
 }
 
@@ -369,11 +371,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       process.exit(1);
     }
     await this.dbVersionCheck({ exit: true });
+
     if (argv?.[2] !== 'upgrade') {
       await this.load({
         method: argv?.[2],
       });
     }
+
     return this.cli.parseAsync(argv, options);
   }
 

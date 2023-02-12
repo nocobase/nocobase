@@ -94,8 +94,14 @@ describe('fields', () => {
       [3, 4],
       [5, 6],
     ]);
-    model.set('lineString', [[5, 6], [7, 8]]);
-    expect(model.get('lineString')).toMatchObject([[5, 6], [7, 8]]);
+    model.set('lineString', [
+      [5, 6],
+      [7, 8],
+    ]);
+    expect(model.get('lineString')).toMatchObject([
+      [5, 6],
+      [7, 8],
+    ]);
     model.set('circle', [1, 2, 0.5]);
     expect(model.get('circle')).toMatchObject([1, 2, 0.5]);
   });
@@ -143,7 +149,12 @@ describe('fields', () => {
 
   it('empty', async () => {
     const Test = await createCollection();
-    const model = await Test.model.create();
+    const model = await Test.model.create({
+      circle: null,
+      lineString: null,
+      point: null,
+      polygon: null,
+    });
     await model.save();
 
     const findOne = () =>

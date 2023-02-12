@@ -93,6 +93,7 @@ export class FieldModel extends MagicAttributeModel {
       const uiSchema = await UISchema.findByPk(options.uiSchemaUid, {
         transaction: loadOptions.transaction,
       });
+
       Object.assign(options, { uiSchema: uiSchema.get() });
     }
 

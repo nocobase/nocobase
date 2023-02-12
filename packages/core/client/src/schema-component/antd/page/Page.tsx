@@ -1,6 +1,7 @@
+import { PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FormDialog, FormLayout } from '@formily/antd';
-import { RecursionField, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
+import { Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { Button, PageHeader as AntdPageHeader, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useContext, useEffect, useState } from 'react';
@@ -8,6 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useDocumentTitle } from '../../../document-title';
 import { Icon } from '../../../icon';
+import { DndContext } from '../../common';
+import { SortableItem } from '../../common/sortable-item';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import FixedBlock from './FixedBlock';
@@ -160,84 +163,91 @@ export const Page = (props) => {
             {...others}
             footer={
               enablePageTabs && (
-                <Tabs
-                  size={'small'}
-                  activeKey={activeKey}
-                  onTabClick={(activeKey) => {
-                    setLoading(true);
-                    setActiveKey(activeKey);
-                    window.history.pushState({}, '', location.pathname + `?tab=` + activeKey);
-                    setTimeout(() => {
-                      setLoading(false);
-                    }, 50);
-                  }}
-                  tabBarExtraContent={
-                    dn.designable && (
-                      <Button
-                        className={css`
-                          border-color: rgb(241, 139, 98) !important;
-                          color: rgb(241, 139, 98) !important;
-                        `}
-                        type={'dashed'}
-                        onClick={async () => {
-                          const values = await FormDialog(t('Add tab'), () => {
-                            return (
-                              <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-                                <FormLayout layout={'vertical'}>
-                                  <SchemaComponent
-                                    schema={{
-                                      properties: {
-                                        title: {
-                                          title: t('Tab name'),
-                                          'x-component': 'Input',
-                                          'x-decorator': 'FormItem',
-                                          required: true,
+                <DndContext>
+                  <Tabs
+                    size={'small'}
+                    activeKey={activeKey}
+                    onTabClick={(activeKey) => {
+                      setLoading(true);
+                      setActiveKey(activeKey);
+                      window.history.pushState({}, '', location.pathname + `?tab=` + activeKey);
+                      setTimeout(() => {
+                        setLoading(false);
+                      }, 50);
+                    }}
+                    tabBarExtraContent={
+                      dn.designable && (
+                        <Button
+                          icon={<PlusOutlined />}
+                          className={css`
+                            border-color: rgb(241, 139, 98) !important;
+                            color: rgb(241, 139, 98) !important;
+                          `}
+                          type={'dashed'}
+                          onClick={async () => {
+                            const values = await FormDialog(t('Add tab'), () => {
+                              return (
+                                <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                                  <FormLayout layout={'vertical'}>
+                                    <SchemaComponent
+                                      schema={{
+                                        properties: {
+                                          title: {
+                                            title: t('Tab name'),
+                                            'x-component': 'Input',
+                                            'x-decorator': 'FormItem',
+                                            required: true,
+                                          },
+                                          icon: {
+                                            title: t('Icon'),
+                                            'x-component': 'IconPicker',
+                                            'x-decorator': 'FormItem',
+                                          },
                                         },
-                                        icon: {
-                                          title: t('Icon'),
-                                          'x-component': 'IconPicker',
-                                          'x-decorator': 'FormItem',
-                                        },
-                                      },
-                                    }}
-                                  />
-                                </FormLayout>
-                              </SchemaComponentOptions>
-                            );
-                          }).open({
-                            initialValues: {},
-                          });
-                          const { title, icon } = values;
-                          dn.insertBeforeEnd({
-                            type: 'void',
-                            title,
-                            'x-icon': icon,
-                            'x-component': 'Grid',
-                            'x-initializer': 'BlockInitializers',
-                            properties: {},
-                          });
-                        }}
-                      >
-                        Add tab
-                      </Button>
-                    )
-                  }
-                >
-                  {fieldSchema.mapProperties((schema) => {
-                    return (
-                      <Tabs.TabPane
-                        tab={
-                          <span className={classNames('nb-action-link', designerCss, props.className)}>
-                            {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-                            <span>{schema.title || t('Unnamed')}</span>
-                            <PageTabDesigner schema={schema} />
-                          </span>
-                        }
-                        key={schema.name}
-                      />
-                    );
-                  })}
-                </Tabs>
+                                      }}
+                                    />
+                                  </FormLayout>
+                                </SchemaComponentOptions>
+                              );
+                            }).open({
+                              initialValues: {},
+                            });
+                            const { title, icon } = values;
+                            dn.insertBeforeEnd({
+                              type: 'void',
+                              title,
+                              'x-icon': icon,
+                              'x-component': 'Grid',
+                              'x-initializer': 'BlockInitializers',
+                              properties: {},
+                            });
+                          }}
+                        >
+                          {t('Add tab')}
+                        </Button>
+                      )
+                    }
+                  >
+                    {fieldSchema.mapProperties((schema) => {
+                      return (
+                        <Tabs.TabPane
+                          tab={
+                            <SortableItem
+                              id={schema.name}
+                              schema={schema}
+                              className={classNames('nb-action-link', designerCss, props.className)}
+                            >
+                              {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
+                              <span>{schema.title || t('Unnamed')}</span>
+                              <PageTabDesigner schema={schema} />
+                            </SortableItem>
+                          }
+                          key={schema.name}
+                        />
+                      );
+                    })}
+                  </Tabs>
+                </DndContext>
               )
             }
           />
@@ -246,6 +256,29 @@ export const Page = (props) => {
       <div style={{ margin: 24 }}>
         {loading ? (
           <Spin />
+        ) : !disablePageHeader && enablePageTabs ? (
+          fieldSchema.mapProperties((schema) => {
+            if (schema.name !== activeKey) return null;
+            return (
+              <FixedBlock
+                key={schema.name}
+                height={
+                  // header 46 margin 48
+                  height + 46 + 48
+                }
+              >
+                <SchemaComponent
+                  schema={
+                    new Schema({
+                      properties: {
+                        [schema.name]: schema,
+                      },
+                    })
+                  }
+                />
+              </FixedBlock>
+            );
+          })
         ) : (
           <FixedBlock
             height={
@@ -253,27 +286,17 @@ export const Page = (props) => {
               height + 46 + 48
             }
           >
-            {!disablePageHeader && enablePageTabs ? (
-              <RecursionField
-                schema={fieldSchema}
-                onlyRenderProperties
-                filterProperties={(s) => {
-                  return s.name === activeKey;
-                }}
-              />
-            ) : (
-              <div
-                className={css`
-                  > .nb-grid:not(:last-child) {
-                    > .nb-schema-initializer-button {
-                      display: none;
-                    }
+            <div
+              className={css`
+                > .nb-grid:not(:last-child) {
+                  > .nb-schema-initializer-button {
+                    display: none;
                   }
-                `}
-              >
-                {props.children}
-              </div>
-            )}
+                }
+              `}
+            >
+              {props.children}
+            </div>
           </FixedBlock>
         )}
       </div>

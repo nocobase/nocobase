@@ -15,9 +15,7 @@ export class OidcPlugin extends Plugin {
 
   async load() {
     // 导入 collection
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, './collections'));
 
     // 获取 User 插件
     const userPlugin = this.app.getPlugin<any>('users');
@@ -46,9 +44,12 @@ export class OidcPlugin extends Plugin {
       await next();
     });
 
-    // 开放访问权限
-    this.app.acl.allow('oidcProviders', '*', 'allowConfigure');
-    this.app.acl.allow('oidc', '*');
+    this.app.acl.allow('oidc', '*', 'public');
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.providers`,
+      actions: ['oidcProviders:*'],
+    });
   }
 
   async install(options?: InstallOptions) {}

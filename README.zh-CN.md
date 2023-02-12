@@ -58,9 +58,9 @@ NocoBase 采用插件化架构，所有新功能都可以通过开发和安装�
 
 [点此查看完整图片](https://www.nocobase.com/images/NocoBaseMindMap.png)
 
-## 联系
+## 商业服务
 
-如果你希望加入我们一起开发 NocoBase，或者需要提供商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
+如果你需要商业版本和商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
 
 或者添加我们的微信：  
 
@@ -81,3 +81,8 @@ NocoBase 支持三种安装方式：
 - <a target="_blank" href="https://docs-cn.nocobase.com/welcome/getting-started/installation/git-clone">Git 源码安装</a>
 
    如果你想体验最新未发布版本，或者想参与贡献，需要在源码上进行修改、调试，建议选择这种安装方式，对开发技术水平要求较高，如果代码有更新，可以走 git 流程拉取最新代码。
+
+## 协议
+
+- [内核](https://github.com/nocobase/nocobase/tree/main/packages/core) 采用 [Apache 2.0 协议](./LICENSE-APACHE-2.0)；
+- [插件](https://github.com/nocobase/nocobase/tree/main/packages/plugins) 采用 [AGPL 3.0 协议](./LICENSE-AGPL)。

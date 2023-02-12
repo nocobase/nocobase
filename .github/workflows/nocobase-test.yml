@@ -19,7 +19,7 @@ jobs:
   sqlite-test:
     strategy:
       matrix:
-        node_version: ['16']
+        node_version: ['16', '18']
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -30,6 +30,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
+      - run: yarn build
       - name: Test with Sqlite
         run: yarn test
         env:
@@ -39,7 +40,7 @@ jobs:
   postgres-test:
     strategy:
       matrix:
-        node_version: ['16']
+        node_version: ['16', '18']
 
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
@@ -66,6 +67,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
+      - run: yarn build
       - name: Test with postgres
         run: yarn test
         env:
@@ -79,7 +81,7 @@ jobs:
   mysql-test:
     strategy:
       matrix:
-        node_version: ['16']
+        node_version: ['16', '18']
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
@@ -97,6 +99,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
+      - run: yarn build
       - name: Test with MySQL
         run: yarn test
         env:

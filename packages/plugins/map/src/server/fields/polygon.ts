@@ -3,34 +3,35 @@ import { DataTypes } from 'sequelize';
 import { isMysql, isPg, joinComma, toValue } from '../helpers';
 
 class Polygon extends DataTypes.ABSTRACT {
-  key = 'Polygon'
+  key = 'Polygon';
 }
 
 export class PolygonField extends Field {
   constructor(options?: any, context?: FieldContext) {
-    const { name } = options
+    const { name } = options;
     super(
       {
         get() {
-          const value = this.getDataValue(name)
+          const value = this.getDataValue(name);
           if (isPg(context)) {
-            return toValue(value)
+            return toValue(value);
           } else if (isMysql(context)) {
-            return value?.coordinates[0].slice(0, -1) || null
+            return value?.coordinates[0].slice(0, -1) || null;
           } else {
-            return value
+            return value;
           }
         },
         set(value) {
-          if (isPg(context)) {
-            value = value ? joinComma(value.map((item: any) => joinComma(item))) : null
+          if (!value?.length) value = null;
+          else if (isPg(context)) {
+            value = joinComma(value.map((item: any) => joinComma(item)));
           } else if (isMysql(context)) {
-            value = value?.length ? {
+            value = {
               type: 'Polygon',
-              coordinates: [value.concat([value[0]])]
-            } : null
+              coordinates: [value.concat([value[0]])],
+            };
           }
-          this.setDataValue(name, value)
+          this.setDataValue(name, value);
         },
         ...options,
       },
@@ -47,7 +48,6 @@ export class PolygonField extends Field {
       return DataTypes.JSON;
     }
   }
-
 }
 
 export interface PolygonFieldOptions extends BaseColumnFieldOptions {

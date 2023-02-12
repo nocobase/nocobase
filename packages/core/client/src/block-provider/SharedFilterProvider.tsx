@@ -17,15 +17,37 @@ export type SharedFilterContextValue = {
   getFilterParams: (filterStore?: SharedFilterStore) => any;
 };
 
+export const mergeFilter = (filters: any[], op = '$and') => {
+  const items = filters.filter(Boolean);
+  if (items.length === 0) {
+    return {};
+  }
+  if (items.length === 1) {
+    return items[0];
+  }
+  return { [op]: items };
+};
+
+export const getFilterParams = (filterStore?: SharedFilterStore) => {
+  const newAssociationFilterList = Object.entries(filterStore).map(([key, filter]) => filter);
+  const newAssociationFilter = newAssociationFilterList.length
+    ? {
+        $and: newAssociationFilterList,
+      }
+    : {};
+
+  return newAssociationFilter;
+};
+
 export const SharedFilterContext = createContext<SharedFilterContextValue>({
   sharedFilterStore: {},
-  setSharedFilterStore: undefined!,
-  getFilterParams: undefined!,
+  setSharedFilterStore: () => {},
+  getFilterParams,
 });
 
 export const concatFilter = (f1: SharedFilter, f2: SharedFilter): SharedFilter => {
-  const newAnd = [f1.$and, f2.$and].filter((i) => i);
-  const newOr = [f1.$or, f2.$or].filter((i) => i);
+  const newAnd = [f1?.$and, f2?.$and].filter((i) => i).reduce((pre, cur) => pre.concat(cur), []);
+  const newOr = [f1?.$or, f2?.$or].filter((i) => i).reduce((pre, cur) => pre.concat(cur), []);
   const newFilter: SharedFilter = {};
   newAnd.length && (newFilter.$and = newAnd);
   newOr.length && (newFilter.$or = newOr);
@@ -39,23 +61,14 @@ export const SharedFilterProvider: FC<{ params?: any }> = (props) => {
     setSharedFilterStoreUnwrap(associationFilter);
   };
 
-  const getFilterParams = (filterStore?: SharedFilterStore) => {
-    const newAssociationFilterList = Object.entries(filterStore ?? sharedFilterStore).map(([key, filter]) => filter);
-    const newAssociationFilter = newAssociationFilterList.length
-      ? {
-          $and: newAssociationFilterList,
-        }
-      : {};
-
-    return newAssociationFilter;
-  };
+  const getFilterParamsWrap = (filterStore?: SharedFilterStore) => getFilterParams(filterStore ?? sharedFilterStore);
 
   return (
     <SharedFilterContext.Provider
       value={{
         sharedFilterStore,
         setSharedFilterStore,
-        getFilterParams,
+        getFilterParams: getFilterParamsWrap,
       }}
     >
       {props.children}

@@ -1,4 +1,4 @@
-# v0.8.1：NocoBase 的 Logging 系统
+# v0.9.0：NocoBase 的 Logging 系统
 
 ## `@nocobase/logger`
 

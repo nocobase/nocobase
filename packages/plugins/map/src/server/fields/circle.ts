@@ -6,28 +6,28 @@ class Circle extends DataTypes.ABSTRACT {
   key = 'Circle';
 }
 
-
 export class CircleField extends Field {
   constructor(options?: any, context?: FieldContext) {
-    const { name } = options
+    const { name } = options;
     super(
       {
         get() {
           const value = this.getDataValue(name);
           if (isPg(context)) {
             if (typeof value === 'string') {
-              return toValue(`(${value})`)
+              return toValue(`(${value})`);
             }
-            return value ? [value.x, value.y, value.radius] : null
+            return value ? [value.x, value.y, value.radius] : null;
           } else {
-            return value
+            return value;
           }
         },
         set(value) {
-          if (isPg(context)) {
-            value = value.join(',')
+          if (!value?.length) value = null;
+          else if (isPg(context)) {
+            value = value.join(',');
           }
-          this.setDataValue(name, value)
+          this.setDataValue(name, value);
         },
         ...options,
       },
@@ -39,7 +39,7 @@ export class CircleField extends Field {
     if (isPg(this.context)) {
       return Circle;
     } else {
-      return DataTypes.JSON
+      return DataTypes.JSON;
     }
   }
 }

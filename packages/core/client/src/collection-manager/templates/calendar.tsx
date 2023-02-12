@@ -7,6 +7,11 @@ export const calendar: ICollectionTemplate = {
   order: 2,
   color: 'orange',
   default: {
+    createdBy: true,
+    updatedBy: true,
+    createdAt: true,
+    updatedAt: true,
+    sortable: true,
     fields: [
       {
         name: 'cron',
@@ -33,5 +38,5 @@ export const calendar: ICollectionTemplate = {
   availableFieldInterfaces: {
     include: [],
   },
-  configurableProperties: getConfigurableProperties('title', 'name', 'inherits'),
+  configurableProperties: getConfigurableProperties('title', 'name', 'inherits','category'),
 };

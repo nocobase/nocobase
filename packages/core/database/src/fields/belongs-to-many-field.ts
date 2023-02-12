@@ -30,9 +30,11 @@ export class BelongsToManyField extends RelationField {
   references(association): Reference[] {
     const db = this.context.database;
 
+    const onDelete = this.options.onDelete || 'CASCADE';
+
     return [
-      BelongsToField.toReference(db, association.toSource, this.options.onDelete),
-      BelongsToField.toReference(db, association.toTarget, this.options.onDelete),
+      BelongsToField.toReference(db, association.toSource, onDelete),
+      BelongsToField.toReference(db, association.toTarget, onDelete),
     ];
   }
 
@@ -59,6 +61,10 @@ export class BelongsToManyField extends RelationField {
       });
 
       Object.defineProperty(Through.model, 'isThrough', { value: true });
+    }
+
+    if (!this.options.onDelete) {
+      this.options.onDelete = 'CASCADE';
     }
 
     const association = collection.model.belongsToMany(Target, {

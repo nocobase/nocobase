@@ -3,10 +3,10 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
-import React, { ChangeEvent, MouseEvent, useContext, useState } from 'react';
+import React, { ChangeEvent, MouseEvent, useState } from 'react';
 import { useRequest } from '../../../api-client';
 import { useBlockRequestContext } from '../../../block-provider';
-import { SharedFilterContext } from '../../../block-provider/SharedFilterProvider';
+import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner } from '../../hooks';
 import { AssociationFilter } from './AssociationFilter';
@@ -23,8 +23,8 @@ export const AssociationFilterItem = (props) => {
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const compile = useCompile();
-  const { service } = useBlockRequestContext();
-  const { setSharedFilterStore, sharedFilterStore, getFilterParams } = useContext(SharedFilterContext);
+  const { service, props: blockProps } = useBlockRequestContext();
+
   const [searchVisible, setSearchVisible] = useState(false);
 
   const collectionFieldName = collectionField.name;
@@ -43,6 +43,8 @@ export const AssociationFilterItem = (props) => {
       action: 'list',
       params: {
         fields: [labelKey, valueKey],
+        pageSize: 200,
+        page: 1,
       },
     },
     {
@@ -65,31 +67,25 @@ export const AssociationFilterItem = (props) => {
   const onSelect = (selectedKeysValue: React.Key[]) => {
     setSelectedKeys(selectedKeysValue);
 
-    const orList = selectedKeysValue.map((item) => ({
-      [collectionFieldName]: {
-        [valueKey]: {
-          $eq: item,
-        },
+    const filters = service.params?.[1]?.filters || {};
+
+    if (selectedKeysValue.length) {
+      filters[`af.${collectionFieldName}`] = {
+        [`${collectionFieldName}.${valueKey}.$in`]: selectedKeysValue,
+      };
+    } else {
+      delete filters[`af.${collectionFieldName}`];
+    }
+
+    service.run(
+      {
+        ...service.params?.[0],
+        pageSize: 200,
+        page: 1,
+        filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
       },
-    }));
-
-    const newFilter =
-      orList.length > 0
-        ? {
-            $or: orList,
-          }
-        : {};
-
-    const newAssociationFilterStore = {
-      ...sharedFilterStore,
-      [collectionFieldName]: newFilter,
-    };
-
-    setSharedFilterStore(newAssociationFilterStore);
-
-    const paramFilter = getFilterParams(newAssociationFilterStore);
-
-    service.run({ ...service.params?.[0], page: 1, filter: paramFilter });
+      { filters },
+    );
   };
 
   const handleSearchToggle = (e: MouseEvent) => {
@@ -179,7 +175,7 @@ export const AssociationFilterItem = (props) => {
           className={css`
             & .ant-collapse-content-box {
               padding: 0 8px !important;
-              max-height: 200px;
+              max-height: 400px;
               overflow: auto;
             }
             & .ant-collapse-header {

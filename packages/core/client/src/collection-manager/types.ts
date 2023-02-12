@@ -12,6 +12,7 @@ export interface FieldOptions {
   type: string;
   interface?: string;
   uiSchema?: ISchema;
+
   [key: string]: any;
 }
 
@@ -22,7 +23,7 @@ export interface CollectionOptions {
   targetKey?: string;
   sortable?: any;
   fields?: FieldOptions[];
-  inherits?:string[];
+  inherits?: string[];
 }
 
 export interface ICollectionProviderProps {
@@ -36,5 +37,6 @@ export interface CollectionFieldOptions {
   sourceKey?: string; // association field
   uiSchema?: ISchema;
   target?: string;
+
   [key: string]: any;
 }

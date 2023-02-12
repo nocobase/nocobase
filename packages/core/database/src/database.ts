@@ -158,6 +158,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
 
+  importedFrom = new Map<string, Array<string>>();
+
   modelHook: ModelHook;
   version: DatabaseVersion;
 
@@ -232,6 +234,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     };
 
     this.migrations = new Migrations(context);
+
     this.migrator = new Umzug({
       logger: migratorOptions.logger || console,
       migrations: this.migrations.callback(),
@@ -241,6 +244,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),
+    });
+
+    this.collection({
+      name: 'migrations',
+      autoGenId: false,
+      timestamps: false,
+      fields: [{ type: 'string', name: 'name' }],
     });
 
     this.sequelize.beforeDefine((model, opts) => {
@@ -346,7 +356,19 @@ export class Database extends EventEmitter implements AsyncEmitter {
    * @param name
    */
   getCollection(name: string): Collection {
-    return this.collections.get(name);
+    if (!name) {
+      return null;
+    }
+
+    const [collectionName, associationName] = name.split('.');
+    let collection = this.collections.get(collectionName);
+
+    if (associationName) {
+      const target = collection.getField(associationName)?.target;
+      return target ? this.collections.get(target) : null;
+    }
+
+    return collection;
   }
 
   hasCollection(name: string): boolean {
@@ -379,11 +401,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   getRepository<R extends ArrayFieldRepository>(name: string, relationId: string | number): R;
 
   getRepository<R extends RelationRepository>(name: string, relationId?: string | number): Repository | R {
-    if (relationId) {
-      const [collection, relation] = name.split('.');
+    const [collection, relation] = name.split('.');
+    if (relation) {
       return this.getRepository(collection)?.relation(relation)?.of(relationId) as R;
     }
-
     return this.getCollection(name)?.repository;
   }
 
@@ -447,6 +468,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   buildField(options, context: FieldContext) {
     const { type } = options;
+
     const Field = this.fieldTypes.get(type);
 
     if (!Field) {
@@ -462,6 +484,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', null);
     }
 
+    if (this.options.schema && this.inDialect('postgres')) {
+      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${this.options.schema}"`, null);
+    }
+
     const result = await this.sequelize.sync(options);
 
     if (isMySQL) {
@@ -472,10 +498,29 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   async clean(options: CleanOptions) {
-    const { drop, ...others } = options;
-    if (drop) {
-      await this.sequelize.getQueryInterface().dropAllTables(others);
+    const { drop, ...others } = options || {};
+    if (drop !== true) {
+      return;
     }
+
+    if (this.options.schema) {
+      const tableNames = (await this.sequelize.getQueryInterface().showAllTables()).map((table) => {
+        return `"${this.options.schema}"."${table}"`;
+      });
+
+      const skip = options.skip || [];
+
+      // @ts-ignore
+      for (const tableName of tableNames) {
+        if (skip.includes(tableName)) {
+          continue;
+        }
+        await this.sequelize.query(`DROP TABLE IF EXISTS ${tableName} CASCADE`);
+      }
+      return;
+    }
+
+    await this.sequelize.getQueryInterface().dropAllTables(others);
   }
 
   async collectionExistsInDb(name, options?: Transactionable) {
@@ -489,7 +534,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.getDialect() === 'sqlite' && lodash.get(this.options, 'storage') == ':memory:';
   }
 
-  async auth(options: QueryOptions & { retry?: number } = {}) {
+  async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
     const { retry = 10, ...others } = options;
     const delay = (ms) => new Promise((yea) => setTimeout(yea, ms));
     let count = 1;
@@ -578,7 +623,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>> {
+  async import(options: {
+    directory: string;
+    from?: string;
+    extensions?: ImportFileExtension[];
+  }): Promise<Map<string, Collection>> {
     const reader = new ImporterReader(options.directory, options.extensions);
     const modules = await reader.read();
     const result = new Map<string, Collection>();
@@ -588,6 +637,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
         this.extendCollection(module.collectionOptions, module.mergeOptions);
       } else {
         const collection = this.collection(module);
+
+        if (options.from) {
+          this.importedFrom.set(options.from, [...(this.importedFrom.get(options.from) || []), collection.name]);
+        }
+
         result.set(collection.name, collection);
       }
     }

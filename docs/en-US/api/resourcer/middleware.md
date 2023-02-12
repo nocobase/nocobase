@@ -1,29 +1,29 @@
 # Middleware
 
-与 Koa 的中间件类似，但提供了更多增强的功能，可以方便的进行更多的扩展。
+It is similar to the middleware of Koa, but with more enhanced features for easy extensions.
 
-中间件定义后可以在资源管理器等多处进行插入使用，由开发者自行控制调用的时机。
+The defined middleware can be inserted for use in multiple places, such as the resourcer, and it is up to the developer for when to invoke it.
 
-## 构造函数
+## Constructor
 
-**签名**
+**Signature**
 
 * `constructor(options: Function)`
 * `constructor(options: MiddlewareOptions)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `options` | `Function` | - | 中间件处理函数 |
-| `options` | `MiddlewareOptions ` | - | 中间件配置项 |
-| `options.only` | `string[]` | - | 仅允许指定的操作 |
-| `options.except` | `string[]` | - | 排除指定的操作 |
-| `options.handler` | `Function` | - | 处理函数 |
+| `options` | `Function` | - | Handler function of middlware |
+| `options` | `MiddlewareOptions ` | - | Configuration items of middlware |
+| `options.only` | `string[]` | - | Only the specified actions are allowed |
+| `options.except` | `string[]` | - | The specified actions are excluded |
+| `options.handler` | `Function` | - | Handler function |
 
-**示例**
+**Example**
 
-简单定义：
+Simple definition:
 
 ```ts
 const middleware = new Middleware((ctx, next) => {
@@ -31,7 +31,7 @@ const middleware = new Middleware((ctx, next) => {
 });
 ```
 
-使用相关参数：
+Definition with relevant parameters:
 
 ```ts
 const middleware = new Middleware({
@@ -42,15 +42,15 @@ const middleware = new Middleware({
 });
 ```
 
-## 实例方法
+## Instance Methods
 
 ### `getHandler()`
 
-返回已经过编排的处理函数。
+Get the orchestrated handler functions.
 
-**示例**
+**Example**
 
-以下中间件在请求时会先输出 `1`，再输出 `2`。
+The following middleware will output `1` and then `2` when requested.
 
 ```ts
 const middleware = new Middleware((ctx, next) => {
@@ -68,35 +68,35 @@ app.resourcer.use(middleware.getHandler());
 
 ### `use()`
 
-对当前中间件添加中间件函数。用于提供中间件的扩展点。示例见 `getHandler()`。
+Add a middleware function to the current middleware. Used to provide extension points for the middleware. See `getHandler()` for the examples.
 
-**签名**
+**Signature**
 
 * `use(middleware: Function)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `middleware` | `Function` | - | 中间件处理函数 |
+| `middleware` | `Function` | - | Handler function of the middleware |
 
 ### `disuse()`
 
-移除当前中间件已添加的中间件函数。
+Remove the middleware functions that have been added to the current middleware.
 
-**签名**
+**Signature**
 
 * `disuse(middleware: Function)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `middleware` | `Function` | - | 中间件处理函数 |
+| `middleware` | `Function` | - | Handler function of the middleware |
 
-**示例**
+**Example**
 
-以下示例在请求处理是只输出 `1`，不执行 fn1 中的 `2` 输出。
+The following example will only output `1` when requested, the output of `2` in fn1 will not be executed.
 
 ```ts
 const middleware = new Middleware((ctx, next) => {
@@ -118,41 +118,41 @@ middleware.disuse(fn1);
 
 ### `canAccess()`
 
-判断当前中间件针对特定操作是否要被调用，通常由资源管理器内部处理。
+Check whether the current middleware is to be invoked for a specific action, it is usually handled by the resourcer internally.
 
-**签名**
+**Signature**
 
 * `canAccess(name: string): boolean`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | - | 操作名称 |
+| `name` | `string` | - | Name of the action |
 
-## 其他导出
+## Other Exports
 
 ### `branch()`
 
-创建一个分支中间件，用于在中间件中进行分支处理。
+Create a branch middleware for branching in the middleware.
 
-**签名**
+**Signature**
 
 * `branch(map: { [key: string]: Function }, reducer: Function, options): Function`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `map` | `{ [key: string]: Function }` | - | 分支处理函数映射表，键名由后续计算函数在调用时给出 |
-| `reducer` | `(ctx) => string` | - | 计算函数，用于基于上下文计算出分支的键名 |
-| `options?` | `Object` | - | 分支配置项 |
-| `options.keyNotFound?` | `Function` | `ctx.throw(404)` | 未找到键名时的处理函数 |
-| `options.handlerNotSet?` | `Function` | `ctx.throw(404)` | 未定义处理函数时的处理 |
+| `map` | `{ [key: string]: Function }` | - | Mapping table of the branch handler function, key names are given by subsequent calculation functions when called |
+| `reducer` | `(ctx) => string` | - | Calculation function, it is used to calculate the key name of the branch based on the context |
+| `options?` | `Object` | - | Configuration items of the branch |
+| `options.keyNotFound?` | `Function` | `ctx.throw(404)` | Handler function when key name is not found |
+| `options.handlerNotSet?` | `Function` | `ctx.throw(404)` | The function when no handler function is defined |
 
-**示例**
+**Example**
 
-用户验证时，根据请求 URL 中 query 部分的 `authenticator` 参数的值决定后续需要如何处理：
+When authenticating user, determine what to do next according to the value of the `authenticator` parameter in the query section of the request URL.
 
 ```ts
 app.resourcer.use(branch({

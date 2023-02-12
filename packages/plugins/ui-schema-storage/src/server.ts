@@ -1,7 +1,7 @@
 import { MagicAttributeModel } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
-import path from 'path';
+import { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
 import { UiSchemaModel } from './model';
 import UiSchemaRepository from './repository';
@@ -25,6 +25,29 @@ export class UiSchemaStoragePlugin extends Plugin {
     this.app.db.registerModels({ MagicAttributeModel, UiSchemaModel, ServerHookModel });
 
     this.registerRepository();
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.block-templates`,
+      actions: ['uiSchemaTemplates:*'],
+    });
+
+    this.app.acl.registerSnippet({
+      name: 'ui.uiSchemas',
+      actions: [
+        'uiSchemas:insert',
+        'uiSchemas:insertNewSchema',
+        'uiSchemas:remove',
+        'uiSchemas:patch',
+        'uiSchemas:batchPatch',
+        'uiSchemas:clearAncestor',
+        'uiSchemas:insertBeforeBegin',
+        'uiSchemas:insertAfterBegin',
+        'uiSchemas:insertBeforeEnd',
+        'uiSchemas:insertAfterEnd',
+        'uiSchemas:insertAdjacent',
+        'uiSchemas:saveAsTemplate',
+      ],
+    });
 
     db.on('uiSchemas.beforeCreate', function setUid(model) {
       if (!model.get('name')) {
@@ -61,14 +84,12 @@ export class UiSchemaStoragePlugin extends Plugin {
       actions: uiSchemaActions,
     });
 
-    this.app.acl.allow('uiSchemas', '*', 'loggedIn');
-    this.app.acl.allow('uiSchemaTemplates', '*', 'loggedIn');
+    this.app.acl.allow('uiSchemas', ['getProperties', 'getJsonSchema'], 'loggedIn');
+    this.app.acl.allow('uiSchemaTemplates', ['get', 'list'], 'loggedIn');
   }
 
   async load() {
-    await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
   }
 }
 

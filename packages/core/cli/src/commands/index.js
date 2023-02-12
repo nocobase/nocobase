@@ -19,4 +19,4 @@ module.exports = (cli) => {
   if (isPackageValid('@umijs/utils')) {
     require('./create-plugin')(cli);
   }
-}
+};

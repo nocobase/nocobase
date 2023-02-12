@@ -11,7 +11,7 @@ import {
   Op,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
-  WhereOperators,
+  WhereOperators
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -87,10 +87,11 @@ export type AssociationKeysToBeUpdate = string[];
 
 export type Values = any;
 
-export interface CountOptions extends Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'>, Transactionable {
-  filter?: Filter;
-  context?: any;
-}
+export type CountOptions = Omit<SequelizeCountOptions, 'distinct' | 'where' | 'include'> &
+  Transactionable & {
+    filter?: Filter;
+    context?: any;
+  } & FilterByTk;
 
 export interface FilterByTk {
   filterByTk?: TargetKey;
@@ -192,6 +193,9 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
   }
 
   of(id: string | number): R {
+    if (!this.association) {
+      return;
+    }
     const klass = this.builder()[this.association.associationType];
     return new klass(this.collection, this.associationName, id);
   }
@@ -222,6 +226,17 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       options = {
         ...options,
         ...this.parseFilter(countOptions.filter, countOptions),
+      };
+    }
+
+    if (countOptions?.filterByTk) {
+      options['where'] = {
+        [Op.and]: [
+          options['where'] || {},
+          {
+            [this.collection.filterTargetKey]: options.filterByTk,
+          },
+        ],
       };
     }
 
@@ -269,7 +284,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           attributes: [primaryKeyField],
           group: `${model.name}.${primaryKeyField}`,
           transaction,
-        })
+          include: opts.include.filter((include) => {
+            return (
+              Object.keys(include.where || {}).length > 0 || JSON.stringify(opts?.filter)?.includes(include.association)
+            );
+          }),
+        } as any)
       ).map((row) => {
         return { row, pk: row.get(primaryKeyField) };
       });
@@ -277,6 +297,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       if (ids.length == 0) {
         return [];
       }
+
+      const templateModel = await model.findOne({
+        ...opts,
+        includeIgnoreAttributes: false,
+        attributes: [primaryKeyField],
+        group: `${model.name}.${primaryKeyField}`,
+        transaction,
+        limit: 1,
+        offset: 0,
+      } as any);
 
       const where = {
         [primaryKeyField]: {
@@ -297,7 +327,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
             return { rows, include };
           });
         }),
-        templateModel: ids[0].row,
+        templateModel: templateModel,
       });
     } else {
       rows = await model.findAll({
@@ -308,10 +338,15 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     if (this.collection.isParent()) {
       for (const row of rows) {
-        const rowCollectionName = this.database.tableNameCollectionMap.get(row.get('__tableName')).name;
-        row.set('__collection', rowCollectionName, {
-          raw: true,
-        });
+        const rowCollectionName = this.database.tableNameCollectionMap.get(
+          options.raw ? row['__tableName'] : row.get('__tableName'),
+        ).name;
+
+        options.raw
+          ? (row['__collection'] = rowCollectionName)
+          : row.set('__collection', rowCollectionName, {
+              raw: true,
+            });
       }
     }
 
@@ -517,6 +552,18 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         ? [options.filterByTk]
         : (options.filterByTk as TargetKey[] | undefined);
 
+    if (
+      this.collection.model.primaryKeyAttributes.length !== 1 &&
+      filterByTk &&
+      !lodash.get(this.collection.options, 'filterTargetKey')
+    ) {
+      if (this.collection.model.primaryKeyAttributes.length > 1) {
+        throw new Error(`filterByTk is not supported for composite primary key`);
+      } else {
+        throw new Error(`filterByTk is not supported for collection that has no primary key`);
+      }
+    }
+
     if (filterByTk && !options.filter) {
       return await this.model.destroy({
         ...options,
@@ -530,6 +577,20 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (options.filter) {
+      if (
+        this.collection.model.primaryKeyAttributes.length !== 1 &&
+        !lodash.get(this.collection.options, 'filterTargetKey')
+      ) {
+        const queryOptions = {
+          ...this.buildQueryOptions(options),
+        };
+
+        return await this.model.destroy({
+          ...queryOptions,
+          transaction,
+        });
+      }
+
       let pks = (
         await this.find({
           filter: options.filter,
@@ -567,7 +628,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return new RelationRepositoryBuilder<R>(this.collection, association);
   }
 
-  protected buildQueryOptions(options: any) {
+  public buildQueryOptions(options: any) {
     const parser = new OptionsParser(options, {
       collection: this.collection,
     });

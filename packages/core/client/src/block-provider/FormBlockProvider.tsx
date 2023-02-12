@@ -1,11 +1,12 @@
 import { createForm } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField } from '@formily/react';
 import { Spin } from 'antd';
+import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { RecordProvider, useRecord } from '../record-provider';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { useDesignable } from '../schema-component';
 import { useCollectionManager } from '../collection-manager';
+import { RecordProvider, useRecord } from '../record-provider';
+import { useDesignable } from '../schema-component';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -21,6 +22,7 @@ const InternalFormBlockProvider = (props) => {
   );
   const { resource, service } = useBlockRequestContext();
   const formBlockRef = useRef();
+  const record = useRecord();
   if (service.loading) {
     return <Spin />;
   }
@@ -37,7 +39,7 @@ const InternalFormBlockProvider = (props) => {
       }}
     >
       {readPretty ? (
-        <RecordProvider record={service?.data?.data}>
+        <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
           <div ref={formBlockRef}>{props.children}</div>
         </RecordProvider>
       ) : (

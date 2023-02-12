@@ -1,67 +1,67 @@
 # Action
 
-Action 是对资源的操作过程的描述，通常包含数据库处理等，类似其他框架中的 service 层，最简化的实现可以是一个 Koa 的中间件函数。在资源管理器里，针对特定资源定义的普通操作函数会被包装成 Action 类型的实例，当请求匹配对应资源的操作时，执行对应的操作过程。
+Action is the description of the operation process on resource, including database processing and so on. It is like the service layer in other frameworks, and the most simplified implementation can be a Koa middleware function. In the resourcer, common action functions defined for particular resources are wrapped into instances of the type Action, and when the request matches the action of the corresponding resource, the corresponding action is executed.
 
-## 构造函数
+## Constructor
 
-通常不需要直接实例化 Action，而是由资源管理器自动调用 `Action` 的静态方法 `toInstanceMap()` 进行实例化。
+Instead of being instantiated directly, the Action is usually instantiated automatically by the resourcer by calling the static method `toInstanceMap()` of `Action`.
 
 ### `constructor(options: ActionOptions)`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `handler` | `Function` | - | 操作函数 |
-| `middlewares?` | `Middleware \| Middleware[]` | - | 针对操作的中间件 |
-| `values?` | `Object` | - | 默认的操作数据 |
-| `fields?` | `string[]` | - | 默认针对的字段组 |
-| `appends?` | `string[]` | - | 默认附加的关联字段组 |
-| `except?` | `string[]` | - | 默认排除的字段组 |
-| `filter` | `FilterOptions` | - | 默认的过滤参数 |
-| `sort` | `string[]` | - | 默认的排序参数 |
-| `page` | `number` | - | 默认的页码 |
-| `pageSize` | `number` | - | 默认的每页数量 |
-| `maxPageSize` | `number` | - | 默认最大每页数量 |
+| `handler` | `Function` | - | Handler function |
+| `middlewares?` | `Middleware \| Middleware[]` | - | Middlewares for the action |
+| `values?` | `Object` | - | Default action data |
+| `fields?` | `string[]` | - | Default list of targeted fields |
+| `appends?` | `string[]` | - | Default list of associated fields to append |
+| `except?` | `string[]` | - |  Default list of fields to exclude |
+| `filter` | `FilterOptions` | - | Default filtering options |
+| `sort` | `string[]` | - | Default sorting options |
+| `page` | `number` | - | Default page number |
+| `pageSize` | `number` | - | Default page size |
+| `maxPageSize` | `number` | - | Default maximum page size |
 
-## 实例成员
+## Instance Members
 
 ### `actionName`
 
-被实例化后对应的操作名称。在实例化时从请求中解析获取。
+Name of the action that corresponds to when it is instantiated. It is parsed and fetched from the request at instantiation.
 
 ### `resourceName`
 
-被实例化后对应的资源名称。在实例化时从请求中解析获取。
+Name of the resource that corresponds to when the action is instantiated. It is parsed and fetched from the request at instantiation.
 
 ### `resourceOf`
 
-被实例化后对应的关系资源的主键值。在实例化时从请求中解析获取。
+Value of the primary key of the relational resource that corresponds to when the action is instantiated. It is parsed and fetched from the request at instantiation.
 
 ### `readonly middlewares`
 
-针对操作的中间件列表。
+List of middlewares targeting the action.
 
 ### `params`
 
-操作参数。包含对应操作的所有相关参数，实例化时根据定义的 action 参数初始化，之后请求中解析前端传入的参数并根据对应参数的合并策略合并。如果有其他中间件的处理，也会有类似的合并过程。直到 handler 处理时，访问 params 得到的是经过多次合并的最终参数。
+Action parameters. It contains all relevant parameters for the corresponding action, which are initialized at instantiation according to the defined action parameters. Later when parameters passed from the front-end are parsed in requests, the corresponding parameters are merged according to the merge strategy. Similar merging process is done if there is other middleware processing. When it comes to the hander, the `params` are the final parameters that have been merged for several times.
 
-参数的合并过程提供了针对操作处理的可扩展性，可以通过自定义中间件的方式按业务需求进行参数的前置解析和处理，例如表单提交的参数验证就可以在此环节实现。
+The merging process of parameters provides scalability for action processing, and the parameters can be pre-parsed and processed according to business requirements by means of custom middleware. For example, parameter validation for form submission can be implemented in this part.
 
-预设的参数可以参考 [/api/actions] 中不同操作的参数。
+Refer to [/api/actions] for the pre-defined parameters of different actions.
 
-参数中还包含请求资源路由的描述部分，具体如下：
+The parameters also contain a description of the request resource route:
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `resourceName` | `string` | - | 资源名称 |
-| `resourceIndex` | `string \| number` | - | 资源的主键值 |
-| `associatedName` | `string` | - | 所属关系资源的名称 |
-| `associatedIndex` | `string \| number` | - | 所属关系资源的主键值 |
-| `associated` | `Object` | - | 所属关系资源的实例 |
-| `actionName` | `string` | - | 操作名称 |
+| `resourceName` | `string` | - | Name of the resource |
+| `resourceIndex` | `string \| number` | - | Value of the primary key of the resource |
+| `associatedName` | `string` | - | Name of the associated resource it belongs to |
+| `associatedIndex` | `string \| number` | - | Value of the primary key of the associated resource it belongs to |
+| `associated` | `Object` | - | Instance of the associated resource it belongs to |
+| `actionName` | `string` | - | Name of the action |
 
-**示例**
+**Example**
 
 ```ts
 app.resourcer.define('books', {
@@ -88,40 +88,40 @@ app.resourcer.define('books', {
 });
 ```
 
-## 实例方法
+## Instance Methods
 
 ### `mergeParams()`
 
-将额外的参数合并至当前参数集，且可以根据不同的策略进行合并。
+Merge additional parameters to the current set of parameters according to different strategies.
 
-**签名**
+**Signature**
 
 * `mergeParams(params: ActionParams, strategies: MergeStrategies = {})`
 
-**参数**
+**Parameter**
 
-| 参数名 | 类型 | 默认值 | 描述 |
+| Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `params` | `ActionParams` | - | 额外的参数集 |
-| `strategies` | `MergeStrategies` | - | 针对每个参数的合并策略 |
+| `params` | `ActionParams` | - | Additional set of parameters |
+| `strategies` | `MergeStrategies` | - | Merge strategies for each parameter |
 
-内置操作的默认合并策略如下表：
+The default merge strategy for built-in actions is as follows:
 
-| 参数名 | 类型 | 默认值 | 合并策略 | 描述 |
+| Name | Type | Default | Merge Strategy |Description |
 | --- | --- | --- | --- | --- |
-| `filterByTk` | `number \| string` | - | SQL `and` | 查询主键值 |
-| `filter` | `FilterOptions` | - | SQL `and` | 查询过滤参数 |
-| `fields` | `string[]` | - | 取并集 | 字段组 |
-| `appends` | `string[]` | `[]` | 取并集 | 附加的关联字段组 |
-| `except` | `string[]` | `[]` | 取并集 | 排除的字段组 |
-| `whitelist` | `string[]` | `[]` | 取交集 | 可处理字段的白名单 |
-| `blacklist` | `string[]` | `[]` | 取并集 | 可处理字段的黑名单 |
-| `sort` | `string[]` | - | SQL `order by` | 查询排序参数 |
-| `page` | `number` | - | 覆盖 | 页码 |
-| `pageSize` | `number` | - | 覆盖 | 每页数量 |
-| `values` | `Object` | - | 深度合并 | 操作提交的数据 |
+| `filterByTk` | `number \| string` | - | SQL `and` | Get value of the primary key |
+| `filter` | `FilterOptions` | - | SQL `and` | Get filtering options |
+| `fields` | `string[]` | - | Take the union | List of fields |
+| `appends` | `string[]` | `[]` | Take the union | List of associated fields to append |
+| `except` | `string[]` | `[]` | Take the union | List of associated fields to exclude |
+| `whitelist` | `string[]` | `[]` | Take the intersection | Whitelist of fields that can be handled |
+| `blacklist` | `string[]` | `[]` | Take the union | Blacklist of fields that can be handled |
+| `sort` | `string[]` | - | SQL `order by` | Get the sorting options |
+| `page` | `number` | - | Override | Page number |
+| `pageSize` | `number` | - | Override | Page size |
+| `values` | `Object` | - | Deep merge | Operation of the submitted data |
 
-**示例**
+**Example**
 
 ```ts
 ctx.action.mergeParams({

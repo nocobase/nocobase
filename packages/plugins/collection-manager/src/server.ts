@@ -13,11 +13,11 @@ import {
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions,
+  beforeInitOptions
 } from './hooks';
 
-import { CollectionModel, FieldModel } from './models';
 import { InheritedCollection } from '@nocobase/database';
+import { CollectionModel, FieldModel } from './models';
 
 export class CollectionManagerPlugin extends Plugin {
   async beforeLoad() {
@@ -36,6 +36,15 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.registerRepositories({
       CollectionRepository,
+    });
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.collections`,
+      actions: [
+        'collections:*',
+        // 'fields:*',
+        'collections.fields:*',
+      ],
     });
 
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
@@ -213,13 +222,10 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.acl.allow('collections', 'list', 'loggedIn');
-    this.app.acl.allow('collections', ['create', 'update', 'destroy'], 'allowConfigure');
   }
 
   async load() {
-    await this.app.db.import({
-      directory: path.resolve(__dirname, './collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, './collections'));
 
     const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('error-handler');
     errorHandlerPlugin.errorHandler.register(

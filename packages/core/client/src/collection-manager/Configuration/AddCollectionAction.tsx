@@ -15,7 +15,7 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import * as components from './components';
 import { templateOptions } from './templates';
 
-const getSchema = (schema, record: any, compile): ISchema => {
+const getSchema = (schema, category, compile): ISchema => {
   if (!schema) {
     return;
   }
@@ -30,6 +30,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
   const initialValue: any = {
     name: `t_${uid()}`,
     template: schema.name,
+    category,
     ...cloneDeep(schema.default),
   };
   if (initialValue.reverseField) {
@@ -234,6 +235,9 @@ export const AddCollectionAction = (props) => {
   const items = templateOptions().map((option) => {
     return { label: compile(option.title), key: option.name };
   });
+  const {
+    state: { category },
+  } = useResourceActionContext();
   return (
     <RecordProvider record={record}>
       <ActionContext.Provider value={{ visible, setVisible }}>
@@ -248,7 +252,7 @@ export const AddCollectionAction = (props) => {
                 overflow: 'auto',
               }}
               onClick={(info) => {
-                const schema = getSchema(getTemplate(info.key), record, compile);
+                const schema = getSchema(getTemplate(info.key), category, compile);
                 setSchema(schema);
                 setVisible(true);
               }}

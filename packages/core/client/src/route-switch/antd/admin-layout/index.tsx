@@ -1,13 +1,13 @@
 import { css } from '@emotion/css';
+import { useMutationObserver } from 'ahooks';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
-  ACLAllowConfigure,
   ACLRolesCheckProvider,
+  CurrentAppInfoProvider,
   CurrentUser,
   CurrentUserProvider,
-  CurrentAppInfoProvider,
   findByUid,
   findMenuItem,
   RemoteCollectionManagerProvider,
@@ -21,12 +21,10 @@ import {
   useSystemSettings,
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
-import { PoweredBy } from '../../../powered-by';
-import { useMutationObserver } from 'ahooks';
 
 const filterByACL = (schema, options) => {
-  const { allowAll, allowConfigure, allowMenuItemIds = [] } = options;
-  if (allowAll || allowConfigure) {
+  const { allowAll, allowMenuItemIds = [] } = options;
+  if (allowAll) {
     return schema;
   }
   const filterSchema = (s) => {
@@ -123,7 +121,7 @@ const MenuEditor = (props) => {
   );
 };
 
-const InternalAdminLayout = (props: any) => {
+export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
   const [sideMenuWidth, setSideMenuWidth] = useState(0);
 
@@ -166,12 +164,28 @@ const InternalAdminLayout = (props: any) => {
             position: relative;
             width: 100%;
             height: 100%;
+            display: flex;
           `}
         >
           <div
-            style={{ position: 'relative', zIndex: 1, display: 'flex', height: '100%', width: 'calc(100vw - 300px)' }}
+            className={css`
+              position: relative;
+              z-index: 1;
+              flex: 1 1 auto;
+              display: flex;
+              height: 100%;
+            `}
           >
-            <div style={{ width: 200, display: 'inline-flex', color: '#fff', padding: '0', alignItems: 'center' }}>
+            <div
+              className={css`
+                width: 200px;
+                display: inline-flex;
+                flex-shrink: 0;
+                color: #fff;
+                padding: 0;
+                align-items: center;
+              `}
+            >
               <img
                 className={css`
                   padding: 0 16px;
@@ -181,20 +195,25 @@ const InternalAdminLayout = (props: any) => {
                 `}
                 src={result?.data?.data?.logo?.url}
               />
-              {/* {result?.data?.data?.title} */}
             </div>
             <div
-              style={{
-                width: 'calc(100% - 590px)',
-              }}
+              className={css`
+                flex: 1 1 auto;
+                width: 0;
+              `}
             >
               <MenuEditor sideMenuRef={sideMenuRef} />
             </div>
           </div>
-          <div style={{ position: 'absolute', height: '100%', zIndex: 10, top: 0, right: 0 }}>
-            <ACLAllowConfigure>
-              <RemotePluginManagerToolbar />
-            </ACLAllowConfigure>
+          <div
+            className={css`
+              position: relative;
+              flex-shrink: 0;
+              height: 100%;
+              z-index: 10;
+            `}
+          >
+            <RemotePluginManagerToolbar />
             <CurrentUser />
           </div>
         </div>
@@ -212,8 +231,8 @@ const InternalAdminLayout = (props: any) => {
           max-width: var(--side-menu-width);
           min-width: var(--side-menu-width);
           pointer-events: none;
-          transition: background-color 0.3s ease 0s, min-width 0.3s ease 0s,
-            max-width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s;
+          /* transition: background-color 0.3s ease 0s, min-width 0.3s ease 0s,
+            max-width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s; */
         `}
       ></div>
       <Layout.Sider

@@ -1,16 +1,28 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import {
+  observer,
+  RecursionField,
+  Schema,
+  useField,
+  useFieldSchema,
+  SchemaExpressionScopeContext,
+} from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useRequest, useSchemaInitializer } from '../../../';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
+};
+
+const useScope = (key: any) => {
+  const scope = useContext(SchemaExpressionScopeContext);
+  return scope[key] !== false;
 };
 
 const useTableColumns = () => {
@@ -20,9 +32,10 @@ const useTableColumns = () => {
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns = schema
     .reduceProperties((buf, s) => {
-      if (isColumnComponent(s)) {
+      if (isColumnComponent(s) && useScope(s['x-visible'])) {
         return buf.concat([s]);
       }
+      return buf
     }, [])
     .map((s: Schema) => {
       return {
@@ -35,7 +48,7 @@ const useTableColumns = () => {
           return (
             <RecordIndexProvider index={index}>
               <RecordProvider record={record}>
-                <RecursionField schema={s} name={index} onlyRenderProperties />
+                <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
               </RecordProvider>
             </RecordIndexProvider>
           );
