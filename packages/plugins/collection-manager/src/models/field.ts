@@ -58,18 +58,20 @@ export class FieldModel extends MagicAttributeModel {
       if (!field) {
         return;
       }
+      const collection = this.getFieldCollection();
 
-      if (isNew) {
-        const collection = this.getFieldCollection();
+      if (isNew && collection.model.rawAttributes[this.get('name')] && this.get('unique')) {
         // trick: set unique to false to avoid auto sync unique index
         collection.model.rawAttributes[this.get('name')].unique = false;
       }
 
       await field.sync(options);
 
-      await this.syncUniqueIndex({
-        transaction: options.transaction,
-      });
+      if (isNew && this.get('unique')) {
+        await this.syncUniqueIndex({
+          transaction: options.transaction,
+        });
+      }
     } catch (error) {
       // field sync failed, delete from memory
       if (isNew && field) {
