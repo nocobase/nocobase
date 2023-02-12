@@ -205,13 +205,18 @@ export class Collection<
   }
 
   checkFieldType(name: string, options: FieldOptions) {
-    const otherFields = [...this.fields.values()].filter((field) => field.name != name);
-    if (otherFields.length === 0) {
-      return;
-    }
+    if (this.db.options.underscored) {
+      const otherFields = [...this.fields.values()].filter(
+        (field) => field.name != name && snakeCase(field.name) === snakeCase(name),
+      );
 
-    if (options.type !== otherFields[0].type) {
-      throw new Error('fields with same column must be of the same type', options);
+      if (otherFields.length === 0) {
+        return;
+      }
+
+      if (options.type !== otherFields[0].type) {
+        throw new Error(`fields with same column must be of the same type ${JSON.stringify(options)}`);
+      }
     }
   }
 

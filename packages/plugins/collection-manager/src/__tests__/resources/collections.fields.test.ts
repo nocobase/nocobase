@@ -27,15 +27,21 @@ describe('collections.fields', () => {
           ],
         },
       });
+
     const collection = app.db.getCollection('test1');
     const field = collection.getField('name');
+
     expect(collection.hasField('name')).toBeTruthy();
+
     const r1 = await field.existsInDb();
     expect(r1).toBeTruthy();
+
     await app.agent().resource('collections.fields', 'test1').destroy({
       filterByTk: 'name',
     });
+
     expect(collection.hasField('name')).toBeFalsy();
+
     const r2 = await field.existsInDb();
     expect(r2).toBeFalsy();
   });

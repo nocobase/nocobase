@@ -12,6 +12,7 @@ import { Collection } from '../collection';
 import { Database } from '../database';
 import { InheritedCollection } from '../inherited-collection';
 import { ModelEventTypes } from '../types';
+import { snakeCase } from '../utils';
 
 export interface FieldContext {
   database: Database;
@@ -90,7 +91,11 @@ export abstract class Field {
   }
 
   columnName() {
-    return this.collection.model.rawAttributes[this.name].field;
+    if (this.database.options.underscored) {
+      return snakeCase(this.name);
+    }
+
+    return this.name;
   }
 
   async removeFromDb(options?: QueryInterfaceOptions) {
