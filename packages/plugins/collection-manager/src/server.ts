@@ -246,39 +246,6 @@ export class CollectionManagerPlugin extends Plugin {
       await next();
     });
 
-    this.app.resourcer.define({
-      name: 'cm',
-      actions: {
-        getDict: async (ctx, next) => {
-          ctx.withoutDataWrapping = true;
-          const collections = [];
-          for (const [name, collection] of this.app.db.collections) {
-            const columns = [];
-            for (const key in collection.model.rawAttributes) {
-              if (Object.prototype.hasOwnProperty.call(collection.model.rawAttributes, key)) {
-                const attribute = collection.model.rawAttributes[key];
-                columns.push({
-                  realName: attribute.field,
-                  name: key,
-                });
-              }
-            }
-            collections.push({
-              name,
-              title: collection.options.title,
-              namespace: collection.options.namespace,
-              duplicator: collection.options.duplicator,
-              // columns,
-            });
-          }
-          ctx.body = collections;
-          await next();
-        },
-      },
-    });
-
-    this.app.acl.allow('cm', 'getDict');
-
     this.app.db.extendCollection({
       name: 'collectionCategory',
       namespace: 'collection-manager',
