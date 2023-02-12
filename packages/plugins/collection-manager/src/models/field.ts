@@ -91,8 +91,10 @@ export class FieldModel extends MagicAttributeModel {
     const collection = this.getFieldCollection();
     const columnName = collection.model.rawAttributes[this.get('name')].field;
 
-    // @ts-ignore
-    const existsIndexes: any = await this.db.sequelize.getQueryInterface().showIndex(collection.model.tableName);
+    const queryInterface = this.db.sequelize.getQueryInterface() as any;
+    const existsIndexes = await queryInterface.showIndex(collection.model.tableName, {
+      transaction: options.transaction,
+    });
 
     const existUniqueIndex = existsIndexes.find((item) => {
       return item.unique && item.fields[0].attribute === columnName && item.fields.length === 1;
@@ -109,7 +111,27 @@ export class FieldModel extends MagicAttributeModel {
     }
 
     if (!unique && existUniqueIndex) {
-      await this.db.sequelize.getQueryInterface().removeIndex(collection.model.tableName, existUniqueIndex.name);
+      const existedConstraints = await queryInterface.showConstraint(
+        collection.model.tableName,
+        existUniqueIndex.name,
+        {
+          transaction: options.transaction,
+        },
+      );
+
+      const existedConstraint = existedConstraints.find(
+        (item) => item.constraintType === 'UNIQUE' && item.constraintName === existUniqueIndex.name,
+      );
+
+      if (existedConstraint) {
+        await queryInterface.removeConstraint(collection.model.tableName, existedConstraint.constraintName, {
+          transaction: options.transaction,
+        });
+      }
+
+      await this.db.sequelize
+        .getQueryInterface()
+        .removeIndex(collection.model.tableName, existUniqueIndex.name, { transaction: options.transaction });
     }
   }
 
