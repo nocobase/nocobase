@@ -1,44 +1,42 @@
-import { Field, BaseColumnFieldOptions, Model, CreateOptions, Repository } from '@nocobase/database';
+import { BaseColumnFieldOptions, CreateOptions, Field, Model } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import isObject from 'lodash/isObject';
 
 export class SnapshotField extends Field {
   get dataType() {
     return DataTypes.JSON;
   }
 
-  afterCreateWithAssociations = async (model: Model, { transaction, values }: CreateOptions) => {
-    const snapshotOwnerCollectionName = this.collection.name;
-    const { targetField: targetFieldName, name: snapshotFieldName, appends } = this.options;
+  createSnapshot = async (model: Model, { transaction, values }: CreateOptions) => {
+    const { name, targetField } = this.options;
+    const collectionName = this.collection.name;
     const primaryKey = this.collection.model.primaryKeyAttribute;
-    const targetField = this.collection.getField(targetFieldName);
-    const { target: targetFieldCollectionName } = targetField.options;
 
-    const repository: Repository = this.database.getRepository<any>(
-      `${snapshotOwnerCollectionName}.${targetFieldName}`,
-      model.get(primaryKey),
-    );
-
-    let res: Model[] | Model;
-
-    try {
-      res = await repository.find({
-        transaction,
-        appends,
-      });
-    } catch (err) {
-      // when appends failed
-      res = [];
+    if (!this.collection.hasField(targetField)) {
+      return;
     }
 
-    const snapshotData = {
-      collectionName: targetFieldCollectionName,
-      data: Array.isArray(res) ? res.map((r) => r.toJSON()) : res,
-    };
+    const repository = this.database.getRepository<any>(`${collectionName}.${targetField}`, model.get(primaryKey));
+    const appends = (this.options.appends || []).filter((appendName) =>
+      repository.targetCollection.hasField(appendName),
+    );
+
+    let data = await repository.find({
+      transaction,
+      appends,
+    });
+
+    if (Array.isArray(data)) {
+      data = data.map((i) => i.toJSON());
+    } else if (data?.toJSON) {
+      data = data.toJSON();
+    }
 
     await model.update(
       {
-        [snapshotFieldName]: snapshotData,
+        [name]: {
+          collectionName,
+          data,
+        },
       },
       {
         transaction,
@@ -49,15 +47,18 @@ export class SnapshotField extends Field {
 
   bind() {
     super.bind();
-    this.on('afterCreateWithAssociations', this.afterCreateWithAssociations);
+    this.on('afterCreateWithAssociations', this.createSnapshot);
   }
 
   unbind() {
     super.unbind();
-    this.off('afterCreateWithAssociations', this.afterCreateWithAssociations);
+    this.off('afterCreateWithAssociations', this.createSnapshot);
   }
 }
 
 export interface SnapshotFieldOptions extends BaseColumnFieldOptions {
   type: 'snapshot';
+  targetField: string;
+  targetCollection?: string;
+  appends?: string[];
 }

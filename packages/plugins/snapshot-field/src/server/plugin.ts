@@ -1,9 +1,7 @@
-import { Context, Next } from '@nocobase/actions';
-import { Model, Field } from '@nocobase/database';
+import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { SnapshotField } from './fields/snapshot-field';
-import isObject from 'lodash/isObject';
 
 export class SnapshotFieldPlugin extends Plugin {
   afterAdd() {}
@@ -61,7 +59,20 @@ export class SnapshotFieldPlugin extends Plugin {
     };
 
     this.app.db.on('fields.afterCreateWithAssociations', fieldHandler);
+    this.app.db.on('fields.beforeCreate', this.autoFillTargetCollection);
   }
+
+  autoFillTargetCollection = async (model: Model) => {
+    const { collectionName, targetField } = model.get();
+    const collection = this.db.getCollection(collectionName);
+    if (!collection) {
+      return;
+    }
+    const field = collection.getField(targetField);
+    if (field?.target) {
+      model.set('targetCollection', field.target);
+    }
+  };
 
   async load() {
     // 导入 collection

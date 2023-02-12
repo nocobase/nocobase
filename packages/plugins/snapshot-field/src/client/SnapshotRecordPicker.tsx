@@ -1,16 +1,15 @@
-import React from 'react';
 import { connect, mapReadPretty, useFieldSchema } from '@formily/react';
-import { ReadPrettyRecordPicker, useCollection, useSnapshotFieldTargetCollectionName } from '@nocobase/client';
+import { ReadPrettyRecordPicker, useCollection } from '@nocobase/client';
+import React from 'react';
 import { SnapshotHistoryCollectionProvider } from './SnapshotHistoryCollectionProvider';
 
 const ReadPrettyRecordPickerWrapper = (props) => {
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
-  const collectionName = useSnapshotFieldTargetCollectionName(collectionField);
 
   return (
-    <SnapshotHistoryCollectionProvider collectionName={collectionName}>
+    <SnapshotHistoryCollectionProvider collectionName={collectionField?.targetCollection}>
       <ReadPrettyRecordPicker {...props} />
     </SnapshotHistoryCollectionProvider>
   );

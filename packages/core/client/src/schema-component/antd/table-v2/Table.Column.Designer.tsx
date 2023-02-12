@@ -1,7 +1,7 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager, useSnapshotFieldTargetCollectionName } from '../../../collection-manager';
+import { useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 
@@ -31,7 +31,7 @@ export const TableColumnDesigner = (props) => {
   const { dn } = useDesignable();
   const fieldNames =
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
-  const options = useLabelFields(collectionField?.target ?? useSnapshotFieldTargetCollectionName(collectionField));
+  const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
   const intefaceCfg = getInterface(collectionField?.interface);
 
   return (
