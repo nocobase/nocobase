@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -205,18 +205,24 @@ export class Collection<
   }
 
   checkFieldType(name: string, options: FieldOptions) {
-    if (this.db.options.underscored) {
-      const otherFields = [...this.fields.values()].filter(
-        (field) => field.name != name && snakeCase(field.name) === snakeCase(name),
-      );
-
-      if (otherFields.length === 0) {
-        return;
+    if (!this.db.options.underscored) {
+      return;
+    }
+    const fieldName = options.field || snakeCase(name);
+    const field = this.findField((f) => {
+      if (f.name === name) {
+        return false;
       }
-
-      if (options.type !== otherFields[0].type) {
-        throw new Error(`fields with same column must be of the same type ${JSON.stringify(options)}`);
+      if (f.field) {
+        return f.field === fieldName;
       }
+      return snakeCase(f.name) === fieldName;
+    });
+    if (!field) {
+      return;
+    }
+    if (options.type !== field.type) {
+      throw new Error(`fields with same column must be of the same type ${JSON.stringify(options)}`);
     }
   }
 

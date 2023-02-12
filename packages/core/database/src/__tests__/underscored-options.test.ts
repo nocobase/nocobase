@@ -47,6 +47,10 @@ describe('underscored options', () => {
     expect(() => {
       collection.addField('testField', { type: 'integer' });
     }).toThrowError();
+
+    expect(() => {
+      collection.addField('test123', { type: 'integer', field: 'test_field' });
+    }).toThrowError();
   });
 
   it('should create index', async () => {

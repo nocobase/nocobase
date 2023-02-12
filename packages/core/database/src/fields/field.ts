@@ -6,7 +6,7 @@ import {
   ModelIndexesOptions,
   QueryInterfaceOptions,
   SyncOptions,
-  Transactionable,
+  Transactionable
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
@@ -91,6 +91,10 @@ export abstract class Field {
   }
 
   columnName() {
+    if (this.options.field) {
+      return this.options.field;
+    }
+
     if (this.database.options.underscored) {
       return snakeCase(this.name);
     }
@@ -122,7 +126,12 @@ export abstract class Field {
     }
     if (this.collection.model.options.timestamps !== false) {
       // timestamps 相关字段不删除
-      if (['createdAt', 'updatedAt', 'deletedAt'].includes(this.name)) {
+      let timestampsFields = ['createdAt', 'updatedAt', 'deletedAt'];
+      if (this.database.options.underscored) {
+        timestampsFields = timestampsFields.map((field) => snakeCase(field));
+      }
+      if (timestampsFields.includes(this.columnName())) {
+        this.collection.fields.delete(this.name);
         return;
       }
     }
@@ -142,11 +151,11 @@ export abstract class Field {
       }
     }
 
-    if (this.options.field && this.name !== this.options.field) {
-      // field 指向的是真实的字段名，如果与 name 不一样，说明字段只是引用
-      this.remove();
-      return;
-    }
+    // if (this.options.field && this.name !== this.options.field) {
+    //   // field 指向的是真实的字段名，如果与 name 不一样，说明字段只是引用
+    //   this.remove();
+    //   return;
+    // }
 
     const columnReferencesCount = _.filter(
       this.collection.model.rawAttributes,
