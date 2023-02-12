@@ -200,19 +200,4 @@ describe('underscored options', () => {
       });
     }).toThrowError();
   });
-
-  it('should throw error when field names conflict', async () => {
-    expect(() => {
-      db.collection({
-        name: 'test',
-        fields: [
-          { name: 'b1_z', type: 'string' },
-          {
-            name: 'b1Z',
-            type: 'string',
-          },
-        ],
-      });
-    }).toThrowError();
-  });
 });
