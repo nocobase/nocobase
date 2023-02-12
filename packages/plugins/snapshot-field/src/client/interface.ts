@@ -1,10 +1,31 @@
+import type { Field } from '@formily/core';
 import { ISchema } from '@formily/react';
-import { IField, interfacesProperties } from '@nocobase/client';
+import { IField, interfacesProperties, useRecord } from '@nocobase/client';
 import { cloneDeep } from 'lodash';
 import { useMemo } from 'react';
 import { useSnapshotTranslation } from './locale';
 
-const { defaultProps, recordPickerSelector } = interfacesProperties;
+const { defaultProps } = interfacesProperties;
+
+const APPENDS = 'appends';
+const TARGET_FIELD = 'targetField';
+
+export const useTopRecord = () => {
+  let record = useRecord();
+
+  while (record && Object.keys(record.__parent).length > 0) {
+    record = record.__parent;
+  }
+  return record;
+};
+
+const onTargetFieldChange = (field: Field) => {
+  field.value; // for watch
+  const targetField = field.query(`.${APPENDS}`).take() as Field | undefined;
+  console.log(field.path);
+  if (!targetField) return;
+  !targetField.getState().disabled && targetField.setValue([]);
+};
 
 export const useSnapshotInterface = () => {
   const { t } = useSnapshotTranslation();
@@ -56,7 +77,6 @@ export const useSnapshotInterface = () => {
         // title,
         'x-component': 'SnapshotRecordPicker',
         'x-component-props': {
-          // mode: 'tags',
           multiple: true,
           fieldNames: {
             label: 'id',
@@ -66,33 +86,52 @@ export const useSnapshotInterface = () => {
       },
     },
     schemaInitialize(schema: ISchema, { field, readPretty, action, block }) {
-      if (readPretty || action === 'update') {
-        schema['properties'] = {
-          viewer: cloneDeep(recordPickerViewer),
-        };
-      } else {
-        schema['properties'] = {
-          selector: cloneDeep(recordPickerSelector),
-        };
-      }
+      schema['properties'] = {
+        viewer: cloneDeep(recordPickerViewer),
+      };
     },
     initialize: (values: any) => {},
     properties: {
       ...defaultProps,
-      target: {
+      [TARGET_FIELD]: {
         type: 'string',
-        title: t('Target collection'),
+        title: t('Association field'),
         required: true,
-        'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
         'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-disabled': '{{ !createOnly }}',
+        'x-component': 'SnapshotOwnerCollectionFieldsSelect',
+        'x-disabled': '{{ !createOnly || isOverride }}',
+        'x-reactions': [
+          {
+            target: APPENDS,
+            when: '{{$self.value != undefined}}',
+            fulfill: {
+              state: {
+                visible: true,
+              },
+            },
+            otherwise: {
+              state: {
+                visible: false,
+              },
+            },
+          },
+        ],
       },
-      'uiSchema.x-component-props.multiple': {
-        type: 'boolean',
-        'x-content': t('Allow linking to multiple records'),
+      [APPENDS]: {
+        type: 'string',
+        title: t('Deep copy fields'),
+        description: t('When a record is created, relational data is backed up in a snapshot'),
         'x-decorator': 'FormItem',
-        'x-component': 'Checkbox',
+        'x-component': 'AppendsTreeSelect',
+        'x-reactions': [
+          {
+            dependencies: [TARGET_FIELD],
+            when: '{{$deps[0]}}',
+            fulfill: {
+              run: '{{$self.setValue($self.value)}}',
+            },
+          },
+        ],
       },
     },
   };
