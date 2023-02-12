@@ -1,6 +1,6 @@
-import { ISchema } from '@formily/react';
 import type { Field } from '@formily/core';
-import { IField, interfacesProperties, useCollectionManager, useCompile, useRecord } from '@nocobase/client';
+import { ISchema } from '@formily/react';
+import { IField, interfacesProperties, useRecord } from '@nocobase/client';
 import { cloneDeep } from 'lodash';
 import { useMemo } from 'react';
 import { useSnapshotTranslation } from './locale';
@@ -99,7 +99,7 @@ export const useSnapshotInterface = () => {
         required: true,
         'x-decorator': 'FormItem',
         'x-component': 'SnapshotOwnerCollectionFieldsSelect',
-        'x-disabled': '{{ !createOnly }}',
+        'x-disabled': '{{ !createOnly || isOverride }}',
         'x-reactions': [
           {
             target: APPENDS,
