@@ -1,4 +1,4 @@
-import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
+import Database, { Collection, MagicAttributeModel, snakeCase } from '@nocobase/database';
 import { SyncOptions, Transactionable } from 'sequelize';
 
 interface LoadOptions extends Transactionable {
@@ -59,7 +59,17 @@ export class FieldModel extends MagicAttributeModel {
         return;
       }
 
+      if (isNew) {
+        const collection = this.getFieldCollection();
+        // trick: set unique to false to avoid auto sync unique index
+        collection.model.rawAttributes[this.get('name')].unique = false;
+      }
+
       await field.sync(options);
+
+      await this.syncUniqueIndex({
+        transaction: options.transaction,
+      });
     } catch (error) {
       // field sync failed, delete from memory
       if (isNew && field) {
@@ -90,8 +100,10 @@ export class FieldModel extends MagicAttributeModel {
     const unique = this.get('unique');
     const collection = this.getFieldCollection();
     const columnName = collection.model.rawAttributes[this.get('name')].field;
+    const tableName = collection.model.tableName;
 
     const queryInterface = this.db.sequelize.getQueryInterface() as any;
+
     const existsIndexes = await queryInterface.showIndex(collection.model.tableName, {
       transaction: options.transaction,
     });
@@ -100,38 +112,36 @@ export class FieldModel extends MagicAttributeModel {
       return item.unique && item.fields[0].attribute === columnName && item.fields.length === 1;
     });
 
-    if (unique && !existUniqueIndex) {
-      collection.addIndex({
-        fields: [this.get('name')],
-        unique: true,
-      });
+    let existsUniqueConstraint;
 
-      // @ts-ignore
-      await collection.sync({ ...options, force: false, alter: { drop: false } });
+    let constraintName = snakeCase(`${tableName}_${columnName}`);
+
+    if (existUniqueIndex) {
+      const existsUniqueConstraints = await queryInterface.showConstraint(
+        collection.model.tableName,
+        constraintName,
+        {},
+      );
+
+      existsUniqueConstraint = existsUniqueConstraints[0];
     }
 
-    if (!unique && existUniqueIndex) {
-      const existedConstraints = await queryInterface.showConstraint(
-        collection.model.tableName,
-        existUniqueIndex.name,
-        {
-          transaction: options.transaction,
-        },
-      );
+    if (unique && !existsUniqueConstraint) {
+      // @ts-ignore
+      await collection.sync({ ...options, force: false, alter: { drop: false } });
 
-      const existedConstraint = existedConstraints.find(
-        (item) => item.constraintType === 'UNIQUE' && item.constraintName === existUniqueIndex.name,
-      );
+      await queryInterface.addConstraint(tableName, {
+        type: 'unique',
+        fields: [columnName],
+        name: constraintName,
+        transaction: options.transaction,
+      });
+    }
 
-      if (existedConstraint) {
-        await queryInterface.removeConstraint(collection.model.tableName, existedConstraint.constraintName, {
-          transaction: options.transaction,
-        });
-      }
-
-      await this.db.sequelize
-        .getQueryInterface()
-        .removeIndex(collection.model.tableName, existUniqueIndex.name, { transaction: options.transaction });
+    if (!unique && existsUniqueConstraint) {
+      await queryInterface.removeConstraint(collection.model.tableName, constraintName, {
+        transaction: options.transaction,
+      });
     }
   }
 

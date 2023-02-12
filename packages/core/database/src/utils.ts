@@ -80,5 +80,5 @@ export function getTableName(collectionName: string, options) {
 }
 
 export function snakeCase(name: string) {
-  return require('sequelize').Utils.underscoredIf(name, true);
+  return require('sequelize').Utils.underscore(name);
 }
