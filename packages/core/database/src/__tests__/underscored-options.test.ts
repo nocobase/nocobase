@@ -15,6 +15,40 @@ describe('underscored options', () => {
     await db.close();
   });
 
+  it('should set two field with same type', async () => {
+    const collection = db.collection({
+      name: 'test',
+      fields: [
+        {
+          type: 'string',
+          name: 'test_field',
+        },
+        {
+          type: 'string',
+          name: 'testField',
+        },
+      ],
+    });
+
+    await db.sync();
+  });
+
+  it('should not set two field with difference type but same field name', async () => {
+    const collection = db.collection({
+      name: 'test',
+      fields: [
+        {
+          type: 'string',
+          name: 'test_field',
+        },
+      ],
+    });
+
+    expect(() => {
+      collection.addField('testField', { type: 'integer' });
+    }).toThrowError();
+  });
+
   it('should create index', async () => {
     const collectionA = db.collection({
       name: 'testCollection',
