@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'ui-schema-storage',
+  duplicator: 'required',
   name: 'uiSchemas',
   title: '字段配置',
   autoGenId: false,

@@ -1,5 +1,7 @@
 export default {
   name: 'applicationPlugins',
+  namespace: 'core',
+  duplicator: 'required',
   repository: 'PluginManagerRepository',
   fields: [
     { type: 'string', name: 'name', unique: true },

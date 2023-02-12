@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'users',
+  duplicator: 'optional',
   name: 'users',
   title: '{{t("Users")}}',
   sortable: 'sort',
