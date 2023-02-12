@@ -204,24 +204,11 @@ export class Collection<
     return this.setField(name, options);
   }
 
-  checkFieldName(name: string) {
-    const getColumnName = (fieldName) => {
-      return this.options.underscored ? snakeCase(fieldName) : fieldName;
-    };
-    const columnName = getColumnName(name);
-
-    for (const [k, field] of this.fields) {
-      const fieldColumnName = getColumnName(field.name);
-
-      if (field.name != name && fieldColumnName === columnName) {
-        throw new Error(`field ${field.name} conflict with ${name}`);
-      }
-    }
-  }
+  checkFieldType(name: string, options: FieldOptions) {}
 
   setField(name: string, options: FieldOptions): Field {
     checkIdentifier(name);
-    this.checkFieldName(name);
+    this.checkFieldType(name, options);
 
     const { database } = this.context;
 

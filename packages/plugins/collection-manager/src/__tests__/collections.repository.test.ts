@@ -183,4 +183,71 @@ describe('collections repository', () => {
       ],
     });
   });
+
+  it('should not destroy column when column belongs to a field', async () => {
+    if (db.options.underscored !== true) return;
+
+    await Collection.repository.create({
+      context: {},
+      values: {
+        name: 'tests',
+        fields: [
+          {
+            type: 'string',
+            name: 'test_field',
+          },
+          {
+            type: 'string',
+            name: 'testField',
+          },
+          {
+            type: 'string',
+            name: 'otherField',
+          },
+        ],
+      },
+    });
+
+    const testCollection = db.getCollection('tests');
+
+    expect(
+      testCollection.model.rawAttributes.test_field.field === testCollection.model.rawAttributes.testField.field,
+    ).toBe(true);
+    const getTableInfo = async () =>
+      await db.sequelize.getQueryInterface().describeTable(testCollection.model.tableName);
+
+    const tableInfo0 = await getTableInfo();
+
+    expect(tableInfo0['other_field']).toBeDefined();
+
+    await Field.repository.destroy({
+      context: {},
+      filter: {
+        name: 'otherField',
+      },
+    });
+
+    const tableInfo1 = await getTableInfo();
+    expect(tableInfo1['other_field']).not.toBeDefined();
+
+    await Field.repository.destroy({
+      context: {},
+      filter: {
+        name: 'testField',
+      },
+    });
+
+    const tableInfo2 = await getTableInfo();
+    expect(tableInfo2['test_field']).toBeDefined();
+
+    await Field.repository.destroy({
+      context: {},
+      filter: {
+        name: 'test_field',
+      },
+    });
+
+    const tableInfo3 = await getTableInfo();
+    expect(tableInfo3['test_field']).not.toBeDefined();
+  });
 });
