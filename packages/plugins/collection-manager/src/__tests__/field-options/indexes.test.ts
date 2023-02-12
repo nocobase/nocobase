@@ -69,6 +69,8 @@ describe('field indexes', () => {
       },
     });
 
+    expect(field.status).toBe(200);
+
     // create a record
     const response1 = await agent.resource(tableName).create({
       values: {

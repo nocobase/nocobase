@@ -502,9 +502,17 @@ describe('collections repository', () => {
 
     expect(addIndexResponse.statusCode).toEqual(200);
 
-    const indexes = await app.db.sequelize.getQueryInterface().showIndex(app.db.getCollection('test').model.tableName);
+    const indexes = (await app.db.sequelize
+      .getQueryInterface()
+      .showIndex(app.db.getCollection('test').model.tableName)) as any;
 
-    expect(indexes).toHaveLength(2);
+    const columnName = app.db.getCollection('test').model.rawAttributes.testField.field;
+
+    expect(
+      indexes.find(
+        (index) => index.unique == true && index.fields[0].attribute == columnName && index.fields.length === 1,
+      ),
+    ).toBeDefined();
 
     const removeIndexResponse = await app
       .agent()
@@ -518,10 +526,14 @@ describe('collections repository', () => {
 
     expect(removeIndexResponse.statusCode).toEqual(200);
 
-    const afterIndexes = await app.db.sequelize
+    const afterIndexes = (await app.db.sequelize
       .getQueryInterface()
-      .showIndex(app.db.getCollection('test').model.tableName);
+      .showIndex(app.db.getCollection('test').model.tableName)) as any;
 
-    expect(afterIndexes).toHaveLength(1);
+    expect(
+      afterIndexes.find(
+        (index) => index.unique == true && index.fields[0].attribute == columnName && index.fields.length === 1,
+      ),
+    ).not.toBeDefined();
   });
 });
