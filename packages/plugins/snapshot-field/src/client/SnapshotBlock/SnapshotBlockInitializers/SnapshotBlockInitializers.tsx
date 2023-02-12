@@ -41,38 +41,4 @@ export const SnapshotBlockInitializers = (props: any) => {
       ]}
     />
   );
-
-  // const { t } = useSnapshotTranslation();
-  // return (
-  //   <SchemaInitializer.Button
-  //     wrap={gridRowColWrap}
-  //     title={t('Add block')}
-  //     icon={'PlusOutlined'}
-  //     items={[
-  //       {
-  //         type: 'itemGroup',
-  //         title: '{{ t("Data blocks") }}',
-  //         children: [
-  //           {
-  //             type: 'item',
-  //             title: '{{t("Details")}}',
-  //             component: 'SnapshotBlockInitializersDetailItem',
-  //             actionInitializers: 'CalendarFormActionInitializers',
-  //           },
-  //         ],
-  //       },
-  //       {
-  //         type: 'itemGroup',
-  //         title: '{{t("Other blocks")}}',
-  //         children: [
-  //           {
-  //             type: 'item',
-  //             title: '{{t("Markdown")}}',
-  //             component: 'MarkdownBlockInitializer',
-  //           },
-  //         ],
-  //       },
-  //     ]}
-  //   />
-  // );
 };

@@ -75,7 +75,7 @@ const useAssociationNames = (collection) => {
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
-    if (collectionField.target && collectionField.interface !== 'snapshot') {
+    if (collectionField.target) {
       associationFields.add(collectionField.name);
       const fields = getCollectionFields(collectionField.target);
       for (const field of fields) {
