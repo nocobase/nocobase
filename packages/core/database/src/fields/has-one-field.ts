@@ -1,4 +1,4 @@
-import { omit } from 'lodash';
+import lodash, { omit } from 'lodash';
 import {
   AssociationScope,
   DataType,
@@ -8,7 +8,7 @@ import {
   Utils,
 } from 'sequelize';
 import { Collection } from '../collection';
-import { checkIdentifier } from '../utils';
+import { checkIdentifier, snakeCase } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
 import { Reference } from '../features/ReferencesMap';
 
@@ -84,11 +84,15 @@ export class HasOneField extends RelationField {
   }
 
   get foreignKey() {
-    if (this.options.foreignKey) {
-      return this.options.foreignKey;
-    }
-    const { model } = this.context.collection;
-    return Utils.camelize([model.options.name.singular, model.primaryKeyAttribute].join('_'));
+    const foreignKey = (() => {
+      if (this.options.foreignKey) {
+        return this.options.foreignKey;
+      }
+      const { model } = this.context.collection;
+      return Utils.camelize([model.options.name.singular, model.primaryKeyAttribute].join('_'));
+    })();
+
+    return foreignKey;
   }
 
   reference(association): Reference {

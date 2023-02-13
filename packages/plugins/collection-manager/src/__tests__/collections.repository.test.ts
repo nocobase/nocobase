@@ -19,6 +19,32 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  test('create underscored field', async () => {
+    if (process.env.DB_UNDERSCORED !== 'true') {
+      return;
+    }
+
+    const collection = await Collection.repository.create({
+      values: {
+        name: 'testCollection',
+        createdAt: true,
+        fields: [
+          {
+            type: 'date',
+            field: 'createdAt',
+            name: 'createdAt',
+          },
+        ],
+      },
+    });
+
+    await collection.migrate();
+
+    const testCollection = db.getCollection('testCollection');
+
+    expect(testCollection.model.rawAttributes.createdAt.field).toEqual('created_at');
+  });
+
   it('case 1', async () => {
     // 什么都没提供，随机 name 和 key
     const data = await Collection.repository.create({
@@ -156,5 +182,165 @@ describe('collections repository', () => {
         },
       ],
     });
+  });
+
+  it('should destroy when fields refer to the same field', async () => {
+    await Collection.repository.create({
+      context: {},
+      values: {
+        name: 'tests',
+        timestamps: true,
+        fields: [
+          {
+            type: 'date',
+            name: 'dateA',
+          },
+          {
+            type: 'date',
+            name: 'date_a',
+          },
+        ],
+      },
+    });
+
+    const testCollection = db.getCollection('tests');
+    const getTableInfo = async () =>
+      await db.sequelize.getQueryInterface().describeTable(testCollection.model.tableName);
+
+    const tableInfo0 = await getTableInfo();
+    expect(tableInfo0['date_a']).toBeDefined();
+
+    await Field.repository.destroy({
+      context: {},
+      filter: {
+        name: ['dateA', 'date_a'],
+      },
+    });
+
+    const count = await Field.repository.count();
+    expect(count).toBe(0);
+    const tableInfo1 = await getTableInfo();
+    expect(tableInfo1['dateA']).not.toBeDefined();
+    expect(tableInfo1['date_a']).not.toBeDefined();
+  });
+
+  it('should not destroy timestamps columns', async () => {
+    const createdAt = db.options.underscored ? 'created_at' : 'createdAt';
+    await Collection.repository.create({
+      context: {},
+      values: {
+        name: 'tests',
+        timestamps: true,
+        fields: [
+          {
+            type: 'date',
+            name: 'createdAt',
+          },
+        ],
+      },
+    });
+
+    const testCollection = db.getCollection('tests');
+    const getTableInfo = async () =>
+      await db.sequelize.getQueryInterface().describeTable(testCollection.model.tableName);
+
+    const tableInfo0 = await getTableInfo();
+    expect(tableInfo0[createdAt]).toBeDefined();
+
+    await Field.repository.destroy({
+      context: {},
+      filter: {
+        name: 'createdAt',
+      },
+    });
+
+    const tableInfo1 = await getTableInfo();
+    expect(tableInfo1[createdAt]).toBeDefined();
+    expect(testCollection.hasField('createdAt')).toBeFalsy();
+    expect(testCollection.model.rawAttributes['createdAt']).toBeDefined();
+  });
+
+  it('should not destroy column when column belongs to a field', async () => {
+    if (db.options.underscored !== true) return;
+
+    await Collection.repository.create({
+      context: {},
+      values: {
+        name: 'tests',
+        fields: [
+          {
+            type: 'string',
+            name: 'test_field',
+          },
+          {
+            type: 'string',
+            name: 'testField',
+          },
+          {
+            type: 'string',
+            name: 'test123',
+            field: 'test_field',
+          },
+          {
+            type: 'string',
+            name: 'otherField',
+          },
+        ],
+      },
+    });
+
+    const testCollection = db.getCollection('tests');
+
+    expect(
+      testCollection.model.rawAttributes.test_field.field === testCollection.model.rawAttributes.testField.field,
+    ).toBe(true);
+    const getTableInfo = async () =>
+      await db.sequelize.getQueryInterface().describeTable(testCollection.model.tableName);
+
+    const tableInfo0 = await getTableInfo();
+
+    expect(tableInfo0['other_field']).toBeDefined();
+
+    await Field.repository.destroy({
+      context: {},
+      filter: {
+        name: 'otherField',
+      },
+    });
+
+    expect(testCollection.model.rawAttributes['otherField']).toBeUndefined();
+    const tableInfo1 = await getTableInfo();
+    expect(tableInfo1['other_field']).not.toBeDefined();
+
+    await Field.repository.destroy({
+      context: {},
+      filter: {
+        name: 'testField',
+      },
+    });
+
+    expect(testCollection.model.rawAttributes['testField']).toBeUndefined();
+    const tableInfo2 = await getTableInfo();
+    expect(tableInfo2['test_field']).toBeDefined();
+
+    await Field.repository.destroy({
+      context: {},
+      filter: {
+        name: 'test_field',
+      },
+    });
+
+    const tableInfo3 = await getTableInfo();
+    expect(tableInfo3['test_field']).toBeDefined();
+
+    await Field.repository.destroy({
+      context: {},
+      filter: {
+        name: 'test123',
+      },
+    });
+
+    const tableInfo4 = await getTableInfo();
+    expect(tableInfo4['test_field']).not.toBeDefined();
   });
 });
