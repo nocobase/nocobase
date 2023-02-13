@@ -40,6 +40,7 @@ export default {
   "Edit category":"编辑分类",
   "Collection category":"数据表类别",
   "Sort":"排序",
+  "Categories":"数据表类别",
   "Category name":"分类名称",
   "Roles & Permissions": "角色和权限",
   "Edit profile": "个人资料",
