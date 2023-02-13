@@ -184,6 +184,46 @@ describe('collections repository', () => {
     });
   });
 
+  it('should destroy when fields refer to the same field', async () => {
+    await Collection.repository.create({
+      context: {},
+      values: {
+        name: 'tests',
+        timestamps: true,
+        fields: [
+          {
+            type: 'date',
+            name: 'dateA',
+          },
+          {
+            type: 'date',
+            name: 'date_a',
+          },
+        ],
+      },
+    });
+
+    const testCollection = db.getCollection('tests');
+    const getTableInfo = async () =>
+      await db.sequelize.getQueryInterface().describeTable(testCollection.model.tableName);
+
+    const tableInfo0 = await getTableInfo();
+    expect(tableInfo0['date_a']).toBeDefined();
+
+    await Field.repository.destroy({
+      context: {},
+      filter: {
+        name: ['dateA', 'date_a'],
+      },
+    });
+
+    const count = await Field.repository.count();
+    expect(count).toBe(0);
+    const tableInfo1 = await getTableInfo();
+    expect(tableInfo1['dateA']).not.toBeDefined();
+    expect(tableInfo1['date_a']).not.toBeDefined();
+  });
+
   it('should not destroy timestamps columns', async () => {
     const createdAt = db.options.underscored ? 'created_at' : 'createdAt';
     await Collection.repository.create({

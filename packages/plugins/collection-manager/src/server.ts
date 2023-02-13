@@ -5,6 +5,7 @@ import { UniqueConstraintError } from 'sequelize';
 
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
+import { Mutex } from 'async-mutex';
 
 import { CollectionRepository } from '.';
 import {
@@ -13,7 +14,7 @@ import {
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions,
+  beforeInitOptions
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
@@ -149,8 +150,12 @@ export class CollectionManagerPlugin extends Plugin {
 
     // before field remove
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
+
+    const mutex = new Mutex();
     this.app.db.on('fields.beforeDestroy', async (model: FieldModel, options) => {
-      await model.remove(options);
+      await mutex.runExclusive(async () => {
+        await model.remove(options);
+      });
     });
 
     this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
