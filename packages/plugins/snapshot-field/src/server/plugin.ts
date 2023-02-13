@@ -59,7 +59,20 @@ export class SnapshotFieldPlugin extends Plugin {
     };
 
     this.app.db.on('fields.afterCreateWithAssociations', fieldHandler);
+    this.app.db.on('fields.beforeCreate', this.autoFillTargetCollection);
   }
+
+  autoFillTargetCollection = async (model: Model) => {
+    const { collectionName, targetField } = model.get();
+    const collection = this.db.getCollection(collectionName);
+    if (!collection) {
+      return;
+    }
+    const field = collection.getField(targetField);
+    if (field?.target) {
+      model.set('targetCollection', field.target);
+    }
+  };
 
   async load() {
     // 导入 collection

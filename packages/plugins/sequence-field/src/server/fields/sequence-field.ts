@@ -65,7 +65,7 @@ sequencePatterns.register('integer', {
   //   return null;
   // },
   async generate(this: SequenceField, instance: Model, options, { transaction }) {
-    const recordTime = <Date>instance.get('createdAt');
+    const recordTime = <Date>instance.get('createdAt') ?? new Date();
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
     const { repository: SeqRepo, model: SeqModel } = this.database.getCollection('sequences');
     const lastSeq = (await SeqRepo.findOne({
@@ -137,7 +137,7 @@ sequencePatterns.register('integer', {
     });
 
     instances.forEach((instance, i) => {
-      const recordTime = <Date>instance.get('createdAt');
+      const recordTime = <Date>instance.get('createdAt') ?? new Date();
       const value = instance.get(name);
       if (value != null && this.options.inputable) {
         const matcher = this.match(value);
@@ -192,7 +192,7 @@ sequencePatterns.register('integer', {
   },
 
   async update(instance, value, options, { transaction }) {
-    const recordTime = <Date>instance.get('createdAt');
+    const recordTime = <Date>instance.get('createdAt') ?? new Date();
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
     const SeqRepo = this.database.getRepository('sequences');
     const lastSeq = await SeqRepo.findOne({
@@ -260,9 +260,9 @@ sequencePatterns.register('date', {
     return moment(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
   },
   batchGenerate(instances, values, options) {
-    const { name, inputable } = options;
+    const { field, inputable } = options;
     instances.forEach((instance, i) => {
-      if (!inputable || instance.get(name) == null) {
+      if (!inputable || instance.get(field ?? 'createdAt') == null) {
         values[i] = sequencePatterns.get('date').generate.call(this, instance, options);
       }
     });
@@ -367,7 +367,7 @@ export class SequenceField extends Field {
     const array = Array(patterns.length).fill(null).map(() => Array(instances.length));
 
     await patterns.reduce((promise, p, i) => promise.then(() =>
-      sequencePatterns.get(p.type).batchGenerate.call(this, instances, array[i], p.options, options)),
+      sequencePatterns.get(p.type).batchGenerate.call(this, instances, array[i], p.options ?? {}, options)),
       Promise.resolve());
 
     instances.forEach((instance, i) => {

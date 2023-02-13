@@ -1,6 +1,5 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import SnapshotFieldPlugin from '../server';
-import path from 'path';
 
 describe('actions', () => {
   let app: MockServer;
@@ -22,7 +21,7 @@ describe('actions', () => {
     await app.destroy();
   });
 
-  it.only('fieldsHistory collectionName and name conflict between tables', async () => {
+  it('fieldsHistory collectionName and name conflict between tables', async () => {
     const agent = app.agent();
 
     const field = {

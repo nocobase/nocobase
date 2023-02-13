@@ -250,6 +250,12 @@ export class CollectionManagerPlugin extends Plugin {
       }
       await next();
     });
+
+    this.app.db.extendCollection({
+      name: 'collectionCategory',
+      namespace: 'collection-manager',
+      duplicator: 'required',
+    });
   }
 }
 
