@@ -7,7 +7,8 @@ import {
   SchemaComponent,
   TableBlockProvider,
   useCollection,
-  useCompile, useRecord
+  useCompile,
+  useRecord,
 } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
 import { AuditLogsDesigner } from './AuditLogsDesigner';
@@ -49,321 +50,277 @@ const collection = {
   ],
 };
 
-const Username = observer(() => {
-  const field = useField<any>();
-  return <div>{field?.value?.nickname || field.value?.id}</div>;
-});
-
-const Collection = observer(() => {
-  const field = useField<any>();
-  const { title, name } = field.value || {};
-  const compile = useCompile();
-  return <div>{title ? compile(title) : name}</div>;
-});
-
-const Field = observer(() => {
-  const field = useField<any>();
-  const compile = useCompile();
-  if (!field.value) {
-    return null;
-  }
-  return <div>{field.value?.uiSchema?.title ? compile(field.value?.uiSchema?.title) : field.value.name}</div>;
-});
-
-const Value = observer(() => {
-  const field = useField<any>();
-  const record = ArrayTable.useRecord();
-  if (record.field?.uiSchema) {
-    return (
-      <FormProvider>
-        <SchemaComponent
-          schema={{
-            name: record.field.name,
-            ...record.field?.uiSchema,
-            default: field.value,
-            'x-read-pretty': true,
-          }}
-        />
-      </FormProvider>
-    );
-  }
-  return <div>{field.value ? JSON.stringify(field.value) : null}</div>;
-});
-
 const IsAssociationBlock = createContext(null);
 
-export const AuditLogs: any = () => {
-  const isAssoc = useContext(IsAssociationBlock);
-  const ext = {};
-  if (!isAssoc) {
-    ext['column31'] = {
-      type: 'void',
-      'x-component': 'TableV2.Column',
-      title: '{{t("Record ID")}}',
-      properties: {
-        recordId: {
-          'x-component': 'Input',
-          'x-read-pretty': true,
+export const useAuditLogsSchema = () => {
+  // const isAssoc = useContext(IsAssociationBlock);
+  // const ext = {};
+  // if (!isAssoc) {
+  //   ext['column31'] = {
+  //     type: 'void',
+  //     'x-decorator': 'TableV2.Column.Decorator',
+  //     'x-component': 'TableV2.Column',
+  //     'x-designer': 'TableV2.Column.Designer',
+  //     title: '{{t("Record ID")}}',
+  //     properties: {
+  //       recordId: {
+  //         'x-component': 'Input',
+  //         'x-read-pretty': true,
+  //       },
+  //     },
+  //   };
+  // }
+
+  return {
+    type: 'void',
+    name: 'lfm4trkw8j3',
+    'x-component': 'div',
+    properties: {
+      actions: {
+        type: 'void',
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 16,
+          },
+        },
+        properties: {
+          filter: {
+            type: 'void',
+            title: '{{ t("Filter") }}',
+            'x-action': 'filter',
+            // 'x-designer': 'Filter.Action.Designer',
+            'x-component': 'Filter.Action',
+            'x-component-props': {
+              icon: 'FilterOutlined',
+              useProps: '{{ useFilterActionProps }}',
+            },
+            'x-align': 'left',
+          },
         },
       },
-    }
-  }
-  return (
-    <SchemaComponent
-      memoized
-      components={{ ArrayTable, Username, Collection, Field, Value }}
-      schema={{
-        type: 'void',
-        name: 'lfm4trkw8j3',
-        'x-component': 'div',
+      y84dlntcaup: {
+        type: 'array',
+        'x-component': 'TableV2',
+        'x-component-props': {
+          rowKey: 'id',
+          rowSelection: {
+            type: 'checkbox',
+          },
+          useProps: '{{ useTableBlockProps }}',
+        },
         properties: {
           actions: {
             type: 'void',
-            'x-component': 'ActionBar',
-            'x-component-props': {
-              style: {
-                marginBottom: 16,
-              },
-            },
-            properties: {
-              filter: {
-                type: 'void',
-                title: '{{ t("Filter") }}',
-                'x-action': 'filter',
-                // 'x-designer': 'Filter.Action.Designer',
-                'x-component': 'Filter.Action',
-                'x-component-props': {
-                  icon: 'FilterOutlined',
-                  useProps: '{{ useFilterActionProps }}',
-                },
-                'x-align': 'left',
-              },
-            },
-          },
-          y84dlntcaup: {
-            type: 'array',
-            'x-component': 'TableV2',
-            'x-component-props': {
-              rowKey: 'id',
-              rowSelection: {
-                type: 'checkbox',
-              },
-              useProps: '{{ useTableBlockProps }}',
-            },
+            title: '{{ t("Actions") }}',
+            'x-action-column': 'actions',
+            'x-decorator': 'TableV2.Column.ActionBar',
+            'x-component': 'TableV2.Column',
+            'x-designer': 'TableV2.ActionColumnDesigner',
+            'x-initializer': 'TableActionColumnInitializers',
             properties: {
               actions: {
                 type: 'void',
-                title: '{{ t("Actions") }}',
-                'x-action-column': 'actions',
-                'x-decorator': 'TableV2.Column.ActionBar',
-                'x-component': 'TableV2.Column',
-                'x-designer': 'TableV2.ActionColumnDesigner',
-                'x-initializer': 'TableActionColumnInitializers',
+                'x-decorator': 'DndContext',
+                'x-component': 'Space',
+                'x-component-props': {
+                  split: '|',
+                },
                 properties: {
-                  actions: {
+                  o80rypwmeeg: {
                     type: 'void',
-                    'x-decorator': 'DndContext',
-                    'x-component': 'Space',
+                    title: '{{ t("View") }}',
+                    'x-designer': 'Action.Designer',
+                    'x-component': 'Action.Link',
                     'x-component-props': {
-                      split: '|',
+                      openMode: 'drawer',
                     },
                     properties: {
-                      o80rypwmeeg: {
+                      drawer: {
                         type: 'void',
-                        title: '{{ t("View") }}',
-                        'x-designer': 'Action.Designer',
-                        'x-component': 'Action.Link',
+                        title: '{{ t("View record") }}',
+                        'x-component': 'Action.Container',
                         'x-component-props': {
-                          openMode: 'drawer',
+                          className: 'nb-action-popup',
                         },
                         properties: {
-                          drawer: {
+                          grid: {
                             type: 'void',
-                            title: '{{ t("View record") }}',
-                            'x-component': 'Action.Container',
-                            'x-component-props': {
-                              className: 'nb-action-popup',
-                            },
+                            'x-component': 'Grid',
                             properties: {
-                              grid: {
+                              tdlav8o9o17: {
                                 type: 'void',
-                                'x-component': 'Grid',
+                                'x-component': 'Grid.Row',
                                 properties: {
-                                  tdlav8o9o17: {
+                                  '7bsnaf47i6g': {
                                     type: 'void',
-                                    'x-component': 'Grid.Row',
+                                    'x-component': 'Grid.Col',
                                     properties: {
-                                      '7bsnaf47i6g': {
+                                      '6s2qbihe3tu': {
                                         type: 'void',
-                                        'x-component': 'Grid.Col',
+                                        'x-acl-action': 'auditLogs:get',
+                                        'x-decorator': 'FormBlockProvider',
+                                        'x-decorator-props': {
+                                          resource: 'auditLogs',
+                                          collection: 'auditLogs',
+                                          readPretty: true,
+                                          action: 'get',
+                                          params: {
+                                            appends: ['collection', 'user', 'changes'],
+                                          },
+                                          useParams: '{{ useParamsFromRecord }}',
+                                          useSourceId: '{{ useSourceIdFromParentRecord }}',
+                                        },
+                                        'x-component': 'CardItem',
                                         properties: {
-                                          '6s2qbihe3tu': {
+                                          mevpuonrda0: {
                                             type: 'void',
-                                            'x-acl-action': 'auditLogs:get',
-                                            'x-decorator': 'FormBlockProvider',
-                                            'x-decorator-props': {
-                                              resource: 'auditLogs',
-                                              collection: 'auditLogs',
-                                              readPretty: true,
-                                              action: 'get',
-                                              params: {
-                                                appends: ['collection', 'user', 'changes'],
-                                              },
-                                              useParams: '{{ useParamsFromRecord }}',
-                                              useSourceId: '{{ useSourceIdFromParentRecord }}',
+                                            'x-component': 'FormV2',
+                                            'x-read-pretty': true,
+                                            'x-component-props': {
+                                              useProps: '{{ useFormBlockProps }}',
                                             },
-                                            'x-component': 'CardItem',
                                             properties: {
-                                              mevpuonrda0: {
+                                              grid: {
                                                 type: 'void',
-                                                'x-component': 'FormV2',
-                                                'x-read-pretty': true,
-                                                'x-component-props': {
-                                                  useProps: '{{ useFormBlockProps }}',
-                                                },
+                                                'x-component': 'Grid',
                                                 properties: {
-                                                  grid: {
+                                                  row1: {
                                                     type: 'void',
-                                                    'x-component': 'Grid',
+                                                    'x-component': 'Grid.Row',
                                                     properties: {
-                                                      row1: {
+                                                      col11: {
                                                         type: 'void',
-                                                        'x-component': 'Grid.Row',
+                                                        'x-component': 'Grid.Col',
                                                         properties: {
-                                                          col11: {
-                                                            type: 'void',
-                                                            'x-component': 'Grid.Col',
-                                                            properties: {
-                                                              collection: {
-                                                                type: 'string',
-                                                                title: '{{t("Collection display name")}}',
-                                                                'x-component': 'Collection',
-                                                                'x-decorator': 'FormItem',
-                                                                'x-read-pretty': true,
-                                                              },
-                                                            },
+                                                          collection: {
+                                                            type: 'string',
+                                                            title: '{{t("Collection display name")}}',
+                                                            'x-component': 'AuditLogsCollection',
+                                                            'x-decorator': 'FormItem',
+                                                            'x-read-pretty': true,
                                                           },
                                                         },
                                                       },
-                                                      row2: {
+                                                    },
+                                                  },
+                                                  row2: {
+                                                    type: 'void',
+                                                    'x-component': 'Grid.Row',
+                                                    properties: {
+                                                      col21: {
                                                         type: 'void',
-                                                        'x-component': 'Grid.Row',
+                                                        'x-component': 'Grid.Col',
                                                         properties: {
-                                                          col21: {
-                                                            type: 'void',
-                                                            'x-component': 'Grid.Col',
-                                                            properties: {
-                                                              type: {
-                                                                type: 'string',
-                                                                'x-component': 'CollectionField',
-                                                                'x-decorator': 'FormItem',
-                                                                'x-read-pretty': true,
-                                                              },
-                                                            },
+                                                          type: {
+                                                            type: 'string',
+                                                            'x-component': 'CollectionField',
+                                                            'x-decorator': 'FormItem',
+                                                            'x-read-pretty': true,
                                                           },
                                                         },
                                                       },
-                                                      row3: {
+                                                    },
+                                                  },
+                                                  row3: {
+                                                    type: 'void',
+                                                    'x-component': 'Grid.Row',
+                                                    properties: {
+                                                      col31: {
                                                         type: 'void',
-                                                        'x-component': 'Grid.Row',
+                                                        'x-component': 'Grid.Col',
                                                         properties: {
-                                                          col31: {
-                                                            type: 'void',
-                                                            'x-component': 'Grid.Col',
-                                                            properties: {
-                                                              createdAt: {
-                                                                type: 'string',
-                                                                'x-component': 'CollectionField',
-                                                                'x-decorator': 'FormItem',
-                                                                'x-read-pretty': true,
-                                                              },
-                                                            },
+                                                          createdAt: {
+                                                            type: 'string',
+                                                            'x-component': 'CollectionField',
+                                                            'x-decorator': 'FormItem',
+                                                            'x-read-pretty': true,
                                                           },
                                                         },
                                                       },
-                                                      row4: {
+                                                    },
+                                                  },
+                                                  row4: {
+                                                    type: 'void',
+                                                    'x-component': 'Grid.Row',
+                                                    properties: {
+                                                      col41: {
                                                         type: 'void',
-                                                        'x-component': 'Grid.Row',
+                                                        'x-component': 'Grid.Col',
                                                         properties: {
-                                                          col41: {
-                                                            type: 'void',
-                                                            'x-component': 'Grid.Col',
-                                                            properties: {
-                                                              user: {
-                                                                type: 'string',
-                                                                title: '{{t("User")}}',
-                                                                'x-component': 'Username',
-                                                                'x-decorator': 'FormItem',
-                                                                'x-read-pretty': true,
-                                                              },
-                                                            },
+                                                          user: {
+                                                            type: 'string',
+                                                            title: '{{t("User")}}',
+                                                            'x-component': 'AuditLogsUsername',
+                                                            'x-decorator': 'FormItem',
+                                                            'x-read-pretty': true,
                                                           },
                                                         },
                                                       },
-                                                      row5: {
+                                                    },
+                                                  },
+                                                  row5: {
+                                                    type: 'void',
+                                                    'x-component': 'Grid.Row',
+                                                    properties: {
+                                                      col51: {
                                                         type: 'void',
-                                                        'x-component': 'Grid.Row',
+                                                        'x-component': 'Grid.Col',
                                                         properties: {
-                                                          col51: {
-                                                            type: 'void',
-                                                            'x-component': 'Grid.Col',
-                                                            properties: {
-                                                              changes: {
-                                                                type: 'array',
-                                                                title: '{{t("Field value changes")}}',
-                                                                'x-decorator': 'FormItem',
-                                                                'x-component': 'ArrayTable',
-                                                                'x-component-props': {
-                                                                  pagination: { pageSize: 10 },
-                                                                  scroll: { x: '100%' },
-                                                                },
-                                                                items: {
-                                                                  type: 'object',
+                                                          changes: {
+                                                            type: 'array',
+                                                            title: '{{t("Field value changes")}}',
+                                                            'x-decorator': 'FormItem',
+                                                            'x-component': 'AuditLogsArrayTable',
+                                                            'x-component-props': {
+                                                              pagination: { pageSize: 10 },
+                                                              scroll: { x: '100%' },
+                                                            },
+                                                            items: {
+                                                              type: 'object',
+                                                              properties: {
+                                                                column3: {
+                                                                  type: 'void',
+                                                                  'x-component': 'AuditLogsArrayTable.Column',
+                                                                  'x-component-props': {
+                                                                    width: 200,
+                                                                    title: '{{t("Field")}}',
+                                                                  },
                                                                   properties: {
-                                                                    column3: {
-                                                                      type: 'void',
-                                                                      'x-component': 'ArrayTable.Column',
-                                                                      'x-component-props': {
-                                                                        width: 200,
-                                                                        title: '{{t("Field")}}',
-                                                                      },
-                                                                      properties: {
-                                                                        field: {
-                                                                          type: 'string',
-                                                                          //'x-decorator': 'Editable',
-                                                                          'x-component': 'Field',
-                                                                        },
-                                                                      },
+                                                                    field: {
+                                                                      type: 'string',
+                                                                      //'x-decorator': 'Editable',
+                                                                      'x-component': 'AuditLogsField',
                                                                     },
-                                                                    column4: {
-                                                                      type: 'void',
-                                                                      'x-component': 'ArrayTable.Column',
-                                                                      'x-component-props': {
-                                                                        width: 200,
-                                                                        title: '{{t("Before change")}}',
-                                                                      },
-                                                                      properties: {
-                                                                        before: {
-                                                                          type: 'string',
-                                                                          'x-decorator': 'FormItem',
-                                                                          'x-component': 'Value',
-                                                                        },
-                                                                      },
+                                                                  },
+                                                                },
+                                                                column4: {
+                                                                  type: 'void',
+                                                                  'x-component': 'AuditLogsArrayTable.Column',
+                                                                  'x-component-props': {
+                                                                    width: 200,
+                                                                    title: '{{t("Before change")}}',
+                                                                  },
+                                                                  properties: {
+                                                                    before: {
+                                                                      type: 'string',
+                                                                      'x-decorator': 'FormItem',
+                                                                      'x-component': 'AuditLogsValue',
                                                                     },
-                                                                    column5: {
-                                                                      type: 'void',
-                                                                      'x-component': 'ArrayTable.Column',
-                                                                      'x-component-props': {
-                                                                        width: 200,
-                                                                        title: '{{t("After change")}}',
-                                                                      },
-                                                                      properties: {
-                                                                        after: {
-                                                                          type: 'string',
-                                                                          'x-decorator': 'FormItem',
-                                                                          'x-component': 'Value',
-                                                                        },
-                                                                      },
+                                                                  },
+                                                                },
+                                                                column5: {
+                                                                  type: 'void',
+                                                                  'x-component': 'AuditLogsArrayTable.Column',
+                                                                  'x-component-props': {
+                                                                    width: 200,
+                                                                    title: '{{t("After change")}}',
+                                                                  },
+                                                                  properties: {
+                                                                    after: {
+                                                                      type: 'string',
+                                                                      'x-decorator': 'FormItem',
+                                                                      'x-component': 'AuditLogsValue',
                                                                     },
                                                                   },
                                                                 },
@@ -392,58 +349,78 @@ export const AuditLogs: any = () => {
                   },
                 },
               },
-              column1: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                properties: {
-                  createdAt: {
-                    'x-component': 'CollectionField',
-                    'x-read-pretty': true,
-                  },
-                },
+            },
+          },
+          column1: {
+            type: 'void',
+            'x-decorator': 'TableV2.Column.Decorator',
+            'x-component': 'TableV2.Column',
+            'x-designer': 'TableV2.Column.Designer',
+            properties: {
+              createdAt: {
+                'x-component': 'CollectionField',
+                'x-read-pretty': true,
               },
-              column2: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                properties: {
-                  type: {
-                    'x-component': 'CollectionField',
-                    'x-read-pretty': true,
-                  },
-                },
+            },
+          },
+          column2: {
+            type: 'void',
+            'x-decorator': 'TableV2.Column.Decorator',
+            'x-component': 'TableV2.Column',
+            'x-designer': 'TableV2.Column.Designer',
+            properties: {
+              type: {
+                'x-component': 'CollectionField',
+                'x-read-pretty': true,
               },
-              column3: {
-                type: 'void',
-                'x-component': 'TableV2.Column',
-                title: '{{t("Collection display name")}}',
-                properties: {
-                  collection: {
-                    'x-component': 'Collection',
-                    'x-read-pretty': true,
-                  },
-                },
+            },
+          },
+          column3: {
+            type: 'void',
+            'x-decorator': 'TableV2.Column.Decorator',
+            'x-component': 'TableV2.Column',
+            'x-designer': 'TableV2.Column.Designer',
+            title: '{{t("Collection display name")}}',
+            properties: {
+              collection: {
+                'x-component': 'AuditLogsCollection',
+                'x-read-pretty': true,
               },
-              ...ext,
-              column4: {
-                type: 'void',
-                'x-component': 'TableV2.Column',
-                title: '{{t("User")}}',
-                properties: {
-                  user: {
-                    'x-component': 'Username',
-                    'x-read-pretty': true,
-                  },
-                },
+            },
+          },
+          column31: {
+            type: 'void',
+            'x-decorator': 'TableV2.Column.Decorator',
+            'x-component': 'TableV2.Column',
+            'x-designer': 'TableV2.Column.Designer',
+            title: '{{t("Record ID")}}',
+            properties: {
+              recordId: {
+                'x-component': 'Input',
+                'x-read-pretty': true,
+              },
+            },
+          },
+          column4: {
+            type: 'void',
+            'x-decorator': 'TableV2.Column.Decorator',
+            'x-component': 'TableV2.Column',
+            'x-designer': 'TableV2.Column.Designer',
+            title: '{{t("User")}}',
+            properties: {
+              user: {
+                'x-component': 'AuditLogsUsername',
+                'x-read-pretty': true,
               },
             },
           },
         },
-      }}
-    />
-  );
+      },
+    },
+  };
 };
+
+export const AuditLogs: any = () => {};
 
 AuditLogs.Decorator = observer((props: any) => {
   const parent = useCollection();
@@ -454,10 +431,13 @@ AuditLogs.Decorator = observer((props: any) => {
     const filterByTk = record?.[parent.filterTargetKey || 'id'];
     if (filter) {
       filter = {
-        $and: [filter, {
-          collectionName: parent.name,
-          recordId: `${filterByTk}`,
-        }],
+        $and: [
+          filter,
+          {
+            collectionName: parent.name,
+            recordId: `${filterByTk}`,
+          },
+        ],
       };
     } else {
       filter = {
