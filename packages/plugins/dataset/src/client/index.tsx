@@ -6,7 +6,7 @@ import {
   SchemaInitializer,
   SchemaInitializerContext,
 } from '@nocobase/client';
-import React, { useCallback, useContext } from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataSetDesigner } from './DataSetDesigner';
 import { FormDialog, FormLayout } from '@formily/antd';
@@ -15,21 +15,46 @@ import Array from '@nocobase/database/src/operators/array';
 import { validateArray } from './utils';
 import { css } from '@emotion/css';
 import { Button } from 'antd';
+import DataSetPreviewTable from './DataSetPreviewTable';
+
 export const DataSetBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
-  const form = useForm();
   const options = useContext(SchemaOptionsContext);
-  const handleDataSetPreview = useCallback((e)=>{
-    console.log(form.values);
-    form.validate()
-  },[form.values])
   return (
     <SchemaInitializer.Item
       {...props}
       icon={<TableOutlined />}
       onClick={async () => {
         const values = await FormDialog(t('Create DataSet Block(🚧Beta Version)'), () => {
+          const form = useForm();
+          const [dataSet, setDataSet] = useState<null | []>(null);
+          const handleDataSetPreview = useCallback((e) => {
+            form.validate();
+            console.log(form.values);
+            const mockData = form?.values?.mockData;
+            if (mockData) {
+              setDataSet(JSON.parse(mockData));
+            }
+          }, [form.values]);
+
+          const DataSetPreview = useCallback(() => {
+            return <section>
+              <header
+                className={css`
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                `}
+              >
+                <h4>DataSet Preview:</h4>
+                <Button onClick={handleDataSetPreview} size='small' style={{ marginTop: '-5px' }}>Refresh</Button>
+              </header>
+              {/* Table */}
+              <DataSetPreviewTable dataSet={dataSet} />
+            </section>;
+          }, [dataSet]);
+
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
@@ -52,10 +77,10 @@ export const DataSetBlockInitializer = (props) => {
                         },
                         mockData: {
                           title: t('Mock Data'),
-                          required:true,
-                          'x-rules':'array',
+                          required: true,
+                          'x-rules': 'array',
                           'x-component': 'Input.TextArea',
-                          'x-validator':validateArray,
+                          'x-validator': validateArray,
                           'x-decorator': 'FormItem',
                           'x-reactions': {
                             dependencies: ['dataSetType'],
@@ -70,23 +95,15 @@ export const DataSetBlockInitializer = (props) => {
                     }}
                   />
                 </FormProvider>
-                <div
-                  className={css`
-                    display: flex;
-                    align-items: center;
-                    gap:10px;
-                  `}
-                >
-                  <h4>DataSet Preview:</h4>
-                  <Button onClick={handleDataSetPreview} size="small" style={{marginTop:"-5px"}}>Refresh</Button>
-                </div>
+                {/*DataSet Preview*/}
+                <DataSetPreview/>
               </FormLayout>
             </SchemaComponentOptions>
           );
         }).open({
           initialValues: {},
         });
-        console.log(values,"values===============");
+        console.log(values, 'values===============');
         // insert({
         //   type: 'void',
         //   'x-component': 'CardItem',
@@ -115,7 +132,7 @@ export default React.memo((props) => {
     component: 'DataSetBlockInitializer',
   });
   return (
-    <SchemaComponentOptions components={{ DataSetDesigner , DataSetBlockInitializer }}>
+    <SchemaComponentOptions components={{ DataSetDesigner, DataSetBlockInitializer }}>
       <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
     </SchemaComponentOptions>
   );
