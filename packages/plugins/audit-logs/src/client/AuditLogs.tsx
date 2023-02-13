@@ -3,11 +3,8 @@ import { observer, useField } from '@formily/react';
 import {
   CollectionManagerContext,
   CollectionManagerProvider,
-  FormProvider,
-  SchemaComponent,
   TableBlockProvider,
   useCollection,
-  useCompile,
   useRecord,
 } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
@@ -45,6 +42,40 @@ const collection = {
           { label: '{{t("Update record")}}', value: 'update', color: 'gold' },
           { label: '{{t("Delete record")}}', value: 'destroy', color: 'magenta' },
         ],
+      },
+    },
+    {
+      name: 'recordId',
+      type: 'string',
+      interface: 'input',
+      uiSchema: {
+        title: '{{t("Record ID")}}',
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      name: 'collectionName',
+      type: 'string',
+      interface: 'input',
+      uiSchema: {
+        title: '{{t("Collection display name")}}',
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      name: 'user',
+      type: 'belongsTo',
+      interface: 'createdBy',
+      target: 'users',
+      targetKey: 'id',
+      uiSchema: {
+        type: 'object',
+        title: '{{t("User")}}',
+        'x-component': 'RecordPicker',
+        'x-component-props': { fieldNames: { value: 'id', label: 'nickname' } },
+        'x-read-pretty': true,
       },
     },
   ],
