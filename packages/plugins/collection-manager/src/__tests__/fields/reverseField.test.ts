@@ -38,6 +38,7 @@ describe('reverseField options', () => {
         reverseField: {},
       },
     });
+
     const json = JSON.parse(JSON.stringify(field.toJSON()));
     expect(json).toMatchObject({
       type: 'hasMany',

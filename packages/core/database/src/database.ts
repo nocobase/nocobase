@@ -60,6 +60,7 @@ import {
   UpdateWithAssociationsListener,
   ValidateListener
 } from './types';
+import { snakeCase } from './utils';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -76,6 +77,7 @@ export interface IDatabaseOptions extends Options {
   tablePrefix?: string;
   migrator?: any;
   usingBigIntForId?: boolean;
+  underscored?: boolean;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -167,7 +169,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   constructor(options: DatabaseOptions) {
     super();
-
     this.version = new DatabaseVersion(this);
 
     const opts = {
@@ -265,6 +266,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   initListener() {
+    this.on('beforeDefine', (model, options) => {
+      if (this.options.underscored) {
+        options.underscored = true;
+      }
+    });
+
     this.on('afterCreate', async (instance) => {
       instance?.toChangedWithAssociations?.();
     });
@@ -291,6 +298,27 @@ export class Database extends EventEmitter implements AsyncEmitter {
         if (idAttribute && idAttribute.primaryKey) {
           model.rawAttributes['id'].type = DataTypes.BIGINT;
           model.refreshAttributes();
+        }
+      }
+    });
+
+    this.on('beforeDefineCollection', (options) => {
+      if (options.underscored) {
+        if (lodash.get(options, 'sortable.scopeKey')) {
+          options.sortable.scopeKey = snakeCase(options.sortable.scopeKey);
+        }
+
+        if (lodash.get(options, 'indexes')) {
+          // change index fields to snake case
+          options.indexes = options.indexes.map((index) => {
+            if (index.fields) {
+              index.fields = index.fields.map((field) => {
+                return snakeCase(field);
+              });
+            }
+
+            return index;
+          });
         }
       }
     });
@@ -328,6 +356,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collection<Attributes = any, CreateAttributes = Attributes>(
     options: CollectionOptions,
   ): Collection<Attributes, CreateAttributes> {
+    if (this.options.underscored) {
+      options.underscored = true;
+    }
+
     this.emit('beforeDefineCollection', options);
 
     const hasValidInheritsOptions = (() => {
@@ -477,6 +509,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       throw Error(`unsupported field type ${type}`);
     }
 
+    if (options.field && this.options.underscored) {
+      options.field = snakeCase(options.field);
+    }
+
     return new Field(options, context);
   }
 
@@ -525,11 +561,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
     await this.sequelize.getQueryInterface().dropAllTables(others);
   }
 
-  async collectionExistsInDb(name, options?: Transactionable) {
+  async collectionExistsInDb(name: string, options?: Transactionable) {
+    const collection = this.getCollection(name);
+    if (!collection) {
+      return false;
+    }
+
     const tables = await this.sequelize.getQueryInterface().showAllTables({
       transaction: options?.transaction,
     });
-    return !!tables.find((table) => table === `${this.getTablePrefix()}${name}`);
+
+    return tables.includes(this.getCollection(name).model.tableName);
   }
 
   public isSqliteMemory() {

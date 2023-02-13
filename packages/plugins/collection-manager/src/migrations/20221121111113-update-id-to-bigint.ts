@@ -30,6 +30,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
     const queryGenerator = queryInterface.queryGenerator as any;
 
     const updateToBigInt = async (model, fieldName) => {
+      const columnName = model.rawAttributes[fieldName].field;
       let sql;
 
       const tableName = model.tableName;
@@ -51,7 +52,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
 
       if (model.rawAttributes[fieldName].type instanceof DataTypes.INTEGER) {
         if (db.inDialect('postgres')) {
-          sql = `ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`;
+          sql = `ALTER TABLE "${tableName}" ALTER COLUMN "${columnName}" SET DATA TYPE BIGINT;`;
         } else if (db.inDialect('mysql')) {
           const dataTypeOrOptions = model.rawAttributes[fieldName];
           const attributeName = fieldName;
@@ -68,6 +69,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
               table: tableName,
             },
           );
+
           sql = queryGenerator.changeColumnQuery(tableName, query);
 
           sql = sql.replace(' PRIMARY KEY;', ' ;');
@@ -83,7 +85,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
         }
 
         if (db.inDialect('postgres')) {
-          const sequenceQuery = `SELECT pg_get_serial_sequence('"${model.tableName}"', '${fieldName}');`;
+          const sequenceQuery = `SELECT pg_get_serial_sequence('"${model.tableName}"', '${columnName}');`;
           const [result] = await this.sequelize.query(sequenceQuery, {});
           const sequenceName = result[0]['pg_get_serial_sequence'];
 
