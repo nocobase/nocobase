@@ -6,7 +6,6 @@ import { SchemaInitializer, useCollectionManager } from "@nocobase/client";
 
 
 export function WorkflowTodoBlockInitializer({ insert, ...props }) {
-  const { collections, ...ctx } = useCollectionManager();
   return (
     <SchemaInitializer.Item
       icon={<TableOutlined />}
