@@ -1,6 +1,6 @@
 import { NoPermissionError } from '@nocobase/acl';
 import { Context, utils as actionUtils } from '@nocobase/actions';
-import { Collection, RelationField } from '@nocobase/database';
+import { Collection, RelationField, snakeCase } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { resolve } from 'path';
@@ -697,12 +697,49 @@ export class PluginACL extends Plugin {
         const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
           Model.getTableName(),
           {
-            where: lodash.mapKeys(queryParams.where, (value, key) => {
-              const field = Model.rawAttributes[key];
-              if (!field) return key;
-              return field.field;
-            }),
+            where: (() => {
+              const filterObj = queryParams.where;
+              if (!this.db.options.underscored) {
+                return filterObj;
+              }
 
+              const iterate = (rootObj, path = []) => {
+                const obj = path.length == 0 ? rootObj : lodash.get(rootObj, path);
+
+                if (Array.isArray(obj)) {
+                  for (let i = 0; i < obj.length; i++) {
+                    if (obj[i] === null) {
+                      continue;
+                    }
+
+                    if (typeof obj[i] === 'object') {
+                      iterate(rootObj, [...path, i]);
+                    }
+                  }
+
+                  return;
+                }
+
+                Reflect.ownKeys(obj).forEach((key) => {
+                  if (Array.isArray(obj) && key == 'length') {
+                    return;
+                  }
+
+                  if ((typeof obj[key] === 'object' && obj[key] !== null) || typeof obj[key] === 'symbol') {
+                    iterate(rootObj, [...path, key]);
+                  }
+
+                  if (typeof key === 'string' && key !== snakeCase(key)) {
+                    lodash.set(rootObj, [...path, snakeCase(key)], lodash.cloneDeep(obj[key]));
+                    lodash.unset(rootObj, [...path, key]);
+                  }
+                });
+              };
+
+              iterate(filterObj);
+
+              return filterObj;
+            })(),
             attributes: [primaryKeyField],
             includeIgnoreAttributes: false,
           },
@@ -710,6 +747,7 @@ export class PluginACL extends Plugin {
         );
 
         const whereCase = actionSql.match(/WHERE (.*?);/)[1];
+
         conditions.push({
           whereCase,
           action,
