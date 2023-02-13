@@ -8,8 +8,14 @@ const validateArray = `{{(value)=> {
           return true;
         }
           return 'Please input array'
-      }}}`
+      }}}`;
+
+const parseNonStandardJsonStringToJsonObj = (str: string) => {
+
+  return '';
+};
 
 export {
-  validateArray
-}
+  validateArray,
+  parseNonStandardJsonStringToJsonObj,
+};
