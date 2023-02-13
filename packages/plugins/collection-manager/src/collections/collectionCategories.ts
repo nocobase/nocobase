@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'collection-manager',
+  duplicator: 'required',
   name: 'collectionCategories',
   autoGenId: true,
   sortable: true,

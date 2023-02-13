@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,7 +58,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener,
+  ValidateListener
 } from './types';
 
 export interface MergeOptions extends merge.Options {}
@@ -250,6 +250,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
       name: 'migrations',
       autoGenId: false,
       timestamps: false,
+      namespace: 'core',
+      duplicator: 'required',
       fields: [{ type: 'string', name: 'name' }],
     });
 
@@ -612,6 +614,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {
+    collectionOptions = lodash.cloneDeep(collectionOptions);
     const collectionName = collectionOptions.name;
     const existCollection = this.getCollection(collectionName);
     if (existCollection) {

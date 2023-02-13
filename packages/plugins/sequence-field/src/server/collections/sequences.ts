@@ -1,4 +1,6 @@
 export default {
+  namespace: 'sequence-field',
+  duplicator: 'required',
   name: 'sequences',
   fields: [
     {

@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -307,6 +307,7 @@ export class Collection<
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     let newOptions = lodash.cloneDeep(options);
     newOptions = merge(this.options, newOptions, mergeOptions);
+    this.options = newOptions;
 
     this.context.database.emit('beforeUpdateCollection', this, newOptions);
 
