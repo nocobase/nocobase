@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'saml',
+  duplicator: 'optional',
   name: 'samlProviders',
   title: '{{t("SAML Providers")}}',
   fields: [

@@ -1,7 +1,9 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'workflow',
   name: 'users_jobs',
+  duplicator: 'optional',
   fields: [
     {
       type: 'bigInt',
