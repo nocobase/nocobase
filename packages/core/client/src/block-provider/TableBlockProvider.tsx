@@ -6,7 +6,6 @@ import { useCollectionManager } from '../collection-manager';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFixedSchema } from '../schema-component';
 
-
 export const TableBlockContext = createContext<any>({});
 
 const InternalTableBlockProvider = (props) => {
@@ -39,7 +38,7 @@ export const useAssociationNames = (collection) => {
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
-    if (collectionField.target && collectionField.interface !== 'snapshot') {
+    if (collectionField.target) {
       associationFields.add(collectionField.name);
       const fields = getCollectionFields(collectionField.target);
       for (const field of fields) {

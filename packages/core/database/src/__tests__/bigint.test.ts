@@ -43,6 +43,6 @@ excludeSqlite()('collection', () => {
 
     const profileTableInfo = await db.sequelize.getQueryInterface().describeTable(profile.model.tableName);
 
-    expect(profileTableInfo['userId'].type).toBe('BIGINT');
+    expect(profileTableInfo[profile.model.rawAttributes['userId'].field].type).toBe('BIGINT');
   });
 });

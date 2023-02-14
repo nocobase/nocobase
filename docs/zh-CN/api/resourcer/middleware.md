@@ -96,7 +96,7 @@ app.resourcer.use(middleware.getHandler());
 
 **示例**
 
-以下示例在请求处理是只输出 `1`，不执行 fn1 中的 `2` 输出。
+以下示例在请求处理时只输出 `1`，不执行 fn1 中的 `2` 输出。
 
 ```ts
 const middleware = new Middleware((ctx, next) => {

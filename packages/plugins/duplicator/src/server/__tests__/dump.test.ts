@@ -1,5 +1,5 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
+import { Database, Model } from '@nocobase/database';
 import * as os from 'os';
 import path from 'path';
 import lodash from 'lodash';
@@ -98,7 +98,11 @@ describe('dump', () => {
 
     const collectionMeta = JSON.parse(collectionMetaFile);
     expect(collectionMeta.count).toEqual(2);
-    expect(collectionMeta.columns).toEqual(Object.keys(db.getCollection('users').model.rawAttributes));
+    expect(collectionMeta.columns).toEqual(
+      Object.keys(db.getCollection('users').model.rawAttributes).map(
+        (fieldName) => db.getCollection('users').model.rawAttributes[fieldName].field,
+      ),
+    );
 
     const dataPath = path.resolve(testDir, 'collections', 'users', 'data');
 

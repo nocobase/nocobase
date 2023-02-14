@@ -1,4 +1,3 @@
-import { Application } from '@nocobase/server';
 import lodash from 'lodash';
 import { Restorer } from './restorer';
 
@@ -70,7 +69,7 @@ CollectionGroupManager.registerCollectionGroup({
 CollectionGroupManager.registerCollectionGroup({
   pluginName: 'collection-manager',
   function: 'collections',
-  collections: ['collections', 'fields'],
+  collections: ['collections', 'fields', 'collectionCategories', 'collectionCategory'],
   dumpable: 'required',
 });
 
@@ -252,5 +251,5 @@ CollectionGroupManager.registerCollectionGroup({
   pluginName: 'iframe-block',
   function: 'iframe html storage',
   collections: ['iframeHtml'],
-  dumpable: 'optional',
+  dumpable: 'required',
 });

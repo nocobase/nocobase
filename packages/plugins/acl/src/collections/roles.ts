@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'acl',
+  duplicator: 'required',
   name: 'roles',
   title: '{{t("Roles")}}',
   autoGenId: false,

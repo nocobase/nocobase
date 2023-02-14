@@ -67,7 +67,9 @@ FormItem.Designer = (props) => {
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
+  const targetFields = collectionField?.target
+    ? getCollectionFields(collectionField.target)
+    : getCollectionFields(collectionField?.targetCollection) ?? [];
   const fieldComponentOptions = useFieldComponentOptions();
   const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const initialValue = {
@@ -466,7 +468,7 @@ FormItem.Designer = (props) => {
             }}
           />
         )}
-      {collectionField?.target && fieldSchema['x-component'] === 'CollectionField' && (
+      {options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Title field')}
