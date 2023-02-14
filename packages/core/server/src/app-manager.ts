@@ -62,10 +62,8 @@ export class AppManager extends EventEmitter {
   }
 
   callback() {
-    let appManager: AppManager = this;
-
     return async (req: IncomingMessage, res: ServerResponse) => {
-      appManager = appManager.app.appManager;
+      const appManager = this.app.appManager;
 
       let handleApp: any = appManager.appSelector(req) || appManager.app;
 
