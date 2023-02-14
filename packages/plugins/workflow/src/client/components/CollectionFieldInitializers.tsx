@@ -27,7 +27,6 @@ function CollectionFieldInitializer({ field, ...props }) {
 
 export function CollectionFieldInitializers(props) {
   const { fields } = useCollection();
-  console.log('------', fields);
   const items = fields
   .filter(field => !['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type) && field.uiSchema)
   .map(field => ({

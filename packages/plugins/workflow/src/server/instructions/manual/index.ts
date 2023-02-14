@@ -1,3 +1,6 @@
+import actions from '@nocobase/actions';
+import { HandlerType } from '@nocobase/resourcer';
+
 import Plugin from '../..';
 import { JOB_STATUS } from "../../constants";
 import { Instruction } from '..';
@@ -89,8 +92,27 @@ export default class implements Instruction {
     plugin.db.extendCollection(usersCollection);
     plugin.db.extendCollection(jobsCollection);
 
-    plugin.app.actions({
-      'users_jobs:submit': submit
+    plugin.app.resource({
+      name: 'users_jobs',
+      actions: {
+        list: {
+          filter: {
+            $or: [
+              {
+                'workflow.current': true
+              },
+              {
+                'workflow.current': false,
+                status: {
+                  $ne: JOB_STATUS.PENDING
+                }
+              }
+            ]
+          },
+          handler: actions.list as HandlerType
+        },
+        submit
+      }
     });
   }
 
