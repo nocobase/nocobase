@@ -3,7 +3,7 @@
 
 `HasManyRepository` is the `Relation Repository` for handling `HasMany` relationships.
 
-## Class Method
+## Class Methods
 
 ### `find()`
 

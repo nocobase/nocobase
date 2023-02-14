@@ -41,6 +41,7 @@ export interface ApplicationOptions {
   acl?: boolean;
   logger?: AppLoggerOptions;
   pmSock?: string;
+  name?: string;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -101,6 +102,8 @@ export class ApplicationVersion {
     if (!app.db.hasCollection('applicationVersion')) {
       app.db.collection({
         name: 'applicationVersion',
+        namespace: 'core',
+        duplicator: 'required',
         timestamps: false,
         fields: [{ name: 'value', type: 'string' }],
       });
@@ -216,6 +219,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get log() {
     return this._logger;
+  }
+
+  get name() {
+    return this.options.name || 'main';
   }
 
   protected init() {
@@ -371,11 +378,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       process.exit(1);
     }
     await this.dbVersionCheck({ exit: true });
+
     if (argv?.[2] !== 'upgrade') {
       await this.load({
         method: argv?.[2],
       });
     }
+
     return this.cli.parseAsync(argv, options);
   }
 
@@ -519,6 +528,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+
+  toJSON() {
+    return {
+      appName: this.name,
+    };
+  }
 }
 
 applyMixins(Application, [AsyncEmitter]);

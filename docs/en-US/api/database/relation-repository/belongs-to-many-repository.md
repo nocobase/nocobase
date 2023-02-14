@@ -4,7 +4,7 @@
 
 Unlike other relationship types, the `BelongsToMany` type of relationship needs to be recorded through an intermediate table. The intermediate table can be created automatically or explicitly specified when defining association relationships in NocoBase.
 
-## Class Method
+## Class Methods
 
 ### `find()`
 

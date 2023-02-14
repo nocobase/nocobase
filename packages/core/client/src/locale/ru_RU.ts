@@ -107,6 +107,7 @@ export default {
   "Create collection": "Создать Коллекцию",
   "Collection display name": "Отображение имени Коллекции",
   "Collection name": "Имя Коллекции",
+  "Categories":"Категории таблиц данных",
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "Случайно сгенерированный и может быть изменен. Поддерживает буквы, цифры и подчеркивания, должно начинаться с буквы.",
   "Storage type": "Тип Хранилища",
   "Edit": "Изменить",

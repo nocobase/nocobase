@@ -38,6 +38,7 @@ const collection = {
         required: true,
         enum: [
           { label: `{{t("Aliyun SMS", { ns: "${NAMESPACE}" })}}`, value: 'sms-aliyun' },
+          { label: `{{t("Tencent SMS", { ns: "${NAMESPACE}" })}}`, value: 'sms-tencent' },
         ],
       },
     },

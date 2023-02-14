@@ -1,4 +1,5 @@
 import decompress from 'decompress';
+import fs from 'fs';
 import fsPromises from 'fs/promises';
 import inquirer from 'inquirer';
 import path from 'path';
@@ -6,15 +7,22 @@ import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
-
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
 
   importedCollections: string[] = [];
 
   async restore(backupFilePath: string) {
-    const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
-    const filePath = path.isAbsolute(backupFilePath) ? backupFilePath : path.resolve(dirname, backupFilePath);
+    let filePath: string;
+
+    if (path.isAbsolute(backupFilePath)) {
+      filePath = backupFilePath;
+    } else if (path.basename(backupFilePath) === backupFilePath) {
+      const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
+      filePath = path.resolve(dirname, backupFilePath);
+    } else {
+      filePath = path.resolve(process.cwd(), backupFilePath);
+    }
 
     const results = await inquirer.prompt([
       {
@@ -31,6 +39,7 @@ export class Restorer extends AppMigrator {
 
     await this.decompressBackup(filePath);
     await this.importCollections();
+    await this.importDb();
     await this.clearWorkDir();
   }
 
@@ -122,7 +131,18 @@ export class Restorer extends AppMigrator {
     const results = await inquirer.prompt(questions);
 
     const importCollection = async (collectionName: string) => {
+      const collectionMetaPath = path.resolve(this.workDir, 'collections', collectionName, 'meta');
+
+      const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
+      const meta = JSON.parse(metaContent);
+      const tableName = meta.tableName;
+
       try {
+        // disable trigger
+        if (this.app.db.inDialect('postgres')) {
+          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS "${tableName}" DISABLE TRIGGER ALL`);
+        }
+
         await this.importCollection({
           name: collectionName,
         });
@@ -130,6 +150,10 @@ export class Restorer extends AppMigrator {
         this.app.log.warn(`import collection ${collectionName} failed`, {
           err,
         });
+      } finally {
+        if (this.app.db.inDialect('postgres')) {
+          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS "${tableName}" ENABLE TRIGGER ALL`);
+        }
       }
     };
 
@@ -199,6 +223,7 @@ export class Restorer extends AppMigrator {
     const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
     const meta = JSON.parse(metaContent);
     app.log.info(`collection meta ${metaContent}`);
+
     const tableName = meta.tableName;
 
     if (options.clear !== false) {
@@ -320,5 +345,31 @@ export class Restorer extends AppMigrator {
     app.logger.info(`${collectionName} imported with ${rowsWithMeta.length} rows`);
 
     this.importedCollections.push(collection.name);
+  }
+
+  async importDb() {
+    const sqlFilePath = path.resolve(this.workDir, 'db.sql');
+    // if db.sql file not exists, skip import
+    if (!fs.existsSync(sqlFilePath)) {
+      return;
+    }
+
+    // read file content from db.sql
+    const queriesContent = await fsPromises.readFile(sqlFilePath, 'utf8');
+
+    const queries = JSON.parse(queriesContent);
+
+    for (const sql of queries) {
+      try {
+        this.app.log.info(`import sql: ${sql}`);
+        await this.app.db.sequelize.query(sql);
+      } catch (e) {
+        if (e.name === 'SequelizeDatabaseError') {
+          this.app.logger.error(e.message);
+        } else {
+          throw e;
+        }
+      }
+    }
   }
 }

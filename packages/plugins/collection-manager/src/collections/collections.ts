@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'collection-manager',
+  duplicator: 'required',
   name: 'collections',
   title: '数据表配置',
   sortable: 'sort',
@@ -49,6 +51,16 @@ export default {
       targetKey: 'name',
       foreignKey: 'collectionName',
       sortBy: 'sort',
+    },
+    {
+      type: 'belongsToMany',
+      name: 'category',
+      target: 'collectionCategories',
+      sourceKey: 'name',
+      foreignKey: 'collectionName',
+      otherKey: 'categoryId',
+      targetKey: 'id',
+      through: 'collectionCategory',
     },
   ],
 } as CollectionOptions;

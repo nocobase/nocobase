@@ -27,7 +27,7 @@ Extended field is implemented mainly by inheriting the `Field` abstract class an
 | `context.database` | `Database` | - | Database instance |
 | `context.collection` | `Collection` | - | Data table instance |
 
-## Instance Member
+## Instance Members
 
 ### `name`
 
@@ -49,7 +49,7 @@ Configuration parameters to initialize the field.
 
 Field context object.
 
-## Configuration Method
+## Configuration Methods
 
 ### `on()`
 
@@ -168,7 +168,7 @@ books.getField('isbn').remove();
 await books.sync();
 ```
 
-## Database Method
+## Database Methods
 
 ### `removeFromDb()`
 

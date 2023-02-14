@@ -4,8 +4,11 @@ import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
-  ACLRolesCheckProvider, CurrentAppInfoProvider, CurrentUser,
-  CurrentUserProvider, findByUid,
+  ACLRolesCheckProvider,
+  CurrentAppInfoProvider,
+  CurrentUser,
+  CurrentUserProvider,
+  findByUid,
   findMenuItem,
   RemoteCollectionManagerProvider,
   RemotePluginManagerToolbar,
@@ -15,7 +18,7 @@ import {
   useDocumentTitle,
   useRequest,
   useRoute,
-  useSystemSettings
+  useSystemSettings,
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
 
@@ -161,12 +164,28 @@ export const InternalAdminLayout = (props: any) => {
             position: relative;
             width: 100%;
             height: 100%;
+            display: flex;
           `}
         >
           <div
-            style={{ position: 'relative', zIndex: 1, display: 'flex', height: '100%', width: 'calc(100vw - 300px)' }}
+            className={css`
+              position: relative;
+              z-index: 1;
+              flex: 1 1 auto;
+              display: flex;
+              height: 100%;
+            `}
           >
-            <div style={{ width: 200, display: 'inline-flex', color: '#fff', padding: '0', alignItems: 'center' }}>
+            <div
+              className={css`
+                width: 200px;
+                display: inline-flex;
+                flex-shrink: 0;
+                color: #fff;
+                padding: 0;
+                align-items: center;
+              `}
+            >
               <img
                 className={css`
                   padding: 0 16px;
@@ -176,17 +195,24 @@ export const InternalAdminLayout = (props: any) => {
                 `}
                 src={result?.data?.data?.logo?.url}
               />
-              {/* {result?.data?.data?.title} */}
             </div>
             <div
-              style={{
-                width: 'calc(100% - 590px)',
-              }}
+              className={css`
+                flex: 1 1 auto;
+                width: 0;
+              `}
             >
               <MenuEditor sideMenuRef={sideMenuRef} />
             </div>
           </div>
-          <div style={{ position: 'absolute', height: '100%', zIndex: 10, top: 0, right: 0 }}>
+          <div
+            className={css`
+              position: relative;
+              flex-shrink: 0;
+              height: 100%;
+              z-index: 10;
+            `}
+          >
             <RemotePluginManagerToolbar />
             <CurrentUser />
           </div>

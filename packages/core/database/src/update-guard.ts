@@ -13,6 +13,7 @@ type UpdateAction = 'create' | 'update';
 export class UpdateGuard {
   model: ModelStatic<any>;
   action: UpdateAction;
+  underscored: boolean;
   private associationKeysToBeUpdate: AssociationKeysToBeUpdate;
   private blackList: BlackList;
   private whiteList: WhiteList;
@@ -162,6 +163,11 @@ export class UpdateGuard {
     guard.setBlackList(options.blacklist);
     guard.setAction(lodash.get(options, 'action', 'update'));
     guard.setAssociationKeysToBeUpdate(options.updateAssociationValues);
+
+    if (options.underscored) {
+      guard.underscored = options.underscored;
+    }
+
     return guard;
   }
 }

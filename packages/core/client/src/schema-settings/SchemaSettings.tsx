@@ -4,7 +4,19 @@ import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import _ from 'lodash';
 import { uid } from '@formily/shared';
-import { Alert, Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
+import {
+  Alert,
+  Button,
+  Cascader,
+  CascaderProps,
+  Dropdown,
+  Menu,
+  MenuItemProps,
+  Modal,
+  Select,
+  Space,
+  Switch,
+} from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
@@ -65,6 +77,7 @@ type SchemaSettingsNested = {
   Divider?: React.FC;
   Popup?: React.FC<MenuItemProps & { schema?: ISchema }>;
   SwitchItem?: React.FC<SwitchItemProps>;
+  CascaderItem?: React.FC<CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any }>;
   [key: string]: any;
 };
 
@@ -430,6 +443,24 @@ SchemaSettings.SelectItem = (props) => {
           bordered={false}
           defaultValue={value}
           onChange={onChange}
+          options={options}
+          style={{ textAlign: 'right', minWidth: 100 }}
+        />
+      </div>
+    </SchemaSettings.Item>
+  );
+};
+
+SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
+  const { title, options, value, onChange, ...others } = props;
+  return (
+    <SchemaSettings.Item {...(others as any)}>
+      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+        {title}
+        <Cascader
+          bordered={false}
+          defaultValue={value}
+          onChange={onChange as any}
           options={options}
           style={{ textAlign: 'right', minWidth: 100 }}
         />

@@ -205,7 +205,7 @@ Get the table name prefix in the configuration.
 
 * `getTablePrefix(): string`
 
-## Data Table Configuration
+## Data Table Configurations
 
 ### `collection()`
 
@@ -359,7 +359,7 @@ class Plugin {
 }
 ```
 
-## Extension Registration and Acquisition
+## Extension Registrations and Acquisitions
 
 ### `registerFieldTypes()`
 
@@ -543,7 +543,7 @@ const post1 = AuthorsRepo.create({ title: 'post1' });
 asset(post1.authorId === author1.id); // true
 ```
 
-## Database Event 
+## Database Events
 
 ### `on()`
 
@@ -591,7 +591,7 @@ db.on('afterCreate', listener);
 db.off('afterCreate', listener);
 ```
 
-## Database Operation
+## Database Operations
 
 ### `auth()`
 
