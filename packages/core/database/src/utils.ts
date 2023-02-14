@@ -89,7 +89,13 @@ export function patchSequelizeQueryInterface(db: Database) {
     //@ts-ignore
     const queryGenerator = db.sequelize.dialect.queryGenerator;
 
+    const originalShowConstraintsQuery = queryGenerator.showConstraintsQuery;
+
     queryGenerator.showConstraintsQuery = (tableName, constraintName) => {
+      if (!constraintName) {
+        return originalShowConstraintsQuery.call(queryGenerator, tableName, constraintName);
+      }
+
       const lines = [
         'SELECT constraint_catalog AS "constraintCatalog",',
         'constraint_schema AS "constraintSchema",',
