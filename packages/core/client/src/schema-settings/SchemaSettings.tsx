@@ -670,7 +670,6 @@ SchemaSettings.BlockTitleItem = () => {
 
 SchemaSettings.LinkageRules = (props) => {
   const { collectionName } = props;
-  const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -691,7 +690,8 @@ SchemaSettings.LinkageRules = (props) => {
                   const options = useCollectionFilterOptions(collectionName);
                   return {
                     options,
-                    defaultValues:fieldSchema?.['x-linkageRules']
+                    defaultValues: fieldSchema?.['x-linkageRules'],
+                    type: fieldSchema['x-component'] === 'Action' ? 'button' : 'field',
                   };
                 },
               },
@@ -707,7 +707,7 @@ SchemaSettings.LinkageRules = (props) => {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
         };
-  
+
         fieldSchema['x-linkageRules'] = rules;
         schema['x-linkageRules'] = rules;
         dn.emit('patch', {

@@ -10,7 +10,7 @@ import { DynamicComponent } from '../../schema-component/antd/filter/DynamicComp
 import { useValues } from './useValues';
 import { ActionType } from './type';
 
-export const LinkageRuleAction = observer((props: any) => {
+export const FormFieldLinkageRuleAction = observer((props: any) => {
   const { value } = props;
   const { t } = useTranslation();
   const compile = useCompile();
@@ -22,8 +22,8 @@ export const LinkageRuleAction = observer((props: any) => {
     { label: t('Editable'), value: ActionType.Editable, selected: false, schema: {} },
     { label: t('ReadOnly'), value: ActionType.ReadOnly, selected: false, schema: {} },
     { label: t('ReadPretty'), value: ActionType.ReadPretty, selected: false, schema: {} },
-    { label: t('Hide'), value: ActionType.Hidden, selected: false, schema: {} },
-    { label: t('Hidden-reserved value'), value: ActionType.None, selected: false, schema: {} },
+    { label: t('Hidden'), value: ActionType.None, selected: false, schema: {} },
+    { label: t('Hidden-reserved value'), value: ActionType.Hidden, selected: false, schema: {} },
     { label: t('Required'), value: ActionType.Required, selected: false, schema: {} },
     { label: t('InRequired '), value: ActionType.InRequired, selected: false, schema: {} },
     { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },
@@ -49,6 +49,49 @@ export const LinkageRuleAction = observer((props: any) => {
           }}
           placeholder={t('Select Field')}
         />
+        <Select
+          value={operator}
+          options={compile(operators)}
+          onChange={(value) => {
+            const flag = [ActionType.Value].includes(value);
+            setEditFlag(flag);
+            setOperator(value);
+          }}
+          placeholder={t('action')}
+        />
+        {editFalg &&
+          React.createElement(DynamicComponent, {
+            value,
+            schema,
+            onChange(value) {
+              setValue(value);
+            },
+          })}
+        {!props.disabled && (
+          <a>
+            <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />
+          </a>
+        )}
+      </Space>
+    </div>
+  );
+});
+
+export const FormButtonLinkageRuleAction = observer((props: any) => {
+  const { value } = props;
+  const { t } = useTranslation();
+  const compile = useCompile();
+  const [editFalg, setEditFlag] = useState(false);
+  const remove = useContext(RemoveActionContext);
+  const { schema, operator, setOperator, setValue } = useValues();
+  const operators = [
+    { label: t('Visible'), value: ActionType.Visible, schema: {} },
+    { label: t('Disabled'), value: ActionType.Disabled, schema: {} },
+    { label: t('Hidden'), value: ActionType.Hidden, schema: {} },
+  ];
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <Space>
         <Select
           value={operator}
           options={compile(operators)}

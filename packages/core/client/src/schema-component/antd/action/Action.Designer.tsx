@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext, useCompile, useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useCollection } from '../../../collection-manager';
 import { requestSettingsSchema } from './utils';
 
 const MenuGroup = (props) => {
@@ -36,6 +37,7 @@ export const ActionDesigner = (props) => {
   const { modalTip, ...restProps } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const { name } = useCollection();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const compile = useCompile();
@@ -132,6 +134,8 @@ export const ActionDesigner = (props) => {
             }
           }}
         />
+        <SchemaSettings.LinkageRules collectionName={name} />
+
         {isPopupAction && (
           <SchemaSettings.SelectItem
             title={t('Open mode')}

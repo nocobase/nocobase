@@ -2,12 +2,13 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Modal, Popover } from 'antd';
 import classnames from 'classnames';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useActionContext } from '../..';
 import { Icon } from '../../../icon';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
+import { useRecord } from '../../../record-provider';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
@@ -17,6 +18,7 @@ import { ActionPage } from './Action.Page';
 import { ActionContext } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
+import { linkageAction } from './utils';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -87,10 +89,19 @@ export const Action: ComposedAction = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
+  const values = useRecord();
   const designerProps = fieldSchema['x-designer-props'];
   const openMode = fieldSchema?.['x-component-props']?.['openMode'];
   const disabled = form.disabled || field.disabled;
   const openSize = fieldSchema?.['x-component-props']?.['openSize'];
+  const linkageRules = fieldSchema?.['x-linkageRules'] || [];
+  useEffect(() => {
+    linkageRules.map((v) => {
+      return v.linkageRuleAction?.action.map((h) => {
+        linkageAction(h.operator, field, v.linkageRuleCondition, values);
+      });
+    });
+  }, [linkageRules]);
   const renderButton = () => (
     <SortableItem
       {...others}

@@ -1,4 +1,5 @@
 import type { ISchema } from '@formily/react';
+import { conditionAnalyse } from '../../common/utils/uitls';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -65,4 +66,29 @@ export const requestSettingsSchema: ISchema = {
       'x-validator': validateJSON,
     },
   },
+};
+
+export const getReverseOperator = (operator) => {
+  switch (operator) {
+    case 'visible':
+      return 'hidden';
+    case 'hidden':
+      return 'visible';
+    default:
+      return '';
+  }
+};
+
+export const linkageAction = (operator, field, linkageRuleCondition, form) => {
+  switch (operator) {
+    case 'visible':
+    case 'hidden':
+      field.display = conditionAnalyse(linkageRuleCondition, form) ? operator : getReverseOperator(operator);
+      break;
+    case 'disabled':
+      field.disabled = conditionAnalyse(linkageRuleCondition, form);
+      break;
+    default:
+      return null;
+  }
 };

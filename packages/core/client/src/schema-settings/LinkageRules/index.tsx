@@ -1,16 +1,12 @@
 import React from 'react';
 import { css } from '@emotion/css';
-import { i18n } from '../../i18n';
-import { ISchema, observer, useForm, useFieldSchema } from '@formily/react';
-import { useCollection, useCollectionManager, useCollectionFilterOptions } from '../../collection-manager';
-import { SchemaComponent, SchemaComponentOptions } from '../../schema-component';
+import { observer, useFieldSchema } from '@formily/react';
+import { SchemaComponent } from '../../schema-component';
 import { FilterContext } from '../../schema-component/antd/filter/context';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 
 export const FormLinkageRules = observer((props: any) => {
   const fieldSchema = useFieldSchema();
-  const { getCollectionFields, getCollection, getInterface, getCollectionJoinField } = useCollectionManager();
-  //   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const { useProps, dynamicComponent } = props;
   const { options,defaultValues } = useProps();
   return (
@@ -50,19 +46,6 @@ export const FormLinkageRules = observer((props: any) => {
                       wrapperCol: 16,
                     },
                     properties: {
-                      // ...validateSchema,
-                      // message: {
-                      //   type: 'string',
-                      //   title: '{{ t("Error message") }}',
-                      //   'x-decorator': 'FormItem',
-                      //   'x-component': 'Input.TextArea',
-                      //   'x-component-props': {
-                      //     autoSize: {
-                      //       minRows: 2,
-                      //       maxRows: 2,
-                      //     },
-                      //   },
-                      // },
                       condition: {
                         'x-component': 'h2',
                         'x-content': '条件',
