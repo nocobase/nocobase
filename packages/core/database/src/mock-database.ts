@@ -32,7 +32,7 @@ export function getConfigByEnv() {
     },
     timezone: process.env.DB_TIMEZONE,
     underscored: process.env.DB_UNDERSCORED === 'true',
-    schema: process.env.DB_SCHEMA,
+    schema: process.env.DB_SCHEMA !== 'public' ? process.env.DB_SCHEMA : undefined,
   };
 }
 
