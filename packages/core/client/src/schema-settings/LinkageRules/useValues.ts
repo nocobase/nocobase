@@ -24,7 +24,6 @@ export const useValues = () => {
     ...field.data,
     setDataIndex(dataIndex) {
       field.data = field.data || {};
-      field.data.value = dataIndex;
       field.value = field.value || [];
       field.value = { ...field.value, targetFields: dataIndex };
     },
@@ -34,7 +33,7 @@ export const useValues = () => {
     },
     setValue(value) {
       field.data.value = value;
-      data2value();
+      field.value = { ...field.value, value };
     },
   };
 };

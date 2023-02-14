@@ -14,9 +14,8 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
   const { value } = props;
   const { t } = useTranslation();
   const compile = useCompile();
-  const [editFalg, setEditFlag] = useState(false);
   const remove = useContext(RemoveActionContext);
-  const { schema, fields, operator, setDataIndex, setOperator, setValue } = useValues();
+  const { schema, fields, operator, setDataIndex, setOperator, setValue, value: fieldValue } = useValues();
   const operators = [
     { label: t('Display'), value: ActionType.Visible, selected: true, schema: {} },
     { label: t('Editable'), value: ActionType.Editable, selected: false, schema: {} },
@@ -51,17 +50,18 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
         />
         <Select
           value={operator}
+          className={css`
+            min-width: 120px;
+          `}
           options={compile(operators)}
           onChange={(value) => {
-            const flag = [ActionType.Value].includes(value);
-            setEditFlag(flag);
             setOperator(value);
           }}
           placeholder={t('action')}
         />
-        {editFalg &&
+        {[ActionType.Value].includes(operator) &&
           React.createElement(DynamicComponent, {
-            value,
+            value: fieldValue,
             schema,
             onChange(value) {
               setValue(value);

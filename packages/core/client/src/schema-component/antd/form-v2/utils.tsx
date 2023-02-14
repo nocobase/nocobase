@@ -20,7 +20,7 @@ export const getReverseOperator = (operator) => {
   }
 };
 
-export const linkageAction = (operator, field, linkageRuleCondition, values) => {
+export const linkageAction = ({ operator, value }, field, linkageRuleCondition, values) => {
   switch (operator) {
     case 'required':
       field.required = conditionAnalyse(linkageRuleCondition, values);
@@ -36,7 +36,10 @@ export const linkageAction = (operator, field, linkageRuleCondition, values) => 
     case 'editable':
     case 'readOnly':
     case 'readPretty':
-      field.pattern= conditionAnalyse(linkageRuleCondition, values) ? operator : getReverseOperator(operator);
+      field.pattern = conditionAnalyse(linkageRuleCondition, values) ? operator : getReverseOperator(operator);
+      break;
+    case 'value':
+      field.value = conditionAnalyse(linkageRuleCondition, values) ? value : field.default;
       break;
     default:
       return null;
