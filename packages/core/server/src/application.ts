@@ -101,6 +101,8 @@ export class ApplicationVersion {
     if (!app.db.hasCollection('applicationVersion')) {
       app.db.collection({
         name: 'applicationVersion',
+        namespace: 'core',
+        duplicator: 'required',
         timestamps: false,
         fields: [{ name: 'value', type: 'string' }],
       });

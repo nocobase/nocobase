@@ -1,6 +1,6 @@
 import { NoPermissionError } from '@nocobase/acl';
 import { Context, utils as actionUtils } from '@nocobase/actions';
-import { Collection, RelationField } from '@nocobase/database';
+import { Collection, RelationField, snakeCase } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { resolve } from 'path';
@@ -262,6 +262,7 @@ export class PluginACL extends Plugin {
 
     this.app.db.on('rolesResources.afterDestroy', async (model, options) => {
       const role = this.acl.getRole(model.get('roleName'));
+
       if (role) {
         role.revokeResource(model.get('name'));
       }
@@ -281,6 +282,7 @@ export class PluginACL extends Plugin {
       const { transaction } = options;
 
       const collectionName = model.get('collectionName');
+
       const fieldName = model.get('name');
 
       const resourceActions = (await this.app.db.getRepository('rolesResourcesActions').find({
@@ -695,16 +697,57 @@ export class PluginACL extends Plugin {
         const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
           Model.getTableName(),
           {
-            // ...queryParams,
-            where: queryParams.where,
+            where: (() => {
+              const filterObj = queryParams.where;
+              if (!this.db.options.underscored) {
+                return filterObj;
+              }
+
+              const iterate = (rootObj, path = []) => {
+                const obj = path.length == 0 ? rootObj : lodash.get(rootObj, path);
+
+                if (Array.isArray(obj)) {
+                  for (let i = 0; i < obj.length; i++) {
+                    if (obj[i] === null) {
+                      continue;
+                    }
+
+                    if (typeof obj[i] === 'object') {
+                      iterate(rootObj, [...path, i]);
+                    }
+                  }
+
+                  return;
+                }
+
+                Reflect.ownKeys(obj).forEach((key) => {
+                  if (Array.isArray(obj) && key == 'length') {
+                    return;
+                  }
+
+                  if ((typeof obj[key] === 'object' && obj[key] !== null) || typeof obj[key] === 'symbol') {
+                    iterate(rootObj, [...path, key]);
+                  }
+
+                  if (typeof key === 'string' && key !== snakeCase(key)) {
+                    lodash.set(rootObj, [...path, snakeCase(key)], lodash.cloneDeep(obj[key]));
+                    lodash.unset(rootObj, [...path, key]);
+                  }
+                });
+              };
+
+              iterate(filterObj);
+
+              return filterObj;
+            })(),
             attributes: [primaryKeyField],
             includeIgnoreAttributes: false,
-            // include: queryParams.include,
           },
           Model,
         );
 
         const whereCase = actionSql.match(/WHERE (.*?);/)[1];
+
         conditions.push({
           whereCase,
           action,
@@ -772,6 +815,11 @@ export class PluginACL extends Plugin {
 
   async load() {
     await this.importCollections(resolve(__dirname, 'collections'));
+    this.db.extendCollection({
+      name: 'rolesUischemas',
+      namespace: 'acl',
+      duplicator: 'required',
+    });
   }
 }
 

@@ -1,5 +1,4 @@
-import { Field } from '@formily/core';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
@@ -97,7 +96,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   return collectionField ? (
     <div>
       <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
-        <CollectionProvider name={collectionField.target}>
+        <CollectionProvider name={collectionField.target ?? collectionField.targetCollection}>
           <EllipsisWithTooltip ellipsis={ellipsis} ref={ellipsisWithTooltipRef}>
             {renderRecords()}
           </EllipsisWithTooltip>

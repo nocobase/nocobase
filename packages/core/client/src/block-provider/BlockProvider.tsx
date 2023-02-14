@@ -92,7 +92,7 @@ export const useResourceAction = (props, opts = {}) => {
    */
   const { resource, action, fieldName: tableFieldName } = props;
   const { fields } = useCollection();
-  const appends = fields?.filter((field) => field.target && field.interface !== 'snapshot').map((field) => field.name);
+  const appends = fields?.filter((field) => field.target).map((field) => field.name);
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();

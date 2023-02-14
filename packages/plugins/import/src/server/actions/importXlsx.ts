@@ -7,7 +7,7 @@ import { transform } from '../utils';
 const IMPORT_LIMIT_COUNT = 10000;
 
 export async function importXlsx(ctx: Context, next: Next) {
-  let { columns } = ctx.request.body;
+  let { columns } = ctx.request.body as any;
   const { ['file']: file } = ctx;
   const { resourceName, resourceOf } = ctx.action;
   if (typeof columns === 'string') {

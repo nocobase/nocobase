@@ -6,12 +6,14 @@ import {
   SchemaInitializerContext,
   SchemaInitializerProvider,
 } from '@nocobase/client';
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useSnapshotInterface } from './interface';
 import { SnapshotRecordPicker } from './SnapshotRecordPicker';
 import { SnapshotBlockInitializers } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializers';
 import { SnapshotBlockInitializersDetailItem } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializersDetailItem';
 import { SnapshotBlockProvider } from './SnapshotBlock/SnapshotBlockProvider';
+import { AppendsTreeSelect } from './components/AppendsTreeSelect';
+import { SnapshotOwnerCollectionFieldsSelect } from './components/SnapshotOwnerCollectionFieldsSelect';
 
 export default React.memo((props) => {
   const initializers = useContext(SchemaInitializerContext);
@@ -39,6 +41,8 @@ export default React.memo((props) => {
               SnapshotRecordPicker,
               SnapshotBlockProvider,
               SnapshotBlockInitializersDetailItem,
+              AppendsTreeSelect,
+              SnapshotOwnerCollectionFieldsSelect,
             }}
           >
             {props.children}
