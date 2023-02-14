@@ -74,7 +74,7 @@ excludeSqlite()('update id to bigint  test', () => {
           db.getCollection(collectionName) ? db.getCollection(collectionName).model.tableName : collectionName,
         );
 
-      if (process.env.DB_UNDERSCORED) {
+      if (db.options.underscored) {
         fieldName = lodash.snakeCase(fieldName);
       }
 
