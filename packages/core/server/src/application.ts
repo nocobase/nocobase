@@ -41,6 +41,7 @@ export interface ApplicationOptions {
   acl?: boolean;
   logger?: AppLoggerOptions;
   pmSock?: string;
+  name?: string;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -216,6 +217,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get log() {
     return this._logger;
+  }
+
+  get name() {
+    return this.options.name || 'main';
   }
 
   protected init() {
@@ -521,6 +526,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+
+  toJSON() {
+    return {
+      appName: this.name,
+    };
+  }
 }
 
 applyMixins(Application, [AsyncEmitter]);

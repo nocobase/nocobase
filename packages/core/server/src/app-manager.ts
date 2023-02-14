@@ -8,7 +8,7 @@ type AppSelector = (req: IncomingMessage) => Application | string | undefined | 
 export class AppManager extends EventEmitter {
   public applications: Map<string, Application> = new Map<string, Application>();
 
-  constructor(private app: Application) {
+  constructor(public app: Application) {
     super();
 
     app.on('beforeStop', async (mainApp, options) => {
@@ -62,11 +62,15 @@ export class AppManager extends EventEmitter {
   }
 
   callback() {
+    let appManager: AppManager = this;
+
     return async (req: IncomingMessage, res: ServerResponse) => {
-      let handleApp: any = this.appSelector(req) || this.app;
+      appManager = appManager.app.appManager;
+
+      let handleApp: any = appManager.appSelector(req) || appManager.app;
 
       if (typeof handleApp === 'string') {
-        handleApp = await this.getApplication(handleApp);
+        handleApp = await appManager.getApplication(handleApp);
 
         if (!handleApp) {
           res.statusCode = 404;
