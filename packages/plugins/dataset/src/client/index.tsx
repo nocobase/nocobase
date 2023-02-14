@@ -4,23 +4,25 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   SchemaInitializer,
-  SchemaInitializerContext,
+  SchemaInitializerContext, useAPIClient, useCollection,
 } from '@nocobase/client';
 import React, { useCallback, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataSetDesigner } from './DataSetDesigner';
 import { FormDialog, FormLayout } from '@formily/antd';
 import { SchemaOptionsContext, useForm } from '@formily/react';
-import Array from '@nocobase/database/src/operators/array';
-import { validateArray } from './utils';
+import { parseDataSetString, validateArray } from './utils';
 import { css } from '@emotion/css';
 import { Button } from 'antd';
 import DataSetPreviewTable from './DataSetPreviewTable';
+import JSON5 from 'json5';
+import { uid } from '@formily/shared';
 
 export const DataSetBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
+  const apiClient = useAPIClient();
   return (
     <SchemaInitializer.Item
       {...props}
@@ -34,10 +36,10 @@ export const DataSetBlockInitializer = (props) => {
             console.log(form.values);
             const mockData = form?.values?.mockData;
             if (mockData) {
-              setDataSet(JSON.parse(mockData));
+              const mockDataArray = parseDataSetString(mockData);
+              setDataSet(mockDataArray);
             }
           }, [form.values]);
-
           const DataSetPreview = useCallback(() => {
             return <section>
               <header
@@ -54,9 +56,8 @@ export const DataSetBlockInitializer = (props) => {
               <DataSetPreviewTable dataSet={dataSet} />
             </section>;
           }, [dataSet]);
-
           return (
-            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+            <SchemaComponentOptions scope={options.scope} components={{ ...options.components, DataSetPreviewTable }}>
               <FormLayout layout={'vertical'}>
                 <FormProvider form={form}>
                   <SchemaComponent
@@ -96,31 +97,48 @@ export const DataSetBlockInitializer = (props) => {
                   />
                 </FormProvider>
                 {/*DataSet Preview*/}
-                <DataSetPreview/>
+                <DataSetPreview />
               </FormLayout>
             </SchemaComponentOptions>
           );
         }).open({
           initialValues: {},
         });
-        console.log(values, 'values===============');
-        // insert({
-        //   type: 'void',
-        //   'x-component': 'CardItem',
-        //   'x-designer': 'DataSetDesigner',
-        //   properties: {
-        //     hello: {
-        //       type: 'void',
-        //       'x-component': 'div',
-        //       'x-content': 'Hello World',
-        //     },
-        //   },
-        // });
+        let dataSet = [];
+        if (values?.mockData) {
+          dataSet = parseDataSetString(values.mockData);
+          const data_set_id = uid();
+          const { dataSetType, mockData } = values;
+          const data = {
+            data_set_id,
+            data_set_type: dataSetType,
+            data_set_value: mockData,
+          };
+          apiClient.request({
+            method: 'post',
+            url: `datasets:create`,
+            data,
+          }).then((res) => {
+            insert({
+              type: 'void',
+              'x-component': 'CardItem',
+              'x-designer': 'DataSetDesigner',
+              properties: {
+                hello: {
+                  type: 'void',
+                  'x-component': 'DataSetPreviewTable',
+                  'x-component-props': {
+                    dataSet,
+                  },
+                },
+              },
+            });
+          });
+        }
       }}
     />
   );
 };
-
 
 export default React.memo((props) => {
   const items = useContext(SchemaInitializerContext);
@@ -132,7 +150,7 @@ export default React.memo((props) => {
     component: 'DataSetBlockInitializer',
   });
   return (
-    <SchemaComponentOptions components={{ DataSetDesigner, DataSetBlockInitializer }}>
+    <SchemaComponentOptions components={{ DataSetDesigner, DataSetPreviewTable, DataSetBlockInitializer }}>
       <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
     </SchemaComponentOptions>
   );
