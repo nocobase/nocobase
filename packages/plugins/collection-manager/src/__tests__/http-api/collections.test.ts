@@ -97,7 +97,7 @@ describe('collections repository', () => {
 
     const testCollection = app.db.getCollection('test');
 
-    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(testCollection.model.tableName);
+    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(testCollection.addSchemaTableName());
 
     expect(tableInfo['field']).toBeDefined();
   });
