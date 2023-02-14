@@ -7,13 +7,9 @@ on:
       - develop
     paths:
       - 'packages/**'
-    # paths-ignore:
-    #   - 'docs/**'
   pull_request:
     paths:
       - 'packages/**'
-    # paths-ignore:
-    #   - 'docs/**'
 
 jobs:
   sqlite-test:
