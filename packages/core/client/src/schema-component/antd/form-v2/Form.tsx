@@ -7,7 +7,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
 import { useProps } from '../../hooks/useProps';
-import {conditionAnalysis} from './utils'
+import { linkageAction } from './utils';
 
 export interface FormProps {
   [key: string]: any;
@@ -60,6 +60,7 @@ const WithForm = (props) => {
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
   const linkageRules = fieldSchema.parent?.['x-linkageRules'] || [];
+  console.log(linkageRules);
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -75,17 +76,13 @@ const WithForm = (props) => {
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
-     return linkageRules.map((v) => {
-           return v.linkageRuleAction?.action.map((h)=>{
-            const fields=h.targetFields.join(',');
-            return onFieldReact(`*(${fields})`, (field:any, form) => {
-              if(conditionAnalysis(v.linkageRuleCondition,form)){
-                field['display'] = h.operator;
-                field['x-pattern'] =h.operator;
-                field.required=h.operator
-              }
-            });
-           })
+      return linkageRules.map((v) => {
+        return v.linkageRuleAction?.action.map((h) => {
+          const fields = h.targetFields.join(',');
+          return onFieldReact(`*(${fields})`, (field: any, form) => {
+            linkageAction(h.operator, field, v.linkageRuleCondition, form);
+          });
+        });
       });
     });
     return () => {

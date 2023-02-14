@@ -5,7 +5,7 @@ export enum ActionType {
   ReadPretty = 'readPretty',
   None = 'none',
   Hidden = 'hidden',
-  Required = 'true',
-  InRequired ='false',
+  Required = 'required',
+  InRequired ='inRequired',
   Value = 'value',
 }

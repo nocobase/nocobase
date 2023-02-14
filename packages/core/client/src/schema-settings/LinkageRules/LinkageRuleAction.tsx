@@ -18,15 +18,15 @@ export const LinkageRuleAction = observer((props: any) => {
   const remove = useContext(RemoveActionContext);
   const { schema, fields, operator, setDataIndex, setOperator, setValue } = useValues();
   const operators = [
-    { label: t('Display'), value: 'display', selected: true, schema: {} },
-    { label: t('Editable'), value: 'editable', selected: false, schema: {} },
-    { label: t('ReadOnly'), value: 'readOnly', selected: false, schema: {} },
-    { label: t('ReadPretty'), value: 'readPretty', selected: false, schema: {} },
-    { label: t('Hide'), value: 'hide', selected: false, schema: { 'x-display': 'hidden' } },
-    { label: t('Hidden-reserved value'), value: 'hidden', selected: false, schema: {} },
-    { label: t('Required true'), value: 'required', selected: false, schema: {} },
-    { label: t('Required false'), value: 'inRequired', selected: false, schema: {} },
-    { label: t('Value'), value: 'value', selected: false, schema: {} },
+    { label: t('Display'), value: ActionType.Visible, selected: true, schema: {} },
+    { label: t('Editable'), value: ActionType.Editable, selected: false, schema: {} },
+    { label: t('ReadOnly'), value: ActionType.ReadOnly, selected: false, schema: {} },
+    { label: t('ReadPretty'), value: ActionType.ReadPretty, selected: false, schema: {} },
+    { label: t('Hide'), value: ActionType.Hidden, selected: false, schema: {} },
+    { label: t('Hidden-reserved value'), value: ActionType.None, selected: false, schema: {} },
+    { label: t('Required'), value: ActionType.Required, selected: false, schema: {} },
+    { label: t('InRequired '), value: ActionType.InRequired, selected: false, schema: {} },
+    { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },
   ];
   return (
     <div style={{ marginBottom: 8 }}>
