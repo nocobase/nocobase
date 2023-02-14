@@ -3,17 +3,18 @@ import { i18n } from '@nocobase/client';
 import { css } from '@emotion/css';
 
 import { CollectionManagerContext, registerField, SchemaComponentOptions } from '@nocobase/client';
-import evaluators from '@nocobase/evaluators/client';
+import evaluators, { Evaluator } from '@nocobase/evaluators/client';
 
 import { formula } from './formula';
 import { NAMESPACE } from './locale';
+import { Registry } from '@nocobase/utils/client';
 
 
 
 registerField(formula.group, 'formula', formula);
 
 function renderExpressionDescription(key: string) {
-  const engine = evaluators.get(key);
+  const engine = (evaluators as Registry<Evaluator>).get(key);
 
   return engine?.link
     ? (

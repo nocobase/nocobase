@@ -1,5 +1,6 @@
 import { i18n, IField, interfacesProperties } from '@nocobase/client';
-import evaluators from '@nocobase/evaluators/client';
+import evaluators, { Evaluator } from '@nocobase/evaluators/client';
+import { Registry } from '@nocobase/utils/client';
 
 import { NAMESPACE } from './locale';
 
@@ -80,7 +81,7 @@ export const formula: IField = {
       title: `{{t("Formula engine", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
-      enum: Array.from(evaluators.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []),
+      enum: Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []),
       required: true,
       default: 'math.js',
     },
@@ -133,7 +134,7 @@ export const formula: IField = {
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
-        const { evaluate } = evaluators.get(values.engine);
+        const { evaluate } = (evaluators as Registry<Evaluator>).get(values.engine);
         const exp = value.trim().replace(/\{\{([^{}]+)\}\}/g, '1');
         try {
           evaluate(exp);

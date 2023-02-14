@@ -3,7 +3,7 @@ import { Registry } from '@nocobase/utils/client';
 import mathjs from './engines/mathjs';
 import formulajs from './engines/formulajs';
 
-interface Evaluator {
+export interface Evaluator {
   label: string;
   tooltip?: string;
   link?: string;
