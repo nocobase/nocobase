@@ -886,11 +886,13 @@ pgOnly()('collection inherits', () => {
 
     const studentTableInfo = await db.sequelize.getQueryInterface().describeTable(student.model.tableName);
 
-    expect(studentTableInfo.score).toBeDefined();
-    expect(studentTableInfo.name).toBeDefined();
-    expect(studentTableInfo.id).toBeDefined();
-    expect(studentTableInfo.createdAt).toBeDefined();
-    expect(studentTableInfo.updatedAt).toBeDefined();
+    const getField = (name) => student.model.rawAttributes[name].field;
+
+    expect(studentTableInfo[getField('score')]).toBeDefined();
+    expect(studentTableInfo[getField('name')]).toBeDefined();
+    expect(studentTableInfo[getField('id')]).toBeDefined();
+    expect(studentTableInfo[getField('createdAt')]).toBeDefined();
+    expect(studentTableInfo[getField('updatedAt')]).toBeDefined();
   });
 
   it('should get parent fields', async () => {
