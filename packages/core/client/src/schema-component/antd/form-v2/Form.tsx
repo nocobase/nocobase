@@ -1,5 +1,5 @@
 import { FormLayout } from '@formily/antd';
-import { createForm, Field, onFormInputChange } from '@formily/core';
+import { createForm, Field, onFormInputChange, onFieldReact } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
@@ -7,6 +7,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
 import { useProps } from '../../hooks/useProps';
+import {conditionAnalysis} from './utils'
 
 export interface FormProps {
   [key: string]: any;
@@ -58,6 +59,7 @@ const WithForm = (props) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
+  const linkageRules = fieldSchema.parent?.['x-linkageRules'] || [];
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -66,6 +68,26 @@ const WithForm = (props) => {
       });
     });
     form.disabled = props.disabled;
+    return () => {
+      form.removeEffects(id);
+    };
+  }, []);
+  useEffect(() => {
+    const id = uid();
+    form.addEffects(id, () => {
+     return linkageRules.map((v) => {
+           return v.linkageRuleAction?.action.map((h)=>{
+            const fields=h.targetFields.join(',');
+            return onFieldReact(`*(${fields})`, (field:any, form) => {
+              if(conditionAnalysis(v.linkageRuleCondition,form)){
+                field['display'] = h.operator;
+                field['x-pattern'] =h.operator;
+                field.required=h.operator
+              }
+            });
+           })
+      });
+    });
     return () => {
       form.removeEffects(id);
     };

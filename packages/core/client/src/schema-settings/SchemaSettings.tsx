@@ -1,7 +1,8 @@
 import { css } from '@emotion/css';
-import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
+import { FormDialog, FormItem, FormLayout, Input, ArrayCollapse } from '@formily/antd';
 import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
+import _ from 'lodash';
 import { uid } from '@formily/shared';
 import { Alert, Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
 import classNames from 'classnames';
@@ -22,10 +23,13 @@ import {
   useAPIClient,
   useCollection,
   useCompile,
-  useDesignable
+  useDesignable,
+  useCollectionFilterOptions,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { FormLinkageRules } from './LinkageRules';
+
 interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
@@ -350,7 +354,7 @@ SchemaSettings.Item = (props) => {
   return (
     <Menu.Item
       key={key}
-      eventKey={eventKey as any || key}
+      eventKey={(eventKey as any) || key}
       {...props}
       onClick={(info) => {
         info.domEvent.preventDefault();
@@ -585,6 +589,7 @@ SchemaSettings.ModalItem = (props) => {
     onSubmit,
     asyncGetInitialValues,
     initialValues,
+    width,
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
@@ -597,7 +602,7 @@ SchemaSettings.ModalItem = (props) => {
       {...others}
       onClick={async () => {
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
-        FormDialog(schema.title || title, () => {
+        FormDialog({ title: schema.title || title, width }, () => {
           return (
             <CollectionManagerContext.Provider value={cm}>
               <SchemaComponentOptions scope={options.scope} components={options.components}>
@@ -656,6 +661,75 @@ SchemaSettings.BlockTitleItem = () => {
             ['x-uid']: fieldSchema['x-uid'],
             'x-component-props': fieldSchema['x-component-props'],
           },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+
+SchemaSettings.LinkageRules = (props) => {
+  const { collectionName } = props;
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Linkage rules')}
+      components={{ ArrayCollapse, FormLayout }}
+      width={600}
+      schema={
+        {
+          type: 'object',
+          title: t('Linkage rules'),
+          properties: {
+            fieldReaction: {
+              'x-component': FormLinkageRules,
+              'x-component-props': {
+                useProps: () => {
+                  const options = useCollectionFilterOptions(collectionName);
+                  return {
+                    options,
+                    defaultValues:fieldSchema?.['x-linkageRules']
+                  };
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={(v) => {
+        // const componentProps = fieldSchema['x-component-props'] || {};
+        // componentProps.title = title;
+        // fieldSchema['x-component-props'] = componentProps;
+        // field.componentProps.title = title;
+        // dn.emit('patch', {
+        //   schema: {
+        //     ['x-uid']: fieldSchema['x-uid'],
+        //     'x-component-props': fieldSchema['x-component-props'],
+        //   },
+        // });
+        // dn.refresh();
+        console.log(v)
+        console.log(field)
+        const rules = [];
+        for (const rule of v.fieldReaction.rules) {
+          rules.push(_.pickBy(rule, _.identity));
+        }
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        // return;
+        // if (['number'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
+        //   rules['numberStringMode'] = true;
+        // }
+
+        fieldSchema['x-linkageRules'] = rules;
+        schema['x-linkageRules'] = rules;
+        console.log(schema)
+        dn.emit('patch', {
+          schema,
         });
         dn.refresh();
       }}
