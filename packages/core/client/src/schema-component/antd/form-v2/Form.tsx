@@ -60,7 +60,6 @@ const WithForm = (props) => {
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
   const linkageRules = fieldSchema.parent?.['x-linkageRules'] || [];
-  console.log(linkageRules);
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -88,7 +87,7 @@ const WithForm = (props) => {
     return () => {
       form.removeEffects(id);
     };
-  }, []);
+  }, [linkageRules]);
   return fieldSchema['x-decorator'] === 'Form' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
 

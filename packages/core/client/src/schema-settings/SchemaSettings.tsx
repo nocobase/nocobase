@@ -700,19 +700,6 @@ SchemaSettings.LinkageRules = (props) => {
         } as ISchema
       }
       onSubmit={(v) => {
-        // const componentProps = fieldSchema['x-component-props'] || {};
-        // componentProps.title = title;
-        // fieldSchema['x-component-props'] = componentProps;
-        // field.componentProps.title = title;
-        // dn.emit('patch', {
-        //   schema: {
-        //     ['x-uid']: fieldSchema['x-uid'],
-        //     'x-component-props': fieldSchema['x-component-props'],
-        //   },
-        // });
-        // dn.refresh();
-        console.log(v)
-        console.log(field)
         const rules = [];
         for (const rule of v.fieldReaction.rules) {
           rules.push(_.pickBy(rule, _.identity));
@@ -720,14 +707,9 @@ SchemaSettings.LinkageRules = (props) => {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
         };
-        // return;
-        // if (['number'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
-        //   rules['numberStringMode'] = true;
-        // }
-
+  
         fieldSchema['x-linkageRules'] = rules;
         schema['x-linkageRules'] = rules;
-        console.log(schema)
         dn.emit('patch', {
           schema,
         });
