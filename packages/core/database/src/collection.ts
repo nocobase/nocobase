@@ -542,4 +542,8 @@ export class Collection<
 
     return tableName;
   }
+
+  public quotedTableName() {
+    return this.db.utils.quoteTable(this.addSchemaTableName());
+  }
 }

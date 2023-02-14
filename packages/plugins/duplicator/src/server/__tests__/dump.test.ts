@@ -19,6 +19,7 @@ describe('dump', () => {
     app = mockServer();
 
     db = app.db;
+    await app.cleanDb();
 
     app.db.collection({
       name: 'users',
@@ -52,7 +53,6 @@ describe('dump', () => {
       fields: [],
     });
 
-    await app.cleanDb();
     await db.sync();
   });
 
