@@ -60,7 +60,7 @@ import {
   UpdateWithAssociationsListener,
   ValidateListener,
 } from './types';
-import { snakeCase } from './utils';
+import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
 import DatabaseUtils from './database-utils';
 
@@ -200,9 +200,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       // https://github.com/sequelize/sequelize/issues/1774
       require('pg').defaults.parseInt8 = true;
     }
+    this.options = opts;
 
     this.sequelize = new Sequelize(opts);
-    this.options = opts;
+
     this.collections = new Map();
     this.modelHook = new ModelHook(this);
 
@@ -266,6 +267,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     this.initListener();
+    patchSequelizeQueryInterface(this);
   }
 
   initListener() {

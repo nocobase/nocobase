@@ -504,7 +504,7 @@ describe('collections repository', () => {
 
     const indexes = (await app.db.sequelize
       .getQueryInterface()
-      .showIndex(app.db.getCollection('test').model.tableName)) as any;
+      .showIndex(app.db.getCollection('test').addSchemaTableName())) as any;
 
     const columnName = app.db.getCollection('test').model.rawAttributes.testField.field;
 
@@ -528,7 +528,7 @@ describe('collections repository', () => {
 
     const afterIndexes = (await app.db.sequelize
       .getQueryInterface()
-      .showIndex(app.db.getCollection('test').model.tableName)) as any;
+      .showIndex(app.db.getCollection('test').addSchemaTableName())) as any;
 
     expect(
       afterIndexes.find(

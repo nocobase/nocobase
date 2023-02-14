@@ -70,7 +70,7 @@ export class MockServer extends Application {
   }
 
   async cleanDb() {
-    await this.db.sequelize.getQueryInterface().dropAllTables();
+    await this.db.clean({ drop: true });
   }
 
   agent(): SuperAgentTest & { resource: (name: string, resourceOf?: any) => Resource } {
