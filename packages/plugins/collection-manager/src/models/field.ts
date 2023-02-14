@@ -107,7 +107,7 @@ export class FieldModel extends MagicAttributeModel {
 
     const queryInterface = this.db.sequelize.getQueryInterface() as any;
 
-    const existsIndexes = await queryInterface.showIndex(collection.model.tableName, {
+    const existsIndexes = await queryInterface.showIndex(collection.addSchemaTableName(), {
       transaction: options.transaction,
     });
 
@@ -121,7 +121,7 @@ export class FieldModel extends MagicAttributeModel {
 
     if (existUniqueIndex) {
       const existsUniqueConstraints = await queryInterface.showConstraint(
-        collection.model.tableName,
+        collection.addSchemaTableName(),
         constraintName,
         {},
       );
@@ -133,7 +133,7 @@ export class FieldModel extends MagicAttributeModel {
       // @ts-ignore
       await collection.sync({ ...options, force: false, alter: { drop: false } });
 
-      await queryInterface.addConstraint(tableName, {
+      await queryInterface.addConstraint(collection.addSchemaTableName(), {
         type: 'unique',
         fields: [columnName],
         name: constraintName,
@@ -142,7 +142,7 @@ export class FieldModel extends MagicAttributeModel {
     }
 
     if (!unique && existsUniqueConstraint) {
-      await queryInterface.removeConstraint(collection.model.tableName, constraintName, {
+      await queryInterface.removeConstraint(collection.addSchemaTableName(), constraintName, {
         transaction: options.transaction,
       });
     }
@@ -164,7 +164,7 @@ export class FieldModel extends MagicAttributeModel {
     const queryInterface = collection.db.sequelize.getQueryInterface();
 
     await queryInterface.changeColumn(
-      collection.model.tableName,
+      collection.addSchemaTableName(),
       collection.model.rawAttributes[this.get('name')].field,
       {
         type: field.dataType,
