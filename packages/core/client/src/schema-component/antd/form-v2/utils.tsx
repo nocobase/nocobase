@@ -39,7 +39,7 @@ export const linkageAction = ({ operator, value }, field, linkageRuleCondition, 
       field.pattern = conditionAnalyse(linkageRuleCondition, values) ? operator : getReverseOperator(operator);
       break;
     case 'value':
-      field.value = conditionAnalyse(linkageRuleCondition, values) ? value : field.default;
+      field.value = conditionAnalyse(linkageRuleCondition, values) ? value : field.inputValue;
       break;
     default:
       return null;
