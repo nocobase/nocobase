@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import * as math from 'mathjs';
 import { isNumber } from 'mathjs';
 import React, { useState } from 'react';
-import { useCollection } from '../collection-manager';
+import { useCollection } from '../../../collection-manager';
 
 const ReadPretty = (props) => {
   if (props?.options?.dataType !== 'string') {

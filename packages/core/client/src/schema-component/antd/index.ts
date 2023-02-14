@@ -11,6 +11,7 @@ export * from './filter';
 export * from './form';
 export * from './form-item';
 export * from './form-v2';
+export * from './formula';
 export * from './g2plot';
 export * from './grid';
 export * from './icon-picker';

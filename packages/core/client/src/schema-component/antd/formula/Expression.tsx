@@ -64,8 +64,7 @@ const renderExp = (exp: string, scope = {}) => {
 };
 
 export const Expression = (props) => {
-  const { evaluate, value, supports, useCurrentFields } = props;
-  const field = useField<Field>();
+  const { value, supports, useCurrentFields } = props;
   const { t } = useTranslation();
   const fields = useCurrentFields();
   const inputRef = useRef<any>();
@@ -137,22 +136,6 @@ export const Expression = (props) => {
       )}
     </Menu>
   );
-
-  useFormEffects(() => {
-    onFormSubmitValidateStart(() => {
-      try {
-        evaluate(field.value, scope);
-        field.feedbacks = [];
-      } catch (e) {
-        console.error(field.value, scope, (e as Error).message);
-        field.setFeedback({
-          type: 'error',
-          code: 'FormulaError',
-          messages: [t('Formula error.')],
-        });
-      }
-    });
-  });
 
   return (
     <Dropdown
