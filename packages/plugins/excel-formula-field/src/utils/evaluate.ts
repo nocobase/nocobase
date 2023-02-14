@@ -1,4 +1,4 @@
-import * as formulajs from '@formulajs/formulajs';
+const formulajs = require('@formulajs/formulajs');
 
 export function evaluate(exp: string, scope = {}) {
   const expression = exp.replace(/{{([^}]+)}}/g, (match, i) => {
