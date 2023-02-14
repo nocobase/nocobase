@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,7 +58,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener
+  ValidateListener,
 } from './types';
 import { snakeCase } from './utils';
 
@@ -323,6 +323,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
             return index;
           });
         }
+      }
+
+      if (this.options.schema && !options.schema) {
+        options.schema = this.options.schema;
       }
     });
   }
