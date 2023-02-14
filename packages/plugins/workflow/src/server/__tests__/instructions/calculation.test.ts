@@ -48,7 +48,7 @@ describe('workflow > instructions > calculation', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.status).toBe(JOB_STATUS.REJECTED);
+      expect(job.status).toBe(JOB_STATUS.ERROR);
       expect(job.result.startsWith('SyntaxError: ')).toBe(true);
     });
 
@@ -148,7 +148,7 @@ describe('workflow > instructions > calculation', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.status).toBe(JOB_STATUS.REJECTED);
+      expect(job.status).toBe(JOB_STATUS.ERROR);
     });
 
     it('text', async () => {

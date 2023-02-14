@@ -8,13 +8,10 @@ import { useFlowContext } from '../../FlowContext';
 import { lang, NAMESPACE } from '../../locale';
 import { VariableTextArea } from '../../components/VariableTextArea';
 import { TypeSets, useWorkflowVariableOptions } from '../../variable';
-import { CalculationEngine, calculationEngines } from './engines';
+import { calculationEngines, renderReference } from './engines';
+import { RadioWithTooltip } from '../../components/RadioWithTooltip';
 
 
-
-function getCalculationEngine(key: string): CalculationEngine {
-  return calculationEngines.get(key);
-}
 
 export default {
   title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
@@ -26,19 +23,11 @@ export default {
       title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
       name: 'config.engine',
       'x-decorator': 'FormItem',
-      'x-component': 'Select',
+      'x-component': 'RadioWithTooltip',
+      'x-component-props': {
+        options: Array.from(calculationEngines.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), [])
+      },
       required: true,
-      enum: Array.from(calculationEngines.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []),
-      default: 'math.js',
-      // 'x-reactions': {
-      //   target: 'config.expression',
-      //   effects: ['onFieldInputValueChange'],
-      //   fulfill: {
-      //     schema: {
-      //       description: '{{getCalculationEngine($self.value).description}}',
-      //     }
-      //   }
-      // },
     },
     'config.expression': {
       type: 'string',
@@ -64,7 +53,7 @@ export default {
         dependencies: ['config.engine'],
         fulfill: {
           schema: {
-            description: '{{getCalculationEngine($deps[0]).description}}',
+            description: '{{renderReference($deps[0])}}',
           }
         }
       },
@@ -76,7 +65,7 @@ export default {
   },
   scope: {
     useWorkflowVariableOptions,
-    getCalculationEngine
+    renderReference
   },
   components: {
     CalculationResult({ dataSource }) {
@@ -96,6 +85,7 @@ export default {
         </pre>
       );
     },
+    RadioWithTooltip,
     VariableTextArea
   },
   getOptions(config, types) {

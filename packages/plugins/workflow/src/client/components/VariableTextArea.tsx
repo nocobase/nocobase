@@ -73,7 +73,7 @@ function getValue(el) {
       values.push(node.textContent?.trim?.());
     }
   }
-  return values.join('').replace(/\s+/g, ' ').trim();
+  return values.join(' ').replace(/\s+/g, ' ').trim();
 }
 
 function renderHTML(exp: string, keyLabelMap) {
@@ -200,10 +200,12 @@ export function VariableTextArea(props) {
           white-space: ${multiline ? 'normal': 'nowrap'};
 
           .ant-tag{
+            display: inline;
             line-height: 19px;
             margin: 0 .5em;
+            padding: 2px 7px;
             border-radius: 10px;
-            background-color: #3847c0;
+            background-color: #6475c0;
           }
         `)}
         ref={inputRef}

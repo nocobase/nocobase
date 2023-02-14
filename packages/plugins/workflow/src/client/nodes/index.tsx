@@ -350,7 +350,7 @@ export function NodeDefaultView(props) {
                   type: 'primary',
                 },
                 properties: {
-                  [instruction.type]: {
+                  [`${instruction.type}_${data.id}`]: {
                     type: 'void',
                     title: instruction.title,
                     'x-component': 'Action.Drawer',
@@ -428,9 +428,9 @@ export function NodeDefaultView(props) {
                             },
                           },
                         },
-                      } as ISchema
+                      }
                     }
-                  }
+                  } as ISchema
                 }
               }
             }

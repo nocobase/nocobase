@@ -200,16 +200,13 @@ export default class WorkflowPlugin extends Plugin {
     }
 
     if (valid) {
-      const execution = await this.db.sequelize.transaction(async (transaction) => {
-        const execution = await workflow.createExecution(
-          {
-            context,
-            key: workflow.key,
-            status: EXECUTION_STATUS.CREATED,
-            useTransaction: workflow.useTransaction,
-          },
-          { transaction },
-        );
+      const execution = await this.db.sequelize.transaction(async transaction => {
+        const execution = await workflow.createExecution({
+          context,
+          key: workflow.key,
+          status: EXECUTION_STATUS.QUEUEING,
+          useTransaction: workflow.useTransaction,
+        }, { transaction });
 
         const executed = await workflow.countExecutions({ transaction });
 
@@ -276,7 +273,7 @@ export default class WorkflowPlugin extends Plugin {
     } else {
       const execution = (await this.db.getRepository('executions').findOne({
         filter: {
-          status: EXECUTION_STATUS.CREATED,
+          status: EXECUTION_STATUS.QUEUEING
         },
         sort: 'createdAt',
       })) as ExecutionModel;
@@ -292,7 +289,7 @@ export default class WorkflowPlugin extends Plugin {
   private async process(execution: ExecutionModel, job?: JobModel) {
     this.executing = execution;
 
-    if (execution.status === EXECUTION_STATUS.CREATED) {
+    if (execution.status === EXECUTION_STATUS.QUEUEING) {
       await execution.update({ status: EXECUTION_STATUS.STARTED });
     }
 

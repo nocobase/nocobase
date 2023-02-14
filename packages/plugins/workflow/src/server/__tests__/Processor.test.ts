@@ -121,12 +121,12 @@ describe('workflow > Processor', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(1);
       const { status, result } = jobs[0].get();
-      expect(status).toEqual(JOB_STATUS.REJECTED);
+      expect(status).toEqual(JOB_STATUS.ERROR);
       expect(result.message).toBe('definite error');
     });
   });
@@ -199,11 +199,11 @@ describe('workflow > Processor', () => {
 
       await sleep(500);
 
-      expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(1);
-      expect(jobs[0].status).toEqual(JOB_STATUS.REJECTED);
+      expect(jobs[0].status).toEqual(JOB_STATUS.ERROR);
       expect(jobs[0].result.message).toEqual('input failed');
     });
   });
@@ -281,7 +281,7 @@ describe('workflow > Processor', () => {
       expect(jobs.length).toEqual(3);
     });
 
-    it('resume error downstream in condition branch, should reject', async () => {
+    it('resume error downstream in condition branch, should error', async () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         // no config means always true
@@ -314,7 +314,7 @@ describe('workflow > Processor', () => {
 
       await sleep(500);
 
-      expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(2);
