@@ -89,13 +89,7 @@ export function patchSequelizeQueryInterface(db: Database) {
     //@ts-ignore
     const queryGenerator = db.sequelize.dialect.queryGenerator;
 
-    const originalShowConstraintsQuery = queryGenerator.showConstraintsQuery;
-
     queryGenerator.showConstraintsQuery = (tableName, constraintName) => {
-      if (!constraintName) {
-        return originalShowConstraintsQuery.call(queryGenerator, tableName, constraintName);
-      }
-
       const lines = [
         'SELECT constraint_catalog AS "constraintCatalog",',
         'constraint_schema AS "constraintSchema",',
@@ -108,8 +102,11 @@ export function patchSequelizeQueryInterface(db: Database) {
         'initially_deferred AS "initiallyDeferred"',
         'from INFORMATION_SCHEMA.table_constraints',
         `WHERE table_name='${tableName}'`,
-        `AND constraint_name='${constraintName}'`,
       ];
+
+      if (!constraintName) {
+        lines.push(`AND constraint_name='${constraintName}'`);
+      }
 
       if (db.options.schema && db.options.schema !== 'public') {
         lines.push(`AND table_schema='${db.options.schema}'`);
