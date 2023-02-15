@@ -11,11 +11,11 @@ import { useValues } from './useValues';
 import { ActionType } from './type';
 
 export const FormFieldLinkageRuleAction = observer((props: any) => {
-  const { value } = props;
+  const { value, options } = props;
   const { t } = useTranslation();
   const compile = useCompile();
   const remove = useContext(RemoveActionContext);
-  const { schema, fields, operator, setDataIndex, setOperator, setValue, value: fieldValue } = useValues();
+  const { schema, fields, operator, setDataIndex, setOperator, setValue, value: fieldValue } = useValues(options);
   const operators = [
     { label: t('Visible'), value: ActionType.Visible, selected: true, schema: {} },
     { label: t('Editable'), value: ActionType.Editable, selected: false, schema: {} },
@@ -78,12 +78,12 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
 });
 
 export const FormButtonLinkageRuleAction = observer((props: any) => {
-  const { value } = props;
+  const { value, options } = props;
   const { t } = useTranslation();
   const compile = useCompile();
   const [editFalg, setEditFlag] = useState(false);
   const remove = useContext(RemoveActionContext);
-  const { schema, operator, setOperator, setValue } = useValues();
+  const { schema, operator, setOperator, setValue } = useValues(options);
   const operators = [
     { label: t('Visible'), value: ActionType.Visible, schema: {} },
     { label: t('Disabled'), value: ActionType.Disabled, schema: {} },

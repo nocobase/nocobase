@@ -77,10 +77,12 @@ const WithForm = (props) => {
     form.addEffects(id, () => {
       return linkageRules.map((v) => {
         return v.linkageRuleAction?.action.map((h) => {
-          const fields = h.targetFields.join(',');
-          return onFieldReact(`*(${fields})`, (field: any, form) => {
-            linkageAction(h, field, v.linkageRuleCondition, form?.values);
-          });
+          if (h.targetFields) {
+            const fields = h.targetFields.join(',');
+            return onFieldReact(`*(${fields})`, (field: any, form) => {
+              linkageAction(h, field, v.linkageRuleCondition, form?.values);
+            });
+          }
         });
       });
     });

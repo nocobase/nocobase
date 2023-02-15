@@ -7,14 +7,14 @@ import { useTranslation } from 'react-i18next';
 import { RemoveActionContext } from './context';
 import { FormFieldLinkageRuleAction, FormButtonLinkageRuleAction } from './LinkageRuleAction';
 export const LinkageRuleActions = observer((props: any): any => {
+  const { type, options } = props;
   const field = useField<ArrayFieldModel>();
-  const data = typeof field?.value === 'object' ? [field?.value] : field?.value;
-  return data?.map((item, index) => {
+  return field?.value?.map((item, index) => {
     return (
       <RemoveActionContext.Provider key={index} value={() => field.remove(index)}>
         <ObjectField
           name={index}
-          component={[props.type === 'button' ? FormButtonLinkageRuleAction : FormFieldLinkageRuleAction]}
+          component={[type === 'button' ? FormButtonLinkageRuleAction : FormFieldLinkageRuleAction, { options }]}
         />
       </RemoveActionContext.Provider>
     );
@@ -25,11 +25,14 @@ export const LinkageRuleActionGroup = (props) => {
   const { t } = useTranslation();
   const field = useField<any>();
   const logic = 'action';
-  const { type } = props?.useProps();
-  console.log(props.value);
+  const { type, options } = props?.useProps();
   return (
     <div style={{ marginLeft: 10 }}>
-      <ArrayField name={logic} component={[LinkageRuleActions, { type }]} disabled={false} initialValue={props.value} />
+      <ArrayField
+        name={logic}
+        component={[LinkageRuleActions, { type, options }]}
+        disabled={false}
+      />
       <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
         <a
           onClick={() => {

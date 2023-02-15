@@ -17,29 +17,25 @@ const findOption = (dataIndex = [], options) => {
   return option;
 };
 
-export const useValues = () => {
+export const useValues = (options) => {
   const field = useField<any>();
   const logic = useContext(FilterLogicContext);
-  const { options } = useContext(FilterContext);
+  const filterOptions = options.filter((v) => {
+    return !['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'].includes(v.name);
+  });
 
-  // const options=[]
-  const data2value = () => {
-    field.value = flat.unflatten({
-      [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
-    });
-  };
   const value2data = () => {
     field.data = { ...field.initialValue };
     const dataIndex = field.initialValue?.targetFields;
-    const option = dataIndex&&findOption(dataIndex, options)||{};
+    const option = (dataIndex && findOption(dataIndex, filterOptions)) || {};
     field.data.schema = option?.schema;
   };
   useEffect(value2data, [logic]);
   return {
-    fields: options,
+    fields: filterOptions,
     ...field.data,
     setDataIndex(dataIndex) {
-      const option = findOption(dataIndex, options);
+      const option = findOption(dataIndex, filterOptions);
       field.data = field.data || {};
       field.data.schema = option?.schema;
       field.value = field.value || [];
