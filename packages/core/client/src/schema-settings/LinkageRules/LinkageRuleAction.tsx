@@ -17,14 +17,14 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
   const remove = useContext(RemoveActionContext);
   const { schema, fields, operator, setDataIndex, setOperator, setValue, value: fieldValue } = useValues();
   const operators = [
-    { label: t('Display'), value: ActionType.Visible, selected: true, schema: {} },
+    { label: t('Visible'), value: ActionType.Visible, selected: true, schema: {} },
     { label: t('Editable'), value: ActionType.Editable, selected: false, schema: {} },
-    { label: t('ReadOnly'), value: ActionType.ReadOnly, selected: false, schema: {} },
-    { label: t('ReadPretty'), value: ActionType.ReadPretty, selected: false, schema: {} },
+    { label: t('Read only'), value: ActionType.ReadOnly, selected: false, schema: {} },
+    { label: t('Easy reading'), value: ActionType.ReadPretty, selected: false, schema: {} },
     { label: t('Hidden'), value: ActionType.None, selected: false, schema: {} },
-    { label: t('Hidden-reserved value'), value: ActionType.Hidden, selected: false, schema: {} },
+    { label: t('Hidden(reserved value)'), value: ActionType.Hidden, selected: false, schema: {} },
     { label: t('Required'), value: ActionType.Required, selected: false, schema: {} },
-    { label: t('InRequired '), value: ActionType.InRequired, selected: false, schema: {} },
+    { label: t('Not required '), value: ActionType.InRequired, selected: false, schema: {} },
     { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },
   ];
   return (
