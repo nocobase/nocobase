@@ -60,6 +60,7 @@ export default {
       foreignKey: 'collectionName',
       otherKey: 'categoryId',
       targetKey: 'id',
+      sortBy: 'sort',
       through: 'collectionCategory',
     },
   ],
