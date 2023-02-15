@@ -23,7 +23,7 @@ export async function importXlsx(ctx: Context, next: Next) {
   } = xlsx.parse(file.buffer);
   const failureData = originalList.splice(IMPORT_LIMIT_COUNT + 1);
   const titles = originalList.shift();
-  const legalList = [];
+  const legalList: any[] = [];
   if (originalList.length > 0 && titles?.length === columns.length) {
     // const results = (
     //   await Promise.allSettled<any>(
@@ -38,12 +38,12 @@ export async function importXlsx(ctx: Context, next: Next) {
     //     }),
     //   )
     // ).filter((item) => 'value' in item && item.value !== undefined);
-    const values = [];
+    const values: any[] = [];
     for (const item of originalList) {
       try {
         const transformResult = await transform({ ctx, record: item, columns, fields: collectionFields });
         values.push(transformResult);
-        legalList.push(cloneDeep(item));
+        legalList.push(cloneDeep<any>(item));
       } catch (error) {
         failureData.unshift([...item, error.message]);
       }
@@ -51,14 +51,24 @@ export async function importXlsx(ctx: Context, next: Next) {
     //@ts-ignore
     // const values = results.map((r) => r.value);
     const result = await ctx.db.sequelize.transaction(async (transaction) => {
+      let sort: number = 0;
+      if (collection.options.sortable) {
+        sort = await repository.model.max<number, any>('sort', { transaction });
+      }
       for (const [index, val] of values.entries()) {
         if (val === undefined || val === null) {
           continue;
         }
         try {
+          let values = { ...val };
+          if (collection.options.sortable) {
+            sort += 1;
+            values['sort'] = sort;
+          }
           await repository.create({
-            values: { ...val },
+            values,
             transaction,
+            logging: false,
           });
         } catch (error) {
           const failData = legalList[index];

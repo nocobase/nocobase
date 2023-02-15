@@ -3,6 +3,10 @@ import { Migration } from '@nocobase/server';
 
 export default class UpdateIdToBigIntMigrator extends Migration {
   async up() {
+    const result = await this.app.version.satisfies('<0.9.0-alpha.1');
+    if (!result) {
+      return;
+    }
     const db = this.app.db;
 
     await db.getCollection('fields').repository.update({

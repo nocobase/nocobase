@@ -12,10 +12,10 @@ const ReadPretty = (props) => {
   const field = useField();
 
   useEffect(() => {
-    if (!field.title) {
+    if (!field.title && collectionField?.uiSchema?.title) {
       field.title = collectionField.uiSchema.title;
     }
-  }, collectionField.title);
+  }, collectionField?.title);
 
   if (!readOnly)
     return (
