@@ -8,7 +8,8 @@ import { RemoveActionContext } from './context';
 import { FormFieldLinkageRuleAction, FormButtonLinkageRuleAction } from './LinkageRuleAction';
 export const LinkageRuleActions = observer((props: any): any => {
   const field = useField<ArrayFieldModel>();
-  return field?.value&&field?.value?.map((item, index) => {
+  const data = typeof field?.value === 'object' ? [field?.value] : field?.value;
+  return data?.map((item, index) => {
     return (
       <RemoveActionContext.Provider key={index} value={() => field.remove(index)}>
         <ObjectField
@@ -25,6 +26,7 @@ export const LinkageRuleActionGroup = (props) => {
   const field = useField<any>();
   const logic = 'action';
   const { type } = props?.useProps();
+  console.log(props.value);
   return (
     <div style={{ marginLeft: 10 }}>
       <ArrayField name={logic} component={[LinkageRuleActions, { type }]} disabled={false} initialValue={props.value} />
