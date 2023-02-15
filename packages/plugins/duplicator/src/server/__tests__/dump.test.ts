@@ -148,7 +148,7 @@ $$`);
     await db.sequelize.query(`
 CREATE  TRIGGER last_name_changes
   BEFORE UPDATE
-  ON ${app.db.getCollection('users').model.tableName}
+  ON ${app.db.getCollection('users').quotedTableName()}
   FOR EACH ROW
   EXECUTE PROCEDURE  trigger_function();
     `);
