@@ -14,17 +14,15 @@ import { lang, NAMESPACE } from "../locale";
 
 const JT_VALUE_RE = /^\s*\{\{([\s\S]*)\}\}\s*$/;
 
-export function parseValue(value: any): { type?: string; variable?: string[] } {
+export function parseValue(value: any): string | string[] {
   if (value == null) {
-    return { type: 'null' };
+    return 'null';
   }
   const type = typeof value;
   if (type === 'string') {
     const matched = value.match(JT_VALUE_RE);
     if (matched) {
-      return {
-        variable: matched[1].split('.'),
-      };
+      return matched[1].split('.');
     }
     // const ts = Date.parse(value);
     // if (value.match(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{0,3})Z$/) && !Number.isNaN(Date.parse(value))) {
@@ -33,9 +31,7 @@ export function parseValue(value: any): { type?: string; variable?: string[] } {
     //   };
     // }
   }
-  return {
-    type: type === 'object' && value instanceof Date ? 'date' : type
-  };
+  return type === 'object' && value instanceof Date ? 'date' : type;
 }
 
 const ConstantTypes = {
@@ -114,23 +110,22 @@ const ConstantTypes = {
   },
 };
 
-function useDefaultConstantOptions() {
-  return {
-    component(props) {
-      const { type } = parseValue(props.value);
-      return ConstantTypes[type]?.component?.(props);
-    },
-    children: Object.values(ConstantTypes)
-  };
+type VariableOptions = {
+  value: string;
+  label?: string;
+  children?: VariableOptions[];
 }
 
 export function VariableInput(props) {
   const { value = '', scope, onChange, children, button } = props;
-  const { type, variable } = parseValue(value);
+  const parsed = parseValue(value);
+  const isConstant = typeof parsed === 'string';
+  const type = isConstant ? parsed : 'string';
+  const variable = isConstant ? null : parsed;
   const ConstantComponent = ConstantTypes[type]?.component;
   const constantOptions = Object.values(ConstantTypes);
   const compile = useCompile();
-  const options = compile([
+  const options: VariableOptions[] = compile([
     { value: '', label: lang('Constant'), children: children ? null : constantOptions },
     ...(typeof scope === 'function' ? scope() : (scope ?? []))
   ]);
@@ -152,8 +147,10 @@ export function VariableInput(props) {
     onChange(`{{${next.join('.')}}}`);
   }
 
-  const variableText = variable?.reduce((opts, key, i) => opts.concat((i ? opts[i - 1].children : options).find(item => item.value === key)), [])
-    .map(item => item.label).join(' / ');
+  const variableText = variable?.reduce((opts, key, i) => {
+    const option = (i ? (opts[i - 1] as VariableOptions).children : options)?.find(item => item.value === key);
+    return option ? opts.concat(option) : opts;
+  }, [] as VariableOptions[]).map(item => item.label).join(' / ');
 
   const disabled = props.disabled || form.disabled;
 

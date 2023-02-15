@@ -55,7 +55,9 @@ function pasteHtml(container, html, { selectPastedContent = false, range: indexe
     const next = range.cloneRange();
     next.setStartAfter(lastNode);
     if (selectPastedContent) {
-      next.setStartBefore(firstChild);
+      if (firstChild) {
+        next.setStartBefore(firstChild);
+      }
     } else {
       next.collapse(true);
     }

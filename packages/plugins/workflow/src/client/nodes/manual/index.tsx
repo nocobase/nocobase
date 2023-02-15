@@ -94,8 +94,14 @@ export default {
     AssigneesSelect
   },
   getOptions(config, types) {
-    const fields = filterTypedFields(config.schema?.collection?.fields ?? [], types);
-    return fields.length ? fields : null;
+    const fields = (config.schema?.collection?.fields ?? []).map(field => ({
+      key: field.name,
+      value: field.name,
+      label: field.uiSchema.title,
+      title: field.uiSchema.title
+    }));
+    const filteredFields = filterTypedFields(fields, types);
+    return filteredFields.length ? filteredFields : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.schema?.collection?.fields?.length

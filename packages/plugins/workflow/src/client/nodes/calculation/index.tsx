@@ -28,6 +28,7 @@ export default {
         options: Array.from(calculationEngines.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), [])
       },
       required: true,
+      default: 'math.js'
     },
     'config.expression': {
       type: 'string',
