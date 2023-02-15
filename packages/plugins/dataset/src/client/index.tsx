@@ -63,6 +63,14 @@ export const DataSetBlockInitializer = (props) => {
                   <SchemaComponent
                     schema={{
                       properties: {
+                        dataSetName: {
+                          title: t('DataSet Name'),
+                          required: true,
+                          'x-component': 'Input',
+                          'x-component-props': { size: 'middle' },
+                          'x-decorator': 'FormItem',
+                          'x-pattern': 'editable',
+                        },
                         dataSetType: {
                           title: t('DataSet Type'),
                           required: true,
@@ -108,11 +116,12 @@ export const DataSetBlockInitializer = (props) => {
         if (values?.mockData) {
           dataSet = parseDataSetString(values.mockData);
           const data_set_id = uid();
-          const { dataSetType, mockData } = values;
+          const { dataSetType, mockData, dataSetName } = values;
           const data = {
             data_set_id,
             data_set_type: dataSetType,
             data_set_value: mockData,
+            data_set_name: dataSetName,
           };
           apiClient.request({
             method: 'post',
