@@ -1,14 +1,21 @@
-import { ISchema, useFieldSchema } from '@formily/react';
-import React from 'react';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager } from '../../../collection-manager';
+import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
+import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
+import { AssociationItemContext } from './Association.Item.Decorator';
 import { AssociationFilter } from './AssociationFilter';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
+  const field = useField();
   const { t } = useTranslation();
+  const { service: associationItemService } = useContext(AssociationItemContext);
+  const dataSource = useCollectionFilterOptions(fieldSchema?.['x-target']);
+  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
+
   const collectionField = AssociationFilter.useAssociationField();
 
   const { getCollectionFields } = useCollectionManager();
@@ -73,6 +80,44 @@ export const AssociationFilterItemDesigner = (props) => {
             });
           }
           dn.refresh();
+        }}
+      />
+      <SchemaSettings.ModalItem
+        title={t('Set the data scope')}
+        schema={
+          {
+            type: 'object',
+            title: t('Set the data scope'),
+            properties: {
+              filter: {
+                default: defaultFilter,
+                enum: dataSource,
+                'x-component': 'Filter',
+                'x-component-props': {},
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={({ filter }) => {
+          const params = field.decoratorProps.params || {};
+          params.filter = filter;
+          field.decoratorProps.params = params;
+          fieldSchema['x-decorator-props']['params'] = params;
+          const filters = associationItemService.params?.[1]?.filters || {};
+          associationItemService.run(
+            {
+              ...associationItemService.params?.[0],
+              filter: mergeFilter([...Object.values(filters), filter]),
+              page: 1,
+            },
+            { filters },
+          );
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+            },
+          });
         }}
       />
       <SchemaSettings.SelectItem
