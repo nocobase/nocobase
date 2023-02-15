@@ -15,6 +15,10 @@ describe('my suite', () => {
       name: 'datasets',
       fields: [
         {
+          name: 'data_set_name',
+          type: 'string',
+        },
+        {
           name: 'data_set_id',
           type: 'string',
         },
@@ -40,6 +44,7 @@ describe('my suite', () => {
   test('my case', async () => {
     const { body } = await agent.resource('datasets').create({
       values: {
+        data_set_name: 'test_dataset',
         data_set_id: randomUUID(),
         data_set_type: 'MOCK',
         data_set_value: `[
@@ -69,8 +74,9 @@ describe('my suite', () => {
 
     expect(body.data).toMatchInlineSnapshot(`
       Object {
-        "createdAt": "2023-02-14T14:12:35.825Z",
-        "data_set_id": "1f9713b9-fae1-451e-9c1f-2b6358d3a2f0",
+        "createdAt": "2023-02-15T03:33:52.356Z",
+        "data_set_id": "fb2ca74a-a942-4ff7-8dd1-cda6fbccad4f",
+        "data_set_name": "test_dataset",
         "data_set_type": "MOCK",
         "data_set_value": "[
                 {
@@ -95,7 +101,7 @@ describe('my suite', () => {
                 }
               ]",
         "id": 1,
-        "updatedAt": "2023-02-14T14:12:35.825Z",
+        "updatedAt": "2023-02-15T03:33:52.356Z",
       }
     `);
   });
@@ -104,6 +110,7 @@ describe('my suite', () => {
     const datasets = db.getRepository('datasets');
     const result = await datasets.create({
       values: {
+        data_set_name: 'test_dataset',
         data_set_id: randomUUID(),
         data_set_type: 'MOCK',
         data_set_value: `[
@@ -132,8 +139,9 @@ describe('my suite', () => {
     });
     expect(result).toMatchInlineSnapshot(`
       Object {
-        "createdAt": 2023-02-14T14:30:41.337Z,
-        "data_set_id": "dd2071cd-6eef-4b80-8bce-83ace2ed5476",
+        "createdAt": 2023-02-15T03:33:52.424Z,
+        "data_set_id": "6097d791-a8ee-4c0b-aed0-fb8d75de38af",
+        "data_set_name": "test_dataset",
         "data_set_type": "MOCK",
         "data_set_value": "[
                 {
@@ -158,7 +166,7 @@ describe('my suite', () => {
                 }
               ]",
         "id": 1,
-        "updatedAt": 2023-02-14T14:30:41.337Z,
+        "updatedAt": 2023-02-15T03:33:52.424Z,
       }
     `);
   });
@@ -167,6 +175,7 @@ describe('my suite', () => {
     const data_set_id = randomUUID();
     const result = await datasets.create({
       values: {
+        data_set_name: 'test_dataset',
         data_set_id,
         data_set_type: 'MOCK',
         data_set_value: `[
@@ -201,8 +210,9 @@ describe('my suite', () => {
     expect(dataset).toMatchInlineSnapshot(`
       Array [
         Object {
-          "createdAt": 2023-02-14T15:08:48.018Z,
-          "data_set_id": "d055dd68-aecb-497d-b6bd-d3982cf3ecaa",
+          "createdAt": 2023-02-15T03:33:52.481Z,
+          "data_set_id": "f853ba7e-2ff9-4319-a600-55349ddd824a",
+          "data_set_name": "test_dataset",
           "data_set_type": "MOCK",
           "data_set_value": "[
                 {
@@ -227,7 +237,7 @@ describe('my suite', () => {
                 }
               ]",
           "id": 1,
-          "updatedAt": 2023-02-14T15:08:48.018Z,
+          "updatedAt": 2023-02-15T03:33:52.481Z,
         },
       ]
     `);
