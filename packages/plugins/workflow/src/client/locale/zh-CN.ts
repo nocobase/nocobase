@@ -65,7 +65,7 @@ export default {
   'Executed at': '执行于',
   'Queueing': '队列中',
   'On going': '进行中',
-  'Succeeded': '成功',
+  'Resolved': '完成',
   'Failed': '失败',
   'Error': '出错',
   'Aborted': '已终止',

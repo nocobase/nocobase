@@ -22,7 +22,7 @@ export const EXECUTION_STATUS = {
 export const ExecutionStatusOptions = [
   { value: EXECUTION_STATUS.QUEUEING, label: `{{t("Queueing", { ns: "${NAMESPACE}" })}}`, color: 'blue' },
   { value: EXECUTION_STATUS.STARTED, label: `{{t("On going", { ns: "${NAMESPACE}" })}}`, color: 'gold' },
-  { value: EXECUTION_STATUS.RESOLVED, label: `{{t("Succeeded", { ns: "${NAMESPACE}" })}}`, color: 'green' },
+  { value: EXECUTION_STATUS.RESOLVED, label: `{{t("Resolved", { ns: "${NAMESPACE}" })}}`, color: 'green' },
   { value: EXECUTION_STATUS.FAILED, label: `{{t("Failed", { ns: "${NAMESPACE}" })}}`, color: 'red' },
   { value: EXECUTION_STATUS.ERROR, label: `{{t("Error", { ns: "${NAMESPACE}" })}}`, color: 'red' },
   { value: EXECUTION_STATUS.ABORTED, label: `{{t("Aborted", { ns: "${NAMESPACE}" })}}`, color: 'red' },
@@ -44,7 +44,7 @@ export const JOB_STATUS = {
 
 export const JobStatusOptions = [
   { value: JOB_STATUS.PENDING, label: `{{t("Pending", { ns: "${NAMESPACE}" })}}`, color: 'gold', icon: <ClockCircleOutlined /> },
-  { value: JOB_STATUS.RESOLVED, label: `{{t("Succeeded", { ns: "${NAMESPACE}" })}}`, color: 'green', icon: <CheckOutlined /> },
+  { value: JOB_STATUS.RESOLVED, label: `{{t("Resolved", { ns: "${NAMESPACE}" })}}`, color: 'green', icon: <CheckOutlined /> },
   { value: JOB_STATUS.FAILED, label: `{{t("Failed", { ns: "${NAMESPACE}" })}}`, color: 'red', icon: <ExclamationOutlined /> },
   { value: JOB_STATUS.ERROR, label: `{{t("Error", { ns: "${NAMESPACE}" })}}`, color: 'red', icon: <CloseOutlined /> },
   { value: JOB_STATUS.ABORTED, label: `{{t("Aborted", { ns: "${NAMESPACE}" })}}`, color: 'red', icon: <MinusOutlined rotate={90} /> },

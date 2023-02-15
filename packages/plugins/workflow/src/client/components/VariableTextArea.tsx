@@ -100,7 +100,7 @@ function createOptionsKeyLabelMap(options: any[]) {
 
 function createVariableTagHTML(variable, keyLabelMap) {
   const labels = keyLabelMap.get(variable);
-  return `<span class="ant-tag ant-tag-has-color" contentEditable="false" data-key="${variable}">${labels?.join(' / ')}</span>`;
+  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-key="${variable}">${labels?.join(' / ')}</span>`;
 }
 
 export function VariableTextArea(props) {
@@ -207,7 +207,6 @@ export function VariableTextArea(props) {
             margin: 0 .5em;
             padding: 2px 7px;
             border-radius: 10px;
-            background-color: #6475c0;
           }
         `)}
         ref={inputRef}

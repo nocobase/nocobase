@@ -180,7 +180,7 @@ export function VariableInput(props) {
             .ant-input{
               overflow: auto;
               white-space: nowrap;
-              padding-right: 28px;
+              ${disabled ? '' : 'padding-right: 28px;'}
 
               .ant-tag{
                 display: inline;
@@ -188,7 +188,6 @@ export function VariableInput(props) {
                 margin: 0;
                 padding: 2px 7px;
                 border-radius: 10px;
-                background-color: #6475c0;
               }
             }
           `}>
@@ -204,19 +203,22 @@ export function VariableInput(props) {
               className={cx('ant-input', { 'ant-input-disabled': disabled })}
               contentEditable={!disabled}
             >
-              <Tag contentEditable={false} className="ant-tag-has-color">{variableText}</Tag>
+              <Tag contentEditable={false} color="blue">{variableText}</Tag>
             </div>
-            <span
-              className={cx('ant-select-clear', css`
-                user-select: 'none'
-
-              `)}
-              unselectable="on"
-              aria-hidden
-              onClick={() => onChange(null)}
-            >
-              <CloseCircleFilled />
-            </span>
+            {!disabled
+              ? (
+                <span
+                  className={cx('ant-select-clear', css`
+                    user-select: 'none'
+                  `)}
+                  unselectable="on"
+                  aria-hidden
+                  onClick={() => onChange(null)}
+                >
+                  <CloseCircleFilled />
+                </span>
+              )
+              : null}
           </div>
         )
         : (

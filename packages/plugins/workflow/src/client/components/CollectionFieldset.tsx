@@ -29,9 +29,10 @@ function AssociationInput(props) {
 }
 
 // NOTE: observer for watching useProps
-export default observer(({ value, onChange }: any) => {
+export default observer(({ value, disabled, onChange }: any) => {
   const { t } = useTranslation();
   const compile = useCompile();
+  const form = useForm();
   const { getCollection, getCollectionFields } = useCollectionManager();
   const { values: data } = useForm();
   const collectionName = data?.config?.collection;
@@ -44,6 +45,7 @@ export default observer(({ value, onChange }: any) => {
 
   const unassignedFields = fields.filter(field => !(field.name in value));
   const scope = useWorkflowVariableOptions();
+  const mergedDisabled = disabled || form.disabled;
 
   return (
     <fieldset className={css`
@@ -93,14 +95,18 @@ export default observer(({ value, onChange }: any) => {
                         }}
                       />
                     </VariableInput>
-                    <Button
-                      type="link"
-                      icon={<CloseCircleOutlined />}
-                      onClick={() => {
-                        const { [field.name]: _, ...rest } = value;
-                        onChange(rest);
-                      }}
-                    />
+                    {!mergedDisabled
+                      ? (
+                        <Button
+                          type="link"
+                          icon={<CloseCircleOutlined />}
+                          onClick={() => {
+                            const { [field.name]: _, ...rest } = value;
+                            onChange(rest);
+                          }}
+                        />
+                      )
+                      : null}
                   </Form.Item>
                 );
               })
