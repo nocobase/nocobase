@@ -14,6 +14,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { templates } from './templates';
 import { ChartConfigurationOptions } from './ChartSchemaTemplates';
+import { DataSetBlockInitializer } from './DataSetBlockInitializer';
 
 export const Options = observer((props) => {
   const form = useForm();
@@ -37,7 +38,7 @@ export const ChartBlockInitializer = (props) => {
   const api = useAPIClient();
   const compiler = useCompile();
   return (
-    <DataBlockInitializer
+    <DataSetBlockInitializer
       {...props}
       componentType={'Kanban'}
       icon={<FormOutlined />}
