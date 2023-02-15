@@ -39,7 +39,7 @@ export const LinkageRuleActionGroup = (props) => {
             };
           }}
         >
-          {t('Add action')}
+          {t('Add property')}
         </a>
       </Space>
     </div>

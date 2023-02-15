@@ -47,8 +47,8 @@ export const FormLinkageRules = observer((props: any) => {
                     },
                     properties: {
                       condition: {
-                        'x-component': 'h2',
-                        'x-content': '条件',
+                        'x-component': 'h4',
+                        'x-content': '{{ t("Condition") }}',
                       },
                       linkageRuleCondition: {
                         'x-component': 'Filter',
@@ -67,8 +67,8 @@ export const FormLinkageRules = observer((props: any) => {
                         },
                       },
                       action: {
-                        'x-component': 'h2',
-                        'x-content': '操作',
+                        'x-component': 'h4',
+                        'x-content': '{{ t("Properties") }}',
                       },
                       linkageRuleAction: {
                         'x-component': LinkageRuleActionGroup,

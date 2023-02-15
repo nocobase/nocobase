@@ -24,7 +24,7 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
     { label: t('Hidden'), value: ActionType.None, selected: false, schema: {} },
     { label: t('Hidden(reserved value)'), value: ActionType.Hidden, selected: false, schema: {} },
     { label: t('Required'), value: ActionType.Required, selected: false, schema: {} },
-    { label: t('Not required '), value: ActionType.InRequired, selected: false, schema: {} },
+    { label: t('Not required'), value: ActionType.InRequired, selected: false, schema: {} },
     { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },
   ];
   return (
