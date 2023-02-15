@@ -1,4 +1,6 @@
 export default {
+  namespace: 'verification',
+  duplicator: 'optional',
   name: 'verifications',
   fields: [
     {

@@ -1,10 +1,12 @@
 import { ISchema, Schema } from '@formily/react';
 import { message } from 'antd';
+import { uid } from '@formily/shared';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
 import { CollectionTemplate } from '../components/CollectionTemplate';
+import { CollectionCategory } from '../components/CollectionCategory';
 import { collectionFieldSchema } from './collectionFields';
 
 const compile = (source) => {
@@ -94,177 +96,310 @@ export const collectionSchema: ISchema = {
             filter: {
               'hidden.$isFalsy': true,
             },
-            appends: [],
+            appends: ['category'],
           },
         },
       },
       properties: {
-        actions: {
+        tabs: {
           type: 'void',
-          'x-component': 'ActionBar',
+          'x-component': 'ConfigurationTabs',
+        },
+      },
+    },
+  },
+};
+
+export const collectionTableSchema: ISchema = {
+  type: 'object',
+  properties: {
+    [uid()]: {
+      type: 'void',
+      'x-component': 'ActionBar',
+      'x-component-props': {
+        style: {
+          marginBottom: 16,
+        },
+      },
+      properties: {
+        filter: {
+          type: 'void',
+          title: '{{ t("Filter") }}',
+          default: {
+            $and: [{ title: { $includes: '' } }, { name: { $includes: '' } }],
+          },
+          'x-action': 'filter',
+          'x-component': 'Filter.Action',
           'x-component-props': {
-            style: {
-              marginBottom: 16,
+            icon: 'FilterOutlined',
+            useProps: '{{ cm.useFilterActionProps }}',
+          },
+          'x-align': 'left',
+        },
+        delete: {
+          type: 'void',
+          title: '{{ t("Delete") }}',
+          'x-component': 'Action',
+          'x-component-props': {
+            icon: 'DeleteOutlined',
+            useAction: '{{ cm.useBulkDestroyActionAndRefreshCM }}',
+            confirm: {
+              title: "{{t('Delete record')}}",
+              content: "{{t('Are you sure you want to delete it?')}}",
             },
           },
+        },
+        create: {
+          type: 'void',
+          title: '{{ t("Create collection") }}',
+          'x-component': 'AddCollection',
+          'x-component-props': {
+            type: 'primary',
+          },
+        },
+      },
+    },
+    [uid()]: {
+      type: 'void',
+      'x-uid': 'input',
+      'x-component': 'Table.Void',
+      'x-component-props': {
+        rowKey: 'name',
+        rowSelection: {
+          type: 'checkbox',
+        },
+        useDataSource: '{{ cm.useDataSourceFromRAC }}',
+        useAction() {
+          const api = useAPIClient();
+          const { t } = useTranslation();
+          return {
+            async move(from, to) {
+              await api.resource('collections').move({
+                sourceId: from.key,
+                targetId: to.key,
+              });
+              message.success(t('Saved successfully'), 0.2);
+            },
+          };
+        },
+      },
+      properties: {
+        column1: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
           properties: {
-            filter: {
-              type: 'void',
-              title: '{{ t("Filter") }}',
-              default: {
-                $and: [{ title: { $includes: '' } }, { name: { $includes: '' } }],
-              },
-              'x-action': 'filter',
-              'x-component': 'Filter.Action',
-              'x-component-props': {
-                icon: 'FilterOutlined',
-                useProps: '{{ cm.useFilterActionProps }}',
-              },
-              'x-align': 'left',
+            title: {
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
             },
-            delete: {
+          },
+        },
+        column2: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column3: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          title: '{{t("Collection template")}}',
+          properties: {
+            template: {
+              'x-component': CollectionTemplate,
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column4: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          'x-visible': 'categoryVisible',
+          title: '{{t("Collection category")}}',
+          properties: {
+            category: {
+              'x-component': CollectionCategory,
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column5: {
+          type: 'void',
+          title: '{{ t("Actions") }}',
+          'x-component': 'Table.Column',
+          properties: {
+            actions: {
               type: 'void',
-              title: '{{ t("Delete") }}',
-              'x-component': 'Action',
+              'x-component': 'Space',
               'x-component-props': {
-                icon: 'DeleteOutlined',
-                useAction: '{{ cm.useBulkDestroyActionAndRefreshCM }}',
-                confirm: {
-                  title: "{{t('Delete record')}}",
-                  content: "{{t('Are you sure you want to delete it?')}}",
+                split: '|',
+              },
+              properties: {
+                view: {
+                  type: 'void',
+                  title: '{{ t("Configure fields") }}',
+                  'x-component': 'Action.Link',
+                  'x-component-props': {},
+                  properties: {
+                    drawer: {
+                      type: 'void',
+                      'x-component': 'Action.Drawer',
+                      'x-component-props': {
+                        destroyOnClose: true,
+                      },
+                      'x-reactions': (field) => {
+                        const i = field.path.segments[1];
+                        const table = field.form.getValuesIn(`table.${i}`);
+                        if (table) {
+                          field.title = `${compile(table.title)} - ${compile('{{ t("Configure fields") }}')}`;
+                        }
+                      },
+                      properties: {
+                        collectionFieldSchema,
+                      },
+                    },
+                  },
                 },
-              },
-            },
-            create: {
-              type: 'void',
-              title: '{{ t("Create collection") }}',
-              'x-component': 'AddCollection',
-              'x-component-props': {
-                type: 'primary',
+                update: {
+                  type: 'void',
+                  title: '{{ t("Edit") }}',
+                  'x-component': 'EditCollection',
+                  'x-component-props': {
+                    type: 'primary',
+                  },
+                },
+                delete: {
+                  type: 'void',
+                  title: '{{ t("Delete") }}',
+                  'x-component': 'Action.Link',
+                  'x-component-props': {
+                    confirm: {
+                      title: "{{t('Delete record')}}",
+                      content: "{{t('Are you sure you want to delete it?')}}",
+                    },
+                    useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
+                  },
+                },
               },
             },
           },
         },
-        table: {
+      },
+    },
+  },
+};
+
+export const collectionCategorySchema: ISchema = {
+  type: 'object',
+  properties: {
+    form: {
+      type: 'void',
+      'x-decorator': 'Form',
+      'x-component': 'Action.Modal',
+      title: '{{ t("Add category") }}',
+      'x-component-props': {
+        width: 520,
+        getContainer: '{{ getContainer }}',
+      },
+      properties: {
+        name: {
+          type: 'string',
+          title: '{{t("Category name")}}',
+          required: true,
+          'x-disabled': '{{ !createOnly }}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+        color: {
+          type: 'string',
+          title: '{{t("Color")}}',
+          required: false,
+          'x-decorator': 'FormItem',
+          'x-component': 'ColorSelect',
+        },
+        footer: {
           type: 'void',
-          'x-uid': 'input',
-          'x-component': 'Table.Void',
-          'x-component-props': {
-            rowKey: 'name',
-            rowSelection: {
-              type: 'checkbox',
+          'x-component': 'Action.Modal.Footer',
+          properties: {
+            action1: {
+              title: '{{ t("Cancel") }}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ useCancelAction }}',
+              },
             },
-            useDataSource: '{{ cm.useDataSourceFromRAC }}',
-            useAction() {
-              const api = useAPIClient();
-              const { t } = useTranslation();
-              return {
-                async move(from, to) {
-                  console.log(from, to);
-                  await api.resource('collections').move({
-                    sourceId: from.key,
-                    targetId: to.key,
-                  });
-                  message.success(t('Saved successfully'), 0.2);
-                },
-              };
+            action2: {
+              title: '{{ t("Submit") }}',
+              'x-component': 'Action',
+              'x-component-props': {
+                type: 'primary',
+                useAction: '{{ useCreateCategry }}',
+              },
             },
           },
+        },
+      },
+    },
+  },
+};
+
+export const collectionCategoryEditSchema: ISchema = {
+  type: 'object',
+  properties: {
+    form: {
+      type: 'void',
+      'x-decorator': 'Form',
+      'x-decorator-props': {
+        useValues: '{{ useValuesFromRecord }}',
+      },
+      'x-component': 'Action.Modal',
+      title: '{{ t("Edit category") }}',
+      'x-component-props': {
+        width: 520,
+        getContainer: '{{ getContainer }}',
+      },
+      properties: {
+        name: {
+          type: 'string',
+          title: '{{t("Category name")}}',
+          required: true,
+          'x-disabled': '{{ !createOnly }}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+        color: {
+          type: 'string',
+          title: '{{t("Color")}}',
+          required: false,
+          'x-decorator': 'FormItem',
+          'x-component': 'ColorSelect',
+        },
+        footer: {
+          type: 'void',
+          'x-component': 'Action.Modal.Footer',
           properties: {
-            column1: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                title: {
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
+            action1: {
+              title: '{{ t("Cancel") }}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ useCancelAction }}',
               },
             },
-            column2: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                name: {
-                  type: 'string',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            column3: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              title: '{{t("Collection template")}}',
-              properties: {
-                template: {
-                  'x-component': CollectionTemplate,
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            column4: {
-              type: 'void',
-              title: '{{ t("Actions") }}',
-              'x-component': 'Table.Column',
-              properties: {
-                actions: {
-                  type: 'void',
-                  'x-component': 'Space',
-                  'x-component-props': {
-                    split: '|',
-                  },
-                  properties: {
-                    view: {
-                      type: 'void',
-                      title: '{{ t("Configure fields") }}',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {},
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer',
-                          'x-component-props': {
-                            destroyOnClose: true,
-                          },
-                          'x-reactions': (field) => {
-                            const i = field.path.segments[1];
-                            const table = field.form.getValuesIn(`table.${i}`);
-                            if (table) {
-                              field.title = `${compile(table.title)} - ${compile('{{ t("Configure fields") }}')}`;
-                            }
-                          },
-                          properties: {
-                            collectionFieldSchema,
-                          },
-                        },
-                      },
-                    },
-                    update: {
-                      type: 'void',
-                      title: '{{ t("Edit") }}',
-                      'x-component': 'EditCollection',
-                      'x-component-props': {
-                        type: 'primary',
-                      },
-                    },
-                    delete: {
-                      type: 'void',
-                      title: '{{ t("Delete") }}',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {
-                        confirm: {
-                          title: "{{t('Delete record')}}",
-                          content: "{{t('Are you sure you want to delete it?')}}",
-                        },
-                        useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
-                      },
-                    },
-                  },
-                },
+            action2: {
+              title: '{{ t("Submit") }}',
+              'x-component': 'Action',
+              'x-component-props': {
+                type: 'primary',
+                useAction: '{{ useEditCategry }}',
               },
             },
           },

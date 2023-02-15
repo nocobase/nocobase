@@ -1,4 +1,5 @@
 import decompress from 'decompress';
+import fs from 'fs';
 import fsPromises from 'fs/promises';
 import inquirer from 'inquirer';
 import path from 'path';
@@ -6,15 +7,22 @@ import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
-import fs from 'fs';
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
 
   importedCollections: string[] = [];
 
   async restore(backupFilePath: string) {
-    const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
-    const filePath = path.isAbsolute(backupFilePath) ? backupFilePath : path.resolve(dirname, backupFilePath);
+    let filePath: string;
+
+    if (path.isAbsolute(backupFilePath)) {
+      filePath = backupFilePath;
+    } else if (path.basename(backupFilePath) === backupFilePath) {
+      const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
+      filePath = path.resolve(dirname, backupFilePath);
+    } else {
+      filePath = path.resolve(process.cwd(), backupFilePath);
+    }
 
     const results = await inquirer.prompt([
       {

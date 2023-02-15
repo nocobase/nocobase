@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'workflow',
+  duplicator: 'optional',
   name: 'executions',
   fields: [
     {

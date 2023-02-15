@@ -1,8 +1,8 @@
-import { Database, MigrationContext} from '@nocobase/database';
+import { Database, MigrationContext } from '@nocobase/database';
 import UpdateCollectionsHiddenMigration from '../../migrations/20221104151410-update-collections-hidden';
 
-import { createApp } from '../index';
 import { MockServer } from '@nocobase/test';
+import { createApp } from '../index';
 
 describe('migration 20221104151410-update-collections-hidden test', () => {
   let app: MockServer;

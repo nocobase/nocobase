@@ -1,6 +1,8 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
+  namespace: 'system-settings',
+  duplicator: 'optional',
   name: 'systemSettings',
   fields: [
     {
