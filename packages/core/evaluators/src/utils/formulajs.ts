@@ -1,4 +1,4 @@
-import * as fns from '@formulajs/formulajs';
+import { default as fns } from '@formulajs/formulajs';
 
 
 

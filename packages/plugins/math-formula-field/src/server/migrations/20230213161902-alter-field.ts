@@ -22,25 +22,32 @@ export default class extends Migration {
       }
 
       const AppPlugin = db.getRepository('applicationPlugins');
-      const mathFormulaPlugin = await AppPlugin.findOne({
+      const formulaPlugin = await AppPlugin.findOne({
         filter: {
-          name: 'math-formula-field',
+          name: 'formula-field',
         },
         transaction
       });
 
-      if (mathFormulaPlugin) {
-        await mathFormulaPlugin.update({
-          name: 'formula-field',
-        }, { transaction });
-
-        await AppPlugin.destroy({
-          filter: {
-            name: 'excel-formula-field'
+      if (!formulaPlugin) {
+        await AppPlugin.create({
+          values: {
+            name: 'formula-field',
+            version: '0.9.0-alpha.2',
+            enabled: true,
+            installed: true,
+            builtin: true
           },
           transaction
         });
       }
+
+      await AppPlugin.destroy({
+        filter: {
+          name: ['math-formula-field', 'excel-formula-field']
+        },
+        transaction
+      });
     });
   }
 }

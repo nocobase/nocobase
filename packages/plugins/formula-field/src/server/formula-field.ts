@@ -11,7 +11,10 @@ export interface FormulaFieldOptions extends BaseFieldOptions {
 
 const DataTypeMap = {
   boolean: DataTypes.BOOLEAN,
-  number: DataTypes.DOUBLE,
+  integer: DataTypes.INTEGER,
+  bigInt: DataTypes.BIGINT,
+  double: DataTypes.DOUBLE,
+  decimal: DataTypes.DECIMAL,
   string: DataTypes.STRING,
   date: DataTypes.DATE(3),
 }
@@ -19,7 +22,7 @@ const DataTypeMap = {
 export class FormulaField extends Field {
   get dataType() {
     const { dataType } = this.options;
-    return DataTypeMap[dataType];
+    return DataTypeMap[dataType] ?? DataTypes.DOUBLE;
   }
 
   calculate(scope) {
@@ -27,7 +30,9 @@ export class FormulaField extends Field {
     const evaluate = evaluators.get(engine);
     try {
       return evaluate(expression, scope);
-    } catch {}
+    } catch (e){
+      console.error(e);
+    }
     return null;
   }
 
