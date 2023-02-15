@@ -13,6 +13,10 @@ export class DatasetPlugin extends Plugin {
       'name': 'datasets',
       fields: [
         {
+          name: 'data_set_name',
+          type: 'string',
+        },
+        {
           name: 'data_set_id',
           type: 'string',
         },
