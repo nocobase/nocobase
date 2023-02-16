@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,9 +58,11 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener
+  ValidateListener,
 } from './types';
-import { snakeCase } from './utils';
+import { patchSequelizeQueryInterface, snakeCase } from './utils';
+
+import DatabaseUtils from './database-utils';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -157,6 +159,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   modelCollection = new Map<ModelStatic<any>, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
 
+  utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
 
@@ -197,9 +200,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       // https://github.com/sequelize/sequelize/issues/1774
       require('pg').defaults.parseInt8 = true;
     }
+    this.options = opts;
 
     this.sequelize = new Sequelize(opts);
-    this.options = opts;
+
     this.collections = new Map();
     this.modelHook = new ModelHook(this);
 
@@ -263,6 +267,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     this.initListener();
+    patchSequelizeQueryInterface(this);
   }
 
   initListener() {
@@ -320,6 +325,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
             return index;
           });
         }
+      }
+
+      if (this.options.schema && !options.schema) {
+        options.schema = this.options.schema;
       }
     });
   }
