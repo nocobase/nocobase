@@ -43,6 +43,16 @@ const useCommentsCollection = () => {
         },
       },
       {
+        name: 'recordId',
+        type: 'string',
+        interface: 'input',
+        uiSchema: {
+          title: '{{t("Record ID")}}',
+          type: 'string',
+          'x-component': 'Input',
+        },
+      },
+      {
         name: 'createdBy',
         type: 'belongsTo',
         target: 'users',
