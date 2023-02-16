@@ -19,6 +19,7 @@ describe('dump', () => {
     app = mockServer();
 
     db = app.db;
+    await app.cleanDb();
 
     app.db.collection({
       name: 'users',
@@ -52,7 +53,6 @@ describe('dump', () => {
       fields: [],
     });
 
-    await app.cleanDb();
     await db.sync();
   });
 
@@ -148,7 +148,7 @@ $$`);
     await db.sequelize.query(`
 CREATE  TRIGGER last_name_changes
   BEFORE UPDATE
-  ON ${app.db.getCollection('users').model.tableName}
+  ON ${app.db.getCollection('users').quotedTableName()}
   FOR EACH ROW
   EXECUTE PROCEDURE  trigger_function();
     `);
