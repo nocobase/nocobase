@@ -1,20 +1,26 @@
 import { FormOutlined } from '@ant-design/icons';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout, Input } from '@formily/antd';
 import { Field } from '@formily/core';
 import { observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm } from '@formily/react';
 import {
-  DataBlockInitializer,
+  APIClientProvider,
+  DataBlockInitializer, FormProvider,
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { templates } from './templates';
-import { ChartConfigurationOptions } from './ChartSchemaTemplates';
 import { DataSetBlockInitializer } from './DataSetBlockInitializer';
+import { css } from '@emotion/css';
+import JSON5 from 'json5';
+import DataSetPreviewTable from './DataSetPreviewTable';
+import { parseDataSetString } from './utils';
+import { Button } from 'antd';
+import { ChartBlockEngine } from './ChartBlockEngine';
 
 export const Options = observer((props) => {
   const form = useForm();
@@ -43,55 +49,133 @@ export const ChartBlockInitializer = (props) => {
       componentType={'Kanban'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const collectionFields = getCollectionFields(item.name);
-        const computedFields = compiler(collectionFields
-          ?.filter((field) => (field.type === 'double' || field.type === 'bigInt'))
-          ?.map((field) => {
-            return {
-              label: field?.uiSchema?.title ?? field?.name,
-              value: field?.name,
-            };
-          }));
-        const groupByFields = compiler(collectionFields
-          ?.map((field) => {
-            return {
-              label: field?.uiSchema?.title ?? field?.name,
-              value: field?.foreignKey ?? field?.name,
-            };
-          }));
-        let values = await FormDialog(t('Create chart block'), () => {
+        console.log(item, '===============');
+        const dataSource = Object.keys(JSON5.parse(item.data_set_value)[0]).map(key => {
+          return {
+            label: key,
+            value: key,
+          };
+        });
+        let values = await FormDialog({ title: t('Create chart block'), width: 1200 }, () => {
+          const [dataSet, setDataSet] = useState(parseDataSetString(item?.data_set_value));
+          const form = useForm();
+          const [previewMetaData, setPreviewMetaData] = useState(null);
+          const previewChart = useCallback(() => {
+            form.validate().then(() => {
+              console.log("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+              const renderComponent = templates.get(form.values.chartType)?.renderComponent;
+              const result = {
+                renderComponent,
+                dataSetMetaData: {
+                  dataSetMetaData: item,
+                  chartConfig: form.values,
+                },
+              };
+              setPreviewMetaData(result);
+              console.log(result, 'form.values');
+            });
+          }, [form.values]);
+
           return (
-            <SchemaComponentOptions
-              scope={options.scope}
-              components={{ ...options.components }}
-            >
-              <FormLayout layout={'vertical'}>
-                <SchemaComponent
-                  scope={{ computedFields: computedFields || [], groupByFields: groupByFields }}
-                  components={{ Options }}
-                  schema={{
-                    properties: {
-                      chartType: {
-                        title: t('Chart type'),
-                        required: true,
-                        'x-component': 'Select',
-                        'x-decorator': 'FormItem',
-                        enum: [...templates.values()].map((template) => {
-                          return {
-                            label: template.type,
-                            value: template.type,
-                          };
-                        }),
-                      },
-                      options: {
-                        type: 'void',
-                        'x-component': 'Options',
-                      },
-                    },
-                  }}
-                />
-              </FormLayout>
-            </SchemaComponentOptions>
+            <APIClientProvider apiClient={api}>
+              <SchemaComponentOptions
+                scope={options.scope}
+                components={{ ...options.components }}
+              >
+                <section className={
+                  css`
+                    display: flex;
+                  `
+                }>
+                  {/*  left*/}
+                  <div className={
+                    css`
+                      flex: 1
+                    `
+                  }>
+                    <FormProvider form={form}>
+                      <FormLayout layout={'vertical'}>
+                        <SchemaComponent
+                          scope={{ dataSource }}
+                          components={{ Options }}
+                          schema={{
+                            properties: {
+                              chartType: {
+                                title: t('Chart type'),
+                                required: true,
+                                'x-component': 'Select',
+                                'x-decorator': 'FormItem',
+                                enum: [...templates.values()].map((template) => {
+                                  return {
+                                    label: template.title,
+                                    value: template.type,
+                                  };
+                                }),
+                              },
+                              options: {
+                                type: 'void',
+                                'x-component': 'Options',
+                              },
+                            },
+                          }}
+                        />
+                      </FormLayout>
+                    </FormProvider>
+                  </div>
+                  {/*  right*/}
+                  <div className={
+                    css`
+                      flex: 1
+                    `
+                  }>
+                    {/*DataSet Preview*/}
+                    <h4>DataSet Preview:</h4>
+                    <DataSetPreviewTable dataSet={dataSet} />
+                    <div className={
+                      css`
+                        display: flex;
+                        gap: 10px;
+                      `
+                    }>
+                      <h4>
+                        Chart Preview:
+                      </h4>
+                      <Button
+                        onClick={() => {
+                          previewChart();
+                        }
+                        }
+                      >
+                        refresh
+                      </Button>
+                    </div>
+                    {/*  Chart Preview*/}
+                    {
+                      previewMetaData
+                      &&
+                      <>
+                        <SchemaComponent
+                          schema={{
+                            properties: {
+                              chartPreview: {
+                                type: 'void',
+                                'x-decorator': 'CardItem',
+                                'x-component': 'ChartBlockEngine',
+                                'title': `${previewMetaData?.dataSetMetaData?.title ?? ''}`,
+                                'x-component-props': {
+                                  renderComponent: previewMetaData.renderComponent,
+                                  chartBlockMetaData: previewMetaData.dataSetMetaData,
+                                },
+                              },
+                            },
+                          }}
+                        />
+                      </>
+                    }
+                  </div>
+                </section>
+              </SchemaComponentOptions>
+            </APIClientProvider>
           );
         }).open({
           initialValues: {},
@@ -99,21 +183,28 @@ export const ChartBlockInitializer = (props) => {
         if (values) {
           //聚合chartOptions
           values = {
-            collectionName: item.name,
-            collectionFields,
-            ...values,
-            chartOptions: {
-              ...(values?.chartOptions || {}),
-            },
+            dataSetMetaData: item,
+            chartConfig: values,
           };
-          const renderComponent = templates.get(values.chartType)?.renderComponent;
-          console.log(values);
+          // const a = {
+          //   chartType: 'Pie',
+          //   Pie: {
+          //     'dimension': 'year',
+          //     'metric': [
+          //       'year',
+          //       'value',
+          //     ],
+          //     'chartConfig': '{\n  "appendPadding": 10,\n  "radius": 0.9,\n  "label": {\n    "type": "inner",\n    "offset": "-30%",\n    "content": "{{({percent}) => `${(percent * 100).toFixed(0)}%`}}",\n    "style": {\n      "fontSize": 14,\n      "textAlign": "center"\n    }\n  },\n  "interactions": [\n    {\n      "type": "element-active"\n    }\n  ]\n}',
+          //   },
+          // };
+          const renderComponent = templates.get(values.chartConfig.chartType)?.renderComponent;
+          console.log(values, '===============================================');
           insert({
             type: 'void',
             'x-designer': 'ChartBlockEngine.Designer',
             'x-decorator': 'CardItem',
             'x-component': 'ChartBlockEngine',
-            'title': `${values?.chartOptions?.title ?? ''}`,
+            'title': `${values?.dataSetMetaData?.title ?? ''}`,
             'x-component-props': {
               renderComponent: renderComponent,
               chartBlockMetaData: values,
