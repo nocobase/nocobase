@@ -1,45 +1,66 @@
 import { conditionAnalyse } from '../../common/utils/uitls';
-export const getReverseOperator = (operator) => {
-  switch (operator) {
-    case 'visible':
-      return 'hidden';
-    case 'hidden':
-    case 'none':
-      return 'visible';
-    case 'editable':
-      return 'readOnly';
-    case 'readOnly':
-    case 'readPretty':
-      return 'editable';
-    case 'required':
-      return false;
-    case 'inRequired':
-      return true;
-    default:
-      return '';
-  }
-};
+import { last } from 'lodash';
 
-export const linkageAction = ({ operator, value }, field, linkageRuleCondition, values) => {
+export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondition, values) => {
+  const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required];
+  const displayResult = field?.linkageProperty?.display || [field?.initProperty?.display];
+  const patternResult = field?.linkageProperty?.pattern || [field?.initProperty?.pattern];
+  const valueResult = field?.linkageProperty?.value || [field?.initProperty?.value];
   switch (operator) {
     case 'required':
-      field.required = conditionAnalyse(linkageRuleCondition, values) ? true : field?.initProperty?.required;
+      if (conditionAnalyse(linkageRuleCondition, values)) {
+        requiredResult.push(true);
+      }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: requiredResult,
+      };
+      console.log(field.linkageProperty?.required);
+      field.required = last(field.linkageProperty?.required);
       break;
     case 'inRequired':
-      field.required = conditionAnalyse(linkageRuleCondition, values) ? false : field?.initProperty?.required;
+      if (conditionAnalyse(linkageRuleCondition, values)) {
+        requiredResult.push(false);
+      }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: requiredResult,
+      };
+      field.required = last(field.linkageProperty?.required);
       break;
     case 'visible':
     case 'none':
     case 'hidden':
-      field.display = conditionAnalyse(linkageRuleCondition, values) ? operator : field?.initProperty?.display;
+      if (conditionAnalyse(linkageRuleCondition, values)) {
+        displayResult.push(operator);
+      }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        display: displayResult,
+      };
+      field.display = last(field.linkageProperty?.display);
       break;
     case 'editable':
     case 'readOnly':
     case 'readPretty':
-      field.pattern = conditionAnalyse(linkageRuleCondition, values) ? operator : field?.initProperty?.pattern;
+      if (conditionAnalyse(linkageRuleCondition, values)) {
+        patternResult.push(operator);
+      }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        pattern: patternResult,
+      };
+      field.pattern = last(patternResult);
       break;
     case 'value':
-      field.value = conditionAnalyse(linkageRuleCondition, values) ? value : field?.initProperty?.value;
+      if (conditionAnalyse(linkageRuleCondition, values)) {
+        valueResult.push(value);
+      }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        value: valueResult,
+      };
+      field.value = last(field.linkageProperty.value);
       break;
     default:
       return null;

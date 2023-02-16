@@ -23,7 +23,6 @@ export const FormLinkageRules = observer((props: any) => {
               'x-component-props': {
                 accordion: true,
               },
-              maxItems: 3,
               items: {
                 type: 'object',
                 'x-component': 'ArrayCollapse.CollapsePanel',

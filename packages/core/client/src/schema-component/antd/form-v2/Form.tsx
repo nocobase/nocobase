@@ -1,5 +1,5 @@
 import { FormLayout } from '@formily/antd';
-import { createForm, Field, onFormInputChange, onFieldReact, onFieldInit } from '@formily/core';
+import { createForm, Field, onFormInputChange, onFieldReact, onFieldInit, onFieldChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
@@ -7,7 +7,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
 import { useProps } from '../../hooks/useProps';
-import { linkageAction } from './utils';
+import { linkageMergeAction } from './utils';
 
 export interface FormProps {
   [key: string]: any;
@@ -79,13 +79,16 @@ const WithForm = (props) => {
         return v.linkageRuleAction?.action.map((h) => {
           if (h.targetFields) {
             const fields = h.targetFields.join(',');
-            return onFieldInit(`*(${fields})`, (field: any, form) => {
+            onFieldInit(`*(${fields})`, (field: any, form) => {
               field['initProperty'] = {
                 display: field.display,
                 required: field.required,
                 pattern: field.pattern,
-                value: field.value||field.initialValue ,
+                value: field.value || field.initialValue,
               };
+            });
+            onFieldChange(`*(${fields})`, ['value'], (field: any) => {
+              field.linkageProperty = {};
             });
           }
         });
@@ -98,12 +101,19 @@ const WithForm = (props) => {
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
-      return linkageRules.map((v) => {
+      const linkagefields = [];
+      return linkageRules.map((v, index) => {
         return v.linkageRuleAction?.action.map((h) => {
           if (h.targetFields) {
             const fields = h.targetFields.join(',');
             return onFieldReact(`*(${fields})`, (field: any, form) => {
-              linkageAction(h, field, v.linkageRuleCondition, form?.values);
+              linkagefields.push(field);
+              linkageMergeAction(h, field, v.linkageRuleCondition, form?.values);
+              if (index === linkageRules.length - 1) {
+                linkagefields.map((v) => {
+                  v.linkageProperty = {};
+                });
+              }
             });
           }
         });
