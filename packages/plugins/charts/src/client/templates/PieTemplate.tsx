@@ -1,5 +1,3 @@
-import { i18n } from '@nocobase/client';
-
 const validateJSON = {
   validator: `{{(value, rule)=> {
     if (!value) {
@@ -20,30 +18,9 @@ const validateJSON = {
 };
 
 const chartConfig = {
-  appendPadding: 10,
-  angleField: 'value',
-  colorField: 'type',
-  radius: 0.9,
-  label: {
-    type: 'inner',
-    offset: '-30%',
-    content: '{{({percent}) => `${(percent * 100).toFixed(0)}%`}}',
-    style: {
-      fontSize: 14,
-      textAlign: 'center',
-    },
-  },
-  interactions: [{ type: 'element-active' }],
-};
-
-export const pieTemplate = {
-  title: 'Pie',
-  type: 'Pie',
-  renderComponent: 'G2Plot',
-  defaultChartOptions: {
     appendPadding: 10,
-    angleField: 'value',
-    colorField: 'type',
+    angleField: '{{metric}}',
+    colorField: '{{dimension}}',
     radius: 0.9,
     label: {
       type: 'inner',
@@ -55,16 +32,45 @@ export const pieTemplate = {
       },
     },
     interactions: [{ type: 'element-active' }],
-  },
+  };
+export const pieTemplate = {
+  title: 'Pie(一个维度，最少一个指标,最多10个指标)',
+  type: 'Pie',
+  renderComponent: 'G2Plot',
+  defaultChartOptions: chartConfig,
   configurableProperties: {
-    type: 'void',
-    'x-component': 'Tabs',
-    'x-component-props': {
-      style: {
-        marginTop: -15,
+    type: 'object',
+    properties: {
+      dimension: {
+        required: true,
+        type: 'string',
+        title: '{{t("Sector label/dimensional")}}',
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        enum: '{{dataSource}}',
+      },
+      metric: {
+        required: true,
+        type: 'string',
+        title: '{{t("Sector Angle/Metric")}}',
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        enum: '{{dataSource}}',
+      },
+      advanceConfig: {
+        required: true,
+        title: '{{t("AdvanceConfig")}}',
+        type: 'string',
+        default: JSON.stringify(chartConfig, null, 2),
+        'x-decorator': 'FormItem',
+        'x-component': 'Input.TextArea',
+        'x-component-props': {
+          autoSize: { minRows: 8, maxRows: 16 },
+        },
+        'x-validator': validateJSON,
       },
     },
-    properties: {
+    /*properties: {
       dataset: {
         type: 'object',
         title: 'Dataset options',
@@ -160,7 +166,7 @@ export const pieTemplate = {
               },
             },
           },
-          /*filter: {
+          /!*filter: {
             title: "{{t('Filter')}}",
             'x-component': 'Filter',
             'x-decorator': 'FormItem',
@@ -173,7 +179,7 @@ export const pieTemplate = {
                 },
               },
             },
-          },*/
+          },*!/
         },
       },
       chartOptions: {
@@ -190,7 +196,7 @@ export const pieTemplate = {
             'x-component': 'Input',
             'x-decorator': 'FormItem',
           },
-          /*angleField: {
+          /!*angleField: {
             title: '{{t(\'angleField\')}}',
             required: true,
             'x-component': 'Select',
@@ -213,7 +219,7 @@ export const pieTemplate = {
                 field.dataSource = [];
               }
             },
-          },*/
+          },*!/
           // colorField: {
           //   title: '{{t(\'colorField\')}}',
           //   required: true,
@@ -262,6 +268,6 @@ export const pieTemplate = {
           },
         },
       },
-    },
+    },*/
   },
 };
