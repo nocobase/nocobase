@@ -1,16 +1,18 @@
-import lodash, { omit } from 'lodash';
+import { omit } from 'lodash';
 import {
   AssociationScope,
   DataType,
   ForeignKeyOptions,
   HasOneOptions,
   HasOneOptions as SequelizeHasOneOptions,
-  Utils,
+  Utils
 } from 'sequelize';
 import { Collection } from '../collection';
-import { checkIdentifier, snakeCase } from '../utils';
-import { BaseRelationFieldOptions, RelationField } from './relation-field';
 import { Reference } from '../features/ReferencesMap';
+import { Repository } from '../repository';
+import { checkIdentifier } from '../utils';
+import { ValueParser } from './field';
+import { BaseRelationFieldOptions, RelationField } from './relation-field';
 
 export interface HasOneFieldOptions extends HasOneOptions {
   /**
@@ -190,6 +192,36 @@ export class HasOneField extends RelationField {
     delete collection.model.associations[this.name];
     // @ts-ignore
     collection.model.refreshAttributes();
+  }
+
+  buildValueParser(ctx: any) {
+    return new ToOneValueParser(this, ctx);
+  }
+}
+
+export class ToOneValueParser extends ValueParser {
+  async setValue(value: any) {
+    const fieldNames = this.getFileNames();
+    console.log('fieldNames', fieldNames, this.ctx.column);
+    const dataIndex = this.ctx?.column?.dataIndex || [];
+    if (Array.isArray(dataIndex) && dataIndex.length < 2) {
+      return;
+    }
+    const field = this.ctx.column.dataIndex[1];
+    const repository = this.field.database.getRepository(this.field.target) as Repository;
+    const instance = await repository.findOne({ filter: { [field]: value.trim() } });
+    if (instance) {
+      this.value = instance.get(fieldNames.value);
+    }
+  }
+
+  getFileNames() {
+    const fieldNames = this.field.options?.uiSchema?.['x-component-props']?.['fieldNames'] || {};
+    return { label: 'id', value: 'id', ...fieldNames };
+  }
+
+  isInterface(name) {
+    return this.field.options.interface === name;
   }
 }
 
