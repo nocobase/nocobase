@@ -1,109 +1,162 @@
 import { Context, Next } from '@nocobase/actions';
-import { Repository } from '@nocobase/database';
-import { cloneDeep } from 'lodash';
+import { Collection, Repository } from '@nocobase/database';
 import xlsx from 'node-xlsx';
-import { transform } from '../utils';
+import XLSX from 'xlsx';
 
 const IMPORT_LIMIT_COUNT = 10000;
 
-export async function importXlsx(ctx: Context, next: Next) {
-  let { columns } = ctx.request.body as any;
-  const { ['file']: file } = ctx;
-  const { resourceName, resourceOf } = ctx.action;
-  if (typeof columns === 'string') {
-    columns = JSON.parse(columns);
-  }
-  const repository = ctx.db.getRepository<any>(resourceName, resourceOf) as Repository;
-  const collection = repository.collection;
+class Importer {
+  repository: Repository;
+  collection: Collection;
+  columns: any[];
+  items: any[][] = [];
+  headerRow;
+  context: Context;
 
-  columns = columns?.filter((col) => col?.dataIndex?.length > 0);
-  const collectionFields = columns.map((col) => collection.fields.get(col.dataIndex[0]));
-  const {
-    0: { data: originalList },
-  } = xlsx.parse(file.buffer);
-  const failureData = originalList.splice(IMPORT_LIMIT_COUNT + 1);
-  const titles = originalList.shift();
-  const legalList: any[] = [];
-  if (originalList.length > 0 && titles?.length === columns.length) {
-    // const results = (
-    //   await Promise.allSettled<any>(
-    //     originalList.map(async (item) => {
-    //       try {
-    //         const transformResult = await transform({ ctx, record: item, columns, fields: collectionFields });
-    //         legalList.push(cloneDeep(item));
-    //         return transformResult;
-    //       } catch (error) {
-    //         failureData.unshift([...item, error.message]);
-    //       }
-    //     }),
-    //   )
-    // ).filter((item) => 'value' in item && item.value !== undefined);
-    const values: any[] = [];
-    for (const item of originalList) {
-      try {
-        const transformResult = await transform({ ctx, record: item, columns, fields: collectionFields });
-        values.push(transformResult);
-        legalList.push(cloneDeep<any>(item));
-      } catch (error) {
-        failureData.unshift([...item, error.message]);
+  constructor(ctx: Context) {
+    const { resourceName, resourceOf } = ctx.action;
+    this.context = ctx;
+    this.repository = ctx.db.getRepository<any>(resourceName, resourceOf);
+    this.collection = this.repository.collection;
+    this.parseXlsx();
+  }
+
+  getRows() {
+    const workbook = XLSX.read(this.context.file.buffer, {
+      type: 'buffer',
+      // cellDates: true,
+      // raw: false,
+    });
+    const r = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json<any>(r, { header: 1, defval: null, raw: false });
+    return rows;
+  }
+
+  parseXlsx() {
+    const rows = this.getRows();
+    let columns = this.context.request.body.columns as any[];
+    if (typeof columns === 'string') {
+      columns = JSON.parse(columns);
+    }
+    this.columns = columns.map((column) => {
+      return {
+        ...column,
+        field: this.collection.fields.get(column.dataIndex[0]),
+      };
+    });
+    const str = this.columns.map((column) => column.defaultTitle).join('||');
+    for (const row of rows) {
+      if (this.hasHeaderRow()) {
+        if (row && row.join('').trim()) {
+          this.items.push(row);
+        }
+      }
+      if (str === row.filter((r) => r).join('||')) {
+        this.headerRow = row;
       }
     }
-    //@ts-ignore
-    // const values = results.map((r) => r.value);
-    const result = await ctx.db.sequelize.transaction(async (transaction) => {
-      let sort: number = 0;
-      if (collection.options.sortable) {
-        sort = await repository.model.max<number, any>('sort', { transaction });
-      }
-      for (const [index, val] of values.entries()) {
-        if (val === undefined || val === null) {
+  }
+
+  getFieldByIndex(index) {
+    return this.columns[index].field;
+  }
+
+  async getItems() {
+    const items: any[] = [];
+    for (const row of this.items) {
+      const values = {};
+      const errors = [];
+      for (let index = 0; index < row.length; index++) {
+        if (!this.columns[index]) {
           continue;
         }
+        const column = this.columns[index];
+        const { field, defaultTitle } = column;
+        let value = row[index];
+        if (value === undefined || value === null) {
+          continue;
+        }
+        const parser = field.buildValueParser({ ...this.context, column });
+        await parser.setValue(typeof value === 'string' ? value.trim() : value);
+        value = parser.getValue();
+        if (parser.errors.length > 0) {
+          errors.push(`${defaultTitle}: ${parser.errors.join(';')}`);
+        }
+        if (value === undefined) {
+          continue;
+        }
+        values[field.name] = value;
+      }
+      items.push({
+        row,
+        values,
+        errors,
+      });
+    }
+    return items;
+  }
+
+  hasSortField() {
+    return !!this.collection.options.sortable;
+  }
+
+  async run() {
+    return await this.context.db.sequelize.transaction(async (transaction) => {
+      let sort: number = 0;
+      if (this.hasSortField()) {
+        sort = await this.repository.model.max<number, any>('sort', { transaction });
+      }
+      const result: any = [[], []];
+      for (const { row, values, errors } of await this.getItems()) {
+        if (errors.length > 0) {
+          row.push(errors.join(';'));
+          result[1].push(row);
+          continue;
+        }
+        if (this.hasSortField()) {
+          values['sort'] = ++sort;
+        }
+        console.log(row, values);
         try {
-          let values = { ...val };
-          if (collection.options.sortable) {
-            sort += 1;
-            values['sort'] = sort;
-          }
-          await repository.create({
+          const instance = await this.repository.create({
             values,
             transaction,
             logging: false,
           });
+          result[0].push(instance);
         } catch (error) {
-          const failData = legalList[index];
-          failData.push(error?.original?.message ?? error.message);
-          failureData.unshift(failData);
+          this.context.log.error(error, row);
+          result[1].push(row);
         }
       }
-      return {
-        successCount: originalList.length - failureData.length,
-        failureCount: failureData.length,
-      };
+      return result;
     });
-    const header = columns?.map((column) => column.defaultTitle);
-    ctx.body = {
-      rows: xlsx.build([
-        {
-          name: file.originalname,
-          data: [header].concat(failureData),
-        },
-      ]),
-      ...result,
-    };
-  } else {
-    ctx.body = {
-      rows: file.buffer.toJSON(),
-      successCount: 0,
-      failureCount: originalList?.length ?? 0,
-    };
   }
 
-  ctx.set({
-    'Content-Type': 'application/octet-stream',
-    // to avoid "invalid character" error in header (RFC)
-    'Content-Disposition': `attachment; filename=${encodeURI('testTitle')}.xlsx`,
-  });
+  hasHeaderRow() {
+    return !!this.headerRow;
+  }
+}
+
+export async function importXlsx(ctx: Context, next: Next) {
+  const importer = new Importer(ctx);
+
+  if (!importer.hasHeaderRow()) {
+    ctx.throw(400, ctx.t('Imported template does not match, please download again.'));
+  }
+
+  const [success, failure] = await importer.run();
+
+  ctx.body = {
+    rows: xlsx.build([
+      {
+        name: ctx.file.originalname,
+        data: [importer.headerRow].concat(failure),
+      },
+    ]),
+    successCount: success.length,
+    failureCount: failure.length,
+  };
 
   await next();
 }

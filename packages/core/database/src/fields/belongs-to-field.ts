@@ -1,7 +1,8 @@
-import lodash, { omit } from 'lodash';
+import { omit } from 'lodash';
 import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
+import { ToOneValueParser } from './has-one-field';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
 
 export class BelongsToField extends RelationField {
@@ -114,6 +115,10 @@ export class BelongsToField extends RelationField {
     // @ts-ignore
     collection.model.refreshAttributes();
     // this.collection.removeIndex([this.options.foreignKey]);
+  }
+
+  buildValueParser(ctx: any) {
+    return new ToOneValueParser(this, ctx);
   }
 }
 

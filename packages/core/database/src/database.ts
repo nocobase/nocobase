@@ -212,7 +212,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     // register database field types
-    for (const [name, field] of Object.entries(FieldTypes)) {
+    for (const [name, field] of Object.entries<any>(FieldTypes)) {
       if (['Field', 'RelationField'].includes(name)) {
         continue;
       }
