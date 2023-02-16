@@ -127,6 +127,8 @@ export const CommentBlock = (props) => {
     });
   };
 
+  const isRootRole = currentUserData?.roles?.[0]?.name === 'root';
+
   return (
     <div>
       {!loading && commentList.length ? (
@@ -139,14 +141,18 @@ export const CommentBlock = (props) => {
                 <span>{moment(i.updatedAt).fromNow()}</span>
               </Tooltip>
             }
-            actions={[
-              <span key="comment-edit" onClick={() => handleEdit(i)}>
-                {t('Edit')}
-              </span>,
-              <span key="comment-delete" onClick={() => handleDelete(i)}>
-                {t('Delete')}
-              </span>,
-            ]}
+            actions={
+              i.createdBy.id === currentUserId || isRootRole
+                ? [
+                    <span key="comment-edit" onClick={() => handleEdit(i)}>
+                      {t('Edit')}
+                    </span>,
+                    <span key="comment-delete" onClick={() => handleDelete(i)}>
+                      {t('Delete')}
+                    </span>,
+                  ]
+                : []
+            }
             author={<a>{i.createdBy.nickname}</a>}
             content={<p>{getContent(i)}</p>}
           />
