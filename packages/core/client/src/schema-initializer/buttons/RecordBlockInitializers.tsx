@@ -1,7 +1,8 @@
 import { Schema, useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, useCollection, useCollectionManager } from '../..';
+import { RecordBlockInitializersContext } from '../contexts/RecordBlockInitializersContext';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
@@ -124,7 +125,9 @@ const useInheritFields = (props) => {
 
 export const RecordBlockInitializers = (props: any) => {
   const { t } = useTranslation();
+  const { extraOtherBlocks } = useContext(RecordBlockInitializersContext);
   const { insertPosition, component, actionInitializers } = props;
+
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -178,12 +181,7 @@ export const RecordBlockInitializers = (props: any) => {
               title: '{{t("Audit logs")}}',
               component: 'AuditLogsBlockInitializer',
             },
-            {
-              key: 'comments',
-              type: 'item',
-              title: '{{t("Comments")}}',
-              component: 'CommentBlockInitializer',
-            },
+            ...extraOtherBlocks,
           ],
         },
       ]}
