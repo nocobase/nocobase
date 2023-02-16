@@ -43,7 +43,7 @@ export const formula: IField = {
         { value: 'integer', label: 'Integer' },
         { value: 'bigInt', label: 'Big integer' },
         { value: 'double', label: 'Double' },
-        { value: 'decimal', label: 'Decimal' },
+        // { value: 'decimal', label: 'Decimal' },
         { value: 'string', label: 'String' },
         { value: 'date', label: 'Datetime' },
       ],
@@ -140,7 +140,7 @@ export const formula: IField = {
           evaluate(exp);
           return '';
         } catch (e) {
-          return i18n.t('Expression syntax error');
+          return i18n.t('Expression syntax error', { ns: NAMESPACE });
         }
       }
     },

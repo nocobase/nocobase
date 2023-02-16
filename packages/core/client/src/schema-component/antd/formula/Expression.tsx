@@ -1,50 +1,73 @@
-import { css } from '@emotion/css';
-import { Field, onFormSubmitValidateStart } from '@formily/core';
-import { useField, useFormEffects } from '@formily/react';
-import { Dropdown, Menu } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { css, cx } from '@emotion/css';
+import { useForm } from '@formily/react';
+import { Button, Cascader, Dropdown, Input, Menu, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks';
 
-function pasteHtml(html, selectPastedContent = false) {
-  var sel, range;
-  if (window.getSelection) {
-    // IE9 and non-IE
-    sel = window.getSelection();
-    if (sel.getRangeAt && sel.rangeCount) {
-      range = sel.getRangeAt(0);
-      range.deleteContents();
 
-      // Range.createContextualFragment() would be useful here but is
-      // only relatively recently standardized and is not supported in
-      // some browsers (IE9, for one)
-      var el = document.createElement('div');
-      el.innerHTML = html;
-      var frag = document.createDocumentFragment(),
-        node,
-        lastNode;
-      while ((node = el.firstChild)) {
-        lastNode = frag.appendChild(node);
-      }
-      var firstNode = frag.firstChild;
-      range.insertNode(frag);
 
-      // Preserve the selection
-      if (lastNode) {
-        range = range.cloneRange();
-        range.setStartAfter(lastNode);
-        if (selectPastedContent) {
-          range.setStartBefore(firstNode);
-        } else {
-          range.collapse(true);
-        }
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
+const VARIABLE_RE = /\{\{\s*([^{}]+)\s*\}\}/g;
+
+function pasteHtml(container, html, { selectPastedContent = false, range: indexes }) {
+  // IE9 and non-IE
+  const sel = window.getSelection?.();
+  if (!sel?.getRangeAt || !sel.rangeCount) {
+    return;
+  }
+  const range = sel.getRangeAt(0);
+  if (!range) {
+    return;
+  }
+  const children = Array.from(container.childNodes) as HTMLElement[];
+  if (indexes[0] === -1) {
+    if (indexes[1]) {
+      range.setStartAfter(children[indexes[1] - 1]);
     }
+  } else {
+    range.setStart(children[indexes[0]], indexes[1]);
+  }
+
+  if (indexes[2] === -1) {
+    if (indexes[3]) {
+      range.setEndAfter(children[indexes[3] - 1]);
+    }
+  } else {
+    range.setEnd(children[indexes[2]], indexes[3]);
+  }
+  range.deleteContents();
+
+  // Range.createContextualFragment() would be useful here but is
+  // only relatively recently standardized and is not supported in
+  // some browsers (IE9, for one)
+  const el = document.createElement('div');
+  el.innerHTML = html;
+
+  const frag = document.createDocumentFragment();
+  let lastNode;
+  while (el.firstChild) {
+    lastNode = frag.appendChild(el.firstChild);
+  }
+  const { firstChild } = frag;
+  range.insertNode(frag);
+
+  // Preserve the selection
+  if (lastNode) {
+    const next = range.cloneRange();
+    next.setStartAfter(lastNode);
+    if (selectPastedContent) {
+      if (firstChild) {
+        next.setStartBefore(firstChild);
+      }
+    } else {
+      next.collapse(true);
+    }
+    sel.removeAllRanges();
+    sel.addRange(next);
   }
 }
 
-const getValue = (el) => {
+function getValue(el) {
   const values: any[] = [];
   for (const node of el.childNodes) {
     if (node.nodeName === 'SPAN') {
@@ -53,150 +76,167 @@ const getValue = (el) => {
       values.push(node.textContent?.trim?.());
     }
   }
-  const text = values.join(' ')?.replace(/\s+/g, ' ').trim();
-  return ` ${text} `;
-};
+  return values.join(' ').replace(/\s+/g, ' ').trim();
+}
 
-const renderExp = (exp: string, scope = {}) => {
-  return exp.replace(/{{([^}]+)}}/g, (_, i) => {
-    return scope[i.trim()] || '';
+function renderHTML(exp: string, keyLabelMap) {
+  return exp.replace(VARIABLE_RE, (_, i) => {
+    const key = i.trim();
+    return createVariableTagHTML(key, keyLabelMap) ?? '';
   });
-};
+}
+
+function createOptionsKeyLabelMap(options: any[]) {
+  const map = new Map<string, string[]>();
+  for (const option of options) {
+    map.set(option.value, [option.label]);
+    if (option.children) {
+      for (const [value, labels] of createOptionsKeyLabelMap(option.children)) {
+        map.set(`${option.value}.${value}`, [option.label, ...labels]);
+      }
+    }
+  }
+  return map;
+}
+
+function createVariableTagHTML(variable, keyLabelMap) {
+  const labels = keyLabelMap.get(variable);
+  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-key="${variable}">${labels?.join(' / ')}</span>`;
+}
 
 export const Expression = (props) => {
-  const { value, supports, useCurrentFields } = props;
+  const { value = '', supports, useCurrentFields, onChange } = props;
   const { t } = useTranslation();
-  const fields = useCurrentFields();
-  const inputRef = useRef<any>();
+  const compile = useCompile();
+  const fields = useCurrentFields().filter(field => supports.includes(field.interface));
+
+  const inputRef = useRef<HTMLDivElement>(null);
+  const options = fields.map(field => ({
+    label: compile(field.uiSchema.title),
+    value: field.name
+  }));
+  const form = useForm();
+  const keyLabelMap = useMemo(() => createOptionsKeyLabelMap(options), []);
   const [changed, setChanged] = useState(false);
+  const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
+  // [startElementIndex, startOffset, endElementIndex, endOffset]
+  const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
 
-  const onChange = (value) => {
-    setChanged(true);
-    props.onChange(value);
-  };
-
-  const numColumns = new Map<string, string>();
-  const scope = {};
-  fields
-    .filter((field) => supports.includes(field.interface))
-    .forEach((field) => {
-      numColumns.set(field.name, field.uiSchema.title);
-      scope[field.name] = 1;
-    });
-  const keys = Array.from(numColumns.keys());
-  const [html, setHtml] = useState(() => {
-    const scope = {};
-    for (const key of keys) {
-      const val = numColumns.get(key);
-      scope[
-        key
-      ] = `  <span class="ant-tag" style="margin: 0 3px;" contentEditable="false" data-key="${key}">${val}</span>  `;
-    }
-    return renderExp(value || '', scope);
-  });
   useEffect(() => {
     if (changed) {
       return;
     }
-    const scope = {};
-    for (const key of keys) {
-      const val = numColumns.get(key);
-      scope[
-        key
-      ] = `  <span class="ant-tag" style="margin: 0 3px;" contentEditable="false" data-key="${key}">${val}</span>  `;
-    }
-    const val = renderExp(value || '', scope);
-    setHtml(val);
+    setHtml(renderHTML(value ?? '', keyLabelMap));
   }, [value]);
-  const menu = (
-    <Menu>
-      {keys.length > 0 ? (
-        keys.map((key) => (
-          <Menu.Item disabled key={key}>
-            <button
-              onClick={async (args) => {
-                (inputRef.current as any).focus();
-                const val = numColumns.get(key);
-                pasteHtml(
-                  `  <span class="ant-tag" style="margin: 0 3px;" contentEditable="false" data-key="${key}">${val}</span>  `,
-                );
-                const text = getValue(inputRef.current);
-                onChange(text);
-                console.log('onChange', text);
-              }}
-            >
-              {numColumns.get(key)}
-            </button>
-          </Menu.Item>
-        ))
-      ) : (
-        <Menu.Item disabled key={0}>
-          {t('No available fields')}
-        </Menu.Item>
-      )}
-    </Menu>
-  );
+
+  useEffect(() => {
+    const { current } = inputRef;
+    if (!current || changed) {
+      return;
+    }
+    const nextRange = new Range();
+    const { lastChild } = current;
+    if (lastChild) {
+      nextRange.setStartAfter(lastChild);
+      nextRange.setEndAfter(lastChild);
+      const nodes = Array.from(current.childNodes);
+      const startElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
+      const endElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
+      setRange([startElementIndex, nextRange.startOffset, endElementIndex, nextRange.endOffset]);
+    }
+  }, [html]);
+
+  function onInsert(keyPath) {
+    const variable: string[] = keyPath.filter(key => Boolean(key.trim()));
+    const { current } = inputRef;
+    if (!current || !variable) {
+      return;
+    }
+
+    current.focus();
+
+    pasteHtml(current, createVariableTagHTML(variable.join('.'), keyLabelMap), {
+      range,
+    });
+
+    setChanged(true);
+    onChange(getValue(current));
+  }
+
+  function onInput({ currentTarget }) {
+    setChanged(true);
+    onChange(getValue(currentTarget));
+  }
+
+  function onBlur({ currentTarget }) {
+    const sel = window.getSelection?.();
+    if (!sel?.getRangeAt || !sel.rangeCount) {
+      return;
+    }
+    const r = sel.getRangeAt(0);
+    const nodes = Array.from(currentTarget.childNodes);
+    const startElementIndex = nodes.indexOf(r.startContainer);
+    const endElementIndex = nodes.indexOf(r.endContainer);
+    setRange([startElementIndex, r.startOffset, endElementIndex, r.endOffset]);
+  }
+
+  const disabled = props.disabled || form.disabled;
 
   return (
-    <Dropdown
-      trigger={['click']}
-      overlay={menu}
-      overlayClassName={css`
-        .ant-dropdown-menu-item {
-          padding: 0;
+    <Input.Group compact className={css`
+      &.ant-input-group.ant-input-group-compact{
+        display: flex;
+        .ant-input{
+          flex-grow: 1;
         }
-        button {
-          cursor: pointer;
-          padding: 5px 12px;
-          text-align: left;
-          color: rgba(0, 0, 0, 0.85);
-          width: 100%;
-          line-height: inherit;
-          height: auto;
-          border: 0px;
-          background-color: transparent;
-          &:hover {
-            background-color: #f5f5f5;
+        .ant-input-disabled{
+          .ant-tag{
+            color: #bfbfbf;
+            border-color: #d9d9d9;
           }
         }
-      `}
-    >
+      }
+    `}>
       <div
         onKeyDown={(e) => {
-          const text = getValue(e.currentTarget);
-          if (e.key === 'Backspace') {
-            if (text && keys.map((k) => `{{${k}}}`).includes(text)) {
-              inputRef.current.innerHTML = '  ';
-            }
+          if (e.key === 'Enter') {
+            e.preventDefault();
           }
         }}
-        onKeyUp={(e) => {
-          const text = getValue(e.currentTarget);
-          if (e.key === 'Backspace') {
-            // pasteHtml(' ');
+        onBlur={onBlur}
+        onInput={onInput}
+        className={cx('ant-input', { 'ant-input-disabled': disabled }, css`
+          overflow: auto;
+          white-space: nowrap;
+          .ant-tag{
+            display: inline;
+            line-height: 19px;
+            margin: 0 .5em;
+            padding: 2px 7px;
+            border-radius: 10px;
           }
-          onChange(text);
-        }}
-        // onClick={(e) => {
-        //   const text = getValue(e.currentTarget);
-        //   onChange(text);
-        //   console.log('onChange', text);
-        // }}
-        onBlur={(e) => {
-          const text = getValue(e.currentTarget);
-          onChange(text);
-        }}
-        onInput={(e) => {
-          const text = getValue(e.currentTarget);
-          onChange(text);
-        }}
-        className={'ant-input'}
-        style={{ display: 'block' }}
+        `)}
         ref={inputRef as any}
-        contentEditable
+        contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-    </Dropdown>
+      <Tooltip title={t('Use variable')}>
+        <Cascader
+          value={[]}
+          options={options}
+          onChange={onInsert}
+        >
+          <Button
+            className={css`
+              font-style: italic;
+              font-family: "New York", "Times New Roman", Times, serif;
+            `}
+          >
+            x
+          </Button>
+        </Cascader>
+      </Tooltip>
+    </Input.Group>
   );
 };
 
