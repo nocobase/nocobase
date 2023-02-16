@@ -10,7 +10,6 @@ import {
 import { Collection } from '../collection';
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
-import { ToManyValueParser } from './belongs-to-many-field';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 
 export interface HasManyFieldOptions extends HasManyOptions {
@@ -185,10 +184,6 @@ export class HasManyField extends RelationField {
     delete collection.model.associations[this.name];
     // @ts-ignore
     collection.model.refreshAttributes();
-  }
-
-  buildValueParser(ctx: any) {
-    return new ToManyValueParser(this, ctx);
   }
 }
 

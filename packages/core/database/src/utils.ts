@@ -1,8 +1,7 @@
 import crypto from 'crypto';
+import Database from './database';
 import { IdentifierError } from './errors/identifier-error';
 import { Model } from './model';
-import lodash from 'lodash';
-import Database from './database';
 
 type HandleAppendsQueryOptions = {
   templateModel: any;
@@ -115,4 +114,14 @@ export function patchSequelizeQueryInterface(db: Database) {
       return lines.join(' ');
     };
   }
+}
+
+export function percent2float(value: string) {
+  const index = value.indexOf('.');
+  if (index === -1) {
+    return parseFloat(value) / 100;
+  }
+  const repeat = value.length - index - 2;
+  const v = parseInt('1' + '0'.repeat(repeat));
+  return (parseFloat(value) * v) / (100 * v);
 }

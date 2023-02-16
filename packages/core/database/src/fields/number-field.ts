@@ -1,41 +1,8 @@
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field, ValueParser } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 
 abstract class NumberField extends Field {
-  buildValueParser(ctx: any) {
-    return new NumberValueParser(this, ctx);
-  }
-}
-
-function percent2float(value: string) {
-  const index = value.indexOf('.');
-  if (index === -1) {
-    return parseFloat(value) / 100;
-  }
-  const repeat = value.length - index - 2;
-  const v = parseInt('1' + '0'.repeat(repeat));
-  return (parseFloat(value) * v) / (100 * v);
-}
-
-export class NumberValueParser extends ValueParser {
-  async setValue(value: any) {
-    if (value === null || value === undefined || typeof value === 'number') {
-      this.value = value;
-    }
-    if (typeof value === 'string') {
-      if (!value) {
-        this.value = null;
-      } else if (['n/a', '-'].includes(value.toLowerCase())) {
-        this.value = null;
-      } else if (value.endsWith('%')) {
-        this.value = percent2float(value);
-        console.log(value, this.value);
-      } else {
-        const val = +value;
-        this.value = isNaN(val) ? null : val;
-      }
-    }
-  }
+  
 }
 
 export class IntegerField extends NumberField {

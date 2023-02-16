@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,11 +58,12 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener,
+  ValidateListener
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
 import DatabaseUtils from './database-utils';
+import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -150,6 +151,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   migrator: Umzug;
   migrations: Migrations;
   fieldTypes = new Map();
+  fieldValueParsers = new Map();
   options: IDatabaseOptions;
   models = new Map<string, ModelStatic<Model>>();
   repositories = new Map<string, RepositoryType>();
@@ -226,6 +228,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
         [key]: field,
       });
     }
+
+    registerFieldValueParsers(this);
 
     this.initOperators();
 
@@ -471,6 +475,20 @@ export class Database extends EventEmitter implements AsyncEmitter {
     for (const [type, fieldType] of Object.entries(fieldTypes)) {
       this.fieldTypes.set(type, fieldType);
     }
+  }
+
+  registerFieldValueParsers(parsers: MapOf<any>) {
+    for (const [type, parser] of Object.entries(parsers)) {
+      this.fieldValueParsers.set(type, parser);
+    }
+  }
+
+  buildFieldValueParser<T extends BaseValueParser>(field: Field, ctx: any) {
+    const Parser = this.fieldValueParsers.has(field.type)
+      ? this.fieldValueParsers.get(field.type)
+      : this.fieldValueParsers.get('default');
+    const parser = new Parser(field, ctx);
+    return parser as T;
   }
 
   registerModels(models: MapOf<ModelStatic<any>>) {

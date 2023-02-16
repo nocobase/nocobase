@@ -40,9 +40,6 @@ export const useDownloadXlsxTemplateAction = () => {
           if (!field) {
             return;
           }
-          if (field.interface === 'chinaRegion') {
-            column.dataIndex.push('name');
-          }
           column.defaultTitle = compile(field?.uiSchema?.title) || field.name;
           if (column.dataIndex.length > 1) {
             const subField = getCollectionJoinField(`${name}.${column.dataIndex.join('.')}`);
@@ -50,6 +47,9 @@ export const useDownloadXlsxTemplateAction = () => {
               return;
             }
             column.defaultTitle = column.defaultTitle + '/' + compile(subField?.uiSchema?.title) || subField.name;
+          }
+          if (field.interface === 'chinaRegion') {
+            column.dataIndex.push('name');
           }
           return column;
         })
@@ -94,9 +94,6 @@ export const useImportStartAction = () => {
           if (!field) {
             return;
           }
-          if (field.interface === 'chinaRegion') {
-            column.dataIndex.push('name');
-          }
           column.defaultTitle = compile(field?.uiSchema?.title) || field.name;
           if (column.dataIndex.length > 1) {
             const subField = getCollectionJoinField(`${name}.${column.dataIndex.join('.')}`);
@@ -104,6 +101,9 @@ export const useImportStartAction = () => {
               return;
             }
             column.defaultTitle = column.defaultTitle + '/' + compile(subField?.uiSchema?.title) || subField.name;
+          }
+          if (field.interface === 'chinaRegion') {
+            column.dataIndex.push('name');
           }
           return column;
         })
