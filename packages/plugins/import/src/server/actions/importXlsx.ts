@@ -2,6 +2,7 @@ import { Context, Next } from '@nocobase/actions';
 import { Collection, Repository } from '@nocobase/database';
 import xlsx from 'node-xlsx';
 import XLSX from 'xlsx';
+import { namespace } from '../../';
 
 const IMPORT_LIMIT_COUNT = 10000;
 
@@ -116,12 +117,12 @@ class Importer {
         if (this.hasSortField()) {
           values['sort'] = ++sort;
         }
-        console.log(row, values);
         try {
           const instance = await this.repository.create({
             values,
             transaction,
             logging: false,
+            context: this.context,
           });
           result[0].push(instance);
         } catch (error) {
@@ -142,7 +143,7 @@ export async function importXlsx(ctx: Context, next: Next) {
   const importer = new Importer(ctx);
 
   if (!importer.hasHeaderRow()) {
-    ctx.throw(400, ctx.t('Imported template does not match, please download again.'));
+    ctx.throw(400, ctx.t('Imported template does not match, please download again.', { ns: namespace }));
   }
 
   const [success, failure] = await importer.run();
