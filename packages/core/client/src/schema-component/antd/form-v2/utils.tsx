@@ -39,7 +39,7 @@ export const linkageAction = ({ operator, value }, field, linkageRuleCondition, 
       field.pattern = conditionAnalyse(linkageRuleCondition, values) ? operator : field?.initProperty?.pattern;
       break;
     case 'value':
-      field.value = conditionAnalyse(linkageRuleCondition, values) ? value : field.value || field?.initProperty?.value;
+      field.value = conditionAnalyse(linkageRuleCondition, values) ? value : field?.initProperty?.value;
       break;
     default:
       return null;
