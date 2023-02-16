@@ -16,6 +16,10 @@ export type ModelCreateWithAssociationsEventType = 'afterCreateWithAssociations'
 export type ModelUpdateWithAssociationsEventType = 'afterUpdateWithAssociations';
 export type ModelSaveWithAssociationsEventType = 'afterSaveWithAssociations';
 
+export type ModelBulkCreateEvnetType = 'beforeBulkCreate' | 'afterBulkCreate';
+export type ModelBulkUpdateEvnetType = 'beforeBulkUpdate' | 'afterBulkUpdate';
+export type ModelBulkDestroyEvnetType = 'beforeBulkDestroy' | 'afterBulkDestroy';
+
 export type ModelValidateEventTypes = ModelValidateEventType | `${CollectionNameType}.${ModelValidateEventType}`;
 export type ModelCreateEventTypes = ModelCreateEventType | `${CollectionNameType}.${ModelCreateEventType}`;
 export type ModelUpdateEventTypes = ModelUpdateEventType | `${CollectionNameType}.${ModelUpdateEventType}`;
@@ -25,6 +29,10 @@ export type ModelCreateWithAssociationsEventTypes = ModelCreateWithAssociationsE
 export type ModelUpdateWithAssociationsEventTypes = ModelUpdateWithAssociationsEventType | `${CollectionNameType}.${ModelUpdateWithAssociationsEventType}`;
 export type ModelSaveWithAssociationsEventTypes = ModelSaveWithAssociationsEventType | `${CollectionNameType}.${ModelSaveWithAssociationsEventType}`;
 
+export type ModelBulkCreateEvnetTypes = ModelBulkCreateEvnetType | `${CollectionNameType}.${ModelBulkCreateEvnetType}`;
+export type ModelBulkUpdateEvnetTypes = ModelBulkUpdateEvnetType | `${CollectionNameType}.${ModelBulkUpdateEvnetType}`;
+export type ModelBulkDestroyEvnetTypes = ModelBulkDestroyEvnetType | `${CollectionNameType}.${ModelBulkDestroyEvnetType}`;
+
 export type ModelEventTypes = ModelSyncEventType
   | ModelValidateEventTypes
   | ModelCreateEventTypes
@@ -33,7 +41,10 @@ export type ModelEventTypes = ModelSyncEventType
   | ModelDestroyEventTypes
   | ModelCreateWithAssociationsEventTypes
   | ModelUpdateWithAssociationsEventTypes
-  | ModelSaveWithAssociationsEventTypes;
+  | ModelSaveWithAssociationsEventTypes
+  | ModelBulkCreateEvnetTypes
+  | ModelBulkUpdateEvnetTypes
+  | ModelBulkDestroyEvnetTypes;
 
 export type DatabaseBeforeDefineCollectionEventType = 'beforeDefineCollection';
 export type DatabaseAfterDefineCollectionEventType = 'afterDefineCollection';

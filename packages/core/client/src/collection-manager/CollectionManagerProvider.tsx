@@ -1,13 +1,13 @@
 import { Spin } from 'antd';
-import React, { useContext, useState } from 'react';
 import { keyBy } from 'lodash';
+import React, { useContext, useState } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
-import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
-import { CollectionManagerContext } from './context';
-import { CollectionManagerOptions } from './types';
 import { templateOptions } from '../collection-manager/Configuration/templates';
-import * as defaultInterfaces from './interfaces';
 import { useCollectionHistory } from './CollectionHistoryProvider';
+import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
+import { CollectionCategroriesContext, CollectionManagerContext } from './context';
+import * as defaultInterfaces from './interfaces';
+import { CollectionManagerOptions } from './types';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { service, interfaces, collections = [], refreshCM, templates } = props;
@@ -38,7 +38,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
     action: 'list',
     params: {
       paginate: false,
-      appends: ['fields', 'fields.uiSchema'],
+      appends: ['fields', 'fields.uiSchema','category'],
       filter: {
         // inherit: false,
       },
@@ -70,5 +70,35 @@ export const RemoteCollectionManagerProvider = (props: any) => {
       refreshCM={refreshCM}
       {...props}
     />
+  );
+};
+
+export const CollectionCategroriesProvider = (props) => {
+  const api = useAPIClient();
+  const options={
+    url: 'collectionCategories:list',
+    params: {
+      paginate: false,
+      sort:['sort']
+    },
+  }
+  const result = useRequest(options);
+  if (result.loading) {
+    return <Spin />;
+  }
+  return (
+    <CollectionCategroriesContext.Provider
+      value={{
+        ...result,
+        data: result?.data?.data,
+        refresh:async ()=>{
+          const { data } = await api.request(options);
+          result.mutate(data);
+          return data?.data || [];
+        }
+      }}
+    >
+      {props.children}
+    </CollectionCategroriesContext.Provider>
   );
 };

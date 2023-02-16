@@ -11,6 +11,8 @@ export default {
   port: process.env.DB_PORT as any,
   timezone: process.env.DB_TIMEZONE,
   tablePrefix: process.env.DB_TABLE_PREFIX,
+  schema: process.env.DB_SCHEMA,
+  underscored: process.env.DB_UNDERSCORED === 'true',
 } as IDatabaseOptions;
 
 function customLogger(queryString, queryObject) {

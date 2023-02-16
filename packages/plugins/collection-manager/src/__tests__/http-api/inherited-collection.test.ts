@@ -64,7 +64,7 @@ pgOnly()('Inherited Collection', () => {
     expect(response.statusCode).toBe(500);
   });
 
-  it('can  create relation with child table', async () => {
+  it('can create relation with child table', async () => {
     await agent.resource('collections').create({
       values: {
         name: 'a',
@@ -99,6 +99,8 @@ pgOnly()('Inherited Collection', () => {
         ],
       },
     });
+
+    const collectionB = app.db.getCollection('b');
 
     const res = await agent.resource('b').create({
       values: {

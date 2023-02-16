@@ -2,7 +2,7 @@
 `BelongsToManyRepository` 是用于处理 `BelongsToMany` 关系的 `Relation Repository`。
 
 不同于其他关系类型，`BelongsToMany` 类型的关系需要通过中间表来记录。
-在 `Nocobase` 中定义关联关系，可自动创建中间表，也可以明确指定中间表。
+在 NocoBase 中定义关联关系，可自动创建中间表，也可以明确指定中间表。
 
 ## 类方法
 

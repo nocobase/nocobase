@@ -244,8 +244,8 @@ export const useACLFieldWhitelist = () => {
       if (!fieldSchema['x-collection-field']) {
         return true;
       }
-      const [, ...keys] = fieldSchema['x-collection-field'].split('.');
-      return whitelist?.includes(keys.join('.'));
+      const [key1, key2] = fieldSchema['x-collection-field'].split('.');
+      return whitelist?.includes(key2 || key1);
     },
   };
 };

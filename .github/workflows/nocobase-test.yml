@@ -7,19 +7,16 @@ on:
       - develop
     paths:
       - 'packages/**'
-    # paths-ignore:
-    #   - 'docs/**'
   pull_request:
     paths:
       - 'packages/**'
-    # paths-ignore:
-    #   - 'docs/**'
 
 jobs:
   sqlite-test:
     strategy:
       matrix:
-        node_version: ['16']
+        node_version: ['16', '18']
+        underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -30,17 +27,20 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
+      - run: yarn build
       - name: Test with Sqlite
         run: yarn test
         env:
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
+          DB_UNDERSCORED: ${{ matrix.underscored }}
 
   postgres-test:
     strategy:
       matrix:
-        node_version: ['16']
-
+        node_version: ['16', '18']
+        underscored: [true, false]
+        schema: [public, nocobase]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
@@ -66,6 +66,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
+      - run: yarn build
       - name: Test with postgres
         run: yarn test
         env:
@@ -75,11 +76,14 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
+          DB_UNDERSCORED: ${{ matrix.underscored }}
+          DB_SCHEMA: ${{ matrix.schema }}
 
   mysql-test:
     strategy:
       matrix:
-        node_version: ['16']
+        node_version: ['16', '18']
+        underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
@@ -97,6 +101,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
+      - run: yarn build
       - name: Test with MySQL
         run: yarn test
         env:
@@ -106,3 +111,4 @@ jobs:
           DB_USER: root
           DB_PASSWORD: password
           DB_DATABASE: nocobase
+          DB_UNDERSCORED: ${{ matrix.underscored }}

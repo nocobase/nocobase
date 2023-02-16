@@ -9,3 +9,5 @@ export const CollectionManagerContext = createContext<CollectionManagerOptions>(
 export const CollectionContext = createContext<CollectionOptions>({});
 
 export const CollectionFieldContext = createContext<CollectionFieldOptions>({});
+
+export const CollectionCategroriesContext = createContext({ data: [], refresh: () => {} });

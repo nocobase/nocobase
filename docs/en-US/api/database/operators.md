@@ -1,6 +1,6 @@
 # Filter Operators
 
-用于 Repository 的 find、findOne、findAndCount、count 等 API 的 filter 参数中：
+Used in the filter parameters of the `find`, `findOne`, `findAndCount`, `count`, etc. APIs of repository:
 
 ```ts
 const repository = db.getRepository('books');
@@ -8,47 +8,47 @@ const repository = db.getRepository('books');
 repository.find({
   filter: {
     title: {
-      $eq: '春秋',
+      $eq: 'Spring and Autumn',
     }
   }
 });
 ```
 
-为了支持 JSON 化，NocoBase 中将查询运算符以 $ 为前缀的字符串标识。
+To support JSON, NocoBase identifies query operators as a string prefixed with $.
 
-另外，NocoBase 也提供了扩展运算符的 API，详见 [`db.registerOperators()`](../database#registeroperators)。
+Moreover, NocoBase provides API to extend operators. Refer to [`db.registerOperators()`](../database#registeroperators).
 
-## 通用运算符
+## General Operators
 
 ### `$eq`
 
-判断字段值是否相等于指定值。相当于 SQL 的 `=`。
+Check if the field value is equal to the specified value. Equivalent to `=` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $eq: '春秋',
+      $eq: 'Spring and Autumn',
     }
   }
 });
 ```
 
-等同于 `title: '春秋'`。
+Equal to `title: 'Spring and Autumn'`
 
 ### `$ne`
 
-判断字段值是否不等于指定值。相当于 SQL 的 `!=`。
+Check if the field value is not equal to the specified value. Equivalent to `!=` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $ne: '春秋',
+      $ne: 'Spring and Autumn',
     }
   }
 });
@@ -56,9 +56,9 @@ repository.find({
 
 ### `$is`
 
-判断字段值是否为指定值。相当于 SQL 的 `IS`。
+Check if the field value is the specified value. Equivalent to `IS` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -72,9 +72,9 @@ repository.find({
 
 ### `$not`
 
-判断字段值是否不为指定值。相当于 SQL 的 `IS NOT`。
+Check if the field value is not the specified value. Equivalent to `IS NOT` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -88,9 +88,10 @@ repository.find({
 
 ### `$col`
 
-判断字段值是否等于另一个字段的值。相当于 SQL 的 `=`。
+Check if the field value is equal to the value of another field. Equivalent to `=` in SQL.
 
-**示例**
+
+**Example**
 
 ```ts
 repository.find({
@@ -104,15 +105,15 @@ repository.find({
 
 ### `$in`
 
-判断字段值是否在指定数组中。相当于 SQL 的 `IN`。
+Check if the field value is in the specified array. Equivalent to `IN` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $in: ['春秋', '战国'],
+      $in: ['Spring and Autumn', 'Warring States'],
     }
   }
 });
@@ -120,15 +121,15 @@ repository.find({
 
 ### `$notIn`
 
-判断字段值是否不在指定数组中。相当于 SQL 的 `NOT IN`。
+Check if the field value is not in the specified array. Equivalent to `NOT IN` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $notIn: ['春秋', '战国'],
+      $notIn: ['Spring and Autumn', 'Warring States'],
     }
   }
 });
@@ -136,9 +137,9 @@ repository.find({
 
 ### `$empty`
 
-判断一般字段是否为空，如果是字符串字段，判断是否为空串，如果是数组字段，判断是否为空数组。
+Check if the general field is empty. For string field, check if it is an empty string; for array field, check if it is an empty array.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -152,9 +153,9 @@ repository.find({
 
 ### `$notEmpty`
 
-判断一般字段是否不为空，如果是字符串字段，判断是否不为空串，如果是数组字段，判断是否不为空数组。
+Check if the general field is not empty. For string field, check if it is not an empty string; for array field, check if it is not an empty array.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -166,19 +167,19 @@ repository.find({
 });
 ```
 
-## 逻辑运算符
+## Logical Operators
 
 ### `$and`
 
-逻辑 AND。相当于 SQL 的 `AND`。
+Logical AND. Equivalent to `AND` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     $and: [
-      { title: '诗经' },
+      { title: 'Book of Songs' },
       { isbn: '1234567890' },
     ]
   }
@@ -187,30 +188,30 @@ repository.find({
 
 ### `$or`
 
-逻辑 OR。相当于 SQL 的 `OR`。
+Logical OR. Equivalent to `OR` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     $or: [
-      { title: '诗经' },
+      { title: 'Book of Songs' },
       { publishedAt: { $lt: '0000-00-00T00:00:00Z' } },
     ]
   }
 });
 ```
 
-## 布尔类型字段运算符
+## Boolean Field Operators
 
-用于布尔类型字段 `type: 'boolean'`
+For boolean fields: `type: 'boolean'`
 
 ### `$isFalsy`
 
-判断布尔类型字段值是否为假。布尔字段值为 `false`、`0` 和 `NULL` 的情况都会被判断为 `$isFalsy: true`。
+Check if a Boolean field value is false. Boolean field values of `false`, `0` and `NULL` are all judged to be `$isFalsy: true`.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -224,9 +225,9 @@ repository.find({
 
 ### `$isTruly`
 
-判断布尔类型字段值是否为真。布尔字段值为 `true` 和 `1` 的情况都会被判断为 `$isTruly: true`。
+Check if a Boolean field value is true. Boolean field values of `true` and `1` are all judged to be `$isTruly: true`.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -238,9 +239,9 @@ repository.find({
 })
 ```
 
-## 数字类型字段运算符
+## Numeric Type Field Operators
 
-用于数字类型字段，包括：
+For numeric type fields, including:
 
 - `type: 'integer'`
 - `type: 'float'`
@@ -250,9 +251,9 @@ repository.find({
 
 ### `$gt`
 
-判断字段值是否大于指定值。相当于 SQL 的 `>`。
+Check if the field value is greater than the specified value. Equivalent to `>` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -266,9 +267,9 @@ repository.find({
 
 ### `$gte`
 
-判断字段值是否大于等于指定值。相当于 SQL 的 `>=`。
+Check if the field value is equal to or greater than the specified value. Equivalent to `>=` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -282,9 +283,9 @@ repository.find({
 
 ### `$lt`
 
-判断字段值是否小于指定值。相当于 SQL 的 `<`。
+Check if the field value is less than the specified value. Equivalent to `<` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -298,9 +299,9 @@ repository.find({
 
 ### `$lte`
 
-判断字段值是否小于等于指定值。相当于 SQL 的 `<=`。
+Check if the field value is equal to or less than the specified value. Equivalent to `<=` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -314,9 +315,9 @@ repository.find({
 
 ### `$between`
 
-判断字段值是否在指定的两个值之间。相当于 SQL 的 `BETWEEN`。
+Check if the field value is between the specified two values. Equivalent to `BETWEEN` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -330,9 +331,9 @@ repository.find({
 
 ### `$notBetween`
 
-判断字段值是否不在指定的两个值之间。相当于 SQL 的 `NOT BETWEEN`。
+Check if the field value is not between the specified two values. Equivalent to `NOT BETWEEN` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -344,21 +345,21 @@ repository.find({
 });
 ```
 
-## 字符串类型字段运算符
+## String Type Field Operators
 
-用于字符串类型字段，包括 `string`
+For string type fields, including `string`.
 
 ### `$includes`
 
-判断字符串字段是否包含指定子串。
+Check if the string field contains the specified substring.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $includes: '三字经',
+      $includes: 'Three Character Classic',
     }
   }
 })
@@ -366,15 +367,15 @@ repository.find({
 
 ### `$notIncludes`
 
-判断字符串字段是否不包含指定子串。
+Check if the string field does not contain the specified substring.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $notIncludes: '三字经',
+      $notIncludes: 'Three Character Classic',
     }
   }
 })
@@ -382,15 +383,15 @@ repository.find({
 
 ### `$startsWith`
 
-判断字符串字段是否以指定子串开头。
+Check if the string field starts with the specified substring.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $startsWith: '三字经',
+      $startsWith: 'Three Character Classic',
     }
   }
 })
@@ -398,15 +399,15 @@ repository.find({
 
 ### `$notStatsWith`
 
-判断字符串字段是否不以指定子串开头。
+Check if the string field does not start with the specified substring.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $notStatsWith: '三字经',
+      $notStatsWith: 'Three Character Classic',
     }
   }
 })
@@ -414,15 +415,15 @@ repository.find({
 
 ### `$endsWith`
 
-判断字符串字段是否以指定子串结尾。
+Check if the string field ends with the specified substring.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $endsWith: '三字经',
+      $endsWith: 'Three Character Classic',
     }
   }
 })
@@ -430,15 +431,15 @@ repository.find({
 
 ### `$notEndsWith`
 
-判断字符串字段是否不以指定子串结尾。
+Check if the string field does not end with the specified substring.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $notEndsWith: '三字经',
+      $notEndsWith: 'Three Character Classic',
     }
   }
 })
@@ -446,15 +447,15 @@ repository.find({
 
 ### `$like`
 
-判断字段值是否包含指定的字符串。相当于 SQL 的 `LIKE`。
+Check if the field value contains the specified string. Equivalent to `LIKE` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $like: '计算机',
+      $like: 'Computer',
     }
   }
 });
@@ -462,15 +463,15 @@ repository.find({
 
 ### `$notLike`
 
-判断字段值是否不包含指定的字符串。相当于 SQL 的 `NOT LIKE`。
+Check if the field value does not contain the specified string. Equivalent to `NOT LIKE` in SQL.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $notLike: '计算机',
+      $notLike: 'Computer',
     }
   }
 });
@@ -478,9 +479,9 @@ repository.find({
 
 ### `$iLike`
 
-判断字段值是否包含指定的字符串，忽略大小写。相当于 SQL 的 `ILIKE`（仅 PG 适用）。
+Check if a field value contains the specified string, case ignored. Equivalent to `ILIKE` in SQL (PG only).
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -494,9 +495,9 @@ repository.find({
 
 ### `$notILike`
 
-判断字段值是否不包含指定的字符串，忽略大小写。相当于 SQL 的 `NOT ILIKE`（仅 PG 适用）。
+Check if a field value does not contain the specified string, case ignored. Equivalent to `NOT ILIKE` in SQL (PG only).
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -510,15 +511,15 @@ repository.find({
 
 ### `$regexp`
 
-判断字段值是否匹配指定的正则表达式。相当于 SQL 的 `REGEXP`（仅 PG 适用）。
+Check if the field value matches the specified regular expression. Equivalent to `REGEXP` in SQL (PG only).
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $regexp: '^计算机',
+      $regexp: '^Computer',
     }
   }
 });
@@ -526,15 +527,15 @@ repository.find({
 
 ### `$notRegexp`
 
-判断字段值是否不匹配指定的正则表达式。相当于 SQL 的 `NOT REGEXP`（仅 PG 适用）。
+Check if the field value does not match the specified regular expression. Equivalent to `NOT REGEXP` in SQL (PG only).
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     title: {
-      $notRegexp: '^计算机',
+      $notRegexp: '^Computer',
     }
   }
 });
@@ -542,9 +543,9 @@ repository.find({
 
 ### `$iRegexp`
 
-判断字段值是否匹配指定的正则表达式，忽略大小写。相当于 SQL 的 `~*`（仅 PG 适用）。
+Check if the field value matches the specified regular expression, case ignored. Equivalent to `~*` in SQL (PG only).
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -558,9 +559,9 @@ repository.find({
 
 ### `$notIRegexp`
 
-判断字段值是否不匹配指定的正则表达式，忽略大小写。相当于 SQL 的 `!~*`（仅 PG 适用）。
+Check if the field value does not match the specified regular expression, case ignored. Equivalent to `!~*` in SQL (PG only).
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -572,15 +573,15 @@ repository.find({
 });
 ```
 
-## 日期类型字段运算符
+## Date Type Field Operators
 
-用于日期类型字段 `type: 'date'`
+For date type fields: `type: 'date'`
 
 ### `$dateOn`
 
-判断日期字段是否在某天内。
+Check if the date field value is within a certain day.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -594,9 +595,9 @@ repository.find({
 
 ### `$dateNotOn`
 
-判断日期字段是否不在某天内。
+Check if the date field value is not within a certain day.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -610,9 +611,9 @@ repository.find({
 
 ### `$dateBefore`
 
-判断日期字段是否在某个值之前。相当于小于传入的日期值。
+Check if the date field value is before a certain value, i.e., less than the one passed in.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -626,9 +627,9 @@ repository.find({
 
 ### `$dateNotBefore`
 
-判断日期字段是否不在某个值之前。相当于大于等于传入的日期值。
+Check if the date field value is not before a certain value, i.e., equal to or greater than the one passed in.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -642,9 +643,9 @@ repository.find({
 
 ### `$dateAfter`
 
-判断日期字段是否在某个值之后。相当于大于传入的日期值。
+Check if the date field value is after a certain value, i.e., greater than the one passed in.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -658,9 +659,9 @@ repository.find({
 
 ### `$dateNotAfter`
 
-判断日期字段是否不在某个值之后。相当于小于等于传入的日期值。
+Check if the date field value is not after a certain value, i.e., equal to or greater than the one passed in.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -672,21 +673,21 @@ repository.find({
 })
 ```
 
-## 数组类型字段运算符
+## Array Type Field Operators
 
-用于数组类型字段 `type: 'array'`
+For array type fields: `type: 'array'`
 
 ### `$match`
 
-判断数组字段的值是否匹配指定数组中的值。
+Check if the array field values match values of the specified array.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     tags: {
-      $match: ['文学', '历史'],
+      $match: ['literature', 'history'],
     }
   }
 })
@@ -694,15 +695,15 @@ repository.find({
 
 ### `$notMatch`
 
-判断数组字段的值是否不匹配指定数组中的值。
+Check if the array field values do not match values of the specified array.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     tags: {
-      $notMatch: ['文学', '历史'],
+      $notMatch: ['literature', 'history'],
     }
   }
 })
@@ -710,15 +711,15 @@ repository.find({
 
 ### `$anyOf`
 
-判断数组字段的值是否包含指定数组中的任意值。
+Check if the array field values contain any of the values of the specified array.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     tags: {
-      $anyOf: ['文学', '历史'],
+      $anyOf: ['literature', 'history'],
     }
   }
 })
@@ -726,15 +727,15 @@ repository.find({
 
 ### `$noneOf`
 
-判断数组字段的值是否不包含指定数组中的任意值。
+Check if the array field values contain none of the values of the specified array.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
   filter: {
     tags: {
-      $noneOf: ['文学', '历史'],
+      $noneOf: ['literature', 'history'],
     }
   }
 })
@@ -742,9 +743,9 @@ repository.find({
 
 ### `$arrayEmpty`
 
-判断数组字段是否为空。
+Check if the array field is empty.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -758,9 +759,9 @@ repository.find({
 
 ### `$arrayNotEmpty`
 
-判断数组字段是否不为空。
+Check if the array field is not empty.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -772,9 +773,9 @@ repository.find({
 });
 ```
 
-## 关系字段类型运算符
+## Relational Field Type Operators
 
-用于判断关系是否存在，字段类型包括：
+For checking if a relationship exists, field types include:
 
 - `type: 'hasOne'`
 - `type: 'hasMany'`
@@ -783,9 +784,9 @@ repository.find({
 
 ### `$exists`
 
-有关系数据
+There is relational data existing.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({
@@ -799,9 +800,9 @@ repository.find({
 
 ### `$notExists`
 
-无关系数据
+There is no relational data existing.
 
-**示例**
+**Example**
 
 ```ts
 repository.find({

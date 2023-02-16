@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import { IdentifierError } from './errors/identifier-error';
 import { Model } from './model';
+import lodash from 'lodash';
+import Database from './database';
 
 type HandleAppendsQueryOptions = {
   templateModel: any;
@@ -71,5 +73,46 @@ const MAX_IDENTIFIER_LENGTH = 63;
 export function checkIdentifier(value: string) {
   if (value.length > MAX_IDENTIFIER_LENGTH) {
     throw new IdentifierError(`Identifier ${value} is too long`);
+  }
+}
+
+export function getTableName(collectionName: string, options) {
+  return options.underscored ? snakeCase(collectionName) : collectionName;
+}
+
+export function snakeCase(name: string) {
+  return require('sequelize').Utils.underscore(name);
+}
+
+export function patchSequelizeQueryInterface(db: Database) {
+  if (db.inDialect('postgres')) {
+    //@ts-ignore
+    const queryGenerator = db.sequelize.dialect.queryGenerator;
+
+    queryGenerator.showConstraintsQuery = (tableName, constraintName) => {
+      const lines = [
+        'SELECT constraint_catalog AS "constraintCatalog",',
+        'constraint_schema AS "constraintSchema",',
+        'constraint_name AS "constraintName",',
+        'table_catalog AS "tableCatalog",',
+        'table_schema AS "tableSchema",',
+        'table_name AS "tableName",',
+        'constraint_type AS "constraintType",',
+        'is_deferrable AS "isDeferrable",',
+        'initially_deferred AS "initiallyDeferred"',
+        'from INFORMATION_SCHEMA.table_constraints',
+        `WHERE table_name='${tableName}'`,
+      ];
+
+      if (!constraintName) {
+        lines.push(`AND constraint_name='${constraintName}'`);
+      }
+
+      if (db.options.schema && db.options.schema !== 'public') {
+        lines.push(`AND table_schema='${db.options.schema}'`);
+      }
+
+      return lines.join(' ');
+    };
   }
 }

@@ -70,6 +70,7 @@ module.exports = (cli) => {
           ...process.argv.slice(3),
           `--port=${serverPort}`,
         ];
+
         if (opts.dbSync) {
           argv.push('--db-sync');
         }

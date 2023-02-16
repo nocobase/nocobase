@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'workflow',
+  duplicator: 'required',
   name: 'flow_nodes',
   // model: 'FlowNodeModel',
   title: 'Workflow Nodes',

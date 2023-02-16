@@ -35,6 +35,21 @@ for (const key in env) {
   }
 }
 
+if (require('semver').satisfies(process.version, '>16') && !process.env.UNSET_NODE_OPTIONS) {
+  if (process.env.NODE_OPTIONS) {
+    let opts = process.env.NODE_OPTIONS;
+    if (!opts.includes('--openssl-legacy-provider')) {
+      opts = opts + ' --openssl-legacy-provider';
+    }
+    if (!opts.includes('--no-experimental-fetch')) {
+      opts = opts + ' --no-experimental-fetch';
+    }
+    process.env.NODE_OPTIONS = opts;
+  } else {
+    process.env.NODE_OPTIONS = '--openssl-legacy-provider --no-experimental-fetch';
+  }
+}
+
 const cli = require('../src/cli');
 
 cli.parse(process.argv);

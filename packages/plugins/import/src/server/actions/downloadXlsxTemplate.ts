@@ -2,14 +2,14 @@ import { Context, Next } from '@nocobase/actions';
 import xlsx from 'node-xlsx';
 
 export async function downloadXlsxTemplate(ctx: Context, next: Next) {
-  let { columns, explain, title } = ctx.action.params;
+  let { columns, explain, title } = ctx.request.body;
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
   }
   const header = columns?.map((column) => column.defaultTitle);
   const data = [header];
   if (explain?.trim() !== '') {
-    data.push([explain]);
+    data.unshift([explain]);
   }
 
   ctx.body = xlsx.build([

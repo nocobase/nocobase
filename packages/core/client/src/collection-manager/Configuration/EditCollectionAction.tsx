@@ -78,7 +78,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: { autoGenId: true, ...record } }), {
+  const result = useRequest(() => Promise.resolve({ data: { autoGenId: true, ...record,category:record?.category.map((v)=>v.id) } }), {
     ...options,
     manual: true,
   });

@@ -74,7 +74,7 @@ app.listen(3000);
 
 **示例**
 
-在创建 app 时件时，可以通过 `resourcer` 选项传入：
+在创建 app 时，可以通过 `resourcer` 选项传入：
 
 ```ts
 const app = new Application({
