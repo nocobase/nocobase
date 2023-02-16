@@ -1,11 +1,12 @@
 import React, { useState, createElement, useEffect } from 'react';
-import { Comment, Divider, Form, Button, Empty, Modal, Avatar } from 'antd';
+import { Comment, Divider, Form, Button, Empty, Modal, Avatar, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { CommentBlockDesigner } from './CommentBlock.Designer';
 import { useCommentTranslation } from '../locale';
 import { CommentBlockDecorator } from './CommentBlock.Decorator';
 import { useCollection, useCurrentUserContext, useRecord, useRequest, useResource } from '@nocobase/client';
 import { createReg, StructMentions } from '../components/StructMentions';
+import moment from 'moment';
 
 let id = 0;
 
@@ -19,6 +20,7 @@ export interface CommentItem {
   createdBy: User;
   mentionUsers: User[];
   content: string;
+  updatedAt: string;
 }
 
 export const CommentBlock = (props) => {
@@ -132,6 +134,11 @@ export const CommentBlock = (props) => {
           <Comment
             key={i.id}
             avatar={<Avatar icon={<UserOutlined />} />}
+            datetime={
+              <Tooltip title={moment(i.updatedAt).format('YYYY-MM-DD HH:mm:ss')}>
+                <span>{moment(i.updatedAt).fromNow()}</span>
+              </Tooltip>
+            }
             actions={[
               <span key="comment-edit" onClick={() => handleEdit(i)}>
                 {t('Edit')}
