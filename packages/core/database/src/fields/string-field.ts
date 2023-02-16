@@ -1,43 +1,9 @@
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field, ValueParser } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 
 export class StringField extends Field {
   get dataType() {
     return DataTypes.STRING;
-  }
-
-  buildValueParser(ctx: any) {
-    return new StringValueParser(this, ctx);
-  }
-}
-
-export class StringValueParser extends ValueParser {
-  async setValue(value: any) {
-    const { map, set } = this.getOptions();
-    if (set.size > 0) {
-      if (map.has(value)) {
-        value = map.get(value);
-      }
-      if (set.has(value)) {
-        this.value = value;
-      } else {
-        this.errors.push('No matching option found');
-      }
-    } else {
-      this.value = value;
-    }
-  }
-
-  getOptions() {
-    const options = this.field.options?.['uiSchema']?.enum || [];
-    const map = new Map();
-    const set = new Set();
-    for (const option of options) {
-      set.add(option.value);
-      set.add(option.label);
-      map.set(option.label, option.value);
-    }
-    return { map, set };
   }
 }
 

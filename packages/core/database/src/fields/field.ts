@@ -238,33 +238,4 @@ export abstract class Field {
   typeToString() {
     return this.dataType.toString();
   }
-
-  buildValueParser(ctx: any) {
-    return new ValueParser(this, ctx);
-  }
-}
-
-export class ValueParser {
-  ctx: any;
-  field: any;
-  value: any;
-  errors = [];
-
-  constructor(field: any, ctx: any) {
-    this.field = field;
-    this.ctx = ctx;
-  }
-
-  toString() {
-    return this.value;
-  }
-
-  getValue() {
-    return this.value;
-  }
-
-  async setValue(value: any) {
-    console.log(this.field.name, value);
-    this.value = value;
-  }
 }

@@ -77,7 +77,7 @@ class Importer {
         if (value === undefined || value === null) {
           continue;
         }
-        const parser = field.buildValueParser({ ...this.context, column });
+        const parser = this.context.db.buildFieldValueParser(field, { ...this.context, column });
         await parser.setValue(typeof value === 'string' ? value.trim() : value);
         value = parser.getValue();
         if (parser.errors.length > 0) {
@@ -127,6 +127,7 @@ class Importer {
           result[0].push(instance);
         } catch (error) {
           this.context.log.error(error, row);
+          row.push(error.message);
           result[1].push(row);
         }
       }
