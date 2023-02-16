@@ -99,10 +99,10 @@ export default class implements Instruction {
           filter: {
             $or: [
               {
-                'workflow.current': true
+                'workflow.enabled': true
               },
               {
-                'workflow.current': false,
+                'workflow.enabled': false,
                 status: {
                   $ne: JOB_STATUS.PENDING
                 }

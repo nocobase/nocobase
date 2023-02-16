@@ -373,7 +373,7 @@ function AddActionButton(props) {
         {
           key: JOB_STATUS.RESOLVED,
           type: 'item',
-          title: `{{t("Resolve", { ns: "${NAMESPACE}" })}}`,
+          title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
           action: JOB_STATUS.RESOLVED,
           actionProps: {
@@ -383,7 +383,7 @@ function AddActionButton(props) {
         {
           key: JOB_STATUS.REJECTED,
           type: 'item',
-          title: `{{t("Reject", { ns: "${NAMESPACE}" })}}`,
+          title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
           action: JOB_STATUS.REJECTED,
           actionProps: {
@@ -393,7 +393,7 @@ function AddActionButton(props) {
         {
           key: JOB_STATUS.PENDING,
           type: 'item',
-          title: `{{t("Save", { ns: "${NAMESPACE}" })}}`,
+          title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
           action: JOB_STATUS.PENDING,
         }
@@ -485,7 +485,7 @@ export function SchemaConfig({ value, onChange }) {
                 properties: actions ?? {
                   resolve: {
                     type: 'void',
-                    title: `{{t("Resolve", { ns: "${NAMESPACE}" })}}`,
+                    title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
                     'x-decorator': 'ManualActionStatusProvider',
                     'x-decorator-props': {
                       value: JOB_STATUS.RESOLVED

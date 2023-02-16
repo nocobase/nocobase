@@ -53,7 +53,7 @@ export function WorkflowCanvas() {
   const history = useHistory();
   const { t } = useTranslation();
   const { data, refresh, loading } = useResourceActionContext();
-  const { resource, targetKey } = useResourceContext();
+  const { resource } = useResourceContext();
   const { setTitle } = useDocumentTitle();
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -79,11 +79,9 @@ export function WorkflowCanvas() {
 
   async function onToggle(value) {
     await resource.update({
-      filterByTk: workflow[targetKey],
+      filterByTk: workflow.id,
       values: {
-        enabled: value,
-        // NOTE: keep `key` field to adapt for backend
-        key: workflow.key
+        enabled: value
       }
     });
     refresh();
@@ -91,7 +89,7 @@ export function WorkflowCanvas() {
 
   async function onRevision() {
     const { data: { data: revision } } = await resource.revision({
-      filterByTk: workflow[targetKey],
+      filterByTk: workflow.id,
       filter: {
         key: workflow.key
       }
