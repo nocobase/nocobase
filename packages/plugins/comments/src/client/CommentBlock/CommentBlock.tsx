@@ -4,7 +4,15 @@ import { UserOutlined } from '@ant-design/icons';
 import { CommentBlockDesigner } from './CommentBlock.Designer';
 import { useCommentTranslation } from '../locale';
 import { CommentBlockDecorator } from './CommentBlock.Decorator';
-import { useCollection, useCurrentUserContext, useRecord, useRequest, useResource } from '@nocobase/client';
+import {
+  ReadPretty,
+  useAPIClient,
+  useCollection,
+  useCurrentUserContext,
+  useRecord,
+  useRequest,
+  useResource,
+} from '@nocobase/client';
 import { createReg, StructMentions } from '../components/StructMentions';
 import moment from 'moment';
 
@@ -31,6 +39,7 @@ export const CommentBlock = (props) => {
   const collection = useCollection();
   const record = useRecord();
   const { data: currentUserData } = useCurrentUserContext();
+  const api = useAPIClient();
 
   let collectionName = collection.name;
   let recordId = record.id;
@@ -127,7 +136,7 @@ export const CommentBlock = (props) => {
     });
   };
 
-  const isRootRole = currentUserData?.roles?.[0]?.name === 'root';
+  const isRootRole = api.auth.role === 'root';
 
   return (
     <div>
@@ -154,7 +163,7 @@ export const CommentBlock = (props) => {
                 : []
             }
             author={<a>{i.createdBy.nickname}</a>}
-            content={<p>{getContent(i)}</p>}
+            content={<ReadPretty.Html value={getContent(i)} />}
           />
         ))
       ) : (
@@ -201,13 +210,12 @@ export const getContent = (item: CommentItem) => {
     for (let r of replaces) {
       const index = plainText.search(r);
       const before = plainText.slice(0, index);
-      const main = <a key={id++}>{plainText.slice(index, index + r.length)}</a>;
+      const main = `<a>${plainText.slice(index, index + r.length)}</a>`;
       plainText = plainText.slice(index + r.length);
       splits.push(before, main);
     }
     splits.push(plainText);
-
-    return splits.filter((i) => i);
+    return splits.filter((i) => i).join('');
   } else {
     return plainText;
   }

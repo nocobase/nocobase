@@ -1,9 +1,7 @@
 import { ArrayTable } from '@formily/antd';
 import { observer, useField } from '@formily/react';
-import { FormProvider, SchemaComponent, useCompile, useRecord } from '@nocobase/client';
+import { FormProvider, SchemaComponent, useCompile, useRecord, ReadPretty } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
-import { Tooltip, Popover } from 'antd';
-import { css } from '@emotion/css';
 import { CommentItem, getContent } from '../CommentBlock/CommentBlock';
 import { useCommentTranslation } from '../locale';
 import { CommentRecordDecorator } from './CommentRecord.Decorator';
@@ -60,29 +58,14 @@ const Commenter = observer(() => {
 const CommentContent = observer(() => {
   const record = useRecord();
   const content = getContent(record as CommentItem);
+
   return (
-    <Popover
-      content={
-        <div
-          className={css`
-            width: 300px;
-            word-break: break-word;
-          `}
-        >
-          {content}
-        </div>
-      }
-    >
-      <div
-        className={css`
-          width: 100%;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        `}
-      >
-        {content}
-      </div>
-    </Popover>
+    <ReadPretty.Html
+      ellipsis
+      forceHtmlEllipsis
+      value={content}
+      htmlStyle={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+    />
   );
 });
 
@@ -266,7 +249,7 @@ export const CommentRecord: any = () => {
               columnFieldTitle: {
                 type: 'void',
                 'x-component': 'TableV2.Column',
-                title: t('Collection title'),
+                title: t('Record title'),
                 properties: {
                   recordTitle: {
                     'x-component': 'PlainText',

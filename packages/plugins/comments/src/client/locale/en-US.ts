@@ -7,6 +7,7 @@ export default {
   'Comment content': 'Comment content',
   'Collection name': 'Collection name',
   'Collection title': 'Collection title',
+  'Record title': 'Record title',
   'Comment Record': 'Comment Record',
   'Delete comment': 'Delete comment',
   'Confirm delete?': 'Confirm delete?',
