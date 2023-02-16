@@ -211,6 +211,7 @@ export default {
   "Many to many description": "Used to create many-to-many relationships. For example, a student will have many teachers and a teacher will have many students. When present as a field, it is a drop-down selection used to select records from the associated collection.",
   "Generated automatically if left blank": "Generated automatically if left blank",
   "Display association fields": "Display association fields",
+  "Display fields title": "Display fields title",
   "Field component": "Field component",
   "Subtable": "Subtable",
   "Subform": "Subform",

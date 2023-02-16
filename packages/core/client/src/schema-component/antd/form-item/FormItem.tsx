@@ -25,6 +25,7 @@ const divWrap = (schema: ISchema) => {
 };
 
 export const FormItem: any = (props) => {
+  const { useLabelStyle, labelStyle, ...restProps } = props;
   const field = useField();
   return (
     <ACLCollectionFieldProvider>
@@ -35,7 +36,8 @@ export const FormItem: any = (props) => {
               flex-wrap: wrap;
             }
           `}`}
-          {...props}
+          {...restProps}
+          labelStyle={Object.assign({}, labelStyle, useLabelStyle?.())}
           extra={
             typeof field.description === 'string' ? (
               <div

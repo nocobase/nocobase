@@ -214,6 +214,7 @@ export default {
   "Many to many description": "用于创建多对多关系，比如一个学生会有多个老师，一个老师也会有多个学生。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。",
   "Generated automatically if left blank": "留空时，自动生成中间表",
   "Display association fields": "显示关联表的字段",
+  "Display fields title": "显示字段标题",
   "Field component": "字段组件",
   "Subtable": "子表格",
   "Subform": "子表单",
