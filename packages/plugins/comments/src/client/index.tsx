@@ -26,7 +26,7 @@ export default React.memo((props: any) => {
           {
             key: 'comments',
             type: 'item',
-            title: t('Comments'),
+            title: t('Comment'),
             component: 'CommentBlockInitializer',
           },
         ]}
