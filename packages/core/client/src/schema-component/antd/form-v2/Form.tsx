@@ -87,7 +87,7 @@ const WithForm = (props) => {
                 value: field.value || field.initialValue,
               };
             });
-            onFieldChange(`*(${fields})`, ['value'], (field: any) => {
+            onFieldChange(`*(${fields})`, ['value','required','pattern','display'], (field: any) => {
               field.linkageProperty = {};
             });
           }
@@ -110,9 +110,11 @@ const WithForm = (props) => {
               linkagefields.push(field);
               linkageMergeAction(h, field, v.linkageRuleCondition, form?.values);
               if (index === linkageRules.length - 1) {
-                linkagefields.map((v) => {
-                  v.linkageProperty = {};
-                });
+                setTimeout(() =>
+                  linkagefields.map((v) => {
+                    v.linkageProperty = {};
+                  }),
+                );
               }
             });
           }

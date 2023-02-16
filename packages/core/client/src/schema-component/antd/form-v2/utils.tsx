@@ -15,7 +15,6 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
         ...field.linkageProperty,
         required: requiredResult,
       };
-      console.log(field.linkageProperty?.required);
       field.required = last(field.linkageProperty?.required);
       break;
     case 'inRequired':
