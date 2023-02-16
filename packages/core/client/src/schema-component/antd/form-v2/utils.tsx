@@ -23,25 +23,23 @@ export const getReverseOperator = (operator) => {
 export const linkageAction = ({ operator, value }, field, linkageRuleCondition, values) => {
   switch (operator) {
     case 'required':
-      field.required = conditionAnalyse(linkageRuleCondition, values);
+      field.required = conditionAnalyse(linkageRuleCondition, values) ? true : field?.initProperty?.required;
       break;
     case 'inRequired':
-      field.required = !conditionAnalyse(linkageRuleCondition, values);
+      field.required = conditionAnalyse(linkageRuleCondition, values) ? false : field?.initProperty?.required;
       break;
     case 'visible':
     case 'none':
     case 'hidden':
-      field.display = conditionAnalyse(linkageRuleCondition, values) ? operator : getReverseOperator(operator);
+      field.display = conditionAnalyse(linkageRuleCondition, values) ? operator : field?.initProperty?.display;
       break;
     case 'editable':
     case 'readOnly':
     case 'readPretty':
-      field.pattern = conditionAnalyse(linkageRuleCondition, values) ? operator : getReverseOperator(operator);
+      field.pattern = conditionAnalyse(linkageRuleCondition, values) ? operator : field?.initProperty?.pattern;
       break;
     case 'value':
-      field.value = conditionAnalyse(linkageRuleCondition, values)
-        ? value
-        : field.initialValue || (value !== field.value ? field.value : undefined);
+      field.value = conditionAnalyse(linkageRuleCondition, values) ? value : field.value || field?.initProperty?.value;
       break;
     default:
       return null;

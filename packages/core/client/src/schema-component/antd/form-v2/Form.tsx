@@ -1,5 +1,5 @@
 import { FormLayout } from '@formily/antd';
-import { createForm, Field, onFormInputChange, onFieldReact } from '@formily/core';
+import { createForm, Field, onFormInputChange, onFieldReact, onFieldInit } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
@@ -68,6 +68,29 @@ const WithForm = (props) => {
       });
     });
     form.disabled = props.disabled;
+    return () => {
+      form.removeEffects(id);
+    };
+  }, []);
+  useEffect(() => {
+    const id = uid();
+    form.addEffects(id, () => {
+      return linkageRules.map((v) => {
+        return v.linkageRuleAction?.action.map((h) => {
+          if (h.targetFields) {
+            const fields = h.targetFields.join(',');
+            return onFieldInit(`*(${fields})`, (field: any, form) => {
+              field['initProperty'] = {
+                display: field.display,
+                required: field.required,
+                pattern: field.pattern,
+                value: field.value||field.initialValue ,
+              };
+            });
+          }
+        });
+      });
+    });
     return () => {
       form.removeEffects(id);
     };
