@@ -1,66 +1,109 @@
-import { CollectionFieldOptions, useAPIClient, useCollectionManager, useCompile } from '@nocobase/client';
-import React, { useEffect , useState } from 'react';
+import { CollectionFieldOptions, useAPIClient, useCollectionManager, useCompile, useRequest } from '@nocobase/client';
+import React, { useEffect, useState } from 'react';
 import { Card, Spin } from 'antd';
 import { getChartData } from './ChartUtils';
 import chartRenderComponentsMap from './chartRenderComponents';
 import { templates } from './templates';
 import { ChartBlockEngineDesigner } from './ChartBlockEngineDesigner';
+import JSON5 from 'json5';
+
+type dataSet = {
+  title: string,
+  id: number,
+  data_set_id: string,
+  data_set_value: string,
+  data_set_name: string,
+}
 
 interface ChartBlockEngineMetaData {
-  collectionName: string;
-  chartType: string;
-  dataset: object;
-  chartOptions: object;
+  dataSetMetaData: dataSet,
   chartConfig: {
-    config: string
-  };
-  collectionFields: CollectionFieldOptions[];
+    chartType: string,
+    [key: string]: any,
+  },
 }
 
 // renderComponent 可扩展 G2Plot | Echarts | D3'
 type RenderComponent = 'G2Plot';
 
-const ChartRenderComponent = ({ chartBlockMetaData, renderComponent, }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }): JSX.Element => {
+const ChartRenderComponent = ({
+                                chartBlockMetaData,
+                                renderComponent,
+                              }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }): JSX.Element => {
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
+
   const RenderComponent = chartRenderComponentsMap.get(renderComponent);//G2Plot | Echarts | D3
-  const { dataset, collectionName, chartType, chartOptions, chartConfig } = chartBlockMetaData;
-  const { loading, data } = useGetChartData(chartBlockMetaData);
+  const { dataSetMetaData, chartConfig } = chartBlockMetaData;
+  const { loading, dataSet } = useGetDataSet(dataSetMetaData.data_set_id);
   let finalChartOptions;
-  if (chartConfig?.config) {
-    finalChartOptions = JSON.parse(compile(chartConfig?.config));
-  } else {
-    finalChartOptions = templates.get(chartType)?.defaultChartOptions;
-  }
+  finalChartOptions = templates.get(chartConfig.chartType)?.defaultChartOptions;
   switch (renderComponent) {
     case 'G2Plot': {
+      let advanceConfig;
+      try {
+        advanceConfig = JSON5.parse(chartConfig[chartConfig?.chartType]?.advanceConfig);
+      } catch (e) {
+        advanceConfig = {};
+      }
       const config = compile({
         ...finalChartOptions,
-        ...chartOptions,
-        data: data,
-      }, chartOptions);
+        ...advanceConfig,
+        data: dataSet?.data_set_value ? JSON5.parse(dataSet?.data_set_value) : [],
+      }, chartConfig[chartConfig.chartType]);
       console.log(chartBlockMetaData, '=====================');
-      console.log(config);
+      console.log(config, '===================================');
       return (
         loading
           ?
           <Spin />
           :
-          <RenderComponent plot={chartType} config={config} />
+          <RenderComponent plot={chartConfig.chartType} config={config} />
       );
     }
   }
 };
 
-const useGetChartData = (chartBlockMetaData: ChartBlockEngineMetaData) => {
+const useGetDataSet = (dataSetId: string) => {
+  const apiClient = useAPIClient();
+  const [dataSet, setDataSet] = useState<dataSet>(null);
+  const { loading, data } = useRequest({ url: `/datasets:get?data_set_id=${dataSetId}` });
+  console.log(data);
+  // useEffect(() => {
+  // apiClient.request({
+  //   method: 'get',
+  //   url: `/api/datasets:get?data_set_id=${dataSetId}`
+  // }).then((value) => {
+  //   setDataSet(value.data.data);
+  //   console.log(value.data.data);
+  //   setLoading(false);
+  // }).catch(err => {
+  //   console.log(err);
+  // });
+  // apiClient.resource('datasets').get({
+  //   data_set_id: dataSetId,
+  // }).then((value) => {
+  //   setDataSet(value.data.data);
+  //   setLoading(false);
+  // }).catch(err => {
+  //   console.log(err);
+  // });
+  // }, []);
+  return {
+    loading,
+    dataSet: data?.data,
+  };
+};
+
+
+/*const useGetChartData = (chartBlockMetaData: ChartBlockEngineMetaData) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
   const apiClient = useAPIClient();
-  const { dataset, collectionName, chartType, chartOptions,collectionFields } = chartBlockMetaData;
+  const { dataset, collectionName, chartType, chartOptions, collectionFields } = chartBlockMetaData;
   useEffect(() => {
     try {
       //1.发送请求获取聚合后的数据data
-      getChartData(apiClient, chartType, dataset, collectionName,collectionFields).then((data) => {
+      getChartData(apiClient, chartType, dataset, collectionName, collectionFields).then((data) => {
         setData(data.chartData);
         setLoading(false);
       });
@@ -73,21 +116,15 @@ const useGetChartData = (chartBlockMetaData: ChartBlockEngineMetaData) => {
     data,
     chartType,
   };
-};
+};*/
 
 const ChartBlockEngine = ({
                             chartBlockMetaData,
                             renderComponent,
                           }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) => {
-  const { getCollectionFields } = useCollectionManager();
-  const collectionFields = getCollectionFields(chartBlockMetaData.collectionName);
-  const _chartBlockMetaData = {
-    ...chartBlockMetaData,
-    collectionFields
-  }
   return (
     <>
-      <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={_chartBlockMetaData} />
+      <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={chartBlockMetaData} />
     </>
   );
 };
