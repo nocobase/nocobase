@@ -251,7 +251,7 @@ interface AvailableStrategyOptions {
 }
 ```
 
-**Detailed Information***
+**Detailed Information**
 
 * displayName - Name of the strategy
 * allowConfigure - Whether this strategy has permission of **resource configuration**; if set to `true`, the permission that requests to register as `configResources` resource in `ACL` will return pass
