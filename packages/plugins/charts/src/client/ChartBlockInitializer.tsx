@@ -1,10 +1,9 @@
 import { FormOutlined } from '@ant-design/icons';
-import { FormDialog, FormLayout, Input } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
 import { observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm } from '@formily/react';
 import {
-  APIClientProvider,
-  DataBlockInitializer, FormProvider,
+  APIClientProvider, FormProvider,
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
@@ -27,7 +26,7 @@ export const Options = observer((props) => {
   const field = useField<Field>();
   const [s, setSchema] = useState(new Schema({}));
   useEffect(() => {
-    form.clearFormGraph('options.*');
+    // form.clearFormGraph('options.*');
     if (form.values.chartType) {
       const template = templates.get(form.values.chartType);
       setSchema(new Schema(template.configurableProperties || {}));
@@ -49,7 +48,6 @@ export const ChartBlockInitializer = (props) => {
       componentType={'Kanban'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        console.log(item, '===============');
         const dataSource = Object.keys(JSON5.parse(item.data_set_value)[0]).map(key => {
           return {
             label: key,
@@ -62,7 +60,6 @@ export const ChartBlockInitializer = (props) => {
           const [previewMetaData, setPreviewMetaData] = useState(null);
           const previewChart = useCallback(() => {
             form.validate().then(() => {
-              console.log("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
               const renderComponent = templates.get(form.values.chartType)?.renderComponent;
               const result = {
                 renderComponent,
@@ -72,10 +69,8 @@ export const ChartBlockInitializer = (props) => {
                 },
               };
               setPreviewMetaData(result);
-              console.log(result, 'form.values');
             });
           }, [form.values]);
-
           return (
             <APIClientProvider apiClient={api}>
               <SchemaComponentOptions
@@ -85,6 +80,7 @@ export const ChartBlockInitializer = (props) => {
                 <section className={
                   css`
                     display: flex;
+                    gap: 16px;
                   `
                 }>
                   {/*  left*/}
@@ -181,24 +177,11 @@ export const ChartBlockInitializer = (props) => {
           initialValues: {},
         });
         if (values) {
-          //聚合chartOptions
           values = {
             dataSetMetaData: item,
             chartConfig: values,
           };
-          // const a = {
-          //   chartType: 'Pie',
-          //   Pie: {
-          //     'dimension': 'year',
-          //     'metric': [
-          //       'year',
-          //       'value',
-          //     ],
-          //     'chartConfig': '{\n  "appendPadding": 10,\n  "radius": 0.9,\n  "label": {\n    "type": "inner",\n    "offset": "-30%",\n    "content": "{{({percent}) => `${(percent * 100).toFixed(0)}%`}}",\n    "style": {\n      "fontSize": 14,\n      "textAlign": "center"\n    }\n  },\n  "interactions": [\n    {\n      "type": "element-active"\n    }\n  ]\n}',
-          //   },
-          // };
           const renderComponent = templates.get(values.chartConfig.chartType)?.renderComponent;
-          console.log(values, '===============================================');
           insert({
             type: 'void',
             'x-designer': 'ChartBlockEngine.Designer',

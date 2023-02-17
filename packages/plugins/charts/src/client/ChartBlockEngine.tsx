@@ -62,49 +62,25 @@ const ChartRenderComponent = ({
 
 const useGetDataSet = (dataSetId: string) => {
   const { loading, data } = useRequest({ url: `/datasets:get?filter={"data_set_id":"${dataSetId}"}` });
-    return {
-      loading,
-      dataSet: data?.data,
-    };
+  return {
+    loading,
+    dataSet: data?.data,
   };
+};
 
+const ChartBlockEngine = ({
+                            chartBlockMetaData,
+                            renderComponent,
+                          }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) => {
+  return (
+    <>
+      <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={chartBlockMetaData} />
+    </>
+  );
+};
 
-  /*const useGetChartData = (chartBlockMetaData: ChartBlockEngineMetaData) => {
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState([]);
-    const apiClient = useAPIClient();
-    const { dataset, collectionName, chartType, chartOptions, collectionFields } = chartBlockMetaData;
-    useEffect(() => {
-      try {
-        //1.发送请求获取聚合后的数据data
-        getChartData(apiClient, chartType, dataset, collectionName, collectionFields).then((data) => {
-          setData(data.chartData);
-          setLoading(false);
-        });
-      } catch (e) {
-        console.log(e);
-      }
-    }, [chartBlockMetaData]);
-    return {
-      loading,
-      data,
-      chartType,
-    };
-  };*/
+ChartBlockEngine.Designer = ChartBlockEngineDesigner;
 
-  const ChartBlockEngine = ({
-                              chartBlockMetaData,
-                              renderComponent,
-                            }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) => {
-    return (
-      <>
-        <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={chartBlockMetaData} />
-      </>
-    );
-  };
-
-  ChartBlockEngine.Designer = ChartBlockEngineDesigner;
-
-  export {
-    ChartBlockEngine,
-  };
+export {
+  ChartBlockEngine,
+};
