@@ -11,3 +11,4 @@ export {
   useTableColumnInitializerFields,
   itemsMerge,
 } from './utils';
+export { Resizable } from './buttons';
