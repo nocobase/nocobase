@@ -24,9 +24,9 @@ export const Checkbox: ComposedCheckbox = connect(
       onInput: 'onChange',
     },
     (props, field) => {
-      // console.log({ props, field });
       return {
         ...props,
+        disabled: props.disabled || field.pattern === 'readOnly',
       };
     },
   ),

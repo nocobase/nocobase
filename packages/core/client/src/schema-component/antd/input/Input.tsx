@@ -17,6 +17,7 @@ export const Input: ComposedInput = connect(
   mapProps((props, field) => {
     return {
       ...props,
+      disabled: props.disabled || field.pattern === 'readOnly',
       suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
     };
   }),
