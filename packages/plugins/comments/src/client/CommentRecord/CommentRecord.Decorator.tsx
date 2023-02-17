@@ -28,18 +28,6 @@ const useCommentsCollection = () => {
           'x-component-props': {
             showTime: true,
           },
-          'x-read-pretty': true,
-        },
-      },
-      {
-        name: 'collectionName',
-        type: 'string',
-        interface: 'input',
-        uiSchema: {
-          title: t('Collection name'),
-          type: 'string',
-          'x-component': 'Input',
-          required: true,
         },
       },
       {
@@ -48,8 +36,23 @@ const useCommentsCollection = () => {
         interface: 'input',
         uiSchema: {
           title: '{{t("Record ID")}}',
-          type: 'string',
-          'x-component': 'Input',
+        },
+      },
+      {
+        name: 'recordTitle',
+        type: 'string',
+        interface: 'input',
+        uiSchema: {
+          title: t('Record title'),
+        },
+      },
+      {
+        name: 'collection',
+        type: 'belongsTo',
+        interface: 'obo',
+        target: 'collections',
+        uiSchema: {
+          title: '{{t("Collection")}}',
         },
       },
       {
@@ -58,16 +61,7 @@ const useCommentsCollection = () => {
         target: 'users',
         interface: 'createdBy',
         uiSchema: {
-          type: 'object',
           title: t('Commenter'),
-          'x-component': 'RecordPicker',
-          'x-component-props': {
-            fieldNames: {
-              value: 'id',
-              label: 'nickname',
-            },
-          },
-          'x-read-pretty': true,
         },
       },
       {
@@ -78,16 +72,34 @@ const useCommentsCollection = () => {
         otherKey: 'commentId',
         interface: 'updatedBy',
         uiSchema: {
-          type: 'object',
           title: t('Ref users'),
-          'x-component': 'RecordPicker',
-          'x-component-props': {
-            fieldNames: {
-              value: 'id',
-              label: 'nickname',
-            },
-          },
-          'x-read-pretty': true,
+        },
+      },
+    ],
+  };
+};
+
+export const useCollectionsCollection = () => {
+  const { t } = useCommentTranslation();
+
+  return {
+    name: 'collections',
+    title: t('Collection name'),
+    fields: [
+      {
+        name: 'name',
+        type: 'string',
+        interface: 'input',
+        uiSchema: {
+          title: t('Collection name'),
+        },
+      },
+      {
+        name: 'title',
+        type: 'string',
+        interface: 'input',
+        uiSchema: {
+          title: t('Collection title'),
         },
       },
     ],
@@ -98,6 +110,7 @@ export const CommentRecordDecorator = observer((props: any) => {
   const parent = useCollection();
   const record = useRecord();
   const { collections, ...restCollectionManagerCtx } = useContext(CollectionManagerContext);
+  const collectionsCollection = useCollectionsCollection();
   const commentsCollection = useCommentsCollection();
 
   let filter = props?.params?.filter;
@@ -137,7 +150,10 @@ export const CommentRecordDecorator = observer((props: any) => {
   };
   return (
     <IsAssociationBlock.Provider value={!!parent.name}>
-      <CollectionManagerProvider {...restCollectionManagerCtx} collections={[...collections, commentsCollection]}>
+      <CollectionManagerProvider
+        {...restCollectionManagerCtx}
+        collections={[...collections, commentsCollection, collectionsCollection]}
+      >
         <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
       </CollectionManagerProvider>
     </IsAssociationBlock.Provider>
