@@ -117,6 +117,13 @@ export function patchSequelizeQueryInterface(db: Database) {
 }
 
 export function percent2float(value: string) {
+  if (!value.endsWith('%')) {
+    return NaN;
+  }
+  let val = value.substring(0, value.length - 1);
+  if (isNaN(+val)) {
+    return NaN;
+  }
   const index = value.indexOf('.');
   if (index === -1) {
     return parseFloat(value) / 100;
