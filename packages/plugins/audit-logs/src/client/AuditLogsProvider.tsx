@@ -1,21 +1,20 @@
-import { SchemaComponentOptions } from '@nocobase/client';
+import { SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
 import React from 'react';
-import { ArrayTable } from '@formily/antd';
-import { AuditLogs } from './AuditLogs';
 import { AuditLogsBlockInitializer } from './AuditLogsBlockInitializer';
-import { Username, Collection, Field, Value } from './components/values';
+import { AuditLogsValue } from './components/AuditLogsValue';
+import { AuditLogsField } from './components/AuditLogsField';
+import { AuditLogsBlockProvider } from './AuditLogsBlockProvider';
+import { AuditLogsTableActionColumnInitializer } from './initializers/AuditLogsTableActionColumnInitializer';
 
 export const AuditLogsProvider = (props: any) => {
   return (
     <SchemaComponentOptions
       components={{
-        AuditLogs,
+        AuditLogsBlockProvider,
         AuditLogsBlockInitializer,
-        AuditLogsArrayTable: ArrayTable,
-        AuditLogsUsername: Username,
-        AuditLogsCollection: Collection,
-        AuditLogsField: Field,
-        AuditLogsValue: Value,
+        AuditLogsValue,
+        AuditLogsField,
+        AuditLogsTableActionColumnInitializer,
       }}
     >
       {props.children}

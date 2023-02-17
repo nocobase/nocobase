@@ -1,14 +1,20 @@
 import { TableOutlined } from '@ant-design/icons';
-import { SchemaInitializer } from '@nocobase/client';
+import { ISchema } from '@formily/react';
+import { createTableBlockSchema, SchemaInitializer } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuditLogsSchema } from './AuditLogs';
 
 export const AuditLogsBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
 
-  const auditLogsSchema = useAuditLogsSchema();
+  const schema = createTableBlockSchema({
+    collection: 'auditLogs',
+    rowKey: 'id',
+    tableActionInitializers: 'AuditLogsTableActionInitializers',
+    tableColumnInitializers: 'AuditLogsTableColumnInitializers',
+    tableActionColumnInitializers: 'AuditLogsTableActionColumnInitializers',
+  });
 
   return (
     <SchemaInitializer.Item
@@ -17,16 +23,11 @@ export const AuditLogsBlockInitializer = (props) => {
       onClick={() => {
         insert({
           type: 'void',
-          'x-designer': 'AuditLogs.Designer',
-          'x-decorator': 'AuditLogs.Decorator',
-          'x-decorator-props': {
-            params: {},
-          },
-          'x-component': 'CardItem',
+          'x-component': 'AuditLogsBlockProvider',
           properties: {
-            auditLogs: auditLogsSchema,
+            auditLogs: schema,
           },
-        });
+        } as ISchema);
       }}
       title={t('Audit Logs')}
     />

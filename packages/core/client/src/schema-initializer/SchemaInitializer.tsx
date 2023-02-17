@@ -10,7 +10,7 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps
+  SchemaInitializerItemProps,
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -161,7 +161,6 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
           return <Menu.Divider key={`divider-${indexA}`} />;
         }
         if (item.type === 'itemGroup') {
-          console.log(item.children);
           return (
             <Menu.ItemGroup
               // @ts-ignore
