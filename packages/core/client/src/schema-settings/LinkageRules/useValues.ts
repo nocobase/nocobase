@@ -24,7 +24,7 @@ export const useValues = (options) => {
     field.data = { ...field.initialValue };
     const dataIndex = field.initialValue?.targetFields;
     const option = (dataIndex && findOption(dataIndex, options)) || {};
-    const operators = option?.operators;
+    const operators = option?.operators || [];
     field.data.operators = operators;
     field.data.schema = option?.schema;
   };
@@ -36,7 +36,12 @@ export const useValues = (options) => {
       const option = findOption(dataIndex, options);
       field.data = field.data || {};
       const operators = option?.operators;
-      field.data.operators = operators;
+      field.data.operators = operators?.filter((v) => {
+        if (dataIndex.length > 1) {
+          return v.value !== 'value';
+        }
+        return true;
+      });
       field.data.schema = option?.schema;
       field.value = field.value || [];
       field.data.operator = undefined;
