@@ -41,6 +41,7 @@ import {
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormLinkageRules } from './LinkageRules';
+import { useLinkageCollectionFieldOptions } from './LinkageRules/actiion-hooks';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -704,6 +705,7 @@ SchemaSettings.LinkageRules = (props) => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const type = fieldSchema['x-component'] === 'Action' ? 'button' : 'field';
   return (
     <SchemaSettings.ModalItem
       title={t('Linkage rules')}
@@ -722,7 +724,8 @@ SchemaSettings.LinkageRules = (props) => {
                   return {
                     options,
                     defaultValues: fieldSchema?.['x-linkageRules'],
-                    type: fieldSchema['x-component'] === 'Action' ? 'button' : 'field',
+                    type,
+                    linkageOptions: useLinkageCollectionFieldOptions(collectionName, type),
                   };
                 },
               },

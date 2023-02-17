@@ -49,6 +49,7 @@ export default {
   "Hidden(reserved value)":"非表示(値の保持)",
   "Not required":"必須ではありません",
   "Value":"フィールド値",
+  "Disabled":"無効化",
   "Linkage rule":"連動規則",
   "Linkage rules":"連動規則",
   "Condition":"条件＃ジョウケン＃",

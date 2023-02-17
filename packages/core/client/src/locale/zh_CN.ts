@@ -46,6 +46,7 @@ export default {
   "Hidden(reserved value)":"隐藏(保留值)",
   "Not required":"非必填",
   "Value":"字段值",
+  "Disabled":"禁用",
   "Linkage rule":"联动规则",
   "Linkage rules":"联动规则",
   "Condition":"条件",

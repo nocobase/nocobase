@@ -48,6 +48,7 @@ export default {
   "Hidden(reserved value)":"Hidden(reserved value)",
   "Not required":"Not required",
   "Value":"Value",
+  "Disabled":"Disabled",
   "Linkage rule":"Linkage rule",
   "Linkage rules":"Linkage rules",
   "Condition":"Condition",
