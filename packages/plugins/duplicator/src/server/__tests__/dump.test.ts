@@ -1,5 +1,5 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
+import { Database, Model } from '@nocobase/database';
 import * as os from 'os';
 import path from 'path';
 import lodash from 'lodash';
@@ -19,6 +19,7 @@ describe('dump', () => {
     app = mockServer();
 
     db = app.db;
+    await app.cleanDb();
 
     app.db.collection({
       name: 'users',
@@ -52,7 +53,6 @@ describe('dump', () => {
       fields: [],
     });
 
-    await app.cleanDb();
     await db.sync();
   });
 
@@ -98,7 +98,11 @@ describe('dump', () => {
 
     const collectionMeta = JSON.parse(collectionMetaFile);
     expect(collectionMeta.count).toEqual(2);
-    expect(collectionMeta.columns).toEqual(Object.keys(db.getCollection('users').model.rawAttributes));
+    expect(collectionMeta.columns).toEqual(
+      Object.keys(db.getCollection('users').model.rawAttributes).map(
+        (fieldName) => db.getCollection('users').model.rawAttributes[fieldName].field,
+      ),
+    );
 
     const dataPath = path.resolve(testDir, 'collections', 'users', 'data');
 
@@ -144,7 +148,7 @@ $$`);
     await db.sequelize.query(`
 CREATE  TRIGGER last_name_changes
   BEFORE UPDATE
-  ON ${app.db.getCollection('users').model.tableName}
+  ON ${app.db.getCollection('users').quotedTableName()}
   FOR EACH ROW
   EXECUTE PROCEDURE  trigger_function();
     `);

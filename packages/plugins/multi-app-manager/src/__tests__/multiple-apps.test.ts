@@ -21,11 +21,39 @@ describe('multiple apps create', () => {
     await app.destroy();
   });
 
+  it('should register db creator', async () => {
+    const fn = jest.fn();
+
+    const appPlugin = app.getPlugin<PluginMultiAppManager>('PluginMultiAppManager');
+    const defaultDbCreator = appPlugin.appDbCreator;
+
+    appPlugin.setAppDbCreator(async (app) => {
+      fn();
+      await defaultDbCreator(app);
+    });
+
+    const name = `td_${uid()}`;
+    await db.getRepository('applications').create({
+      values: {
+        name,
+        options: {
+          plugins: [],
+        },
+      },
+    });
+    await app.appManager.removeApplication(name);
+
+    expect(fn).toBeCalled();
+  });
+
   it('should create application', async () => {
     const name = `td_${uid()}`;
     const miniApp = await db.getRepository('applications').create({
       values: {
         name,
+        options: {
+          plugins: [],
+        },
       },
     });
 
@@ -37,6 +65,9 @@ describe('multiple apps create', () => {
     await db.getRepository('applications').create({
       values: {
         name,
+        options: {
+          plugins: [],
+        },
       },
     });
 

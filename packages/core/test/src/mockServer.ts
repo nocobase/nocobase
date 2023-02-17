@@ -57,6 +57,7 @@ interface Resource {
 export class MockServer extends Application {
   async loadAndInstall(options: any = {}) {
     await this.load({ method: 'install' });
+
     await this.install({
       ...options,
       sync: {
@@ -69,7 +70,7 @@ export class MockServer extends Application {
   }
 
   async cleanDb() {
-    await this.db.sequelize.getQueryInterface().dropAllTables();
+    await this.db.clean({ drop: true });
   }
 
   agent(): SuperAgentTest & { resource: (name: string, resourceOf?: any) => Resource } {

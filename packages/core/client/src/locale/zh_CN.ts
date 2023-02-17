@@ -40,6 +40,7 @@ export default {
   "Edit category":"编辑分类",
   "Collection category":"数据表类别",
   "Sort":"排序",
+  "Categories":"数据表类别",
   "Category name":"分类名称",
   "Roles & Permissions": "角色和权限",
   "Edit profile": "个人资料",
@@ -633,4 +634,8 @@ export default {
   'Fix block': '固定区块',
   'Plugin name': '插件',
   'Plugin tab name': '插件标签页',
+  'Enable page header': '启用页眉',
+  'Display page title': '显示页面标题',
+  'Edit page title': '编辑页面标题',
+  'Enable page tabs': '启用页面选项卡',
 }

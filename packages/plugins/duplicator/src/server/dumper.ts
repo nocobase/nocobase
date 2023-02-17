@@ -177,7 +177,7 @@ ORDER BY table_schema, table_name`,
     const dataStream = fs.createWriteStream(dataFilePath);
 
     const rows = await app.db.sequelize.query(
-      sqlAdapter(app.db, `SELECT * FROM ${collection.isParent() ? 'ONLY' : ''} "${collection.model.tableName}"`),
+      sqlAdapter(app.db, `SELECT * FROM ${collection.isParent() ? 'ONLY' : ''} ${collection.quotedTableName()}`),
       {
         type: 'SELECT',
       },

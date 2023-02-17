@@ -75,6 +75,7 @@ export class OptionsParser {
     for (const sortKey of sort) {
       let direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
       let sortField: Array<any> = sortKey.replace('-', '').split('.');
+
       if (this.database.inDialect('postgres', 'sqlite')) {
         direction = `${direction} NULLS LAST`;
       }
@@ -86,7 +87,11 @@ export class OptionsParser {
           sortField[i] = associationModel.associations[associationKey].target;
           associationModel = sortField[i];
         }
+      } else {
+        const rawField = this.model.rawAttributes[sortField[0]];
+        sortField[0] = rawField?.field || sortField[0];
       }
+
       sortField.push(direction);
       if (this.database.inDialect('mysql')) {
         orderParams.push([Sequelize.fn('ISNULL', Sequelize.col(`${this.model.name}.${sortField[0]}`))]);

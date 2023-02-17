@@ -38,6 +38,7 @@ export default {
   "Add category":"分類の追加",
   "Edit category":"分類の編集",
   "Sort":"ソート＃ソート＃",
+  "Categories":"データテーブルカテゴリ",
   "Category name":"分類名",
   "Delete category":"分類の削除",
   "Collection category":"Collection category",

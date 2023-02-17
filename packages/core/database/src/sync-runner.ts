@@ -7,6 +7,8 @@ export class SyncRunner {
 
     const inheritedCollection = model.collection as InheritedCollection;
     const db = inheritedCollection.context.database;
+    const schemaName = db.options.schema || 'public';
+
     const dialect = db.sequelize.getDialect();
 
     const queryInterface = db.sequelize.getQueryInterface();
@@ -27,7 +29,10 @@ export class SyncRunner {
 
     const parentTables = parents.map((parent) => parent.model.tableName);
 
-    const tableName = model.getTableName();
+    const tableName = model.tableName;
+
+    const schemaTableName = db.utils.addSchema(tableName);
+    const quoteTableName = db.utils.quoteTable(tableName);
 
     const attributes = model.tableAttributes;
 
@@ -44,6 +49,7 @@ export class SyncRunner {
           `SELECT column_default
            FROM information_schema.columns
            WHERE table_name = '${parent}'
+            and table_schema = '${schemaName}'
              and "column_name" = 'id';`,
           {
             transaction,
@@ -60,7 +66,7 @@ export class SyncRunner {
           throw new Error(`Can't find sequence name of ${parent}`);
         }
 
-        const regex = new RegExp(/nextval\('("?\w+"?)\'.*\)/);
+        const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
         const match = regex.exec(columnDefault);
 
         const sequenceName = match[1];
@@ -82,25 +88,24 @@ export class SyncRunner {
       }
     }
 
-    await this.createTable(tableName, childAttributes, options, model, parentTables);
+    await this.createTable(schemaTableName, childAttributes, options, model, parentTables, db);
 
     if (maxSequenceName) {
       const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map(
         (parent) => db.getCollection(parent).model.tableName,
       );
 
-      const sequenceTables = [...parentsDeep, tableName];
+      const sequenceTables = [...parentsDeep, tableName.toString()];
 
       for (const sequenceTable of sequenceTables) {
-        const queryName = Boolean(sequenceTable.match(/[A-Z]/)) ? `"${sequenceTable}"` : sequenceTable;
+        const queryName =
+          Boolean(sequenceTable.match(/[A-Z]/)) && !sequenceTable.includes(`"`) ? `"${sequenceTable}"` : sequenceTable;
 
         const idColumnQuery = await queryInterface.sequelize.query(
           `
-            SELECT true
-            FROM pg_attribute
-            WHERE attrelid = '${queryName}'::regclass  -- cast to a registered class (table)
-AND    attname = 'id'
-AND    NOT attisdropped
+          SELECT column_name
+FROM information_schema.columns
+WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schemaName}';
           `,
           {
             transaction,
@@ -112,7 +117,7 @@ AND    NOT attisdropped
         }
 
         await queryInterface.sequelize.query(
-          `alter table "${sequenceTable}"
+          `alter table "${schemaName}"."${sequenceTable}"
             alter column id set default nextval('${maxSequenceName}')`,
           {
             transaction,
@@ -124,7 +129,9 @@ AND    NOT attisdropped
     if (options.alter) {
       const columns = await queryInterface.describeTable(tableName, options);
 
-      for (const columnName in childAttributes) {
+      for (const attribute in childAttributes) {
+        const columnName = childAttributes[attribute].field;
+
         if (!columns[columnName]) {
           await queryInterface.addColumn(tableName, columnName, childAttributes[columnName], options);
         }
@@ -132,7 +139,7 @@ AND    NOT attisdropped
     }
   }
 
-  static async createTable(tableName, attributes, options, model, parentTables) {
+  static async createTable(tableName, attributes, options, model, parentTables, db) {
     let sql = '';
 
     options = { ...options };
@@ -157,7 +164,11 @@ AND    NOT attisdropped
 
     sql = `${queryGenerator.createTableQuery(tableName, attributes, options)}`.replace(
       ';',
-      ` INHERITS (${parentTables.map((t) => `"${t}"`).join(', ')});`,
+      ` INHERITS (${parentTables
+        .map((t) => {
+          return db.utils.quoteTable(db.utils.addSchema(t, db.options.schema));
+        })
+        .join(', ')});`,
     );
 
     return await model.sequelize.query(sql, options);

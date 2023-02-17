@@ -2,6 +2,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { getConfiguration, setConfiguration } from './actions';
 import { CircleField, LineStringField, PointField, PolygonField } from './fields';
+import { CircleValueParser, LineStringValueParser, PointValueParser, PolygonValueParser } from './value-parsers';
 
 export class MapPlugin extends Plugin {
   afterAdd() {}
@@ -13,8 +14,13 @@ export class MapPlugin extends Plugin {
       lineString: LineStringField,
       circle: CircleField,
     };
-
     this.db.registerFieldTypes(fields);
+    this.db.registerFieldValueParsers({
+      point: PointValueParser,
+      polygon: PolygonValueParser,
+      lineString: LineStringValueParser,
+      circle: CircleValueParser,
+    });
   }
 
   async load() {

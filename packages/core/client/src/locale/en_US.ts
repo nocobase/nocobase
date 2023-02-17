@@ -40,6 +40,7 @@ export default {
   "Edit category":"Edit category",
   "Collection category":"Collection category",
   "Sort":"Sort",
+  "Categories":"Categories",
   "Category name":"Category name",
   "Roles & Permissions": "Roles & Permissions",
   "Edit profile": "Edit profile",

@@ -62,6 +62,8 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     const transaction = await this.getTransaction(options);
     const association = <BelongsToMany>this.association;
 
+    const throughModel = this.throughModel();
+
     const instancesToIds = (instances) => {
       return instances.map((instance) => instance.get(this.targetKey()));
     };
@@ -69,7 +71,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     // Through Table
     const throughTableWhere: Array<any> = [
       {
-        [association.foreignKey]: this.sourceKeyValue,
+        [throughModel.rawAttributes[association.foreignKey].field]: this.sourceKeyValue,
       },
     ];
 
@@ -100,7 +102,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     }
 
     throughTableWhere.push({
-      [association.otherKey]: {
+      [throughModel.rawAttributes[association.otherKey].field]: {
         [Op.in]: ids,
       },
     });
