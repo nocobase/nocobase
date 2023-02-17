@@ -1,6 +1,7 @@
 import type { ISchema } from '@formily/react';
 import { last } from 'lodash';
 import { conditionAnalyse } from '../../common/utils/uitls';
+import { ActionType } from '../../../schema-settings/LinkageRules/type';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -74,20 +75,20 @@ export const linkageAction = (operator, field, linkageRuleCondition, form) => {
   const disableResult = [field.disabled];
 
   switch (operator) {
-    case 'visible':
-    case 'hidden':
+    case ActionType.Visible:
+    case ActionType.Hidden:
       if (conditionAnalyse(linkageRuleCondition, form)) {
         displayResult.push(operator);
       }
       field.display = last(displayResult);
       break;
-    case 'disabled':
+    case ActionType.Disabled:
       if (conditionAnalyse(linkageRuleCondition, form)) {
         disableResult.push(true);
       }
       field.disabled = last(disableResult);
       break;
-    case 'active':
+    case ActionType.Active:
       if (conditionAnalyse(linkageRuleCondition, form)) {
         disableResult.push(false);
       }

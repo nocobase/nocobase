@@ -1,5 +1,6 @@
 import { conditionAnalyse } from '../../common/utils/uitls';
 import { last } from 'lodash';
+import { ActionType } from '../../../schema-settings/LinkageRules/type';
 
 export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondition, values) => {
   const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required];
@@ -7,7 +8,7 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
   const patternResult = field?.linkageProperty?.pattern || [field?.initProperty?.pattern];
   const valueResult = field?.linkageProperty?.value || [field?.initProperty?.value];
   switch (operator) {
-    case 'required':
+    case ActionType.Required:
       if (conditionAnalyse(linkageRuleCondition, values)) {
         requiredResult.push(true);
       }
@@ -17,7 +18,7 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
       };
       field.required = last(field.linkageProperty?.required);
       break;
-    case 'inRequired':
+    case ActionType.InRequired:
       if (conditionAnalyse(linkageRuleCondition, values)) {
         requiredResult.push(false);
       }
@@ -27,9 +28,9 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
       };
       field.required = last(field.linkageProperty?.required);
       break;
-    case 'visible':
-    case 'none':
-    case 'hidden':
+    case ActionType.Visible:
+    case ActionType.None:
+    case ActionType.Hidden:
       if (conditionAnalyse(linkageRuleCondition, values)) {
         displayResult.push(operator);
       }
@@ -39,9 +40,9 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
       };
       field.display = last(field.linkageProperty?.display);
       break;
-    case 'editable':
-    case 'readOnly':
-    case 'readPretty':
+    case ActionType.Editable:
+    case ActionType.ReadOnly:
+    case ActionType.ReadPretty:
       if (conditionAnalyse(linkageRuleCondition, values)) {
         patternResult.push(operator);
       }
@@ -51,7 +52,7 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
       };
       field.pattern = last(patternResult);
       break;
-    case 'value':
+    case ActionType.Value:
       if (conditionAnalyse(linkageRuleCondition, values)) {
         valueResult.push(value);
       }
