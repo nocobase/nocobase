@@ -71,7 +71,6 @@ const InternalSelect = connect(
   (props: Props) => {
     const { objectValue, ...others } = props;
     const mode = props.mode || props.multiple ? 'multiple' : undefined;
-
     if (objectValue) {
       return <ObjectSelect {...others} mode={mode} />;
     }
@@ -96,6 +95,7 @@ const InternalSelect = connect(
     (props, field) => {
       return {
         ...props,
+        disabled: props.disabled || field.pattern === 'readOnly',
         fieldNames: { ...defaultFieldNames, ...props.fieldNames },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
