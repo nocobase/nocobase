@@ -1,12 +1,14 @@
 import { useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
 
 export default function useServiceOptions(props) {
   const { action = 'list', service, params, value } = props;
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const { getCollectionFields } = useCollectionManager();
+  const record = useRecord();
 
   const collectionField = useMemo(() => {
     return getField(fieldSchema.name);
@@ -16,7 +18,7 @@ export default function useServiceOptions(props) {
     if (!collectionField) return params?.filter;
     let extraFilter = {};
     if (['oho', 'o2m'].includes(collectionField.interface)) {
-      const eqValue = typeof value === 'object' && value !== null ? value[props?.fieldNames?.value] : value;
+      const eqValue = record?.[collectionField.sourceKey];
       extraFilter = {
         $or: [
           {
