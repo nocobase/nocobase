@@ -5,7 +5,7 @@ export default class DatabaseUtils {
   constructor(public db: Database) {}
 
   addSchema(tableName, schema?) {
-    if (this.db.options.schema) {
+    if (this.db.options.schema && !schema) {
       schema = this.db.options.schema;
     }
 
@@ -13,7 +13,7 @@ export default class DatabaseUtils {
       // @ts-ignore
       tableName = this.db.sequelize.getQueryInterface().queryGenerator.addSchema({
         tableName,
-        _schema: this.db.options.schema,
+        _schema: schema,
       });
     }
 
