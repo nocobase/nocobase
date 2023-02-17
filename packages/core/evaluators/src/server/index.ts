@@ -16,17 +16,9 @@ export interface EvaluatorsOptions extends RegistryOptions {
   evaluators?: { [key: string]: Evaluator };
 }
 
-function evaluate(this: Evaluator, expression: string, scope: { [key: string]: any } = {}): any {
-  const exp = expression.trim().replace(/\{\{\s*([^{}]+)\.?\s*\}\}/g, (_, v) => {
-    const item = get(scope, v);
-    return typeof item === 'function' ? item() : item;
-  });
-  return this(exp);
-}
-
 const evaluators = new Registry<Evaluator>();
 
-evaluators.register('math.js', evaluate.bind(mathjs));
-evaluators.register('formula.js', evaluate.bind(formulajs));
+evaluators.register('math.js', mathjs);
+evaluators.register('formula.js', formulajs);
 
 export default evaluators;

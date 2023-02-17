@@ -41,9 +41,9 @@ export const formula: IField = {
       enum: [
         { value: 'boolean', label: 'Boolean' },
         { value: 'integer', label: 'Integer' },
-        { value: 'bigInt', label: 'Big integer' },
+        // { value: 'bigInt', label: 'Big integer' }, // not supported
         { value: 'double', label: 'Double' },
-        // { value: 'decimal', label: 'Decimal' },
+        // { value: 'decimal', label: 'Decimal' }, // not supported
         { value: 'string', label: 'String' },
         { value: 'date', label: 'Datetime' },
       ],

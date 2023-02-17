@@ -10,26 +10,211 @@ export interface FormulaFieldOptions extends BaseFieldOptions {
 }
 
 const DataTypeMap = {
-  boolean: DataTypes.BOOLEAN,
-  integer: DataTypes.INTEGER,
-  bigInt: DataTypes.BIGINT,
-  double: DataTypes.DOUBLE,
-  decimal: DataTypes.DECIMAL,
-  string: DataTypes.STRING,
-  date: DataTypes.DATE(3),
+  boolean: {
+    type: DataTypes.BOOLEAN,
+    transformers: Boolean
+  },
+  integer: {
+    type: DataTypes.INTEGER,
+    transformers: {
+      boolean(value: boolean) {
+        return Number(value);
+      },
+      number(value: number) {
+        return value >= 0 ? Math.floor(value) : Math.ceil(value);
+      },
+      bigint(value: bigint) {
+        return Number(value);
+      },
+      string(value: string) {
+        const result = Number.parseInt(value, 10);
+        if (Number.isNaN(result) || !Number.isFinite(result)) {
+          return null;
+        }
+        return result;
+      },
+      date(value: Date) {
+        const result = value.valueOf();
+        if (Number.isNaN(result)) {
+          return null;
+        }
+        return result;
+      }
+    }
+  },
+  bigInt: {
+    type: DataTypes.BIGINT,
+    transformers: {
+      boolean(value: boolean) {
+        return BigInt(value);
+      },
+      number(value: number) {
+        return BigInt(Math.floor(value >= 0 ? Math.floor(value) : Math.ceil(value)));
+      },
+      bigint(value: bigint) {
+        return value;
+      },
+      string(value: string) {
+        try {
+          return BigInt(value);
+        } catch (e) {
+          const result = Number.parseInt(value, 10);
+          if (Number.isNaN(result) || !Number.isFinite(result)) {
+            return null;
+          }
+          return BigInt(result);
+        }
+      },
+      date(value: Date) {
+        const result = value.valueOf();
+        if (Number.isNaN(result)) {
+          return null;
+        }
+        return result;
+      }
+    }
+  },
+  double: {
+    type: DataTypes.DOUBLE,
+    transformers: {
+      boolean(value: boolean) {
+        return Number(value);
+      },
+      number(value: number) {
+        return value;
+      },
+      bigint(value: bigint) {
+        return Number(value);
+      },
+      string(value: string) {
+        const result = Number.parseFloat(value);
+        if (Number.isNaN(result) || !Number.isFinite(result)) {
+          return null;
+        }
+        return result;
+      },
+      date(value: Date) {
+        const result = value.valueOf();
+        if (Number.isNaN(result)) {
+          return null;
+        }
+        return result;
+      }
+    }
+  },
+  decimal: {
+    type: DataTypes.DECIMAL,
+    transformers: {
+      boolean(value: boolean) {
+        return Number(value);
+      },
+      number(value: number) {
+        return value;
+      },
+      bigint(value: bigint) {
+        return value;
+      },
+      date(value: Date) {
+        const result = value.valueOf();
+        if (Number.isNaN(result)) {
+          return null;
+        }
+        return result;
+      }
+    }
+  },
+  string: {
+    type: DataTypes.STRING,
+    transformers: {
+      boolean(value: boolean) {
+        return value.toString();
+      },
+      number(value: number) {
+        return value.toString();
+      },
+      bigint(value: bigint) {
+        return value.toString();
+      },
+      string(value: string) {
+        return value;
+      },
+      date(value: Date) {
+        return value.toISOString();
+      }
+    }
+  },
+  date: {
+    type: DataTypes.DATE(3),
+    transformers: {
+      boolean(value: boolean) {
+        return null;
+      },
+      number(value: number) {
+        const result = new Date(value);
+        if (Number.isNaN(result.valueOf())) {
+          return null;
+        }
+        return result;
+      },
+      bigint(value: bigint) {
+        const result = new Date(Number(value));
+        if (Number.isNaN(result.valueOf())) {
+          return null;
+        }
+        return result;
+      },
+      string(value: string) {
+        const ts = Date.parse(value);
+        if (Number.isNaN(ts)) {
+          return null;
+        }
+        return new Date(ts);
+      },
+      date(value: Date) {
+        return new Date(value);
+      }
+    }
+  },
+}
+
+
+
+function toDbType(value, type) {
+  if (value == null) {
+    return null;
+  }
+
+  let jsType: string = typeof value;
+  if (jsType == 'object' && value instanceof Date) {
+    jsType = 'date';
+  }
+
+  if (!DataTypeMap[type]) {
+    return null;
+  }
+
+  const { transformers } = DataTypeMap[type];
+
+  if (typeof transformers === 'function') {
+    return transformers(value);
+  }
+
+  const transformer = transformers[jsType];
+  return transformer ? transformer(value) : null;
 }
 
 export class FormulaField extends Field {
   get dataType() {
     const { dataType } = this.options;
-    return DataTypeMap[dataType] ?? DataTypes.DOUBLE;
+    return DataTypeMap[dataType]?.type ?? DataTypes.DOUBLE;
   }
 
   calculate(scope) {
-    const { expression, engine } = this.options;
+    const { expression, engine, dataType = 'double' } = this.options;
     const evaluate = evaluators.get(engine);
     try {
-      return evaluate(expression, scope);
+      const result = evaluate(expression, scope);
+      return toDbType(result, dataType);
     } catch (e){
       console.error(e);
     }
@@ -65,9 +250,7 @@ export class FormulaField extends Field {
   calculateField = async (instance) => {
     const { name } = this.options;
     const result = this.calculate(instance.toJSON());
-    if (result === 0 || result) {
-      instance.set(name, result);
-    }
+    instance.set(name, result);
   };
 
   updateFieldData = async (instance, { transaction }) => {
