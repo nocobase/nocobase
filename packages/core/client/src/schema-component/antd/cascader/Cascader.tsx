@@ -89,6 +89,7 @@ export const Cascader = connect(
     (props, field) => {
       return {
         ...props,
+        disabled: props.disabled || field.pattern === 'readOnly',
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
     },

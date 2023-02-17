@@ -11,18 +11,34 @@ type ComposedRadio = React.FC<RadioProps> & {
 
 export const Radio: ComposedRadio = connect(
   AntdRadio,
-  mapProps({
-    value: 'checked',
-    onInput: 'onChange',
-  }),
+  mapProps(
+    {
+      value: 'checked',
+      onInput: 'onChange',
+    },
+    (props, field) => {
+      return {
+        ...props,
+        disabled: props.disabled || field.pattern === 'readOnly',
+      };
+    },
+  ),
 );
 Radio.__ANT_RADIO = true;
 
 Radio.Group = connect(
   AntdRadio.Group,
-  mapProps({
-    dataSource: 'options',
-  }),
+  mapProps(
+    {
+      dataSource: 'options',
+    },
+    (props, field) => {
+      return {
+        ...props,
+        disabled: props.disabled || field.pattern === 'readOnly',
+      };
+    },
+  ),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
       return <div></div>;
@@ -30,6 +46,7 @@ Radio.Group = connect(
     const { options = [], value } = props;
     const field = useField<any>();
     const dataSource = field.dataSource || [];
+    console.log(field);
     return (
       <div>
         {dataSource

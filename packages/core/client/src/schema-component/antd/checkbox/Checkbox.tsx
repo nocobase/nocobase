@@ -42,9 +42,17 @@ Checkbox.__ANT_CHECKBOX = true;
 
 Checkbox.Group = connect(
   AntdCheckbox.Group,
-  mapProps({
-    dataSource: 'options',
-  }),
+  mapProps(
+    {
+      dataSource: 'options',
+    },
+    (props, field) => {
+      return {
+        ...props,
+        disabled: props.disabled || field.pattern === 'readOnly',
+      };
+    },
+  ),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
       return null;
