@@ -1,10 +1,12 @@
 import { TableOutlined } from '@ant-design/icons';
 import { SchemaInitializer } from '@nocobase/client';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { useCommentRecordSchema } from './CommentRecord';
 
 export const CommentRecordInitializer = (props) => {
   const { insert } = props;
+  const schema = useCommentRecordSchema();
+
   return (
     <SchemaInitializer.Item
       {...props}
@@ -12,17 +14,14 @@ export const CommentRecordInitializer = (props) => {
       onClick={() => {
         insert({
           type: 'void',
-          'x-designer': 'CommentRecord.Designer',
-          'x-decorator': 'CommentRecord.Decorator',
+          'x-designer': 'CommentRecordDesigner',
+          'x-decorator': 'CommentRecordDecorator',
           'x-decorator-props': {
             params: {},
           },
           'x-component': 'CardItem',
           properties: {
-            auditLogs: {
-              type: 'void',
-              'x-component': 'CommentRecord',
-            },
+            commentRecords: schema,
           },
         });
       }}
