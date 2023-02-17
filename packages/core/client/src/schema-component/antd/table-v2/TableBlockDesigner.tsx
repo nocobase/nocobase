@@ -95,80 +95,9 @@ export const TableBlockDesigner = () => {
         }}
       />
       {!dragSort && (
-        <SchemaSettings.ModalItem
-          title={t('Set default sorting rules')}
-          components={{ ArrayItems }}
-          schema={
-            {
-              type: 'object',
-              title: t('Set default sorting rules'),
-              properties: {
-                sort: {
-                  type: 'array',
-                  default: sort,
-                  'x-component': 'ArrayItems',
-                  'x-decorator': 'FormItem',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      space: {
-                        type: 'void',
-                        'x-component': 'Space',
-                        properties: {
-                          sort: {
-                            type: 'void',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'ArrayItems.SortHandle',
-                          },
-                          field: {
-                            type: 'string',
-                            enum: sortFields,
-                            'x-decorator': 'FormItem',
-                            'x-component': 'Select',
-                            'x-component-props': {
-                              style: {
-                                width: 260,
-                              },
-                            },
-                          },
-                          direction: {
-                            type: 'string',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'Radio.Group',
-                            'x-component-props': {
-                              optionType: 'button',
-                            },
-                            enum: [
-                              {
-                                label: t('ASC'),
-                                value: 'asc',
-                              },
-                              {
-                                label: t('DESC'),
-                                value: 'desc',
-                              },
-                            ],
-                          },
-                          remove: {
-                            type: 'void',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'ArrayItems.Remove',
-                          },
-                        },
-                      },
-                    },
-                  },
-                  properties: {
-                    add: {
-                      type: 'void',
-                      title: t('Add sort field'),
-                      'x-component': 'ArrayItems.Addition',
-                    },
-                  },
-                },
-              },
-            } as ISchema
-          }
+        <SchemaSettings.DefaultSortingRules
+          sort={sort}
+          sortFields={sortFields}
           onSubmit={({ sort }) => {
             const sortArr = sort.map((item) => {
               return item.direction === 'desc' ? `-${item.field}` : item.field;
