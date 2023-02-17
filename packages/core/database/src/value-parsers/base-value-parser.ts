@@ -7,6 +7,7 @@ export class BaseValueParser {
   constructor(field: any, ctx: any) {
     this.field = field;
     this.ctx = ctx;
+    this.value = null;
   }
 
   toString() {
