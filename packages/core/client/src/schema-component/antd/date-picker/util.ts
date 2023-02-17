@@ -47,11 +47,12 @@ export const moment2str = (value?: moment.Moment | moment.Moment[], options: Mom
 };
 
 export const mapDateFormat = function () {
-  return (props: any) => {
+  return (props: any, field) => {
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
     return {
       ...props,
+      disabled: props.disabled || field.pattern === 'readOnly',
       format: format,
       value: str2moment(props.value, props),
       onChange: (value: moment.Moment | moment.Moment[]) => {

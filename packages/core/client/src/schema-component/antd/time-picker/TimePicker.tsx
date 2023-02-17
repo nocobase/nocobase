@@ -10,13 +10,14 @@ type ComposedTimePicker = React.FC<AntdTimePickerProps> & {
 };
 
 const mapTimeFormat = function () {
-  return (props: any) => {
+  return (props: any, field) => {
     const format = props['format'] || 'HH:mm:ss';
     const onChange = props.onChange;
     return {
       ...props,
       format,
       value: momentable(props.value, format),
+      disabled: props.disabled || field.pattern === 'readOnly',
       onChange: (value: moment.Moment | moment.Moment[]) => {
         if (onChange) {
           onChange(formatMomentValue(value, format) || null);
