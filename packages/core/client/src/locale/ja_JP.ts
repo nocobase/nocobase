@@ -50,6 +50,7 @@ export default {
   "Not required":"必須ではありません",
   "Value":"フィールド値",
   "Disabled":"無効化",
+  "Active":"有効化",
   "Linkage rule":"連動規則",
   "Linkage rules":"連動規則",
   "Condition":"条件＃ジョウケン＃",

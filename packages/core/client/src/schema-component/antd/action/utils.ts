@@ -1,4 +1,5 @@
 import type { ISchema } from '@formily/react';
+import { last } from 'lodash';
 import { conditionAnalyse } from '../../common/utils/uitls';
 
 const validateJSON = {
@@ -68,25 +69,29 @@ export const requestSettingsSchema: ISchema = {
   },
 };
 
-export const getReverseOperator = (operator) => {
-  switch (operator) {
-    case 'visible':
-      return 'hidden';
-    case 'hidden':
-      return 'visible';
-    default:
-      return '';
-  }
-};
-
 export const linkageAction = (operator, field, linkageRuleCondition, form) => {
+  const displayResult = [field.display];
+  const disableResult = [field.disabled];
+
   switch (operator) {
     case 'visible':
     case 'hidden':
-      field.display = conditionAnalyse(linkageRuleCondition, form) ? operator : getReverseOperator(operator);
+      if (conditionAnalyse(linkageRuleCondition, form)) {
+        displayResult.push(operator);
+      }
+      field.display = last(displayResult);
       break;
     case 'disabled':
-      field.disabled = conditionAnalyse(linkageRuleCondition, form);
+      if (conditionAnalyse(linkageRuleCondition, form)) {
+        disableResult.push(true);
+      }
+      field.disabled = last(disableResult);
+      break;
+    case 'active':
+      if (conditionAnalyse(linkageRuleCondition, form)) {
+        disableResult.push(false);
+      }
+      field.disabled = last(disableResult);
       break;
     default:
       return null;

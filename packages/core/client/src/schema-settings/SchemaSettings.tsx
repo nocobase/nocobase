@@ -725,7 +725,7 @@ SchemaSettings.LinkageRules = (props) => {
                     options,
                     defaultValues: fieldSchema?.['x-linkageRules'],
                     type,
-                    linkageOptions: useLinkageCollectionFieldOptions(collectionName, type),
+                    linkageOptions: useLinkageCollectionFieldOptions(collectionName),
                   };
                 },
               },

@@ -25,7 +25,6 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
     value: fieldValue,
     operators,
   } = useValues(options);
-
   return (
     <div style={{ marginBottom: 8 }}>
       <Space>
@@ -85,8 +84,9 @@ export const FormButtonLinkageRuleAction = observer((props: any) => {
   const { schema, operator, setOperator, setValue } = useValues(options);
   const operators = [
     { label: t('Visible'), value: ActionType.Visible, schema: {} },
-    { label: t('Disabled'), value: ActionType.Disabled, schema: {} },
     { label: t('Hidden'), value: ActionType.Hidden, schema: {} },
+    { label: t('Disabled'), value: ActionType.Disabled, schema: {} },
+    { label: t('Active'), value: ActionType.Active, schema: {} },
   ];
   return (
     <div style={{ marginBottom: 8 }}>

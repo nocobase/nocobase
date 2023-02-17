@@ -1,14 +1,14 @@
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '../../collection-manager';
+import { useCollectionManager } from '../../collection-manager';
 import { ActionType } from './type';
 
-export const useLinkageCollectionFieldOptions = (collectionName: string, type: string) => {
+export const useLinkageCollectionFieldOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName).filter((v) => {
     return !['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'].includes(v.name);
   });
   const { t } = useTranslation();
-  const fieldOperators = [
+  const operators = [
     { label: t('Visible'), value: ActionType.Visible, selected: true, schema: {} },
     { label: t('Editable'), value: ActionType.Editable, selected: false, schema: {} },
     { label: t('Read only'), value: ActionType.ReadOnly, selected: false, schema: {} },
@@ -19,12 +19,6 @@ export const useLinkageCollectionFieldOptions = (collectionName: string, type: s
     { label: t('Not required'), value: ActionType.InRequired, selected: false, schema: {} },
     { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },
   ];
-  const buttonOperators = [
-    { label: t('Visible'), value: ActionType.Visible, schema: {} },
-    { label: t('Disabled'), value: ActionType.Disabled, schema: {} },
-    { label: t('Hidden'), value: ActionType.Hidden, schema: {} },
-  ];
-  const operators = type === 'button' ? buttonOperators : fieldOperators;
   const field2option = (field, depth) => {
     const fieldInterface = getInterface(field.interface);
     const { nested, children } = fieldInterface?.filterable || {};

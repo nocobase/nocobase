@@ -9,4 +9,5 @@ export enum ActionType {
   InRequired ='inRequired',
   Disabled ='disabled',
   Value = 'value',
+  Active = 'active',
 }
