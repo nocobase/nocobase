@@ -10,6 +10,10 @@ export class BaseValueParser {
     this.value = null;
   }
 
+  trim(value: any) {
+    return typeof value === 'string' ? value.trim() : value;
+  }
+
   toArr(value: any, splitter?: string) {
     let values: string[] = [];
     if (!value) {
@@ -19,7 +23,7 @@ export class BaseValueParser {
     } else if (Array.isArray(value)) {
       values = value;
     }
-    return values.map((v) => (v.trim ? v.trim() : v)).filter(Boolean);
+    return values.map((v) => this.trim(v)).filter(Boolean);
   }
 
   toString() {

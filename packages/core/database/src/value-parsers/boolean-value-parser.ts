@@ -20,10 +20,10 @@ export class BooleanValueParser extends BaseValueParser {
       } else if (['0', 'n', 'no', 'false', '否'].includes(value.toLowerCase())) {
         this.value = false;
       } else {
-        this.errors.push(`Value invalid - ${JSON.stringify(this.value)}`);
+        this.errors.push(`Invalid value - ${JSON.stringify(this.value)}`);
       }
     } else {
-      this.errors.push(`Value invalid - ${JSON.stringify(this.value)}`);
+      this.errors.push(`Invalid value - ${JSON.stringify(this.value)}`);
     }
   }
 }
