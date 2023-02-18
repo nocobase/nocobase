@@ -40,7 +40,6 @@ export default ({ dataSet }: DataSetPreviewProps) => {
       },
     },
   };
-  console.log(dataSet);
   return (
     <SchemaComponentProvider scope={{ dataSet }} components={{ Table, Input ,FormItem}}>
       <SchemaComponent schema={schema} />
