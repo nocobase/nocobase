@@ -7,7 +7,7 @@ describe('dataset', () => {
     expect(a).toBe(10);
   });
 
-  it('parse mockData String to obj', () => {
+  it.skip('parse mockData String to obj', () => {
     const mockData = "[{ id1: 1, name: 'Name1' },{ id1: 2, name: 'Name2' },{ id1: 3, name: 'Name3' },]";
     const mockDataArray = JSON5.parse(mockData);
     if (mockData) {

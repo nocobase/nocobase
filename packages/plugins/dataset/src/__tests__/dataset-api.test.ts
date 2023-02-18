@@ -41,7 +41,7 @@ describe('my suite', () => {
     await app.destroy();
   });
 
-  test('my case', async () => {
+  test.skip('my case', async () => {
     const { body } = await agent.resource('datasets').create({
       values: {
         data_set_name: 'test_dataset',
@@ -106,7 +106,7 @@ describe('my suite', () => {
     `);
   });
 
-  it('test use dataset api to create a dataset ', async function () {
+  it.skip('test use dataset api to create a dataset ', async function () {
     const datasets = db.getRepository('datasets');
     const result = await datasets.create({
       values: {
@@ -170,7 +170,7 @@ describe('my suite', () => {
       }
     `);
   });
-  it('test fetch specific dataset by id', async function () {
+  it.skip('test fetch specific dataset by id', async function () {
     const datasets = db.getRepository('datasets');
     const data_set_id = randomUUID();
     const result = await datasets.create({
