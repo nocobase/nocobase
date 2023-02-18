@@ -33,7 +33,7 @@ const chartConfig = {
   },
 };
 export const lineTemplate = {
-  title: 'Line(最少一个维度，最少一个度量)',
+  title: 'Line(一个维度，一个度量)',
   type: 'Line',
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
@@ -43,7 +43,7 @@ export const lineTemplate = {
       dimension: {
         required: true,
         type: 'string',
-        title: '{{t("Sector label/dimensional")}}',
+        title: '{{t("Category Axis/dimension")}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
@@ -51,7 +51,7 @@ export const lineTemplate = {
       metric: {
         required: true,
         type: 'string',
-        title: '{{t("Sector Angle/Metric")}}',
+        title: '{{t("Value Axis/Metrics")}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
