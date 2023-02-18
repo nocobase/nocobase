@@ -333,7 +333,10 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
-        options: Array.from(calculationEngines.getEntities()).reduce((result: RadioWithTooltipOption[], [value, options]) => result.concat({ value, ...options }), []),
+        options: [
+          ['basic', { label: `{{t("Basic", { ns: "${NAMESPACE}" })}}` }],
+          ...Array.from(calculationEngines.getEntities())
+        ].reduce((result: RadioWithTooltipOption[], [value, options]: any) => result.concat({ value, ...options }), []),
       },
       required: true,
       default: 'basic',

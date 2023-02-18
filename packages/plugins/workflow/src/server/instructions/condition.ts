@@ -1,6 +1,3 @@
-
-import { get } from "lodash";
-
 import { Evaluator, Processor } from '..';
 import { JOB_STATUS } from "../constants";
 import FlowNodeModel from "../models/FlowNode";
@@ -37,7 +34,7 @@ export default {
     let result = true;
 
     try {
-      result = logicCalculate(calculation, evaluator, scope);
+      result = logicCalculate(processor.getParsedValue(calculation), evaluator, scope);
     } catch (e) {
       return {
         result: e.toString(),

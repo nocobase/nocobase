@@ -17,7 +17,6 @@ export interface CalculationEngine {
 
 export const calculationEngines = new Registry<CalculationEngine>();
 
-calculationEngines.register('basic', basic);
 calculationEngines.register('math.js', mathjs);
 calculationEngines.register('formula.js', formulajs);
 

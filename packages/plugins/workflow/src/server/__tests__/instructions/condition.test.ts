@@ -260,12 +260,12 @@ describe('workflow > instructions > condition', () => {
         config: {
           calculation: {
             calculator: 'equal',
-            operands: [1, 1]
+            operands: [1, '{{$context.data.read}}']
           }
         }
       });
 
-      const post = await PostRepo.create({ values: { title: 't1' } });
+      const post = await PostRepo.create({ values: { read: 1 } });
 
       await sleep(500);
 
@@ -284,12 +284,12 @@ describe('workflow > instructions > condition', () => {
           engine: 'basic',
           calculation: {
             calculator: 'equal',
-            operands: [1, 1]
+            operands: [1, '{{$context.data.read}}']
           }
         }
       });
 
-      const post = await PostRepo.create({ values: { title: 't1' } });
+      const post = await PostRepo.create({ values: { read: 1 } });
 
       await sleep(500);
 

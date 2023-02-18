@@ -76,9 +76,9 @@ calculators.register('notEndsWith', notEndsWith);
 
 
 export default function(calculation, scope) {
-    const fn = calculators.get(calculation.calculator);
-    if (!fn) {
-      throw new Error(`no calculator function registered for "${calculation.calculator}"`);
-    }
-    return Boolean(fn(...calculation.operands));
+  const fn = calculators.get(calculation.calculator);
+  if (!fn) {
+    throw new Error(`no calculator function registered for "${calculation.calculator}"`);
+  }
+  return Boolean(fn(...calculation.operands));
 }
