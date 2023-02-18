@@ -3,13 +3,12 @@ import React, { useCallback, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   APIClientProvider,
-  CollectionManagerContext, FormProvider,
+  FormProvider,
   GeneralSchemaDesigner,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaSettings,
   useAPIClient,
-  useCollectionManager,
   useCompile,
   useDesignable,
 } from '@nocobase/client';
@@ -50,7 +49,6 @@ export const ChartBlockEngineDesigner = () => {
   const api = useAPIClient();
   const options = useContext(SchemaOptionsContext);
   const { chartBlockMetaData, renderComponent } = fieldSchema?.['x-component-props'];
-  console.log(chartBlockMetaData, renderComponent);
   return (
     <GeneralSchemaDesigner>
       <ChartBlockEngineDesignerInitializer
@@ -78,7 +76,6 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
     const api = useAPIClient();
     const field = useField();
     const compiler = useCompile();
-    console.log(field, fieldSchema);
 
     return (
       <SchemaSettings.Item
@@ -100,7 +97,6 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                   },
                 };
                 setPreviewMetaData(result);
-                console.log(result, 'form.values');
               });
             }, [form.values]);
             const dataSource = Object.keys(JSON5.parse(dataSetMetaData.data_set_value)[0]).map(key => {
@@ -131,7 +127,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                       <FormProvider form={form}>
                         <FormLayout layout={'vertical'}>
                           <SchemaComponent
-                            scope={{ dataSource }}
+                            scope={{ dataSource,JSON5 }}
                             components={{ Options }}
                             schema={{
                               properties: {
@@ -218,7 +214,6 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
             })
             .then((values) => {
               //patch updates
-              console.log(values);
               values = {
                 dataSetMetaData,
                 chartConfig: values,
