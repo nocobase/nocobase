@@ -5,7 +5,11 @@ import { css } from "@emotion/css";
 
 import { useCompile } from '@nocobase/client';
 
-
+export interface RadioWithTooltipOption {
+  value: any;
+  label: string;
+  tooltip?: string;
+}
 
 export function RadioWithTooltip(props) {
   const { options = [], ...other } = props;

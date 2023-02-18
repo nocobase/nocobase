@@ -5,7 +5,7 @@ import { useFlowContext } from "./FlowContext";
 import { triggers } from "./triggers";
 import { NAMESPACE } from "./locale";
 
-
+export type VariableOption = { key: string, value: string; label: string; children?: VariableOption[] };
 
 const VariableTypes = [
   {
@@ -14,7 +14,7 @@ const VariableTypes = [
     options(types) {
       const current = useNodeContext();
       const upstreams = useAvailableUpstreams(current);
-      const options = [];
+      const options: VariableOption[] = [];
       upstreams.forEach((node) => {
         const instruction = instructions.get(node.type);
         const subOptions = instruction.getOptions?.(node.config, types);
@@ -39,6 +39,17 @@ const VariableTypes = [
       return trigger?.getOptions?.(workflow.config, types) ?? null;
     },
   },
+  {
+    title: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
+    value: '$system',
+    options: [
+      {
+        key: 'now',
+        value: 'now',
+        label: `{{t("Current time", { ns: "${NAMESPACE}" })}}`,
+      }
+    ]
+  }
 ];
 
 export const TypeSets = {

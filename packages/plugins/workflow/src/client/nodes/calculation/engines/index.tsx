@@ -4,6 +4,7 @@ import { css } from '@emotion/css';
 import { Registry } from '@nocobase/utils/client';
 import { i18n } from '@nocobase/client';
 
+import basic from './basic';
 import mathjs from './mathjs';
 import formulajs from './formulajs';
 
@@ -16,6 +17,7 @@ export interface CalculationEngine {
 
 export const calculationEngines = new Registry<CalculationEngine>();
 
+calculationEngines.register('basic', basic);
 calculationEngines.register('math.js', mathjs);
 calculationEngines.register('formula.js', formulajs);
 
