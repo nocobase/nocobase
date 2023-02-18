@@ -59,7 +59,7 @@ export const FormBlockProvider = (props) => {
     !designable && __tableName && !inheritCollections.includes(props.collection) && __tableName !== props.collection;
   return (
     !flag && (
-      <BlockProvider {...props}>
+      <BlockProvider {...props} block={'form'}>
         <InternalFormBlockProvider {...props} />
       </BlockProvider>
     )
