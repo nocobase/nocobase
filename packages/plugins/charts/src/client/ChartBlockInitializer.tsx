@@ -3,12 +3,11 @@ import { FormDialog, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
 import { observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm } from '@formily/react';
 import {
-  APIClientProvider, FormProvider,
+  APIClientProvider,
+  FormProvider,
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
-  useCollectionManager,
-  useCompile,
 } from '@nocobase/client';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,8 +24,12 @@ export const Options = observer((props) => {
   const form = useForm();
   const field = useField<Field>();
   const [s, setSchema] = useState(new Schema({}));
+  const [chartType, setChartType] = useState(form.values.chartType);
   useEffect(() => {
     // form.clearFormGraph('options.*');
+    setChartType(form?.values?.chartType);
+    if (chartType !== form?.values?.chartType)
+      form.clearFormGraph('options.*');
     if (form.values.chartType) {
       const template = templates.get(form.values.chartType);
       setSchema(new Schema(template.configurableProperties || {}));
@@ -38,10 +41,8 @@ export const Options = observer((props) => {
 export const ChartBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
-  const { getCollectionFields, getCollection } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
-  const compiler = useCompile();
   return (
     <DataSetBlockInitializer
       {...props}
@@ -92,7 +93,7 @@ export const ChartBlockInitializer = (props) => {
                     <FormProvider form={form}>
                       <FormLayout layout={'vertical'}>
                         <SchemaComponent
-                          scope={{ dataSource }}
+                          scope={{ dataSource, JSON5, setPreviewMetaData }}
                           components={{ Options }}
                           schema={{
                             properties: {
