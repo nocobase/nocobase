@@ -9,7 +9,12 @@ export interface registerAppOptions extends Transactionable {
 }
 
 export class ApplicationModel extends Model {
-  static async handleAppStart(app: Application, options: registerAppOptions) {
+  static async handleAppStart(mainApp: Application, app: Application, options: registerAppOptions) {
+    await mainApp.emit('beforeSubAppLoad', {
+      mainApp,
+      subApp: app,
+    });
+
     await app.load();
 
     if (!(await app.isInstalled())) {
@@ -35,6 +40,7 @@ export class ApplicationModel extends Model {
     const app = mainApp.appManager.createApplication(appName, {
       ...options.appOptionsFactory(appName, mainApp),
       ...appOptions,
+      name: appName,
     });
 
     const isInstalled = await (async () => {
@@ -52,7 +58,7 @@ export class ApplicationModel extends Model {
       await options.dbCreator(app);
     }
 
-    await AppModel.handleAppStart(app, options);
+    await AppModel.handleAppStart(mainApp, app, options);
 
     await AppModel.update(
       {

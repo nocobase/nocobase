@@ -1,4 +1,4 @@
-import lodash, { omit } from 'lodash';
+import { omit } from 'lodash';
 import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';

@@ -40,9 +40,9 @@ export abstract class Field {
   [key: string]: any;
 
   constructor(options?: any, context?: FieldContext) {
-    this.context = context;
-    this.database = context.database;
-    this.collection = context.collection;
+    this.context = context as any;
+    this.database = this.context.database;
+    this.collection = this.context.collection;
     this.options = options || {};
     this.init();
   }
@@ -138,7 +138,7 @@ export abstract class Field {
     // 排序字段通过 sortable 控制
     const sortable = this.collection.options.sortable;
     if (sortable) {
-      let sortField: string;
+      let sortField: any;
       if (sortable === true) {
         sortField = 'sort';
       } else if (typeof sortable === 'string') {

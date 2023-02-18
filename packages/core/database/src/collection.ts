@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -531,5 +531,19 @@ export class Collection<
 
   public isParent() {
     return this.context.database.inheritanceMap.isParentNode(this.name);
+  }
+
+  public addSchemaTableName() {
+    const tableName = this.model.tableName;
+
+    if (this.options.schema) {
+      return this.db.utils.addSchema(tableName, this.options.schema);
+    }
+
+    return tableName;
+  }
+
+  public quotedTableName() {
+    return this.db.utils.quoteTable(this.addSchemaTableName());
   }
 }
