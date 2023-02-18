@@ -10,9 +10,9 @@ export function Branch({
   branchIndex = null,
   controller = null
 }: {
-  from: any;
-  entry: any;
-  branchIndex: number | null;
+  from?: any;
+  entry?: any;
+  branchIndex?: number | null;
   controller?: any
 }) {
   const list: any[] = [];
