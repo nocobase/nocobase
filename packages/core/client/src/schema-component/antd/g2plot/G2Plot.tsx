@@ -106,8 +106,12 @@ export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotPr
     if (plotRef.current) {
       plotRef.current.update(config);
     } else {
-      plotRef.current = new plot(containerRef.current, config);
-      plotRef.current.render();
+      try {
+        plotRef.current = new plot(containerRef.current, config);
+        plotRef?.current?.render();
+      }catch (e) {
+       console.warn(e)
+      }
     }
 
     syncRef(plotRef, ref);
@@ -121,8 +125,12 @@ export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotPr
   }
 
   useEffect(() => {
-    renderPlot();
-
+    try {
+      renderPlot();
+    }
+    catch(e){
+      console.log(e)
+    }
     return () => destoryPlot();
   }, [config, plot]);
 
@@ -154,6 +162,7 @@ export const G2Plot: any = observer((props: any) => {
       field.data.loading = false;
     }
   }, []);
+
   if (!plot || !config) {
     return <div style={{ opacity: 0.3 }}>{t('In configuration')}...</div>;
   }
