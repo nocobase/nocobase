@@ -5,6 +5,7 @@ import chartRenderComponentsMap from './chartRenderComponents';
 import { templates } from './templates';
 import { ChartBlockEngineDesigner } from './ChartBlockEngineDesigner';
 import JSON5 from 'json5';
+import { useForm } from '@formily/react';
 
 type dataSet = {
   title: string,
@@ -67,11 +68,26 @@ const useGetDataSet = (dataSetId: string) => {
     dataSet: data?.data,
   };
 };
-
+let chartType = '';
 const ChartBlockEngine = ({
                             chartBlockMetaData,
                             renderComponent,
                           }: { chartBlockMetaData: ChartBlockEngineMetaData, renderComponent: RenderComponent }) => {
+  const form = useForm();
+  if (!chartType) {
+    chartType = form.values.chartType;
+    return (
+      <>
+        <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={chartBlockMetaData} />
+      </>
+    );
+  }
+  if (chartType !== form.values.chartType) {
+    chartType = form.values.chartType;
+    return (
+      <>Please check your chart config option</>
+    );
+  }
   return (
     <>
       <ChartRenderComponent renderComponent={renderComponent} chartBlockMetaData={chartBlockMetaData} />
