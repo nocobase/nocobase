@@ -35,7 +35,6 @@ async function pieHandler(ctx: Context) {
       sql = `SELECT \"${groupByField}\",${aggregateFunction}(${aggregateFunction==='COUNT' ?'*':computedField}) as \"${`${groupByField}_${computedField}`}\" FROM \"${collection.model.tableName}\" GROUP BY \"${groupByField}\"`;
       break;
   }
-  console.log(sql, 'sql!!!!!!!!!!!!!!!');
   const result = await ctx.db.sequelize.query(sql);
   if (result[0].length) {
     chartData = result[0].map((item) => {
