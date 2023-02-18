@@ -12,6 +12,8 @@ describe('number value parser', () => {
     expect(parser.toArr('A,B')).toEqual(['A', 'B']);
     expect(parser.toArr('A, B')).toEqual(['A', 'B']);
     expect(parser.toArr('A， B')).toEqual(['A', 'B']);
+    expect(parser.toArr('A, B ')).toEqual(['A', 'B']);
+    expect(parser.toArr('A， B  ')).toEqual(['A', 'B']);
     expect(parser.toArr('A、 B')).toEqual(['A', 'B']);
     expect(parser.toArr('A ,, B')).toEqual(['A', 'B']);
   });
