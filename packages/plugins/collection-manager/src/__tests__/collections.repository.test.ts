@@ -343,4 +343,112 @@ describe('collections repository', () => {
     const tableInfo4 = await getTableInfo();
     expect(tableInfo4['test_field']).not.toBeDefined();
   });
+
+  it('should create field normal when repeat create and destroy', async () => {
+    const c1Z = await Collection.repository.create({
+      values: {
+        name: 'c1Z',
+      },
+      context: {},
+    });
+
+    const c2Z = await Collection.repository.create({
+      values: {
+        name: 'c2Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'a',
+        type: 'string',
+        collectionName: 'c1Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'b',
+        type: 'integer',
+        collectionName: 'c1Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g1',
+        type: 'belongsTo',
+        target: 'c2Z',
+        foreignKey: 'a',
+        collectionName: 'c1Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g2',
+        type: 'belongsTo',
+        target: 'c2Z',
+        foreignKey: 'b',
+        collectionName: 'c1Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g3',
+        type: 'belongsTo',
+        target: 'c2Z',
+        foreignKey: 'a',
+        collectionName: 'c1Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g1',
+        type: 'hasMany',
+        target: 'c1Z',
+        foreignKey: 'a',
+        collectionName: 'c2Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g2',
+        type: 'hasMany',
+        target: 'c1Z',
+        foreignKey: 'b',
+        collectionName: 'c2Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.destroy({
+      filter: {
+        collectionName: 'c1Z',
+        name: ['a', 'b'],
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g5',
+        type: 'belongsTo',
+        target: 'c2Z',
+        foreignKey: 'a1',
+        collectionName: 'c1Z',
+      },
+      context: {},
+    });
+  });
 });
