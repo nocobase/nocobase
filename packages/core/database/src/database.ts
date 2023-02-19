@@ -113,6 +113,10 @@ class DatabaseVersion {
   }
 
   async satisfies(versions) {
+    const supportDataBaseList = Object.keys(versions)
+    if(this.db.inDialect(...supportDataBaseList) === false) {
+      return false
+    }
     const dialects = {
       sqlite: {
         sql: 'select sqlite_version() as version',
