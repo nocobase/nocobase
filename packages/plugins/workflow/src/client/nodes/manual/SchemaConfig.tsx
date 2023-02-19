@@ -183,7 +183,7 @@ function AddFormField(props) {
   return (
     <AddFormFieldButtonContext.Provider value={{
       onAddField(item) {
-        const { properties: { unique, ...properties }, ...options } = cloneDeep(item);
+        const { properties: { unique, type, ...properties }, ...options } = cloneDeep(item);
         delete properties.name['x-disabled'];
         setInterface({
           ...options,
