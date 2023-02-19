@@ -1,6 +1,16 @@
 import { Migration } from '@nocobase/server';
 
+function addQuote(v) {
+  if (typeof v !== 'string') {
+    return v;
+  }
 
+  if (v.match(/^{{\s*([^{}]+)\s*}}$/)) {
+    return v;
+  }
+
+  return `'${v}'`;
+}
 
 const calculatorsMap = {
   'equal': '==',
@@ -17,25 +27,25 @@ const calculatorsMap = {
   'divide': '/',
   'mod': '%',
   includes(a, b) {
-    return `SEARCH('${b}', '${a}') >= 0`;
+    return `SEARCH(${addQuote(b)}, ${addQuote(a)}) >= 0`;
   },
   notIncludes(a, b) {
-    return `SEARCH('${b}', '${a}') < 0`;
+    return `SEARCH(${addQuote(b)}, ${addQuote(a)}) < 0`;
   },
   startsWith(a, b) {
-    return `SEARCH('${b}', '${a}') == 0`
+    return `SEARCH(${addQuote(b)}, ${addQuote(a)}) == 0`
   },
   endsWith(a, b) {
-    return `RIGHT('${a}', LEN('${b}')) == '${b}'`;
+    return `RIGHT(${addQuote(a)}, LEN(${addQuote(b)})) == ${addQuote(b)}`;
   },
   notStartsWith(a, b) {
-    return `SEARCH('${b}', '${a}') != 0`;
+    return `SEARCH(${addQuote(b)}, ${addQuote(a)}) != 0`;
   },
   notEndsWith(a, b) {
-    return `RIGHT('${a}', LEN('${b}')) != '${b}'`;
+    return `RIGHT(${addQuote(a)}, LEN(${addQuote(b)})) != ${addQuote(b)}`;
   },
   concat(a, b) {
-    return `CONCATENATE('${a}', '${b}')`;
+    return `CONCATENATE(${addQuote(a)}, ${addQuote(b)})`;
   }
 }
 
