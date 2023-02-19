@@ -1,5 +1,5 @@
 import path from 'path';
-import { Database, Model } from '..';
+import { checkIsSatisfiedInSpecialVersion, Database, Model } from '..';
 import { ArrayFieldRepository } from '../field-repository/array-field-repository';
 import { mockDatabase } from './index';
 
@@ -284,5 +284,21 @@ describe('database', () => {
     expect(test).toBeInstanceOf(CustomModel);
     test.customMethod();
     expect(test.get('abc')).toBe('abc');
+  });
+
+  describe('check special version whether pass validator', () => {
+    it('can not pass the the validator', function() {
+      const uselessSpecialVersionTokens = ['MariaDB'];
+      const currentVersion = '10.4.17-MariaDB-1:10.4.17+maria~bionic';
+      const result = checkIsSatisfiedInSpecialVersion(currentVersion, uselessSpecialVersionTokens);
+      expect(result).toBe(false)
+    });
+
+    it('can pass the validator', () => {
+      const uselessSpecialVersionTokens = ['MariaDB'];
+      const currentVersion = '10.4.17';
+      const result = checkIsSatisfiedInSpecialVersion(currentVersion, uselessSpecialVersionTokens);
+      expect(result).toBe(true)
+    });
   });
 });
