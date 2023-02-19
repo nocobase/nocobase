@@ -10,9 +10,10 @@ export type Scope = { [key: string]: any };
 export type Evaluator = (expression: string, scope?: Scope) => any;
 
 export function parseExpression(exp: string, scope: Scope = {}) {
-  return exp.trim().replace(/\{\{\s*([^{}]+)\.?\s*\}\}/g, (_, v) => {
+  return exp.trim().replace(/\s*{{\s*([^{}]+)\s*}}\s*/g, (_, v) => {
     const item = get(scope, v);
-    return typeof item === 'function' ? item() : item;
+    const key = v.replace(/\.(\d+)/g, '["$1"]');
+    return ` ${typeof item === 'function' ? item() : key} `;
   });
 }
 

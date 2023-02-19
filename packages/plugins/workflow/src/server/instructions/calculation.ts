@@ -17,14 +17,10 @@ export default {
     const { engine, expression = '' } = <CalculationConfig>node.config || {};
     const evaluator = <Evaluator | undefined>processor.options.plugin.calculators.get(engine);
     const scope = processor.getScope();
-    const exp = expression.trim().replace(/\{\{\s*([^{}]+)\.?\s*\}\}/g, (_, v) => {
-      const item = get(scope, v);
-      return typeof item === 'function' ? item() : item;
-    });
 
     try {
-      const result = evaluator && exp
-        ? evaluator(exp)
+      const result = evaluator && expression
+        ? evaluator(expression, scope)
         : null;
       return {
         result,
