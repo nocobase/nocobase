@@ -291,14 +291,14 @@ describe('database', () => {
       const uselessSpecialVersionTokens = ['MariaDB'];
       const currentVersion = '10.4.17-MariaDB-1:10.4.17+maria~bionic';
       const result = checkIsSatisfiedInSpecialVersion(currentVersion, uselessSpecialVersionTokens);
-      expect(result).toBe(false)
+      expect(result).toBe(false);
     });
 
     it('can pass the validator', () => {
       const uselessSpecialVersionTokens = ['MariaDB'];
       const currentVersion = '10.4.17';
       const result = checkIsSatisfiedInSpecialVersion(currentVersion, uselessSpecialVersionTokens);
-      expect(result).toBe(true)
+      expect(result).toBe(true);
     });
   });
 });
