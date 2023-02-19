@@ -344,6 +344,58 @@ describe('collections repository', () => {
     expect(tableInfo4['test_field']).not.toBeDefined();
   });
 
+  it('should destroy relation field after foreignKey destroyed', async () => {
+    await Collection.repository.create({
+      context: {},
+      values: {
+        name: 'c1Z',
+        fields: [
+          {
+            type: 'string',
+            name: 'a',
+          },
+        ],
+      },
+    });
+
+    await Collection.repository.create({
+      context: {},
+      values: {
+        name: 'c2Z',
+      },
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g1',
+        foreignKey: 'a',
+        target: 'c2Z',
+        type: 'belongsTo',
+        collectionName: 'c1Z',
+        interface: 'm2o',
+      },
+      context: {},
+    });
+
+    const foreignKey = await Field.repository.findOne({
+      filter: {
+        collectionName: 'c1Z',
+        name: 'a',
+      },
+    });
+
+    expect(foreignKey.get('isForeignKey')).toBeTruthy();
+
+    await Field.repository.destroy({
+      filter: {
+        name: 'a',
+      },
+      context: {},
+    });
+
+    expect(await Field.repository.findOne({ filter: { name: 'g1' } })).toBeFalsy();
+  });
+
   it('should create field normal when repeat create and destroy', async () => {
     const c1Z = await Collection.repository.create({
       values: {
@@ -406,6 +458,7 @@ describe('collections repository', () => {
         target: 'c2Z',
         foreignKey: 'a',
         collectionName: 'c1Z',
+        interface: 'm2o',
       },
       context: {},
     });
@@ -417,6 +470,7 @@ describe('collections repository', () => {
         target: 'c1Z',
         foreignKey: 'a',
         collectionName: 'c2Z',
+        interface: 'o2m',
       },
       context: {},
     });
@@ -428,6 +482,7 @@ describe('collections repository', () => {
         target: 'c1Z',
         foreignKey: 'b',
         collectionName: 'c2Z',
+        interface: 'o2m',
       },
       context: {},
     });
@@ -440,6 +495,8 @@ describe('collections repository', () => {
       context: {},
     });
 
+    expect(await Field.repository.count()).toBe(0);
+
     await Field.repository.create({
       values: {
         name: 'g5',
@@ -447,8 +504,11 @@ describe('collections repository', () => {
         target: 'c2Z',
         foreignKey: 'a1',
         collectionName: 'c1Z',
+        interface: 'm2o',
       },
       context: {},
     });
+
+    expect(await Field.repository.count()).toBe(2);
   });
 });
