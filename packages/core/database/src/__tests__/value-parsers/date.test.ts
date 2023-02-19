@@ -58,6 +58,7 @@ describe('number value parser', () => {
 
   it('should be correct', () => {
     expectValue(42510).toBe('2016-05-20T00:00:00.000Z');
+    expectValue('42510').toBe('2016-05-20T00:00:00.000Z');
     expectValue('2016-05-20T00:00:00.000Z').toBe('2016-05-20T00:00:00.000Z');
     expectValue('2016-05-20 04:22:22', 'dateOnly').toBe('2016-05-20T00:00:00.000Z');
     expectValue('2016-05-20 01:00:00', 'dateTime').toBe(moment('2016-05-20 01:00:00').toISOString());
