@@ -402,11 +402,7 @@ describe('formula field', () => {
 
           await db.sync();
 
-          const test = Test.model.create<any>({
-            a: BigInt(Number.MAX_SAFE_INTEGER),
-          });
-
-          await expect(test).rejects.toBeDefined();
+          await expect(Test.model.create<any>({ a: BigInt(Number.MAX_SAFE_INTEGER) })).rejects.toThrow();
         });
       });
 
@@ -483,11 +479,7 @@ describe('formula field', () => {
 
           await db.sync();
 
-          const test = Test.model.create<any>({
-            a: now,
-          });
-
-          await expect(test).rejects.toBeDefined();
+          await expect(Test.model.create<any>({ a: now })).rejects.toThrow();
         });
       });
     });
