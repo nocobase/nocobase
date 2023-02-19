@@ -65,7 +65,8 @@ import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import DatabaseUtils from './database-utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 
-export interface MergeOptions extends merge.Options {}
+export interface MergeOptions extends merge.Options {
+}
 
 export interface PendingOptions {
   field: RelationField;
@@ -105,6 +106,21 @@ export type AddMigrationsOptions = {
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
 
+// useless special version tokens Array
+const uselessSpecialVersionTokens = ['MariaDB'];
+
+/**
+ * Check is satisfied in special version
+ * @param version current version
+ * @param uselessSpecialVersionTokens useless special version tokens eg ['MariaDB']
+ */
+export const checkIsSatisfiedInSpecialVersion = (version: string, uselessSpecialVersionTokens: string[]) => {
+  const currentVersion = version.toLowerCase();
+  return uselessSpecialVersionTokens.some((token) => {
+    return !currentVersion.includes(token.toLowerCase());
+  });
+};
+
 class DatabaseVersion {
   db: Database;
 
@@ -113,10 +129,6 @@ class DatabaseVersion {
   }
 
   async satisfies(versions) {
-    const supportDataBaseList = Object.keys(versions)
-    if(this.db.inDialect(...supportDataBaseList) === false) {
-      return false
-    }
     const dialects = {
       sqlite: {
         sql: 'select sqlite_version() as version',
@@ -125,7 +137,7 @@ class DatabaseVersion {
       mysql: {
         sql: 'select version() as version',
         get: (v) => {
-          const m = /([\d+\.]+)/.exec(v);
+          const m = /([\d+\.]+)/i.exec(v);
           return m[0];
         },
       },
@@ -143,6 +155,9 @@ class DatabaseVersion {
           return false;
         }
         const [result] = (await this.db.sequelize.query(dialects[dialect].sql)) as any;
+        if (result?.[0]?.version) {
+          checkIsSatisfiedInSpecialVersion(result?.[0]?.version, uselessSpecialVersionTokens);
+        }
         return semver.satisfies(dialects[dialect].get(result?.[0]?.version), versions[dialect]);
       }
     }
@@ -386,11 +401,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     const collection = hasValidInheritsOptions
       ? new InheritedCollection(options, {
-          database: this,
-        })
+        database: this,
+      })
       : new Collection(options, {
-          database: this,
-        });
+        database: this,
+      });
 
     this.collections.set(collection.name, collection);
 
