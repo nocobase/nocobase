@@ -137,7 +137,7 @@ class DatabaseVersion {
       mysql: {
         sql: 'select version() as version',
         get: (v) => {
-          const m = /([\d+\.]+)/i.exec(v);
+          const m = /([\d+\.]+)/.exec(v);
           return m[0];
         },
       },
