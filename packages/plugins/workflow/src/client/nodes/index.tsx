@@ -30,6 +30,7 @@ import destroy from './destroy';
 import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
 import { lang, NAMESPACE } from '../locale';
 import request from "./request";
+import { VariableOption } from '../variable';
 
 export interface Instruction {
   title: string;
@@ -42,7 +43,7 @@ export interface Instruction {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   endding?: boolean;
-  getOptions?(config, types?): { label: string; key: string }[] | null;
+  getOptions?(config, types?): VariableOption[] | null;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
 };

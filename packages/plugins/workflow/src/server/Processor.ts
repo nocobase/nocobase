@@ -155,17 +155,11 @@ export default class Processor {
       }
     }
 
-    let savedJob;
-    if (job instanceof Model) {
-      savedJob = (await job.save({ transaction: this.transaction })) as unknown as JobModel;
-    } else {
-      const upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
-      savedJob = await this.saveJob({
-        nodeId: node.id,
-        upstreamId,
-        ...job,
-      });
+    if (!(job instanceof Model)) {
+      job.upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
+      job.nodeId = node.id;
     }
+    const savedJob = await this.saveJob(job);
 
     if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node

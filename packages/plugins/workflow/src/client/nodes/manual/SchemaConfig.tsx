@@ -3,6 +3,7 @@ import { Field } from '@formily/core';
 import { useForm, Schema } from '@formily/react';
 import { ArrayTable } from '@formily/antd';
 import { cloneDeep, get, set } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import {
   CollectionProvider,
@@ -16,7 +17,9 @@ import {
   gridRowColWrap,
   useCollectionManager,
   ActionContext,
-  CollectionContext
+  CollectionContext,
+  GeneralSchemaDesigner,
+  SchemaSettings
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 import { useTrigger } from '../../triggers';
@@ -33,6 +36,22 @@ function useTriggerInitializers(): SchemaInitializerItemOptions | null {
   return trigger.useInitializers? trigger.useInitializers(workflow.config) : null;
 };
 
+function SimpleDesigner() {
+  const { t } = useTranslation();
+  return (
+    <GeneralSchemaDesigner title={t('Form')}>
+      <SchemaSettings.BlockTitleItem />
+      <SchemaSettings.Divider />
+      <SchemaSettings.Remove
+        removeParentsIfNoChildren
+        breakRemoveOn={{
+          'x-component': 'Grid',
+        }}
+      />
+    </GeneralSchemaDesigner>
+  );
+}
+
 function FormBlockInitializer({ insert, ...props }) {
   return (
     <SchemaInitializer.Item
@@ -41,7 +60,7 @@ function FormBlockInitializer({ insert, ...props }) {
         insert({
           type: 'void',
           'x-component': 'CardItem',
-          'x-designer': 'FormV2.Designer',
+          'x-designer': 'SimpleDesigner',
           properties: {
             grid: {
               type: 'void',
@@ -183,7 +202,7 @@ function AddFormField(props) {
   return (
     <AddFormFieldButtonContext.Provider value={{
       onAddField(item) {
-        const { properties: { unique, ...properties }, ...options } = cloneDeep(item);
+        const { properties: { unique, type, ...properties }, ...options } = cloneDeep(item);
         delete properties.name['x-disabled'];
         setInterface({
           ...options,
@@ -373,7 +392,7 @@ function AddActionButton(props) {
         {
           key: JOB_STATUS.RESOLVED,
           type: 'item',
-          title: `{{t("Resolve", { ns: "${NAMESPACE}" })}}`,
+          title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
           action: JOB_STATUS.RESOLVED,
           actionProps: {
@@ -383,7 +402,7 @@ function AddActionButton(props) {
         {
           key: JOB_STATUS.REJECTED,
           type: 'item',
-          title: `{{t("Reject", { ns: "${NAMESPACE}" })}}`,
+          title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
           action: JOB_STATUS.REJECTED,
           actionProps: {
@@ -393,7 +412,7 @@ function AddActionButton(props) {
         {
           key: JOB_STATUS.PENDING,
           type: 'item',
-          title: `{{t("Save", { ns: "${NAMESPACE}" })}}`,
+          title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
           action: JOB_STATUS.PENDING,
         }
@@ -485,7 +504,7 @@ export function SchemaConfig({ value, onChange }) {
                 properties: actions ?? {
                   resolve: {
                     type: 'void',
-                    title: `{{t("Resolve", { ns: "${NAMESPACE}" })}}`,
+                    title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
                     'x-decorator': 'ManualActionStatusProvider',
                     'x-decorator-props': {
                       value: JOB_STATUS.RESOLVED
@@ -541,7 +560,8 @@ export function SchemaConfig({ value, onChange }) {
                 // NOTE: fake provider component
                 ManualActionStatusProvider(props) {
                   return props.children;
-                }
+                },
+                SimpleDesigner
               }}
               scope={{
                 useSubmit,

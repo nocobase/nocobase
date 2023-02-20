@@ -512,19 +512,6 @@ WorkflowTodo.Decorator = function ({ children }) {
       sort: ['-createdAt'],
       appends: ['user', 'node', 'workflow'],
       except: ['workflow.config'],
-      filter: {
-        $or: [
-          {
-            'workflow.current': true
-          },
-          {
-            'workflow.current': false,
-            status: {
-              $ne: JOB_STATUS.PENDING
-            }
-          }
-        ]
-      }
     },
     rowKey: 'id',
     showIndex: true,

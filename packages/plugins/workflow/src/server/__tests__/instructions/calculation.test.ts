@@ -133,12 +133,12 @@ describe('workflow > instructions > calculation', () => {
   });
 
   describe('formula.js', () => {
-    it('string variable without quote should throw error', async () => {
+    it('string variable with quote should be wrong result', async () => {
       const n1 = await workflow.createNode({
         type: 'calculation',
         config: {
           engine: 'formula.js',
-          expression: `CONCATENATE('a', {{$context.data.title}})`,
+          expression: `CONCATENATE('a', '{{$context.data.title}}')`,
         }
       });
 
@@ -148,7 +148,7 @@ describe('workflow > instructions > calculation', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.status).toBe(JOB_STATUS.ERROR);
+      expect(job.result).toBe('a $context.data.title ');
     });
 
     it('text', async () => {
@@ -156,7 +156,7 @@ describe('workflow > instructions > calculation', () => {
         type: 'calculation',
         config: {
           engine: 'formula.js',
-          expression: `CONCATENATE('a', '{{$context.data.title}}')`,
+          expression: `CONCATENATE('a', {{$context.data.title}})`,
         }
       });
 

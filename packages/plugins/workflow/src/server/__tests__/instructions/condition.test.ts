@@ -251,4 +251,95 @@ describe('workflow > instructions > condition', () => {
       expect(job.result).toBe(false);
     });
   });
+
+  describe('engines', () => {
+    it('default as basic', async () => {
+      const n1 = await workflow.createNode({
+        title: 'condition',
+        type: 'condition',
+        config: {
+          calculation: {
+            calculator: 'equal',
+            operands: [1, '{{$context.data.read}}']
+          }
+        }
+      });
+
+      const post = await PostRepo.create({ values: { read: 1 } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      const [job] = await execution.getJobs();
+      expect(job.result).toEqual(true);
+    });
+
+    it('basic engine', async () => {
+      const n1 = await workflow.createNode({
+        title: 'condition',
+        type: 'condition',
+        config: {
+          engine: 'basic',
+          calculation: {
+            calculator: 'equal',
+            operands: [1, '{{$context.data.read}}']
+          }
+        }
+      });
+
+      const post = await PostRepo.create({ values: { read: 1 } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      const [job] = await execution.getJobs();
+      expect(job.result).toEqual(true);
+    });
+
+    it('math.js', async () => {
+      const n1 = await workflow.createNode({
+        title: 'condition',
+        type: 'condition',
+        config: {
+          engine: 'math.js',
+          calculation: '1 == 1'
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      const [job] = await execution.getJobs();
+      expect(job.result).toEqual(true);
+    });
+
+    it('formula.js', async () => {
+      const n1 = await workflow.createNode({
+        title: 'condition',
+        type: 'condition',
+        config: {
+          engine: 'formula.js',
+          calculation: '1 == 1'
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      const [job] = await execution.getJobs();
+      expect(job.result).toEqual(true);
+    });
+  });
 });

@@ -1,32 +1,19 @@
-
-import { get } from "lodash";
-
 import { Evaluator, Processor } from '..';
 import { JOB_STATUS } from "../constants";
 import FlowNodeModel from "../models/FlowNode";
 import { Instruction } from ".";
 
-function logicCalculate(calculation, evaluator, processor) {
+function logicCalculate(calculation, evaluator, scope) {
   if (!calculation) {
     return true;
   }
 
-  const type = typeof calculation;
-  switch (type) {
-    case 'string':
-      const scope = processor.getScope();
-      const exp = calculation.trim().replace(/\{\{\s*([^{}]+)\.?\s*\}\}/g, (_, v) => {
-        const item = get(scope, v);
-        return typeof item === 'function' ? item() : item;
-      });
-
-      return evaluator(exp);
-    case 'object':
-      const method = calculation.group.type === 'and' ? 'every' : 'some';
-      return calculation.group.calculations[method](item => logicCalculate(item, evaluator, processor));
+  if (typeof calculation === 'object' && calculation.group) {
+    const method = calculation.group.type === 'and' ? 'every' : 'some';
+    return calculation.group.calculations[method](item => logicCalculate(item, evaluator, scope));
   }
 
-  return true;
+  return evaluator(calculation, scope);
 }
 
 
@@ -34,7 +21,7 @@ export default {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     // TODO(optimize): loading of jobs could be reduced and turned into incrementally in processor
     // const jobs = await processor.getJobs();
-    const { engine = 'math.js', calculation, rejectOnFalse } = node.config || {};
+    const { engine = 'basic', calculation, rejectOnFalse } = node.config || {};
     const evaluator = <Evaluator | undefined>processor.options.plugin.calculators.get(engine);
     if (!evaluator) {
       return {
@@ -43,10 +30,11 @@ export default {
       }
     }
 
+    const scope = processor.getScope();
     let result = true;
 
     try {
-      result = logicCalculate(calculation, evaluator, processor);
+      result = logicCalculate(processor.getParsedValue(calculation), evaluator, scope);
     } catch (e) {
       return {
         result: e.toString(),

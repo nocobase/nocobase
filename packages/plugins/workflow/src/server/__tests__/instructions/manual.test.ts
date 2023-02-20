@@ -535,4 +535,54 @@ describe('workflow > instructions > manual', () => {
   describe('mode: (-1,0) (multiple record, any to percent)', () => {
 
   });
+
+  describe('use result of submitted form in manual node', () => {
+    it('result should be available and correct', async () => {
+      const n1 = await workflow.createNode({
+        type: 'manual',
+        config: {
+          assignees: [users[0].id, users[1].id],
+          actions: [JOB_STATUS.RESOLVED],
+        }
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'calculation',
+        config: {
+          engine: 'math.js',
+          expression: `{{$jobsMapByNodeId.${n1.id}.number}} + 1`
+        },
+        upstreamId: n1.id
+      });
+
+      await n1.setDownstream(n2);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const UserJobModel = db.getModel('users_jobs');
+      const pendingJobs = await UserJobModel.findAll({
+        order: [[ 'userId', 'ASC' ]]
+      });
+      expect(pendingJobs.length).toBe(2);
+
+      const res1 = await userAgents[0].resource('users_jobs').submit({
+        filterByTk: pendingJobs[0].get('id'),
+        values: {
+          status: JOB_STATUS.RESOLVED,
+          result: { number: 1 }
+        }
+      });
+      expect(res1.status).toBe(202);
+
+      await sleep(1000);
+
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [j1, j2] = await e2.getJobs({ order: [['createdAt', 'ASC']] });
+      expect(j2.status).toBe(JOB_STATUS.RESOLVED);
+      expect(j2.result).toBe(2);
+    });
+  });
 });

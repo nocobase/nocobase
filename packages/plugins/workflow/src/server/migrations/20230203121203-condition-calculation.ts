@@ -36,7 +36,7 @@ function migrateConfig({ group: { type = 'and', calculations = [] } }) {
     group: {
       type,
       calculations: calculations.map(({ calculator = '===', operands = [] }: any) => {
-        return `(${operands.map((operand) => operand.group ? migrateConfig(operand) : operand).join(` ${calculatorsMap[calculator]} `)})`;
+        return `(${operands.map((operand) => operand?.group ? migrateConfig(operand) : operand).join(` ${calculatorsMap[calculator]} `)})`;
       })
     }
   }
@@ -63,8 +63,8 @@ export default class extends Migration {
         return node.update({
           config: {
             ...node.config,
-            engine: 'formula.js',
-            calculation: migrateConfig(node.config.calculation)
+            engine: 'basic',
+            // calculation: migrateConfig(node.config.calculation)
           }
         }, {
           transaction
