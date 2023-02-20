@@ -3,6 +3,7 @@ import { Field } from '@formily/core';
 import { useForm, Schema } from '@formily/react';
 import { ArrayTable } from '@formily/antd';
 import { cloneDeep, get, set } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import {
   CollectionProvider,
@@ -16,7 +17,9 @@ import {
   gridRowColWrap,
   useCollectionManager,
   ActionContext,
-  CollectionContext
+  CollectionContext,
+  GeneralSchemaDesigner,
+  SchemaSettings
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 import { useTrigger } from '../../triggers';
@@ -33,6 +36,22 @@ function useTriggerInitializers(): SchemaInitializerItemOptions | null {
   return trigger.useInitializers? trigger.useInitializers(workflow.config) : null;
 };
 
+function SimpleDesigner() {
+  const { t } = useTranslation();
+  return (
+    <GeneralSchemaDesigner title={t('Form')}>
+      <SchemaSettings.BlockTitleItem />
+      <SchemaSettings.Divider />
+      <SchemaSettings.Remove
+        removeParentsIfNoChildren
+        breakRemoveOn={{
+          'x-component': 'Grid',
+        }}
+      />
+    </GeneralSchemaDesigner>
+  );
+}
+
 function FormBlockInitializer({ insert, ...props }) {
   return (
     <SchemaInitializer.Item
@@ -41,7 +60,7 @@ function FormBlockInitializer({ insert, ...props }) {
         insert({
           type: 'void',
           'x-component': 'CardItem',
-          'x-designer': 'FormV2.Designer',
+          'x-designer': 'SimpleDesigner',
           properties: {
             grid: {
               type: 'void',
@@ -541,7 +560,8 @@ export function SchemaConfig({ value, onChange }) {
                 // NOTE: fake provider component
                 ManualActionStatusProvider(props) {
                   return props.children;
-                }
+                },
+                SimpleDesigner
               }}
               scope={{
                 useSubmit,

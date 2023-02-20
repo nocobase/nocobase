@@ -120,7 +120,7 @@ function CalculationInitializer({ node, insert, ...props }) {
           'x-component-props': {
             title: node.title ?? `#${node.id}`
           },
-          'x-designer': 'DetailsDesigner',
+          'x-designer': 'SimpleDesigner',
           properties: {
             result: {
               type: 'void',

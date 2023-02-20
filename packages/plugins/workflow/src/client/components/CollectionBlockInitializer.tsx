@@ -23,7 +23,7 @@ export function CollectionBlockInitializer({ insert, collection, dataSource, ...
           'x-component-props': {
             // title: props.title
           },
-          'x-designer': 'DetailsDesigner',
+          'x-designer': 'SimpleDesigner',
           properties: {
             grid: {
               type: 'void',
