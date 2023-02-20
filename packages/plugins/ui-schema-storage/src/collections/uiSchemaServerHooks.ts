@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'ui-schema-storage',
+  duplicator: 'required',
   name: 'uiSchemaServerHooks',
   model: 'ServerHookModel',
   // autoGenId: false,

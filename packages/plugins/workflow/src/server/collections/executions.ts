@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'workflow',
+  duplicator: 'optional',
   name: 'executions',
   fields: [
     {
@@ -16,18 +18,13 @@ export default {
       name: 'useTransaction',
       defaultValue: false
     },
-    // @deprecated
-    {
-      type: 'uuid',
-      name: 'transaction',
-      defaultValue: null
-    },
     {
       type: 'hasMany',
       name: 'jobs',
+      onDelete: 'CASCADE',
     },
     {
-      type: 'jsonb',
+      type: 'json',
       name: 'context',
     },
     {

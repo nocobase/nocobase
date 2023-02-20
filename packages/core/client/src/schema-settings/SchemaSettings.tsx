@@ -3,7 +3,19 @@ import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Alert, Button, Dropdown, Menu, MenuItemProps, Modal, Select, Space, Switch } from 'antd';
+import {
+  Alert,
+  Button,
+  Cascader,
+  CascaderProps,
+  Dropdown,
+  Menu,
+  MenuItemProps,
+  Modal,
+  Select,
+  Space,
+  Switch
+} from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
@@ -21,6 +33,7 @@ import {
   useActionContext,
   useAPIClient,
   useCollection,
+  useCollectionManager,
   useCompile,
   useDesignable
 } from '..';
@@ -61,6 +74,7 @@ type SchemaSettingsNested = {
   Divider?: React.FC;
   Popup?: React.FC<MenuItemProps & { schema?: ISchema }>;
   SwitchItem?: React.FC<SwitchItemProps>;
+  CascaderItem?: React.FC<CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any }>;
   [key: string]: any;
 };
 
@@ -122,7 +136,9 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 SchemaSettings.Template = (props) => {
   const { componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
+  const { getCollection } = useCollectionManager();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
+  const compile = useCompile();
   const api = useAPIClient();
   const { dn: tdn } = useBlockTemplateContext();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -152,6 +168,7 @@ SchemaSettings.Template = (props) => {
     <SchemaSettings.Item
       onClick={async () => {
         setVisible(false);
+        const { title } = getCollection(collectionName);
         const values = await FormDialog(t('Save as template'), () => {
           return (
             <FormLayout layout={'vertical'}>
@@ -163,6 +180,7 @@ SchemaSettings.Template = (props) => {
                     name: {
                       title: t('Template name'),
                       required: true,
+                      default: `${compile(title)}_${t(componentName)}`,
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -238,6 +256,8 @@ const findBlockTemplateSchema = (fieldSchema) => {
 SchemaSettings.FormItemTemplate = (props) => {
   const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
+  const compile = useCompile();
+  const { getCollection } = useCollectionManager();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -285,8 +305,13 @@ SchemaSettings.FormItemTemplate = (props) => {
     <SchemaSettings.Item
       onClick={async () => {
         setVisible(false);
+        const { title } = getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(t('Save as template'), () => {
+          const componentTitle = {
+            FormItem: t('Form'),
+            ReadPrettyFormItem: t('Details'),
+          };
           return (
             <FormLayout layout={'vertical'}>
               <SchemaComponent
@@ -297,6 +322,7 @@ SchemaSettings.FormItemTemplate = (props) => {
                     name: {
                       title: t('Template name'),
                       required: true,
+                      default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -350,7 +376,7 @@ SchemaSettings.Item = (props) => {
   return (
     <Menu.Item
       key={key}
-      eventKey={eventKey as any || key}
+      eventKey={(eventKey as any) || key}
       {...props}
       onClick={(info) => {
         info.domEvent.preventDefault();
@@ -426,6 +452,24 @@ SchemaSettings.SelectItem = (props) => {
           bordered={false}
           defaultValue={value}
           onChange={onChange}
+          options={options}
+          style={{ textAlign: 'right', minWidth: 100 }}
+        />
+      </div>
+    </SchemaSettings.Item>
+  );
+};
+
+SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
+  const { title, options, value, onChange, ...others } = props;
+  return (
+    <SchemaSettings.Item {...(others as any)}>
+      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+        {title}
+        <Cascader
+          bordered={false}
+          defaultValue={value}
+          onChange={onChange as any}
           options={options}
           style={{ textAlign: 'right', minWidth: 100 }}
         />

@@ -31,7 +31,7 @@ export const TableColumnDesigner = (props) => {
   const { dn } = useDesignable();
   const fieldNames =
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
-  const options = useLabelFields(collectionField?.target);
+  const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
   const intefaceCfg = getInterface(collectionField?.interface);
 
   return (

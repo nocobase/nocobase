@@ -1,6 +1,8 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
+  namespace: 'ui-routes-storage',
+  duplicator: 'required',
   name: 'uiRoutes',
   title: '前端路由表',
   model: 'MagicAttributeModel',

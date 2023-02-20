@@ -69,7 +69,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const {
     popover,
     confirm,
-    // openMode,
+    openMode: om,
     containerRefKey,
     component,
     useAction = useA,

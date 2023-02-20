@@ -7,7 +7,6 @@ import Plugin from '.';
 import ExecutionModel from './models/Execution';
 import JobModel from './models/Job';
 import FlowNodeModel from './models/FlowNode';
-import calculators from './calculators';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 
 
@@ -22,11 +21,14 @@ export default class Processor {
   static StatusMap = {
     [JOB_STATUS.PENDING]: EXECUTION_STATUS.STARTED,
     [JOB_STATUS.RESOLVED]: EXECUTION_STATUS.RESOLVED,
-    [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
+    [JOB_STATUS.FAILED]: EXECUTION_STATUS.FAILED,
+    [JOB_STATUS.ERROR]: EXECUTION_STATUS.ERROR,
+    [JOB_STATUS.ABORTED]: EXECUTION_STATUS.ABORTED,
     [JOB_STATUS.CANCELED]: EXECUTION_STATUS.CANCELED,
+    [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
   };
 
-  transaction: Transaction;
+  transaction?: Transaction;
 
   nodes: FlowNodeModel[] = [];
   nodesMap = new Map<number, FlowNodeModel>();
@@ -37,7 +39,7 @@ export default class Processor {
   }
 
   // make dual linked nodes list then cache
-  private makeNodes(nodes = []) {
+  private makeNodes(nodes: FlowNodeModel[] = []) {
     this.nodes = nodes;
 
     nodes.forEach((node) => {
@@ -46,11 +48,11 @@ export default class Processor {
 
     nodes.forEach((node) => {
       if (node.upstreamId) {
-        node.upstream = this.nodesMap.get(node.upstreamId);
+        node.upstream = this.nodesMap.get(node.upstreamId) as FlowNodeModel;
       }
 
       if (node.downstreamId) {
-        node.downstream = this.nodesMap.get(node.downstreamId);
+        node.downstream = this.nodesMap.get(node.downstreamId) as FlowNodeModel;
       }
     });
   }
@@ -76,7 +78,7 @@ export default class Processor {
       : await options.plugin.db.sequelize.transaction();
   }
 
-  private async prepare() {
+  public async prepare() {
     const transaction = await this.getTransaction();
     this.transaction = transaction;
 
@@ -139,12 +141,12 @@ export default class Processor {
         return null;
       }
     } catch (err) {
-      // for uncaught error, set to rejected
+      // for uncaught error, set to error
       job = {
         result: err instanceof Error
           ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
           : err,
-        status: JOB_STATUS.REJECTED,
+        status: JOB_STATUS.ERROR,
       };
       // if previous job is from resuming
       if (prevJob && prevJob.nodeId === node.id) {
@@ -153,17 +155,11 @@ export default class Processor {
       }
     }
 
-    let savedJob;
-    if (job instanceof Model) {
-      savedJob = (await job.save({ transaction: this.transaction })) as unknown as JobModel;
-    } else {
-      const upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
-      savedJob = await this.saveJob({
-        nodeId: node.id,
-        upstreamId,
-        ...job,
-      });
+    if (!(job instanceof Model)) {
+      job.upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
+      job.nodeId = node.id;
     }
+    const savedJob = await this.saveJob(job);
 
     if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node
@@ -244,7 +240,7 @@ export default class Processor {
   getBranches(node: FlowNodeModel): FlowNodeModel[] {
     return this.nodes
       .filter(item => item.upstream === node && item.branchIndex !== null)
-      .sort((a, b) => a.branchIndex - b.branchIndex);
+      .sort((a, b) => Number(a.branchIndex) - Number(b.branchIndex));
   }
 
   // find the first node in current branch
@@ -274,7 +270,7 @@ export default class Processor {
   }
 
   findBranchParentJob(job: JobModel, node: FlowNodeModel): JobModel | null {
-    for (let j = job; j; j = this.jobsMap.get(j.upstreamId)) {
+    for (let j: JobModel | undefined = job; j; j = this.jobsMap.get(j.upstreamId)) {
       if (j.nodeId === node.id) {
         return j;
       }
@@ -282,20 +278,24 @@ export default class Processor {
     return null;
   }
 
-  public getParsedValue(value, node?) {
-    const injectedFns = {};
+  public getScope(node?) {
+    const systemFns = {};
     const scope = {
       execution: this.execution,
       node
     };
-    for (let [name, fn] of calculators.getEntities()) {
-      injectedFns[name] = fn.bind(scope);
+    for (let [name, fn] of this.options.plugin.functions.getEntities()) {
+      systemFns[name] = fn.bind(scope);
     }
 
-    return parse(value)({
+    return {
       $context: this.execution.context,
       $jobsMapByNodeId: this.jobsMapByNodeId,
-      $fn: injectedFns
-    });
+      $system: systemFns
+    };
+  }
+
+  public getParsedValue(value, node?) {
+    return parse(value)(this.getScope(node));
   }
 }

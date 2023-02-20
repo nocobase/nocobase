@@ -1,27 +1,28 @@
 # ACLRole
 
-ACLRole，ACL 系统中的用户角色类。在 ACL 系统中，通常使用 `acl.define` 定义角色。
+ACLRole is the user role class in ACL system. In ACL systems, roles are usually defined by `acl.define`.
 
-## 类方法
+## Class Methods
 
 ### `constructor()`
-构造函数
 
-**签名**
+Constructor.
+
+**Signature**
 * `constructor(public acl: ACL, public name: string)`
 
-**详细信息**
-* acl - ACL 实例
-* name - 角色名称
+**Detailed Information**
+* acl - ACL instance
+* name - Name of the role
 
 ### `grantAction()`
 
-为角色授予 Action 权限
+Grant the action permission to the role. 
 
-**签名**
+**Signature**
 * `grantAction(path: string, options?: RoleActionParams)`
 
-**类型**
+**Type**
 ```typescript
 interface RoleActionParams {
   fields?: string[];
@@ -33,39 +34,39 @@ interface RoleActionParams {
 }
 ```
 
-**详细信息**
+**Detailed Information**
 
-* path - 资源Action路径，如 `posts:edit`，表示 `posts` 资源的 `edit` Action, 资源名称和 Action 之间使用 `:` 冒号分隔。
+* path - Action path of the resource, such as `posts:edit`, which means the `edit` action of the `posts` resource. Use colon `:` to separate the name of resource and action.
 
-RoleActionParams 为授权时，对应 action 的可配置参数，用以实现更细粒度的权限控制。
+When RoleActionParams is to grant permission, the corresponding action can be configured with parameters to achieve finer-grained permission control.
 
-* fields - 可访问的字段
+* fields - Accessible fields
   ```typescript
   acl.define({
     role: 'admin',
     actions: {
       'posts:view': {
-        // admin 用户可以请求 posts:view action，但是只有 fields 配置的字段权限
+        // admin user can request posts:view action, but limited to the configured fields
         fields: ["id", "title", "content"], 
       },
     },
   });
   ```
-* filter - 权限资源过滤配置
+* filter - Permission resource filtering configuration
   ```typescript
   acl.define({
     role: 'admin',
     actions: {
       'posts:view': {
-        // admin 用户可以请求 posts:view action，但是列出的结果必须满足 filter 设置的条件。
+        // admin user can request posts:view action, but the listed results is filtered by conditions in the filter
         filter: {
-          createdById: '{{ ctx.state.currentUser.id }}', // 支持模板语法，可以取 ctx 中的值，将在权限判断时替换
+          createdById: '{{ ctx.state.currentUser.id }}', // Template syntax is supported to take the value in ctx, and will be replaced when checking permissions
         },
       },
     },
   });
   ```
-* own - 是否只能访问自己的数据
+* own - Whether to access only your own data
   ```typescript
   const actionsWithOwn = {
     'posts:view': {
@@ -73,7 +74,7 @@ RoleActionParams 为授权时，对应 action 的可配置参数，用以实现�
      }
   }
   
-  // 等价于
+  // Equivalent to
   const actionsWithFilter =  {
     'posts:view': {
       "filter": {
@@ -82,6 +83,5 @@ RoleActionParams 为授权时，对应 action 的可配置参数，用以实现�
     }
   }
   ```
-* whitelist - 白名单，只有在白名单中的字段才能被访问
-* blacklist - 黑名单，黑名单中的字段不能被访问
-
+* whitelist - Whitelist, only the fields in whitelist can be accessed
+* blacklist - Blacklist, fields in blacklist cannot be accessed

@@ -5,23 +5,23 @@ import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
 import initActions from './actions';
-import calculators from './calculators';
+import initCalculationEngines from './calculators';
+import type { Evaluator } from './calculators';
 import { EXECUTION_STATUS } from './constants';
-import extensions from './extensions';
 import initInstructions, { Instruction } from './instructions';
 import ExecutionModel from './models/Execution';
 import JobModel from './models/Job';
 import WorkflowModel from './models/Workflow';
 import Processor from './Processor';
 import initTriggers, { Trigger } from './triggers';
-
+import initFunctions from './functions';
 
 type Pending = [ExecutionModel, JobModel?];
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
-  calculators = calculators;
-  extensions = extensions;
+  calculators: Registry<Evaluator> = new Registry();
+  functions: Registry<Function> = new Registry();
   executing: ExecutionModel | null = null;
   pending: Pending[] = [];
   events: [WorkflowModel, any, { context?: any }][] = [];
@@ -34,9 +34,9 @@ export default class WorkflowPlugin extends Plugin {
     } else if (!instance.current) {
       const count = await Model.count({
         where: {
-          key: instance.key
+          key: instance.key,
         },
-        transaction: options.transaction
+        transaction: options.transaction,
       });
       if (!count) {
         instance.set('current', true);
@@ -52,18 +52,21 @@ export default class WorkflowPlugin extends Plugin {
         key: instance.key,
         current: true,
         id: {
-          [Op.ne]: instance.id
-        }
+          [Op.ne]: instance.id,
+        },
       },
-      transaction: options.transaction
+      transaction: options.transaction,
     });
 
     if (previous) {
       // NOTE: set to `null` but not `false` will not violate the unique index
-      await previous.update({ enabled: false, current: null }, {
-        transaction: options.transaction,
-        hooks: false
-      });
+      await previous.update(
+        { enabled: false, current: null },
+        {
+          transaction: options.transaction,
+          hooks: false,
+        },
+      );
 
       this.toggle(previous, false);
     }
@@ -71,6 +74,13 @@ export default class WorkflowPlugin extends Plugin {
 
   async load() {
     const { db, options } = this;
+
+    initActions(this);
+    initTriggers(this, options.triggers);
+    initInstructions(this, options.instructions);
+    initCalculationEngines(this);
+    initFunctions(this, options.functions);
+
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.workflows`,
@@ -98,17 +108,9 @@ export default class WorkflowPlugin extends Plugin {
       },
     });
 
-    initActions(this);
-    initTriggers(this, options.triggers);
-    initInstructions(this, options.instructions);
-
     db.on('workflows.beforeSave', this.onBeforeSave);
     db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));
     db.on('workflows.afterDestroy', (model: WorkflowModel) => this.toggle(model, false));
-
-    this.app.on('afterLoad', async () => {
-      this.extensions.reduce((promise, extend) => promise.then(() => extend(this)), Promise.resolve());
-    });
 
     // [Life Cycle]:
     //   * load all workflows in db
@@ -185,12 +187,14 @@ export default class WorkflowPlugin extends Plugin {
       // NOTE: no transaction here for read-uncommitted execution
       const existed = await workflow.countExecutions({
         where: {
-          id: options.context.executionId
-        }
+          id: options.context.executionId,
+        },
       });
 
       if (existed) {
-        this.app.logger.warn(`[Workflow] workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`);
+        this.app.logger.warn(
+          `[Workflow] workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`,
+        );
         valid = false;
       }
     }
@@ -200,7 +204,7 @@ export default class WorkflowPlugin extends Plugin {
         const execution = await workflow.createExecution({
           context,
           key: workflow.key,
-          status: EXECUTION_STATUS.CREATED,
+          status: EXECUTION_STATUS.QUEUEING,
           useTransaction: workflow.useTransaction,
         }, { transaction });
 
@@ -211,19 +215,22 @@ export default class WorkflowPlugin extends Plugin {
 
         const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
           where: {
-            key: workflow.key
+            key: workflow.key,
           },
-          transaction
+          transaction,
         });
-        await (<typeof WorkflowModel>workflow.constructor).update({
-          allExecuted
-        }, {
-          where: {
-            key: workflow.key
+        await (<typeof WorkflowModel>workflow.constructor).update(
+          {
+            allExecuted,
           },
-          individualHooks: true,
-          transaction
-        });
+          {
+            where: {
+              key: workflow.key,
+            },
+            individualHooks: true,
+            transaction,
+          },
+        );
 
         execution.workflow = workflow;
 
@@ -243,7 +250,7 @@ export default class WorkflowPlugin extends Plugin {
     } else {
       this.dispatch();
     }
-  }
+  };
 
   public async resume(job) {
     if (!job.execution) {
@@ -264,16 +271,16 @@ export default class WorkflowPlugin extends Plugin {
     if (this.pending.length) {
       next = this.pending.shift() as Pending;
     } else {
-      const execution = await this.db.getRepository('executions').findOne({
+      const execution = (await this.db.getRepository('executions').findOne({
         filter: {
-          status: EXECUTION_STATUS.CREATED
+          status: EXECUTION_STATUS.QUEUEING
         },
-        sort: 'createdAt'
-      }) as ExecutionModel;
+        sort: 'createdAt',
+      })) as ExecutionModel;
       if (execution) {
         next = [execution];
       }
-    };
+    }
     if (next) {
       this.process(...next);
     }
@@ -282,13 +289,13 @@ export default class WorkflowPlugin extends Plugin {
   private async process(execution: ExecutionModel, job?: JobModel) {
     this.executing = execution;
 
-    if (execution.status === EXECUTION_STATUS.CREATED) {
+    if (execution.status === EXECUTION_STATUS.QUEUEING) {
       await execution.update({ status: EXECUTION_STATUS.STARTED });
     }
 
     const processor = this.createProcessor(execution);
 
-    this.app.logger.info(`[Workflow] execution ${execution.id} ${job ? 'resuming' : 'starting'} ...`);
+    this.app.logger.info(`[Workflow] execution ${execution.id} ${job ? 'resuming' : 'starting'}...`);
 
     try {
       await (job ? processor.resume(job) : processor.start());
@@ -301,7 +308,7 @@ export default class WorkflowPlugin extends Plugin {
     this.dispatch();
   }
 
-  private createProcessor(execution: ExecutionModel, options = {}): Processor {
+  public createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
   }
 }

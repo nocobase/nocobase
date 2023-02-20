@@ -1,11 +1,14 @@
 import { clone } from '@formily/shared';
+import { CascaderProps } from 'antd';
 import { reduce, unionBy, uniq } from 'lodash';
 import { useContext } from 'react';
+import { useCompile } from '../../schema-component';
 import { CollectionManagerContext } from '../context';
 import { CollectionFieldOptions } from '../types';
 
 export const useCollectionManager = () => {
   const { refreshCM, service, interfaces, collections, templates } = useContext(CollectionManagerContext);
+  const compile = useCompile()
   const getInheritedFields = (name) => {
     const inheritKeys = getInheritCollections(name);
     const inheritedFields = reduce(
@@ -59,23 +62,63 @@ export const useCollectionManager = () => {
   };
 
   const getChildrenCollections = (name) => {
-    const childrens = [];
-    const getChildrens = (name) => {
+    const children = [];
+    const getChildren = (name) => {
       const inheritCollections = collections.filter((v) => {
         return v.inherits?.includes(name);
       });
       inheritCollections.forEach((v) => {
         const collectionKey = v.name;
-        childrens.push(v);
-        return getChildrens(collectionKey);
+        children.push(v);
+        return getChildren(collectionKey);
       });
-      return childrens;
+      return children;
     };
-    return getChildrens(name);
+    return getChildren(name);
   };
   const getCurrentCollectionFields = (name: string) => {
     const collection = collections?.find((collection) => collection.name === name);
     return collection?.fields || [];
+  };
+
+
+  const getCollectionFieldsOptions = (collectionName: string, type: string | string[] = 'string', opts?: {
+    /**
+     * 为 true 时允许查询所有关联字段
+     * 为 Array<string> 时仅允许查询指定的关联字段
+     */
+    association?: boolean | string[];
+  }) => {
+    const { association = false } = opts || {};
+    if (typeof type === 'string') {
+      type = [type];
+    }
+    const fields = getCollectionFields(collectionName);
+    const options = fields
+      ?.filter(
+        (field) =>
+          field.interface &&
+          (type.includes(field.type) || (association && field.target && field.target !== collectionName &&
+            Array.isArray(association) ? association.includes(field.interface) : false
+          )),
+      )
+      ?.map((field) => {
+        const result: CascaderProps<any>['options'][0] = {
+          value: field.name,
+          label: compile(field?.uiSchema?.title) || field.name,
+        };
+        if (association && field.target) {
+          result.children = getCollectionFieldsOptions(field.target, type, opts);
+          if (!result.children?.length) {
+            return null
+          }
+        }
+        return result;
+      })
+      // 过滤 map 产生为 null 的数据
+      .filter(Boolean)
+
+    return options;
   };
 
   return {
@@ -91,6 +134,7 @@ export const useCollectionManager = () => {
     getInheritedFields,
     getCollectionField,
     getCollectionFields,
+    getCollectionFieldsOptions,
     getCurrentCollectionFields,
     getCollection(name: any) {
       if (typeof name !== 'string') {
