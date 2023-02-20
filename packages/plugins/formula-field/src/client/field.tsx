@@ -8,7 +8,7 @@ import { NAMESPACE } from './locale';
 
 const { defaultProps, operators } = interfacesProperties;
 
-export const formula: IField = {
+export default {
   name: 'formula',
   type: 'object',
   group: 'advanced',
@@ -135,7 +135,7 @@ export const formula: IField = {
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = (evaluators as Registry<Evaluator>).get(values.engine);
-        const exp = value.trim().replace(/\{\{([^{}]+)\}\}/g, '1');
+        const exp = value.trim().replace(/{{\s*([^{}]+)\s*}}/g, '1');
         try {
           evaluate(exp);
           return '';
@@ -148,4 +148,4 @@ export const formula: IField = {
   filterable: {
     operators: operators.number,
   },
-};
+} as IField;

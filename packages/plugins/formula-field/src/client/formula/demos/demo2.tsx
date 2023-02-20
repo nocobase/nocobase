@@ -15,10 +15,31 @@ const schema = {
       default: '{{f1 }} + {{ f2}}',
       'x-component': 'Expression',
       'x-component-props': {
-        evaluate: (exp, scope) => {
-          return 1;
-        },
-        supports: ['number'],
+        supports: [
+          'checkbox',
+
+          'number',
+          'percent',
+          'integer',
+          'number',
+          'percent',
+
+          'input',
+          'textarea',
+          'email',
+          'phone',
+
+          'datetime',
+          'createdAt',
+          'updatedAt',
+
+          'radioGroup',
+          'checkboxGroup',
+          'select',
+          'multipleSelect',
+
+          // 'json'
+        ],
         useCurrentFields: () => {
           return [
             {

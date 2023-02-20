@@ -1,11 +1,10 @@
 import { onFormValuesChange } from '@formily/core';
 import { useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
-import { toFixedByStep } from '@nocobase/utils/client';
+import evaluators, { Evaluator } from '@nocobase/evaluators/client';
+import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import cloneDeep from 'lodash/cloneDeep';
-import * as math from 'mathjs';
-import { isNumber } from 'mathjs';
 import React, { useState } from 'react';
-import { useCollection } from '../../../collection-manager';
+import { useCollection } from '@nocobase/client';
 
 const ReadPretty = (props) => {
   if (props?.options?.dataType !== 'string') {
@@ -15,15 +14,14 @@ const ReadPretty = (props) => {
 };
 
 const Input = (props) => {
-  const { evaluate, options } = props;
-  const { dataType, expression } = options;
+  const { options } = props;
+  const { dataType, expression, engine = 'math.js' } = options;
+  const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
   const form = useForm();
   const val = () => {
     const scope = cloneDeep(form.values);
     try {
-      let result = evaluate(expression, scope);
-      result = isNumber(result) && Number.isFinite(result) ? math.round(result, 9) : result;
-      return result;
+      return evaluate(expression, scope);
     } catch (error) {
       return null;
     }

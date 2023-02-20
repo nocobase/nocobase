@@ -7,7 +7,7 @@ export interface Evaluator {
   label: string;
   tooltip?: string;
   link?: string;
-  evaluate(exp: string): any;
+  evaluate(exp: string, scope?: { [key: string]: any }): any;
 }
 
 const evaluators = new Registry<Evaluator>();

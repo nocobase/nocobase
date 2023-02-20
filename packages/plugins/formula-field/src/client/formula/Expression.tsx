@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { Button, Cascader, Dropdown, Input, Menu, Tooltip } from 'antd';
+import { Button, Cascader, Input, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCompile } from '../../hooks';
+import { useCompile } from '@nocobase/client';
 
 
 

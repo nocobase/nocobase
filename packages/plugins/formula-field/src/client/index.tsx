@@ -5,13 +5,14 @@ import { css } from '@emotion/css';
 import { CollectionManagerContext, registerField, SchemaComponentOptions } from '@nocobase/client';
 import evaluators, { Evaluator } from '@nocobase/evaluators/client';
 
-import { formula } from './formula';
+import Formula from './formula';
+import field from './field';
 import { NAMESPACE } from './locale';
 import { Registry } from '@nocobase/utils/client';
 
 
 
-registerField(formula.group, 'formula', formula);
+registerField(field.group, 'formula', field);
 
 function renderExpressionDescription(key: string) {
   const engine = (evaluators as Registry<Evaluator>).get(key);
@@ -39,11 +40,14 @@ export default React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
   return (
     <SchemaComponentOptions
+      components={{
+        Formula
+      }}
       scope={{
         renderExpressionDescription
       }}
     >
-      <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, formula } }}>
+      <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, formula: field } }}>
         {props.children}
       </CollectionManagerContext.Provider>
     </SchemaComponentOptions>

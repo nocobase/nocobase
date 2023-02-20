@@ -1,4 +1,4 @@
-import { evaluate } from "mathjs";
+import evaluate from "../../utils/mathjs";
 
 
 
